@@ -97,6 +97,11 @@ jobs:
   secret-scan:
     name: secret-scan (gitleaks)
     runs-on: ubuntu-latest
+    # gitleaks-action czyta listę commitów PR-a przez API → wymaga pull-requests:read.
+    # Workflow-level `permissions: contents: read` to odcinał (octokit 403 → crash).
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
