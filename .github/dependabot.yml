@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # Zależności npm (pnpm) — tygodniowo, zgrupowane, żeby nie zalać PR-ami.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      production-minor-patch:
+        dependency-type: production
+        update-types: [minor, patch]
+      development:
+        dependency-type: development
+    labels:
+      - dependencies
+
+  # Akcje GitHub Actions użyte w pr.yml — pinowane wersje aktualizowane tygodniowo.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+      - ci

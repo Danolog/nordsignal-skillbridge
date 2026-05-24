@@ -1,0 +1,17 @@
+# CODEOWNERS — wymagany reviewer na ścieżkach czerwonych linii nordsignal.
+# Egzekwowane dopiero, gdy branch protection ma włączone
+# "Require review from Code Owners" (krok administracyjny — Ethan/Darek).
+#
+# @Danolog = konto właściciela repo (Darek). Potwierdzone z `gh auth status`.
+# Brak reguły domyślnej (`*`) — celowo: nie chcemy wymuszać review właściciela
+# na KAŻDYM PR-ze, tylko na zmianach z czerwonych linii (CLAUDE.md sekcja 4).
+
+# Konstytucja produktu + konfiguracja agentowa
+/CLAUDE.md              @Danolog
+
+# CI, ownership, polityki repo — zmiana bramek = zmiana czerwonej linii
+/.github/               @Danolog
+
+# Schemat bazy produkcyjnej + migracje (DROP/ALTER prod = czerwona linia)
+/drizzle/               @Danolog
+/src/lib/db/schema.ts   @Danolog
