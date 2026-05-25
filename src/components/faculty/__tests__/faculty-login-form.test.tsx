@@ -52,7 +52,7 @@ describe("FacultyLoginForm", () => {
 	});
 
 	it("shows loading state while submitting", async () => {
-		let resolvePromise: (value: unknown) => void;
+		let resolvePromise: ((value: unknown) => void) | undefined;
 		const fetchPromise = new Promise((resolve) => {
 			resolvePromise = resolve;
 		});

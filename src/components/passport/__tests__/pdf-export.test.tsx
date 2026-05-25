@@ -25,7 +25,7 @@ vi.mock("jspdf", () => {
 	};
 });
 
-function createMockRef(): RefObject<HTMLDivElement> {
+function createMockRef(): RefObject<HTMLDivElement | null> {
 	const div = document.createElement("div");
 	const ref = createRef<HTMLDivElement>();
 	Object.defineProperty(ref, "current", { value: div, writable: true });

@@ -107,7 +107,7 @@ describe("GapCard", () => {
 	});
 
 	it("shows loading state while fetching", async () => {
-		let resolvePromise: (value: unknown) => void;
+		let resolvePromise: ((value: unknown) => void) | undefined;
 		const fetchPromise = new Promise((resolve) => {
 			resolvePromise = resolve;
 		});

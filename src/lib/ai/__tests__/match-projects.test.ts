@@ -101,7 +101,7 @@ describe("matchProjects", () => {
 					{ id: "pc2", projectId: "proj-1", competencyName: "Pandas", role: "required" },
 				],
 			},
-		]);
+		] as unknown as Awaited<ReturnType<typeof mockProjects>>);
 
 		mockGenerateText.mockResolvedValue({
 			text: JSON.stringify([
@@ -152,7 +152,7 @@ describe("matchProjects", () => {
 					{ id: "pc3", projectId: "proj-2", competencyName: "Pandas", role: "required" },
 				],
 			},
-		]);
+		] as unknown as Awaited<ReturnType<typeof mockProjects>>);
 
 		mockGenerateText.mockResolvedValue({
 			text: "This is not valid JSON at all!!!",

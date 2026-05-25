@@ -130,7 +130,7 @@ describe("generateSkillMap", () => {
 
 		await generateSkillMap("student-1", ["React", "TypeScript"], "Frontend Developer");
 
-		const call = mockGenerateObject.mock.calls[0][0];
+		const call = mockGenerateObject.mock.calls[0][0] as { schema?: unknown; prompt: string };
 		expect(call.schema).toBeDefined();
 		expect(call.prompt).toContain("React");
 		expect(call.prompt).toContain("TypeScript");
