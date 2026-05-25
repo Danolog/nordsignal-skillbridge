@@ -9,8 +9,6 @@ import {
 	gaps,
 	gapsRelations,
 	jobMarketData,
-	microCourses,
-	microCoursesRelations,
 	passports,
 	projectCompetencies,
 	projectCompetenciesRelations,
@@ -92,11 +90,6 @@ describe("DB Schema — Domain tables", () => {
 		expect(getTableName(skillMaps)).toBe("skill_maps");
 	});
 
-	it("microCourses table exists with correct SQL name", () => {
-		expect(microCourses).toBeDefined();
-		expect(getTableName(microCourses)).toBe("micro_courses");
-	});
-
 	it("passports table exists with correct SQL name", () => {
 		expect(passports).toBeDefined();
 		expect(getTableName(passports)).toBe("passports");
@@ -146,13 +139,6 @@ describe("DB Schema — Column presence", () => {
 		expect(colNames).toContain("nodes");
 		expect(colNames).toContain("edges");
 	});
-
-	it("microCourses has content JSON column", () => {
-		const colNames = Object.keys(microCourses);
-		expect(colNames).toContain("content");
-		expect(colNames).toContain("completed");
-		expect(colNames).toContain("gapId");
-	});
 });
 
 describe("DB Schema — Relations", () => {
@@ -166,10 +152,6 @@ describe("DB Schema — Relations", () => {
 
 	it("exports gapsRelations", () => {
 		expect(gapsRelations).toBeDefined();
-	});
-
-	it("exports microCoursesRelations", () => {
-		expect(microCoursesRelations).toBeDefined();
 	});
 });
 

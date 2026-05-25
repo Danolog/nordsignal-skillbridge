@@ -1,0 +1,1 @@
+DROP TABLE "micro_courses" CASCADE;

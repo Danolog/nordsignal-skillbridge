@@ -160,24 +160,6 @@ export const skillMaps = pgTable("skill_maps", {
 	updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const microCourses = pgTable(
-	"micro_courses",
-	{
-		id: uuid("id").defaultRandom().primaryKey(),
-		studentId: uuid("student_id")
-			.notNull()
-			.references(() => students.id, { onDelete: "cascade" }),
-		gapId: uuid("gap_id").references(() => gaps.id, { onDelete: "set null" }),
-		competencyName: text("competency_name").notNull(),
-		title: text("title").notNull(),
-		content: jsonb("content").notNull(),
-		completed: boolean("completed").notNull().default(false),
-		completedAt: timestamp("completed_at", { withTimezone: true }),
-		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-	},
-	(table) => [index("idx_micro_courses_student_id").on(table.studentId)],
-);
-
 export const passports = pgTable("passports", {
 	id: uuid("id").defaultRandom().primaryKey(),
 	studentId: uuid("student_id")
@@ -317,7 +299,6 @@ export const studentsRelations = relations(students, ({ one, many }) => ({
 	competencies: many(competencies),
 	gaps: many(gaps),
 	skillMap: one(skillMaps, { fields: [students.id], references: [skillMaps.studentId] }),
-	microCourses: many(microCourses),
 	passport: one(passports, { fields: [students.id], references: [passports.studentId] }),
 	projectSubmissions: many(projectSubmissions),
 }));
@@ -328,12 +309,6 @@ export const competenciesRelations = relations(competencies, ({ one }) => ({
 
 export const gapsRelations = relations(gaps, ({ one, many }) => ({
 	student: one(students, { fields: [gaps.studentId], references: [students.id] }),
-	microCourses: many(microCourses),
-}));
-
-export const microCoursesRelations = relations(microCourses, ({ one }) => ({
-	student: one(students, { fields: [microCourses.studentId], references: [students.id] }),
-	gap: one(gaps, { fields: [microCourses.gapId], references: [gaps.id] }),
 }));
 
 export const passportsRelations = relations(passports, ({ one }) => ({

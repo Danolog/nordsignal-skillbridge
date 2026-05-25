@@ -18,7 +18,7 @@ vi.mock("@/lib/db", () => ({
 	},
 }));
 
-vi.mock("../generate-micro-course", async (importOriginal) => {
+vi.mock("../learning-steps", async (importOriginal) => {
 	const actual = (await importOriginal()) as Record<string, unknown>;
 	return {
 		...actual,
@@ -29,7 +29,7 @@ vi.mock("../generate-micro-course", async (importOriginal) => {
 import { generateText } from "ai";
 import { db } from "@/lib/db";
 import { generateProjectBrief } from "../generate-brief";
-import { generateLearningSteps } from "../generate-micro-course";
+import { generateLearningSteps } from "../learning-steps";
 
 type TextReturn = ReturnType<typeof generateText> extends Promise<infer T> ? T : never;
 

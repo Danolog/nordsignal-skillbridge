@@ -106,7 +106,7 @@ export function NodeDetailPanel({ node, onClose }: NodeDetailPanelProps) {
 			<div className="px-6 py-4 border-t border-indigo-500/8">
 				{status === "missing" && (
 					<Link
-						href={`/micro-courses?generate=${encodeURIComponent(label)}`}
+						href="/projects"
 						className="flex items-center justify-center gap-2 w-full py-3 px-5 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-[Nunito] font-bold text-sm shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:shadow-[0_0_32px_rgba(16,185,129,0.4)] hover:-translate-y-0.5 transition-all"
 					>
 						<Rocket size={18} />
@@ -115,7 +115,7 @@ export function NodeDetailPanel({ node, onClose }: NodeDetailPanelProps) {
 				)}
 				{status === "in_progress" && (
 					<Link
-						href={`/micro-courses?generate=${encodeURIComponent(label)}`}
+						href="/projects"
 						className="flex items-center justify-center gap-2 w-full py-3 px-5 rounded-full bg-amber-400/12 border border-amber-400/20 text-amber-500 font-[Nunito] font-bold text-sm hover:bg-amber-400/20 transition-all"
 					>
 						<BookOpen size={18} />
