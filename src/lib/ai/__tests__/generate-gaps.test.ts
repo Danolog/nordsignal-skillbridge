@@ -113,7 +113,7 @@ describe("generateGaps", () => {
 		await generateGaps("student-1", ["Python"], "Data Analyst");
 
 		const passportUpdate = setSpy.mock.calls.find((call) => {
-			const arg = call[0] as Record<string, unknown>;
+			const arg = (call as unknown[])[0] as Record<string, unknown>;
 			return "marketCoveragePercent" in arg;
 		});
 		expect(passportUpdate).toBeUndefined();
@@ -122,7 +122,7 @@ describe("generateGaps", () => {
 	it("passes schema and prompt with competencies and career goal", async () => {
 		await generateGaps("student-1", ["Python", "SQL"], "Data Engineer");
 
-		const call = mockGenerateObject.mock.calls[0][0];
+		const call = mockGenerateObject.mock.calls[0][0] as { schema?: unknown; prompt: string };
 		expect(call.schema).toBeDefined();
 		expect(call.prompt).toContain("Python");
 		expect(call.prompt).toContain("SQL");
