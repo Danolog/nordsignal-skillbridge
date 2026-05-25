@@ -29,6 +29,13 @@
       "when": 1777665361837,
       "tag": "0003_bumpy_microbe",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779730528588,
+      "tag": "0004_drop_micro_courses",
+      "breakpoints": true
     }
   ]
 }

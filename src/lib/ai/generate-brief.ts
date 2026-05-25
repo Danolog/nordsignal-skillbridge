@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
 import { db } from "@/lib/db";
 import { competencies, projects, students } from "@/lib/db/schema";
-import { generateLearningSteps, type LearningStep } from "./generate-micro-course";
+import { generateLearningSteps, type LearningStep } from "./learning-steps";
 
 export interface ProjectBrief {
 	objective: string;
