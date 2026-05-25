@@ -77,7 +77,9 @@
 	"pnpm": {
 		"overrides": {
 			"@better-auth/sso": "1.6.9",
-			"@better-auth/core": "1.6.9"
+			"@better-auth/core": "1.6.9",
+			"samlify": ">=2.13.0",
+			"@xmldom/xmldom": ">=0.9.8"
 		}
 	}
 }
