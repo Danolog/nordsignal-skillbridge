@@ -1,4 +1,3 @@
-import { dash } from "@better-auth/infra";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -19,5 +18,5 @@ export const auth = betterAuth({
 			clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
 		},
 	},
-	plugins: [nextCookies(), dash()],
+	plugins: [nextCookies()],
 });
