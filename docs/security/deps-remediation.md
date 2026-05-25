@@ -1,6 +1,6 @@
 # Ticket — remediacja zależności (deps-scan → wymagany przed prod)
 
-**Status:** Otwarty · **Utworzony:** 2026-05-25 (Leo, w ramach domknięcia Z2/K4 CI)
+**Status:** W toku — **Krok 1 ZROBIONY 2026-05-25** (override `samlify`+`@xmldom`, high **32→26**); zostaje triaż 26 high (Krok 2) + sign-off Ryana · **Utworzony:** 2026-05-25 (Leo, w ramach domknięcia Z2/K4 CI)
 **Owner techniczny:** Leo + Ethan · **Sign-off bezpieczeństwa:** Ryan (domena 8)
 **Powiązane:** ADR-001 §4.1 (K4 CI), `.github/workflows/pr.yml` job `deps-scan`, `docs/security/beta-v01-signoff.md` (bramka go-live Tydz. 4)
 
@@ -37,7 +37,7 @@ W `package.json`:
 - `@better-auth/sso` deklaruje `samlify@2.10.2`, ale **nie jest importowany w runtime** → wymuszenie 2.13.0 nie ma jak zepsuć działającego kodu (gałąź martwa). Ryzyko niskie.
 - Po `pnpm install` zweryfikować: `pnpm typecheck` + `pnpm test:run` zielone (auth/`dash` nietknięte), `pnpm build` przechodzi.
 
-### Krok 2 — triaż pozostałych 31 high
+### Krok 2 — triaż pozostałych 26 high (po Kroku 1)
 - `pnpm audit --audit-level high --json` → pełna lista. Dla każdego: produkcyjny vs dev-only, używana vs martwa ścieżka.
 - Dev-only / martwe ścieżki → override lub akceptacja z uzasadnieniem. Produkcyjne używane → upgrade.
 - **NIE** maskować `pnpm audit --no-...` ani nie zdejmować `--audit-level high`.
@@ -54,7 +54,7 @@ W `package.json`:
 
 ## 5. Definition of Done
 
-- [ ] Override `samlify ≥ 2.13.0` + `pnpm install` + zielone typecheck/test/build (PR).
+- [x] **ZROBIONE 2026-05-25** — override `samlify ≥ 2.13.0` (→2.13.1) + `@xmldom/xmldom ≥ 0.9.8` (→0.9.10), oba wyłącznie na martwej ścieżce `@better-auth/sso`; typecheck ✅ + 389/389 testów ✅; high **32→26** (cały klaster SAML zdjęty). **Finding poboczny (osobny ticket):** `pnpm build` ma pre-istniejący błąd `errorHandler→onError` w `/api/gaps` (migracja API zależności, NIE ten override; CI nie ma joba `build` → błąd był niewidoczny).
 - [ ] Triaż 31 pozostałych high — każde sklasyfikowane (upgrade / override / zaakceptowane z uzasadnieniem).
 - [ ] `pnpm audit --audit-level high` → 0 high (lub jawna lista wyjątków podpisana przez Ryana).
 - [ ] `deps-scan` dorzucony do wymaganych statusów branch protection.
