@@ -1,0 +1,126 @@
+name: PR
+
+# K4 (CI) — brama jakości każdego PR-u do main. ADR-001 sekcja 4.1 (6 jobów).
+# Bez zielonego CI merge zablokowany (branch protection — konfiguracja administracyjna).
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Anuluj starsze przebiegi tego samego PR-a/brancha (oszczędność minut runnera).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint (biome)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  typecheck:
+    name: typecheck (tsc --noEmit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  test:
+    name: test (vitest)
+    runs-on: ubuntu-latest
+    env:
+      # Placeholdery — testy unit nie łączą się z bazą; klient db
+      # konstruuje się leniwie (src/lib/db/index.ts), env tylko by import nie pękł.
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      BETTER_AUTH_SECRET: ci-placeholder-secret-not-used
+      BETTER_AUTH_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:run
+
+  integration:
+    name: integration (drizzle migrate na tymczasowej bazie)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: skillbridge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/skillbridge_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Brama integracyjna Bety: wszystkie migracje Drizzle stosują się czysto
+      # na świeżej bazie. Złamana/niespójna migracja = czerwone CI.
+      - run: pnpm db:migrate
+
+  secret-scan:
+    name: secret-scan (gitleaks)
+    runs-on: ubuntu-latest
+    # gitleaks-action czyta listę commitów PR-a przez API → wymaga pull-requests:read.
+    # Workflow-level `permissions: contents: read` to odcinał (octokit 403 → crash).
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deps-scan:
+    name: deps-scan (pnpm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Blokuje na podatnościach high/critical; moderate/low raportowane,
+      # nie wywalają PR-u (szum na Becie). Dependabot pilnuje reszty.
+      - run: pnpm audit --audit-level high
