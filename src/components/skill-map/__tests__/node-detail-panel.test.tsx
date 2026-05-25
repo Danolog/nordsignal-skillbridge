@@ -79,10 +79,10 @@ describe("NodeDetailPanel", () => {
 		expect(screen.getByText("Kompetencja opanowana")).toBeDefined();
 	});
 
-	it("links to micro-courses for missing status", () => {
+	it("links to projects for missing status", () => {
 		renderPanel("missing");
 		const link = screen.getByText("Zamknij tę lukę").closest("a");
-		expect(link?.getAttribute("href")).toBe("/micro-courses?generate=React");
+		expect(link?.getAttribute("href")).toBe("/projects");
 	});
 
 	it("calls onClose when close button is clicked", async () => {
