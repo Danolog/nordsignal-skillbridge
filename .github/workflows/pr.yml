@@ -94,6 +94,27 @@ jobs:
       # na świeżej bazie. Złamana/niespójna migracja = czerwone CI.
       - run: pnpm db:migrate
 
+  build:
+    name: build (next build)
+    runs-on: ubuntu-latest
+    env:
+      # Placeholdery — `next build` zbiera dane stron i ewaluuje moduły
+      # (m.in. instancję Better Auth). Env tylko po to, by importy nie pękły;
+      # realny deploy bierze sekrety z Vercela. Ten job łapie błędy, których
+      # lint/typecheck nie widzą (np. errorHandler→onError w pluginie auth).
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      BETTER_AUTH_SECRET: ci-placeholder-secret-not-used
+      BETTER_AUTH_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
   secret-scan:
     name: secret-scan (gitleaks)
     runs-on: ubuntu-latest
