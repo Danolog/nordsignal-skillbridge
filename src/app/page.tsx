@@ -299,8 +299,8 @@ export default function Home() {
 						</Link>
 						<span className="text-[13px] text-[rgba(148,163,184,0.20)]">&middot;</span>
 						<span className="text-[13px] text-[rgba(148,163,184,0.40)]">
-							© 2026 SkillBridge&nbsp;&middot;&nbsp;Projekt EduTech
-							Masters&nbsp;&middot;&nbsp;Grupa Merito
+							© 2026 SkillBridge&nbsp;&middot;&nbsp;Projekt EduTech Masters&nbsp;&middot;&nbsp;Grupa
+							Merito
 						</span>
 					</div>
 				</div>
