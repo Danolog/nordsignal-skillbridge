@@ -312,6 +312,10 @@ export const facultySessions = pgTable(
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
 		tokenHash: text("token_hash").notNull().unique(),
+		// K3: which campus this faculty session belongs to (set at login by
+		// per-campus password). Nullable: pre-K3 sessions resolve to no tenant
+		// (must re-login). RLS faculty policy reads tenant via app context.
+		tenantId: uuid("tenant_id").references(() => tenants.id),
 		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 		ipAddress: text("ip_address"),
 		userAgent: text("user_agent"),

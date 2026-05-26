@@ -16,7 +16,15 @@ const {
 	passports,
 	projects,
 	projectCompetencies,
+	tenants,
 } = schema;
+
+// K3: demo reseedowane do 2 tenantów-partnerów (decyzja Sophii: ≥6 studentów/tenant,
+// ≥3 różne careerGoal). 15 demo studentów dzielonych round-robin → ~8/7, oba ≥6.
+const PARTNER_TENANTS = [
+	{ slug: "wsb-merito-szczecin", name: "WSB Merito Szczecin" },
+	{ slug: "wsb-merito-warszawa", name: "WSB Merito Warszawa" },
+] as const;
 const db = drizzle(process.env.DATABASE_URL ?? "", { schema });
 
 const DATA: Array<{
@@ -919,6 +927,18 @@ async function seed() {
 	await db.insert(jobMarketData).values(rows);
 	console.log(`Seeded ${rows.length} job market records for ${DATA.length} career goals.`);
 
+	// ── Seed tenants (K3) — 2 partnerzy Bety + parking sierot ──
+	console.log("Seeding tenants...");
+	await db
+		.insert(tenants)
+		.values([
+			...PARTNER_TENANTS.map((t) => ({ slug: t.slug, name: t.name })),
+			{ slug: "__unmapped", name: "Niezmapowane (parking sierot — RLS deny)" },
+		])
+		.onConflictDoNothing();
+	const tenantRows = await db.select({ id: tenants.id, slug: tenants.slug }).from(tenants);
+	const tenantIdBySlug = new Map(tenantRows.map((t) => [t.slug, t.id]));
+
 	// ── Seed demo students ──
 	console.log("Seeding demo students...");
 
@@ -941,7 +961,12 @@ async function seed() {
 
 	const now = new Date();
 
-	for (const demo of DEMO_STUDENTS) {
+	for (let i = 0; i < DEMO_STUDENTS.length; i++) {
+		const demo = DEMO_STUDENTS[i];
+		// Round-robin przypisanie do 2 tenantów-partnerów; university spójne z tenantem.
+		const partner = PARTNER_TENANTS[i % PARTNER_TENANTS.length];
+		const tenantId = tenantIdBySlug.get(partner.slug);
+		if (!tenantId) throw new Error(`seed: brak tenanta ${partner.slug}`);
 		// Upsert user
 		await db
 			.insert(user)
@@ -981,7 +1006,8 @@ async function seed() {
 			.insert(students)
 			.values({
 				userId: demo.userId,
-				university: demo.university,
+				tenantId,
+				university: partner.name,
 				fieldOfStudy: demo.fieldOfStudy,
 				semester: demo.semester,
 				careerGoal: demo.careerGoal,
@@ -996,6 +1022,7 @@ async function seed() {
 			await db.insert(competencies).values(
 				demo.acquired.map((name) => ({
 					studentId,
+					tenantId,
 					name,
 					status: "acquired" as const,
 				})),
@@ -1007,6 +1034,7 @@ async function seed() {
 			await db.insert(gaps).values(
 				demo.gaps.map((g) => ({
 					studentId,
+					tenantId,
 					competencyName: g.name,
 					priority: g.priority,
 					marketPercentage: g.marketPct,
@@ -1020,6 +1048,7 @@ async function seed() {
 		const coverage = Math.round((demo.acquired.length / totalComps) * 100);
 		await db.insert(passports).values({
 			studentId,
+			tenantId,
 			marketCoveragePercent: coverage,
 		});
 
