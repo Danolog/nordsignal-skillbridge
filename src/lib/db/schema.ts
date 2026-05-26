@@ -62,6 +62,20 @@ export const verification = pgTable("verification", {
 	updatedAt: timestamp("updated_at", { withTimezone: true }),
 });
 
+// Multi-tenancy (K3) — each tenant is a university campus. Seeded in 0005.
+// tenant_id is denormalised onto student-data tables (0006) so RLS policies
+// stay JOIN-free; see docs/security/rls-matrix.md + docs/data/tenant-mapping-beta.md.
+export const tenants = pgTable(
+	"tenants",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		slug: text("slug").notNull().unique(),
+		name: text("name").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [index("idx_tenants_slug").on(table.slug)],
+);
+
 // SkillBridge AI domain tables
 
 export const competencyStatusEnum = pgEnum("competency_status", [

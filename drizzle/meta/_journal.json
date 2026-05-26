@@ -36,6 +36,13 @@
       "when": 1779730528588,
       "tag": "0004_drop_micro_courses",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779820904318,
+      "tag": "0005_chilly_gamma_corps",
+      "breakpoints": true
     }
   ]
 }
