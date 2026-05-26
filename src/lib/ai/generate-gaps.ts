@@ -27,6 +27,7 @@ const GapResultSchema = z.object({
 
 export async function generateGaps(
 	studentId: string,
+	tenantId: string,
 	studentCompetencies: string[],
 	careerGoal: string,
 ): Promise<void> {
@@ -76,6 +77,7 @@ Zasady:
 			await db.insert(gaps).values(
 				result.gaps.map((g) => ({
 					studentId,
+					tenantId,
 					competencyName: g.name,
 					priority: g.priority,
 					marketPercentage: g.marketPercentage,

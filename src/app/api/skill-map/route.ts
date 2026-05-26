@@ -57,7 +57,7 @@ export async function POST() {
 	const competencyNames = student.competencies.map((c) => c.name);
 
 	try {
-		await generateSkillMap(student.id, competencyNames, student.careerGoal);
+		await generateSkillMap(student.id, student.tenantId, competencyNames, student.careerGoal);
 	} catch (err) {
 		logError("skill-map.generate", err, { studentId: student.id });
 		return NextResponse.json({ error: "Generation failed" }, { status: 500 });

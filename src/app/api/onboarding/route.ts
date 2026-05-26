@@ -7,6 +7,7 @@ import { generateSkillMap } from "@/lib/ai/generate-skill-map";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { competencies, passports, students } from "@/lib/db/schema";
+import { resolveTenantId } from "@/lib/db/tenant-mapping";
 import { logError } from "@/lib/log";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
@@ -48,6 +49,9 @@ export async function POST(req: Request) {
 
 	const userId = session.user.id;
 
+	// K3: resolve tenant from (free-form) university — mirror of 0006 backfill.
+	const tenantId = await resolveTenantId(university);
+
 	// Upsert student record
 	const existing = await db.query.students.findFirst({
 		where: eq(students.userId, userId),
@@ -59,6 +63,7 @@ export async function POST(req: Request) {
 		await db
 			.update(students)
 			.set({
+				tenantId,
 				university,
 				fieldOfStudy,
 				semester,
@@ -77,6 +82,7 @@ export async function POST(req: Request) {
 			.insert(students)
 			.values({
 				userId,
+				tenantId,
 				university,
 				fieldOfStudy,
 				semester,
@@ -92,6 +98,7 @@ export async function POST(req: Request) {
 	await db.insert(competencies).values(
 		competencyNames.map((name) => ({
 			studentId,
+			tenantId,
 			name,
 			status: "acquired" as const,
 		})),
@@ -102,7 +109,7 @@ export async function POST(req: Request) {
 		where: eq(passports.studentId, studentId),
 	});
 	if (!existingPassport) {
-		await db.insert(passports).values({ studentId });
+		await db.insert(passports).values({ studentId, tenantId });
 	}
 
 	// Synchronous AI generation — Vercel serverless terminates the function after the response,
@@ -110,8 +117,8 @@ export async function POST(req: Request) {
 	// skill map is ready or whether they need to retry from /skill-map.
 	try {
 		await Promise.all([
-			generateGaps(studentId, competencyNames, careerGoal),
-			generateSkillMap(studentId, competencyNames, careerGoal),
+			generateGaps(studentId, tenantId, competencyNames, careerGoal),
+			generateSkillMap(studentId, tenantId, competencyNames, careerGoal),
 		]);
 	} catch (err) {
 		logError("onboarding", err, { studentId });

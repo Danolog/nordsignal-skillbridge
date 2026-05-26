@@ -35,7 +35,7 @@ export default async function PassportPage() {
 	if (!passport) {
 		const [created] = await db
 			.insert(passports)
-			.values({ studentId: student.id, marketCoveragePercent: coverage })
+			.values({ studentId: student.id, tenantId: student.tenantId, marketCoveragePercent: coverage })
 			.returning();
 		passport = created;
 	} else if (passport.marketCoveragePercent !== coverage) {

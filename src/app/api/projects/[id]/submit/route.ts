@@ -126,6 +126,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 			.insert(projectSubmissions)
 			.values({
 				studentId: student.id,
+				tenantId: student.tenantId,
 				projectId,
 				...submissionData,
 				aiReviewJson: { review },

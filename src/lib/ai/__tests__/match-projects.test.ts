@@ -32,6 +32,7 @@ const mockProjects = vi.mocked(db.query.projects.findMany);
 const student = {
 	id: "student-1",
 	userId: "user-1",
+	tenantId: "tenant-1",
 	careerGoal: "Data Analyst",
 	semester: 4,
 	university: "WSB",
@@ -45,6 +46,7 @@ const student = {
 const gap = {
 	id: "gap-1",
 	studentId: "student-1",
+	tenantId: "tenant-1",
 	competencyName: "Pandas",
 	priority: "critical" as const,
 	marketPercentage: 55,
@@ -61,6 +63,7 @@ beforeEach(() => {
 		{
 			id: "c1",
 			studentId: "student-1",
+			tenantId: "tenant-1",
 			name: "Python",
 			status: "acquired",
 			marketPercentage: 78,
@@ -69,6 +72,7 @@ beforeEach(() => {
 		{
 			id: "c2",
 			studentId: "student-1",
+			tenantId: "tenant-1",
 			name: "SQL",
 			status: "acquired",
 			marketPercentage: 89,

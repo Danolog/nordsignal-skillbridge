@@ -77,7 +77,7 @@ describe("generateGaps", () => {
 			return { values: vi.fn() } as never;
 		}) as typeof db.insert);
 
-		await generateGaps("student-1", ["Python"], "Data Analyst");
+		await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
 
 		expect(callOrder.indexOf("delete")).toBeLessThan(callOrder.indexOf("insert"));
 		expect(mockDelete).toHaveBeenCalled();
@@ -88,7 +88,7 @@ describe("generateGaps", () => {
 			object: { ...validResponse, gaps: [] },
 		} as Awaited<ReturnType<typeof generateObject>>);
 
-		await generateGaps("student-1", ["Python"], "Data Analyst");
+		await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
 
 		expect(mockDelete).toHaveBeenCalled();
 		expect(mockInsert).not.toHaveBeenCalled();
@@ -98,7 +98,7 @@ describe("generateGaps", () => {
 		const valuesSpy = vi.fn();
 		mockInsert.mockReturnValue({ values: valuesSpy } as never);
 
-		await generateGaps("student-42", ["Python"], "Data Analyst");
+		await generateGaps("student-42", "tenant-1", ["Python"], "Data Analyst");
 
 		expect(valuesSpy).toHaveBeenCalledOnce();
 		const inserted = valuesSpy.mock.calls[0][0] as Array<{ studentId: string }>;
@@ -110,7 +110,7 @@ describe("generateGaps", () => {
 		const setSpy = vi.fn(() => ({ where: vi.fn() }));
 		mockUpdate.mockReturnValue({ set: setSpy } as never);
 
-		await generateGaps("student-1", ["Python"], "Data Analyst");
+		await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
 
 		const passportUpdate = setSpy.mock.calls.find((call) => {
 			const arg = (call as unknown[])[0] as Record<string, unknown>;
@@ -120,7 +120,7 @@ describe("generateGaps", () => {
 	});
 
 	it("passes schema and prompt with competencies and career goal", async () => {
-		await generateGaps("student-1", ["Python", "SQL"], "Data Engineer");
+		await generateGaps("student-1", "tenant-1", ["Python", "SQL"], "Data Engineer");
 
 		const call = mockGenerateObject.mock.calls[0][0] as { schema?: unknown; prompt: string };
 		expect(call.schema).toBeDefined();
@@ -131,7 +131,7 @@ describe("generateGaps", () => {
 
 	it("propagates AI SDK errors", async () => {
 		mockGenerateObject.mockRejectedValue(new Error("rate limit"));
-		await expect(generateGaps("student-1", ["Python"], "Data Analyst")).rejects.toThrow(
+		await expect(generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst")).rejects.toThrow(
 			"rate limit",
 		);
 	});
