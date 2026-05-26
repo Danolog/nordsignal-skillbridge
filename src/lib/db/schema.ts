@@ -118,6 +118,10 @@ export const students = pgTable(
 			.notNull()
 			.unique()
 			.references(() => user.id, { onDelete: "cascade" }),
+		// K3 multi-tenancy: nullable + backfill in 0006, SET NOT NULL in 0007.
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
 		university: text("university").notNull(),
 		fieldOfStudy: text("field_of_study").notNull(),
 		semester: integer("semester").notNull(),
@@ -127,7 +131,10 @@ export const students = pgTable(
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
-	(table) => [index("idx_students_user_id").on(table.userId)],
+	(table) => [
+		index("idx_students_user_id").on(table.userId),
+		index("idx_students_tenant_id").on(table.tenantId),
+	],
 );
 
 export const competencies = pgTable(
@@ -137,12 +144,18 @@ export const competencies = pgTable(
 		studentId: uuid("student_id")
 			.notNull()
 			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
 		name: text("name").notNull(),
 		status: competencyStatusEnum("status").notNull().default("acquired"),
 		marketPercentage: integer("market_percentage"),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 	},
-	(table) => [index("idx_competencies_student_id").on(table.studentId)],
+	(table) => [
+		index("idx_competencies_student_id").on(table.studentId),
+		index("idx_competencies_tenant_id").on(table.tenantId),
+	],
 );
 
 export const gaps = pgTable(
@@ -152,6 +165,9 @@ export const gaps = pgTable(
 		studentId: uuid("student_id")
 			.notNull()
 			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
 		competencyName: text("competency_name").notNull(),
 		priority: gapPriorityEnum("priority").notNull().default("important"),
 		marketPercentage: integer("market_percentage").notNull().default(0),
@@ -159,31 +175,48 @@ export const gaps = pgTable(
 		whyImportant: text("why_important"),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 	},
-	(table) => [index("idx_gaps_student_id").on(table.studentId)],
+	(table) => [
+		index("idx_gaps_student_id").on(table.studentId),
+		index("idx_gaps_tenant_id").on(table.tenantId),
+	],
 );
 
-export const skillMaps = pgTable("skill_maps", {
-	id: uuid("id").defaultRandom().primaryKey(),
-	studentId: uuid("student_id")
-		.notNull()
-		.unique()
-		.references(() => students.id, { onDelete: "cascade" }),
-	nodes: jsonb("nodes").notNull().default([]),
-	edges: jsonb("edges").notNull().default([]),
-	generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const skillMaps = pgTable(
+	"skill_maps",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.unique()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		nodes: jsonb("nodes").notNull().default([]),
+		edges: jsonb("edges").notNull().default([]),
+		generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [index("idx_skill_maps_tenant_id").on(table.tenantId)],
+);
 
-export const passports = pgTable("passports", {
-	id: uuid("id").defaultRandom().primaryKey(),
-	studentId: uuid("student_id")
-		.notNull()
-		.unique()
-		.references(() => students.id, { onDelete: "cascade" }),
-	marketCoveragePercent: integer("market_coverage_percent").notNull().default(0),
-	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const passports = pgTable(
+	"passports",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.unique()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		marketCoveragePercent: integer("market_coverage_percent").notNull().default(0),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [index("idx_passports_tenant_id").on(table.tenantId)],
+);
 
 export const jobMarketData = pgTable(
 	"job_market_data",
@@ -242,6 +275,9 @@ export const projectSubmissions = pgTable(
 		studentId: uuid("student_id")
 			.notNull()
 			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
 		projectId: uuid("project_id")
 			.notNull()
 			.references(() => projects.id, { onDelete: "cascade" }),
@@ -258,6 +294,7 @@ export const projectSubmissions = pgTable(
 	(table) => [
 		index("idx_project_submissions_student").on(table.studentId),
 		index("idx_project_submissions_project").on(table.projectId),
+		index("idx_project_submissions_tenant_id").on(table.tenantId),
 	],
 );
 
