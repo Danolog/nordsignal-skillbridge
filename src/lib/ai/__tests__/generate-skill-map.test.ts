@@ -141,8 +141,8 @@ describe("generateSkillMap", () => {
 	it("propagates AI SDK errors", async () => {
 		mockGenerateObject.mockRejectedValue(new Error("API rate limit exceeded"));
 
-		await expect(generateSkillMap("student-1", "tenant-1", ["Python"], "Data Analyst")).rejects.toThrow(
-			"API rate limit exceeded",
-		);
+		await expect(
+			generateSkillMap("student-1", "tenant-1", ["Python"], "Data Analyst"),
+		).rejects.toThrow("API rate limit exceeded");
 	});
 });

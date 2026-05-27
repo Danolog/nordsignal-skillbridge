@@ -41,10 +41,9 @@ async function main() {
 	const client = await pool.connect();
 	try {
 		// 1. tenants
-		const t = await client.query(
-			`SELECT slug FROM tenants WHERE slug = ANY($1)`,
-			[["wsb-merito-szczecin", "wsb-merito-warszawa", "__unmapped"]],
-		);
+		const t = await client.query(`SELECT slug FROM tenants WHERE slug = ANY($1)`, [
+			["wsb-merito-szczecin", "wsb-merito-warszawa", "__unmapped"],
+		]);
 		check("1. tenants zaseedowane (3)", t.rowCount === 3, `znaleziono ${t.rowCount}/3`);
 
 		// 2. role
@@ -83,7 +82,7 @@ async function main() {
 		if (sample.rowCount === 0) {
 			check("5. izolacja studenta", false, "brak studentów — uruchom pnpm db:seed");
 		} else {
-			const { user_id, tenant_id } = sample.rows[0];
+			const { user_id } = sample.rows[0];
 			await client.query("BEGIN");
 			await client.query(`SELECT set_config('app.current_user_id', $1, true)`, [user_id]);
 			await client.query("SET LOCAL ROLE app_student");
@@ -114,7 +113,10 @@ async function main() {
 				onlyTenantA,
 				`tenanty w wyniku: ${seen.rows.map((x) => x.tenant_id).join(", ") || "brak"}`,
 			);
-			check("6b. faculty NIE widzi drugiego tenanta", !seen.rows.some((row) => row.tenant_id === b.id));
+			check(
+				"6b. faculty NIE widzi drugiego tenanta",
+				!seen.rows.some((row) => row.tenant_id === b.id),
+			);
 		}
 
 		// 7. audit_log append-only

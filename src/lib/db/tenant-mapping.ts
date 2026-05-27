@@ -13,7 +13,15 @@ import { tenants } from "@/lib/db/schema";
  */
 
 const DIACRITICS: Record<string, string> = {
-	ł: "l", ą: "a", ę: "e", ó: "o", ż: "z", ź: "z", ś: "s", ć: "c", ń: "n",
+	ł: "l",
+	ą: "a",
+	ę: "e",
+	ó: "o",
+	ż: "z",
+	ź: "z",
+	ś: "s",
+	ć: "c",
+	ń: "n",
 };
 
 export function normalizeUniversity(university: string): string {

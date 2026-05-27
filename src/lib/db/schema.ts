@@ -362,7 +362,7 @@ export const competenciesRelations = relations(competencies, ({ one }) => ({
 	student: one(students, { fields: [competencies.studentId], references: [students.id] }),
 }));
 
-export const gapsRelations = relations(gaps, ({ one, many }) => ({
+export const gapsRelations = relations(gaps, ({ one }) => ({
 	student: one(students, { fields: [gaps.studentId], references: [students.id] }),
 }));
 
