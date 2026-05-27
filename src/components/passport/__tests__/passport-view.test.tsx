@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { PASSPORT_SHARE_CONSENT_VERSION } from "@/lib/consent";
 import { PassportView } from "../passport-view";
 
 vi.mock("sonner", () => ({
@@ -126,46 +127,93 @@ describe("PassportView", () => {
 		expect(screen.getByText("14")).toBeInTheDocument();
 	});
 
-	it("renders Kopiuj link button", () => {
+	it("renders share button (paszport domyślnie niepubliczny → 'Udostępnij publicznie')", () => {
 		render(<PassportView data={mockData} />);
-		expect(screen.getByText("Kopiuj link")).toBeInTheDocument();
+		expect(screen.getByText("Udostępnij publicznie")).toBeInTheDocument();
+		// B1: dopóki niepubliczny, nie ma 'Kopiuj link' ani 'Wyłącz udostępnianie'
+		expect(screen.queryByText("Wyłącz udostępnianie")).not.toBeInTheDocument();
 	});
 
-	it("copies public URL to clipboard on Kopiuj link click", async () => {
+	it("A1: 'Udostępnij publicznie' otwiera ekran zgody i NIE udostępnia od razu", async () => {
+		const mockFetch = vi.fn();
+		vi.stubGlobal("fetch", mockFetch);
+
+		render(<PassportView data={mockData} />);
+		fireEvent.click(screen.getByText("Udostępnij publicznie"));
+
+		// Ekran zgody wymienia wprost, co staje się publiczne i że link działa bez logowania.
+		expect(screen.getByText("Twój paszport stanie się publiczny")).toBeInTheDocument();
+		expect(screen.getByText(/bez logowania i bez Twojej wiedzy/)).toBeInTheDocument();
+		expect(screen.getByText(/Uczelnia, kierunek i semestr/)).toBeInTheDocument();
+		// Bez akceptacji nie ma żadnego zapisu na serwerze.
+		expect(mockFetch).not.toHaveBeenCalled();
+		vi.unstubAllGlobals();
+	});
+
+	it("A1: pokazuje zweryfikowane projekty na ekranie zgody tylko gdy istnieją", () => {
+		render(<PassportView data={mockData} />);
+		fireEvent.click(screen.getByText("Udostępnij publicznie"));
+		expect(screen.queryByText(/Zweryfikowane projekty: ocena/)).not.toBeInTheDocument();
+	});
+
+	it("B1: akceptacja zgody wywołuje opt-in i kopiuje link po tokenie", async () => {
 		const { toast } = await import("sonner");
 		const mockWriteText = vi.fn().mockResolvedValue(undefined);
-		Object.assign(navigator, {
-			clipboard: { writeText: mockWriteText },
-		});
+		Object.assign(navigator, { clipboard: { writeText: mockWriteText } });
+		const mockFetch = vi
+			.fn()
+			.mockResolvedValue({ ok: true, json: async () => ({ shareToken: "tok-xyz" }) });
+		vi.stubGlobal("fetch", mockFetch);
 
 		render(<PassportView data={mockData} />);
-		fireEvent.click(screen.getByText("Kopiuj link"));
+		fireEvent.click(screen.getByText("Udostępnij publicznie"));
+		fireEvent.click(screen.getByText("Rozumiem, udostępnij publicznie"));
 
 		await waitFor(() => {
-			expect(mockWriteText).toHaveBeenCalledWith(
-				expect.stringContaining("/passport/passport-uuid-123"),
+			expect(mockFetch).toHaveBeenCalledWith(
+				"/api/passport/share",
+				expect.objectContaining({
+					method: "POST",
+					body: JSON.stringify({ consentVersion: PASSPORT_SHARE_CONSENT_VERSION }),
+				}),
 			);
 		});
-
 		await waitFor(() => {
-			expect(toast.success).toHaveBeenCalledWith("Link skopiowany!");
+			expect(mockWriteText).toHaveBeenCalledWith(expect.stringContaining("/passport/tok-xyz"));
 		});
+		expect(toast.success).toHaveBeenCalledWith("Paszport jest teraz publiczny — link skopiowany");
+		vi.unstubAllGlobals();
 	});
 
-	it("shows error toast when clipboard fails", async () => {
-		const { toast } = await import("sonner");
-		Object.assign(navigator, {
-			clipboard: {
-				writeText: vi.fn().mockRejectedValue(new Error("Clipboard error")),
-			},
-		});
+	it("B1: gdy już publiczny → 'Kopiuj link' kopiuje po tokenie bez ponownego opt-inu", async () => {
+		const mockWriteText = vi.fn().mockResolvedValue(undefined);
+		Object.assign(navigator, { clipboard: { writeText: mockWriteText } });
+		const mockFetch = vi.fn();
+		vi.stubGlobal("fetch", mockFetch);
 
-		render(<PassportView data={mockData} />);
+		render(<PassportView data={{ ...mockData, publicEnabled: true, shareToken: "share-abc" }} />);
 		fireEvent.click(screen.getByText("Kopiuj link"));
 
 		await waitFor(() => {
-			expect(toast.error).toHaveBeenCalledWith("Nie udalo sie skopiowac linku");
+			expect(mockWriteText).toHaveBeenCalledWith(expect.stringContaining("/passport/share-abc"));
 		});
+		expect(mockFetch).not.toHaveBeenCalled();
+		vi.unstubAllGlobals();
+	});
+
+	it("B1: błąd opt-inu pokazuje toast błędu", async () => {
+		const { toast } = await import("sonner");
+		Object.assign(navigator, { clipboard: { writeText: vi.fn() } });
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+
+		render(<PassportView data={mockData} />);
+		fireEvent.click(screen.getByText("Udostępnij publicznie"));
+		fireEvent.click(screen.getByText("Rozumiem, udostępnij publicznie"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Nie udało się udostępnić paszportu");
+		});
+		vi.unstubAllGlobals();
 	});
 
 	it("renders formatted date in footer", () => {

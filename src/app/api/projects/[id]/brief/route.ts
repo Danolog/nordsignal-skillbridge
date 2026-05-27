@@ -49,6 +49,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 	} else {
 		await db.insert(projectSubmissions).values({
 			studentId: student.id,
+			tenantId: student.tenantId,
 			projectId,
 			aiReviewJson: { brief },
 		});

@@ -6,7 +6,8 @@ import { generateGaps } from "@/lib/ai/generate-gaps";
 import { generateSkillMap } from "@/lib/ai/generate-skill-map";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { competencies, passports, students } from "@/lib/db/schema";
+import { competencies, passports, projectSubmissions, students } from "@/lib/db/schema";
+import { resolveTenantId } from "@/lib/db/tenant-mapping";
 import { logError } from "@/lib/log";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
@@ -48,6 +49,17 @@ export async function POST(req: Request) {
 
 	const userId = session.user.id;
 
+	// K3: resolve tenant from (free-form) university — mirror of 0006 backfill.
+	// resolveTenantId rzuca, gdy brak tenanta __unmapped (seed 0005) — łapiemy,
+	// żeby nie wyciekł goły 500 bez kontekstu.
+	let tenantId: string;
+	try {
+		tenantId = await resolveTenantId(university);
+	} catch (err) {
+		logError("onboarding", err, { phase: "resolveTenant" });
+		return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+	}
+
 	// Upsert student record
 	const existing = await db.query.students.findFirst({
 		where: eq(students.userId, userId),
@@ -59,6 +71,7 @@ export async function POST(req: Request) {
 		await db
 			.update(students)
 			.set({
+				tenantId,
 				university,
 				fieldOfStudy,
 				semester,
@@ -77,6 +90,7 @@ export async function POST(req: Request) {
 			.insert(students)
 			.values({
 				userId,
+				tenantId,
 				university,
 				fieldOfStudy,
 				semester,
@@ -92,26 +106,40 @@ export async function POST(req: Request) {
 	await db.insert(competencies).values(
 		competencyNames.map((name) => ({
 			studentId,
+			tenantId,
 			name,
 			status: "acquired" as const,
 		})),
 	);
 
-	// Create passport if not exists
+	// Create passport if not exists; jeśli istnieje — odśwież tenantId
+	// (re-onboarding ze zmienioną uczelnią mógł zmienić tenant — bez tego
+	// wiersz potomny zostaje ze starym tenant_id = niespójność z students).
 	const existingPassport = await db.query.passports.findFirst({
 		where: eq(passports.studentId, studentId),
 	});
 	if (!existingPassport) {
-		await db.insert(passports).values({ studentId });
+		await db.insert(passports).values({ studentId, tenantId });
+	} else if (existingPassport.tenantId !== tenantId) {
+		await db.update(passports).set({ tenantId }).where(eq(passports.studentId, studentId));
 	}
+
+	// projectSubmissions też dziedziczą tenant_id — przy re-onboardingu ze zmienioną
+	// uczelnią trzeba je odświeżyć, inaczej zweryfikowane zgłoszenia zostają ze starym
+	// tenantem i wyciekają do dashboardu faculty starego kampusu. (W2 pominął tę tabelę;
+	// idempotentne dla nowych studentów — 0 wierszy.)
+	await db
+		.update(projectSubmissions)
+		.set({ tenantId })
+		.where(eq(projectSubmissions.studentId, studentId));
 
 	// Synchronous AI generation — Vercel serverless terminates the function after the response,
 	// so fire-and-forget would lose the work. Awaiting also lets us tell the client whether the
 	// skill map is ready or whether they need to retry from /skill-map.
 	try {
 		await Promise.all([
-			generateGaps(studentId, competencyNames, careerGoal),
-			generateSkillMap(studentId, competencyNames, careerGoal),
+			generateGaps(studentId, tenantId, competencyNames, careerGoal),
+			generateSkillMap(studentId, tenantId, competencyNames, careerGoal),
 		]);
 	} catch (err) {
 		logError("onboarding", err, { studentId });

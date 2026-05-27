@@ -62,6 +62,20 @@ export const verification = pgTable("verification", {
 	updatedAt: timestamp("updated_at", { withTimezone: true }),
 });
 
+// Multi-tenancy (K3) — each tenant is a university campus. Seeded in 0005.
+// tenant_id is denormalised onto student-data tables (0006) so RLS policies
+// stay JOIN-free; see docs/security/rls-matrix.md + docs/data/tenant-mapping-beta.md.
+export const tenants = pgTable(
+	"tenants",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		slug: text("slug").notNull().unique(),
+		name: text("name").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [index("idx_tenants_slug").on(table.slug)],
+);
+
 // SkillBridge AI domain tables
 
 export const competencyStatusEnum = pgEnum("competency_status", [
@@ -104,6 +118,10 @@ export const students = pgTable(
 			.notNull()
 			.unique()
 			.references(() => user.id, { onDelete: "cascade" }),
+		// K3 multi-tenancy: nullable + backfill in 0006, SET NOT NULL in 0007.
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
 		university: text("university").notNull(),
 		fieldOfStudy: text("field_of_study").notNull(),
 		semester: integer("semester").notNull(),
@@ -113,7 +131,10 @@ export const students = pgTable(
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
-	(table) => [index("idx_students_user_id").on(table.userId)],
+	(table) => [
+		index("idx_students_user_id").on(table.userId),
+		index("idx_students_tenant_id").on(table.tenantId),
+	],
 );
 
 export const competencies = pgTable(
@@ -123,12 +144,18 @@ export const competencies = pgTable(
 		studentId: uuid("student_id")
 			.notNull()
 			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
 		name: text("name").notNull(),
 		status: competencyStatusEnum("status").notNull().default("acquired"),
 		marketPercentage: integer("market_percentage"),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 	},
-	(table) => [index("idx_competencies_student_id").on(table.studentId)],
+	(table) => [
+		index("idx_competencies_student_id").on(table.studentId),
+		index("idx_competencies_tenant_id").on(table.tenantId),
+	],
 );
 
 export const gaps = pgTable(
@@ -138,6 +165,9 @@ export const gaps = pgTable(
 		studentId: uuid("student_id")
 			.notNull()
 			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
 		competencyName: text("competency_name").notNull(),
 		priority: gapPriorityEnum("priority").notNull().default("important"),
 		marketPercentage: integer("market_percentage").notNull().default(0),
@@ -145,31 +175,56 @@ export const gaps = pgTable(
 		whyImportant: text("why_important"),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 	},
-	(table) => [index("idx_gaps_student_id").on(table.studentId)],
+	(table) => [
+		index("idx_gaps_student_id").on(table.studentId),
+		index("idx_gaps_tenant_id").on(table.tenantId),
+	],
 );
 
-export const skillMaps = pgTable("skill_maps", {
-	id: uuid("id").defaultRandom().primaryKey(),
-	studentId: uuid("student_id")
-		.notNull()
-		.unique()
-		.references(() => students.id, { onDelete: "cascade" }),
-	nodes: jsonb("nodes").notNull().default([]),
-	edges: jsonb("edges").notNull().default([]),
-	generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const skillMaps = pgTable(
+	"skill_maps",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.unique()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		nodes: jsonb("nodes").notNull().default([]),
+		edges: jsonb("edges").notNull().default([]),
+		generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [index("idx_skill_maps_tenant_id").on(table.tenantId)],
+);
 
-export const passports = pgTable("passports", {
-	id: uuid("id").defaultRandom().primaryKey(),
-	studentId: uuid("student_id")
-		.notNull()
-		.unique()
-		.references(() => students.id, { onDelete: "cascade" }),
-	marketCoveragePercent: integer("market_coverage_percent").notNull().default(0),
-	createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const passports = pgTable(
+	"passports",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.unique()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		marketCoveragePercent: integer("market_coverage_percent").notNull().default(0),
+		// B1/RODO: publiczne udostępnianie tylko za świadomą zgodą studenta.
+		// public_enabled domyślnie false (paszport niepubliczny); share_token =
+		// niezgadywalny identyfikator publiczny (zamiast enumerowanego PK).
+		publicEnabled: boolean("public_enabled").notNull().default(false),
+		shareToken: text("share_token").unique(),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_passports_tenant_id").on(table.tenantId),
+		index("idx_passports_share_token").on(table.shareToken),
+	],
+);
 
 export const jobMarketData = pgTable(
 	"job_market_data",
@@ -228,6 +283,9 @@ export const projectSubmissions = pgTable(
 		studentId: uuid("student_id")
 			.notNull()
 			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
 		projectId: uuid("project_id")
 			.notNull()
 			.references(() => projects.id, { onDelete: "cascade" }),
@@ -244,6 +302,7 @@ export const projectSubmissions = pgTable(
 	(table) => [
 		index("idx_project_submissions_student").on(table.studentId),
 		index("idx_project_submissions_project").on(table.projectId),
+		index("idx_project_submissions_tenant_id").on(table.tenantId),
 	],
 );
 
@@ -261,6 +320,10 @@ export const facultySessions = pgTable(
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
 		tokenHash: text("token_hash").notNull().unique(),
+		// K3: which campus this faculty session belongs to (set at login by
+		// per-campus password). Nullable: pre-K3 sessions resolve to no tenant
+		// (must re-login). RLS faculty policy reads tenant via app context.
+		tenantId: uuid("tenant_id").references(() => tenants.id),
 		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 		ipAddress: text("ip_address"),
 		userAgent: text("user_agent"),
@@ -307,7 +370,7 @@ export const competenciesRelations = relations(competencies, ({ one }) => ({
 	student: one(students, { fields: [competencies.studentId], references: [students.id] }),
 }));
 
-export const gapsRelations = relations(gaps, ({ one, many }) => ({
+export const gapsRelations = relations(gaps, ({ one }) => ({
 	student: one(students, { fields: [gaps.studentId], references: [students.id] }),
 }));
 

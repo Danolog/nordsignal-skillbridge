@@ -31,6 +31,7 @@ const SkillMapSchema = z.object({
 
 export async function generateSkillMap(
 	studentId: string,
+	tenantId: string,
 	studentCompetencies: string[],
 	careerGoal: string,
 ): Promise<void> {
@@ -64,6 +65,7 @@ Zasady:
 			await db
 				.update(skillMaps)
 				.set({
+					tenantId,
 					nodes: object.nodes,
 					edges: object.edges,
 					updatedAt: new Date(),
@@ -72,6 +74,7 @@ Zasady:
 		} else {
 			await db.insert(skillMaps).values({
 				studentId,
+				tenantId,
 				nodes: object.nodes,
 				edges: object.edges,
 			});

@@ -1,10 +1,16 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auditContextFromRequest, recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
-import { facultySessions } from "@/lib/db/schema";
-import { FACULTY_COOKIE_NAME, hashToken } from "@/lib/faculty-auth";
+import { facultySessions, tenants } from "@/lib/db/schema";
+import {
+	FACULTY_COOKIE_NAME,
+	FACULTY_TENANT_SLUGS,
+	facultyPasswordEnvVar,
+	hashToken,
+} from "@/lib/faculty-auth";
 import { applyRateLimit, getClientIp, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
@@ -24,14 +30,44 @@ function constantTimeEqual(a: string, b: string): boolean {
 	return timingSafeEqual(bufA, bufB);
 }
 
+const WEAK_DICTIONARY = ["faculty2024", "admin", "password", "12345678", "qwerty"];
+
 function assertProductionPasswordStrength(): string | null {
 	if (process.env.NODE_ENV !== "production") return null;
-	const pw = process.env.FACULTY_PASSWORD ?? "";
-	const weakDictionary = ["faculty2024", "admin", "password", "12345678", "qwerty"];
-	if (pw.length < 16 || weakDictionary.includes(pw.toLowerCase())) {
-		return "FACULTY_PASSWORD too weak for production";
+	// Każdy kampus musi mieć mocne hasło — sprawdzamy wszystkie skonfigurowane.
+	for (const slug of FACULTY_TENANT_SLUGS) {
+		const pw = process.env[facultyPasswordEnvVar(slug)] ?? "";
+		// Nieskonfigurowany kampus = brak logowania DO NIEGO (matchTenantSlug pomija puste).
+		// Nie blokujemy całego panelu — walidujemy tylko ustawione hasła, inaczej jeden
+		// pusty slug 500-uje login WSZYSTKICH kampusów.
+		if (pw.length === 0) continue;
+		if (pw.length < 16 || WEAK_DICTIONARY.includes(pw.toLowerCase())) {
+			return `${facultyPasswordEnvVar(slug)} too weak for production`;
+		}
 	}
 	return null;
+}
+
+/**
+ * Dopasowuje hasło do kampusu w stałym czasie — porównuje z KAŻDYM kandydatem
+ * (bez short-circuit), żeby czas odpowiedzi nie zdradzał, który kampus pasuje.
+ * Zwraca slug dopasowanego tenanta albo null.
+ */
+type MatchResult = { slug: string } | { error: "none" } | { error: "collision" };
+
+function matchTenantSlug(password: string): MatchResult {
+	const matches: string[] = [];
+	for (const slug of FACULTY_TENANT_SLUGS) {
+		const expected = process.env[facultyPasswordEnvVar(slug)] ?? "";
+		if (expected.length > 0 && constantTimeEqual(password, expected)) {
+			matches.push(slug);
+		}
+	}
+	// Dwa kampusy z tym samym hasłem = błąd konfiguracji — NIE zgadujemy tenanta
+	// (cichy wybór złego kampusu = cross-tenant). Fail-closed.
+	if (matches.length > 1) return { error: "collision" };
+	if (matches.length === 0) return { error: "none" };
+	return { slug: matches[0] };
 }
 
 export async function POST(req: Request) {
@@ -61,14 +97,26 @@ export async function POST(req: Request) {
 	const { password } = parsedBody.data;
 
 	const auditCtx = auditContextFromRequest(req);
-	const expected = process.env.FACULTY_PASSWORD ?? "";
-	if (expected.length === 0 || !constantTimeEqual(password, expected)) {
+	const match = matchTenantSlug(password);
+	if ("error" in match && match.error === "collision") {
+		return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+	}
+	if ("error" in match) {
 		await recordAudit({
 			actorType: "anonymous",
 			action: "faculty.login.fail",
 			...auditCtx,
 		});
 		return NextResponse.json({ error: "Nieprawidłowe hasło" }, { status: 401 });
+	}
+
+	// Hasło → tenant. Brak wiersza tenanta = błąd konfiguracji (seed 0005).
+	const [tenant] = await db
+		.select({ id: tenants.id })
+		.from(tenants)
+		.where(eq(tenants.slug, match.slug));
+	if (!tenant) {
+		return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
 	}
 
 	const token = randomBytes(32).toString("base64url");
@@ -79,6 +127,7 @@ export async function POST(req: Request) {
 		.insert(facultySessions)
 		.values({
 			tokenHash,
+			tenantId: tenant.id,
 			expiresAt,
 			ipAddress: auditCtx.ipAddress,
 			userAgent: auditCtx.userAgent,

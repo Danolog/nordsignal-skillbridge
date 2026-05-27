@@ -78,7 +78,7 @@ describe("generateSkillMap", () => {
 		const mockValues = vi.fn();
 		mockInsert.mockReturnValue({ values: mockValues } as never);
 
-		await generateSkillMap("student-1", ["Python", "SQL"], "Full-stack Developer");
+		await generateSkillMap("student-1", "tenant-1", ["Python", "SQL"], "Full-stack Developer");
 
 		expect(mockGenerateObject).toHaveBeenCalledOnce();
 		expect(mockInsert).toHaveBeenCalled();
@@ -99,6 +99,7 @@ describe("generateSkillMap", () => {
 		mockFindFirst.mockResolvedValue({
 			id: "map-1",
 			studentId: "student-1",
+			tenantId: "tenant-1",
 			nodes: [],
 			edges: [],
 			generatedAt: new Date(),
@@ -109,7 +110,7 @@ describe("generateSkillMap", () => {
 		const mockSet = vi.fn(() => ({ where: mockWhere }));
 		mockUpdate.mockReturnValue({ set: mockSet } as never);
 
-		await generateSkillMap("student-1", ["Python"], "Data Analyst");
+		await generateSkillMap("student-1", "tenant-1", ["Python"], "Data Analyst");
 
 		expect(mockUpdate).toHaveBeenCalled();
 		expect(mockSet).toHaveBeenCalledWith(
@@ -128,7 +129,7 @@ describe("generateSkillMap", () => {
 		mockFindFirst.mockResolvedValue(undefined);
 		mockInsert.mockReturnValue({ values: vi.fn() } as never);
 
-		await generateSkillMap("student-1", ["React", "TypeScript"], "Frontend Developer");
+		await generateSkillMap("student-1", "tenant-1", ["React", "TypeScript"], "Frontend Developer");
 
 		const call = mockGenerateObject.mock.calls[0][0] as { schema?: unknown; prompt: string };
 		expect(call.schema).toBeDefined();
@@ -140,8 +141,8 @@ describe("generateSkillMap", () => {
 	it("propagates AI SDK errors", async () => {
 		mockGenerateObject.mockRejectedValue(new Error("API rate limit exceeded"));
 
-		await expect(generateSkillMap("student-1", ["Python"], "Data Analyst")).rejects.toThrow(
-			"API rate limit exceeded",
-		);
+		await expect(
+			generateSkillMap("student-1", "tenant-1", ["Python"], "Data Analyst"),
+		).rejects.toThrow("API rate limit exceeded");
 	});
 });

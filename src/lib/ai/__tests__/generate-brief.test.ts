@@ -64,6 +64,7 @@ const project = {
 const student = {
 	id: "student-1",
 	userId: "user-1",
+	tenantId: "tenant-1",
 	careerGoal: "Data Analyst",
 	semester: 4,
 	university: "WSB",
@@ -94,6 +95,7 @@ describe("generateProjectBrief", () => {
 			{
 				id: "c1",
 				studentId: "student-1",
+				tenantId: "tenant-1",
 				name: "Python",
 				status: "acquired",
 				marketPercentage: 78,
@@ -117,6 +119,7 @@ describe("generateProjectBrief", () => {
 			{
 				id: "c1",
 				studentId: "student-1",
+				tenantId: "tenant-1",
 				name: "Python",
 				status: "acquired",
 				marketPercentage: 78,
@@ -125,6 +128,7 @@ describe("generateProjectBrief", () => {
 			{
 				id: "c2",
 				studentId: "student-1",
+				tenantId: "tenant-1",
 				name: "Pandas",
 				status: "acquired",
 				marketPercentage: 55,

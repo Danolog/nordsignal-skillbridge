@@ -1,0 +1,154 @@
+# Macierz RLS — SkillBridge Beta v0.1
+
+**Wersja:** v0.3 · 2026-05-27
+**Owner:** Ethan (CTO)
+**Status:** **Wdrożone i podpisane** — sign-off Ryana (CRCO, domena 8 / G6) wystawiony 2026-05-27 (`docs/security/beta-v01-signoff.md`, werdykt GO). Ta wersja godzi zapis macierzy z **faktycznym wdrożeniem** na gałęzi `feat/k3-rls-multitenancy` (PR #18). Migracja prod = osobna czerwona linia (`docs/runbooks/k3-prod-migration.md`).
+**Wejście:** `schema.ts` (`main`, **16 tabel** po dropie micro-courses w `0004`) · ADR-001 sekcja 4.2 (multi-tenancy + RLS) · ADR-003 (strategia: WHERE primary + RLS defense-in-depth, 4 warstwy) · `docs/audyty/2026-05-20-skillbridge-ai-production-readiness.md` (K3) · ADR-008 (drop micro-courses — WYKONANY).
+
+**Changelog v0.2 → v0.3 (2026-05-27) — reconcyliacja zapis↔wdrożenie:** (1) **Numeracja migracji zgodna z `drizzle/`**: `0005` tenants → `0006` tenant_id+backfill → `0007` `SET NOT NULL` → `0008` faculty per tenant + role + RLS → `0009` passport share token. (Plan v0.2 mówił `0006b`/`0007` — w kodzie to `0007`/`0008`.) (2) **`ENABLE`, NIE `FORCE` RLS** — wdrożenie używa `ENABLE ROW LEVEL SECURITY` + ról grupowych `app_student`/`app_faculty` (`NOLOGIN`) i `SET LOCAL ROLE` w runtime; aplikacja łączy się jako `neondb_owner` (właściciel → bypass RLS, ale ścieżki danych studenta jawnie przełączają rolę). `FORCE` + dedykowana nie-właścicielska rola login = **dług utwardzenia po Becie** (sekcja 8). (3) Role: `app_student`/`app_faculty` (nie `authenticated_student`/`authenticated_faculty`/`service_role` z planu). (4) **B1 ZAMKNIĘTE i podpisane** (sekcja 6.1) — token+opt-in (`0009`), zgoda **poinformowana i wersjonowana** (`PASSPORT_SHARE_CONSENT_VERSION`, A1 `bd39efc`), `noindex` + metadane bez PII (A2 `6f5dd2e`). (5) DoD: pozycje domknięte zaznaczone (sekcja 7).
+
+**Changelog v0.1 → v0.2 (2026-05-26):** (1) **Renumeracja** — drop micro-courses wszedł na prod jako `0004`, więc K3: `0005` tenants → `0006` tenant_id+backfill → `0006b` NOT NULL → `0007` RLS+role (było 0004/0005/0006/0009). (2) `micro_courses` **usunięta** ze schemy — wypada z macierzy, 16 tabel. (3) Partnerzy Bety **potwierdzeni**: WSB Merito Szczecin + Warszawa. (4) Sterownik = `node-postgres` (nie Neon serverless) → `SET LOCAL` w transakcji bez quirków. (5) ~~Egzekucja RLS wymaga `FORCE ROW LEVEL SECURITY`~~ → skorygowane w v0.3: wdrożono `ENABLE` + `SET LOCAL ROLE`. (6) Faculty per kampus = **hasło per tenant** + `faculty_sessions.tenant_id` (decyzja Darka 2026-05-26; `faculty_users` po Becie).
+
+**Żargon (tłumaczenie):** *RLS* (Row Level Security) = izolacja na poziomie wiersza w bazie — polityka SQL decyduje, które wiersze widzi dane połączenie. *tenant* = uczelnia (najemca). *tenant_id* = kolumna wiążąca wiersz z uczelnią. *deny-by-default* = brak reguły = brak dostępu. *append-only* = tylko dopisywanie, bez edycji/kasowania.
+
+---
+
+## 1. Model tenanta (co doda K3)
+
+Dziś izolacji między uczelniami **nie ma** (K3): zero `tenant_id`, zero polityk RLS, faculty na jednym współdzielonym haśle. K3 (Tydz. 2) dodaje:
+
+- **`tenants`** (`0005`): `id uuid PK, slug text UNIQUE, name text`. Seed = 2 design partnerów Bety (`wsb-merito-szczecin`, `wsb-merito-warszawa`) + `__unmapped`.
+- **`tenant_id`** (`0006` nullable+backfill → `0007` `SET NOT NULL`): denormalizowany na każdej tabeli z danymi studenta — żeby polityka RLS była prosta i indeksowalna (bez JOIN w polityce). Backfill ze `students.university` (free-form) przez mapę `docs/data/tenant-mapping-beta.md` (osobny artefakt). `NOT NULL` po zielonej walidacji (0 NULL na 16 realnych studentach).
+- **Faculty per tenant** (`0008`): wariant minimalny (decyzja Darka 2026-05-26) — `faculty_sessions.tenant_id` + login po **haśle per kampus** (`FACULTY_PASSWORD_<TENANT>`), zamiast jednego `FACULTY_PASSWORD`. Nazwane konta `faculty_users` per osoba — po Becie.
+- **RLS + role** (`0008`): role grupowe `app_student`/`app_faculty` (`NOLOGIN`) + GRANTy + **`ENABLE` ROW LEVEL SECURITY (nie `FORCE`)** + polityki per tabela wg tej macierzy. Aplikacja łączy się jako właściciel (`neondb_owner`, bypass RLS), a ścieżki, które mają egzekwować RLS, robią `SET LOCAL ROLE app_student`/`app_faculty` w transakcji (`withTenantContext`). **Świadomy kompromis Bety:** brak `FORCE` i brak dedykowanej roli login (utwardzenie po Becie — sekcja 8). `service_role` z planu nie powstał — niepotrzebny przy modelu owner-bypass.
+
+> **⚠️ Uwaga implementacyjna (code-review 2026-05-27):** w obecnym kodzie `withTenantContext` (`SET LOCAL ROLE`) jest wywoływany **wyłącznie** w `api/faculty/dashboard`. Trasy danych studenta (onboarding, skill-map, gaps, passport, projects) łączą się jako owner → **RLS ich NIE egzekwuje**; izolację studenta trzyma jedynie warstwa 1 (jawny `WHERE user_id/student_id`). RLS (warstwa 2) jest realną siatką **tylko** dla agregatów faculty. Zanim trasa studenta będzie mogła polegać na RLS jako siatce, musi przejść przez `withTenantContext`. `k3-validate` testuje role `app_*` w izolacji, nie ścieżkę ownera — zielony wynik **nie** dowodzi egzekucji RLS na trasach studenta. Objęcie tras studenta `withTenantContext` (albo `FORCE RLS` + rola login) = dług utwardzenia (sekcja 8).
+
+**Dwie osie dostępu** (ADR-001 4.2):
+- **Student** widzi swoje: `auth.user_id() = students.user_id` (przez `current_setting()`, ADR-003).
+- **Faculty** widzi swój tenant: `current_faculty_tenant_id() = <tabela>.tenant_id`.
+
+---
+
+## 2. Klasyfikacja danych (rama K-PUB/K-INT/K-PII z `policies/data-classification.md`)
+
+- **K-PII** — dane osobowe (imię, e-mail, uczelnia+kierunek+cel studenta łącznie identyfikujące).
+- **K-INT** — wewnętrzne nie-PII (kompetencje, luki, submisje, oceny AI).
+- **K-PUB** — publiczne/referencyjne (katalog projektów, dane rynku pracy).
+- **K-SES** — sekrety sesji/audyt (tokeny, hash, log) — nigdy do klienta.
+
+---
+
+## 3. Macierz RLS per tabela
+
+| # | Tabela | Klasa | Oś własności | `tenant_id` w `0006`? | RLS | SELECT (kto) | INSERT/UPDATE/DELETE (kto) |
+|---|---|---|---|---|---|---|---|
+| 1 | `students` | K-PII | student (`user_id`) + tenant | **TAK** (backfill) | ✅ | student: swój; faculty: swój tenant | student: swój (onboarding); faculty: brak zapisu danych studenta |
+| 2 | `competencies` | K-INT | student (przez `student_id`) + tenant | **TAK** | ✅ | student: swoje; faculty: tenant (agregat) | student: swoje; system |
+| 3 | `gaps` | K-INT | student + tenant | **TAK** | ✅ | student: swoje; faculty: tenant (agregat) | system (generowane AI); student: brak |
+| 4 | `skill_maps` | K-INT | student + tenant | **TAK** | ✅ | student: swój | system (generowane AI) |
+| 5 | `passports` | K-INT + **publiczny odczyt** | student + tenant | **TAK** | ✅ + wyjątek | student: swój; **public: po `passports.id`, tylko whitelist kolumn** (sekcja 6.1) | student: swój; system |
+| 6 | `project_submissions` | K-INT | student + tenant; **moderacja faculty** | **TAK** | ✅ | student: swoje; faculty: tenant (kolejka moderacji) | student: swoje (do `submitted`); **faculty: `status=verified/rejected` + `verified_by` — jedyna ścieżka werdyktu** (K2 fix) |
+| 7 | ~~`micro_courses`~~ | — | — | — | n/d | n/d | **USUNIĘTA w `0004` (ADR-008, na prod 2026-05-26).** Poza schemą i zakresem RLS. |
+| 8 | `job_market_data` | K-PUB | brak (referencyjna) | NIE | wyjątek (sekcja 5) | wszyscy uwierzytelnieni | tylko system/seed |
+| 9 | `projects` | K-PUB | globalna (katalog); `partner_id`+`exclusivity` | NIE | wyjątek | wszyscy uwierzytelnieni (z filtrem exclusivity — sekcja 6.2) | tylko system/seed |
+| 10 | `project_competencies` | K-PUB | dziecko `projects` | NIE | wyjątek | wszyscy uwierzytelnieni | tylko system/seed |
+| 11 | `project_sources` | K-PUB | konfiguracja | NIE | wyjątek | server-only | tylko system |
+| 12 | `faculty_sessions` | K-SES | faculty (przez `faculty_user` → tenant) | przez link | ✅ deny-all client | **nigdy klient** (server-only lookup po `token_hash`) | tylko server |
+| 13 | `audit_log` | K-SES | brak | NIE | ✅ deny-all client | **nigdy klient** | **append-only**; tylko server INSERT; UPDATE/DELETE zakazane (sekcja 6.3) |
+| 14 | `user` (Better Auth) | K-PII | self | NIE (tenant przez `students`) | wyjątek warunkowy (6.4) | server (Better Auth) | server (Better Auth) |
+| 15 | `session` (Better Auth) | K-SES | self | NIE | wyjątek warunkowy (6.4) | server | server |
+| 16 | `account` (Better Auth) | K-SES (tokeny OAuth, hasło) | self | NIE | wyjątek warunkowy (6.4) | server | server |
+| 17 | `verification` (Better Auth) | K-SES | brak (identifier) | NIE | wyjątek warunkowy (6.4) | server | server |
+
+**`tenant_id` dodawany w `0006` → 6 tabel:** `students`, `competencies`, `gaps`, `skill_maps`, `passports`, `project_submissions`. (ADR-001 mówił o 7 — siódma to `micro_courses`, usunięta w `0004`, więc realnie 6.)
+
+---
+
+## 4. Lista wyjątków RLS (wymóg DoD domeny 8)
+
+Skrypt CI sprawdza: każda tabela w `public.` ma `relrowsecurity = true` **lub** jest tu z uzasadnieniem. Tabele bez RLS user-data:
+
+| Tabela | Dlaczego bez RLS tenant-owej | Kontrola zamiast RLS |
+|---|---|---|
+| `job_market_data` | Dane referencyjne, identyczne dla wszystkich, brak właściciela | Zapis tylko przez seed/system (brak endpointu zapisu klienta) |
+| `projects` | Katalog globalny; izolacja exclusivity ≠ tenant-isolation | Filtr `exclusivity`/`partner_id` w warstwie zapytań (6.2); zapis tylko seed |
+| `project_competencies` | Dziecko `projects`, te same prawa | Jak `projects` |
+| `project_sources` | Konfiguracja źródeł, nie dane użytkownika | Server-only, brak ścieżki klienta |
+
+`faculty_sessions`, `audit_log`, Better Auth (`user`/`session`/`account`/`verification`) — **mają RLS** (deny-all dla klienta), ale nie tenant-ową — patrz 6.3/6.4.
+
+---
+
+## 5. Egzekucja — 4 warstwy (ADR-003)
+
+Macierz definiuje *co* ma być prawdą; ADR-003 definiuje *jak* to egzekwujemy. Każda tabela z `tenant_id` przechodzi przez 4 warstwy:
+
+1. **`withTenantContext` (primary)** — `TenantScopedDb` wymusza `where(eq(*.tenantId, ctx.tenantId))` na SELECT/UPDATE/DELETE. Type-safe, czytelne w warstwie aplikacji.
+2. **Polityka RLS SQL (defense-in-depth)** — `current_setting()` per request; jeśli ktoś zapomni WHERE lub użyje surowego SQL → 0 wierszy.
+3. **Lint w CI (K4)** — statyczna analiza: query Drizzle na tabeli z `tenant_id` bez `where(eq(*.tenantId,...))` → build czerwony.
+4. **Test cross-tenant w CI (K4)** — symulacja ataku: student tenanta A próbuje danych B → 0 wierszy + wpis `audit_log` „attempted cross-tenant access".
+
+---
+
+## 6. Przypadki specjalne
+
+### 6.1 Paszport publiczny (`passports`, `/passport/[token]`) — B1 ROZWIĄZANE (opcja b, decyzja Darka 2026-05-27)
+Finding (publiczny paszport ujawniał imię+uczelnię+profil **bez zgody, po zgadywalnym UUID** — niezależny przegląd podbił do blokera B1) **zamknięty mechanizmem token + opt-in** (migracja `0009`):
+- `passports.public_enabled boolean default false` — **domyślnie niepubliczny** (żaden istniejący paszport nie jest publicznie dostępny).
+- `passports.share_token text unique` — niezgadywalny token (256-bit), klucz dostępu publicznego zamiast PK; nadawany przy świadomym włączeniu.
+- Publiczny odczyt (`/passport/[id]/page.tsx` + `/api/passport/[id]`) wyłącznie po `share_token` **i** `public_enabled = true`. Enumeracja po UUID niemożliwa.
+- Opt-in/opt-out: `POST/DELETE /api/passport/share` (uwierzytelnione, własny paszport) + przycisk w `passport-view` („Udostępnij publicznie" / „Wyłącz udostępnianie"), audyt `passport.share.enable/disable`.
+**Sign-off Ryana (domena 8) — WYSTAWIONY 2026-05-27, GO.** Domknięcia ponad samym tokenem:
+- **A1 — zgoda poinformowana i wersjonowana** (`bd39efc`): ekran zgody wymienia wprost ujawniane pola i ostrzega „każdy z linkiem widzi dane — bez logowania"; udostępnienie dopiero po akceptacji. Klient wysyła `consentVersion`, serwer odrzuca rozjazd (409) i zapisuje wersję + ip/userAgent w `audit_log.metadata` (`PASSPORT_SHARE_CONSENT_VERSION`, `src/lib/consent.ts`). Bump wersji = przy każdej zmianie treści zgody.
+- **A2 — niewykrywalność** (`6f5dd2e`): strona publiczna `robots: noindex/nofollow`, tytuł/metadane bez imienia (PII).
+- **Minimalizacja pól**: widok publiczny zwraca whitelistę (imię, uczelnia, kierunek, semestr, cel, kompetencje, zweryfikowane projekty) — nie cały rekord.
+
+### 6.2 Exclusivity projektów (`projects`)
+`exclusivity=true` + `partner_id` = projekt widoczny tylko dla studentów danego partnera. To **nie** RLS tenant-owy (projekt to katalog, nie dane studenta), lecz filtr w warstwie zapytań: katalog dla studenta tenanta T pokazuje `exclusivity=false OR partner_id = T`. Test w CI.
+
+### 6.3 `audit_log` — append-only
+INSERT tylko server. **UPDATE/DELETE zakazane politykami** (`FOR UPDATE/DELETE USING (false)`). Retencja 12 m-cy (CLAUDE.md sekcja 10) → plan retencji `docs/data/retention.md`. Klient nigdy nie czyta.
+
+### 6.4 Tabele Better Auth — wyjątek warunkowy
+`user`/`session`/`account`/`verification` są obsługiwane **wyłącznie server-side przez adapter Better Auth** (brak ścieżki bezpośredniego zapytania klienta). W `0008` mają `ENABLE RLS` **bez polityki app-rolowej** → właściciel (Better Auth = `neondb_owner`) omija RLS i logowanie działa nietknięte, a role `app_student`/`app_faculty` bez GRANTu/polityki = deny-client. **Ryzyko potwierdzone empirycznie:** sign-up/login = 200 na preview Vercel po `0008` (smoke Darka 2026-05-27) — kolizji brak, tabele zostają z `ENABLE` (nie wracają na listę wyjątków).
+
+---
+
+## 7. Wejście do sign-offu Ryana (G6) + DoD
+
+Domena 8 wymaga sign-offu Ryana przed go-live. Ta macierz dostarcza element „macierz RLS per tabela". Pozostałe elementy (osobne): lista endpointów publicznych (skan middleware matcher — Leo Z7), plan retencji (`docs/data/retention.md`), audyt zależności (Dependabot, K4).
+
+**DoD tej macierzy (stan 2026-05-27, zwalidowany na dev/preview Neon przez `tools/k3-validate.ts`):**
+- ☑ Skrypt CI: każda tabela w `public.` ma `relrowsecurity=true` lub jest na liście wyjątków (sekcja 4) — `k3-validate` potwierdza RLS enabled.
+- ☑ Test integracyjny per tabela tenant-owa: student/faculty tenanta A nie czyta danych B → 0 wierszy (testy izolacji 7/7).
+- ☑ Test: faculty A nie moderuje submisji B (polityka `faculty_moderates_tenant` per tenant).
+- ☑ Test append-only `audit_log`: UPDATE/DELETE → odrzucone politykę.
+- ☑ Test logowania/rejestracji zielony po włączeniu RLS na tabelach Better Auth (6.4) — smoke preview.
+- ☑ Sign-off Ryana w `docs/security/beta-v01-signoff.md` (GO, 2026-05-27).
+
+> ⚠️ Walidacja wykonana na gałęzi dev/preview Neon. **Re-run `tools/k3-validate.ts` na `main` po migracji prod** (runbook §8) jest warunkiem zamknięcia DoD na produkcji.
+
+---
+
+## 8. Dług utwardzenia (po Becie — nazwany, niezablokujący)
+
+1. **`FORCE RLS` + nie-właścicielska rola login.** Beta egzekwuje RLS przez `SET LOCAL ROLE` przy połączeniu jako owner (`neondb_owner`). Owner omija RLS, więc każdy surowy zapytanie bez przełączenia roli = brak izolacji na warstwie bazy (broni warstwa aplikacji + lint + test, ADR-003). Docelowo: dedykowana rola login bez `BYPASSRLS` + `FORCE ROW LEVEL SECURITY` na tabelach danych → izolacja niezależna od dyscypliny `SET LOCAL ROLE`.
+2. **Izolacja kolumnowa faculty UPDATE = warstwa aplikacji, nie baza.** Polityka `faculty_moderates_tenant ON project_submissions FOR UPDATE TO app_faculty` ogranicza UPDATE do **wierszy** własnego tenanta, ale **nie ogranicza kolumn** — to, że faculty zmienia wyłącznie `status`/`verified_by` (a nie np. treści submisji studenta), egzekwuje kod (`withTenantContext` + handler), nie `WITH CHECK` na poziomie SQL. Dług nazwany w ADR-003; po Becie rozważyć column-level GRANT lub trigger walidujący zmieniane kolumny.
+3. **`faculty_users` per osoba** zamiast hasła per kampus (`FACULTY_PASSWORD_<TENANT>`) — konta nazwane + audyt per człowiek.
+4. **`audit_log` append-only nie chroni przed `TRUNCATE`** (code-review 2026-05-27). Trigger `audit_log_append_only` jest `BEFORE UPDATE OR DELETE … FOR EACH ROW` — `TRUNCATE` go nie odpala, więc owner może wyczyścić cały ślad jednym poleceniem (app-role `app_student`/`app_faculty` i tak nie mają dostępu do tabeli). Po Becie: statement-level `BEFORE TRUNCATE` trigger albo `REVOKE TRUNCATE ON audit_log`.
+5. **`share_token` paszportu: „wyłączenie" to pauza, nie odwołanie** (code-review 2026-05-27). `DELETE /api/passport/share` ustawia `public_enabled=false`, ale **zachowuje token**; re-enable reaktywuje ten sam link, brak ścieżki rotacji — wyciekły token jest trwały. Świadoma decyzja UX B1 (podpisana przez Ryana: „re-enable nie zmienia linku"), ale RODO-istotna. Po Becie rozważyć rotację tokenu przy wyłączeniu lub osobny endpoint rotacji — decyzja Sophia/Ryan.
+
+---
+
+## Self-critique
+
+Rola: principal engineer po incydencie wycieku danych między tenantami. Pięć słabości i co poprawiłem przed oddaniem:
+
+1. **„7 tabel z tenant_id" przepisane bezrefleksyjnie z ADR-001.** → Policzyłem realnie ze schemy: 7 zawierało `micro_courses`, którą `0009` usuwa (ADR-008) — więc **6**. Niespójność nazwana, nie powielona.
+2. **Better Auth jako martwy punkt.** Łatwo było napisać „RLS na wszystkim" — ale RLS na `user`/`session` może zerwać własne zapytania Better Auth. → Sekcja 6.4 + DoD z testem logowania po `0006`; wyjątek warunkowy zamiast ślepego „enable".
+3. **Publiczny paszport mógł zniknąć w „SELECT public".** → Wyodrębniony jako finding RODO (6.1): ujawnia imię+uczelnię bez zgody; rekomendacja `public_enabled` + zgoda, do decyzji z Ryanem. Bezpieczeństwo prowadzi do działania, nie opisu.
+4. **Macierz mogła być listą bez egzekucji.** → Sekcja 5 wiąże każdą tabelę tenant-ową z 4 warstwami ADR-003 (helper + RLS + lint + test), a nie deklaracją „włączymy RLS".
+5. **`audit_log` jako zwykła tabela K-INT.** → Sklasyfikowany K-SES, append-only z jawnym zakazem UPDATE/DELETE (6.3) — log, którego nie da się po cichu zmienić, to warunek audytowalności (wartość 1 CLAUDE.md).
+
+Porównanie z golden-adr: każda pozycja macierzy wyprowadzona ze schemy + klasy danych, każdy przypadek specjalny domknięty kontrolą lub testem, a najtwardsze ryzyko (publiczny paszport, Better Auth) eskalowane do sign-offu Ryana, nie schowane. Gotowe jako wejście do K3 i G6.

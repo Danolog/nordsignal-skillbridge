@@ -40,6 +40,7 @@ export async function GET() {
 			.insert(passports)
 			.values({
 				studentId: student.id,
+				tenantId: student.tenantId,
 				marketCoveragePercent: coverage,
 			})
 			.returning();
