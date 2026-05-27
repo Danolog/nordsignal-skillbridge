@@ -91,6 +91,11 @@ pnpm tsx tools/k3-validate.ts          # oczekiwane: 15/15 ZIELONE, 0 NULL tenan
 
 # 8b. smoke aplikacji prod (po deployu main): sign-up/login + GET /api/passport
 #     oczekiwane: 200/404, NIE 500
+
+# 8c. gate §4a — ZERO studentów w __unmapped po reseedzie (łapie rezydualne, niesprzątane wiersze)
+#     SELECT count(*) FROM students s JOIN tenants t ON t.id = s.tenant_id WHERE t.slug = '__unmapped';
+#     oczekiwane: 0. Jeśli >0 → rezydualne konta spoza demo IDs: ręczny remap tenant_id
+#     na właściwego partnera albo usunięcie wiersza (decyzja per rekord).
 ```
 
 ## 9. Rollback
@@ -104,3 +109,6 @@ pnpm tsx tools/k3-validate.ts          # oczekiwane: 15/15 ZIELONE, 0 NULL tenan
 - Backup branch zostaw min. kilka dni; potem usuń (oszczędność compute): `neonctl branches delete prod-backup-pre-k3-2026-05-27 …`.
 - `preview-k3` zostaje jako środowisko preview gałęzi (branch-scoped `DATABASE_URL` w Vercelu).
 - Rozważ utwardzenie po Becie: izolowana rola login nie-owner + `FORCE RLS` (dług z `0008`).
+
+## 11. Znane sprawy proceduralne
+- **Commit reseedu `45c5b5d` (Leo) był lokalny, niewypchnięty** na 2026-05-27 — `git push` padał na `Permission denied (publickey)` (agent SSH zgubił klucz; wcześniej w sesji push działał). Przed migracją: napraw SSH (`ssh-add`) i wypchnij `45c5b5d` na `feat/k3-rls-multitenancy`, żeby reseed był w gałęzi wdrażanej na prod.
