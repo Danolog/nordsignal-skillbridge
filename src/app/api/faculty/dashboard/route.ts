@@ -1,4 +1,4 @@
-import { count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { headers as nextHeaders } from "next/headers";
 import { NextResponse } from "next/server";
 import { generateFacultySuggestions } from "@/lib/ai/generate-faculty-suggestions";
@@ -29,7 +29,13 @@ export async function GET() {
 	const data = await withTenantContext(
 		{ userId: "", tenantId: facultyAuth.tenantId, role: "faculty" },
 		async (tx) => {
-			const [studentCountResult] = await tx.select({ count: count() }).from(students);
+			// Warstwa 1 (WHERE) jawnie obok RLS (warstwa 2) — ADR-003: WHERE główne,
+			// RLS defense-in-depth. tid powtórzony w każdym zapytaniu na danych studenta.
+			const tid = facultyAuth.tenantId;
+			const [studentCountResult] = await tx
+				.select({ count: count() })
+				.from(students)
+				.where(eq(students.tenantId, tid));
 			const studentCount = studentCountResult?.count ?? 0;
 			if (studentCount < 3) {
 				return { tooFewStudents: true as const, studentCount };
@@ -38,7 +44,8 @@ export async function GET() {
 			// 1. Count students per career goal
 			const allStudents = await tx
 				.select({ id: students.id, careerGoal: students.careerGoal })
-				.from(students);
+				.from(students)
+				.where(eq(students.tenantId, tid));
 			const studentsPerGoal = new Map<string, number>();
 			for (const s of allStudents) {
 				studentsPerGoal.set(s.careerGoal, (studentsPerGoal.get(s.careerGoal) || 0) + 1);
@@ -53,6 +60,7 @@ export async function GET() {
 				})
 				.from(gaps)
 				.innerJoin(students, eq(gaps.studentId, students.id))
+				.where(eq(gaps.tenantId, tid))
 				.groupBy(gaps.competencyName, students.careerGoal);
 
 			const gapMap = new Map<string, number>();
@@ -84,6 +92,7 @@ export async function GET() {
 					avgMarketPct: sql<number>`ROUND(AVG(${gaps.marketPercentage}))`.as("avg_market_pct"),
 				})
 				.from(gaps)
+				.where(eq(gaps.tenantId, tid))
 				.groupBy(gaps.competencyName)
 				.orderBy(desc(count()))
 				.limit(5);
@@ -95,7 +104,7 @@ export async function GET() {
 						.select({ careerGoal: students.careerGoal })
 						.from(gaps)
 						.innerJoin(students, eq(gaps.studentId, students.id))
-						.where(eq(gaps.competencyName, missing.name))
+						.where(and(eq(gaps.competencyName, missing.name), eq(gaps.tenantId, tid)))
 						.groupBy(students.careerGoal);
 
 					return {

@@ -104,12 +104,16 @@ export async function POST(req: Request) {
 		})),
 	);
 
-	// Create passport if not exists
+	// Create passport if not exists; jeśli istnieje — odśwież tenantId
+	// (re-onboarding ze zmienioną uczelnią mógł zmienić tenant — bez tego
+	// wiersz potomny zostaje ze starym tenant_id = niespójność z students).
 	const existingPassport = await db.query.passports.findFirst({
 		where: eq(passports.studentId, studentId),
 	});
 	if (!existingPassport) {
 		await db.insert(passports).values({ studentId, tenantId });
+	} else if (existingPassport.tenantId !== tenantId) {
+		await db.update(passports).set({ tenantId }).where(eq(passports.studentId, studentId));
 	}
 
 	// Synchronous AI generation — Vercel serverless terminates the function after the response,

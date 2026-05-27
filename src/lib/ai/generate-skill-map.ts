@@ -65,6 +65,7 @@ Zasady:
 			await db
 				.update(skillMaps)
 				.set({
+					tenantId,
 					nodes: object.nodes,
 					edges: object.edges,
 					updatedAt: new Date(),

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { generateWhyImportant } from "@/lib/ai/generate-why";
@@ -42,7 +42,12 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 		gap.marketPercentage,
 	);
 
-	await db.update(gaps).set({ whyImportant }).where(eq(gaps.id, gapId));
+	// Defense-in-depth: zawęź zapis do gapa NALEŻĄCEGO do tego studenta
+	// (ścieżka idzie owner-db, RLS jej nie chroni — WHERE jest jedyną warstwą).
+	await db
+		.update(gaps)
+		.set({ whyImportant })
+		.where(and(eq(gaps.id, gapId), eq(gaps.studentId, student.id)));
 
 	return NextResponse.json({ whyImportant });
 }

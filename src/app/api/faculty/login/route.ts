@@ -49,15 +49,21 @@ function assertProductionPasswordStrength(): string | null {
  * (bez short-circuit), żeby czas odpowiedzi nie zdradzał, który kampus pasuje.
  * Zwraca slug dopasowanego tenanta albo null.
  */
-function matchTenantSlug(password: string): string | null {
-	let matched: string | null = null;
+type MatchResult = { slug: string } | { error: "none" } | { error: "collision" };
+
+function matchTenantSlug(password: string): MatchResult {
+	const matches: string[] = [];
 	for (const slug of FACULTY_TENANT_SLUGS) {
 		const expected = process.env[facultyPasswordEnvVar(slug)] ?? "";
 		if (expected.length > 0 && constantTimeEqual(password, expected)) {
-			matched = slug;
+			matches.push(slug);
 		}
 	}
-	return matched;
+	// Dwa kampusy z tym samym hasłem = błąd konfiguracji — NIE zgadujemy tenanta
+	// (cichy wybór złego kampusu = cross-tenant). Fail-closed.
+	if (matches.length > 1) return { error: "collision" };
+	if (matches.length === 0) return { error: "none" };
+	return { slug: matches[0] };
 }
 
 export async function POST(req: Request) {
@@ -87,8 +93,11 @@ export async function POST(req: Request) {
 	const { password } = parsedBody.data;
 
 	const auditCtx = auditContextFromRequest(req);
-	const matchedSlug = matchTenantSlug(password);
-	if (!matchedSlug) {
+	const match = matchTenantSlug(password);
+	if ("error" in match && match.error === "collision") {
+		return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+	}
+	if ("error" in match) {
 		await recordAudit({
 			actorType: "anonymous",
 			action: "faculty.login.fail",
@@ -101,7 +110,7 @@ export async function POST(req: Request) {
 	const [tenant] = await db
 		.select({ id: tenants.id })
 		.from(tenants)
-		.where(eq(tenants.slug, matchedSlug));
+		.where(eq(tenants.slug, match.slug));
 	if (!tenant) {
 		return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
 	}
