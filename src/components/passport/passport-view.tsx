@@ -1,7 +1,7 @@
 "use client";
 
 import { BarChart3, Check, Clock, Link as LinkIcon, XCircle } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { CompetencyCard } from "./competency-badge";
 import { PdfExportButton } from "./pdf-export";
@@ -25,6 +25,10 @@ export interface PassportData {
 	gapCount: number;
 	generatedAt: string;
 	projectReceipts?: ProjectReceipt[];
+	// B1: udostępnianie publiczne = opt-in studenta. Ustawiane tylko w widoku
+	// właściciela (dashboard); widok publiczny ich nie potrzebuje.
+	shareToken?: string | null;
+	publicEnabled?: boolean;
 }
 
 function getInitials(name: string): string {
@@ -43,13 +47,43 @@ export function PassportView({ data }: { data: PassportData }) {
 	const inProgress = data.competencies.filter((c) => c.status === "in_progress");
 	const totalRequired = data.competencies.length + data.gapCount;
 
+	// B1: udostępnianie po świadomym kliknięciu. Token i status z serwera.
+	const [shareToken, setShareToken] = useState<string | null>(data.shareToken ?? null);
+	const [publicEnabled, setPublicEnabled] = useState<boolean>(data.publicEnabled ?? false);
+
+	const copyTokenLink = async (token: string) => {
+		await navigator.clipboard.writeText(`${window.location.origin}/passport/${token}`);
+	};
+
 	const copyLink = async () => {
-		const publicUrl = `${window.location.origin}/passport/${data.id}`;
 		try {
-			await navigator.clipboard.writeText(publicUrl);
-			toast.success("Link skopiowany!");
+			// Już publiczny → po prostu kopiuj istniejący link po tokenie.
+			if (publicEnabled && shareToken) {
+				await copyTokenLink(shareToken);
+				toast.success("Link skopiowany!");
+				return;
+			}
+			// Pierwsze udostępnienie = świadome włączenie publicznego dostępu.
+			const res = await fetch("/api/passport/share", { method: "POST" });
+			if (!res.ok) throw new Error("share failed");
+			const { shareToken: token } = (await res.json()) as { shareToken: string };
+			setShareToken(token);
+			setPublicEnabled(true);
+			await copyTokenLink(token);
+			toast.success("Paszport jest teraz publiczny — link skopiowany");
 		} catch {
-			toast.error("Nie udalo sie skopiowac linku");
+			toast.error("Nie udało się udostępnić paszportu");
+		}
+	};
+
+	const disableSharing = async () => {
+		try {
+			const res = await fetch("/api/passport/share", { method: "DELETE" });
+			if (!res.ok) throw new Error("disable failed");
+			setPublicEnabled(false);
+			toast.success("Udostępnianie wyłączone — link nieaktywny");
+		} catch {
+			toast.error("Nie udało się wyłączyć udostępniania");
 		}
 	};
 
@@ -67,8 +101,13 @@ export function PassportView({ data }: { data: PassportData }) {
 				<div className="pp-actions">
 					<button type="button" className="pp-btn pp-btn-secondary" onClick={copyLink}>
 						<LinkIcon size={16} />
-						Kopiuj link
+						{publicEnabled ? "Kopiuj link" : "Udostępnij publicznie"}
 					</button>
+					{publicEnabled && (
+						<button type="button" className="pp-btn pp-btn-secondary" onClick={disableSharing}>
+							Wyłącz udostępnianie
+						</button>
+					)}
 					<PdfExportButton passportRef={passportRef} />
 				</div>
 			</div>

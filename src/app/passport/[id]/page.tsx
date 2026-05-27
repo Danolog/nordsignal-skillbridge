@@ -14,7 +14,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
 	const { id } = await params;
 	const passport = await db.query.passports.findFirst({
-		where: eq(passports.id, id),
+		where: and(eq(passports.shareToken, id), eq(passports.publicEnabled, true)),
 	});
 
 	if (!passport) {
@@ -37,8 +37,9 @@ export async function generateMetadata({
 export default async function PublicPassportPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;
 
+	// B1: dostęp tylko po share_token + public_enabled (zgoda studenta).
 	const passport = await db.query.passports.findFirst({
-		where: eq(passports.id, id),
+		where: and(eq(passports.shareToken, id), eq(passports.publicEnabled, true)),
 	});
 	if (!passport) notFound();
 

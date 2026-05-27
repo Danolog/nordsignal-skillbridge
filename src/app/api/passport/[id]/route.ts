@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { competencies, gaps, passports, students, user } from "@/lib/db/schema";
@@ -6,8 +6,10 @@ import { competencies, gaps, passports, students, user } from "@/lib/db/schema";
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;
 
+	// B1: dostęp publiczny tylko po niezgadywalnym share_token i tylko gdy student
+	// włączył udostępnianie (public_enabled). Surowy PK nie jest już kluczem.
 	const passport = await db.query.passports.findFirst({
-		where: eq(passports.id, id),
+		where: and(eq(passports.shareToken, id), eq(passports.publicEnabled, true)),
 	});
 
 	if (!passport) {

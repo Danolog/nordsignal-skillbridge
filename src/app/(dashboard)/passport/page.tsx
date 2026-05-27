@@ -89,6 +89,8 @@ export default async function PassportPage() {
 		gapCount: studentGaps.length,
 		generatedAt: passport.updatedAt.toISOString(),
 		projectReceipts,
+		shareToken: passport.shareToken,
+		publicEnabled: passport.publicEnabled,
 	};
 
 	return <PassportView data={passportData} />;

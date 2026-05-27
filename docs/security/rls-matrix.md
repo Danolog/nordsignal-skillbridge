@@ -89,8 +89,13 @@ Macierz definiuje *co* ma być prawdą; ADR-003 definiuje *jak* to egzekwujemy. 
 
 ## 6. Przypadki specjalne
 
-### 6.1 Paszport publiczny (`passports`, `/passport/[id]`)
-Strona publiczna bez logowania. RLS nie może blokować odczytu po `id`, ale **odsłaniamy tylko whitelistę kolumn**: `marketCoveragePercent`, kompetencje (nazwa/status/%), oraz dane studenta **za świadomą zgodą** — dziś endpoint zwraca `student.name` + uczelnia. **Finding do domeny 8:** publiczny paszport ujawnia imię i uczelnię bez kontroli zgody (RODO/minimalizacja). Rekomendacja: dodać `passports.public_enabled boolean default false` + zgodę studenta; do czasu — endpoint zwraca pseudonim, nie `user.name`. Do decyzji z Ryanem przy sign-offie.
+### 6.1 Paszport publiczny (`passports`, `/passport/[token]`) — B1 ROZWIĄZANE (opcja b, decyzja Darka 2026-05-27)
+Finding (publiczny paszport ujawniał imię+uczelnię+profil **bez zgody, po zgadywalnym UUID** — niezależny przegląd podbił do blokera B1) **zamknięty mechanizmem token + opt-in** (migracja `0009`):
+- `passports.public_enabled boolean default false` — **domyślnie niepubliczny** (żaden istniejący paszport nie jest publicznie dostępny).
+- `passports.share_token text unique` — niezgadywalny token (256-bit), klucz dostępu publicznego zamiast PK; nadawany przy świadomym włączeniu.
+- Publiczny odczyt (`/passport/[id]/page.tsx` + `/api/passport/[id]`) wyłącznie po `share_token` **i** `public_enabled = true`. Enumeracja po UUID niemożliwa.
+- Opt-in/opt-out: `POST/DELETE /api/passport/share` (uwierzytelnione, własny paszport) + przycisk w `passport-view` („Udostępnij publicznie" / „Wyłącz udostępnianie"), audyt `passport.share.enable/disable`.
+**Do sign-offu Ryana (domena 8):** potwierdzić adekwatność RODO (zgoda przez kliknięcie wystarcza? minimalizacja zwracanych pól?). UX opt-inu (modal zgody, treść) — do dopracowania z Sophią/Milą.
 
 ### 6.2 Exclusivity projektów (`projects`)
 `exclusivity=true` + `partner_id` = projekt widoczny tylko dla studentów danego partnera. To **nie** RLS tenant-owy (projekt to katalog, nie dane studenta), lecz filtr w warstwie zapytań: katalog dla studenta tenanta T pokazuje `exclusivity=false OR partner_id = T`. Test w CI.

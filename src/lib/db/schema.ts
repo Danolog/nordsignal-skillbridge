@@ -212,10 +212,18 @@ export const passports = pgTable(
 			.notNull()
 			.references(() => tenants.id),
 		marketCoveragePercent: integer("market_coverage_percent").notNull().default(0),
+		// B1/RODO: publiczne udostępnianie tylko za świadomą zgodą studenta.
+		// public_enabled domyślnie false (paszport niepubliczny); share_token =
+		// niezgadywalny identyfikator publiczny (zamiast enumerowanego PK).
+		publicEnabled: boolean("public_enabled").notNull().default(false),
+		shareToken: text("share_token").unique(),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
-	(table) => [index("idx_passports_tenant_id").on(table.tenantId)],
+	(table) => [
+		index("idx_passports_tenant_id").on(table.tenantId),
+		index("idx_passports_share_token").on(table.shareToken),
+	],
 );
 
 export const jobMarketData = pgTable(
