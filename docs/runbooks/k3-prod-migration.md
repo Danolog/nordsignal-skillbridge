@@ -36,7 +36,7 @@ Migracja została **przećwiczona na identycznej kopii danych prod**:
 
 ⚠️ **Uwaga z review (rezydua):** czyszczenie w `seed.ts` kasuje tylko **znane demo `user_id`** (+5 starych `demo-user-*`). Wiersze `students` o innym `user_id` (realne/testowe konta) **nie są sprzątane** i zachowują tenant z backfillu — mogą zostać w `__unmapped`. Dlatego §8 (8c) wymusza sprawdzenie `count(__unmapped) = 0` po reseedzie; jeśli >0 → ręczny remap lub usunięcie rezyduów.
 
-Drobny dług (nie blokuje): pola `university` w `DEMO_STUDENTS` (11 kampusów) są martwe — `seed.ts:674` je nadpisuje `partner.name`. Do cleanupu (Leo).
+Cleanup martwego pola `university` w `DEMO_STUDENTS` — **zrobiony** (commit `91e64d5`, Leo): usunięte z typu `DemoStudent` i 15 literałów; kolumna `students.university` w bazie zasilana `partner.name` (seed.ts:674), więc paszport/dashboard/profil dalej pokazują uczelnię poprawnie. Typecheck/biome/testy 22/22 zielone.
 
 ## 5. Co robią migracje pending (orientacyjnie — zweryfikuj pliki w `drizzle/`)
 | Migracja | Zakres |
