@@ -17,20 +17,22 @@ export async function generateMetadata({
 		where: and(eq(passports.shareToken, id), eq(passports.publicEnabled, true)),
 	});
 
+	// A2: link udostępnialny pracodawcy, ale niewykrywalny w wyszukiwarkach.
+	// noindex/nofollow zapobiega indeksowaniu; metadane nie ujawniają PII (imienia studenta).
+	const robots = { index: false, follow: false } as const;
+
 	if (!passport) {
-		return { title: "Paszport nie znaleziony" };
+		return { title: "Paszport nie znaleziony", robots };
 	}
 
 	const student = await db.query.students.findFirst({
 		where: eq(students.id, passport.studentId),
 	});
-	const studentUser = student
-		? await db.query.user.findFirst({ where: eq(user.id, student.userId) })
-		: null;
 
 	return {
-		title: `Paszport Kompetencji — ${studentUser?.name ?? "Student"} | SkillBridge`,
+		title: "Paszport Kompetencji | SkillBridge",
 		description: `Paszport kompetencji: ${student?.careerGoal ?? ""}. Pokrycie rynkowe: ${passport.marketCoveragePercent}%`,
+		robots,
 	};
 }
 
