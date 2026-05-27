@@ -1,6 +1,6 @@
 # Runbook: Migracja produkcji — K3 (multitenancy + RLS)
 
-> **Status:** PRZYGOTOWANY (backup wykonany, rehearsal zielony). **Wykonanie na prod = czerwona linia — wymaga jawnej zgody Darka.**
+> **Status:** PRZYGOTOWANY (backup wykonany, rehearsal zielony) — ale **ZABLOKOWANY gate'em danych** (§4a: reseed do 2 kampusów, inaczej 12/16 studentów → `__unmapped`). **Wykonanie na prod = czerwona linia — wymaga jawnej zgody Darka.**
 > **Data przygotowania:** 2026-05-27 · **Gałąź kodu:** `feat/k3-rls-multitenancy` (PR #18)
 
 ---
@@ -24,6 +24,24 @@ Migracja została **przećwiczona na identycznej kopii danych prod**:
 - Backfill `tenant_id` dał **0 NULL** na realnych 16 studentach → `0007` (SET NOT NULL) nie wywróci się na prod.
 - Wniosek: ryzyko niskie — ta sama operacja na tych samych danych już przeszła.
 
+## 4a. 🔴 BLOKER danych — reseed do 2 kampusów-partnerów (PRZED migracją)
+Backfill `0006` mapuje `students.university` → tenant tylko dla **2 partnerów** (`wsb-merito-szczecin`, `wsb-merito-warszawa`); wszystko inne → `__unmapped` (**RLS deny = niewidoczne w aplikacji**). Bez przygotowania danych demo trafi do `__unmapped`.
+
+**Stan zmierzony na `preview-k3` (= kopia danych prod, po backfill):**
+| tenant | studentów |
+|---|---|
+| `__unmapped` | **12** (znikają z aplikacji) |
+| `wsb-merito-szczecin` | 2 (poniżej progu 3 dla faculty dashboard) |
+| `wsb-merito-warszawa` | 2 (poniżej progu 3) |
+
+Przyczyna: `src/lib/db/seed.ts` wciąż rozrzuca demo po **11 kampusach** WSB Merito. Wymóg `docs/data/tenant-mapping-beta.md` §4 + DoD (Sophia potwierdzona): **reseed demo do Szczecina + Warszawy, ≥6 studentów/tenant, ≥3 różne `careerGoal`** (zadanie Leo, warstwa 4). **Otwarte na 2026-05-27.**
+
+**Wymagane przed migracją prod (jedno z):**
+- (a) zaktualizować `seed.ts` do 2 kampusów (≥6/tenant) → reseed prod **po** migracji `0005`–`0009` (potrzebny `tenant_id`), albo
+- (b) ręcznie zremapować istniejące wiersze prod na 2 partnerów po backfillu (UPDATE `tenant_id` z `__unmapped` na właściwy tenant) — jeśli dane prod mają być zachowane.
+
+→ Dopóki to nierozwiązane, migracja prod da poprawnie zizolowaną, ale **pustą** aplikację dla 12/16 studentów. Sign-off Ryana (bezpieczeństwo) tego nie obejmuje — to gate danych/produktu (Leo/Sophia).
+
 ## 5. Co robią migracje pending (orientacyjnie — zweryfikuj pliki w `drizzle/`)
 | Migracja | Zakres |
 |---|---|
@@ -39,6 +57,7 @@ Migracja została **przećwiczona na identycznej kopii danych prod**:
 - [x] Backup branch istnieje
 - [x] Rehearsal zielony
 - [x] Sekrety zrotowane (2026-05-27)
+- [ ] 🔴 **BLOKER danych: reseed do 2 kampusów-partnerów** (§4a) — bez tego 12/16 studentów → `__unmapped`
 - [ ] Ustalona **kolejność migracja vs merge** (patrz niżej)
 - [ ] Okno ~5–10 min (DDL + role + RLS; krótka możliwa niedostępność zapisów)
 - [ ] Brak równoległych deployów/migracji
