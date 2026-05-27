@@ -1,6 +1,6 @@
 # Runbook: Migracja produkcji — K3 (multitenancy + RLS)
 
-> **Status:** PRZYGOTOWANY (backup wykonany, rehearsal zielony) — ale **ZABLOKOWANY gate'em danych** (§4a: reseed do 2 kampusów, inaczej 12/16 studentów → `__unmapped`). **Wykonanie na prod = czerwona linia — wymaga jawnej zgody Darka.**
+> **Status:** PRZYGOTOWANY (backup + rehearsal zielone; gate danych §4a **rozwiązany** — reseed gotowy w kodzie, do uruchomienia na prod w ramach §7). **Wykonanie na prod = czerwona linia — wymaga jawnej zgody Darka.**
 > **Data przygotowania:** 2026-05-27 · **Gałąź kodu:** `feat/k3-rls-multitenancy` (PR #18)
 
 ---
@@ -24,23 +24,19 @@ Migracja została **przećwiczona na identycznej kopii danych prod**:
 - Backfill `tenant_id` dał **0 NULL** na realnych 16 studentach → `0007` (SET NOT NULL) nie wywróci się na prod.
 - Wniosek: ryzyko niskie — ta sama operacja na tych samych danych już przeszła.
 
-## 4a. 🔴 BLOKER danych — reseed do 2 kampusów-partnerów (PRZED migracją)
-Backfill `0006` mapuje `students.university` → tenant tylko dla **2 partnerów** (`wsb-merito-szczecin`, `wsb-merito-warszawa`); wszystko inne → `__unmapped` (**RLS deny = niewidoczne w aplikacji**). Bez przygotowania danych demo trafi do `__unmapped`.
+## 4a. ✅ Gate danych — reseed do 2 kampusów-partnerów (ROZWIĄZANY)
+**Problem (historyczny):** backfill `0006` mapuje `students.university` → tenant tylko dla 2 partnerów (`wsb-merito-szczecin`, `wsb-merito-warszawa`); reszta → `__unmapped` (RLS deny = niewidoczne). Stary seed (11 kampusów) dawał na `preview-k3` **12/16 studentów w `__unmapped`** + oba tenanty <3 (próg faculty dashboard).
 
-**Stan zmierzony na `preview-k3` (= kopia danych prod, po backfill):**
-| tenant | studentów |
-|---|---|
-| `__unmapped` | **12** (znikają z aplikacji) |
-| `wsb-merito-szczecin` | 2 (poniżej progu 3 dla faculty dashboard) |
-| `wsb-merito-warszawa` | 2 (poniżej progu 3) |
+**Rozwiązanie — commit `45c5b5d` (Leo), zatwierdzony review 2026-05-27 (Ethan):**
+- `seed.ts` ustawia `university = partner.name` + `tenant_id` round-robin po 2 partnerach (`seed-students.ts: partnerTenantForIndex`). Dane spójne (university == tenant).
+- Test `__tests__/seed-tenants.test.ts` pilnuje DoD §4 (dokładnie 2 partnerów, zero sierot w demo, ≥6/tenant, ≥3 careerGoal) — 5/5 zielone, na tej samej funkcji, której używa seed.
+- **Zweryfikowane end-to-end na `preview-k3`** (`pnpm db:seed`): `__unmapped` = **0**, szczecin 9/6, warszawa 7/5, 0 niespójnych.
 
-Przyczyna: `src/lib/db/seed.ts` wciąż rozrzuca demo po **11 kampusach** WSB Merito. Wymóg `docs/data/tenant-mapping-beta.md` §4 + DoD (Sophia potwierdzona): **reseed demo do Szczecina + Warszawy, ≥6 studentów/tenant, ≥3 różne `careerGoal`** (zadanie Leo, warstwa 4). **Otwarte na 2026-05-27.**
+**Sposób na prod = wariant (a):** reseed prod (`pnpm db:seed`) **po** migracji `0005`–`0009` (seed wymaga `tenant_id`). Kroki w §7 (7d), weryfikacja w §8 (8c).
 
-**Wymagane przed migracją prod (jedno z):**
-- (a) zaktualizować `seed.ts` do 2 kampusów (≥6/tenant) → reseed prod **po** migracji `0005`–`0009` (potrzebny `tenant_id`), albo
-- (b) ręcznie zremapować istniejące wiersze prod na 2 partnerów po backfillu (UPDATE `tenant_id` z `__unmapped` na właściwy tenant) — jeśli dane prod mają być zachowane.
+⚠️ **Uwaga z review (rezydua):** czyszczenie w `seed.ts` kasuje tylko **znane demo `user_id`** (+5 starych `demo-user-*`). Wiersze `students` o innym `user_id` (realne/testowe konta) **nie są sprzątane** i zachowują tenant z backfillu — mogą zostać w `__unmapped`. Dlatego §8 (8c) wymusza sprawdzenie `count(__unmapped) = 0` po reseedzie; jeśli >0 → ręczny remap lub usunięcie rezyduów.
 
-→ Dopóki to nierozwiązane, migracja prod da poprawnie zizolowaną, ale **pustą** aplikację dla 12/16 studentów. Sign-off Ryana (bezpieczeństwo) tego nie obejmuje — to gate danych/produktu (Leo/Sophia).
+Drobny dług (nie blokuje): pola `university` w `DEMO_STUDENTS` (11 kampusów) są martwe — `seed.ts:674` je nadpisuje `partner.name`. Do cleanupu (Leo).
 
 ## 5. Co robią migracje pending (orientacyjnie — zweryfikuj pliki w `drizzle/`)
 | Migracja | Zakres |
@@ -57,7 +53,8 @@ Przyczyna: `src/lib/db/seed.ts` wciąż rozrzuca demo po **11 kampusach** WSB Me
 - [x] Backup branch istnieje
 - [x] Rehearsal zielony
 - [x] Sekrety zrotowane (2026-05-27)
-- [ ] 🔴 **BLOKER danych: reseed do 2 kampusów-partnerów** (§4a) — bez tego 12/16 studentów → `__unmapped`
+- [x] Gate danych: reseed gotowy w kodzie (commit `45c5b5d`, §4a) — do uruchomienia na prod w §7 (7d)
+- [ ] **Commit `45c5b5d` wypchnięty na origin** (był lokalny; SSH do GH wymaga naprawy — patrz §11)
 - [ ] Ustalona **kolejność migracja vs merge** (patrz niżej)
 - [ ] Okno ~5–10 min (DDL + role + RLS; krótka możliwa niedostępność zapisów)
 - [ ] Brak równoległych deployów/migracji
@@ -80,6 +77,11 @@ pg_dump "<main-DIRECT-connstring>" -Fc -f prod-pre-k3-2026-05-27.dump   # pg_dum
 # 7c. uruchom migracje (z ustawionym DATABASE_URL = main direct)
 pnpm db:migrate
 #     oczekiwane: applies 0005–0009 → "migrations applied successfully!"
+
+# 7d. reseed danych demo do 2 kampusów-partnerów (gate §4a; PO migracji — seed wymaga tenant_id)
+#     UWAGA: pnpm db:seed kasuje i odtwarza dane demo (jobMarketData, tenants, students, projects).
+pnpm db:seed
+#     oczekiwane: "Seeded 15 demo students" + tenants (szczecin/warszawa/__unmapped)
 ```
 
 ## 8. Weryfikacja po migracji
