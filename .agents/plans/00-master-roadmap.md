@@ -240,3 +240,9 @@ Data Analyst, Data Scientist, Frontend Developer, Backend Developer,
 Full-stack Developer, UX/UI Designer, Project Manager,
 DevOps Engineer, Cybersecurity Analyst, Inne (wpisz)
 ```
+
+## Dług techniczny (po Becie v0.1)
+
+Świadomie odłożone utwardzenia — nie blokują Bety, do domknięcia po niej.
+
+- **[#19](https://github.com/Danolog/nordsignal-skillbridge/issues/19) — FORCE RLS + dedykowana rola login nie-owner dla runtime.** K3 (PR #18) wprowadził RLS w trybie `ENABLE` (nie `FORCE`); runtime łączy się jako owner, który bypassuje non-FORCE RLS. Dziś izolacja danych studenta opiera się **wyłącznie** na `WHERE student_id/user_id` (warstwa 1) — działa, ale bez backupu RLS. Zakres: rola login nie-owner bez `BYPASSRLS`, osobny connection string runtime, `FORCE ROW LEVEL SECURITY`, przepięcie ścieżek studenta na `withTenantContext`, oraz wpięcie `tools/k3-validate.ts` do CI. Patrz ADR-003, `docs/security/rls-matrix.md`.
