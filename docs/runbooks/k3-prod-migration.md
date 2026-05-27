@@ -53,8 +53,7 @@ Drobny dług (nie blokuje): pola `university` w `DEMO_STUDENTS` (11 kampusów) s
 - [x] Backup branch istnieje
 - [x] Rehearsal zielony
 - [x] Sekrety zrotowane (2026-05-27)
-- [x] Gate danych: reseed gotowy w kodzie (commit `45c5b5d`, §4a) — do uruchomienia na prod w §7 (7d)
-- [ ] **Commit `45c5b5d` wypchnięty na origin** (był lokalny; SSH do GH wymaga naprawy — patrz §11)
+- [x] Gate danych: reseed gotowy i **wypchnięty** (commit `45c5b5d`, §4a) — do uruchomienia na prod w §7 (7d)
 - [ ] Ustalona **kolejność migracja vs merge** (patrz niżej)
 - [ ] Okno ~5–10 min (DDL + role + RLS; krótka możliwa niedostępność zapisów)
 - [ ] Brak równoległych deployów/migracji
@@ -111,4 +110,4 @@ pnpm tsx tools/k3-validate.ts          # oczekiwane: 15/15 ZIELONE, 0 NULL tenan
 - Rozważ utwardzenie po Becie: izolowana rola login nie-owner + `FORCE RLS` (dług z `0008`).
 
 ## 11. Znane sprawy proceduralne
-- **Commit reseedu `45c5b5d` (Leo) był lokalny, niewypchnięty** na 2026-05-27 — `git push` padał na `Permission denied (publickey)` (agent SSH zgubił klucz; wcześniej w sesji push działał). Przed migracją: napraw SSH (`ssh-add`) i wypchnij `45c5b5d` na `feat/k3-rls-multitenancy`, żeby reseed był w gałęzi wdrażanej na prod.
+- Commit reseedu `45c5b5d` (Leo) **wypchnięty** na `feat/k3-rls-multitenancy` 2026-05-27 (chwilowy blip SSH `Permission denied (publickey)` minął przy kolejnym push). Reseed jest w gałęzi wdrażanej na prod.
