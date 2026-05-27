@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { PASSPORT_SHARE_CONSENT_VERSION } from "@/lib/consent";
 import { PassportView } from "../passport-view";
 
 vi.mock("sonner", () => ({
@@ -133,7 +134,29 @@ describe("PassportView", () => {
 		expect(screen.queryByText("Wyłącz udostępnianie")).not.toBeInTheDocument();
 	});
 
-	it("B1: pierwsze udostępnienie wywołuje opt-in i kopiuje link po tokenie", async () => {
+	it("A1: 'Udostępnij publicznie' otwiera ekran zgody i NIE udostępnia od razu", async () => {
+		const mockFetch = vi.fn();
+		vi.stubGlobal("fetch", mockFetch);
+
+		render(<PassportView data={mockData} />);
+		fireEvent.click(screen.getByText("Udostępnij publicznie"));
+
+		// Ekran zgody wymienia wprost, co staje się publiczne i że link działa bez logowania.
+		expect(screen.getByText("Twój paszport stanie się publiczny")).toBeInTheDocument();
+		expect(screen.getByText(/bez logowania i bez Twojej wiedzy/)).toBeInTheDocument();
+		expect(screen.getByText(/Uczelnia, kierunek i semestr/)).toBeInTheDocument();
+		// Bez akceptacji nie ma żadnego zapisu na serwerze.
+		expect(mockFetch).not.toHaveBeenCalled();
+		vi.unstubAllGlobals();
+	});
+
+	it("A1: pokazuje zweryfikowane projekty na ekranie zgody tylko gdy istnieją", () => {
+		render(<PassportView data={mockData} />);
+		fireEvent.click(screen.getByText("Udostępnij publicznie"));
+		expect(screen.queryByText(/Zweryfikowane projekty: ocena/)).not.toBeInTheDocument();
+	});
+
+	it("B1: akceptacja zgody wywołuje opt-in i kopiuje link po tokenie", async () => {
 		const { toast } = await import("sonner");
 		const mockWriteText = vi.fn().mockResolvedValue(undefined);
 		Object.assign(navigator, { clipboard: { writeText: mockWriteText } });
@@ -144,9 +167,16 @@ describe("PassportView", () => {
 
 		render(<PassportView data={mockData} />);
 		fireEvent.click(screen.getByText("Udostępnij publicznie"));
+		fireEvent.click(screen.getByText("Rozumiem, udostępnij publicznie"));
 
 		await waitFor(() => {
-			expect(mockFetch).toHaveBeenCalledWith("/api/passport/share", { method: "POST" });
+			expect(mockFetch).toHaveBeenCalledWith(
+				"/api/passport/share",
+				expect.objectContaining({
+					method: "POST",
+					body: JSON.stringify({ consentVersion: PASSPORT_SHARE_CONSENT_VERSION }),
+				}),
+			);
 		});
 		await waitFor(() => {
 			expect(mockWriteText).toHaveBeenCalledWith(expect.stringContaining("/passport/tok-xyz"));
@@ -178,6 +208,7 @@ describe("PassportView", () => {
 
 		render(<PassportView data={mockData} />);
 		fireEvent.click(screen.getByText("Udostępnij publicznie"));
+		fireEvent.click(screen.getByText("Rozumiem, udostępnij publicznie"));
 
 		await waitFor(() => {
 			expect(toast.error).toHaveBeenCalledWith("Nie udało się udostępnić paszportu");
