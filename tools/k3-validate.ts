@@ -122,6 +122,12 @@ async function main() {
 		// 7. audit_log append-only
 		for (const op of ["UPDATE", "DELETE"] as const) {
 			await client.query("BEGIN");
+			// Wiersz-próbka, żeby trigger FOR EACH ROW miał na czym zadziałać — na pustym
+			// audit_log UPDATE/DELETE WHERE true nie odpala triggera → fałszywy FAIL.
+			// Rolowane razem z resztą (ROLLBACK), więc nie zostaje w bazie.
+			await client.query(
+				`INSERT INTO audit_log (actor_type, action) VALUES ('system', 'k3-validate-probe')`,
+			);
 			let blocked = false;
 			try {
 				if (op === "UPDATE") {

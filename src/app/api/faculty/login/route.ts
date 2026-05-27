@@ -37,6 +37,10 @@ function assertProductionPasswordStrength(): string | null {
 	// Każdy kampus musi mieć mocne hasło — sprawdzamy wszystkie skonfigurowane.
 	for (const slug of FACULTY_TENANT_SLUGS) {
 		const pw = process.env[facultyPasswordEnvVar(slug)] ?? "";
+		// Nieskonfigurowany kampus = brak logowania DO NIEGO (matchTenantSlug pomija puste).
+		// Nie blokujemy całego panelu — walidujemy tylko ustawione hasła, inaczej jeden
+		// pusty slug 500-uje login WSZYSTKICH kampusów.
+		if (pw.length === 0) continue;
 		if (pw.length < 16 || WEAK_DICTIONARY.includes(pw.toLowerCase())) {
 			return `${facultyPasswordEnvVar(slug)} too weak for production`;
 		}

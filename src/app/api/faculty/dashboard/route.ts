@@ -1,4 +1,4 @@
-import { and, count, desc, eq, sql } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 import { headers as nextHeaders } from "next/headers";
 import { NextResponse } from "next/server";
 import { generateFacultySuggestions } from "@/lib/ai/generate-faculty-suggestions";
@@ -97,24 +97,20 @@ export async function GET() {
 				.orderBy(desc(count()))
 				.limit(5);
 
-			// Get career goals for each missing competency
-			const topMissingWithGoals = await Promise.all(
-				topMissingRaw.map(async (missing) => {
-					const goalRows = await tx
-						.select({ careerGoal: students.careerGoal })
-						.from(gaps)
-						.innerJoin(students, eq(gaps.studentId, students.id))
-						.where(and(eq(gaps.competencyName, missing.name), eq(gaps.tenantId, tid)))
-						.groupBy(students.careerGoal);
-
-					return {
-						name: missing.name,
-						missingCount: missing.missingCount,
-						requiredByPercent: missing.avgMarketPct,
-						careerGoals: goalRows.map((r) => r.careerGoal),
-					};
-				}),
-			);
+			// Career goals per competency — z już pobranego gapData (grupuje gaps po
+			// competency+careerGoal w tym samym tenancie), zamiast N+1 zapytań per top-competency.
+			const goalsByComp = new Map<string, Set<string>>();
+			for (const row of gapData) {
+				const set = goalsByComp.get(row.competencyName) ?? new Set<string>();
+				set.add(row.careerGoal);
+				goalsByComp.set(row.competencyName, set);
+			}
+			const topMissingWithGoals = topMissingRaw.map((missing) => ({
+				name: missing.name,
+				missingCount: missing.missingCount,
+				requiredByPercent: missing.avgMarketPct,
+				careerGoals: [...(goalsByComp.get(missing.name) ?? [])],
+			}));
 
 			return { tooFewStudents: false as const, studentCount, heatmapData, topMissingWithGoals };
 		},
