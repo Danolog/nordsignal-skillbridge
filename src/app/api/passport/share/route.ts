@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth/server";
 import { PASSPORT_SHARE_CONSENT_VERSION } from "@/lib/consent";
 import { db } from "@/lib/db";
 import { passports, students } from "@/lib/db/schema";
+import { withTenantContext } from "@/lib/db/tenant-context";
 
 // B1/RODO: świadome włączenie/wyłączenie publicznego udostępniania paszportu.
 // Tylko właściciel; token niezgadywalny (256-bit base64url).
@@ -19,16 +20,15 @@ import { passports, students } from "@/lib/db/schema";
 // („wyłączyłem = link nie działa"). Audyt rotacji w `passport.share.disable`
 // z metadata.tokenRotated=true + skrótem hash poprzedniego tokenu (sam token
 // nigdy nie ląduje w audit_log).
+//
+// §8 #1 Phase 2 / issue #19g (2026-05-28): odczyt/zapis paszportu przez
+// withTenantContext({role: "student"}). Pre-fetch studentMeta owner-side.
 
-async function ownPassport(userId: string) {
-	const student = await db.query.students.findFirst({
+async function loadStudentMeta(userId: string) {
+	return db.query.students.findFirst({
 		where: eq(students.userId, userId),
+		columns: { id: true, tenantId: true },
 	});
-	if (!student) return null;
-	const passport = await db.query.passports.findFirst({
-		where: eq(passports.studentId, student.id),
-	});
-	return passport ?? null;
 }
 
 export async function POST(req: Request) {
@@ -46,67 +46,98 @@ export async function POST(req: Request) {
 		);
 	}
 
-	const passport = await ownPassport(session.user.id);
-	if (!passport) return NextResponse.json({ error: "Passport not found" }, { status: 404 });
+	const userId = session.user.id;
+	const studentMeta = await loadStudentMeta(userId);
+	if (!studentMeta) return NextResponse.json({ error: "Passport not found" }, { status: 404 });
 
-	const shareToken = passport.shareToken ?? randomBytes(32).toString("base64url");
-	await db
-		.update(passports)
-		.set({ publicEnabled: true, shareToken, updatedAt: new Date() })
-		.where(eq(passports.id, passport.id));
+	const shareToken = await withTenantContext(
+		{ userId, tenantId: studentMeta.tenantId, role: "student" },
+		async (tx) => {
+			const passport = await tx.query.passports.findFirst({
+				where: eq(passports.studentId, studentMeta.id),
+			});
+			if (!passport) return null;
+			const token = passport.shareToken ?? randomBytes(32).toString("base64url");
+			await tx
+				.update(passports)
+				.set({ publicEnabled: true, shareToken: token, updatedAt: new Date() })
+				.where(eq(passports.id, passport.id));
+			return { token, passportId: passport.id };
+		},
+	);
 
+	if (!shareToken) {
+		return NextResponse.json({ error: "Passport not found" }, { status: 404 });
+	}
+
+	// Audit log POZA tx — audit_log = server-only INSERT, RLS deny-all dla
+	// klienta, append-only trigger (0008/0010). Inny model dostępu, inna ścieżka.
 	const { ipAddress, userAgent } = auditContextFromRequest(req);
 	await recordAudit({
 		actorType: "student",
-		actorId: session.user.id,
+		actorId: userId,
 		action: "passport.share.enable",
 		targetType: "passports",
-		targetId: passport.id,
+		targetId: shareToken.passportId,
 		ipAddress,
 		userAgent,
 		metadata: { consentVersion: PASSPORT_SHARE_CONSENT_VERSION },
 	});
 
-	return NextResponse.json({ publicEnabled: true, shareToken });
+	return NextResponse.json({ publicEnabled: true, shareToken: shareToken.token });
 }
 
 export async function DELETE(req: Request) {
 	const session = await auth.api.getSession({ headers: await headers() });
 	if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-	const passport = await ownPassport(session.user.id);
-	if (!passport) return NextResponse.json({ error: "Passport not found" }, { status: 404 });
+	const userId = session.user.id;
+	const studentMeta = await loadStudentMeta(userId);
+	if (!studentMeta) return NextResponse.json({ error: "Passport not found" }, { status: 404 });
 
 	// §8 #5: wyłączamy publiczny dostęp I ROTUJEMY token (NULL). Wyciekły
 	// link przestaje być trwały. Re-enable wygeneruje nowy shareToken w POST.
-	// Zachowujemy hash poprzedniego tokenu w audycie dla traceability —
-	// surowy token nigdy nie ląduje w audit_log (K-SES vs K-INT).
-	const previousTokenHash = passport.shareToken
-		? createHash("sha256").update(passport.shareToken).digest("hex").slice(0, 16)
-		: null;
+	// Hash poprzedniego tokenu do audytu — surowy token NIGDY do audit_log.
+	const result = await withTenantContext(
+		{ userId, tenantId: studentMeta.tenantId, role: "student" },
+		async (tx) => {
+			const passport = await tx.query.passports.findFirst({
+				where: eq(passports.studentId, studentMeta.id),
+			});
+			if (!passport) return null;
+			const previousTokenHash = passport.shareToken
+				? createHash("sha256").update(passport.shareToken).digest("hex").slice(0, 16)
+				: null;
+			await tx
+				.update(passports)
+				.set({ publicEnabled: false, shareToken: null, updatedAt: new Date() })
+				.where(eq(passports.id, passport.id));
+			return { passportId: passport.id, previousTokenHash };
+		},
+	);
 
-	await db
-		.update(passports)
-		.set({ publicEnabled: false, shareToken: null, updatedAt: new Date() })
-		.where(eq(passports.id, passport.id));
+	if (!result) return NextResponse.json({ error: "Passport not found" }, { status: 404 });
 
 	const { ipAddress, userAgent } = auditContextFromRequest(req);
 	await recordAudit({
 		actorType: "student",
-		actorId: session.user.id,
+		actorId: userId,
 		action: "passport.share.disable",
 		targetType: "passports",
-		targetId: passport.id,
+		targetId: result.passportId,
 		ipAddress,
 		userAgent,
 		metadata: {
-			tokenRotated: previousTokenHash !== null,
+			tokenRotated: result.previousTokenHash !== null,
 			// Skrót (16 hex znaków sha256) — wystarczy do correlation w incident
 			// response („czy ten leaked link to był ten paszport?"), za krótki by
 			// odtworzyć token brute-forcem.
-			previousTokenHashPrefix: previousTokenHash,
+			previousTokenHashPrefix: result.previousTokenHash,
 		},
 	});
 
-	return NextResponse.json({ publicEnabled: false, tokenRotated: previousTokenHash !== null });
+	return NextResponse.json({
+		publicEnabled: false,
+		tokenRotated: result.previousTokenHash !== null,
+	});
 }
