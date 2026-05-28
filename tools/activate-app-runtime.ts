@@ -4,11 +4,11 @@ import { Pool } from "pg";
 
 config({ path: ".env.local" });
 
-const ownerUrl = process.env.DATABASE_URL;
-if (!ownerUrl) {
+if (!process.env.DATABASE_URL) {
 	console.error("DATABASE_URL not set");
 	process.exit(1);
 }
+const ownerUrl: string = process.env.DATABASE_URL;
 
 // Generuje hasło na żądanie LUB używa ustawionego (gdy ten skrypt
 // uruchamiany jest powtórnie z pre-istniejącym hasłem do regeneracji
