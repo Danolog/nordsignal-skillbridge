@@ -33,16 +33,23 @@ ALTER TABLE project_submissions  FORCE ROW LEVEL SECURITY;--> statement-breakpoi
 -- 2. owner_passthrough policy na każdej z 6 tabel. Pętla DO $$ … END $$ żeby
 -- nie duplikować boilerplate. DROP POLICY IF EXISTS = idempotencja (re-run
 -- migracji jako część regression / smoke nie wybucha).
+--
+-- Polityka idzie `TO <CURRENT_USER>` — w prod = `neondb_owner` (właściciel
+-- Neon free tier), w CI ephemeral = `test`, w dev lokalnym = co kto sobie
+-- skonfigurował. CREATE POLICY nie przyjmuje wyrażenia `TO CURRENT_USER`
+-- (wymaga literału roli), więc `format(... %I, current_user)` wstawia nazwę
+-- bieżącego ownera bezpiecznie z escapingiem.
 DO $$
 DECLARE
 	tbl text;
+	owner_name text := current_user;
 	tbls text[] := ARRAY['students','competencies','gaps','skill_maps','passports','project_submissions'];
 BEGIN
 	FOREACH tbl IN ARRAY tbls LOOP
 		EXECUTE format('DROP POLICY IF EXISTS owner_passthrough ON %I', tbl);
 		EXECUTE format(
-			'CREATE POLICY owner_passthrough ON %I FOR ALL TO neondb_owner USING (true) WITH CHECK (true)',
-			tbl
+			'CREATE POLICY owner_passthrough ON %I FOR ALL TO %I USING (true) WITH CHECK (true)',
+			tbl, owner_name
 		);
 	END LOOP;
 END $$;

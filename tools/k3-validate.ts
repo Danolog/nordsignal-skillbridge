@@ -213,15 +213,23 @@ async function main() {
 				`FORCE na ${forceTables.rowCount}/6`,
 			);
 
+			// Polityka idzie `TO <current_user>` (prod = neondb_owner, CI = test) —
+			// agnostyczny test sprawdza tylko nazwę + tablename + by `roles` zawierało
+			// jakąś rolę (nie pustą). Dokładne dopasowanie nazwy ownera by zaszkodziło
+			// w CI ephemeral.
 			const passthroughPolicies = await client.query(
-				`SELECT tablename FROM pg_policies
+				`SELECT tablename, roles FROM pg_policies
 				 WHERE tablename = ANY($1::text[]) AND policyname = 'owner_passthrough'`,
 				[TENANT_TABLES],
 			);
 			check(
 				"10b. owner_passthrough policy na 6 tabelach",
-				passthroughPolicies.rowCount === 6,
-				`policy na ${passthroughPolicies.rowCount}/6`,
+				passthroughPolicies.rowCount === 6 &&
+					passthroughPolicies.rows.every((r) => Array.isArray(r.roles) && r.roles.length > 0),
+				`policy na ${passthroughPolicies.rowCount}/6 (roles non-empty: ${
+					passthroughPolicies.rows.filter((r) => Array.isArray(r.roles) && r.roles.length > 0)
+						.length
+				}/6)`,
 			);
 
 			// Cross-role deny-default: SET LOCAL ROLE app_student BEZ
