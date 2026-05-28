@@ -13,6 +13,8 @@
  *   6. izolacja FACULTY: jako app_faculty widzi tylko swój tenant
  *   7. audit_log append-only: UPDATE/DELETE odrzucone
  *   8. audit_log TRUNCATE protection (§8 #4, migracja 0010): TRUNCATE odrzucone
+ *   9. app_runtime role (§8 #1 Phase 1, migracja 0011): istnieje, NOBYPASSRLS,
+ *      członek app_student + app_faculty
  *
  * Connection string NIE jest logowany. Wypisuje PASS/FAIL, kończy exit 1 przy błędzie.
  */
@@ -160,6 +162,34 @@ async function main() {
 			}
 			await client.query("ROLLBACK");
 			check("8. audit_log TRUNCATE odrzucone (statement trigger)", blocked);
+		}
+
+		// 9. app_runtime role (§8 #1 Phase 1, migracja 0011)
+		// - istnieje
+		// - NOBYPASSRLS (rolbypassrls = false)
+		// - członek app_student i app_faculty (przez pg_auth_members)
+		{
+			const role = await client.query(
+				`SELECT rolname, rolbypassrls FROM pg_roles WHERE rolname = 'app_runtime'`,
+			);
+			const exists = role.rowCount === 1;
+			check("9a. rola app_runtime istnieje", exists);
+			if (exists) {
+				check("9b. app_runtime NOBYPASSRLS", role.rows[0].rolbypassrls === false);
+			}
+			const memberships = await client.query(
+				`SELECT r.rolname AS group_role
+				   FROM pg_auth_members m
+				   JOIN pg_roles r ON m.roleid = r.oid
+				   JOIN pg_roles m_role ON m.member = m_role.oid
+				  WHERE m_role.rolname = 'app_runtime'
+				    AND r.rolname IN ('app_student', 'app_faculty')`,
+			);
+			check(
+				"9c. app_runtime członek app_student + app_faculty",
+				memberships.rowCount === 2,
+				`członek ${memberships.rowCount}/2 grup`,
+			);
 		}
 	} finally {
 		client.release();
