@@ -214,22 +214,25 @@ async function main() {
 			);
 
 			// Polityka idzie `TO <current_user>` (prod = neondb_owner, CI = test) —
-			// agnostyczny test sprawdza tylko nazwę + tablename + by `roles` zawierało
-			// jakąś rolę (nie pustą). Dokładne dopasowanie nazwy ownera by zaszkodziło
-			// w CI ephemeral.
+			// agnostyczny test sprawdza nazwę policy + tablename + by `roles` miało
+			// >= 1 rolę. Sprawdzenie WYKONANE W SQL (cardinality), bo node-postgres
+			// nie zawsze parsuje `name[]` na JS Array (zwraca string "{role}") —
+			// Array.isArray(r.roles) dawało false negative na prod (Neon) mimo
+			// poprawnego stanu policy. Server-side cardinality jest immune na parser
+			// quirks i zwraca prosty integer.
 			const passthroughPolicies = await client.query(
-				`SELECT tablename, roles FROM pg_policies
-				 WHERE tablename = ANY($1::text[]) AND policyname = 'owner_passthrough'`,
+				`SELECT tablename, cardinality(roles) AS role_count
+				   FROM pg_policies
+				  WHERE tablename = ANY($1::text[]) AND policyname = 'owner_passthrough'`,
 				[TENANT_TABLES],
 			);
+			const okPolicyCount = passthroughPolicies.rows.filter(
+				(r) => Number(r.role_count) >= 1,
+			).length;
 			check(
-				"10b. owner_passthrough policy na 6 tabelach",
-				passthroughPolicies.rowCount === 6 &&
-					passthroughPolicies.rows.every((r) => Array.isArray(r.roles) && r.roles.length > 0),
-				`policy na ${passthroughPolicies.rowCount}/6 (roles non-empty: ${
-					passthroughPolicies.rows.filter((r) => Array.isArray(r.roles) && r.roles.length > 0)
-						.length
-				}/6)`,
+				"10b. owner_passthrough policy na 6 tabelach (>=1 rola każda)",
+				passthroughPolicies.rowCount === 6 && okPolicyCount === 6,
+				`policy na ${passthroughPolicies.rowCount}/6 (>=1 rola: ${okPolicyCount}/6)`,
 			);
 
 			// Cross-role deny-default: SET LOCAL ROLE app_student BEZ
