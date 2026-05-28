@@ -106,8 +106,12 @@ export function PassportView({ data }: { data: PassportData }) {
 		try {
 			const res = await fetch("/api/passport/share", { method: "DELETE" });
 			if (!res.ok) throw new Error("disable failed");
+			// §8 #5: backend rotuje shareToken (NULL). Lokalny stan czyścimy,
+			// żeby UI nie pokazał starego linku po re-enable — POST wygeneruje
+			// nowy token i ustawimy go w `confirmShare`.
 			setPublicEnabled(false);
-			toast.success("Udostępnianie wyłączone — link nieaktywny");
+			setShareToken(null);
+			toast.success("Udostępnianie wyłączone — link unieważniony na stałe");
 		} catch {
 			toast.error("Nie udało się wyłączyć udostępniania");
 		}
@@ -155,7 +159,8 @@ export function PassportView({ data }: { data: PassportData }) {
 						<p>
 							Każdy, kto pozna ten link, zobaczy te dane —{" "}
 							<strong>bez logowania i bez Twojej wiedzy</strong>. Link możesz w każdej chwili
-							wyłączyć; dane przestaną być wtedy dostępne.
+							wyłączyć; <strong>wyłączenie unieważnia link na stałe</strong> — ponowne udostępnienie
+							wygeneruje nowy adres.
 						</p>
 					</div>
 
