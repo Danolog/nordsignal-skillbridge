@@ -201,6 +201,56 @@ describe("PassportView", () => {
 		vi.unstubAllGlobals();
 	});
 
+	it("§8 #5: wyłączenie czyści lokalny token (rotacja), kolejny share generuje nowy", async () => {
+		const { toast } = await import("sonner");
+		const mockWriteText = vi.fn().mockResolvedValue(undefined);
+		Object.assign(navigator, { clipboard: { writeText: mockWriteText } });
+		const mockFetch = vi
+			.fn()
+			// 1) DELETE -> ok, backend zerował token
+			.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({ publicEnabled: false, tokenRotated: true }),
+			})
+			// 2) POST -> nowy token "tok-NEW"
+			.mockResolvedValueOnce({ ok: true, json: async () => ({ shareToken: "tok-NEW" }) });
+		vi.stubGlobal("fetch", mockFetch);
+
+		render(<PassportView data={{ ...mockData, publicEnabled: true, shareToken: "tok-OLD" }} />);
+
+		// Wyłącz udostępnianie → toast „unieważniony na stałe"
+		fireEvent.click(screen.getByText("Wyłącz udostępnianie"));
+		await waitFor(() => {
+			expect(toast.success).toHaveBeenCalledWith(
+				"Udostępnianie wyłączone — link unieważniony na stałe",
+			);
+		});
+
+		// Po wyłączeniu lokalny shareToken jest wyczyszczony — kliknięcie
+		// „Udostępnij publicznie" wywołuje opt-in (a nie copy starego linku).
+		fireEvent.click(screen.getByText("Udostępnij publicznie"));
+		fireEvent.click(screen.getByText("Rozumiem, udostępnij publicznie"));
+
+		await waitFor(() => {
+			// Drugie wywołanie fetch = POST z aktualną wersją zgody
+			expect(mockFetch).toHaveBeenNthCalledWith(
+				2,
+				"/api/passport/share",
+				expect.objectContaining({
+					method: "POST",
+					body: JSON.stringify({ consentVersion: PASSPORT_SHARE_CONSENT_VERSION }),
+				}),
+			);
+		});
+		await waitFor(() => {
+			// Kopiowany link ma NOWY token, nie stary
+			expect(mockWriteText).toHaveBeenCalledWith(expect.stringContaining("/passport/tok-NEW"));
+			expect(mockWriteText).not.toHaveBeenCalledWith(expect.stringContaining("/passport/tok-OLD"));
+		});
+
+		vi.unstubAllGlobals();
+	});
+
 	it("B1: błąd opt-inu pokazuje toast błędu", async () => {
 		const { toast } = await import("sonner");
 		Object.assign(navigator, { clipboard: { writeText: vi.fn() } });
