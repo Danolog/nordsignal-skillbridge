@@ -12,6 +12,7 @@
  *   5. izolacja STUDENTA: jako app_student widzi tylko swoje
  *   6. izolacja FACULTY: jako app_faculty widzi tylko swój tenant
  *   7. audit_log append-only: UPDATE/DELETE odrzucone
+ *   8. audit_log TRUNCATE protection (§8 #4, migracja 0010): TRUNCATE odrzucone
  *
  * Connection string NIE jest logowany. Wypisuje PASS/FAIL, kończy exit 1 przy błędzie.
  */
@@ -140,6 +141,25 @@ async function main() {
 			}
 			await client.query("ROLLBACK");
 			check(`7. audit_log ${op} odrzucone (append-only)`, blocked);
+		}
+
+		// 8. audit_log TRUNCATE protection (§8 #4, migracja 0010)
+		// Trigger BEFORE TRUNCATE … FOR EACH STATEMENT odpala się też na pustej
+		// tabeli (w przeciwieństwie do FOR EACH ROW dla UPDATE/DELETE) — więc bez
+		// INSERT-próbki. Test wykonywany jako owner (najsilniejszy wektor, dziś
+		// runtime łączy się jako owner do czasu §8 #1) — app-role i tak nie ma
+		// TRUNCATE (REVOKE w 0010 jest defense-in-depth na wypadek przyszłego
+		// "GRANT ALL").
+		{
+			await client.query("BEGIN");
+			let blocked = false;
+			try {
+				await client.query(`TRUNCATE TABLE audit_log`);
+			} catch {
+				blocked = true;
+			}
+			await client.query("ROLLBACK");
+			check("8. audit_log TRUNCATE odrzucone (statement trigger)", blocked);
 		}
 	} finally {
 		client.release();
