@@ -64,7 +64,7 @@ jobs:
       - run: pnpm test:run
 
   integration:
-    name: integration (drizzle migrate na tymczasowej bazie)
+    name: integration (drizzle migrate + seed + k3-validate)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -90,9 +90,17 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Brama integracyjna Bety: wszystkie migracje Drizzle stosują się czysto
+      # 1. Brama integracyjna Bety: wszystkie migracje Drizzle stosują się czysto
       # na świeżej bazie. Złamana/niespójna migracja = czerwone CI.
       - run: pnpm db:migrate
+      # 2. §8 #1 Phase 2 / sub-issue #19i (rls-matrix.md): seed potrzebny do
+      # testów izolacji 5/6 (wymagają wierszy) + testów 10c FORCE deny-default
+      # (wymaga przynajmniej 1 wiersza, żeby SELECT WYKLUCZYŁ go pod app_student
+      # bez current_user_id).
+      - run: pnpm db:seed
+      # 3. tools/k3-validate.ts — testy 1..10/10 zielone = K3 RLS DoD spełnione
+      # (sekcja §7 rls-matrix.md). Exit code 1 przy jakimkolwiek FAIL.
+      - run: pnpm tsx tools/k3-validate.ts
 
   build:
     name: build (next build)
