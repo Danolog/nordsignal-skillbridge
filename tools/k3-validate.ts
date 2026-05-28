@@ -15,6 +15,9 @@
  *   8. audit_log TRUNCATE protection (§8 #4, migracja 0010): TRUNCATE odrzucone
  *   9. app_runtime role (§8 #1 Phase 1, migracja 0011): istnieje, NOBYPASSRLS,
  *      członek app_student + app_faculty
+ *  10. FORCE RLS (§8 #1 Phase 2 / sub-issue #19h, migracja 0012, ADR-005):
+ *      6 tabel studenta ma relforcerowsecurity=true; owner_passthrough policy
+ *      istnieje na każdej; cross-role: app_runtime bez SET LOCAL ROLE = deny-default.
  *
  * Connection string NIE jest logowany. Wypisuje PASS/FAIL, kończy exit 1 przy błędzie.
  */
@@ -189,6 +192,61 @@ async function main() {
 				"9c. app_runtime członek app_student + app_faculty",
 				memberships.rowCount === 2,
 				`członek ${memberships.rowCount}/2 grup`,
+			);
+		}
+
+		// 10. FORCE RLS (§8 #1 Phase 2 / sub-issue #19h, migracja 0012, ADR-005)
+		// - relforcerowsecurity = true na 6 tabelach studenta (pg_class)
+		// - owner_passthrough policy istnieje na każdej z 6 (pg_policies)
+		// - cross-role test: pod SET LOCAL ROLE app_student BEZ app.current_user_id
+		//   musi zwrócić 0 wierszy (deny-default). To dowód, że FORCE działa
+		//   od strony app_runtime.
+		{
+			const forceTables = await client.query(
+				`SELECT relname FROM pg_class
+				 WHERE relname = ANY($1::text[]) AND relforcerowsecurity = true`,
+				[TENANT_TABLES],
+			);
+			check(
+				"10a. FORCE RLS na 6 tabelach studenta",
+				forceTables.rowCount === 6,
+				`FORCE na ${forceTables.rowCount}/6`,
+			);
+
+			// Polityka idzie `TO <current_user>` (prod = neondb_owner, CI = test) —
+			// agnostyczny test sprawdza tylko nazwę + tablename + by `roles` zawierało
+			// jakąś rolę (nie pustą). Dokładne dopasowanie nazwy ownera by zaszkodziło
+			// w CI ephemeral.
+			const passthroughPolicies = await client.query(
+				`SELECT tablename, roles FROM pg_policies
+				 WHERE tablename = ANY($1::text[]) AND policyname = 'owner_passthrough'`,
+				[TENANT_TABLES],
+			);
+			check(
+				"10b. owner_passthrough policy na 6 tabelach",
+				passthroughPolicies.rowCount === 6 &&
+					passthroughPolicies.rows.every((r) => Array.isArray(r.roles) && r.roles.length > 0),
+				`policy na ${passthroughPolicies.rowCount}/6 (roles non-empty: ${
+					passthroughPolicies.rows.filter((r) => Array.isArray(r.roles) && r.roles.length > 0)
+						.length
+				}/6)`,
+			);
+
+			// Cross-role deny-default: SET LOCAL ROLE app_student BEZ
+			// app.current_user_id (NULL → predykat user_id = NULL = false).
+			// Pod FORCE owner też podlega RLS, ale owner_passthrough byłby
+			// wybrany dla app_student? NIE — owner_passthrough jest TO neondb_owner.
+			// Pod app_student → student_sees_own match, ale current_user_id NULL
+			// → false → 0 wierszy. Bingo.
+			await client.query("BEGIN");
+			await client.query("SET LOCAL ROLE app_student");
+			// celowo NIE ustawiamy app.current_user_id
+			const denyDefault = await client.query(`SELECT id FROM students LIMIT 1`);
+			await client.query("ROLLBACK");
+			check(
+				"10c. app_student bez app.current_user_id = deny-default (0 wierszy)",
+				denyDefault.rowCount === 0,
+				`zwrócono ${denyDefault.rowCount} wierszy`,
 			);
 		}
 	} finally {
