@@ -7,10 +7,20 @@ import { auditContextFromRequest, recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { projectSubmissions, projects, students } from "@/lib/db/schema";
+import { withTenantContext } from "@/lib/db/tenant-context";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
 
+/**
+ * §8 #1 Phase 2 / issue #19f (refactor sub-issue): odczyt/zapis
+ * projectSubmissions przez withTenantContext({role: "student"}).
+ * reviewSubmission (AI + cheat-detect) POZA tx. Audit log = owner db
+ * (audit_log nie ma RLS user-aware policy, server-only INSERT).
+ *
+ * Pre-fetch studentMeta + project (project = katalog publiczny, K-PUB) owner-side.
+ * Cache check + upsert submission wewnątrz withTenantContext.
+ */
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
 	const session = await auth.api.getSession({ headers: await headers() });
 	if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,16 +70,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 				.filter((u) => parseNotebookUrl(u) !== null || parseRepoUrl(u) !== null)
 		: [];
 
-	const student = await db.query.students.findFirst({
-		where: eq(students.userId, session.user.id),
-	});
-	if (!student) return NextResponse.json({ error: "Student not found" }, { status: 404 });
+	const userId = session.user.id;
 
+	const studentMeta = await db.query.students.findFirst({
+		where: eq(students.userId, userId),
+		columns: { id: true, tenantId: true },
+	});
+	if (!studentMeta) return NextResponse.json({ error: "Student not found" }, { status: 404 });
+
+	// projects = K-PUB (katalog, bez tenant-RLS) — owner-side query OK.
 	const project = await db.query.projects.findFirst({
 		where: eq(projects.id, projectId),
 	});
 	if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
+	// AI POZA tx — nie trzymamy połączenia przez LLM + cheat detection.
 	let review: Awaited<ReturnType<typeof reviewSubmission>>;
 	try {
 		review = await reviewSubmission(
@@ -94,13 +109,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 		status = "rejected";
 	}
 
-	const existing = await db.query.projectSubmissions.findFirst({
-		where: and(
-			eq(projectSubmissions.studentId, student.id),
-			eq(projectSubmissions.projectId, projectId),
-		),
-	});
-
 	const submissionData = {
 		repoUrl: repoUrlStr,
 		notebookUrl: notebookUrlStr,
@@ -110,34 +118,49 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 		status,
 	};
 
-	let submission: typeof projectSubmissions.$inferSelect;
-	if (existing) {
-		[submission] = await db
-			.update(projectSubmissions)
-			.set({
-				...submissionData,
-				aiReviewJson: { ...((existing.aiReviewJson as object) ?? {}), review },
-				updatedAt: new Date(),
-			})
-			.where(eq(projectSubmissions.id, existing.id))
-			.returning();
-	} else {
-		[submission] = await db
-			.insert(projectSubmissions)
-			.values({
-				studentId: student.id,
-				tenantId: student.tenantId,
-				projectId,
-				...submissionData,
-				aiReviewJson: { review },
-			})
-			.returning();
-	}
+	// Cache check + upsert przez RLS — student_sees_own ON project_submissions.
+	const submission = await withTenantContext(
+		{ userId, tenantId: studentMeta.tenantId, role: "student" },
+		async (tx) => {
+			const existing = await tx.query.projectSubmissions.findFirst({
+				where: and(
+					eq(projectSubmissions.studentId, studentMeta.id),
+					eq(projectSubmissions.projectId, projectId),
+				),
+			});
 
+			if (existing) {
+				const [updated] = await tx
+					.update(projectSubmissions)
+					.set({
+						...submissionData,
+						aiReviewJson: { ...((existing.aiReviewJson as object) ?? {}), review },
+						updatedAt: new Date(),
+					})
+					.where(eq(projectSubmissions.id, existing.id))
+					.returning();
+				return updated;
+			}
+			const [inserted] = await tx
+				.insert(projectSubmissions)
+				.values({
+					studentId: studentMeta.id,
+					tenantId: studentMeta.tenantId,
+					projectId,
+					...submissionData,
+					aiReviewJson: { review },
+				})
+				.returning();
+			return inserted;
+		},
+	);
+
+	// Audit log idzie przez owner db — audit_log ma deny-all RLS dla
+	// klienta, INSERT tylko server (jak dziś). Append-only chroni trigger.
 	if (status === "verified") {
 		await recordAudit({
 			actorType: "system",
-			actorId: student.id,
+			actorId: studentMeta.id,
 			action: "submission.verified",
 			targetType: "submission",
 			targetId: submission.id,
