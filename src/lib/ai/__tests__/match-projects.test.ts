@@ -39,6 +39,7 @@ const student = {
 	fieldOfStudy: "IT",
 	onboardingCompleted: true,
 	syllabusText: null,
+	careerHelperCompletedAt: null,
 	createdAt: new Date(),
 	updatedAt: new Date(),
 };
