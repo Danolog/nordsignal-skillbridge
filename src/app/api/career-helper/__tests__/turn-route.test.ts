@@ -23,6 +23,9 @@ const txState = {
 	},
 	historyRows: [] as { role: "ai" | "user"; content: string }[],
 	withTenantCalls: [] as { role: string }[],
+	// Wiersze wstawione w fazie zapisu (onFinish) — kontrakt tury otwierającej:
+	// TYLKO AI (otwarcie) vs para user+ai (normalna tura).
+	insertedRows: [] as { role: string; content: string }[][],
 };
 vi.mock("@/lib/db/tenant-context", () => ({
 	withTenantContext: vi.fn(async (ctx: { role: string }, fn: (tx: unknown) => Promise<unknown>) => {
@@ -36,7 +39,12 @@ vi.mock("@/lib/db/tenant-context", () => ({
 			});
 		const tx = {
 			select: () => ({ from: () => ({ where }) }),
-			insert: () => ({ values: async () => undefined }),
+			insert: () => ({
+				values: async (rows: { role: string; content: string }[]) => {
+					txState.insertedRows.push(rows);
+					return undefined;
+				},
+			}),
 			update: () => ({ set: () => ({ where: async () => undefined }) }),
 		};
 		return fn(tx);
@@ -79,15 +87,19 @@ beforeEach(() => {
 	};
 	txState.historyRows = [];
 	txState.withTenantCalls = [];
+	txState.insertedRows = [];
 	mockResolveStudent.mockResolvedValue({
 		ok: true,
 		userId: "user-1",
 		studentId: "student-1",
 		tenantId: "tenant-1",
 	});
-	mockRunTurn.mockReturnValue({
+	// Domyślny mock runTurn woła onFinish (await), żeby ćwiczyć realną logikę
+	// zapisu handlera (faza persist) — w tym kontrakt tury otwierającej.
+	mockRunTurn.mockImplementation((args: { onFinish?: (a: { text: string }) => unknown }) => ({
 		toUIMessageStreamResponse: () => new Response("stream", { status: 200 }),
-	});
+		__finish: args.onFinish?.({ text: "Pytanie Pomocnika?" }),
+	}));
 });
 
 describe("/turn — auth + izolacja tenanta", () => {
@@ -135,10 +147,60 @@ describe("/turn — stany sesji", () => {
 		expect(res.status).toBe(409);
 	});
 
-	it("400 gdy pusty userMessage", async () => {
+	it("400 gdy pusty userMessage W TRAKCIE rozmowy (history niepuste = to nie otwarcie)", async () => {
+		txState.session = { id: VALID_ID, status: "in_progress", turn: 1, answers: {} };
+		txState.historyRows = [{ role: "ai", content: "Pierwsze pytanie?" }];
 		const res = await POST(makeReq({ userMessage: "" }), { params });
 		expect(res.status).toBe(400);
 		expect(mockRunTurn).not.toHaveBeenCalled();
+	});
+});
+
+// --- B0: tura otwierająca (kontrakt Ethana §2) — test INTEGRACYJNY ---------
+// Ćwiczy PRAWDZIWY TurnSchema (Zod) + PRAWDZIWĄ logikę handlera (reguła
+// otwarcia + zapis tur). Mockujemy DOPIERO granicę LLM (runTurn), nie transport
+// frontu. To luka, przez którą bug B0 wyszedł na produkcję: poprzednie testy
+// nie ćwiczyły realnego kontraktu wejścia dla pustej wiadomości.
+describe("/turn — B0 tura otwierająca (history=[] + puste = Pomocnik pierwszy)", () => {
+	it("otwarcie: history=[] + userMessage puste → NIE 400, runTurn w trybie otwierającym", async () => {
+		// history pusta + turn=0 (domyślnie w beforeEach).
+		const res = await POST(makeReq({ userMessage: "" }), { params });
+		expect(res.status).toBe(200);
+		expect(mockRunTurn).toHaveBeenCalledOnce();
+		// runTurn dostał undefined (tryb otwierający), nie pusty string.
+		expect(mockRunTurn.mock.calls[0][0].userMessage).toBeUndefined();
+	});
+
+	it("otwarcie działa też gdy userMessage w ogóle pominięte (brak pola)", async () => {
+		const res = await POST(makeReq({}), { params });
+		expect(res.status).toBe(200);
+		expect(mockRunTurn.mock.calls[0][0].userMessage).toBeUndefined();
+	});
+
+	it("otwarcie ZAPISUJE tylko turę AI — żadnej pustej tury usera", async () => {
+		await POST(makeReq({ userMessage: "" }), { params });
+		// onFinish (await) wykonany w mocku runTurn → insert już zarejestrowany.
+		await mockRunTurn.mock.results[0].value.__finish;
+		expect(txState.insertedRows).toHaveLength(1);
+		const rows = txState.insertedRows[0];
+		expect(rows).toHaveLength(1);
+		expect(rows[0].role).toBe("ai");
+		expect(rows.some((r) => r.role === "user")).toBe(false);
+	});
+
+	it("normalna tura: userMessage niepuste → para user+ai", async () => {
+		txState.session = { id: VALID_ID, status: "in_progress", turn: 1, answers: {} };
+		txState.historyRows = [{ role: "ai", content: "Pierwsze pytanie?" }];
+		const res = await POST(makeReq({ userMessage: "Lubię analizować dane" }), { params });
+		expect(res.status).toBe(200);
+		expect(mockRunTurn.mock.calls[0][0].userMessage).toBe("Lubię analizować dane");
+		await mockRunTurn.mock.results[0].value.__finish;
+		expect(txState.insertedRows).toHaveLength(1);
+		const rows = txState.insertedRows[0];
+		expect(rows).toHaveLength(2);
+		expect(rows[0].role).toBe("user");
+		expect(rows[0].content).toBe("Lubię analizować dane");
+		expect(rows[1].role).toBe("ai");
 	});
 });
 

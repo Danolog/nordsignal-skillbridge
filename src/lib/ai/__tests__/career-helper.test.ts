@@ -1,10 +1,11 @@
-import { MockLanguageModelV3 } from "ai/test";
+import { convertArrayToReadableStream, MockLanguageModelV3 } from "ai/test";
 import { describe, expect, it } from "vitest";
 import {
 	detectCrisis,
 	generateSummary,
 	MAX_RESTARTS,
 	MAX_TURNS,
+	runTurn,
 	violatesVerdictGuardrail,
 } from "../career-helper";
 
@@ -111,6 +112,39 @@ describe("generateSummary — egzekucja HITL na /summary", () => {
 			judgeModel: objectModel({ verdict: "YES", reason: "ok" }),
 		});
 		expect(result.judged).toBe(false);
+	});
+});
+
+describe("runTurn — tryb otwierający (B0, Pomocnik odzywa się pierwszy)", () => {
+	function streamModel(text: string) {
+		return new MockLanguageModelV3({
+			doStream: async () => ({
+				stream: convertArrayToReadableStream([
+					{ type: "text-start", id: "0" },
+					{ type: "text-delta", id: "0", delta: text },
+					{ type: "text-end", id: "0" },
+					{
+						type: "finish",
+						finishReason: { unified: "stop", raw: "stop" },
+						usage: {
+							inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+							outputTokens: { total: 1, text: 1, reasoning: 0 },
+						},
+					},
+				]),
+			}),
+		});
+	}
+
+	it("brak userMessage (puste + history=[]) → strumień działa bez wiadomości usera", async () => {
+		const result = runTurn({
+			answers: { interests: "kod" },
+			history: [],
+			userMessage: undefined,
+			model: streamModel("Cześć! Co najbardziej lubisz robić na studiach?"),
+		});
+		const text = await result.text;
+		expect(text).toBe("Cześć! Co najbardziej lubisz robić na studiach?");
 	});
 });
 
