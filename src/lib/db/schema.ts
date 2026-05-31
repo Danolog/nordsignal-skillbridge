@@ -1,13 +1,17 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
 	boolean,
+	check,
 	index,
 	integer,
 	jsonb,
 	pgEnum,
 	pgTable,
+	real,
+	smallint,
 	text,
 	timestamp,
+	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
 
@@ -128,6 +132,9 @@ export const students = pgTable(
 		careerGoal: text("career_goal").notNull(),
 		syllabusText: text("syllabus_text"),
 		onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
+		// B0: znacznik domknięcia Pomocnika Wyboru Kariery (NULL = nieukończony).
+		// Gate dla Phase 2 (reset Pomocnika z dashboardu) — zerowy koszt teraz.
+		careerHelperCompletedAt: timestamp("career_helper_completed_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
@@ -313,6 +320,112 @@ export const projectSources = pgTable("project_sources", {
 	lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
 });
 
+// ============================================================================
+// B0 — Pomocnik Wyboru Kariery (Career Helper). Migracja 0013.
+//
+// Trzy nowe tabele danych studenta (tenant-owe): sesje, tury rozmowy, ścieżki.
+// Wszystkie z tenant_id denormalizowanym (RLS JOIN-free, jak reszta — ADR-003),
+// FORCE RLS + owner_passthrough (spójnie z 0012/ADR-005), grant tylko app_student.
+// app_faculty CELOWO bez żadnego grantu — to prywatne dane studenta, nie panel
+// wykładowcy (wzorzec jak project_reflections w decyzji schematu B3/B4/B5).
+//
+// Sekcja RLS NIE jest generowana przez drizzle-kit — dopisana ręcznie w
+// drizzle/0013_*.sql wzorem 0012.
+// ============================================================================
+
+export const careerHelperSessionStatusEnum = pgEnum("career_helper_session_status", [
+	"in_progress",
+	"completed",
+	"interrupted",
+	"restarted",
+]);
+
+export const careerHelperTurnRoleEnum = pgEnum("career_helper_turn_role", ["ai", "user"]);
+
+export const careerHelperSessions = pgTable(
+	"career_helper_sessions",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		status: careerHelperSessionStatusEnum("status").notNull().default("in_progress"),
+		// Numer tury liczony przez serwer (limit 9 w kodzie, nie w prompcie).
+		turn: smallint("turn").notNull().default(0),
+		// Ankieta q1..q4 — zachowywana przy restart (spec B0 §3.5 / §4.5).
+		answers: jsonb("answers").notNull(),
+		// Licznik restartów — cap aplikacyjny "max 2 restarty" (golden ADR-001 §4.1).
+		restartCount: smallint("restart_count").notNull().default(0),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_career_helper_sessions_student_id").on(table.studentId),
+		index("idx_career_helper_sessions_tenant_id").on(table.tenantId),
+		check("career_helper_sessions_turn_range", sql`${table.turn} BETWEEN 0 AND 9`),
+	],
+);
+
+export const careerHelperTurns = pgTable(
+	"career_helper_turns",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		sessionId: uuid("session_id")
+			.notNull()
+			.references(() => careerHelperSessions.id, { onDelete: "cascade" }),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		role: careerHelperTurnRoleEnum("role").notNull(),
+		content: text("content").notNull(),
+		turnIndex: smallint("turn_index").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_career_helper_turns_session_id").on(table.sessionId),
+		index("idx_career_helper_turns_student_id").on(table.studentId),
+		index("idx_career_helper_turns_tenant_id").on(table.tenantId),
+	],
+);
+
+export const studentCareerPaths = pgTable(
+	"student_career_paths",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		// Denormalizacja tenant_id (rozstrzygnięcie spec §8.3 przez Ethana) — szybkie RLS.
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		sessionId: uuid("session_id").references(() => careerHelperSessions.id, {
+			onDelete: "set null",
+		}),
+		label: text("label").notNull(),
+		why: text("why"),
+		// Zapis wewnętrzny / Phase 2 — endpoint NIE serializuje tego pola do frontu (HITL).
+		probability: real("probability"),
+		source: text("source").notNull().default("helper"),
+		isPrimary: boolean("is_primary").notNull().default(true),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_student_career_paths_student_id").on(table.studentId),
+		index("idx_student_career_paths_tenant_id").on(table.tenantId),
+		uniqueIndex("uq_student_career_paths_primary")
+			.on(table.studentId)
+			.where(sql`${table.isPrimary} = true`),
+		check("student_career_paths_source", sql`${table.source} IN ('helper')`),
+	],
+);
+
 // Faculty sessions — DB-backed, replaces static cookie value.
 // Cookie carries random 256-bit token; DB stores its SHA-256 hash for lookup.
 export const facultySessions = pgTable(
@@ -400,5 +513,38 @@ export const projectSubmissionsRelations = relations(projectSubmissions, ({ one 
 	project: one(projects, {
 		fields: [projectSubmissions.projectId],
 		references: [projects.id],
+	}),
+}));
+
+// B0 — Career Helper relations
+
+export const careerHelperSessionsRelations = relations(careerHelperSessions, ({ one, many }) => ({
+	student: one(students, {
+		fields: [careerHelperSessions.studentId],
+		references: [students.id],
+	}),
+	turns: many(careerHelperTurns),
+	paths: many(studentCareerPaths),
+}));
+
+export const careerHelperTurnsRelations = relations(careerHelperTurns, ({ one }) => ({
+	session: one(careerHelperSessions, {
+		fields: [careerHelperTurns.sessionId],
+		references: [careerHelperSessions.id],
+	}),
+	student: one(students, {
+		fields: [careerHelperTurns.studentId],
+		references: [students.id],
+	}),
+}));
+
+export const studentCareerPathsRelations = relations(studentCareerPaths, ({ one }) => ({
+	student: one(students, {
+		fields: [studentCareerPaths.studentId],
+		references: [students.id],
+	}),
+	session: one(careerHelperSessions, {
+		fields: [studentCareerPaths.sessionId],
+		references: [careerHelperSessions.id],
 	}),
 }));

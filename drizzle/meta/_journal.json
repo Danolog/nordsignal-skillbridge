@@ -92,6 +92,13 @@
       "when": 1780000200000,
       "tag": "0012_force_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1780249086555,
+      "tag": "0013_b0_career_helper",
+      "breakpoints": true
     }
   ]
 }
