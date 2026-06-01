@@ -194,6 +194,9 @@ export function ChatScreen({
 	}
 
 	// Render wiadomości z UIMessage.parts (v6).
+	// B0 — tura otwierająca: front wysyła sendMessage({ text: "" }) jako wyzwalacz,
+	// więc w `messages` pojawia się PUSTA wiadomość usera. NIE wolno renderować jej
+	// jako pustego dymka — filtrujemy puste tury usera (AI zostaje zawsze: typing/stream).
 	const rendered = messages
 		.map((m) => ({
 			role: m.role === "assistant" ? ("ai" as const) : ("user" as const),
@@ -202,7 +205,7 @@ export function ChatScreen({
 				.map((p) => ("text" in p ? p.text : ""))
 				.join(""),
 		}))
-		.filter((m) => m.content.length > 0 || m.role === "ai");
+		.filter((m) => m.role === "ai" || m.content.trim().length > 0);
 
 	if (summaryPending) {
 		return (

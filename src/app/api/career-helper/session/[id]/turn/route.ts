@@ -11,7 +11,10 @@ import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limi
 export const maxDuration = 60;
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
-const TurnSchema = z.object({ userMessage: z.string().min(1).max(USER_MESSAGE_MAX_LEN) });
+// userMessage opcjonalne: puste/brak = KANDYDAT na turę otwierającą (B0 —
+// Pomocnik odzywa się pierwszy). Czy faktycznie wolno, rozstrzyga handler po
+// wczytaniu historii (puste dozwolone TYLKO przy history.length === 0).
+const TurnSchema = z.object({ userMessage: z.string().max(USER_MESSAGE_MAX_LEN).optional() });
 
 /**
  * POST /api/career-helper/session/[id]/turn — tura rozmowy (STREAMING, Sonnet).
@@ -52,11 +55,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 			{ status: 400 },
 		);
 	}
-	const { userMessage } = parsed.data;
+	const userMessage = parsed.data.userMessage ?? "";
+	const isEmptyMessage = userMessage.trim().length === 0;
 	const { userId, studentId, tenantId } = studentAuth;
 
-	// Filtr kryzysowy PRZED modelem i PRZED jakimkolwiek I/O do LLM.
-	if (detectCrisis(userMessage)) {
+	// Filtr kryzysowy PRZED modelem i PRZED jakimkolwiek I/O do LLM. Na pustym
+	// wejściu (kandydat na turę otwierającą) nie ma czego skanować — pomijamy.
+	if (!isEmptyMessage && detectCrisis(userMessage)) {
 		return NextResponse.json({ crisis: true }, { status: 200 });
 	}
 
@@ -122,33 +127,58 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
 	const { answers, history, nextTurn } = prep;
 
+	// Reguła tury otwierającej (decyzja kontraktu Ethana §2):
+	//  - history pusta + wiadomość pusta  → tura OTWIERAJĄCA: zapisujemy TYLKO
+	//    turę AI (Pomocnik odzywa się pierwszy, brak pustej tury usera).
+	//  - history NIEpusta + wiadomość pusta → 400: realna odpowiedź w trakcie
+	//    rozmowy musi być niepusta (to nie jest otwarcie).
+	//  - wiadomość niepusta → para user+ai (jak dotąd).
+	const isOpeningTurn = isEmptyMessage && history.length === 0;
+	if (isEmptyMessage && !isOpeningTurn) {
+		return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+	}
+
 	// (2) Strumień LLM POZA transakcją. (3) Zapis tury w onFinish — OSOBNY
 	//     withTenantContext (transakcja tenanta nie wisi przez czas streamingu).
 	const result = runTurn({
 		answers,
 		history,
-		userMessage,
+		// Puste = tryb otwierający w runTurn (prompt z samej ankiety).
+		userMessage: isOpeningTurn ? undefined : userMessage,
 		onFinish: async ({ text }) => {
 			try {
 				await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {
-					await tx.insert(careerHelperTurns).values([
-						{
-							sessionId: params.data.id,
-							studentId,
-							tenantId,
-							role: "user",
-							content: userMessage,
-							turnIndex: nextTurn,
-						},
-						{
-							sessionId: params.data.id,
-							studentId,
-							tenantId,
-							role: "ai",
-							content: text,
-							turnIndex: nextTurn,
-						},
-					]);
+					// Tura otwierająca: NIE wstawiamy pustej tury usera — tylko AI.
+					const rows = isOpeningTurn
+						? [
+								{
+									sessionId: params.data.id,
+									studentId,
+									tenantId,
+									role: "ai" as const,
+									content: text,
+									turnIndex: nextTurn,
+								},
+							]
+						: [
+								{
+									sessionId: params.data.id,
+									studentId,
+									tenantId,
+									role: "user" as const,
+									content: userMessage,
+									turnIndex: nextTurn,
+								},
+								{
+									sessionId: params.data.id,
+									studentId,
+									tenantId,
+									role: "ai" as const,
+									content: text,
+									turnIndex: nextTurn,
+								},
+							];
+					await tx.insert(careerHelperTurns).values(rows);
 					await tx
 						.update(careerHelperSessions)
 						.set({ turn: nextTurn, updatedAt: new Date() })
