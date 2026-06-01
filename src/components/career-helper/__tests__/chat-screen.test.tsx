@@ -70,6 +70,23 @@ describe("ChatScreen", () => {
 		await waitFor(() => expect(screen.getByText(/Tura 1 z 9/)).toBeInTheDocument());
 	});
 
+	// Nagłówek przyklejony (zgłoszenie Darka): tytuł, podtytuł i licznik tury żyją
+	// w elemencie <header> ze sticky/bg/z-index, żeby zostały widoczne przy
+	// przewijaniu listy wiadomości. jsdom nie liczy layoutu — weryfikujemy obecność
+	// klas sticky na nagłówku zawierającym licznik, nie realne piksele.
+	it("nagłówek z licznikiem tur jest przyklejony (sticky) u góry panelu", async () => {
+		stubSession({ messages: [aiPlain("Cześć!")], turn: 1, status: "in_progress" });
+		mockChat.messages = [aiMsg("Cześć! O czym chcesz dziś pogadać?")];
+		render(<ChatScreen sessionId="s1" onShowSummary={vi.fn()} onRestart={vi.fn()} />);
+		const counter = await screen.findByText(/Tura 1 z 9/);
+		const header = counter.closest("header");
+		expect(header).not.toBeNull();
+		// Licznik (i z nim tytuł HITL) siedzi w nagłówku oznaczonym jako sticky.
+		expect(header?.className).toContain("sticky");
+		expect(header?.className).toContain("top-0");
+		expect(header).toContainElement(screen.getByText(/AI nie wybiera za Ciebie zawodu/));
+	});
+
 	it("stan streaming: input zablokowany (placeholder „Pomocnik pisze”)", () => {
 		stubSession({ messages: [], turn: 1, status: "in_progress" });
 		mockChat.status = "streaming";

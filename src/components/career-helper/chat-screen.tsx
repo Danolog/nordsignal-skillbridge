@@ -271,8 +271,15 @@ export function ChatScreen({
 	}
 
 	return (
-		<div className="flex min-h-[calc(100vh-72px)] flex-col">
-			<header className="border-b px-8 py-4">
+		// Wysokość panelu spięta do okna (h-, nie min-h-): kolumna nie rośnie poza
+		// ekran, więc to lista wiadomości (flex-1 overflow-y-auto niżej) jest
+		// kontenerem scrolla — nie cała strona. Dzięki temu sticky nagłówek trzyma
+		// się góry panelu, a auto-scroll z PR #53 dojeżdża po właściwym elemencie.
+		<div className="flex h-[calc(100vh-72px)] flex-col">
+			{/* Nagłówek (tytuł + podtytuł + licznik tury) przyklejony u góry panelu —
+			    jak zamrożony górny wiersz: nieprzewijalny, z tłem bg-background i z-10,
+			    żeby wiadomości nie prześwitywały pod spodem przy przewijaniu listy. */}
+			<header className="sticky top-0 z-10 border-b bg-background px-8 py-4">
 				<div className="mx-auto flex max-w-[720px] items-start justify-between gap-4">
 					<div className="flex flex-col gap-1">
 						<h1 className="text-2xl font-semibold text-foreground">{COPY.chat.title}</h1>
