@@ -1,7 +1,8 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import { generateObject, type LanguageModel, streamText } from "ai";
+import { generateObject, type LanguageModel, NoObjectGeneratedError, streamText } from "ai";
 import { z } from "zod";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { logError } from "@/lib/log";
 
 /**
  * B0 — Pomocnik Wyboru Kariery. Warstwa AI (ADR-004 + golden-adr.md §4).
@@ -177,17 +178,40 @@ Odpowiedz jedną wiadomością Pomocnika — pytanie pogłębiające albo krótk
 
 // --- Podsumowanie (/summary) — blokująco, Opus + sędzia -----------------------
 
+// Limity DŁUGOŚCI pól — używane też w prompcie (Opus dostaje je wprost).
+// KLUCZOWE: w schemacie egzekwujemy je przez ŁAGODNE PRZYCINANIE (.transform),
+// nie przez twardy .max(). Twardy .max() = każde przekroczenie o 1 znak →
+// walidacja Zod nie przechodzi → generateObject rzuca NoObjectGeneratedError →
+// 500. To była połowa kapryśności na prod: Opus czasem pisze „why" na 820
+// znaków zamiast 800 i CAŁE podsumowanie pada, choć treść jest poprawna.
+// Przycinamy do limitu zamiast odrzucać — kontrakt produktowy (1–3 ścieżki, bez
+// procentów/rankingu) trzyma typ SummaryResult, nie te bound'y.
+const SUMMARY_TEXT_MAX = 2000;
+const PATH_LABEL_MAX = 120;
+const PATH_WHY_MAX = 800;
+const MAX_PATHS = 3;
+
+function trimmed(max: number) {
+	return z
+		.string()
+		.min(1)
+		.transform((s) => (s.length > max ? s.slice(0, max).trimEnd() : s));
+}
+
 export const CareerSummarySchema = z.object({
-	summaryText: z.string().min(1).max(2000),
+	summaryText: trimmed(SUMMARY_TEXT_MAX),
 	careerPaths: z
 		.array(
 			z.object({
-				label: z.string().min(1).max(120),
-				why: z.string().min(1).max(800),
+				label: trimmed(PATH_LABEL_MAX),
+				why: trimmed(PATH_WHY_MAX),
 			}),
 		)
 		.min(1)
-		.max(3),
+		// Tolerujemy >3 ścieżki (Opus bywa nadgorliwy) — bierzemy pierwsze 3
+		// zamiast odrzucać cały output. Dolny limit (≥1) zostaje twardy: zero
+		// ścieżek to realny brak treści, nie nadmiar do przycięcia.
+		.transform((paths) => paths.slice(0, MAX_PATHS)),
 });
 
 export type CareerSummary = z.infer<typeof CareerSummarySchema>;
@@ -230,17 +254,71 @@ const JudgeSchema = z.object({
 	reason: z.string().max(500),
 });
 
+// --- Utwardzenie generateObject: retry na NoObjectGeneratedError -------------
+
+// Ile razy łącznie próbujemy generateObject zanim odpuścimy (1 + ponowienia).
+// Świadomie 2 (nie 3): /summary woła generator do 2× (pętla sędziego) i sędziego
+// do 2×. Przy maxDuration=60 musimy zostawić budżet — worst case to 2 iteracje ×
+// (2 próby gen + 2 próby sędzia) = 8 wywołań Opusa. 2 próby zamykają większość
+// kapryśności (ten sam prompt rzadko pada 2× z rzędu); 3. próba kupowała mało
+// jakości za realne ryzyko timeoutu. Stała, łatwa do podbicia jeśli ruch pokaże inaczej.
+const GENERATE_OBJECT_ATTEMPTS = 2;
+/** Backoff (ms) między próbami — krótki, żeby nie zjadać budżetu maxDuration=60. */
+const GENERATE_OBJECT_BACKOFF_MS = 200;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * Opakowuje generateObject jawnym retry na AI_NoObjectGeneratedError.
+ *
+ * WAŻNE: wbudowane `maxRetries` AI SDK NIE ponawia NoObjectGenerated (to nie
+ * błąd sieci/5xx — to „model zwrócił coś, co nie pasuje do schematu"). Ten błąd
+ * jest KAPRYŚNY: ten sam prompt raz przechodzi, raz nie (Opus niedeterministyczny).
+ * Większość niezgodności znika przy zwykłym ponowieniu — stąd jawny try/catch.
+ *
+ * Łapiemy WYŁĄCZNIE NoObjectGeneratedError. Inne błędy (404 zły model, 401 zły
+ * klucz, 429 rate limit, timeout) NIE są kapryśne — ponawianie ich tylko pali
+ * czas/budżet, więc rzucamy je natychmiast w górę (route zaloguje + zwróci 500,
+ * front pokaże stan „spróbuj ponownie").
+ *
+ * `scope` trafia do logu przy każdej nieudanej próbie — widać w logach Vercel,
+ * ile razy retry ratował sytuację (sygnał do monitoringu, nie do studenta).
+ */
+async function generateObjectWithRetry<T>(
+	scope: string,
+	call: () => Promise<{ object: T }>,
+): Promise<{ object: T }> {
+	let lastErr: unknown;
+	for (let attempt = 1; attempt <= GENERATE_OBJECT_ATTEMPTS; attempt++) {
+		try {
+			return await call();
+		} catch (err) {
+			if (!NoObjectGeneratedError.isInstance(err)) throw err;
+			lastErr = err;
+			// Logujemy KAŻDĄ nieudaną próbę (PII-safe: logError bierze tylko name+message).
+			logError(`${scope}.no-object-retry`, err, { attempt, of: GENERATE_OBJECT_ATTEMPTS });
+			if (attempt < GENERATE_OBJECT_ATTEMPTS) await sleep(GENERATE_OBJECT_BACKOFF_MS * attempt);
+		}
+	}
+	// Wyczerpaliśmy próby — rzucamy ostatni NoObjectGeneratedError. generateSummary
+	// łapie go wyżej i zamienia na łagodny SummaryResult (nie surowy wyjątek).
+	throw lastErr;
+}
+
 async function judgeSummary(summary: CareerSummary, model: LanguageModel): Promise<boolean> {
 	// Guardrail deterministyczny PRZED sędzią — tani, zamyka oczywiste wzorce.
 	const blob = `${summary.summaryText}\n${summary.careerPaths.map((p) => `${p.label} ${p.why}`).join("\n")}`;
 	if (violatesVerdictGuardrail(blob)) return false;
 
-	const { object } = await generateObject({
-		model,
-		schema: JudgeSchema,
-		system: JUDGE_SYSTEM_PROMPT,
-		prompt: `<user_input untrusted="true">${sanitizeForPrompt(blob, 4000)}</user_input>`,
-	});
+	const { object } = await generateObjectWithRetry("career-helper.summary.judge", () =>
+		generateObject({
+			model,
+			schema: JudgeSchema,
+			maxOutputTokens: 200,
+			system: JUDGE_SYSTEM_PROMPT,
+			prompt: `<user_input untrusted="true">${sanitizeForPrompt(blob, 4000)}</user_input>`,
+		}),
+	);
 	return object.verdict === "YES";
 }
 
@@ -271,32 +349,60 @@ export async function generateSummary(args: GenerateSummaryArgs): Promise<Summar
 		.join("\n");
 
 	let last: CareerSummary | null = null;
-	// Dwie próby (golden-adr §4.3 — regeneracja raz przy odmowie sędziego).
-	for (let attempt = 0; attempt < 2; attempt++) {
-		const { object } = await generateObject({
-			model: summaryModel,
-			schema: CareerSummarySchema,
-			system: SUMMARY_SYSTEM_PROMPT,
-			prompt: `<user_input untrusted="true">
+	try {
+		// Dwie próby (golden-adr §4.3 — regeneracja raz przy odmowie sędziego).
+		// Wewnątrz każdej, generateObjectWithRetry dokłada własne ponowienia na
+		// kapryśny NoObjectGeneratedError (osobny wymiar: schemat ≠ odmowa sędziego).
+		for (let attempt = 0; attempt < 2; attempt++) {
+			const { object } = await generateObjectWithRetry("career-helper.summary.generate", () =>
+				generateObject({
+					model: summaryModel,
+					schema: CareerSummarySchema,
+					// Cap długości wyjścia: dół-of-thumb summaryText(2000) + 3×(label 120
+					// + why 800) + narzut JSON ≈ 3.5 tys. znaków. Bez tego limitu AI SDK
+					// brał default, przy którym Opus bywał UCINANY w połowie JSON →
+					// niedomknięty obiekt → NoObjectGeneratedError. 4096 tokenów = z zapasem.
+					maxOutputTokens: 4096,
+					system: SUMMARY_SYSTEM_PROMPT,
+					prompt: `<user_input untrusted="true">
 Ankieta (JSON): ${safeAnswers}
 
 Rozmowa:
 ${transcript}
 </user_input>
 
-Zwróć podsumowanie: summaryText (2–3 zdania) + 1–3 obszary (label + why jako opis powiązania).`,
-		});
-		last = object;
-		const ok = await judgeSummary(object, judgeModel);
-		if (ok) {
-			return {
-				judged: true,
-				judgedFor: "R2",
-				summaryText: object.summaryText,
-				// Serializacja BEZ probability — tylko label + why (guardrail).
-				careerPaths: object.careerPaths.map((p) => ({ label: p.label, why: p.why })),
-			};
+Zwróć podsumowanie jako obiekt:
+- summaryText: 2–3 zdania (maks. ${SUMMARY_TEXT_MAX} znaków), własnymi słowami studenta, bez werdyktu.
+- careerPaths: DOKŁADNIE 1–3 obszary. Każdy: label (krótka nazwa obszaru, maks. ${PATH_LABEL_MAX} znaków) + why (opis powiązania z ankietą/rozmową, maks. ${PATH_WHY_MAX} znaków).
+Trzymaj się limitów długości i liczby obszarów (najwyżej ${MAX_PATHS}). Bez procentów, rankingu i pól spoza schematu.`,
+				}),
+			);
+			last = object;
+			const ok = await judgeSummary(object, judgeModel);
+			if (ok) {
+				return {
+					judged: true,
+					judgedFor: "R2",
+					summaryText: object.summaryText,
+					// Serializacja BEZ probability — tylko label + why (guardrail).
+					careerPaths: object.careerPaths.map((p) => ({ label: p.label, why: p.why })),
+				};
+			}
 		}
+	} catch (err) {
+		// Retry generateObject wyczerpany (trwały NoObjectGeneratedError) ALBO inny
+		// błąd modelu. Zamiast pozwolić, by wyjątek wyleciał do route jako surowy
+		// 500, zwracamy ŁAGODNY stan: summary_error widziany przez front (puste
+		// careerPaths → ekran „nie udało się, spróbuj ponownie" z afordancją ponów).
+		// Logujemy PII-safe; student nigdy nie widzi stack trace ani 500. Osobny tag
+		// (.exhausted) odróżnia ten przypadek w logach od catcha w route (.generate).
+		logError("career-helper.summary.generate.exhausted", err, {});
+		return {
+			judged: false,
+			judgedFor: "warstwa4_failed",
+			summaryText: null,
+			careerPaths: [],
+		};
 	}
 
 	// Sędzia odmówił 2× → fallback do człowieka. Same obszary bez streszczenia.
