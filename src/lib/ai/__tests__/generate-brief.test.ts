@@ -100,6 +100,8 @@ describe("generateProjectBrief", () => {
 				name: "Python",
 				status: "acquired",
 				marketPercentage: 78,
+				selfAssessment: null,
+				verifiedByMethod: "self",
 				createdAt: new Date(),
 			},
 		]);
@@ -124,6 +126,8 @@ describe("generateProjectBrief", () => {
 				name: "Python",
 				status: "acquired",
 				marketPercentage: 78,
+				selfAssessment: null,
+				verifiedByMethod: "self",
 				createdAt: new Date(),
 			},
 			{
@@ -133,6 +137,8 @@ describe("generateProjectBrief", () => {
 				name: "Pandas",
 				status: "acquired",
 				marketPercentage: 55,
+				selfAssessment: null,
+				verifiedByMethod: "self",
 				createdAt: new Date(),
 			},
 		]);

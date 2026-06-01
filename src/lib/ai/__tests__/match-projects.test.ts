@@ -68,6 +68,8 @@ beforeEach(() => {
 			name: "Python",
 			status: "acquired",
 			marketPercentage: 78,
+			selfAssessment: null,
+			verifiedByMethod: "self",
 			createdAt: new Date(),
 		},
 		{
@@ -77,6 +79,8 @@ beforeEach(() => {
 			name: "SQL",
 			status: "acquired",
 			marketPercentage: 89,
+			selfAssessment: null,
+			verifiedByMethod: "self",
 			createdAt: new Date(),
 		},
 	]);
