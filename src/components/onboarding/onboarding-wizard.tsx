@@ -7,12 +7,25 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { type CompetencyItem, createCompetencyItem, StepCompetencies } from "./step-competencies";
 import { type ProfileData, StepProfile } from "./step-profile";
+import { StepSelfAssessment } from "./step-self-assessment";
 import { StepSyllabus } from "./step-syllabus";
 
+/**
+ * Wizard onboardingu: 5 kroków (spec B4 §1 + §3.3).
+ * Krok 1–3: Profil / Sylabus / Kompetencje — zbieranie danych i zapis profilu.
+ * Krok 4: Samoocena (StepSelfAssessment, B4) — ocena kompetencji po ich zapisie.
+ * Krok 5: Wnioski — przekierowanie do dashboardu (brak osobnego ekranu w Becie).
+ *
+ * Spec: docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §1/§3
+ * Krok 4 wchodzi po handleSubmit (krok 3) — kompetencje muszą być w bazie
+ * zanim GET /api/self-assessment je pobierze.
+ */
 const STEPS = [
 	{ label: "Profil", num: 1 },
 	{ label: "Sylabus", num: 2 },
 	{ label: "Kompetencje", num: 3 },
+	{ label: "Samoocena", num: 4 },
+	{ label: "Wnioski", num: 5 },
 ];
 
 interface OnboardingWizardProps {
@@ -113,11 +126,16 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 				toast.warning(
 					"Profil zapisany, ale generacja Skill Map nie powiodła się. Spróbuj ponownie ze strony Skill Map.",
 				);
-				router.push("/skill-map");
+				// Mimo błędu generacji Skill Map przechodzimy do samooceny (krok 4)
+				// — kompetencje są zapisane, samoocena może działać.
+				setStep(4);
 			} else {
 				toast.success("Paszport Kompetencji utworzony!");
-				router.push("/dashboard");
+				// Przejście do kroku 4 — Samoocena (B4, spec §1/§3).
+				// Kompetencje są już w bazie — GET /api/self-assessment może je pobrać.
+				setStep(4);
 			}
+			setSubmitting(false);
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Nie udało się zapisać danych.");
 			setSubmitting(false);
@@ -146,11 +164,11 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 			{/* Progress bar */}
 			<div className="mb-10 w-full max-w-[560px]">
 				<div className="relative mb-3 flex items-center justify-between">
-					{/* Line */}
+					{/* Line — 5 kroków, progres = (step-1)/(5-1) */}
 					<div className="absolute left-6 right-6 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-muted">
 						<div
 							className="ob-progress-fill h-full rounded-full transition-all duration-500"
-							style={{ width: step === 1 ? "0%" : step === 2 ? "50%" : "100%" }}
+							style={{ width: `${((step - 1) / 4) * 100}%` }}
 						/>
 					</div>
 					{/* Dots */}
@@ -262,12 +280,44 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 								) : (
 									<>
 										<Check className="h-4 w-4" />
-										Zatwierdź i utwórz Paszport
+										Zatwierdź i przejdź dalej
 									</>
 								)}
 							</Button>
 						</div>
 					</>
+				)}
+
+				{/* Step 4 — Samoocena (B4, spec §3).
+				    StepSelfAssessment zarządza własnym ładowaniem i autosave (GET/PATCH).
+				    onAdvance: advance 4→5 powiódł się → krok 5 (Wnioski).
+				    onSkip: student chce ocenić później → krok 5 (Wnioski). */}
+				{step === 4 && (
+					<StepSelfAssessment onAdvance={() => setStep(5)} onSkip={() => setStep(5)} />
+				)}
+
+				{/* Step 5 — Wnioski (OUT Beta: brak osobnego ekranu).
+				    Spec §3.4 S8: przejście do kroku 5 onboardingu (Wnioski).
+				    W Becie krok 5 = bezpośredni redirect do dashboardu.
+				    TODO: gdy spec §B5 "Moja droga" zostanie wdrożony, krok 5 zamieni się
+				    w pełny ekran Wniosków (Sophia/Jack w następnym sprincie). */}
+				{step === 5 && (
+					<div className="flex flex-col items-center gap-6 py-4 text-center">
+						<div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
+							<Check className="h-8 w-8 text-emerald-500" />
+						</div>
+						<div className="max-w-sm">
+							<h2 className="font-heading text-2xl font-extrabold mb-2">Profil gotowy!</h2>
+							<p className="text-sm text-muted-foreground">
+								Twój Paszport Kompetencji jest gotowy. Możesz teraz przeglądać projekty i rozwijać
+								swoje kompetencje.
+							</p>
+						</div>
+						<Button onClick={() => router.push("/dashboard")} className="ob-btn-primary gap-2">
+							Przejdź do dashboardu
+							<ChevronRight className="h-4 w-4" />
+						</Button>
+					</div>
 				)}
 			</div>
 		</div>

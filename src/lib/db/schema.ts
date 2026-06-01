@@ -157,11 +157,28 @@ export const competencies = pgTable(
 		name: text("name").notNull(),
 		status: competencyStatusEnum("status").notNull().default("acquired"),
 		marketPercentage: integer("market_percentage"),
+		// B4 — Samoocena kompetencji (migracja 0015).
+		// selfAssessment: NULL = nieocenione; 1–4 = poziom deklarowany przez studenta.
+		// Mapowanie poziom→status przy zapisie (decyzja Darka 2026-06-01):
+		//   1 → 'missing', 2 → 'in_progress', 3 → 'acquired', 4 → 'acquired', NULL → 'missing'
+		// app_faculty NIE widzi tej kolumny (izolacja R1, migracja 0015 część 2).
+		selfAssessment: smallint("self_assessment"),
+		// verifiedByMethod: w Becie zawsze 'self'; non-breaking pod silnik testów (Phase 3+, OUT).
+		// DEFAULT 'self' — backfill bezpieczny dla istniejących wierszy (non-breaking ALTER).
+		// app_faculty NIE widzi tej kolumny (deny-by-default, jak selfAssessment).
+		verifiedByMethod: text("verified_by_method").notNull().default("self"),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 	},
 	(table) => [
 		index("idx_competencies_student_id").on(table.studentId),
 		index("idx_competencies_tenant_id").on(table.tenantId),
+		// CHECK na selfAssessment: baza odrzuca wartości spoza 1–4 (Drizzle generuje jako constraint)
+		check(
+			"competencies_self_assessment_range",
+			sql`${table.selfAssessment} IS NULL OR ${table.selfAssessment} BETWEEN 1 AND 4`,
+		),
+		// CHECK na verifiedByMethod: Beta zamknięta na 'self' (silnik testów = OUT)
+		check("competencies_verified_by_method_values", sql`${table.verifiedByMethod} IN ('self')`),
 	],
 );
 

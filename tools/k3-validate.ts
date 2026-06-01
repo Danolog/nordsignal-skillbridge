@@ -252,6 +252,29 @@ async function main() {
 				`zwrócono ${denyDefault.rowCount} wierszy`,
 			);
 		}
+
+		// 11. B4 R1 — izolacja kolumnowa self_assessment + verified_by_method przed app_faculty
+		// (ADR-002 „Validation plan pkt 2", migracja 0015 część 2).
+		// information_schema.column_privileges: musi zwrócić 0 wierszy dla faculty + tych kolumn.
+		// 0 wierszy = deny-by-default egzekwowany w bazie (REVOKE/GRANT z 0015).
+		//
+		// Gdy migracja 0015 jeszcze nie wylądowała na tym środowisku (kolumna nie istnieje),
+		// zapytanie też zwróci 0 — test PASS, bo kolumna nieistniejąca ≡ nieuprawniona.
+		// Pełna egzekucja R1 sprawdzalna dopiero po `pnpm db:migrate` z 0015.
+		{
+			const r1 = await client.query(
+				`SELECT column_name, privilege_type
+				   FROM information_schema.column_privileges
+				  WHERE grantee = 'app_faculty'
+				    AND table_name = 'competencies'
+				    AND column_name IN ('self_assessment', 'verified_by_method')`,
+			);
+			check(
+				"11. B4 R1 — app_faculty NIE ma SELECT na self_assessment/verified_by_method",
+				r1.rowCount === 0,
+				`znaleziono ${r1.rowCount} wierszy uprawnień (oczekiwano 0)`,
+			);
+		}
 	} finally {
 		client.release();
 		await pool.end();
