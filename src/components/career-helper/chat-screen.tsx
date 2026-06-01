@@ -54,6 +54,11 @@ export function ChatScreen({
 	const [restarting, setRestarting] = useState(false);
 	const [restartError, setRestartError] = useState(false);
 	const [rehydrated, setRehydrated] = useState(false);
+	// Rozmowa domknięta OSTATNIĄ odpowiedzią studenta na 9. pytanie AI: /turn
+	// zwraca wtedy JSON {final:true} (nie strumień), backend zapisuje odpowiedź
+	// user-only bez 10. pytania. Dopiero teraz pokazujemy „Pokaż podsumowanie".
+	// Niezmiennik kontraktu Darka: nigdy nie pokazujemy pytania bez pola do odpowiedzi.
+	const [finalized, setFinalized] = useState(false);
 
 	// Transport: wstrzykujemy fetch czytający nagłówek tury z odpowiedzi /turn.
 	const transport = useRef(
@@ -76,13 +81,17 @@ export function ChatScreen({
 					const n = Number(hdr);
 					if (Number.isFinite(n)) setTurn(n);
 				}
-				// Kryzys: backend zwraca JSON {crisis:true} z content-type application/json.
+				// Backend zwraca JSON (nie strumień) w dwóch przypadkach:
+				//  - {crisis:true} → S5 paused_crisis (statyczny modal),
+				//  - {final:true}  → ostatnia odpowiedź studenta na 9. pytanie zapisana,
+				//                    rozmowa domknięta → pokazujemy „Pokaż podsumowanie".
 				const ct = res.headers.get("content-type") ?? "";
 				if (ct.includes("application/json")) {
 					const clone = res.clone();
 					try {
-						const data = (await clone.json()) as { crisis?: boolean };
+						const data = (await clone.json()) as { crisis?: boolean; final?: boolean };
 						if (data.crisis) setCrisis(true);
+						if (data.final) setFinalized(true);
 					} catch {
 						/* nie-JSON albo strumień — ignorujemy */
 					}
@@ -110,6 +119,13 @@ export function ChatScreen({
 				if (cancelled) return;
 				setTurn(data.turn);
 				if (data.status === "interrupted") setInterrupted(true);
+				// Rozmowa domknięta odpowiedzią studenta: ostatnia zapisana wiadomość to
+				// tura usera (odpowiedź na 9. pytanie, bez kolejnej tury AI). Wtedy od razu
+				// pokazujemy „Pokaż podsumowanie", nie wskrzeszamy pola do wpisania.
+				const lastMsg = data.messages[data.messages.length - 1];
+				if (data.turn >= MAX_TURNS && lastMsg?.role === "user") {
+					setFinalized(true);
+				}
 				// Pierwsza tura (brak historii) — Pomocnik pisze otwierającą wiadomość.
 				if (data.status === "in_progress" && data.messages.length === 0) {
 					sendMessage({ text: "" });
@@ -136,18 +152,22 @@ export function ChatScreen({
 		const enteredError = status === "error" && prevStatus.current !== "error";
 		prevStatus.current = status;
 		if (!enteredError) return;
-		// Kryzys: /turn zwraca JSON {crisis:true} (nie strumień) → useChat zgłasza
-		// "error". To NIE jest błąd techniczny — modal S5 ma priorytet, nie retry.
-		if (crisis) return;
+		// Kryzys i domknięcie rozmowy: /turn zwraca JSON ({crisis:true} / {final:true}),
+		// nie strumień → useChat zgłasza "error". To NIE jest błąd techniczny — nie
+		// retry, nie interrupted (modal S5 / „Pokaż podsumowanie" mają priorytet).
+		if (crisis || finalized) return;
 		if (!retriedRef.current) {
 			setRetried(true);
 			const t = setTimeout(() => regenerate(), 2000);
 			return () => clearTimeout(t);
 		}
 		setInterrupted(true);
-	}, [status, regenerate, crisis]);
+	}, [status, regenerate, crisis, finalized]);
 
-	const turnLimitReached = turn >= MAX_TURNS && status === "ready";
+	// Rozmowa domknięta OSTATNIĄ odpowiedzią studenta (na 9. pytanie AI) → pokazujemy
+	// „Pokaż podsumowanie". DOPÓKI nie domknięta, pole zostaje aktywne także na 9.
+	// pytanie — student musi móc na nie odpowiedzieć (niezmiennik kontraktu Darka).
+	const conversationDone = finalized;
 	const isStreaming = status === "streaming" || status === "submitted";
 
 	const handleSend = useCallback(() => {
@@ -263,8 +283,10 @@ export function ChatScreen({
 				</div>
 			</div>
 
-			{/* Stan błędu strumienia (S4) — toast inline z akcją Ponów (przed interrupted). */}
-			{status === "error" && !interrupted && (
+			{/* Stan błędu strumienia (S4) — toast inline z akcją Ponów (przed interrupted).
+			    NIE pokazujemy go, gdy rozmowa jest domknięta (final:true daje status
+			    "error", choć to nie błąd) ani przy kryzysie (modal S5 ma priorytet). */}
+			{status === "error" && !interrupted && !conversationDone && !crisis && (
 				<div role="alert" className="mx-auto mb-2 w-full max-w-[720px] px-8">
 					<div className="flex items-center justify-between gap-3 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
 						<span>
@@ -286,7 +308,7 @@ export function ChatScreen({
 				</div>
 			)}
 
-			{turnLimitReached ? (
+			{conversationDone ? (
 				<div className="sticky bottom-0 flex flex-col items-center gap-3 border-t bg-background px-8 py-6">
 					<Button type="button" onClick={handleShowSummary} aria-label="Pokaż podsumowanie rozmowy">
 						{COPY.chat.turnLimit.cta}
@@ -297,7 +319,7 @@ export function ChatScreen({
 					value={input}
 					onChange={setInput}
 					onSend={handleSend}
-					disabled={isStreaming || turnLimitReached}
+					disabled={isStreaming || conversationDone}
 					placeholder={
 						isStreaming ? COPY.chat.inputPlaceholderDisabled : COPY.chat.inputPlaceholderDefault
 					}

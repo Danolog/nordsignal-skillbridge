@@ -21,7 +21,7 @@ const txState = {
 		turn: number;
 		answers: unknown;
 	},
-	historyRows: [] as { role: "ai" | "user"; content: string }[],
+	historyRows: [] as { role: "ai" | "user"; content: string; turnIndex?: number }[],
 	withTenantCalls: [] as { role: string }[],
 	// Wiersze wstawione w fazie zapisu (onFinish) — kontrakt tury otwierającej:
 	// TYLKO AI (otwarcie) vs para user+ai (normalna tura).
@@ -141,10 +141,17 @@ describe("/turn — stany sesji", () => {
 		expect(res.status).toBe(404);
 	});
 
-	it("409 gdy osiągnięty limit tur (turn >= 9)", async () => {
+	it("409 gdy ostatnia odpowiedź studenta JUŻ zapisana (turnIndex > MAX_TURNS = domknięte)", async () => {
+		// Rozmowa domknięta: na 9. pytanie AI student już odpowiedział (user@10).
+		// Kolejna tura = 409 (idempotencja dla stałego/powtarzającego klienta).
 		txState.session = { id: VALID_ID, status: "in_progress", turn: 9, answers: {} };
+		txState.historyRows = [
+			{ role: "ai", content: "9. pytanie", turnIndex: 9 },
+			{ role: "user", content: "ostatnia odpowiedź", turnIndex: 10 },
+		];
 		const res = await POST(makeReq({ userMessage: "test" }), { params });
 		expect(res.status).toBe(409);
+		expect(mockRunTurn).not.toHaveBeenCalled();
 	});
 
 	it("400 gdy pusty userMessage W TRAKCIE rozmowy (history niepuste = to nie otwarcie)", async () => {
@@ -201,6 +208,46 @@ describe("/turn — B0 tura otwierająca (history=[] + puste = Pomocnik pierwszy
 		expect(rows[0].role).toBe("user");
 		expect(rows[0].content).toBe("Lubię analizować dane");
 		expect(rows[1].role).toBe("ai");
+	});
+});
+
+// --- B0 Sprawa B: OSTATNIA odpowiedź studenta na 9. pytanie AI ----------------
+// Kontrakt Darka: ostatnia interakcja to ODPOWIEDŹ studenta, nie pytanie bez pola
+// do wpisania. Gdy turn === MAX_TURNS (9. pytanie AI już na ekranie), kolejny
+// /turn to OSTATNIA odpowiedź: zapis user-only, BEZ modelu (żadnego 10. pytania),
+// BEZ podbicia `turn` (kolumna ma check 0..9), odpowiedź 200 {final:true}.
+describe("/turn — ostatnia odpowiedź studenta (turn === MAX_TURNS)", () => {
+	it("turn=9 + odpowiedź niepusta → 200 {final:true}, BEZ modelu, zapis user-only", async () => {
+		txState.session = { id: VALID_ID, status: "in_progress", turn: 9, answers: {} };
+		txState.historyRows = [{ role: "ai", content: "9. pytanie AI?", turnIndex: 9 }];
+		const res = await POST(makeReq({ userMessage: "Moja ostatnia odpowiedź" }), { params });
+		expect(res.status).toBe(200);
+		const json = await res.json();
+		expect(json).toEqual({ final: true, turn: 9 });
+		// Żadnego 10. pytania — model NIE wołany.
+		expect(mockRunTurn).not.toHaveBeenCalled();
+		// Nagłówek tury zostaje na MAX_TURNS (front czyta to z odpowiedzi).
+		expect(res.headers.get("x-career-helper-turn")).toBe("9");
+		// Zapis: dokładnie jeden wiersz usera, turnIndex powyżej MAX_TURNS.
+		expect(txState.insertedRows).toHaveLength(1);
+		const rows = txState.insertedRows[0] as {
+			role: string;
+			content: string;
+			turnIndex: number;
+		}[];
+		expect(rows).toHaveLength(1);
+		expect(rows[0].role).toBe("user");
+		expect(rows[0].content).toBe("Moja ostatnia odpowiedź");
+		expect(rows[0].turnIndex).toBe(10); // MAX_TURNS + 1
+	});
+
+	it("turn=9 + odpowiedź pusta → 400 (nie domykamy rozmowy pustą odpowiedzią)", async () => {
+		txState.session = { id: VALID_ID, status: "in_progress", turn: 9, answers: {} };
+		txState.historyRows = [{ role: "ai", content: "9. pytanie AI?", turnIndex: 9 }];
+		const res = await POST(makeReq({ userMessage: "" }), { params });
+		expect(res.status).toBe(400);
+		expect(mockRunTurn).not.toHaveBeenCalled();
+		expect(txState.insertedRows).toHaveLength(0);
 	});
 });
 

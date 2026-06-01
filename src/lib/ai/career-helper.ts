@@ -31,8 +31,12 @@ export const MAX_RESTARTS = 2;
 export const USER_MESSAGE_MAX_LEN = 4000;
 
 const TURN_MODEL_ID = "claude-sonnet-4-6";
-const SUMMARY_MODEL_ID = "claude-opus-4-7";
-const JUDGE_MODEL_ID = "claude-opus-4-7";
+// Opus 4.7 to wycofany identyfikator — Anthropic zwraca 404 „model not found",
+// co na /summary leciało jako 500 (tag career-helper.summary.generate). /turn
+// działał, bo Sonnet 4.6 jest ważny. Aktualny Opus = 4.8 (CLAUDE.md §10:
+// agent-as-judge na Opusie). Generator i sędzia muszą używać ważnego ID.
+const SUMMARY_MODEL_ID = "claude-opus-4-8";
+const JUDGE_MODEL_ID = "claude-opus-4-8";
 
 // --- Filtr kryzysowy (deterministyczny, PRZED modelem) -----------------------
 
