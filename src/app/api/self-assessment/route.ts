@@ -6,6 +6,7 @@
  *
  * Spec: docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §3.5
  * Kontrakt schematu: docs/briefings/2026-05-31-ethan-schema-b3b4b5.md §B4.1
+ * Logika: src/lib/self-assessment/index.ts
  */
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
@@ -15,6 +16,7 @@ import { db } from "@/lib/db";
 import { competencies, students } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { logError } from "@/lib/log";
+import { buildAssessmentResponse } from "@/lib/self-assessment";
 
 export async function GET() {
 	const session = await auth.api.getSession({ headers: await headers() });
@@ -56,18 +58,7 @@ export async function GET() {
 		return NextResponse.json({ error: "Failed to load competencies" }, { status: 500 });
 	}
 
-	// requiredCount: min(5, N) — backend jest źródłem prawdy (spec §3.4 „reguła progu")
-	// Frontend bramuje CTA „Idź dalej" na tej liczbie — nie zgaduje.
-	const requiredCount = Math.min(5, rows.length);
-
-	return NextResponse.json({
-		assessmentId: `asm_${studentMeta.id}`,
-		status: "draft",
-		requiredCount,
-		competencies: rows.map((c) => ({
-			competencyId: c.id,
-			name: c.name,
-			level: c.selfAssessment ?? null, // null = nieocenione (○ w UI)
-		})),
-	});
+	// buildAssessmentResponse: requiredCount = min(5, N) + kształt odpowiedzi
+	// Logika w produkcji (src/lib/self-assessment) — nie w route'cie ani w testach.
+	return NextResponse.json(buildAssessmentResponse(studentMeta.id, rows));
 }

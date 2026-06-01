@@ -7,6 +7,7 @@
  *
  * Spec: docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §3.5 (advance)
  * PRD: docs/product/skillbridge-prd-panel-studenta-v0.1.md §4.3 US-B4.2 KA1
+ * Logika: src/lib/self-assessment/index.ts
  */
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
@@ -17,6 +18,7 @@ import { db } from "@/lib/db";
 import { competencies, students } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { logError } from "@/lib/log";
+import { evaluateAdvance } from "@/lib/self-assessment";
 
 const AdvanceSchema = z.object({
 	fromStep: z.literal(4),
@@ -53,8 +55,8 @@ export async function POST(req: Request) {
 	}
 
 	try {
-		// Sprawdzamy próg przez RLS (student widzi tylko swoje kompetencje)
-		const result = await withTenantContext(
+		// Sprawdzamy próg przez RLS (mechanizm izolacji danych — student widzi tylko swoje kompetencje)
+		const { total, ratedCount } = await withTenantContext(
 			{ userId, tenantId: studentMeta.tenantId, role: "student" },
 			async (tx) => {
 				const allRows = await tx
@@ -62,27 +64,17 @@ export async function POST(req: Request) {
 					.from(competencies)
 					.where(eq(competencies.studentId, studentMeta.id));
 
-				const total = allRows.length;
-				const ratedCount = allRows.filter((c) => c.selfAssessment !== null).length;
-				// requiredCount: min(5, N) — spójnie z GET /api/self-assessment
-				const requiredCount = Math.min(5, total);
-
-				return { total, ratedCount, requiredCount };
+				return {
+					total: allRows.length,
+					ratedCount: allRows.filter((c) => c.selfAssessment !== null).length,
+				};
 			},
 		);
 
-		const { ratedCount, requiredCount } = result;
-
-		if (ratedCount < requiredCount) {
-			return NextResponse.json(
-				{
-					error: "Insufficient ratings",
-					ratedCount,
-					requiredCount,
-					missing: requiredCount - ratedCount,
-				},
-				{ status: 422 },
-			);
+		// evaluateAdvance: bramka progu min(5, N) — logika w src/lib/self-assessment
+		const check = evaluateAdvance(ratedCount, total);
+		if (!check.ok) {
+			return NextResponse.json(check.body, { status: 422 });
 		}
 	} catch (err) {
 		logError("onboarding.advance", err, { userId, fromStep: 4 });

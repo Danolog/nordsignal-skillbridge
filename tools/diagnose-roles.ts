@@ -42,7 +42,7 @@ async function main() {
 			);
 			console.log("\n=== Last 5 migrations applied ===");
 			console.table(m.rows);
-		} catch (err) {
+		} catch (_err) {
 			console.log("\n[no drizzle migrations table — fresh DB or different schema]");
 		}
 

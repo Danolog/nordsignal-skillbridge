@@ -10,20 +10,12 @@
  *
  * Pokrycie: wszystkie 5 przypadków (null + 4 wartości) — czerwona linia DoD Bety.
  * Koniec hardcoded 'acquired' — PRD §4.3 KA2.
+ *
+ * WAŻNE: Importujemy levelToStatus z PRODUKCJI (src/lib/self-assessment).
+ * Nie ma tu replik — test weryfikuje realną logikę biznesową, a nie kopię.
  */
 import { describe, expect, it } from "vitest";
-
-// Duplikujemy logikę mapowania tu lokalnie (nie importujemy z route — route jest
-// server-only i ma side-effecty Node.js). Testujemy czystą funkcję.
-// Źródło prawdy: src/app/api/self-assessment/ratings/[competencyId]/route.ts
-type CompetencyStatus = "acquired" | "in_progress" | "missing";
-
-function levelToStatus(level: number | null): CompetencyStatus {
-	if (level === null) return "missing";
-	if (level === 1) return "missing";
-	if (level === 2) return "in_progress";
-	return "acquired"; // 3 i 4
-}
+import { levelToStatus } from "@/lib/self-assessment";
 
 describe("levelToStatus — mapowanie poziom→status (decyzja Darka 2026-06-01)", () => {
 	it("NULL → 'missing' (nieocenione = brakująca kompetencja)", () => {

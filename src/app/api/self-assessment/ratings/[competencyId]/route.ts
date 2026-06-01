@@ -10,6 +10,7 @@
  * Spec: docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §3.5
  * Kontrakt schematu: docs/briefings/2026-05-31-ethan-schema-b3b4b5.md §B4.1
  * Mapowanie statusu: decyzja Darka 2026-06-01 (zamknięte, nie podważaj)
+ * Logika: src/lib/self-assessment/index.ts
  */
 import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
@@ -18,27 +19,14 @@ import { z } from "zod";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { competencies, students } from "@/lib/db/schema";
-
-// Typ wartości kolumny status kompetencji (z Drizzle pgEnum)
-type CompetencyStatus = "acquired" | "in_progress" | "missing";
-
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { logError } from "@/lib/log";
+import { levelToStatus } from "@/lib/self-assessment";
 
-// Walidacja wejścia (Zod): level musi być 1–4 (int) — domena 2 standardu, Leo karta roli
+// Walidacja wejścia (Zod — biblioteka do walidacji schematów): level musi być 1–4 (int)
 const PatchSchema = z.object({
 	level: z.number().int().min(1).max(4),
 });
-
-// Mapowanie poziom samooceny → status kompetencji w bazie.
-// Decyzja Darka 2026-06-01 (ratyfikowane, zamknięte — PRD §4.3 KA2).
-// Koniec hardcoded 'acquired' — status odzwierciedla deklarację studenta.
-function levelToStatus(level: number): CompetencyStatus {
-	if (level === 1) return "missing";
-	if (level === 2) return "in_progress";
-	// level 3 i 4: student 'zna' lub 'dobrze zna' → acquired
-	return "acquired";
-}
 
 type RouteContext = { params: Promise<{ competencyId: string }> };
 
