@@ -105,6 +105,11 @@ export function ChatScreen({
 		transport,
 	});
 
+	// Auto-przewijanie do dołu (zgłoszenie Darka): kontener wiadomości ma sam zjeżdżać
+	// na dół przy nowej wiadomości (user/AI) ORAZ w trakcie streamingu (dochodzą tokeny).
+	// scrollRef = kontener scrolla (role="log"). Efekt niżej, gdy znamy już `rendered`.
+	const scrollRef = useRef<HTMLDivElement>(null);
+
 	// Rehydracja: GET /session — odtwórz historię i stan (spec §4.5 montaż chatu).
 	useEffect(() => {
 		let cancelled = false;
@@ -227,6 +232,29 @@ export function ChatScreen({
 		}))
 		.filter((m) => m.role === "ai" || m.content.trim().length > 0);
 
+	// Auto-scroll do dołu: reaguje na nową wiadomość (zmiana liczby) ORAZ na tokeny
+	// w trakcie streamingu (zmiana treści ostatniej wiadomości) i na `status`. Sklejamy
+	// te sygnały w jeden klucz, którego efekt faktycznie używa (early-out, gdy nic się
+	// nie zmieniło) — dzięki temu zależność jest jedna i realnie konsumowana. Guard
+	// "blisko dołu": jeśli student ręcznie przewinął w górę (czyta historię), NIE
+	// ściągamy go z powrotem na dół. Aria nietknięte — przewijamy sam kontener.
+	const messageCount = rendered.length;
+	const lastContent = rendered[rendered.length - 1]?.content ?? "";
+	const scrollSignal = `${messageCount}|${status}|${lastContent.length}`;
+	const prevScrollSignal = useRef("");
+	useEffect(() => {
+		if (scrollSignal === prevScrollSignal.current) return;
+		prevScrollSignal.current = scrollSignal;
+		const el = scrollRef.current;
+		if (!el) return;
+		// Próg 100 px od dołu = "blisko dołu". Przy pierwszym renderze (scrollTop 0,
+		// bez nadmiaru treści) warunek jest spełniony, więc start zawsze dojeżdża.
+		const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+		if (nearBottom) {
+			el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+		}
+	}, [scrollSignal]);
+
 	if (summaryPending) {
 		return (
 			<output
@@ -243,8 +271,15 @@ export function ChatScreen({
 	}
 
 	return (
-		<div className="flex min-h-[calc(100vh-72px)] flex-col">
-			<header className="border-b px-8 py-4">
+		// Wysokość panelu spięta do okna (h-, nie min-h-): kolumna nie rośnie poza
+		// ekran, więc to lista wiadomości (flex-1 overflow-y-auto niżej) jest
+		// kontenerem scrolla — nie cała strona. Dzięki temu sticky nagłówek trzyma
+		// się góry panelu, a auto-scroll z PR #53 dojeżdża po właściwym elemencie.
+		<div className="flex h-[calc(100vh-72px)] flex-col">
+			{/* Nagłówek (tytuł + podtytuł + licznik tury) przyklejony u góry panelu —
+			    jak zamrożony górny wiersz: nieprzewijalny, z tłem bg-background i z-10,
+			    żeby wiadomości nie prześwitywały pod spodem przy przewijaniu listy. */}
+			<header className="sticky top-0 z-10 border-b bg-background px-8 py-4">
 				<div className="mx-auto flex max-w-[720px] items-start justify-between gap-4">
 					<div className="flex flex-col gap-1">
 						<h1 className="text-2xl font-semibold text-foreground">{COPY.chat.title}</h1>
@@ -257,6 +292,7 @@ export function ChatScreen({
 			</header>
 
 			<div
+				ref={scrollRef}
 				role="log"
 				aria-live="polite"
 				aria-relevant="additions"
