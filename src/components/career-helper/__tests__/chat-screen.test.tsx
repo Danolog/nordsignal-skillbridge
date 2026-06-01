@@ -49,10 +49,16 @@ beforeEach(() => {
 		sendMessage: vi.fn(),
 		regenerate: vi.fn(),
 	};
+	// jsdom nie ma Element.scrollTo — efekt auto-scrolla go woła w KAŻDYM teście.
+	// Domyślny no-op, żeby pozostałe testy nie wywracały się na braku metody;
+	// testy scrolla nadpisują go własnym spy przez mockScrollTo().
+	mockScrollTo();
 });
 
 afterEach(() => {
 	vi.restoreAllMocks();
+	// Sprzątamy własność dodaną na prototypie (configurable: true).
+	Reflect.deleteProperty(HTMLElement.prototype, "scrollTo");
 });
 
 describe("ChatScreen", () => {
@@ -164,8 +170,54 @@ describe("ChatScreen", () => {
 		render(<ChatScreen sessionId="s1" onShowSummary={vi.fn()} onRestart={vi.fn()} />);
 		expect(screen.queryByText("To NIE są rekomendacje")).not.toBeInTheDocument();
 	});
+
+	// Auto-scroll (zgłoszenie Darka): kontener wiadomości woła scrollTo(dół) przy
+	// montażu z treścią. jsdom nie liczy layoutu (scrollHeight/clientHeight = 0),
+	// więc weryfikujemy WYWOŁANIE mocka scrollTo, nie realny piksel pozycji.
+	it("auto-scroll: woła scrollTo na kontenerze logu (jsdom — mock, bez layoutu)", async () => {
+		const scrollTo = mockScrollTo();
+		stubSession({ messages: [aiPlain("Cześć!")], turn: 1, status: "in_progress" });
+		mockChat.messages = [aiMsg("Cześć! O czym chcesz dziś pogadać?")];
+		render(<ChatScreen sessionId="s1" onShowSummary={vi.fn()} onRestart={vi.fn()} />);
+		await waitFor(() => expect(scrollTo).toHaveBeenCalled());
+		// Przewija do dołu (top = scrollHeight) płynnie.
+		const arg = scrollTo.mock.calls.at(-1)?.[0];
+		expect(arg).toMatchObject({ behavior: "smooth" });
+	});
+
+	// Streaming: gdy dochodzą tokeny (zmienia się treść ostatniej wiadomości) i status
+	// = streaming, scroll dalej dojeżdża do dołu — nie tylko po zakończeniu.
+	it("auto-scroll: dojeżdża też w trakcie streamingu (rerender ze zmienioną treścią)", async () => {
+		const scrollTo = mockScrollTo();
+		stubSession({ messages: [], turn: 1, status: "in_progress" });
+		mockChat.status = "streaming";
+		mockChat.messages = [aiMsg("Piszę")];
+		const { rerender } = render(
+			<ChatScreen sessionId="s1" onShowSummary={vi.fn()} onRestart={vi.fn()} />,
+		);
+		await waitFor(() => expect(scrollTo).toHaveBeenCalled());
+		const before = scrollTo.mock.calls.length;
+		// Dochodzi token → treść ostatniej wiadomości rośnie.
+		mockChat.messages = [aiMsg("Piszę odpowiedź…")];
+		rerender(<ChatScreen sessionId="s1" onShowSummary={vi.fn()} onRestart={vi.fn()} />);
+		await waitFor(() => expect(scrollTo.mock.calls.length).toBeGreaterThan(before));
+	});
 });
 
 function aiPlain(content: string) {
 	return { role: "ai" as const, content };
+}
+
+// jsdom nie implementuje Element.scrollTo (brak layoutu) — definiujemy mock na
+// prototypie, żeby efekt auto-scrolla mógł go zawołać. Zwraca spy do asercji.
+// scrollHeight/scrollTop/clientHeight zostają 0 w jsdom → guard "blisko dołu"
+// (próg 100 px) jest spełniony, więc scrollTo jest wołane (to chcemy zweryfikować).
+function mockScrollTo() {
+	const fn = vi.fn();
+	Object.defineProperty(HTMLElement.prototype, "scrollTo", {
+		value: fn,
+		writable: true,
+		configurable: true,
+	});
+	return fn;
 }
