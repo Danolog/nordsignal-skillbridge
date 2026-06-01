@@ -219,6 +219,73 @@ describe("ChatScreen", () => {
 		rerender(<ChatScreen sessionId="s1" onShowSummary={vi.fn()} onRestart={vi.fn()} />);
 		await waitFor(() => expect(scrollTo.mock.calls.length).toBeGreaterThan(before));
 	});
+
+	// Bug 1 — auto-scroll przy wiadomości usera (regresja): po wysłaniu wiadomości
+	// przez studenta widok musi zjechać na dół (bezpośredni scroll w handleSend
+	// przez requestAnimationFrame, niezależnie od efektu scrollSignal).
+	// jsdom: requestAnimationFrame = synchroniczny w vitest (vi.useFakeTimers nie
+	// potrzebny — testing-library/react domyślnie mockuje rAF albo flushuje go);
+	// sprawdzamy że scrollTo zostało wywołane po kliknięciu Send.
+	it("auto-scroll: scrollTo po wysłaniu wiadomości usera (bug 1 regresja)", async () => {
+		const scrollTo = mockScrollTo();
+		stubSession({ messages: [], turn: 1, status: "in_progress" });
+		mockChat.status = "ready";
+		mockChat.messages = [aiMsg("Pierwsze pytanie?")];
+		render(<ChatScreen sessionId="s1" onShowSummary={vi.fn()} onRestart={vi.fn()} />);
+		// Czekamy na render
+		const label = "Napisz wiadomość do Pomocnika";
+		await waitFor(() => expect(screen.getByLabelText(label)).toBeInTheDocument());
+		const callsBefore = scrollTo.mock.calls.length;
+		// Wpisujemy wiadomość i klikamy Send
+		const textarea = screen.getByLabelText(label);
+		const { fireEvent } = await import("@testing-library/react");
+		fireEvent.change(textarea, { target: { value: "Lubię analizować dane" } });
+		const sendBtn = screen.getByRole("button", { name: /Wyślij/i });
+		fireEvent.click(sendBtn);
+		// scrollTo wywołane (przez requestAnimationFrame w handleSend)
+		await waitFor(() => expect(scrollTo.mock.calls.length).toBeGreaterThan(callsBefore));
+		const lastArg = scrollTo.mock.calls.at(-1)?.[0];
+		expect(lastArg).toMatchObject({ behavior: "smooth" });
+	});
+
+	// Bug 2 — fokus po wysłaniu i po zakończeniu streamingu.
+	// a11y: przywracamy fokus po wysłaniu (kliknięcie Send = blur textarea)
+	// i po zakończeniu odpowiedzi AI (status streaming → ready).
+	// jsdom: document.activeElement + focus() działają bez layoutu.
+	it("fokus: po wysłaniu wiadomości (kliknięcie Send) kursor wraca do textarea (bug 2)", async () => {
+		stubSession({ messages: [], turn: 1, status: "in_progress" });
+		mockScrollTo();
+		mockChat.status = "ready";
+		mockChat.messages = [aiMsg("Pierwsze pytanie?")];
+		render(<ChatScreen sessionId="s1" onShowSummary={vi.fn()} onRestart={vi.fn()} />);
+		const label = "Napisz wiadomość do Pomocnika";
+		await waitFor(() => expect(screen.getByLabelText(label)).toBeInTheDocument());
+		const textarea = screen.getByLabelText(label);
+		const { fireEvent } = await import("@testing-library/react");
+		fireEvent.change(textarea, { target: { value: "Moja odpowiedź" } });
+		const sendBtn = screen.getByRole("button", { name: /Wyślij/i });
+		sendBtn.click();
+		// Po kliknięciu Send: handleSend wywołuje inputRef.current?.focus().
+		await waitFor(() => expect(document.activeElement).toBe(textarea));
+	});
+
+	it("fokus: wraca do textarea po zakończeniu odpowiedzi AI (status streaming → ready, bug 2)", async () => {
+		stubSession({ messages: [], turn: 1, status: "in_progress" });
+		mockScrollTo();
+		mockChat.status = "streaming";
+		mockChat.messages = [aiMsg("Odpowiedź AI w trakcie…")];
+		const { rerender } = render(
+			<ChatScreen sessionId="s1" onShowSummary={vi.fn()} onRestart={vi.fn()} />,
+		);
+		// Pole jest disabled podczas streamingu — fokus nie idzie tam.
+		const textarea = screen.getByLabelText("Napisz wiadomość do Pomocnika");
+		expect(textarea).toBeDisabled();
+		// Streaming kończy się — status "ready", pole aktywne.
+		mockChat.status = "ready";
+		rerender(<ChatScreen sessionId="s1" onShowSummary={vi.fn()} onRestart={vi.fn()} />);
+		// Efekt fokusujący uruchamia się po zmianie statusu.
+		await waitFor(() => expect(document.activeElement).toBe(textarea));
+	});
 });
 
 function aiPlain(content: string) {
