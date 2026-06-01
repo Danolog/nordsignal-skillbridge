@@ -65,13 +65,28 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 		return NextResponse.json({ crisis: true }, { status: 200 });
 	}
 
+	// Indeks tury dla OSTATNIEJ odpowiedzi studenta (na 9. — ostatnie — pytanie AI).
+	// Ta odpowiedź NIE generuje 10. pytania i NIE podbija licznika `turn` (kolumna
+	// ma check 0..9 w bazie). Zapisujemy ją osobnym turnIndex POWYŻEJ MAX_TURNS,
+	// żeby jednoznacznie wykryć „rozmowa domknięta odpowiedzią" przy rehydracji i
+	// odeprzeć podwójną wysyłkę (stary klient) — patrz gałąź `finalAnswer` niżej.
+	const FINAL_ANSWER_TURN_INDEX = MAX_TURNS + 1;
+
 	// (1) Praca na bazie ZAMKNIĘTA w withTenantContext — PRZED strumieniem.
 	type PrepReady = {
 		answers: unknown;
 		history: { role: "ai" | "user"; content: string }[];
 		nextTurn: number;
 	};
-	type Prep = PrepReady | { closed: true } | { limit: true } | null;
+	// `finalAnswer` = student odpowiada na 9. (ostatnie) pytanie AI. Zapis user-only,
+	// bez modelu, bez podbicia `turn`. Niezmiennik kontraktu Darka: ostatnia
+	// interakcja to ODPOWIEDŹ studenta, nie pytanie bez pola do wpisania.
+	type Prep =
+		| PrepReady
+		| { closed: true }
+		| { limit: true }
+		| { finalAnswer: true; nextTurn: number }
+		| null;
 	let prep: Prep;
 	try {
 		prep = await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {
@@ -93,12 +108,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 			if (sessionRow.status !== "in_progress" && sessionRow.status !== "restarted") {
 				return { closed: true as const };
 			}
-			if (sessionRow.turn >= MAX_TURNS) {
-				return { limit: true as const };
-			}
 
 			const history = await tx
-				.select({ role: careerHelperTurns.role, content: careerHelperTurns.content })
+				.select({
+					role: careerHelperTurns.role,
+					content: careerHelperTurns.content,
+					turnIndex: careerHelperTurns.turnIndex,
+				})
 				.from(careerHelperTurns)
 				.where(
 					and(
@@ -108,9 +124,28 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 				)
 				.orderBy(asc(careerHelperTurns.turnIndex), asc(careerHelperTurns.createdAt));
 
+			// Odpowiedź na ostatnie pytanie już zapisana (turnIndex > MAX_TURNS) —
+			// rozmowa domknięta. Każda kolejna tura = 409 (idempotencja dla stałego
+			// lub powtarzającego klienta; front i tak chowa input po domknięciu).
+			const alreadyFinalized = history.some((h) => h.turnIndex > MAX_TURNS);
+			if (alreadyFinalized) {
+				return { limit: true as const };
+			}
+
+			const cleanHistory = history.map((h) => ({ role: h.role, content: h.content })) as {
+				role: "ai" | "user";
+				content: string;
+			}[];
+
+			// Licznik `turn` osiągnął MAX_TURNS → na ekranie jest 9. (ostatnie) pytanie
+			// AI. Ta tura to OSTATNIA odpowiedź studenta: zapis user-only, bez modelu.
+			if (sessionRow.turn >= MAX_TURNS) {
+				return { finalAnswer: true as const, nextTurn: FINAL_ANSWER_TURN_INDEX };
+			}
+
 			return {
 				answers: sessionRow.answers,
-				history: history as { role: "ai" | "user"; content: string }[],
+				history: cleanHistory,
 				nextTurn: sessionRow.turn + 1,
 			};
 		});
@@ -123,6 +158,46 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 	if ("closed" in prep) return NextResponse.json({ error: "Session closed" }, { status: 409 });
 	if ("limit" in prep) {
 		return NextResponse.json({ error: "Turn limit reached", turn: MAX_TURNS }, { status: 409 });
+	}
+
+	// Ostatnia odpowiedź studenta na 9. pytanie AI: zapis user-only (bez modelu,
+	// bez podbicia `turn`), potem front pokazuje „Pokaż podsumowanie". Pusta
+	// wiadomość tu = 400 (nie da się domknąć rozmowy pustą odpowiedzią).
+	if ("finalAnswer" in prep) {
+		if (isEmptyMessage) {
+			return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+		}
+		try {
+			await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {
+				await tx.insert(careerHelperTurns).values([
+					{
+						sessionId: params.data.id,
+						studentId,
+						tenantId,
+						role: "user" as const,
+						content: userMessage,
+						turnIndex: prep.nextTurn,
+					},
+				]);
+				await tx
+					.update(careerHelperSessions)
+					.set({ updatedAt: new Date() })
+					.where(
+						and(
+							eq(careerHelperSessions.id, params.data.id),
+							eq(careerHelperSessions.studentId, studentId),
+						),
+					);
+			});
+		} catch (err) {
+			logError("career-helper.turn.final", err, { studentId });
+			return NextResponse.json({ error: "Nie udało się zapisać odpowiedzi." }, { status: 500 });
+		}
+		// `turn` zostaje MAX_TURNS (kolumna ma check 0..9); front czyta to z nagłówka.
+		return NextResponse.json(
+			{ final: true, turn: MAX_TURNS },
+			{ status: 200, headers: { "x-career-helper-turn": String(MAX_TURNS) } },
+		);
 	}
 
 	const { answers, history, nextTurn } = prep;
