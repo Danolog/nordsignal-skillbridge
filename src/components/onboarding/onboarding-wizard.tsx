@@ -298,7 +298,9 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 
 				{/* Step 5 — Wnioski (OUT Beta: brak osobnego ekranu).
 				    Spec §3.4 S8: przejście do kroku 5 onboardingu (Wnioski).
-				    W Becie krok 5 = bezpośredni redirect do dashboardu. */}
+				    W Becie krok 5 = bezpośredni redirect do dashboardu.
+				    TODO: gdy spec §B5 "Moja droga" zostanie wdrożony, krok 5 zamieni się
+				    w pełny ekran Wniosków (Sophia/Jack w następnym sprincie). */}
 				{step === 5 && (
 					<div className="flex flex-col items-center gap-6 py-4 text-center">
 						<div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
