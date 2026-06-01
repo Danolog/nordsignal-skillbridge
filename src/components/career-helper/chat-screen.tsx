@@ -60,6 +60,11 @@ export function ChatScreen({
 	// Niezmiennik kontraktu Darka: nigdy nie pokazujemy pytania bez pola do odpowiedzi.
 	const [finalized, setFinalized] = useState(false);
 
+	// Ref do pola tekstowego (bug 2 — fokus po wysłaniu / po zakończeniu AI).
+	// Przywracamy fokus TYLKO gdy komponent aktywny — nie kradniemy go w trakcie
+	// streamingu (czytniki ekranu); przywracamy dopiero po `status === "ready"`.
+	const inputRef = useRef<HTMLTextAreaElement>(null);
+
 	// Transport: wstrzykujemy fetch czytający nagłówek tury z odpowiedzi /turn.
 	const transport = useRef(
 		new DefaultChatTransport({
@@ -175,11 +180,42 @@ export function ChatScreen({
 	const conversationDone = finalized;
 	const isStreaming = status === "streaming" || status === "submitted";
 
+	// Fokus po zakończeniu odpowiedzi AI (bug 2): przywracamy kursor do pola
+	// wpisywania gdy streaming kończy się (status wraca do "ready"). Warunek
+	// `!conversationDone` — nie przywracamy fokusu gdy rozmowa domknięta
+	// (pole znika, CTA „Pokaż podsumowanie" powinno dostać fokus naturalnie).
+	// `!crisis` — kryzys = modal S5 ma priorytet.
+	const prevStatusRef = useRef<typeof status>("ready");
+	useEffect(() => {
+		const wasStreaming =
+			prevStatusRef.current === "streaming" || prevStatusRef.current === "submitted";
+		prevStatusRef.current = status;
+		if (wasStreaming && status === "ready" && !conversationDone && !crisis) {
+			inputRef.current?.focus();
+		}
+	}, [status, conversationDone, crisis]);
+
 	const handleSend = useCallback(() => {
 		if (input.trim().length === 0) return;
 		setRetried(false);
 		sendMessage({ text: input });
 		setInput("");
+		// Scroll bezpośredni po wysłaniu (bug 1): useEffect reaguje na zmianę
+		// scrollSignal, ale może mieć race condition gdy wiadomość usera i zmiana
+		// statusu batchują się w jednym React update. Wywołujemy scroll bezpośrednio
+		// tu, żeby widok zawsze zjechał na dół po kliknięciu Send — niezależnie
+		// od efektu poniżej.
+		requestAnimationFrame(() => {
+			const el = scrollRef.current;
+			if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+		});
+		// Fokus po wysłaniu (bug 2): po sendMessage pole zostaje aktywne, ale
+		// kursor może zniknąć (np. kliknięcie w przycisk Send powoduje blur na
+		// textarea). Przywracamy fokus natychmiast — praca z klawiatury bez myszki.
+		// Status = "submitted" → pole jest już disabled → fokus nie weźmie, ale
+		// onFocus wywoła się po powrocie do "ready" (efekt wyżej). Tu przywracamy
+		// dla przypadku gdy textarea traci fokus przez kliknięcie Send buttonem.
+		inputRef.current?.focus();
 	}, [input, sendMessage]);
 
 	async function handleShowSummary() {
@@ -352,6 +388,7 @@ export function ChatScreen({
 				</div>
 			) : (
 				<ChatInput
+					ref={inputRef}
 					value={input}
 					onChange={setInput}
 					onSend={handleSend}

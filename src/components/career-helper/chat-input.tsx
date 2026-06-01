@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import { forwardRef } from "react";
 import { COPY } from "@/lib/career-helper/copy";
 import { cn } from "@/lib/utils";
 
@@ -8,20 +9,22 @@ import { cn } from "@/lib/utils";
  * ChatInput (kompozyt B0.3, spec §6.3) — textarea + Send sticky na dole.
  * Enter = onSend (gdy value niepuste); Shift+Enter = nowy wiersz; Escape = brak.
  * a11y: aria-multiline, aria-label, Send disabled gdy puste lub disabled.
+ *
+ * forwardRef (bug 2): rodzic (ChatScreen) trzyma ref do textarea i przywraca
+ * fokus po wysłaniu wiadomości i po zakończeniu odpowiedzi AI — klawiatura
+ * bez myszki. Fokus przywracany TYLKO gdy komponent jest aktywny (nie
+ * disabled) — nie kradniemy fokusu w trakcie streamingu.
  */
-export function ChatInput({
-	value,
-	onChange,
-	onSend,
-	disabled = false,
-	placeholder,
-}: {
-	value: string;
-	onChange: (v: string) => void;
-	onSend: () => void;
-	disabled?: boolean;
-	placeholder?: string;
-}) {
+export const ChatInput = forwardRef<
+	HTMLTextAreaElement,
+	{
+		value: string;
+		onChange: (v: string) => void;
+		onSend: () => void;
+		disabled?: boolean;
+		placeholder?: string;
+	}
+>(function ChatInput({ value, onChange, onSend, disabled = false, placeholder }, ref) {
 	const canSend = !disabled && value.trim().length > 0;
 
 	function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -36,6 +39,7 @@ export function ChatInput({
 		<div className="sticky bottom-0 border-t bg-background px-4 py-4 sm:px-8">
 			<div className="mx-auto flex max-w-[720px] items-end gap-3">
 				<textarea
+					ref={ref}
 					value={value}
 					onChange={(e) => onChange(e.target.value)}
 					onKeyDown={handleKeyDown}
@@ -71,4 +75,4 @@ export function ChatInput({
 			</p>
 		</div>
 	);
-}
+});

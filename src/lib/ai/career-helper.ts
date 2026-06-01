@@ -35,6 +35,15 @@ const TURN_MODEL_ID = "claude-sonnet-4-6";
 // co na /summary leciało jako 500 (tag career-helper.summary.generate). /turn
 // działał, bo Sonnet 4.6 jest ważny. Aktualny Opus = 4.8 (CLAUDE.md §10:
 // agent-as-judge na Opusie). Generator i sędzia muszą używać ważnego ID.
+//
+// Diagnostyka: jeśli /summary ponownie zwraca 500 z tagiem summary.generate,
+// sprawdź w logach Vercel pełną wiadomość błędu (teraz logujemy err.message).
+// Najczęstsze przyczyny:
+//   1. ANTHROPIC_API_KEY na Vercel prod nie ma dostępu do claude-opus-4-8
+//      → ustaw aktualny klucz w Vercel Dashboard → Settings → Environment Variables
+//   2. Timeout (maxDuration=60): Opus 4.8 + 2× generateObject ≈ 20–40s typowo,
+//      ale przy dużym ruchu Anthropic może być wolniejszy → zwiększ do 300 (wymaga Vercel Pro)
+//   3. Rate limit (429 Anthropic) → redukcja concurrent requestów lub tier upgrade
 const SUMMARY_MODEL_ID = "claude-opus-4-8";
 const JUDGE_MODEL_ID = "claude-opus-4-8";
 
