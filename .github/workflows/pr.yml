@@ -101,6 +101,11 @@ jobs:
       # 3. tools/k3-validate.ts — testy 1..10/10 zielone = K3 RLS DoD spełnione
       # (sekcja §7 rls-matrix.md). Exit code 1 przy jakimkolwiek FAIL.
       - run: pnpm tsx tools/k3-validate.ts
+      # 4. Testy integracyjne vitest (projekt `integration`, **/*.integration.test.{ts,tsx})
+      # — realna ścieżka renderu na zmigrowanej + zaseedowanej bazie kontenera. Job `test`
+      # (unit) je wyklucza; tu, gdzie jest Postgres, faktycznie się wykonują. DATABASE_URL
+      # jobu (@localhost:5432/skillbridge_test) trafia w strażnik isLocalTestDb → suite leci.
+      - run: pnpm test:integration
 
   build:
     name: build (next build)
