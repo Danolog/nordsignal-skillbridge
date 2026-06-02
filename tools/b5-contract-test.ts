@@ -21,22 +21,16 @@
  * Zero realnych sekretów w tym pliku.
  */
 import { config } from "dotenv";
+
 // Ładuje .env.local, ale DATABASE_URL z procesu (przekazane przez shell) ma
 // wyższy priorytet — dotenv NIE nadpisuje zmiennych już ustawionych w procesie.
 config({ path: ".env.local" });
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "../src/lib/db/schema";
-import {
-	projectReflections,
-	projectSubmissions,
-	projects,
-	students,
-	tenants,
-	user,
-} from "../src/lib/db/schema";
+import { projectSubmissions, students, tenants, user } from "../src/lib/db/schema";
 
 const DB_URL = process.env.DATABASE_URL ?? "";
 if (!DB_URL || DB_URL.includes("neon.tech")) {
@@ -196,7 +190,8 @@ async function callPost(userId: string, payload: PostPayload): Promise<PostResul
 		};
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : String(e);
-		if (msg === "SUBMISSION_NOT_FOUND") return { status: 404, body: { error: "Submission not found" } };
+		if (msg === "SUBMISSION_NOT_FOUND")
+			return { status: 404, body: { error: "Submission not found" } };
 		if (msg === "SUBMISSION_NOT_ACCEPTED")
 			return {
 				status: 409,
@@ -292,28 +287,26 @@ async function setupTestData() {
 	]);
 
 	// Stwórz studentów
-	await db
-		.insert(students)
-		.values([
-			{
-				userId: userAId,
-				tenantId,
-				university: "Testowa Uczelnia",
-				fieldOfStudy: "Test",
-				semester: 1,
-				careerGoal: "Test",
-				onboardingCompleted: false,
-			},
-			{
-				userId: userBId,
-				tenantId,
-				university: "Testowa Uczelnia",
-				fieldOfStudy: "Test",
-				semester: 1,
-				careerGoal: "Test",
-				onboardingCompleted: false,
-			},
-		]);
+	await db.insert(students).values([
+		{
+			userId: userAId,
+			tenantId,
+			university: "Testowa Uczelnia",
+			fieldOfStudy: "Test",
+			semester: 1,
+			careerGoal: "Test",
+			onboardingCompleted: false,
+		},
+		{
+			userId: userBId,
+			tenantId,
+			university: "Testowa Uczelnia",
+			fieldOfStudy: "Test",
+			semester: 1,
+			careerGoal: "Test",
+			onboardingCompleted: false,
+		},
+	]);
 	// studentA to pierwszy insert, B to drugi
 	const studentsCreated = await db.query.students.findMany({
 		where: (s) => and(eq(s.userId, userAId)),
@@ -498,7 +491,14 @@ async function main() {
 				? reflections[0].created_at >= reflections[reflections.length - 1].created_at
 				: true; // tylko 1 element = nieweryfikowalne, zakładamy OK
 
-		if (r.status === 200 && hasArray && hasItems && hasProjectTitle && hasProjectSlug && sortedDesc) {
+		if (
+			r.status === 200 &&
+			hasArray &&
+			hasItems &&
+			hasProjectTitle &&
+			hasProjectSlug &&
+			sortedDesc
+		) {
 			pass(
 				`T5. GET lista "Moja droga" → 200, ${reflections.length} refleksji, projectTitle/projectSlug obecne`,
 			);
@@ -517,19 +517,13 @@ async function main() {
 		const client6 = await pool.connect();
 		try {
 			// Student A próbuje pobrać refleksje — RLS powinien zwrócić TYLKO refleksje A
-			const rows = await withTenantCtx(
-				client6,
-				td.userAId,
-				td.tenantId,
-				"student",
-				async (tx) => {
-					const res = await tx.query(
-						`SELECT id, student_id FROM project_reflections WHERE tenant_id = $1`,
-						[td.tenantId],
-					);
-					return res.rows;
-				},
-			);
+			const rows = await withTenantCtx(client6, td.userAId, td.tenantId, "student", async (tx) => {
+				const res = await tx.query(
+					`SELECT id, student_id FROM project_reflections WHERE tenant_id = $1`,
+					[td.tenantId],
+				);
+				return res.rows;
+			});
 			// Wszystkie zwrócone wiersze muszą należeć do studentA
 			const allBelongToA = rows.every((r) => r.student_id === td.studentAId);
 			const noBelongsToB = !rows.some((r) => r.student_id === td.studentBId);
@@ -564,7 +558,9 @@ async function main() {
 			}
 			await client7.query("ROLLBACK");
 			if (denied) {
-				pass("T7. Deny-faculty — app_faculty odmówiony dostęp do project_reflections (brak grantu)");
+				pass(
+					"T7. Deny-faculty — app_faculty odmówiony dostęp do project_reflections (brak grantu)",
+				);
 			} else {
 				fail(
 					"T7. Deny-faculty na project_reflections",
