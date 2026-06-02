@@ -31,13 +31,15 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "../src/lib/db/schema";
 import { projectSubmissions, students, tenants, user } from "../src/lib/db/schema";
+import { assertTestDb } from "./assert-test-db";
 
+// Guard allowlisty: przerywa z czytelnym błędem, gdy DATABASE_URL wskazuje
+// na cokolwiek spoza localhost/127.0.0.1/::1 — nawet jeśli agent pomyli env.
 const DB_URL = process.env.DATABASE_URL ?? "";
-if (!DB_URL || DB_URL.includes("neon.tech")) {
-	console.error(
-		"❌ ABORT: DATABASE_URL wskazuje na Neon (prod) albo nie jest ustawiona. " +
-			"Podaj testowy URL przez zmienną środowiskową procesu.",
-	);
+try {
+	assertTestDb(DB_URL, "DATABASE_URL");
+} catch (e) {
+	console.error("❌ ABORT:", e instanceof Error ? e.message : String(e));
 	process.exit(1);
 }
 

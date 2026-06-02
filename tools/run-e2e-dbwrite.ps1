@@ -9,13 +9,19 @@
 #   (B0/B4 dodatkowo) $env:ANTHROPIC_API_KEY=...
 #
 # Co robi:
-#   1. migruje schemat (0001–0014) na E2E_DATABASE_URL (drizzle-kit migrate)
+#   1. migruje schemat przez db:migrate:test (guard allowlisty + drizzle-kit migrate)
 #   2. seeduje konta + dane testowe (tools/seed-e2e.ts)
 #   3. podnosi `next dev` na bazie testowej (osobny proces) — albo użyj własnego
 #   4. odpala pakiet @dbwrite (Playwright)
 #
 # Krok 3 (serwer) zostawiamy świadomie ręczny — bo `next dev` bierze .env.local
-# (=prod). Uruchom dev z DATABASE_URL=E2E_DATABASE_URL w osobnym oknie, POTEM ten skrypt z -SkipServer.
+# (=prod). Uruchom dev z $env:DATABASE_URL=$env:E2E_DATABASE_URL w osobnym oknie,
+# POTEM ten skrypt z -SkipServer.
+#
+# WAŻNE — PowerShell (nie bash):
+#   Zmienne środowiskowe ustawiaj przez $env:VAR="..." przed wywołaniem pnpm.
+#   NIGDY nie używaj składni bash-prefix VAR=... pnpm ... — w PowerShellu
+#   nie ustawia zmiennej, a drizzle-kit spada na .env.local (=prod).
 
 param([switch]$SkipServer)
 
@@ -28,8 +34,11 @@ if (-not $env:E2E_DATABASE_URL) { Write-Error "Brak E2E_DATABASE_URL"; exit 1 }
 $env:DATABASE_URL = $env:E2E_DATABASE_URL
 $env:E2E_ALLOW_DB_WRITES = "1"
 
-Write-Host "==> Migracje (0001-0014) na bazie testowej..."
-pnpm exec drizzle-kit migrate
+# db:migrate:test = migrate-test.ts: ładuje .env.test (jeśli jest), uruchamia
+# guard allowlisty (assertTestDb), DOPIERO POTEM drizzle-kit migrate.
+# Jeśli DATABASE_URL wskazuje na nie-lokalną bazę — przerywa PRZED migracją.
+Write-Host "==> Migracje (db:migrate:test — z guardem allowlisty) na bazie testowej..."
+pnpm db:migrate:test
 
 Write-Host "==> Seed E2E (konta + dane testowe)..."
 pnpm exec tsx tools/seed-e2e.ts

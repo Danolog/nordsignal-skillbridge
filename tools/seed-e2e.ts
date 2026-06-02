@@ -31,29 +31,17 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/lib/db/schema";
+import { assertTestDb } from "./assert-test-db";
 
-// ── Guard bezpieczeństwa: osobna baza testowa, nigdy prod ────────────────────
+// ── Guard bezpieczeństwa: allowlista hostów testowych (localhost / 127.0.0.1 / ::1)
+// assertTestDb przerywa z czytelnym błędem, gdy E2E_DATABASE_URL wskazuje
+// na nie-lokalny host — nawet jeśli agent pomyli env lub użyje bash-prefixu.
+// Ten seed celowo NIE czyta .env.local (prod). ──────────────────────────────────
 const DB_URL = process.env.E2E_DATABASE_URL;
-if (!DB_URL) {
-	console.error(
-		"STOP: brak E2E_DATABASE_URL. Ustaw connection string do BAZY TESTOWEJ " +
-			"(nie prod). Ten seed celowo NIE czyta .env.local.",
-	);
-	process.exit(1);
-}
-const PROD_FRAGMENTS = [
-	".neon.tech", // prod Neon (chyba że to dedykowana gałąź testowa — wtedy ustaw E2E_ALLOW_REMOTE=1)
-	"vercel",
-	"nordsignal",
-	"skill-bridge-ai",
-];
-const looksProd = PROD_FRAGMENTS.some((f) => DB_URL.includes(f));
-if (looksProd && process.env.E2E_ALLOW_REMOTE !== "1") {
-	console.error(
-		`STOP: E2E_DATABASE_URL wygląda na host zdalny/produkcyjny i nie ustawiono ` +
-			`E2E_ALLOW_REMOTE=1. Użyj lokalnej bazy testowej albo dedykowanej gałęzi Neon ` +
-			`(wtedy świadomie ustaw E2E_ALLOW_REMOTE=1). NIE drukuję connection stringa.`,
-	);
+try {
+	assertTestDb(DB_URL, "E2E_DATABASE_URL");
+} catch (e) {
+	console.error(e instanceof Error ? e.message : String(e));
 	process.exit(1);
 }
 

@@ -20,10 +20,11 @@
 		"test:e2e:pw:dbwrite": "playwright test --grep @dbwrite",
 		"seed:e2e": "tsx tools/seed-e2e.ts",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
-		"db:push": "drizzle-kit push",
-		"db:studio": "drizzle-kit studio",
-		"db:seed": "tsx src/lib/db/seed.ts"
+		"db:migrate": "tsx tools/db-guard-migrate.ts",
+		"db:migrate:test": "tsx tools/migrate-test.ts",
+		"db:push": "tsx tools/db-guard-push.ts",
+		"db:studio": "tsx tools/db-guard-studio.ts",
+		"db:seed": "tsx tools/db-guard-seed.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^3.0.58",
