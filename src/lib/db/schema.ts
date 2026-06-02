@@ -279,12 +279,55 @@ export const projects = pgTable(
 		partnerId: text("partner_id"),
 		exclusivity: boolean("exclusivity").notNull().default(false),
 		briefTemplate: text("brief_template"),
+		// B3 — Wiedza teoretyczna (migracja 0016).
+		// NULL = brak teorii → front mapuje na stan S4 `empty_theory` (spec §2.4).
+		// Brak defaultu: projekt bez teorii ma NULL, nie pusty placeholder.
+		theoryMd: text("theory_md"),
 		rubricJson: jsonb("rubric_json").notNull().default([]),
 		status: text("status").notNull().default("active"),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
 	(table) => [index("idx_projects_slug").on(table.slug)],
+);
+
+// ============================================================================
+// B3 — Źródła wiedzy w projekcie. Migracja 0016.
+//
+// Decyzja schematu (Ethan, 2026-05-31, §B3.2): NOWA tabela project_learning_resources
+// (nie rozszerzenie konfiguracyjnej project_sources — to inna domena).
+// Istniejąca project_sources = konfiguracja skąd marketplace pobiera projekty
+// (type: open_data/oss/partner/ngo/faculty, bez project_id ani title).
+//
+// Typ źródła: text + CHECK (lista miękka — 'article'/'tool' w Beta+1 = ALTER CHECK,
+// nie ALTER TYPE Postgres jak przy enum). Klasa K-PUB: dziecko katalogu projects,
+// te same prawa co project_competencies. Bez RLS tenant-owej — projekty to globalny
+// katalog, nie dane studenta. Wyjątek RLS w rls-matrix §4 + k3-validate (analogicznie
+// jak project_competencies). GRANT SELECT do app_student i app_faculty.
+// ============================================================================
+
+export const projectLearningResources = pgTable(
+	"project_learning_resources",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		projectId: uuid("project_id")
+			.notNull()
+			.references(() => projects.id, { onDelete: "cascade" }),
+		title: text("title").notNull(),
+		url: text("url").notNull(),
+		// CHECK IN ('video','docs','course') — lista miękka; nie enum Postgres (nieodwracalne ADD VALUE).
+		type: text("type").notNull(),
+		// Kolejność wyświetlania; 0 = brak preferencji.
+		position: integer("position").notNull().default(0),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_project_learning_resources_project_id").on(table.projectId),
+		check(
+			"project_learning_resources_type_values",
+			sql`${table.type} IN ('video','docs','course')`,
+		),
+	],
 );
 
 export const projectCompetencies = pgTable(
@@ -565,11 +608,20 @@ export const passportsRelations = relations(passports, ({ one }) => ({
 export const projectsRelations = relations(projects, ({ many }) => ({
 	competencies: many(projectCompetencies),
 	submissions: many(projectSubmissions),
+	learningResources: many(projectLearningResources),
 }));
 
 export const projectCompetenciesRelations = relations(projectCompetencies, ({ one }) => ({
 	project: one(projects, {
 		fields: [projectCompetencies.projectId],
+		references: [projects.id],
+	}),
+}));
+
+// B3 — Learning resources relations
+export const projectLearningResourcesRelations = relations(projectLearningResources, ({ one }) => ({
+	project: one(projects, {
+		fields: [projectLearningResources.projectId],
 		references: [projects.id],
 	}),
 }));

@@ -113,6 +113,13 @@
       "when": 1780410597938,
       "tag": "0015_jittery_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1780422859265,
+      "tag": "0016_goofy_sentry",
+      "breakpoints": true
     }
   ]
 }

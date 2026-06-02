@@ -45,6 +45,22 @@ const TENANT_TABLES = [
 	"project_reflections",
 ];
 
+// Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.
+// Wymóg DoD: każda tabela bez RLS tenant-owej musi być tu z uzasadnieniem
+// (rls-matrix §4). Tabele poniżej są globalnym katalogiem (nie danymi studenta)
+// — brak właściciela tenant-owego → brak RLS tenant-owej jest poprawnym stanem.
+// Kontrola: zapis tylko seed/system, brak endpointu zapisu klienta.
+// Testy RLS (test #3, #10) celowo NIE weryfikują tych tabel — to prawidłowe.
+// biome-ignore lint: intentional const for documentation
+const K_PUB_TABLES = [
+	"job_market_data", // dane rynku pracy, brak właściciela
+	"projects", // katalog globalny; izolacja exclusivity w warstwie zapytań
+	"project_competencies", // dziecko projects, te same prawa
+	"project_sources", // konfiguracja źródeł, server-only
+	// B3 — materiały edukacyjne projektu (migracja 0016, dziecko projects, K-PUB)
+	"project_learning_resources",
+] as const;
+
 async function main() {
 	const client = await pool.connect();
 	try {

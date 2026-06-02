@@ -25,6 +25,7 @@ const PROD_HOST_FRAGMENTS = [
 	"nordsignal.cc",
 ];
 
+// biome-ignore lint/suspicious/noConfusingVoidType: idiom fixture Playwright — void jest wymagany przez base.extend<T> gdy fixture nie zwraca wartości.
 export const dbWriteTest = base.extend<{ _dbWriteGuard: void }>({
 	_dbWriteGuard: [
 		// biome-ignore lint/correctness/noEmptyPattern: idiom fixture Playwright — auto-fixture nie potrzebuje innych fixture.
