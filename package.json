@@ -17,6 +17,8 @@
 		"test:e2e": "bash tests/e2e/run-all.sh",
 		"test:e2e:pw": "playwright test",
 		"test:e2e:pw:safe": "playwright test --grep @safe",
+		"test:e2e:pw:dbwrite": "playwright test --grep @dbwrite",
+		"seed:e2e": "tsx tools/seed-e2e.ts",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:push": "drizzle-kit push",

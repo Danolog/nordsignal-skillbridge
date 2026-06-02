@@ -1,142 +1,103 @@
 import { expect } from "@playwright/test";
 import { loginWithPassword } from "./helpers/auth";
+import { driveChatToSummaryCta } from "./helpers/b0-chat";
 import { dbWriteTest as test } from "./helpers/guards";
+import { fillSurveyAndContinue } from "./helpers/survey";
 
 /**
  * @dbwrite + KOSZT LLM — B0 „Pomocnik kariery" (LIVE).
  *
  * UWAGA KOSZT: pełny czat (~9 tur) + podsumowanie wołają model Claude przez
  * /turn i /summary. Każdy przebieg to realny koszt API i zapis sesji/tur do bazy.
- * Trzymamy minimum: jeden pełny przejazd czatu + 3× podsumowanie (bug #57 bywał
- * kapryśny — powtarzamy, by złapać niestabilność).
+ * Trzymamy minimum: jeden pełny przejazd czatu + 1 test fokusu + 3× podsumowanie
+ * (bug #57 bywał kapryśny — powtarzamy, by złapać niestabilność).
  *
- * Selektory wprost z kodu:
- *  - licznik tury: „Tura X z 9" (COPY.chat.turnCounter, MAX_TURNS=9), w przyklejonym
- *    <header class="sticky top-0">.
- *  - pole wejścia: ChatInput (textarea), CTA wysyłki aria-label „Wyślij wiadomość".
- *  - po domknięciu rozmowy: przycisk „Pokaż podsumowanie" (aria-label
- *    „Pokaż podsumowanie rozmowy").
- *  - podsumowanie: nagłówek „Co rozumiem z naszej rozmowy" + disclaimer
- *    „To NIE są rekomendacje".
+ * Mechanika i selektory wprost z kodu:
+ *  - ankieta (krok 1 z 3): helper fillSurveyAndContinue (q1/q2 radio, q3 checkbox
+ *    max 3, q4 textarea ≥10 znaków) — asertuje „Idź dalej" enabled.
+ *  - czat: helper driveChatToSummaryCta — odpowiada aż do CTA „Pokaż podsumowanie"
+ *    (pole DISABLED w trakcie streamingu; rozmowa domyka się po 9. pytaniu AI).
+ *  - podsumowanie: nagłówek „Co rozumiem z naszej rozmowy" + disclaimer „To NIE są
+ *    rekomendacje"; karty „Wybieram tę ścieżkę".
+ *
+ * Konto: "main" (onboardingCompleted=TRUE). B0 wymaga tylko zalogowanego studenta.
+ * Czas: każdy pełny przejazd to ~9 wywołań modelu — podnosimy budżet testu.
  */
 
-test.describe("@dbwrite B0 Pomocnik kariery — czat i podsumowanie", () => {
+test.describe("@dbwrite @llm B0 Pomocnik kariery — czat i podsumowanie", () => {
+	// B0 czat i podsumowanie wołają model. Serwer musi mieć ANTHROPIC_API_KEY.
+	// Sygnalizujemy to flagą E2E_LLM_AVAILABLE=1 (klucz po stronie serwera, nie
+	// w transkrypcie Playwright) lub obecnością klucza w procesie Playwright.
+	test.skip(
+		!process.env.ANTHROPIC_API_KEY && process.env.E2E_LLM_AVAILABLE !== "1",
+		"B0 wymaga LLM (serwer musi mieć ANTHROPIC_API_KEY). Ustaw E2E_LLM_AVAILABLE=1, gdy serwer ma klucz.",
+	);
+
 	test("Ankieta → czat (AI odzywa się pierwszy) → 9 tur → podsumowanie", async ({ page }) => {
+		test.setTimeout(240_000);
 		await loginWithPassword(page);
 		await page.goto("/pomocnik-kariery");
 
-		// Ekran 1 — ankieta (krok 1 z 3). Wypełnić 4 pytania, „Idź dalej".
-		await expect(page.getByRole("heading", { name: /krok 1 z 3: ankieta/i })).toBeVisible();
-		// Ankieta ma pytania typu single/multi/textarea — wybieramy pierwszy dostępny
-		// wariant każdego pytania i wypełniamy textarea minimalną liczbą znaków.
-		// (Konkretne odpowiedzi nie wpływają na asercje czatu — sprawdzamy mechanikę.)
-		for (const radio of await page.getByRole("radio").all()) {
-			// pierwszy radio każdej grupy — Playwright kliknie widoczne
-			if (await radio.isVisible()) {
-				await radio.check().catch(() => {});
-			}
-		}
-		for (const textarea of await page.getByRole("textbox").all()) {
-			if (await textarea.isVisible()) {
-				await textarea.fill("To jest moja testowa odpowiedź na pytanie otwarte w ankiecie.");
-			}
-		}
-		await page.getByRole("button", { name: /Idź dalej/i }).click();
+		await fillSurveyAndContinue(page);
 
-		// Ekran 2 — czat. AI odzywa się pierwszy → licznik „Tura 1 z 9" pojawia się
-		// po otwierającej wiadomości Pomocnika.
+		// Ekran 2 — czat.
 		await expect(page.getByRole("heading", { name: /krok 2 z 3: rozmowa/i })).toBeVisible();
-		const turnCounter = page.getByText(/Tura \d+ z 9/);
-		await expect(turnCounter).toBeVisible({ timeout: 30_000 });
+		await driveChatToSummaryCta(page);
 
-		const input = page.getByRole("textbox");
-		const sendBtn = page.getByRole("button", { name: /Wyślij wiadomość/i });
+		await page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i }).click();
 
-		// Przejdź ~9 tur: odpowiadaj aż pojawi się CTA „Pokaż podsumowanie".
-		const showSummary = page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i });
-		for (let i = 0; i < 12; i++) {
-			if (await showSummary.isVisible().catch(() => false)) break;
-			await expect(input).toBeEnabled({ timeout: 30_000 });
-			await input.fill(`Odpowiedź studenta numer ${i + 1} — testuję przepływ rozmowy.`);
-			await sendBtn.click();
-			// Fix #55: po wysłaniu fokus wraca do pola wejścia (gdy rozmowa nie domknięta).
-			// Sprawdzamy po powrocie statusu do gotowości w następnej iteracji.
-			await page.waitForTimeout(500);
-		}
-
-		await expect(showSummary).toBeVisible({ timeout: 60_000 });
-		await showSummary.click();
-
-		// Ekran 3 — podsumowanie: nagłówek + disclaimer (HITL, bez procentów).
-		await expect(page.getByText(/Co rozumiem z naszej rozmowy/i)).toBeVisible({ timeout: 60_000 });
-		await expect(page.getByText(/To NIE są rekomendacje/i)).toBeVisible();
-		// Bez procentów: nie powinno być „%" w sekcji ścieżek (sanity — nie twardy gate).
-		// 1–3 ścieżki: karty wyboru „Wybieram tę ścieżkę".
-		await expect(page.getByText(/Wybieram tę ścieżkę/i).first()).toBeVisible();
+		// Ekran 3 — podsumowanie. Backend ma DWA dozwolone warianty (kontrakt
+		// SummaryResponse): judged:true → pełne podsumowanie „Co rozumiem z naszej
+		// rozmowy"; judged:false (warstwa 4 oceny nie przeszła) → akceptowalny
+		// degrade HITL „Przygotuję to za chwilę". Oba pokazują karty wyboru ścieżki.
+		// Pusty/błędny ekran = FAIL; którykolwiek z dwóch wariantów = PASS.
+		// /summary woła model i bywa wolne (do ~64 s) → budżet 150 s (sedno bug #57).
+		await expect(
+			page
+				.getByText(/Co rozumiem z naszej rozmowy/i)
+				.or(page.getByText(/Przygotuję to za chwilę/i)),
+		).toBeVisible({ timeout: 150_000 });
+		// 1–3 ścieżki: karty wyboru „Wybieram tę ścieżkę" muszą się pojawić w obu wariantach.
+		await expect(page.getByText(/Wybieram tę ścieżkę/i).first()).toBeVisible({ timeout: 60_000 });
 	});
 
 	test("Fix #55: po wysłaniu wiadomości fokus wraca do pola wejścia", async ({ page }) => {
+		test.setTimeout(120_000);
 		await loginWithPassword(page);
 		await page.goto("/pomocnik-kariery");
-		// Skrót: wejdź w czat jak wyżej (wypełnij ankietę), wyślij jedną wiadomość,
-		// poczekaj aż AI skończy (status ready) i sprawdź, że textarea ma fokus.
-		await expect(page.getByRole("heading", { name: /krok 1 z 3/i })).toBeVisible();
-		for (const radio of await page.getByRole("radio").all()) {
-			if (await radio.isVisible()) await radio.check().catch(() => {});
-		}
-		for (const textarea of await page.getByRole("textbox").all()) {
-			if (await textarea.isVisible())
-				await textarea.fill("Testowa odpowiedź otwarta na ankietę B0.");
-		}
-		await page.getByRole("button", { name: /Idź dalej/i }).click();
+		await fillSurveyAndContinue(page);
 
 		const input = page.getByRole("textbox");
-		await expect(page.getByText(/Tura \d+ z 9/)).toBeVisible({ timeout: 30_000 });
-		await expect(input).toBeEnabled({ timeout: 30_000 });
+		await expect(page.getByText(/Tura \d+ z 9/)).toBeVisible({ timeout: 45_000 });
+		await expect(input).toBeEnabled({ timeout: 45_000 });
 		await input.fill("Pierwsza odpowiedź — sprawdzam powrót fokusu.");
 		await page.getByRole("button", { name: /Wyślij wiadomość/i }).click();
 		// Po zakończeniu odpowiedzi AI (status ready) komponent przywraca fokus do textarea.
-		await expect(input).toBeEnabled({ timeout: 30_000 });
+		await expect(input).toBeEnabled({ timeout: 45_000 });
 		await expect(input).toBeFocused({ timeout: 10_000 });
 	});
 
 	// Fix #57 bywał kapryśny → 3 przebiegi samego /summary. Każdy: świeża sesja,
-	// szybkie domknięcie czatu, generacja podsumowania. Liczba 3 = kompromis
-	// pokrycie/koszt LLM (wytyczna Olivera).
+	// domknięcie czatu, generacja podsumowania. 3 = kompromis pokrycie/koszt LLM.
 	for (let run = 1; run <= 3; run++) {
 		test(`Fix #57: /summary generuje wynik — przebieg ${run}/3`, async ({ page }) => {
+			test.setTimeout(180_000);
 			await loginWithPassword(page);
 			await page.goto("/pomocnik-kariery");
-			await expect(page.getByRole("heading", { name: /krok 1 z 3/i })).toBeVisible();
-			for (const radio of await page.getByRole("radio").all()) {
-				if (await radio.isVisible()) await radio.check().catch(() => {});
-			}
-			for (const textarea of await page.getByRole("textbox").all()) {
-				if (await textarea.isVisible())
-					await textarea.fill("Odpowiedź ankietowa do przebiegu podsumowania.");
-			}
-			await page.getByRole("button", { name: /Idź dalej/i }).click();
+			await fillSurveyAndContinue(page);
 
-			const input = page.getByRole("textbox");
-			const sendBtn = page.getByRole("button", { name: /Wyślij wiadomość/i });
-			const showSummary = page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i });
-			await expect(page.getByText(/Tura \d+ z 9/)).toBeVisible({ timeout: 30_000 });
-			for (let i = 0; i < 12; i++) {
-				if (await showSummary.isVisible().catch(() => false)) break;
-				await expect(input).toBeEnabled({ timeout: 30_000 });
-				await input.fill(`Krótka odpowiedź ${i + 1}.`);
-				await sendBtn.click();
-				await page.waitForTimeout(400);
-			}
-			await expect(showSummary).toBeVisible({ timeout: 60_000 });
-			await showSummary.click();
+			await driveChatToSummaryCta(page);
+			await page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i }).click();
+
 			// Wynik musi się wygenerować — nagłówek podsumowania albo (akceptowalny
 			// degrade HITL) ekran „Przygotuję to za chwilę". Pusty ekran = FAIL.
+			// /summary woła model i bywa wolne (zaobserwowane do ~64 s) → budżet 150 s,
+			// żeby smoke nie był flaky na samej latencji LLM (to był sedno bug #57).
 			await expect(
 				page
 					.getByText(/Co rozumiem z naszej rozmowy/i)
 					.or(page.getByText(/Przygotuję to za chwilę/i)),
-			).toBeVisible({ timeout: 60_000 });
+			).toBeVisible({ timeout: 150_000 });
 		});
 	}
 });

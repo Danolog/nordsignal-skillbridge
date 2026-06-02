@@ -3,19 +3,33 @@ import type { Page } from "@playwright/test";
 /**
  * Logowanie testowe e-mail/hasło dla przepływów @dbwrite.
  *
- * Wymaga konta testowego w BAZIE TESTOWEJ (nie prod!) — przekazanego przez env:
- *   E2E_TEST_EMAIL, E2E_TEST_PASSWORD
- * Konto musi mieć już ukończony onboarding (rekord `students`), inaczej trasy
- * Bety przekierują na /onboarding zamiast pokazać funkcję. Seed: `pnpm db:seed`
- * na bazie testowej tworzy 15 studentów demo — użyj jednego z nich albo dodaj
- * dedykowane konto e-mail/hasło (better-auth signUp.email).
+ * DWA konta testowe (seed: tools/seed-e2e.ts), bo wymagania tras są SPRZECZNE:
+ *  - B1/dashboard/projekty wymagają onboardingCompleted=TRUE (inaczej trasa
+ *    przekierowuje na /onboarding).
+ *  - B4 (samoocena w onboardingu) wymaga onboardingCompleted=FALSE (inaczej
+ *    /onboarding przekierowuje na /dashboard).
+ * Jeden student nie spełnia obu naraz → dwa konta.
+ *
+ * Konta i hasła przekazywane przez env (BAZA TESTOWA, nie prod!):
+ *   E2E_TEST_EMAIL / E2E_TEST_PASSWORD        — student onboardingCompleted=TRUE
+ *   E2E_TEST_EMAIL_B4 / E2E_TEST_PASSWORD_B4  — student onboardingCompleted=FALSE
+ *
+ * Konta tworzy seed-e2e.ts przez better-auth signUp.email (realny hash hasła) —
+ * NIE ręcznym INSERT do account.password (better-auth liczy hash sam).
  */
-export async function loginWithPassword(page: Page): Promise<void> {
-	const email = process.env.E2E_TEST_EMAIL;
-	const password = process.env.E2E_TEST_PASSWORD;
+type Account = "main" | "b4";
+
+export async function loginWithPassword(page: Page, account: Account = "main"): Promise<void> {
+	const email = account === "b4" ? process.env.E2E_TEST_EMAIL_B4 : process.env.E2E_TEST_EMAIL;
+	const password =
+		account === "b4" ? process.env.E2E_TEST_PASSWORD_B4 : process.env.E2E_TEST_PASSWORD;
 	if (!email || !password) {
 		throw new Error(
-			"Brak E2E_TEST_EMAIL / E2E_TEST_PASSWORD — ustaw poświadczenia konta testowego (baza testowa).",
+			`Brak poświadczeń konta testowego "${account}" — ustaw ` +
+				(account === "b4"
+					? "E2E_TEST_EMAIL_B4 / E2E_TEST_PASSWORD_B4"
+					: "E2E_TEST_EMAIL / E2E_TEST_PASSWORD") +
+				" (baza testowa).",
 		);
 	}
 	await page.goto("/login");
