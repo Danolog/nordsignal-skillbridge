@@ -51,7 +51,9 @@ const TENANT_TABLES = [
 // — brak właściciela tenant-owego → brak RLS tenant-owej jest poprawnym stanem.
 // Kontrola: zapis tylko seed/system, brak endpointu zapisu klienta.
 // Testy RLS (test #3, #10) celowo NIE weryfikują tych tabel — to prawidłowe.
-// biome-ignore lint: intentional const for documentation
+//
+// Ta lista NIE jest już martwa: test #13 (kompletność wyjątków) czyta ją i
+// egzekwuje, że KAŻDA tabela `public` bez RLS jest albo tu, albo w TENANT_TABLES.
 const K_PUB_TABLES = [
 	"job_market_data", // dane rynku pracy, brak właściciela
 	"projects", // katalog globalny; izolacja exclusivity w warstwie zapytań
@@ -59,6 +61,12 @@ const K_PUB_TABLES = [
 	"project_sources", // konfiguracja źródeł, server-only
 	// B3 — materiały edukacyjne projektu (migracja 0016, dziecko projects, K-PUB)
 	"project_learning_resources",
+	// tenants — rejestr uczelni (slug/name). To rejestr najemców, nie dane
+	// studenta; sam nie ma właściciela tenant-owego, więc brak RLS tenant-owej
+	// jest poprawnym stanem (analogicznie do katalogu projects). Zapis tylko
+	// seed/system (brak endpointu zapisu klienta), odczyt server-side (faculty
+	// login lookup). Migracja 0005.
+	"tenants",
 ] as const;
 
 async function main() {
@@ -87,6 +95,40 @@ async function main() {
 			rls.rowCount === 9,
 			`włączony na ${rls.rowCount}/9`,
 		);
+
+		// 13. KOMPLETNOŚĆ WYJĄTKÓW RLS (DoD domeny 8, rls-matrix §4; rekomendacja
+		// Ethana wariant (a) — realny test zamiast martwej stałej K_PUB_TABLES).
+		//
+		// Inwariant: KAŻDA tabela bazowa w schemacie `public` bez `relrowsecurity=true`
+		// musi być JAWNIE sklasyfikowana — albo w TENANT_TABLES (te i tak mają RLS),
+		// albo w K_PUB_TABLES (jawny wyjątek z uzasadnieniem). Tabela `public` bez RLS
+		// i spoza obu list → FAIL. Domyka lukę: nowa tabela bez RLS przechodziła dotąd
+		// niezauważona, bo nic nie czytało K_PUB_TABLES.
+		//
+		// Zakres: `relkind='r'` (zwykłe tabele) w `public`. Tabela drizzle
+		// `__drizzle_migrations` żyje w schemacie `drizzle` (nie `public`) — naturalnie
+		// poza zakresem, bez specjalnego wykluczenia.
+		{
+			const allPublic = await client.query(
+				`SELECT c.relname, c.relrowsecurity AS rls
+				   FROM pg_class c
+				   JOIN pg_namespace n ON c.relnamespace = n.oid
+				  WHERE n.nspname = 'public' AND c.relkind = 'r'`,
+			);
+			const classified = new Set<string>([...TENANT_TABLES, ...K_PUB_TABLES]);
+			const unaccounted = allPublic.rows
+				.filter((r) => r.rls !== true && !classified.has(r.relname))
+				.map((r) => r.relname)
+				.sort();
+			check(
+				"13. kompletność wyjątków K-PUB — każda tabela public bez RLS jest sklasyfikowana",
+				unaccounted.length === 0,
+				unaccounted.length === 0
+					? `wszystkie ${allPublic.rowCount} tabel public pokryte (RLS lub lista wyjątków)`
+					: `tabela(e) bez RLS i NIE na liście wyjątków K-PUB: ${unaccounted.join(", ")} — ` +
+							"dodaj do K_PUB_TABLES z uzasadnieniem (rls-matrix §4) albo włącz RLS",
+			);
+		}
 
 		// 4. backfill — 0 NULL
 		for (const tbl of TENANT_TABLES) {
