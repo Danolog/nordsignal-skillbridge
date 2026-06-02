@@ -2,7 +2,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { generateObject, type LanguageModel, NoObjectGeneratedError, streamText } from "ai";
 import { z } from "zod";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
-import { logError } from "@/lib/log";
+import { extractValidationIssues, logError } from "@/lib/log";
 
 /**
  * B0 — Pomocnik Wyboru Kariery. Warstwa AI (ADR-004 + golden-adr.md §4).
@@ -179,42 +179,82 @@ Odpowiedz jedną wiadomością Pomocnika — pytanie pogłębiające albo krótk
 // --- Podsumowanie (/summary) — blokująco, Opus + sędzia -----------------------
 
 // Limity DŁUGOŚCI pól — używane też w prompcie (Opus dostaje je wprost).
-// KLUCZOWE: w schemacie egzekwujemy je przez ŁAGODNE PRZYCINANIE (.transform),
-// nie przez twardy .max(). Twardy .max() = każde przekroczenie o 1 znak →
-// walidacja Zod nie przechodzi → generateObject rzuca NoObjectGeneratedError →
-// 500. To była połowa kapryśności na prod: Opus czasem pisze „why" na 820
-// znaków zamiast 800 i CAŁE podsumowanie pada, choć treść jest poprawna.
-// Przycinamy do limitu zamiast odrzucać — kontrakt produktowy (1–3 ścieżki, bez
-// procentów/rankingu) trzyma typ SummaryResult, nie te bound'y.
+// KLUCZOWE: schemat przekazany do generateObject jest MAKSYMALNIE TOLERANCYJNY.
+// Każde twarde ograniczenie Zod (.min, .max, required, sztywny enum) = potencjalny
+// AI_NoObjectGeneratedError, bo generateObject WALIDUJE WEWNĘTRZNIE i rzuca ZANIM
+// zwróci obiekt — żaden post-processing się wtedy nie wykona. Dlatego limity i
+// kontrakt produktowy (1–3 ścieżki, bez %/rankingu) egzekwujemy DOPIERO PO udanej
+// walidacji (funkcja normalizeSummary niżej), a nie rygorem pól w schemacie.
+//
+// Diagnoza systematycznej porażki prod (2026-06-02, sonda realnym generateObject
+// na AI SDK 6 + Zod 4): walidacja padała NIE na długości (to relaks #55 już zdjął
+// przez .transform), tylko na TWARDYCH regułach struktury, których Opus nie trzyma
+// konsekwentnie:
+//   • `.min(1)` na string — gdy Opus zwróci puste/whitespace „why" → too_small,
+//   • `.min(1)` na array careerPaths — gdy Opus zwróci pustą tablicę → too_small,
+//   • pola WYMAGANE (label/why) — gdy Opus pominie „why" przy obszarze → invalid_type.
+// Każdy z tych przypadków wywracał CAŁY obiekt. Nadmiarowe pola (np. „probability")
+// Zod 4 i tak po cichu ZDEJMUJE (strip) — to NIE był winowajca. Stąd: zdejmujemy
+// min/required ze schematu, dopuszczamy puste/brakujące, a sens (≥1 użyteczna
+// ścieżka) rozstrzygamy po walidacji.
 const SUMMARY_TEXT_MAX = 2000;
 const PATH_LABEL_MAX = 120;
 const PATH_WHY_MAX = 800;
 const MAX_PATHS = 3;
 
-function trimmed(max: number) {
-	return z
-		.string()
-		.min(1)
-		.transform((s) => (s.length > max ? s.slice(0, max).trimEnd() : s));
-}
-
-export const CareerSummarySchema = z.object({
-	summaryText: trimmed(SUMMARY_TEXT_MAX),
+// Schemat SUROWY (co przyjmujemy od Opusa) — bez min/required/max. Pola opcjonalne
+// z domyślną pustą wartością, żeby brak „why" albo pusty string NIE wywracał walidacji.
+// Normalizację (przycięcie, odsianie pustych, limit 3) robi normalizeSummary PO walidacji.
+const RawCareerSummarySchema = z.object({
+	summaryText: z.string().optional().default(""),
 	careerPaths: z
 		.array(
 			z.object({
-				label: trimmed(PATH_LABEL_MAX),
-				why: trimmed(PATH_WHY_MAX),
+				label: z.string().optional().default(""),
+				why: z.string().optional().default(""),
 			}),
 		)
-		.min(1)
-		// Tolerujemy >3 ścieżki (Opus bywa nadgorliwy) — bierzemy pierwsze 3
-		// zamiast odrzucać cały output. Dolny limit (≥1) zostaje twardy: zero
-		// ścieżek to realny brak treści, nie nadmiar do przycięcia.
-		.transform((paths) => paths.slice(0, MAX_PATHS)),
+		.optional()
+		.default([]),
 });
 
-export type CareerSummary = z.infer<typeof CareerSummarySchema>;
+export type RawCareerSummary = z.infer<typeof RawCareerSummarySchema>;
+
+/** Znormalizowany wynik podsumowania (PO walidacji + kontrakcie produktowym). */
+export type CareerSummary = {
+	summaryText: string;
+	careerPaths: { label: string; why: string }[];
+};
+
+/**
+ * Egzekwuje kontrakt produktowy PO udanej walidacji (nie w schemacie Zod):
+ *  - przycina pola do limitów wyświetlania,
+ *  - odsiewa ścieżki bez labela (puste = brak treści, nie obszar),
+ *  - przycina do MAX_PATHS obszarów.
+ * NIE narzuca tu „≥1 ścieżka" — pusty wynik to legalny stan, który generateSummary
+ * mapuje na łagodny fallback (ekran „spróbuj ponownie / przegląd opiekuna"), a nie 500.
+ */
+function clip(s: string, max: number): string {
+	return s.length > max ? s.slice(0, max).trimEnd() : s;
+}
+
+export function normalizeSummary(raw: RawCareerSummary): CareerSummary {
+	const careerPaths = (raw.careerPaths ?? [])
+		.map((p) => ({
+			label: clip((p.label ?? "").trim(), PATH_LABEL_MAX),
+			why: clip((p.why ?? "").trim(), PATH_WHY_MAX),
+		}))
+		.filter((p) => p.label.length > 0)
+		.slice(0, MAX_PATHS);
+	return {
+		summaryText: clip((raw.summaryText ?? "").trim(), SUMMARY_TEXT_MAX),
+		careerPaths,
+	};
+}
+
+// Schemat publiczny = surowy + normalizacja w .transform. Cokolwiek przyjdzie od
+// Opusa i przejdzie surową walidację, wychodzi już znormalizowane do kontraktu.
+export const CareerSummarySchema = RawCareerSummarySchema.transform(normalizeSummary);
 
 /** Wynik /summary zwracany do frontu — BEZ probability/% (guardrail HITL). */
 export type SummaryResult =
@@ -249,9 +289,14 @@ Odrzuć (verdict: "NO"), jeśli podsumowanie:
 - ocenia wartość osoby.
 W przeciwnym razie zaakceptuj (verdict: "YES").`;
 
+// Schemat sędziego — tolerancyjny tą samą zasadą co CareerSummarySchema.
+// verdict NIE jako sztywny enum (Opus bywa zwraca „yes"/„Yes."/„ACCEPT") —
+// przyjmujemy dowolny string i interpretujemy w judgeSummary (domyślnie odmowa
+// przy niejednoznaczności = bezpieczniej dla HITL). reason bez .max (długość to
+// nie kontrakt — przycinamy po, jeśli trzeba). Cel: sędzia nie pada na walidacji.
 const JudgeSchema = z.object({
-	verdict: z.enum(["YES", "NO"]),
-	reason: z.string().max(500),
+	verdict: z.string().optional().default(""),
+	reason: z.string().optional().default(""),
 });
 
 // --- Utwardzenie generateObject: retry na NoObjectGeneratedError -------------
@@ -295,8 +340,17 @@ async function generateObjectWithRetry<T>(
 		} catch (err) {
 			if (!NoObjectGeneratedError.isInstance(err)) throw err;
 			lastErr = err;
-			// Logujemy KAŻDĄ nieudaną próbę (PII-safe: logError bierze tylko name+message).
-			logError(`${scope}.no-object-retry`, err, { attempt, of: GENERATE_OBJECT_ATTEMPTS });
+			// Logujemy KAŻDĄ nieudaną próbę. PII-safe: logError bierze name+message,
+			// a extractValidationIssues zwraca WYŁĄCZNIE metadane reguły Zod
+			// (path.code.message) — KTÓRE pole i jaką regułę Opus złamał. Bez surowej
+			// treści studenta (err.text). To zamyka diagnozę „No object generated"
+			// (dotąd log nie mówił, które pole padło).
+			const issues = extractValidationIssues(err);
+			logError(`${scope}.no-object-retry`, err, {
+				attempt,
+				of: GENERATE_OBJECT_ATTEMPTS,
+				issues: issues.length > 0 ? issues.map((i) => `${i.path}:${i.code}`).join("; ") : "none",
+			});
 			if (attempt < GENERATE_OBJECT_ATTEMPTS) await sleep(GENERATE_OBJECT_BACKOFF_MS * attempt);
 		}
 	}
@@ -319,7 +373,10 @@ async function judgeSummary(summary: CareerSummary, model: LanguageModel): Promi
 			prompt: `<user_input untrusted="true">${sanitizeForPrompt(blob, 4000)}</user_input>`,
 		}),
 	);
-	return object.verdict === "YES";
+	// verdict to teraz string (schemat tolerancyjny). Akceptujemy tylko jednoznaczne
+	// „YES"; cokolwiek innego (puste, „NO", „maybe", literówka) = odmowa. Bezpieczniej
+	// dla HITL: niejasny werdykt sędziego NIE przepuszcza podsumowania do studenta.
+	return object.verdict.trim().toUpperCase() === "YES";
 }
 
 export type GenerateSummaryArgs = {
@@ -378,6 +435,17 @@ Trzymaj się limitów długości i liczby obszarów (najwyżej ${MAX_PATHS}). Be
 				}),
 			);
 			last = object;
+			// Kontrakt „≥1 użyteczna ścieżka" egzekwujemy TU (po walidacji), nie w
+			// schemacie Zod. Schemat celowo przyjmuje pusty wynik (żeby nie rzucał
+			// NoObjectGeneratedError) — ale pusty wynik nie ma sensu pokazywać
+			// studentowi ani oceniać sędzią. Pusto → następna próba; jeśli druga też
+			// pusta, pętla kończy się i wpadamy w łagodny fallback warstwa4_failed.
+			if (object.careerPaths.length === 0) {
+				logError("career-helper.summary.generate.empty-after-validate", new Error("0 paths"), {
+					attempt,
+				});
+				continue;
+			}
 			const ok = await judgeSummary(object, judgeModel);
 			if (ok) {
 				return {
@@ -396,7 +464,13 @@ Trzymaj się limitów długości i liczby obszarów (najwyżej ${MAX_PATHS}). Be
 		// careerPaths → ekran „nie udało się, spróbuj ponownie" z afordancją ponów).
 		// Logujemy PII-safe; student nigdy nie widzi stack trace ani 500. Osobny tag
 		// (.exhausted) odróżnia ten przypadek w logach od catcha w route (.generate).
-		logError("career-helper.summary.generate.exhausted", err, {});
+		const exhaustedIssues = extractValidationIssues(err);
+		logError("career-helper.summary.generate.exhausted", err, {
+			issues:
+				exhaustedIssues.length > 0
+					? exhaustedIssues.map((i) => `${i.path}:${i.code}`).join("; ")
+					: "none",
+		});
 		return {
 			judged: false,
 			judgedFor: "warstwa4_failed",
