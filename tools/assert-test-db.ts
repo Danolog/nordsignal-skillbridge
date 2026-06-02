@@ -1,58 +1,86 @@
 /**
- * assert-test-db — guard bezpieczeństwa bazy testowej (allowlista hostów).
+ * assert-test-db — guard bezpieczeństwa bazy (allowlista hostów lokalnych).
  *
- * Wywołaj PRZED każdą operacją testową / seedową / e2e zapisującą do bazy.
- * Przerywa z czytelnym błędem, gdy DATABASE_URL wskazuje na host spoza
- * allowlisty hostów lokalnych / kontenerowych.
+ * Wywołaj PRZED każdą operacją dotykającą bazy (migrate, seed, push, studio, e2e).
+ * Przerywa z czytelnym błędem, gdy DATABASE_URL wskazuje na host spoza allowlisty
+ * lokalnych hostów — CHYBA że ustawiono jawną flagę potwierdzenia.
  *
- * Wzorzec: ALLOWLISTA (dozwolone hosty testowe), nie denylista —
+ * Wzorzec: ALLOWLISTA (dozwolone hosty lokalne), nie denylista —
  * łapie każdy zdalny host, nie tylko znane nazwy produkcyjne.
  *
- * Dozwolone hosty testowe (domyślne):
- *   - localhost
- *   - 127.0.0.1
- *   - ::1  (IPv6 loopback)
+ * Logika decyzyjna (trzy ścieżki):
+ *   1. Host LOKALNY (localhost / 127.0.0.1 / ::1) → przechodzi cicho.
+ *      CI (PostgreSQL w kontenerze na localhost) przechodzi bez żadnej flagi.
+ *   2. Host ZDALNY + brak CONFIRM_PROD_DB=1 → ABORT z instrukcją.
+ *      Zamyka incydent „gołe db:migrate z prod-DSN".
+ *   3. Host ZDALNY + CONFIRM_PROD_DB=1 → przechodzi (świadoma ścieżka operatora).
+ *      Darek na prod: $env:CONFIRM_PROD_DB=1; pnpm db:migrate
  *
- * Rozszerzenie (obejście na własną odpowiedzialność):
- *   Ustaw E2E_ALLOW_REMOTE=1, żeby przepuścić dedykowaną gałąź Neon testową.
- *   Nigdy nie ustawiaj E2E_ALLOW_REMOTE=1 przy bazie prod.
+ * Hard-deny (warstwa dodatkowa, pierwsza — przed parsowaniem hosta):
+ *   Zawsze blokuje znane fragmenty prod-URL nawet przy CONFIRM_PROD_DB=1 i E2E_ALLOW_REMOTE=1.
+ *   Cel: ostatnia linia obrony przy dosłownym prod-DSN.
  *
- * Użycie:
- *   import { assertTestDb } from "./assert-test-db";
- *   assertTestDb(process.env.DATABASE_URL); // rzuca, jeśli host nie jest lokalny
+ * E2E_ALLOW_REMOTE=1 (legacy dla seed-e2e / b5-contract-test):
+ *   Przepuszcza zdalny host jak CONFIRM_PROD_DB=1, ale tylko gdy NIE trafił w hard-deny.
+ *   Obie flagi traktowane równorzędnie.
+ *
+ * Dozwolone hosty lokalne:
+ *   localhost / 127.0.0.1 / ::1
+ *
+ * Nie zmieniaj drizzle.config.ts — guard żyje w wrapperach skryptów.
+ * db:generate nie łączy się z bazą i nie używa tego guarda.
  */
 
-/** Hosty bezwarunkowo dozwolone dla operacji testowych. */
-const ALLOWED_TEST_HOSTS = ["localhost", "127.0.0.1", "::1"];
+/** Hosty bezwarunkowo dozwolone — lokalny kontener / loopback. */
+const ALLOWED_LOCAL_HOSTS = ["localhost", "127.0.0.1", "::1"];
 
 /**
- * Zwraca hostname z connection stringa PostgreSQL.
- * Obsługuje formaty:
+ * Fragmenty bezwarunkowo blokowane w surowym URL (hard-deny).
+ * Sprawdzane PRZED parsowaniem hosta — pierwsza warstwa ochrony.
+ * Blokuje nawet przy CONFIRM_PROD_DB=1 i E2E_ALLOW_REMOTE=1.
+ */
+const HARD_DENY_FRAGMENTS = [
+	"skill-bridge-ai", // produkcyjna baza Neon SkillBridge
+];
+
+/**
+ * Zwraca znormalizowany hostname z connection stringa PostgreSQL.
+ *
+ * Obsługuje:
  *   postgresql://user:pass@host:port/dbname
  *   postgres://user:pass@host/dbname
- *   host=... (DSN w stylu libpq — nie używany w tym repo, ale zabezpieczamy)
+ *   IPv6: postgresql://u@[::1]:5432/db → zwraca "::1" (bez nawiasów)
  *
- * Zwraca null, gdy nie udało się sparsować.
+ * Zwraca null gdy nie udało się sparsować (nieznany format DSN).
  */
 export function parseDbHost(url: string): string | null {
 	try {
-		// URL-based DSN (postgresql:// lub postgres://)
 		if (url.startsWith("postgresql://") || url.startsWith("postgres://")) {
 			const parsed = new URL(url);
-			return parsed.hostname || null;
+			const hostname = parsed.hostname || null;
+			if (!hostname) return null;
+			// Normalizacja IPv6: URL.hostname zwraca "[::1]" z nawiasami — stripujemy.
+			return hostname.replace(/^\[|\]$/g, "");
 		}
 	} catch {
-		// URL.parse rzucił — prawdopodobnie DSN w stylu libpq; pomijamy
+		// URL.parse rzucił — prawdopodobnie nieparseable DSN
 	}
 	return null;
 }
 
 /**
- * Sprawdza, czy podany connection string celuje w dozwolony host testowy.
- * Jeśli nie — rzuca Error z czytelnym komunikatem.
+ * Guard bezpieczeństwa bazy — sprawdza host i wymagane flagi.
  *
- * @param dbUrl  Wartość DATABASE_URL (lub innej zmiennej z DSN).
- * @param varName  Nazwa zmiennej (dla lepszego komunikatu błędu).
+ * Kolejność sprawdzeń (KRYTYCZNA — nie zmieniaj):
+ *   1. Hard-deny na surowym stringu → ABORT bezwarunkowo.
+ *   2. Parsowanie hosta.
+ *   3. Nieparseable + brak flagi → ABORT.
+ *   4. Host lokalny → PASS cicho.
+ *   5. Host zdalny + flaga (CONFIRM_PROD_DB=1 lub E2E_ALLOW_REMOTE=1) → PASS z ostrzeżeniem.
+ *   6. Host zdalny + brak flagi → ABORT z instrukcją jak postąpić.
+ *
+ * @param dbUrl   Wartość zmiennej z DSN (DATABASE_URL, E2E_DATABASE_URL, itp.)
+ * @param varName Nazwa zmiennej (dla czytelnego komunikatu błędu)
  */
 export function assertTestDb(dbUrl: string | undefined, varName = "DATABASE_URL"): void {
 	if (!dbUrl) {
@@ -62,61 +90,65 @@ export function assertTestDb(dbUrl: string | undefined, varName = "DATABASE_URL"
 		);
 	}
 
-	// E2E_ALLOW_REMOTE=1 → świadome obejście (dedykowana gałąź Neon testowa).
-	// Guard nadal odrzuca znane prod-frагменты — patrz niżej.
-	const allowRemote = process.env.E2E_ALLOW_REMOTE === "1";
-
-	const host = parseDbHost(dbUrl);
-
-	if (host === null) {
-		// Nie udało się sparsować hosta — zachowujemy ostrożność i blokujemy,
-		// chyba że jawnie ustawiono E2E_ALLOW_REMOTE.
-		if (!allowRemote) {
-			throw new Error(
-				`[assert-test-db] STOP: nie udało się sparsować hosta z ${varName}. ` +
-					"Sprawdź format connection stringa. Ustaw E2E_ALLOW_REMOTE=1, " +
-					"jeśli celowo używasz zdalnej bazy testowej.",
-			);
-		}
-		return; // E2E_ALLOW_REMOTE=1 + nieparseable → przepuść z ostrzeżeniem
-	}
-
-	// Bezwarunkowa denylista prod-fragmentów — blokuj NAWET przy E2E_ALLOW_REMOTE,
-	// żeby nie przepuścić produkcyjnych baz Neon przez przypadek.
-	const HARD_DENY_FRAGMENTS = [
-		"skill-bridge-ai", // produkcyjna baza Neon SkillBridge
-		"nordsignal", // potencjalne bazy firmowe
-	];
+	// ── 1. HARD-DENY — pierwsza warstwa, na surowym stringu, bezwarunkowa ─────
+	// Musi być PRZED gałęzią host===null, żeby nieparseable URL + fragment prod
+	// nie był przepuszczany przez E2E_ALLOW_REMOTE=1.
 	const hardDenied = HARD_DENY_FRAGMENTS.find((frag) => dbUrl.toLowerCase().includes(frag));
 	if (hardDenied) {
 		throw new Error(
 			`[assert-test-db] ODMOWA: ${varName} zawiera fragment "${hardDenied}", ` +
 				`który wygląda na produkcyjną bazę SkillBridge. ` +
-				`Operacja testowa/seedowa na prod jest zakazana. ` +
-				`(E2E_ALLOW_REMOTE nie obchodzi tej blokady)`,
+				`Operacja na tej bazie jest zakazana z tego skryptu. ` +
+				`(Ani CONFIRM_PROD_DB=1 ani E2E_ALLOW_REMOTE=1 nie obchodzą tej blokady)`,
 		);
 	}
 
-	// Sprawdź allowlistę lokalnych hostów.
-	const isAllowed = ALLOWED_TEST_HOSTS.includes(host);
+	// ── 2. Parsowanie hosta ────────────────────────────────────────────────────
+	const host = parseDbHost(dbUrl);
 
-	if (!isAllowed) {
-		if (allowRemote) {
-			// E2E_ALLOW_REMOTE=1 → zdalny host przepuszczony (dedykowana gałąź Neon).
-			// Drukujemy ostrzeżenie, żeby było widoczne w logach.
-			console.warn(
-				`[assert-test-db] OSTRZEŻENIE: ${varName} wskazuje na nie-lokalny host ` +
-					`"${host}". E2E_ALLOW_REMOTE=1 — przyjmuję, że to dedykowana gałąź testowa. ` +
-					`NIE używaj z bazą prod.`,
+	// Flagi świadomego przejścia (równorzędne — obie traktowane jak "znam ryzyko")
+	const confirmProd = process.env.CONFIRM_PROD_DB === "1";
+	const allowRemote = process.env.E2E_ALLOW_REMOTE === "1";
+	const hasRemoteFlag = confirmProd || allowRemote;
+
+	// ── 3. Nieparseable URL ───────────────────────────────────────────────────
+	if (host === null) {
+		if (!hasRemoteFlag) {
+			throw new Error(
+				`[assert-test-db] STOP: nie udało się sparsować hosta z ${varName}. ` +
+					"Sprawdź format connection stringa. " +
+					"Aby świadomie uruchomić na zdalnej bazie: ustaw CONFIRM_PROD_DB=1.",
 			);
-			return;
 		}
-
-		throw new Error(
-			`[assert-test-db] ODMOWA: operacja testowa wskazuje na nie-lokalną bazę ` +
-				`"${host}" — możliwy prod lub zdalny serwer. ` +
-				`Dozwolone hosty testowe: ${ALLOWED_TEST_HOSTS.join(", ")}. ` +
-				`Jeśli celowo używasz dedykowanej gałęzi Neon testowej, ustaw E2E_ALLOW_REMOTE=1.`,
+		console.warn(
+			`[assert-test-db] OSTRZEŻENIE: nie udało się sparsować hosta z ${varName}. ` +
+				"Flaga potwierdzenia ustawiona — przepuszczam.",
 		);
+		return;
 	}
+
+	// ── 4. Host lokalny — PASS cicho ─────────────────────────────────────────
+	if (ALLOWED_LOCAL_HOSTS.includes(host)) {
+		return;
+	}
+
+	// ── 5. Host zdalny + flaga potwierdzenia — PASS z ostrzeżeniem ───────────
+	if (hasRemoteFlag) {
+		const flagName = confirmProd ? "CONFIRM_PROD_DB=1" : "E2E_ALLOW_REMOTE=1";
+		console.warn(
+			`[assert-test-db] OSTRZEŻENIE: ${varName} wskazuje na zdalny host "${host}". ` +
+				`${flagName} ustawione — przyjmuję świadomą decyzję operatora. ` +
+				`NIE używaj z bazą prod bez pełnej świadomości konsekwencji.`,
+		);
+		return;
+	}
+
+	// ── 6. Host zdalny + brak flagi — ABORT z instrukcją ─────────────────────
+	throw new Error(
+		`[assert-test-db] ABORT: ${varName} wskazuje na zdalny host "${host}" — możliwy prod lub zdalny serwer. ` +
+			`Dozwolone hosty lokalne: ${ALLOWED_LOCAL_HOSTS.join(", ")}. ` +
+			`Dla testów użyj lokalnej bazy / pnpm db:migrate:test. ` +
+			`Aby świadomie uruchomić na zdalnej bazie: ustaw CONFIRM_PROD_DB=1 ` +
+			`(PowerShell: $env:CONFIRM_PROD_DB=1; pnpm db:migrate).`,
+	);
 }
