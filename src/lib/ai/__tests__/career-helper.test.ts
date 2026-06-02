@@ -1,11 +1,13 @@
-import { NoObjectGeneratedError } from "ai";
+import { generateObject, NoObjectGeneratedError } from "ai";
 import { convertArrayToReadableStream, MockLanguageModelV3 } from "ai/test";
 import { describe, expect, it } from "vitest";
 import {
+	CareerSummarySchema,
 	detectCrisis,
 	generateSummary,
 	MAX_RESTARTS,
 	MAX_TURNS,
+	normalizeSummary,
 	runTurn,
 	violatesVerdictGuardrail,
 } from "../career-helper";
@@ -244,6 +246,76 @@ describe("generateSummary — utwardzenie na AI_NoObjectGeneratedError (bug prod
 			expect(result.careerPaths).toHaveLength(3); // 4. ścieżka odcięta
 			expect(result.careerPaths[0].why.length).toBeLessThanOrEqual(800); // why przycięte
 		}
+	});
+});
+
+describe("CareerSummarySchema — schemat tolerancyjny na realny output Opusa (fix schema-mismatch)", () => {
+	// Te warianty WCZEŚNIEJ rzucały AI_NoObjectGeneratedError na prod (sonda
+	// realnym generateObject potwierdziła: too_small / invalid_type wywracały CAŁY
+	// obiekt). Teraz schemat MUSI je przyjąć (walidacja przechodzi) i znormalizować.
+	// Używamy REALNEGO generateObject + REALNEGO CareerSummarySchema (nie repliki),
+	// żeby udowodnić, że walidacja AI SDK naprawdę nie odrzuca.
+	async function validateRaw(raw: unknown) {
+		const result = generateResult(raw);
+		const model = new MockLanguageModelV3({ doGenerate: async () => result });
+		return generateObject({ model, schema: CareerSummarySchema, prompt: "x" });
+	}
+
+	it("obszar BEZ pola why (Opus pomija why) — wcześniej invalid_type, teraz przechodzi", async () => {
+		const { object } = await validateRaw({
+			summaryText: "Z tego, co powiedziałeś, ciekawi Cię praca z danymi.",
+			careerPaths: [{ label: "Analityka danych" }], // brak why
+		});
+		expect(object.careerPaths).toHaveLength(1);
+		expect(object.careerPaths[0].label).toBe("Analityka danych");
+		expect(object.careerPaths[0].why).toBe(""); // brak why → pusty, nie crash
+	});
+
+	it("pusty summaryText (Opus zwraca pusty) — wcześniej too_small, teraz przechodzi", async () => {
+		const { object } = await validateRaw({
+			summaryText: "",
+			careerPaths: [{ label: "Analityka danych", why: "Lubisz porządkować dane." }],
+		});
+		expect(object.summaryText).toBe("");
+		expect(object.careerPaths).toHaveLength(1);
+	});
+
+	it("pusta tablica careerPaths — wcześniej too_small(array), teraz przechodzi (0 ścieżek)", async () => {
+		const { object } = await validateRaw({ summaryText: "ok", careerPaths: [] });
+		expect(object.careerPaths).toHaveLength(0); // legalny stan → fallback wyżej, nie 500
+	});
+
+	it("całkowity brak klucza careerPaths — wcześniej invalid_type, teraz default []", async () => {
+		const { object } = await validateRaw({ summaryText: "ok" });
+		expect(object.careerPaths).toHaveLength(0);
+	});
+
+	it("nadmiarowe pole probability — Zod 4 zdejmuje (strip), output bez niego", async () => {
+		const { object } = await validateRaw({
+			summaryText: "ok",
+			careerPaths: [{ label: "Analityka", why: "bo dane", probability: 0.7 }],
+		});
+		expect(object.careerPaths[0]).not.toHaveProperty("probability");
+		expect(Object.keys(object.careerPaths[0]).sort()).toEqual(["label", "why"]);
+	});
+});
+
+describe("normalizeSummary — kontrakt produktowy PO walidacji (1–3 ścieżki, przycięcie)", () => {
+	it("odsiewa ścieżki bez labela i przycina do 3", () => {
+		const out = normalizeSummary({
+			summaryText: "x".repeat(2500), // > 2000
+			careerPaths: [
+				{ label: "  Analityka  ", why: "y".repeat(900) }, // > 800, label do trim
+				{ label: "", why: "puste — odsiać" }, // brak labela → out
+				{ label: "Inżynieria", why: "ok" },
+				{ label: "Data science", why: "ok" },
+				{ label: "Czwarta", why: "ok" }, // > 3 → odciąć
+			],
+		});
+		expect(out.summaryText.length).toBeLessThanOrEqual(2000);
+		expect(out.careerPaths).toHaveLength(3); // 4. odcięta, pusty-label odsiany
+		expect(out.careerPaths[0].label).toBe("Analityka"); // trim
+		expect(out.careerPaths[0].why.length).toBeLessThanOrEqual(800); // przycięte
 	});
 });
 
