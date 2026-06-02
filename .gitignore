@@ -37,6 +37,12 @@ yarn-error.log*
 # E2E screenshots
 tests/e2e/screenshots/
 
+# Playwright (E2E CareerEDGE) — artefakty przebiegu, nie commitujemy
+/playwright-report/
+/test-results/
+/blob-report/
+/playwright/.cache/
+
 # Security audit reports (private)
 audit/
 
