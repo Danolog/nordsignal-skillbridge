@@ -3,6 +3,7 @@
 import { Clock, Database, ExternalLink, Github, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ReflectionCallout } from "@/components/skillbridge/b5/ReflectionCallout";
 import type { ProjectBrief } from "@/lib/ai/generate-brief";
 import { SubmissionForm } from "./submission-form";
 
@@ -32,9 +33,15 @@ interface ProjectDetailProps {
 		competencies: ProjectCompetency[];
 	};
 	submission: Submission | null;
+	/** B5 — istniejąca refleksja (null = nieistniejąca; dane = edycja/upsert) */
+	existingReflection: {
+		answerSurprised: string | null;
+		answerFrustrated: string | null;
+		answerLearned: string | null;
+	} | null;
 }
 
-export function ProjectDetail({ project, submission }: ProjectDetailProps) {
+export function ProjectDetail({ project, submission, existingReflection }: ProjectDetailProps) {
 	const [brief, setBrief] = useState<ProjectBrief | null>(
 		submission?.aiReviewJson
 			? (((submission.aiReviewJson as Record<string, unknown>).brief as ProjectBrief | null) ??
@@ -194,6 +201,18 @@ export function ProjectDetail({ project, submission }: ProjectDetailProps) {
 					<h3>Status zgłoszenia: {submission.status}</h3>
 					{submission.score !== null && <p>Wynik: {submission.score}/100</p>}
 				</div>
+			)}
+
+			{/* B5 — Callout refleksji: pojawia się gdy submission.status spełnia warunek
+			    (domyślnie 'verified'). Warunek wydzielony w REFLECTION_TRIGGER_STATUSES
+			    — Sophia/Leo rozszerzą go bez dotykania tej linii. */}
+			{submission && (
+				<ReflectionCallout
+					submissionId={submission.id}
+					projectId={project.id}
+					submissionStatus={submission.status}
+					existingReflection={existingReflection}
+				/>
 			)}
 		</div>
 	);

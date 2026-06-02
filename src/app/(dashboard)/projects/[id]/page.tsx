@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ProjectDetail } from "@/components/projects/project-detail";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { projectSubmissions, projects, students } from "@/lib/db/schema";
+import { projectReflections, projectSubmissions, projects, students } from "@/lib/db/schema";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
 	const session = await auth.api.getSession({ headers: await headers() });
@@ -26,9 +26,26 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 		where: and(eq(projectSubmissions.studentId, student.id), eq(projectSubmissions.projectId, id)),
 	});
 
+	// B5 — wczytaj istniejącą refleksję dla tego zgłoszenia (null = nieistniejąca).
+	// Prywatność: wczytywana tylko gdy jest submission (brak submission = brak refleksji).
+	const reflection = submission
+		? await db.query.projectReflections.findFirst({
+				where: eq(projectReflections.submissionId, submission.id),
+				columns: {
+					answerSurprised: true,
+					answerFrustrated: true,
+					answerLearned: true,
+				},
+			})
+		: null;
+
 	return (
 		<div className="proj-page">
-			<ProjectDetail project={project} submission={submission ?? null} />
+			<ProjectDetail
+				project={project}
+				submission={submission ?? null}
+				existingReflection={reflection ?? null}
+			/>
 		</div>
 	);
 }

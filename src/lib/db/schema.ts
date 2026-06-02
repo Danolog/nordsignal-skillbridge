@@ -338,6 +338,58 @@ export const projectSources = pgTable("project_sources", {
 });
 
 // ============================================================================
+// B5 — Refleksja po projekcie. Migracja 0015.
+//
+// Decyzja schematu (Ethan, 2026-05-31, §B5.1): NOWA tabela project_reflections
+// (nie kolumny na project_submissions). Powód: project_submissions jest
+// współdzielona z panelem wykładowcy (app_faculty ma SELECT/UPDATE). Refleksje
+// są PRYWATNE — tylko student, nigdy faculty, nigdy paszport (PRD US-B5.1 KA5,
+// spec §4.6). Osobna tabela bez żadnego grantu app_faculty daje to czysto
+// (deny-by-default) zamiast trzeciej izolacji kolumnowej.
+//
+// Trzy pytania (R2, zablokowane przez Darka) = trzy nazwane kolumny text NULL
+// (NULL = pominięte przez studenta), nie jsonb — czytelne, typowalne.
+// UNIQUE na submission_id: jedna refleksja na zgłoszenie (ponowny zapis = UPDATE).
+//
+// FORCE RLS + owner_passthrough spójnie z 0012/ADR-005 (jak 6 tabel studenta i
+// 3 tabele B0). Grant tylko app_student. Sekcja RLS NIE jest generowana przez
+// drizzle-kit — dopisana ręcznie w drizzle/0015_*.sql wzorem 0013.
+// ============================================================================
+
+export const projectReflections = pgTable(
+	"project_reflections",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		projectId: uuid("project_id")
+			.notNull()
+			.references(() => projects.id, { onDelete: "cascade" }),
+		submissionId: uuid("submission_id")
+			.notNull()
+			.references(() => projectSubmissions.id, { onDelete: "cascade" }),
+		// „Co cię w tym projekcie zaskoczyło?” (NULL = pominięte)
+		answerSurprised: text("answer_surprised"),
+		// „Co cię w nim wkurzyło albo zniechęciło?”
+		answerFrustrated: text("answer_frustrated"),
+		// „Czego dowiedziałeś się o sobie?”
+		answerLearned: text("answer_learned"),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_project_reflections_student_id").on(table.studentId),
+		index("idx_project_reflections_tenant_id").on(table.tenantId),
+		// UNIQUE: jedna refleksja na zgłoszenie (ponowny zapis = UPDATE istniejącej)
+		uniqueIndex("uq_project_reflections_submission").on(table.submissionId),
+	],
+);
+
+// ============================================================================
 // B0 — Pomocnik Wyboru Kariery (Career Helper). Migracja 0013.
 //
 // Trzy nowe tabele danych studenta (tenant-owe): sesje, tury rozmowy, ścieżki.
@@ -563,5 +615,21 @@ export const studentCareerPathsRelations = relations(studentCareerPaths, ({ one 
 	session: one(careerHelperSessions, {
 		fields: [studentCareerPaths.sessionId],
 		references: [careerHelperSessions.id],
+	}),
+}));
+
+// B5 — Project Reflections relations
+export const projectReflectionsRelations = relations(projectReflections, ({ one }) => ({
+	student: one(students, {
+		fields: [projectReflections.studentId],
+		references: [students.id],
+	}),
+	submission: one(projectSubmissions, {
+		fields: [projectReflections.submissionId],
+		references: [projectSubmissions.id],
+	}),
+	project: one(projects, {
+		fields: [projectReflections.projectId],
+		references: [projects.id],
 	}),
 }));

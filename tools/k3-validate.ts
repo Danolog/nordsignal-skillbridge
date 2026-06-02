@@ -41,6 +41,8 @@ const TENANT_TABLES = [
 	"skill_maps",
 	"passports",
 	"project_submissions",
+	// B5 — prywatne refleksje studenta (migracja 0015, K-PII+, deny-faculty)
+	"project_reflections",
 ];
 
 async function main() {
@@ -65,9 +67,9 @@ async function main() {
 			[[...TENANT_TABLES, "audit_log", "faculty_sessions"]],
 		);
 		check(
-			"3. RLS włączony (6 tenant + audit_log + faculty_sessions)",
-			rls.rowCount === 8,
-			`włączony na ${rls.rowCount}/8`,
+			"3. RLS włączony (7 tenant + audit_log + faculty_sessions)",
+			rls.rowCount === 9,
+			`włączony na ${rls.rowCount}/9`,
 		);
 
 		// 4. backfill — 0 NULL
@@ -208,9 +210,9 @@ async function main() {
 				[TENANT_TABLES],
 			);
 			check(
-				"10a. FORCE RLS na 6 tabelach studenta",
-				forceTables.rowCount === 6,
-				`FORCE na ${forceTables.rowCount}/6`,
+				"10a. FORCE RLS na 7 tabelach studenta",
+				forceTables.rowCount === 7,
+				`FORCE na ${forceTables.rowCount}/7`,
 			);
 
 			// Polityka idzie `TO <current_user>` (prod = neondb_owner, CI = test) —
@@ -230,9 +232,9 @@ async function main() {
 				(r) => Number(r.role_count) >= 1,
 			).length;
 			check(
-				"10b. owner_passthrough policy na 6 tabelach (>=1 rola każda)",
-				passthroughPolicies.rowCount === 6 && okPolicyCount === 6,
-				`policy na ${passthroughPolicies.rowCount}/6 (>=1 rola: ${okPolicyCount}/6)`,
+				"10b. owner_passthrough policy na 7 tabelach (>=1 rola każda)",
+				passthroughPolicies.rowCount === 7 && okPolicyCount === 7,
+				`policy na ${passthroughPolicies.rowCount}/7 (>=1 rola: ${okPolicyCount}/7)`,
 			);
 
 			// Cross-role deny-default: SET LOCAL ROLE app_student BEZ
@@ -250,6 +252,24 @@ async function main() {
 				"10c. app_student bez app.current_user_id = deny-default (0 wierszy)",
 				denyDefault.rowCount === 0,
 				`zwrócono ${denyDefault.rowCount} wierszy`,
+			);
+		}
+
+		// 12a. B5 R1 — deny-faculty na project_reflections (Ryan, sekcja 3 wiersz 17).
+		// Tabela bez grantu tabelowego i bez polityki faculty_sees_tenant →
+		// deny-by-default egzekwowany na poziomie PostgreSQL.
+		// information_schema.role_table_grants: 0 wierszy = grant nie istnieje.
+		{
+			const r12a = await client.query(
+				`SELECT count(*)::int AS c
+				   FROM information_schema.role_table_grants
+				  WHERE grantee = 'app_faculty'
+				    AND table_name = 'project_reflections'`,
+			);
+			check(
+				"12a. B5 R1 — app_faculty NIE ma grantu na project_reflections (deny-by-default)",
+				r12a.rows[0].c === 0,
+				`znaleziono ${r12a.rows[0].c} grantów faculty (oczekiwano 0)`,
 			);
 		}
 
