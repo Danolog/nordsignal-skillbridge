@@ -3,6 +3,8 @@
 import { Clock, Database, ExternalLink, Github, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { LearningResource } from "@/components/skillbridge/b3/SourceLinkRow";
+import { TheorySection } from "@/components/skillbridge/b3/TheorySection";
 import { ReflectionCallout } from "@/components/skillbridge/b5/ReflectionCallout";
 import type { ProjectBrief } from "@/lib/ai/generate-brief";
 import { SubmissionForm } from "./submission-form";
@@ -39,9 +41,19 @@ interface ProjectDetailProps {
 		answerFrustrated: string | null;
 		answerLearned: string | null;
 	} | null;
+	/** B3 — teoria w markdown; null = stan S4 empty_theory (blok pominięty). "" ≠ null. */
+	theoryMd: string | null;
+	/** B3 — źródła wiedzy, posortowane po position (backend). [] = stan S5 empty_sources. */
+	learningResources: LearningResource[];
 }
 
-export function ProjectDetail({ project, submission, existingReflection }: ProjectDetailProps) {
+export function ProjectDetail({
+	project,
+	submission,
+	existingReflection,
+	theoryMd,
+	learningResources,
+}: ProjectDetailProps) {
 	const [brief, setBrief] = useState<ProjectBrief | null>(
 		submission?.aiReviewJson
 			? (((submission.aiReviewJson as Record<string, unknown>).brief as ProjectBrief | null) ??
@@ -107,6 +119,10 @@ export function ProjectDetail({ project, submission, existingReflection }: Proje
 					))}
 				</div>
 			</div>
+
+			{/* B3 — Wiedza teoretyczna + Źródła wiedzy. Pominięcia stanów S4/S5/S6
+			    obsługuje TheorySection (spec §2.4). Renderuje się przed wykonaniem/briefem. */}
+			<TheorySection theoryMd={theoryMd} learningResources={learningResources} />
 
 			{!brief && (
 				<button
