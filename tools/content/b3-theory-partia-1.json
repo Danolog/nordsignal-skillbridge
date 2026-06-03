@@ -1,0 +1,122 @@
+[
+	{
+		"slug": "predykcja-cen-mieszkan",
+		"theory_md": "### Regresja, metryki i przygotowanie danych\n\nRegresja (z ang. *regression*, czyli prognozowanie wartości liczbowej) to klasa algorytmów uczenia maszynowego, których celem jest przewidzenie konkretnej liczby — w tym projekcie: ceny mieszkania w złotych. Model regresji liniowej (ang. *linear regression*) szuka prostej lub hiperpłaszczyzny, która najlepiej pasuje do danych treningowych, minimalizując sumę kwadratów różnic między prognozami a rzeczywistymi cenami. Aby ocenić jakość modelu, używamy trzech miar: **RMSE** (pierwiastek ze średniego błędu kwadratowego, ang. *Root Mean Squared Error*) — wyraża typowy błąd w tych samych jednostkach co cena (złote), mocniej karząc duże odchylenia; **MAE** (średni błąd bezwzględny, ang. *Mean Absolute Error*) — średnia odległość prognoz od rzeczywistości, odporniejsza na pojedyncze skoki; **R²** (współczynnik determinacji) — mówi, jaki ułamek zmienności cen model tłumaczy (1.0 = idealne dopasowanie, 0 = model nie lepszy niż przewidywanie samej średniej). Kluczowa pułapka: RMSE 50 000 zł brzmi duże, ale przy medianie cen 600 000 zł to błąd względny poniżej 9% — RMSE zawsze interpretuj przez pryzmat skali zmiennej docelowej, nie jako wartość absolutną.\n\n**Inżynieria cech** (ang. *feature engineering* — przekształcenie surowych danych w formę czytelną dla algorytmu) to krok krytyczny przed treningiem modelu. Trzy techniki kluczowe w tym projekcie: (1) **Kodowanie kategoryczne metodą one-hot** (ang. *One-Hot Encoding*) — kolumny kategoryczne (np. dzielnica, typ budynku) zamieniasz na zestaw kolumn binarnych 0/1; każda kolumna odpowiada jednej kategorii, a model nie zakłada fałszywej kolejności między nimi. (2) **Skalowanie cech** (ang. *feature scaling*) przez `StandardScaler` — przesuwa każdą kolumnę numeryczną tak, by miała średnią 0 i odchylenie standardowe 1; bez tego regresja liniowa może ignorować cechy o małej skali liczbowej (np. liczba pokoi: 1–5) na rzecz cech o dużej skali (np. metraż: 20–200). `StandardScaler` obliczasz **wyłącznie na zbiorze treningowym** i stosujesz gotowe parametry do zbioru testowego — inaczej wyciekasz informację o danych testowych do treningu. (3) **Obsługa wartości skrajnych** (ang. *outliers* — obserwacje odbiegające od reszty) — transakcje z ceną 10× wyższą niż mediana prawdopodobnie to błędy danych lub nieruchomości komercyjne; warto je odciąć lub zbadać osobno, bo mocno zawyżają RMSE i przekrzywiają współczynniki modelu.\n\nProsty podział na zbiór treningowy i testowy (ang. *train/test split*) jest wrażliwy na to, które transakcje trafią do której grupy — jeden pechowy losowy podział może zawyżyć lub zaniżyć ocenę modelu o kilkanaście procent. **Walidacja krzyżowa** (ang. *k-fold cross-validation* — wielokrotna ocena modelu na różnych podzbiorach danych) rozwiązuje ten problem: dzieli dane na *k* równych części (tzw. foldów — podzbiorów), trenuje model *k* razy, za każdym razem używając innego foldu jako zbioru testowego, a pozostałych jako treningowego; wynikowa metryka to średnia z *k* niezależnych ocen. Na małym zbiorze (kilka tysięcy transakcji) k=5 lub k=10 daje stabilniejszy obraz rzeczywistej generalizacji modelu niż jednorazowy split — dzięki temu wiesz, czy Twój Random Forest naprawdę jest lepszy od regresji liniowej, czy tylko trafił na korzystny podział danych.\n\n```python\nfrom sklearn.model_selection import cross_val_score\nfrom sklearn.ensemble import RandomForestRegressor\nimport numpy as np\n\nrf = RandomForestRegressor(n_estimators=100, random_state=42)\n# neg_root_mean_squared_error: scikit-learn zwraca wartości ujemne (wyższe = lepsze)\nscores = cross_val_score(rf, X_train, y_train,\n                         cv=5, scoring='neg_root_mean_squared_error')\nprint(f\"RMSE CV: {-scores.mean():.0f} zł ± {scores.std():.0f} zł\")\n```\n",
+		"learning_resources": [
+			{
+				"title": "Scikit-learn: modele liniowe — dokumentacja użytkownika",
+				"url": "https://scikit-learn.org/stable/modules/linear_model.html",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Scikit-learn: walidacja krzyżowa — dokumentacja",
+				"url": "https://scikit-learn.org/stable/modules/cross_validation.html",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "StatQuest: „Linear Regression, Clearly Explained!!!\" — wideo, ok. 20 min",
+				"url": "https://www.youtube.com/watch?v=7ArmBVF2dCs",
+				"type": "video",
+				"position": 3
+			},
+			{
+				"title": "Google ML Crash Course: regresja liniowa",
+				"url": "https://developers.google.com/machine-learning/crash-course/linear-regression",
+				"type": "course",
+				"position": 4
+			}
+		]
+	},
+	{
+		"slug": "eda-titanic-pandas-numpy",
+		"theory_md": "### DataFrame i ndarray — dwa różne narzędzia do różnych zadań\n\nPodstawą pracy z danymi w Pythonie są dwie struktury, które współpracują, ale rozwiązują inne problemy. `pandas.DataFrame` (ramka danych — tabela z nazwanymi kolumnami i indeksem wierszy) to obiekt, po którym możesz odwoływać się do danych po etykiecie (`df['Age']`), mieszać typy w kolumnach (liczby, tekst, daty) i korzystać z wbudowanych metod czyszczenia. `numpy.ndarray` (wielowymiarowa tablica numeryczna bez etykiet, ang. *n-dimensional array*) to z kolei jednorodna struktura liczb zoptymalizowana pod obliczenia wektorowe — działanie na całej tablicy naraz, bez jawnej pętli `for`. W praktyce: wczytując CSV przez pandas dostajesz DataFrame; gdy wywołasz `.values` lub przekażesz kolumnę do NumPy, dostajesz ndarray. Używaj DataFrame do eksploracji i czyszczenia — NumPy do operacji czysto numerycznych, gdzie liczy się szybkość (np. normalizacja, macierz korelacji ręcznie, operacje na wektorach). Pandas sam korzysta z NumPy pod spodem, więc granica jest płynna, ale świadome wybieranie narzędzia robi różnicę przy większych zbiorach.\n\nImputacja braków (ang. *imputation* — uzupełnianie brakujących wartości) to decyzja analityczna, nie krok mechaniczny. Kolumna `Age` w Titanicu ma ~20% braków — masz trzy sensowne opcje, każda z konsekwencjami. **Usunięcie wiersza** (`dropna` — usuń wiersze z brakami) jest proste, ale odrzucasz obserwacje, co może wprowadzić obciążenie próby (ang. *bias*) jeśli braki nie są przypadkowe — np. starsi pasażerowie mogli rzadziej podawać wiek. **Uzupełnienie medianą lub modą** (`fillna` — wypełnij braki podaną wartością) zachowuje rozmiar próby, ale spłaszcza rozkład i może zaciemniać różnice między grupami. **Flaga osobną kolumną** (`Age_missing = 1/0`) pozwala modelowi przyszłości „wiedzieć\", że wartość była nieznana — to przydatna informacja sama w sobie. Żadna metoda nie jest domyślnie poprawna: wybór zależy od tego, czy brak jest przypadkowy, jak dużo danych tracisz i co chcesz z nimi dalej robić. Jeden istotny szczegół: globalna mediana wieku dla wszystkich pasażerów ignoruje fakt, że 1. klasa miała inny profil wieku niż 3. — jeśli imputujesz, rozważ imputację warunkową (osobna mediana per klasa), żeby nie wnosić fałszywego sygnału do danych.\n\nWizualizacja eksploracyjna (ang. *exploratory data analysis*, w skrócie EDA — eksploracyjna analiza danych) służy stawianiu pytań, nie odpowiadaniu na nie — wybór wykresu powinien wynikać z pytania, jakie zadajesz. **Histogram** pokazuje rozkład jednej zmiennej ciągłej: ile pasażerów było w danym przedziale wieku, gdzie jest skupisko, gdzie ogon. **Wykres pudełkowy** (ang. *boxplot*) uwidacznia kwantyle i wartości skrajne — jednym rzutem oka widzisz medianę, rozstęp międzykwartylowy (ang. *IQR*, *Interquartile Range* — różnica między 75. a 25. percentylem) i obserwacje odstające; świetnie nadaje się do porównania rozkładu ceny biletu między klasami. **Mapa ciepła korelacji** (ang. *heatmap* — wizualizacja macierzy wartości jako kolorów) pokazuje siłę liniowych związków między zmiennymi numerycznymi: które pary mają tendencję do wspólnego wzrostu lub spadku, a które są niezależne. Biblioteka Seaborn (nakładka na Matplotlib) oferuje te trzy typy przez `histplot`, `boxplot` i `heatmap` — warto zacząć od nich, zanim przejdziesz do bardziej wyspecjalizowanych wykresów.\n\n```python\nimport pandas as pd\nimport numpy as np\nimport seaborn as sns\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('titanic.csv')\n\n# Imputacja: globalna mediana Age jako punkt wyjścia\ndf['Age_missing'] = df['Age'].isna().astype(int)  # flaga braków\ndf['Age'] = df['Age'].fillna(df['Age'].median())  # fillna = wypełnij medianą\n\n# Operacja wektorowa NumPy: normalizacja wieku do zakresu [0, 1]\nage_array = df['Age'].values  # ndarray\ndf['Age_norm'] = (age_array - age_array.min()) / (age_array.max() - age_array.min())\n\n# Przeżywalność wg klasy i płci\nsurvival = df.groupby(['Pclass', 'Sex'])['Survived'].mean().reset_index()\nprint(survival)\n\n# Heatmapa korelacji\nsns.heatmap(df[['Age', 'Fare', 'Pclass', 'Survived']].corr(), annot=True, cmap='coolwarm')\nplt.show()\n```\n",
+		"learning_resources": [
+			{
+				"title": "Pandas: tutoriale wprowadzające — oficjalna dokumentacja",
+				"url": "https://pandas.pydata.org/docs/getting_started/intro_tutorials/",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "NumPy: absolutne podstawy dla początkujących — oficjalna dokumentacja",
+				"url": "https://numpy.org/doc/stable/user/absolute_beginners.html",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "Seaborn: przewodnik użytkownika i tutorial — oficjalna dokumentacja",
+				"url": "https://seaborn.pydata.org/tutorial.html",
+				"type": "docs",
+				"position": 3
+			},
+			{
+				"title": "Corey Schafer: „Python Pandas Tutorial (Part 1)\" — wideo, podstawy pracy z danymi",
+				"url": "https://www.youtube.com/watch?v=ZyhVh-qRZPA",
+				"type": "video",
+				"position": 4
+			}
+		]
+	},
+	{
+		"slug": "docker-hello-world",
+		"theory_md": "Kontener (ang. *container* — izolowany, przenośny pakiet aplikacji) to izolowany proces uruchomiony na tym samym jądrze systemu (ang. *kernel*) co host — system gospodarz. W odróżnieniu od maszyny wirtualnej (ang. *Virtual Machine*, VM), która emuluje kompletny sprzęt i uruchamia własny system operacyjny (rzędu GB pamięci, minuty startu), kontener współdzieli kernel hosta i zawiera tylko kod aplikacji wraz z jej zależnościami (ang. *dependencies* — biblioteki i narzędzia potrzebne aplikacji do działania). Startuje w sekundy i zajmuje megabajty. Docker jest dziś dominującą implementacją tej koncepcji: uruchamia kontenery na bazie obrazów (ang. *image* — niezmienny, warstwowy pakiet zawierający wszystko, czego potrzebuje aplikacja do działania).\n\n### Dockerfile — warstwy i pamięć podręczna\n\nObraz budowany jest na podstawie pliku `Dockerfile` — zestawu instrukcji wykonywanych jedna po drugiej. Każda instrukcja `RUN`, `COPY` czy `ADD` tworzy nową warstwę (ang. *layer*), którą Docker zapisuje w pamięci podręcznej (ang. *cache*). Jeśli zawartość danej warstwy nie zmieniła się od poprzedniego budowania, Docker pomija jej ponowne wykonanie i sięga po wersję z cache'u. Kolejność instrukcji ma tu realne znaczenie: umieszczenie `COPY package.json .` i `RUN npm install` przed `COPY . .` (kopiowaniem całego kodu) sprawia, że instalacja zależności jest pomijana przy każdym budowaniu wywołanym zmianą kodu — o ile `package.json` nie uległ zmianie. Odwrócenie tej kolejności oznacza pełną reinstalację zależności przy każdej edycji dowolnego pliku.\n\n```dockerfile\n# Dobra kolejność warstw — instalacja zależności cachowana osobno\nFROM node:20-alpine\nWORKDIR /app\nCOPY package*.json ./         # najpierw plik zależności\nRUN npm install --production  # instalacja (ta warstwa cachowana)\nCOPY . .                      # dopiero potem reszta kodu\nCMD [\"node\", \"server.js\"]\n```\n\nDocker Compose (plik `docker-compose.yml` lub `compose.yaml`) to narzędzie do deklaratywnego definiowania wielokontenerowego stosu (ang. *multi-container stack* — zestawu powiązanych kontenerów działających razem). Zamiast uruchamiać każdy kontener ręcznie, opisujesz serwisy (ang. *services* — nazwane kontenery z konfiguracją), ich obrazy, zależności, mapowania portów i wolumeny (ang. *volumes* — trwałe przestrzenie dyskowe montowane poza cyklem życia kontenera) w jednym pliku YAML, a potem startujesz cały stos jedną komendą `docker compose up`. Sieć (ang. *network*) tworzona jest automatycznie — serwisy widzą się nawzajem po nazwie zdefiniowanej w pliku (np. serwis `app` łączy się z bazą danych pod adresem `db`). Wolumen jest kluczowy przy bazie danych: kontener PostgreSQL bez wolumenu traci wszystkie dane po restarcie, bo domyślnie zapisuje je wewnątrz kontenera, który jest efemeryczny (tymczasowy, nietrwały). Wolumen montuje katalog danych bazy poza cyklem życia kontenera — dane zostają na hoście.\n\nJeden błąd, który pojawia się konsekwentnie w pierwszych projektach: hasła do bazy danych i klucze API (ang. *API key* — klucz uwierzytelniający dostęp do zewnętrznego serwisu) wpisane bezpośrednio w `Dockerfile` jako instrukcja `ENV` i zatwierdzone w repozytorium Git (ang. *commit* — zapis zmiany w historii kodu). Raz wypchnięty sekret do repo jest praktycznie publiczny — historia Git go przechowuje nawet po usunięciu pliku. Bezpieczny wzorzec to `env_file` wskazujący na plik `.env` leżący poza repozytorium (dodany do `.gitignore`), albo — przy bardziej zaawansowanych wdrożeniach (ang. *deployment* — uruchomienie produkcyjne) — dedykowany mechanizm sekretów Docker Compose opisany w oficjalnej dokumentacji.\n",
+		"learning_resources": [
+			{
+				"title": "Docker Get Started — oficjalny warsztat (45 min)",
+				"url": "https://docs.docker.com/get-started/workshop/",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Docker Compose — przegląd i model aplikacji",
+				"url": "https://docs.docker.com/compose/",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "Najlepsze praktyki: zmienne środowiskowe w Docker Compose",
+				"url": "https://docs.docker.com/compose/how-tos/environment-variables/best-practices/",
+				"type": "docs",
+				"position": 3
+			},
+			{
+				"title": "TechWorld with Nana: „Docker Tutorial for Beginners [FULL COURSE in 3 Hours]\"",
+				"url": "https://www.youtube.com/watch?v=3c-iBn73dDE",
+				"type": "video",
+				"position": 4
+			}
+		]
+	},
+	{
+		"slug": "rest-api-crud",
+		"theory_md": "REST (ang. *Representational State Transfer* — architektura transferu stanu reprezentacji) to konwencja projektowania API (ang. *Application Programming Interface* — interfejs programistyczny, umowa między klientem a serwerem) oparta na dwóch filarach: zasobach i metodach HTTP. Zasoby (ang. *resources* — obiekty, którymi API zarządza) definiujemy przez ścieżki URL: `/products` oznacza kolekcję, `/products/:id` — konkretny egzemplarz. Metodą HTTP (czasownikiem żądania) mówimy serwerowi, co chcemy z tym zasobem zrobić: `GET` to odczyt bez efektów ubocznych, `POST` tworzy nowy rekord i zwraca `201 Created`, `PUT`/`PATCH` aktualizuje istniejący i zwraca `200 OK`, `DELETE` usuwa i zwraca `200` lub `204 No Content`. Gdy klient poda nieistniejące ID, odpowiadamy `404 Not Found`; gdy dane wejściowe są błędne — `400 Bad Request`; gdy serwer wysypie się niespodziewanie — `500 Internal Server Error`. Trzymanie się tych konwencji sprawia, że każdy klient HTTP (przeglądarka, `curl`, aplikacja mobilna) rozumie nasze API bez dodatkowej dokumentacji.\n\nMiddleware (oprogramowanie pośredniczące — funkcja przechwytująca żądanie przed handlerem trasy) w Express.js to funkcja o sygnaturze `(req, res, next)`. Express przetwarza middleware w kolejności rejestracji przez `app.use(...)` — to stos, nie zbiór. Każda funkcja w stosie może zmodyfikować obiekt żądania (`req`) lub odpowiedzi (`res`), zakończyć cykl odpowiedzią albo wywołać `next()`, żeby przekazać kontrolę dalej. Brak `next()` i brak wysłania odpowiedzi = żądanie wisi w nieskończoność. Wbudowane middleware `express.json()` parsuje ciało żądania (ang. *request body* — treść żądania HTTP, np. dane formularza lub JSON) jako JSON przed handlerem; middleware z czterema argumentami `(err, req, res, next)` to globalny łapacz błędów — rejestrowany jako ostatni, zbiera wszystkie nieobsłużone wyjątki. Dzięki temu logika walidacji, uwierzytelnienia czy limitowania żądań (ang. *rate limiting* — ograniczenie liczby żądań na jednostkę czasu) mieszka w jednym miejscu, a nie jest kopiowana do każdej trasy.\n\nSQL w kontekście API ma jeden krytyczny wzorzec: **zapytania parametryzowane** (ang. *parameterized queries* — zapytania z placeholderami zamiast wklejonych wartości) zamiast sklejania ciągów znaków. Moduł `pg` (sterownik PostgreSQL dla Node.js — biblioteka do komunikacji z bazą danych) przyjmuje tablicę wartości jako drugi argument `client.query(sql, [val1, val2])` i podstawia je bezpiecznie — baza traktuje je jako dane, nie jako fragment kodu SQL. Sklejanie stringa (`\"SELECT * FROM products WHERE id = \" + req.params.id`) otwiera lukę wstrzyknięcia kodu SQL (ang. *SQL injection* — atak polegający na przemyceniu złośliwego zapytania przez parametr wejściowy) — atakujący może zakończyć zapytanie i dołączyć własne polecenie. Cztery operacje CRUD (tworzenie, odczyt, aktualizacja, usuwanie — ang. *Create, Read, Update, Delete*) mają bezpośrednie odpowiedniki: `INSERT INTO ... VALUES ($1, $2) RETURNING *` dla `POST`, `SELECT ... WHERE id = $1` dla `GET /products/:id`, `UPDATE ... SET name = $1 WHERE id = $2` dla `PUT`, `DELETE FROM ... WHERE id = $1` dla `DELETE`.\n\n```javascript\n// Middleware walidacji jako oddzielna funkcja — rejestrowana przed handlerem\nfunction validateProduct(req, res, next) {\n  if (!req.body.name || typeof req.body.name !== 'string') {\n    return res.status(400).json({ error: 'Pole name jest wymagane i musi być tekstem' });\n  }\n  next(); // przekaż kontrolę do handlera trasy\n}\n\n// Zapytanie parametryzowane — $1 to placeholder, nie interpolacja stringa\napp.post('/products', validateProduct, async (req, res) => {\n  const { name, price } = req.body;\n  const result = await pool.query(\n    'INSERT INTO products (name, price) VALUES ($1, $2) RETURNING *',\n    [name, price]\n  );\n  res.status(201).json(result.rows[0]);\n});\n```\n\nWalidacja powtarzana jako `if (!req.body.name) return res.status(400)...` w każdym handlerze to sygnał do refaktoru: wydziel ją jako middleware albo użyj biblioteki Zod lub Joi (narzędzia do deklaratywnego opisywania schematów danych), które automatycznie generują komunikaty błędów — kod pozostaje w jednym miejscu i jest testowalny osobno.\n",
+		"learning_resources": [
+			{
+				"title": "Express.js: używanie middleware — oficjalna dokumentacja",
+				"url": "https://expressjs.com/en/guide/using-middleware.html",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "MDN: kody statusu odpowiedzi HTTP",
+				"url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "The Odin Project: podstawy API (ścieżka Node.js)",
+				"url": "https://www.theodinproject.com/lessons/nodejs-api-basics",
+				"type": "course",
+				"position": 3
+			},
+			{
+				"title": "Traversy Media: „Express Crash Course\"",
+				"url": "https://www.youtube.com/watch?v=CnH3kAXSrmU",
+				"type": "video",
+				"position": 4
+			}
+		]
+	}
+]

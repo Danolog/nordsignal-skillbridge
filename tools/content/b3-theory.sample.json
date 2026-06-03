@@ -1,0 +1,38 @@
+[
+	{
+		"slug": "analiza-wynagrodzen-gus",
+		"theory_md": "# Teoria: Analiza wynagrodzeń (dane GUS)\n\n## Po co to robisz\nNauczysz się pobierać dane z Banku Danych Lokalnych GUS i przekształcać je w czytelną analizę trendów.\n\n## Kluczowe pojęcia\n- **DataFrame** — tabela danych w bibliotece pandas (wiersze + kolumny).\n- **Analiza eksploracyjna (EDA)** — pierwszy etap, w którym poznajesz dane: rozkłady, braki, wartości odstające.\n\n## Krok po kroku\n1. Pobierz dane z BDL (format CSV lub przez API).\n2. Wczytaj do DataFrame i sprawdź braki.\n3. Policz trendy i przygotuj minimum 3 wykresy z opisami.\n4. Sformułuj minimum 5 wniosków.\n",
+		"learning_resources": [
+			{
+				"title": "Dokumentacja pandas — wczytywanie CSV",
+				"url": "https://pandas.pydata.org/docs/user_guide/io.html",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Bank Danych Lokalnych GUS — przewodnik",
+				"url": "https://bdl.stat.gov.pl/bdl/dane/podgrup/temat",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "Kurs: analiza danych w Pythonie (wideo)",
+				"url": "https://www.youtube.com/watch?v=example",
+				"type": "video",
+				"position": 3
+			}
+		]
+	},
+	{
+		"slug": "demografia-powiatow",
+		"theory_md": "# Teoria: Mapa demograficzna powiatów\n\nProjekt pokazuje, jak połączyć dane tabelaryczne z warstwą geograficzną (mapą) i zwizualizować zmiany populacji.\n\n## Kluczowe pojęcia\n- **Choropleth** — mapa, w której kolor obszaru koduje wartość liczbową.\n- **Złączenie (join)** — łączenie tabeli danych z tabelą geometrii po wspólnym kluczu (kod TERYT).\n",
+		"learning_resources": [
+			{
+				"title": "GeoPandas — wprowadzenie do map",
+				"url": "https://geopandas.org/en/stable/getting_started/introduction.html",
+				"type": "docs",
+				"position": 1
+			}
+		]
+	}
+]

@@ -1,0 +1,37 @@
+# docker-compose.test.yml — lokalna baza testowa SkillBridge (dev + agent QA Quinn).
+#
+# Postaw:    docker compose -f docker-compose.test.yml up -d
+# Zatrzymaj: docker compose -f docker-compose.test.yml down       (dane zostają w wolumenie)
+# Wyczyść:   docker compose -f docker-compose.test.yml down -v     (kasuje dane testowe)
+#
+# Host localhost:5433 — zgodny z .env.test.example i allowlistą tools/assert-test-db.ts
+# (localhost przechodzi guard cicho; to NIE jest prod). Po starcie kontenera:
+#   1) skopiuj .env.test.example -> .env.test
+#   2) pnpm db:migrate:test      (guard allowlisty — przerwie, gdy DSN wskaże na zdalny host)
+#   3) pnpm seed:e2e
+#
+# Decyzja CTO (Ethan) 2026-06-03: lokalny Postgres przez compose zamiast ad-hoc `docker run`
+# z tests/e2e-pw/README.md — jedno polecenie, nazwany wolumen, mniej miejsc na pomyłkę
+# operatora/agenta. Obraz postgres:16 = parytet z service-kontenerem CI (.github/workflows/pr.yml).
+# Dla agenta QA (Quinn) obowiązuje reguła README #4: NIGDY gołe `pnpm db:migrate`, tylko `:test`.
+
+services:
+  postgres-test:
+    image: postgres:16
+    container_name: skillbridge-postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: skillbridge_test
+    ports:
+      - "5433:5432"
+    volumes:
+      - skillbridge-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d skillbridge_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  skillbridge-test-data:
