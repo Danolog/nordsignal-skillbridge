@@ -51,6 +51,8 @@ const project = {
 	partnerId: null,
 	exclusivity: false,
 	briefTemplate: null,
+	// B3 — nowa kolumna theory_md (migracja 0016); NULL = brak teorii.
+	theoryMd: null,
 	rubricJson: [{ criterion: "Kryterium 1", weight: 50, description: "Opis" }],
 	status: "active",
 	createdAt: new Date(),

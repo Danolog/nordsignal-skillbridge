@@ -16,9 +16,17 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 	if (!student) redirect("/onboarding");
 
 	const { id } = await params;
+	// B3 — teoria (project.theoryMd) + źródła (learningResources, posortowane po position).
+	// project_learning_resources to klasa K-PUB (globalny katalog, bez RLS) — czytamy przez db.
 	const project = await db.query.projects.findFirst({
 		where: eq(projects.id, id),
-		with: { competencies: true },
+		with: {
+			competencies: true,
+			learningResources: {
+				columns: { title: true, url: true, type: true },
+				orderBy: (r, { asc }) => [asc(r.position)],
+			},
+		},
 	});
 	if (!project) notFound();
 
@@ -45,6 +53,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 				project={project}
 				submission={submission ?? null}
 				existingReflection={reflection ?? null}
+				theoryMd={project.theoryMd ?? null}
+				learningResources={project.learningResources}
 			/>
 		</div>
 	);
