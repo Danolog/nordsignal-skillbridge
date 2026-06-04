@@ -8,6 +8,9 @@ export interface CompetencyItem {
 	name: string;
 }
 
+/** Próg minimalny kompetencji (spec B3 §1 pkt 3+5). Współdzielony z isStep3Valid w wizardzie. */
+export const MIN_COMPETENCIES = 5;
+
 interface StepCompetenciesProps {
 	competencies: CompetencyItem[];
 	onChange: (competencies: CompetencyItem[]) => void;
@@ -32,10 +35,15 @@ export function StepCompetencies({ competencies, onChange }: StepCompetenciesPro
 	};
 
 	const filledCount = competencies.filter((c) => c.name.trim() !== "").length;
+	const belowMinimum = filledCount < MIN_COMPETENCIES;
+	const thresholdMessageId = "competencies-threshold-msg";
 
 	return (
 		<div className="space-y-4">
-			<div className="ob-competency-scroll max-h-[340px] overflow-y-auto pr-1">
+			<div
+				className="ob-competency-scroll max-h-[340px] overflow-y-auto pr-1"
+				aria-describedby={thresholdMessageId}
+			>
 				<div className="space-y-2">
 					{competencies.map((item) => (
 						<div
@@ -61,9 +69,34 @@ export function StepCompetencies({ competencies, onChange }: StepCompetenciesPro
 				</div>
 			</div>
 
-			<div className="text-right font-mono text-xs text-muted-foreground">
-				<span className="font-bold text-[#6366F1]">{filledCount}</span> / 40 kompetencji
+			{/* Licznik X/5 względem progu minimalnego (spec B3 §1). Czytelny dla
+			    czytników ekranu przez aria-live — student słyszy zmianę po edycji. */}
+			<div className="flex items-center justify-between gap-2 font-mono text-xs" aria-live="polite">
+				<span className="text-muted-foreground">
+					<span className={`font-bold ${belowMinimum ? "text-amber-600" : "text-emerald-600"}`}>
+						{filledCount}
+					</span>
+					/{MIN_COMPETENCIES}{" "}
+					<span className="sr-only">
+						{belowMinimum
+							? `wybrano ${filledCount} z wymaganych ${MIN_COMPETENCIES} kompetencji`
+							: `wybrano ${filledCount} kompetencji, minimum ${MIN_COMPETENCIES} spełnione`}
+					</span>
+				</span>
+				<span className="text-muted-foreground/70">maks. 40</span>
 			</div>
+
+			{/* Komunikat progu powiązany z listą przez aria-describedby. <output> ma
+			    domyślne role=status (live region), więc SR ogłasza przejście poniżej/
+			    powyżej progu bez ręcznego role. */}
+			<output
+				id={thresholdMessageId}
+				className={`block text-xs ${belowMinimum ? "text-amber-600" : "text-muted-foreground"}`}
+			>
+				{belowMinimum
+					? `Pracodawcy oczekują min. ${MIN_COMPETENCIES} kompetencji.`
+					: "Minimum spełnione — każda kolejna kompetencja zwiększa Twoje szanse."}
+			</output>
 
 			<button
 				type="button"

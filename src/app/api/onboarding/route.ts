@@ -19,7 +19,10 @@ const OnboardingSchema = z.object({
 	semester: z.number().int().min(1).max(15),
 	careerGoal: z.string().min(1).max(200),
 	syllabusText: z.string().max(50_000).optional().default(""),
-	competencies: z.array(z.string().min(1).max(200)).min(1).max(100),
+	competencies: z
+		.array(z.string().min(1).max(200))
+		.min(5, { message: "Wymagane minimum 5 kompetencji" })
+		.max(100),
 });
 
 export async function POST(req: Request) {
@@ -39,8 +42,17 @@ export async function POST(req: Request) {
 	}
 	const parsed = OnboardingSchema.safeParse(raw);
 	if (!parsed.success) {
+		// Obrona w głąb: próg min. 5 kompetencji wymuszany też po stronie serwera
+		// (nie tylko isStep3Valid we froncie). Komunikat progu wyciągamy na wierzch,
+		// żeby klient dostał czytelny powód zamiast surowego flatten().
+		const competencyIssue = parsed.error.issues.find(
+			(i) => i.path[0] === "competencies" && i.code === "too_small",
+		);
 		return NextResponse.json(
-			{ error: "Invalid input", issues: parsed.error.flatten() },
+			{
+				error: competencyIssue?.message ?? "Invalid input",
+				issues: parsed.error.flatten(),
+			},
 			{ status: 400 },
 		);
 	}

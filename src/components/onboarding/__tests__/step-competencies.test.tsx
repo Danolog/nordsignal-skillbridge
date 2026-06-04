@@ -17,12 +17,22 @@ describe("StepCompetencies", () => {
 		expect(screen.getByDisplayValue("React")).toBeInTheDocument();
 	});
 
-	it("shows correct filled count", () => {
+	it("shows correct filled count against the minimum threshold", () => {
 		const items = makeItems(["Python", "", "React"]);
 		render(<StepCompetencies competencies={items} onChange={vi.fn()} />);
 
+		// 2 wypełnione kompetencje, poniżej progu 5 → licznik 2/5 + komunikat progu
 		expect(screen.getByText("2")).toBeInTheDocument();
-		expect(screen.getByText("/ 40 kompetencji")).toBeInTheDocument();
+		expect(screen.getByText(/\/5/)).toBeInTheDocument();
+		expect(screen.getByText(/Pracodawcy oczekują min\. 5 kompetencji/)).toBeInTheDocument();
+	});
+
+	it("shows the success hint once the minimum is met", () => {
+		const items = makeItems(["A", "B", "C", "D", "E"]);
+		render(<StepCompetencies competencies={items} onChange={vi.fn()} />);
+
+		expect(screen.getByText("5")).toBeInTheDocument();
+		expect(screen.getByText(/każda kolejna kompetencja zwiększa Twoje szanse/)).toBeInTheDocument();
 	});
 
 	it("calls onChange when editing a competency name", () => {

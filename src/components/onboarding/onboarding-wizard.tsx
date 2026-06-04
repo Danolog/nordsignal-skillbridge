@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { type CompetencyItem, createCompetencyItem, StepCompetencies } from "./step-competencies";
+import {
+	type CompetencyItem,
+	createCompetencyItem,
+	MIN_COMPETENCIES,
+	StepCompetencies,
+} from "./step-competencies";
 import { type ProfileData, StepProfile } from "./step-profile";
 import { StepSelfAssessment } from "./step-self-assessment";
 import { StepSyllabus } from "./step-syllabus";
@@ -59,7 +64,8 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 		profile.careerGoal &&
 		(profile.careerGoal !== "custom" || profile.customCareerGoal.trim());
 
-	const isStep3Valid = competencies.filter((c) => c.name.trim()).length >= 5;
+	const filledCompetencyCount = competencies.filter((c) => c.name.trim()).length;
+	const isStep3Valid = filledCompetencyCount >= MIN_COMPETENCIES;
 
 	const goToStep = (target: number) => {
 		if (target === 2 && !isStep1Valid) {
@@ -99,8 +105,8 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 	// Submit
 	const handleSubmit = async () => {
 		const filledNames = competencies.filter((c) => c.name.trim()).map((c) => c.name.trim());
-		if (filledNames.length < 5) {
-			toast.error("Dodaj co najmniej 5 kompetencji.");
+		if (filledNames.length < MIN_COMPETENCIES) {
+			toast.error(`Pracodawcy oczekują min. ${MIN_COMPETENCIES} kompetencji.`);
 			return;
 		}
 		setSubmitting(true);
@@ -271,6 +277,12 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 								onClick={handleSubmit}
 								disabled={!isStep3Valid || submitting}
 								className="ob-btn-accent gap-2"
+								aria-describedby={!isStep3Valid ? "competencies-threshold-msg" : undefined}
+								title={
+									!isStep3Valid
+										? `Pracodawcy oczekują min. ${MIN_COMPETENCIES} kompetencji.`
+										: undefined
+								}
 							>
 								{submitting ? (
 									<>
