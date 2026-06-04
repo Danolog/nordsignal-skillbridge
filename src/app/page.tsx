@@ -1,6 +1,7 @@
-import { ArrowRight, Award, BookOpen, BrainCircuit, TrendingUp } from "lucide-react";
+import { ArrowRight, Award, BookOpen, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { ScrollAnimations } from "@/components/landing/scroll-animations";
+import { Logo } from "@/components/ui/logo";
 
 export default function Home() {
 	return (
@@ -12,13 +13,8 @@ export default function Home() {
 				id="header"
 				className="lp-header fixed top-0 right-0 left-0 z-50 flex h-[72px] items-center justify-between px-5 md:px-10"
 			>
-				<Link href="/" className="flex items-center gap-2.5 no-underline">
-					<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#6366F1_0%,#22D3EE_100%)] shadow-[0_0_18px_rgba(99,102,241,0.45)]">
-						<BrainCircuit className="h-5 w-5 text-white" strokeWidth={1.8} />
-					</div>
-					<span className="lp-grad-text font-heading text-lg font-extrabold tracking-tight">
-						SkillBridge
-					</span>
+				<Link href="/" className="no-underline">
+					<Logo size="md" variant="landing" />
 				</Link>
 
 				<nav className="flex items-center gap-1">
@@ -282,13 +278,8 @@ export default function Home() {
 			{/* ── Footer ── */}
 			<footer className="border-t border-[rgba(255,255,255,0.06)] bg-[#060810] px-5 py-7 md:px-10">
 				<div className="mx-auto flex max-w-[1160px] flex-wrap items-center justify-between gap-4">
-					<Link href="/" className="flex items-center gap-2 no-underline">
-						<div className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-[linear-gradient(135deg,#6366F1_0%,#22D3EE_100%)]">
-							<BrainCircuit className="h-[15px] w-[15px] text-white" strokeWidth={1.8} />
-						</div>
-						<span className="font-heading text-sm font-bold text-[rgba(248,250,252,0.50)]">
-							SkillBridge
-						</span>
+					<Link href="/" className="no-underline">
+						<Logo size="sm" variant="landing" className="opacity-90" />
 					</Link>
 					<div className="flex items-center gap-4">
 						<Link

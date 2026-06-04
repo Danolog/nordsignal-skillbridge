@@ -1,6 +1,6 @@
-import { BrainCircuit } from "lucide-react";
 import Link from "next/link";
 import { FacultyLoginForm } from "@/components/faculty/faculty-login-form";
+import { Logo } from "@/components/ui/logo";
 
 export default function FacultyLoginPage() {
 	return (
@@ -12,10 +12,7 @@ export default function FacultyLoginPage() {
 
 			{/* Logo */}
 			<Link href="/" className="auth-logo">
-				<div className="auth-logo-icon">
-					<BrainCircuit size={20} strokeWidth={1.8} />
-				</div>
-				<span className="auth-logo-text">SkillBridge</span>
+				<Logo size="md" variant="auth" />
 			</Link>
 
 			{/* Card */}
