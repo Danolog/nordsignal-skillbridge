@@ -95,7 +95,7 @@ export function StepCompetencies({ competencies, onChange }: StepCompetenciesPro
 			>
 				{belowMinimum
 					? `Pracodawcy oczekują min. ${MIN_COMPETENCIES} kompetencji.`
-					: "Minimum spełnione — każda kolejna kompetencja zwiększa Twoje szanse."}
+					: "Masz komplet 5. Każda dodatkowa kompetencja podnosi Twoje szanse u pracodawcy."}
 			</output>
 
 			<button

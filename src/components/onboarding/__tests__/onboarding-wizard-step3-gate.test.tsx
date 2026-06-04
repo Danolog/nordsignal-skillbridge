@@ -120,7 +120,7 @@ describe("Brama #3 front — krok 3 wizarda, granica progu 4→5", () => {
 			expect(screen.getByText(/wybrano 5 kompetencji, minimum 5 spełnione/)).toBeInTheDocument();
 			// Komunikat sukcesu (powyżej progu) zamiast progu.
 			expect(
-				screen.getByText(/każda kolejna kompetencja zwiększa Twoje szanse/),
+				screen.getByText(/Masz komplet 5.*podnosi Twoje szanse u pracodawcy/),
 			).toBeInTheDocument();
 			expect(screen.queryByText(/Pracodawcy oczekują min\. 5 kompetencji/)).not.toBeInTheDocument();
 		},
@@ -167,7 +167,7 @@ describe("Brama #3 front — krok 3 wizarda, granica progu 4→5", () => {
 			expect(submitButton()).toBeEnabled();
 			expect(screen.getByText(/wybrano 5 kompetencji, minimum 5 spełnione/)).toBeInTheDocument();
 			expect(
-				screen.getByText(/każda kolejna kompetencja zwiększa Twoje szanse/),
+				screen.getByText(/Masz komplet 5.*podnosi Twoje szanse u pracodawcy/),
 			).toBeInTheDocument();
 		},
 		TEST_TIMEOUT,

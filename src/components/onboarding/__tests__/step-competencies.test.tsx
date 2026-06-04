@@ -32,7 +32,9 @@ describe("StepCompetencies", () => {
 		render(<StepCompetencies competencies={items} onChange={vi.fn()} />);
 
 		expect(screen.getByText("5")).toBeInTheDocument();
-		expect(screen.getByText(/każda kolejna kompetencja zwiększa Twoje szanse/)).toBeInTheDocument();
+		expect(
+			screen.getByText(/Masz komplet 5.*podnosi Twoje szanse u pracodawcy/),
+		).toBeInTheDocument();
 	});
 
 	it("calls onChange when editing a competency name", () => {
