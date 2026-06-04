@@ -82,4 +82,24 @@ Błąd #1 (logo) — **korzeń już gatowany strukturalnie** (Z4 `ui-consistency
 
 ---
 
-*Po decyzji Ethana: implementację jobów (`pr.yml`) prowadzi Engineering (Leo/Ethan), Quinn dostarcza komendy/scenariusze i weryfikuje, że joby realnie blokują (nie tylko deklarują). Zmiana `pr.yml` na main = czerwona linia (auto-deploy nie, ale brama jakości — sign-off w PR).*
+---
+
+## 9. DECYZJA Ethana (CTO) — 2026-06-04
+
+Rozstrzygnięcie checklisty §8 (domena G3 Ethana — standard bramki + topologia CI):
+
+1. **`e2e-safe` — blokujący OD RAZU.** Topologia `next build && next start`, bez bazy/LLM, `--grep @safe`. Domyka egzekucję bramki auth (domena 4 `[Beta]`).
+2. **`e2e-dbwrite` — blokujący, ale FAZOWO:** ląduje najpierw **non-blocking** → kalibracja flaka 3–5 PR-ów → flip na required (nie wpuszczać nowego bazodanowego e2e od razu do required = ochrona przed zablokowaniem bramki na flaku).
+3. **Topologia e2e = `next build && next start` (NIE `next dev`/turbopack)** — twardy standard CI (R2 zamknięte: zimny start to niedeterminizm, nie flak do retry; `next start` testuje artefakt produkcyjny). Serwer startowany jawnie w jobie albo `playwright.config.ci.ts` z `webServer` aktywnym **tylko pod `CI`** — lokalny bezpiecznik `webServer:off` (chroni przed prod-Neon) zostaje.
+4. **`e2e-llm` = opcja 2 TERAZ** (nocny `schedule` cron + `workflow_dispatch`), **opcja 1 (blokujący per-PR) PRZED go-live Bety**, z **Haiku** w CI (`E2E_LLM_MODEL` — test ścieżki, nie jakości) + `paths-filter` (tylko PR-y dotykające AI/onboarding) + concurrency cancel. ⚠️ **Klucz API modelu jako poufna zmienna CI = SIGN-OFF DARKA (czerwona linia)** + audyt Ryana (osobny klucz CI z limitem wydatków, rotowalny, wklejany ręcznie przez Darka w ustawieniach GitHub — nie przez agenta). Do Bety jedziemy na nocnym przebiegu bez tej zmiennej w bramce.
+5. **R1 potwierdzone** (migracje 0008/0011 tworzą role — bez dodatkowego kroku). **`visual-regression` PO strumieniu B** (wspólny `<Logo/>`) — do tego czasu strukturalny gate Z4 wystarcza.
+
+**Zlecenie dla Leo (kolejność):** (1) `e2e-safe` required; (2) `e2e-dbwrite` non-blocking → po 3–5 zielonych PR-ach flip na required; (3) `e2e-llm` nocny — **STOP przed dodaniem poufnej zmiennej** (czeka na sign-off Darka + audyt Ryana); (4) `playwright.config.ci.ts` topologia `next start`; (5) `visual-regression` na backlog (zależność: wspólny `<Logo/>`). Env w jobach przez `dotenv`/`--env-file`, nie ręczny `Get-Content` (pamięć `env-test-loader-cudzyslowy`).
+
+**Dyscyplina merge (R3) — wiążąca:** bramy `it.fails` (Z2/Z3/Z4) wjeżdżają **jednym PR-em razem z naprawami** strumieni C/D/B (flip bez fixu = czerwone CI). Egzekwuje Leo w review.
+
+**Do Darka (1 pozycja):** podpięcie klucza API modelu jako poufnej zmiennej CI dla blokującego `e2e-llm` przed Betą — czerwona linia (zewnętrzny klucz + płatne API w CI). Do Bety pokrycie AI biegnie nocnym przebiegiem bez tej zmiennej.
+
+---
+
+*Implementację jobów (`pr.yml`) prowadzi Leo wg zlecenia §9; Quinn dostarcza komendy/scenariusze i weryfikuje, że joby realnie blokują (nie tylko deklarują). Zmiana `pr.yml` na main = czerwona linia (sign-off w PR). Klucz API w CI = osobny sign-off Darka.*
