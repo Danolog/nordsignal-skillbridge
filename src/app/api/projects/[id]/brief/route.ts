@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { projectSubmissions, students } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
+import { logError } from "@/lib/log";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
 export const maxDuration = 60;
@@ -51,31 +52,45 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 		});
 	}
 
-	// AI POZA tx — nie trzymamy połączenia przez LLM.
-	const brief = await generateProjectBrief(projectId, studentMeta.id);
+	// §8 #1 (obserwowalność błędu #4): generateProjectBrief może rzucić (np.
+	// "AI zwróciło nieprawidłowy JSON", generate-brief.ts:111). Bez try/catch błąd
+	// leciał niezłapany → puste 500, zero logu. Łapiemy, logujemy z kontekstem przez
+	// PII-bezpieczny logError (lib/log.ts — loguje tylko message+name, nie raw error
+	// z promptem) i zwracamy OPISOWY 5xx. Surowy błąd modelu/stack NIE wychodzi do
+	// klienta. Odporniejszy parser (generate-brief.ts) to osobny strumień (#4 cz. 2).
+	try {
+		// AI POZA tx — nie trzymamy połączenia przez LLM.
+		const brief = await generateProjectBrief(projectId, studentMeta.id);
 
-	// Persistence przez RLS + jawne WHERE (warstwa 1 ADR-003).
-	await withTenantContext(
-		{ userId, tenantId: studentMeta.tenantId, role: "student" },
-		async (tx) => {
-			if (existing) {
-				await tx
-					.update(projectSubmissions)
-					.set({
-						aiReviewJson: { ...(existing.aiReviewJson as object), brief },
-						updatedAt: new Date(),
-					})
-					.where(eq(projectSubmissions.id, existing.id));
-			} else {
-				await tx.insert(projectSubmissions).values({
-					studentId: studentMeta.id,
-					tenantId: studentMeta.tenantId,
-					projectId,
-					aiReviewJson: { brief },
-				});
-			}
-		},
-	);
+		// Persistence przez RLS + jawne WHERE (warstwa 1 ADR-003).
+		await withTenantContext(
+			{ userId, tenantId: studentMeta.tenantId, role: "student" },
+			async (tx) => {
+				if (existing) {
+					await tx
+						.update(projectSubmissions)
+						.set({
+							aiReviewJson: { ...(existing.aiReviewJson as object), brief },
+							updatedAt: new Date(),
+						})
+						.where(eq(projectSubmissions.id, existing.id));
+				} else {
+					await tx.insert(projectSubmissions).values({
+						studentId: studentMeta.id,
+						tenantId: studentMeta.tenantId,
+						projectId,
+						aiReviewJson: { brief },
+					});
+				}
+			},
+		);
 
-	return NextResponse.json({ brief });
+		return NextResponse.json({ brief });
+	} catch (err) {
+		logError("brief", err, { projectId, studentId: studentMeta.id });
+		return NextResponse.json(
+			{ error: "Nie udało się wygenerować briefu projektu. Spróbuj ponownie za chwilę." },
+			{ status: 502 },
+		);
+	}
 }
