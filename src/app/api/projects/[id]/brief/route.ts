@@ -87,7 +87,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
 		return NextResponse.json({ brief });
 	} catch (err) {
-		logError("brief", err, { projectId, studentId: studentMeta.id });
+		logError("brief.generate", err, { projectId, studentId: studentMeta.id });
 		return NextResponse.json(
 			{ error: "Nie udało się wygenerować briefu projektu. Spróbuj ponownie za chwilę." },
 			{ status: 502 },
