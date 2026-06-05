@@ -30,15 +30,26 @@ export function SummaryScreen({
 	onSelectPathDone,
 	onBackToChat,
 	onRetrySummary,
+	persistOnSelect = true,
 }: {
 	sessionId: string;
 	summary: SummaryResponse;
-	/** Po „Idź dalej do samooceny” — przejście do kroku 4 onboardingu. */
-	onSelectPathDone: () => void;
+	/**
+	 * Po „Idź dalej do samooceny” — przekazuje WYBRANĄ etykietę ścieżki w górę.
+	 * standalone: wywołane po zapisie select-path (router.push w rodzicu).
+	 * embedded (Krok 0): wywołane BEZ zapisu — rodzic wkłada cel do pamięci wizarda.
+	 */
+	onSelectPathDone: (careerLabel: string) => void;
 	/** „Nic z tego — wracam do rozmowy” → restart przez modal. */
 	onBackToChat: () => void;
 	/** Ponów /summary (stan summary_error). */
 	onRetrySummary: () => void;
+	/**
+	 * Czy wołać POST select-path przy wyborze (standalone=true). W trybie embedded
+	 * (Krok 0 onboardingu) brak rekordu studenta → nie ma czego nadpisać; cel
+	 * persystuje finalny POST /api/onboarding. Domyślnie true (zachowanie standalone).
+	 */
+	persistOnSelect?: boolean;
 }) {
 	const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
 	const [restartingOpen, setRestartingOpen] = useState(false);
@@ -52,6 +63,12 @@ export function SummaryScreen({
 
 	async function handleSelectAndAdvance() {
 		if (!selectedLabel) return;
+		// Tryb embedded (Krok 0): cel płynie w pamięci — brak zapisu bazowego
+		// (rekord studenta jeszcze nie istnieje; persystuje POST /api/onboarding).
+		if (!persistOnSelect) {
+			onSelectPathDone(selectedLabel);
+			return;
+		}
 		setAdvancing(true);
 		setSelectError(false);
 		try {
@@ -61,7 +78,7 @@ export function SummaryScreen({
 				body: JSON.stringify({ careerLabel: selectedLabel, source: "helper" }),
 			});
 			if (!res.ok) throw new Error("select_failed");
-			onSelectPathDone();
+			onSelectPathDone(selectedLabel);
 		} catch {
 			setSelectError(true);
 			setAdvancing(false);
