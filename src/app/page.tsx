@@ -1,301 +1,330 @@
-import { ArrowRight, Award, BookOpen, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { ScrollAnimations } from "@/components/landing/scroll-animations";
 import { Logo } from "@/components/ui/logo";
 
+// Landing #6 „Papierowy editorial" (kierunek A). Bohater = STUDENT.
+// Copy zatwierdzone przez Mayę (spec docs/product/skillbridge-h-landing-spec-A-v0.1.md §0) — wstawione dokładnie.
+// Tokeny editorial (--color-ed-*) z globals.css; zero kolorów na sztywno.
+// CTA → rejestracja /signup. Liczby [XX]/[XXX] = placeholdery (do weryfikacji Darek/Sophia).
+
+/** Paski kompetencji w karcie Paszportu — szerokość jako %, kolor wg progu (patrz barColor). */
+const PASSPORT_BARS: { label: string; value: number }[] = [
+	{ label: "Analiza danych", value: 82 },
+	{ label: "Komunikacja", value: 74 },
+	{ label: "Finanse", value: 65 },
+	{ label: "Zarządzanie projektem", value: 48 },
+	{ label: "Programowanie", value: 35 },
+];
+
+// Próg koloru paska (spec §4): ≥80 amber · 40–79 warn · <40 danger.
+function barColor(value: number): string {
+	if (value >= 80) return "var(--color-ed-amber)";
+	if (value >= 40) return "var(--color-ed-warn)";
+	return "var(--color-ed-danger)";
+}
+
+const STEPS = [
+	{
+		n: "01",
+		title: "Wgraj program studiów",
+		body: "Wklej tekst albo prześlij PDF sylabusa. AI wyłuskuje kompetencje. Przejrzyj i popraw — to Twoja lista, nie werdykt maszyny.",
+	},
+	{
+		n: "02",
+		title: "Zobacz, gdzie są luki",
+		body: "AI zestawia Twoje kompetencje z wymaganiami rynku i proponuje, czego brakuje. Co uznasz za lukę wartą zamknięcia — wybierasz sam.",
+	},
+	{
+		n: "03",
+		title: "Zamykaj luki w swoim tempie",
+		body: "Krótkie kursy (15–30 min) pod konkretną lukę. Twoje refleksje są prywatne — AI ich nie czyta.",
+	},
+];
+
+const GAINS = [
+	{
+		emoji: "🎓",
+		title: "Paszport Kompetencji",
+		body: "Udostępniasz pracodawcy jednym linkiem. Samoocena + propozycja AI, jasno opisane — bez ściemy.",
+	},
+	{
+		emoji: "📊",
+		title: "Wiedza o rynku",
+		body: "Czego rynek szuka na Twojej ścieżce — z realnych ofert pracy analizowanych co miesiąc.",
+	},
+	{
+		emoji: "📖",
+		title: "Kursy wycelowane w lukę",
+		body: "15–30 min, praktyka. Pod konkretną lukę, nie ogólny katalog wiedzy.",
+	},
+];
+
 export default function Home() {
 	return (
-		<>
+		<div className="min-h-screen bg-ed-cream font-ed-body text-ed-ink">
 			<ScrollAnimations />
 
-			{/* ── Header ── */}
+			{/* ── Header / Nav (fixed) ── */}
 			<header
 				id="header"
-				className="lp-header fixed top-0 right-0 left-0 z-50 flex h-[72px] items-center justify-between px-5 md:px-10"
+				className="fixed top-0 right-0 left-0 z-50 flex h-[72px] items-center justify-between border-b border-ed-border bg-ed-cream px-6 md:px-20"
 			>
 				<Link href="/" className="no-underline">
-					<Logo size="md" variant="landing" />
+					<Logo size="sm" variant="landing" />
 				</Link>
-
-				<nav className="flex items-center gap-1">
+				<nav className="flex items-center gap-3">
 					<Link
-						href="#how"
-						className="lp-nav-link rounded-full px-4 py-2 text-sm font-medium no-underline"
+						href="#jak"
+						className="hidden text-sm font-medium text-ed-muted no-underline transition-colors hover:text-ed-ink sm:inline"
 					>
 						Jak to działa
 					</Link>
 					<Link
-						href="/faculty/login"
-						className="lp-nav-link rounded-full px-4 py-2 text-sm font-medium no-underline"
-					>
-						Panel wykładowcy
-					</Link>
-					<Link
 						href="/login"
-						className="lp-nav-btn rounded-full px-5 py-2 text-sm font-semibold no-underline"
+						className="hidden text-sm font-medium text-ed-muted no-underline transition-colors hover:text-ed-ink sm:inline"
 					>
 						Zaloguj się
+					</Link>
+					<Link
+						href="/signup"
+						className="rounded-full border border-ed-ink bg-ed-ink px-5 py-2 text-sm font-bold text-ed-cream no-underline transition-opacity hover:opacity-90"
+					>
+						Zbuduj Paszport
 					</Link>
 				</nav>
 			</header>
 
 			{/* ── Hero ── */}
-			<section className="lp-dot-grid relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#0B0E14_0%,#1a1040_45%,#0e1628_100%)] px-6 pt-32 pb-20 text-center">
-				{/* Blobs */}
-				<div className="lp-blob top-[-8%] left-[2%] h-[480px] w-[480px] bg-[radial-gradient(circle,rgba(99,102,241,0.28)_0%,transparent_70%)]" />
-				<div
-					className="lp-blob top-[15%] right-[3%] h-[380px] w-[380px] bg-[radial-gradient(circle,rgba(34,211,238,0.20)_0%,transparent_70%)]"
-					style={{ animationDelay: "-4s" }}
-				/>
-				<div
-					className="lp-blob bottom-[8%] left-[28%] h-[320px] w-[320px] bg-[radial-gradient(circle,rgba(16,185,129,0.14)_0%,transparent_70%)]"
-					style={{ animationDelay: "-7s" }}
-				/>
-
-				{/* Badge */}
-				<div className="relative z-[2] mb-8 inline-flex items-center gap-2 rounded-full border border-[rgba(99,102,241,0.32)] bg-[rgba(99,102,241,0.14)] px-[18px] py-2 text-[13px] font-semibold tracking-wide text-[#A5B4FC] backdrop-blur-sm">
-					<div className="lp-badge-dot h-1.5 w-1.5 rounded-full bg-[#A5B4FC] shadow-[0_0_8px_#A5B4FC]" />
-					Powered by Claude AI&nbsp;&middot;&nbsp;Merito Group
-				</div>
-
-				{/* H1 */}
-				<h1 className="relative z-[2] mb-6 max-w-[820px] font-heading text-[clamp(38px,5.5vw,72px)] leading-[1.1] font-black tracking-tight text-[#F8FAFC]">
-					Twój sylabus spotyka się
-					<br />z <span className="lp-grad-text">rynkiem pracy.</span>
-				</h1>
-
-				{/* Subtitle */}
-				<p className="relative z-[2] mb-12 max-w-[580px] text-[clamp(16px,1.8vw,20px)] leading-[1.75] text-[rgba(148,163,184,0.88)]">
-					SkillBridge analizuje Twój program studiów, identyfikuje luki kompetencyjne i generuje
-					spersonalizowane mikro-kursy. Twoja droga do wymarzonej pracy zaczyna się tutaj.
-				</p>
-
-				{/* Actions */}
-				<div className="relative z-[2] flex flex-wrap justify-center gap-4">
-					<Link
-						href="/onboarding"
-						className="lp-btn-cta inline-flex items-center gap-2.5 rounded-full px-[34px] py-4 font-heading text-[17px] font-bold tracking-wide text-white no-underline"
-					>
-						<Award className="h-[18px] w-[18px]" strokeWidth={2.5} />
-						Stwórz swój Paszport
-					</Link>
-					<Link
-						href="/login"
-						className="lp-btn-ghost inline-flex items-center gap-2 rounded-full px-8 py-4 text-base font-semibold text-[rgba(248,250,252,0.80)] no-underline"
-					>
-						Zaloguj się
-						<ArrowRight className="h-4 w-4" strokeWidth={2.5} />
-					</Link>
-				</div>
-
-				{/* Stats */}
-				<div className="relative z-[2] mt-[72px] flex flex-wrap items-center justify-center gap-6 sm:gap-10">
-					<div className="text-center">
-						<span className="lp-grad-text mb-1.5 block font-[family-name:var(--font-geist-mono)] text-[30px] font-bold leading-none">
-							14
-						</span>
-						<div className="text-[13px] font-medium text-[rgba(148,163,184,0.65)]">
-							uczelni Merito
-						</div>
-					</div>
-					<div className="lp-stat-sep h-10 w-px bg-[rgba(255,255,255,0.10)]" />
-					<div className="text-center">
-						<span className="lp-grad-text mb-1.5 block font-[family-name:var(--font-geist-mono)] text-[30px] font-bold leading-none">
-							500+
-						</span>
-						<div className="text-[13px] font-medium text-[rgba(148,163,184,0.65)]">
-							ofert pracy / mies.
-						</div>
-					</div>
-					<div className="lp-stat-sep h-10 w-px bg-[rgba(255,255,255,0.10)]" />
-					<div className="text-center">
-						<span className="lp-grad-text mb-1.5 block font-[family-name:var(--font-geist-mono)] text-[30px] font-bold leading-none">
-							95%
-						</span>
-						<div className="text-[13px] font-medium text-[rgba(148,163,184,0.65)]">
-							trafności AI
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* ── Value Props ── */}
-			<section className="bg-[#FAFAFA] px-5 py-[72px] md:px-10 md:py-[100px]">
-				<div className="mx-auto max-w-[1160px]">
-					<div className="mb-16 text-center">
-						<span className="mb-4 inline-block rounded-full border border-[rgba(99,102,241,0.22)] bg-[rgba(99,102,241,0.10)] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6366F1]">
-							Dlaczego SkillBridge?
-						</span>
-						<h2 className="mb-4 font-heading text-[clamp(28px,4vw,48px)] leading-[1.15] font-black tracking-tight text-[#0F172A]">
-							Trzy filary Twojego sukcesu
-						</h2>
-						<p className="mx-auto max-w-[540px] text-lg leading-[1.75] text-[#475569]">
-							Kompletny ekosystem do zarządzania swoją karierą — od pierwszego semestru do
-							wymarzonej pracy.
+			<section className="mx-auto max-w-[1440px] px-6 pt-[120px] pb-16 md:px-10 md:pt-[140px] lg:px-20">
+				<div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[680px_560px] lg:gap-16">
+					{/* Lewa kolumna */}
+					<div>
+						<p
+							className="ed-hero-up mb-6 text-[11px] font-bold tracking-[1.65px] text-ed-amber uppercase"
+							style={{ animationDelay: "0.10s" }}
+						>
+							Platforma kompetencji studentów
 						</p>
+						<h1
+							className="ed-hero-up mb-7 font-ed-display text-[clamp(36px,8vw,72px)] leading-[1.08] font-bold text-ed-ink"
+							style={{ animationDelay: "0.25s" }}
+						>
+							AI podpowiada
+							<br />
+							Ci, czego brakuje.
+							<br />
+							Decyzję zostawia
+							<br />
+							Tobie.
+						</h1>
+						<p
+							className="ed-hero-up mb-9 max-w-[560px] text-[18px] leading-[1.58] text-ed-muted"
+							style={{ animationDelay: "0.40s" }}
+						>
+							SkillBridge czyta Twój program studiów, porównuje go z tym, czego dziś szuka rynek, i
+							pokazuje, gdzie masz luki. Nie wystawia ocen za Ciebie — proponuje, a Ty wybierasz, co
+							z tym zrobisz.
+						</p>
+						<div className="ed-hero-up" style={{ animationDelay: "0.40s" }}>
+							<Link
+								href="/signup"
+								className="inline-flex items-center rounded-full bg-ed-amber px-8 py-4 font-ed-body text-[16px] font-bold text-ed-cream no-underline transition-opacity hover:opacity-90"
+							>
+								Zbuduj swój Paszport Kompetencji
+							</Link>
+						</div>
 					</div>
 
-					<div className="value-grid grid grid-cols-1 gap-6 md:grid-cols-3">
-						{/* Paszport Kompetencji */}
-						<div className="lp-val-card fade-up cursor-default rounded-3xl border border-[rgba(99,102,241,0.08)] bg-white p-8 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-							<div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl border border-[rgba(99,102,241,0.22)] bg-[linear-gradient(135deg,rgba(99,102,241,0.16),rgba(99,102,241,0.06))]">
-								<Award className="h-[26px] w-[26px] text-[#6366F1]" strokeWidth={2} />
-							</div>
-							<h3 className="mb-3 font-heading text-[21px] font-extrabold tracking-tight text-[#0F172A]">
+					{/* Prawa kolumna — karta Paszportu */}
+					<div className="rounded-2xl border border-ed-border bg-ed-surface p-7 shadow-[0_2px_24px_rgba(27,25,23,0.06)]">
+						<div className="mb-1 flex items-center justify-between">
+							<span className="font-ed-display text-[20px] font-bold text-ed-ink">
 								Paszport Kompetencji
-							</h3>
-							<p className="text-[15px] leading-[1.75] text-[#475569]">
-								Twój osobisty, cyfrowy dokument umiejętności. Podziel się nim z pracodawcą jednym
-								linkiem — jak LinkedIn, tylko z prawdziwymi, zwalidowanymi kompetencjami.
-							</p>
+							</span>
+							<span className="rounded-full bg-ed-badge-bg px-3 py-1 text-[12px] font-medium text-ed-muted">
+								Finanse
+							</span>
+						</div>
+						<p className="mb-6 text-[14px] leading-[1.6] text-ed-muted">
+							Twoja samoocena vs propozycja AI
+						</p>
+
+						<div className="flex flex-col gap-4">
+							{PASSPORT_BARS.map((bar) => (
+								<div key={bar.label}>
+									<div className="mb-1.5 flex items-center justify-between">
+										<span className="text-[14px] font-medium text-ed-ink">{bar.label}</span>
+										<span className="text-[14px] text-ed-muted">{bar.value}%</span>
+									</div>
+									<div className="h-2 w-full overflow-hidden rounded-full bg-ed-border">
+										<div
+											className="h-full rounded-full"
+											style={{ width: `${bar.value}%`, background: barColor(bar.value) }}
+										/>
+									</div>
+								</div>
+							))}
 						</div>
 
-						{/* Market Intelligence */}
-						<div className="lp-val-card fade-up cursor-default rounded-3xl border border-[rgba(99,102,241,0.08)] bg-white p-8 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-							<div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl border border-[rgba(34,211,238,0.22)] bg-[linear-gradient(135deg,rgba(34,211,238,0.16),rgba(34,211,238,0.06))]">
-								<TrendingUp className="h-[26px] w-[26px] text-[#22D3EE]" strokeWidth={2} />
-							</div>
-							<h3 className="mb-3 font-heading text-[21px] font-extrabold tracking-tight text-[#0F172A]">
-								Market Intelligence
-							</h3>
-							<p className="text-[15px] leading-[1.75] text-[#475569]">
-								Dane z tysięcy ofert pracy w Polsce, aktualizowane na bieżąco. Wiesz dokładnie,
-								czego szuka rynek dla Twojej ścieżki kariery.
-							</p>
-						</div>
-
-						{/* Mikro-kursy AI */}
-						<div className="lp-val-card fade-up cursor-default rounded-3xl border border-[rgba(99,102,241,0.08)] bg-white p-8 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-							<div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl border border-[rgba(16,185,129,0.22)] bg-[linear-gradient(135deg,rgba(16,185,129,0.16),rgba(16,185,129,0.06))]">
-								<BookOpen className="h-[26px] w-[26px] text-[#10B981]" strokeWidth={2} />
-							</div>
-							<h3 className="mb-3 font-heading text-[21px] font-extrabold tracking-tight text-[#0F172A]">
-								Mikro-kursy AI
-							</h3>
-							<p className="text-[15px] leading-[1.75] text-[#475569]">
-								Automatycznie generowane, 15–30 minutowe kursy zamykające konkretne luki.
-								Praktyczne, nie akademickie — bo rynek potrzebuje umiejętności, nie teorii.
+						<div className="mt-6 border-t-2 border-ed-amber pt-4">
+							<p className="text-[14px] leading-[1.6] text-ed-muted">
+								Samoocena + propozycja AI · ostatnie słowo masz Ty
 							</p>
 						</div>
 					</div>
 				</div>
 			</section>
 
-			{/* ── How It Works ── */}
-			<section
-				id="how"
-				className="bg-[linear-gradient(180deg,#EEF2FF_0%,#E2E8F0_100%)] px-5 py-[72px] md:px-10 md:py-[100px]"
-			>
-				<div className="mx-auto max-w-[1160px]">
-					<div className="mb-16 text-center">
-						<span className="mb-4 inline-block rounded-full border border-[rgba(99,102,241,0.22)] bg-[rgba(99,102,241,0.10)] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#6366F1]">
-							Jak to działa?
-						</span>
-						<h2 className="mb-4 font-heading text-[clamp(28px,4vw,48px)] leading-[1.15] font-black tracking-tight text-[#0F172A]">
-							Trzy kroki do Paszportu
-						</h2>
-						<p className="mx-auto max-w-[540px] text-lg leading-[1.75] text-[#475569]">
-							Od sylabusa do wymarzonej pracy w kilka minut.
+			{/* ── Pasek dowodu ── */}
+			<section className="mx-auto max-w-[1440px] px-6 py-2 md:px-10 lg:px-20">
+				<div className="grid grid-cols-1 divide-y divide-ed-border border-y border-ed-border md:grid-cols-3 md:divide-x md:divide-y-0">
+					<div className="px-6 py-6 text-center">
+						<span className="font-ed-display text-[28px] font-bold text-ed-ink">[XX]</span>
+						<p className="mt-1 text-[15px] leading-[1.65] text-ed-muted">uczelni w programie</p>
+					</div>
+					<div className="px-6 py-6 text-center">
+						<span className="font-ed-display text-[28px] font-bold text-ed-ink">[XXX]</span>
+						<p className="mt-1 text-[15px] leading-[1.65] text-ed-muted">
+							ofert pracy analizowanych miesięcznie
 						</p>
 					</div>
-
-					<div className="steps-grid lp-steps-line grid grid-cols-1 gap-7 md:grid-cols-3">
-						{/* Step 1 */}
-						<div className="lp-step-card fade-up relative z-[1] rounded-3xl border border-[rgba(99,102,241,0.08)] bg-white p-7 text-center shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-							<div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#6366F1_0%,#22D3EE_100%)] font-[family-name:var(--font-geist-mono)] text-xl font-bold text-white shadow-[0_0_24px_rgba(99,102,241,0.35)]">
-								01
-							</div>
-							<h3 className="mb-3 font-heading text-[21px] font-extrabold tracking-tight text-[#0F172A]">
-								Wgraj sylabus
-							</h3>
-							<p className="text-[15px] leading-[1.75] text-[#475569]">
-								Wklej tekst lub prześlij PDF swojego programu studiów. AI automatycznie wyekstrahuje
-								wszystkie kompetencje i umiejętności.
-							</p>
-						</div>
-
-						{/* Step 2 */}
-						<div className="lp-step-card fade-up relative z-[1] rounded-3xl border border-[rgba(99,102,241,0.08)] bg-white p-7 text-center shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-							<div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#6366F1_0%,#22D3EE_100%)] font-[family-name:var(--font-geist-mono)] text-xl font-bold text-white shadow-[0_0_24px_rgba(99,102,241,0.35)]">
-								02
-							</div>
-							<h3 className="mb-3 font-heading text-[21px] font-extrabold tracking-tight text-[#0F172A]">
-								Odkryj luki
-							</h3>
-							<p className="text-[15px] leading-[1.75] text-[#475569]">
-								AI porównuje Twoje kompetencje z wymaganiami rynku dla wybranej ścieżki kariery.
-								Dowiedz się dokładnie, czego Ci brakuje.
-							</p>
-						</div>
-
-						{/* Step 3 */}
-						<div className="lp-step-card fade-up relative z-[1] rounded-3xl border border-[rgba(99,102,241,0.08)] bg-white p-7 text-center shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-							<div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#6366F1_0%,#22D3EE_100%)] font-[family-name:var(--font-geist-mono)] text-xl font-bold text-white shadow-[0_0_24px_rgba(99,102,241,0.35)]">
-								03
-							</div>
-							<h3 className="mb-3 font-heading text-[21px] font-extrabold tracking-tight text-[#0F172A]">
-								Zamknij luki
-							</h3>
-							<p className="text-[15px] leading-[1.75] text-[#475569]">
-								Otrzymaj spersonalizowane mikro-kursy i buduj swój Paszport Kompetencji. Każdy kurs
-								to praktyczna wiedza, nie teoria.
-							</p>
-						</div>
+					<div className="px-6 py-6 text-center">
+						<span className="font-ed-display text-[18px] font-bold text-ed-ink">Ty decydujesz</span>
+						<p className="mt-1 text-[15px] leading-[1.65] text-ed-muted">
+							AI proponuje, ostatnie słowo masz Ty
+						</p>
 					</div>
 				</div>
 			</section>
 
-			{/* ── CTA Banner ── */}
-			<section className="lp-dot-grid relative overflow-hidden bg-[linear-gradient(135deg,#0B0E14_0%,#1a1040_45%,#0e1628_100%)] px-5 py-[120px] text-center md:px-10">
-				<div className="lp-blob top-[-8%] left-[2%] h-[480px] w-[480px] bg-[radial-gradient(circle,rgba(99,102,241,0.28)_0%,transparent_70%)] opacity-40" />
-				<div
-					className="lp-blob top-[15%] right-[3%] h-[380px] w-[380px] bg-[radial-gradient(circle,rgba(34,211,238,0.20)_0%,transparent_70%)] opacity-40"
-					style={{ animationDelay: "-4s" }}
-				/>
+			{/* ── Jak to działa ── */}
+			<section id="jak" className="mx-auto max-w-[1440px] px-6 py-20 md:px-10 lg:px-20">
+				<h2 className="mb-2 font-ed-display text-[44px] leading-[1.1] font-bold text-ed-ink">
+					Jak to działa
+				</h2>
+				<div className="mb-12 h-[3px] w-16 bg-ed-amber" />
+				<div className="value-grid grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-3">
+					{STEPS.map((step) => (
+						<div key={step.n} className="fade-up">
+							<div className="font-ed-display text-[56px] leading-none font-bold text-ed-border">
+								{step.n}
+							</div>
+							<div className="my-4 h-px w-full bg-ed-border" />
+							<h3 className="mb-3 font-ed-display text-[20px] font-bold text-ed-ink">
+								{step.title}
+							</h3>
+							<p className="text-[15px] leading-[1.65] text-ed-muted">{step.body}</p>
+						</div>
+					))}
+				</div>
+			</section>
 
-				<div className="relative z-[2] mx-auto max-w-[1160px]">
-					<div className="mb-6 inline-block rounded-full border border-[rgba(99,102,241,0.35)] bg-[rgba(99,102,241,0.20)] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#A5B4FC]">
-						Zacznij dziś — bezpłatnie
+			{/* ── Co zyskujesz ── */}
+			<section className="mx-auto max-w-[1440px] px-6 py-12 md:px-10 lg:px-20">
+				<div className="mb-12 h-[3px] w-full bg-ed-amber" />
+				<div className="steps-grid grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+					{GAINS.map((gain) => (
+						<div
+							key={gain.title}
+							className="fade-up ed-lift relative rounded-2xl border border-ed-border bg-ed-surface p-7 pl-9"
+						>
+							<div className="absolute top-0 bottom-0 left-0 w-1.5 rounded-l-2xl bg-ed-amber" />
+							<div className="mb-4 text-[32px] leading-none">{gain.emoji}</div>
+							<h3 className="mb-3 font-ed-display text-[18px] font-bold text-ed-ink">
+								{gain.title}
+							</h3>
+							<p className="text-[15px] leading-[1.65] text-ed-muted">{gain.body}</p>
+						</div>
+					))}
+				</div>
+			</section>
+
+			{/* ── Dla uczelni ── */}
+			<section className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 lg:px-20">
+				<h2 className="mb-8 font-ed-display text-[36px] leading-[1.1] font-bold text-ed-ink">
+					Dla uczelni: zobaczcie swój program oczami rynku pracy
+				</h2>
+				<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+					{/* DZIŚ */}
+					<div className="relative rounded-2xl border-2 border-ed-amber bg-ed-cream p-7 pt-10">
+						<span className="absolute top-0 left-0 inline-flex items-center gap-2 rounded-tl-2xl rounded-br-xl bg-ed-amber px-4 py-1.5 text-[11px] font-bold tracking-[1.65px] text-ed-cream uppercase">
+							<span className="ed-pulse h-1.5 w-1.5 rounded-full bg-ed-cream" />
+							Dziś
+						</span>
+						<p className="text-[16px] leading-[1.6] text-ed-ink">
+							Panel tylko do odczytu — mapa pokrycia kompetencji + luki program vs rynek. Zero
+							nakładu dla uczelni — dane z programu studiów + ofert pracy.
+						</p>
 					</div>
-					<h2 className="mb-4 font-heading text-[clamp(30px,4vw,52px)] leading-[1.12] font-black tracking-tight text-[#F8FAFC]">
-						Gotowy/a? Stwórz swój
+					{/* W PEŁNEJ WERSJI */}
+					<div className="relative rounded-2xl border border-ed-border bg-ed-surface p-7 pt-10">
+						<span className="absolute top-0 left-0 inline-flex items-center rounded-tl-2xl rounded-br-xl bg-ed-border px-4 py-1.5 text-[11px] font-bold tracking-[1.65px] text-ed-muted uppercase">
+							W pełnej wersji
+						</span>
+						<p className="text-[16px] leading-[1.6] text-ed-muted">
+							Model trójstronny — wykładowca / instytucja / firma potwierdzają kompetencje. Uczelnia
+							jako trzecia strona walidacji.
+						</p>
+					</div>
+				</div>
+			</section>
+
+			{/* ── Dla pracodawcy ── */}
+			<section className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 lg:px-20">
+				<h2 className="mb-8 font-ed-display text-[36px] leading-[1.1] font-bold text-ed-ink">
+					Dla pracodawcy: jeden link zamiast stosu CV
+				</h2>
+				<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+					{/* DZIŚ */}
+					<div className="relative rounded-2xl border-2 border-ed-amber bg-ed-cream p-7 pt-10">
+						<span className="absolute top-0 left-0 inline-flex items-center gap-2 rounded-tl-2xl rounded-br-xl bg-ed-amber px-4 py-1.5 text-[11px] font-bold tracking-[1.65px] text-ed-cream uppercase">
+							<span className="ed-pulse h-1.5 w-1.5 rounded-full bg-ed-cream" />
+							Dziś
+						</span>
+						<p className="text-[16px] leading-[1.6] text-ed-ink">
+							Paszport kandydata jednym linkiem, bez logowania. Widzisz samoocenę + propozycję AI —
+							bez pośredników.
+						</p>
+					</div>
+					{/* W PEŁNEJ WERSJI */}
+					<div className="relative rounded-2xl border border-ed-border bg-ed-surface p-7 pt-10">
+						<span className="absolute top-0 left-0 inline-flex items-center rounded-tl-2xl rounded-br-xl bg-ed-border px-4 py-1.5 text-[11px] font-bold tracking-[1.65px] text-ed-muted uppercase">
+							W pełnej wersji
+						</span>
+						<p className="text-[16px] leading-[1.6] text-ed-muted">
+							Firma jako trzecia strona potwierdzania kompetencji. Zamknięta pętla: uczelnia →
+							student → rynek.
+						</p>
+					</div>
+				</div>
+			</section>
+
+			{/* ── CTA końcowe ── */}
+			<section className="bg-ed-ink">
+				<div className="mx-auto max-w-[1440px] px-6 py-24 text-center md:px-10 lg:px-20">
+					<h2 className="mx-auto mb-9 max-w-[760px] font-ed-display text-[44px] leading-[1.12] font-bold text-ed-cream">
+						Zobacz, czego szuka rynek na Twojej ścieżce.
 						<br />
-						<span className="lp-grad-text">Paszport Kompetencji.</span>
+						Decyzję, co z tym zrobić, podejmiesz sam.
 					</h2>
-					<p className="mx-auto mb-12 max-w-[480px] text-lg text-[rgba(148,163,184,0.80)]">
-						Dołącz do studentów uczelni Merito, którzy już znają swoją wartość na rynku pracy.
-					</p>
 					<Link
-						href="/onboarding"
-						className="lp-btn-cta inline-flex items-center gap-2.5 rounded-full px-11 py-[18px] font-heading text-lg font-bold tracking-wide text-white no-underline"
+						href="/signup"
+						className="inline-flex items-center rounded-full bg-ed-amber px-9 py-4 font-ed-body text-[16px] font-bold text-ed-ink no-underline transition-opacity hover:opacity-90"
 					>
-						<ArrowRight className="h-5 w-5" strokeWidth={2.5} />
-						Zacznij teraz
+						Zbuduj swój Paszport Kompetencji
 					</Link>
 				</div>
 			</section>
 
 			{/* ── Footer ── */}
-			<footer className="border-t border-[rgba(255,255,255,0.06)] bg-[#060810] px-5 py-7 md:px-10">
-				<div className="mx-auto flex max-w-[1160px] flex-wrap items-center justify-between gap-4">
+			<footer className="border-t border-ed-border bg-ed-cream">
+				<div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-6 py-7 md:px-10 lg:px-20">
 					<Link href="/" className="no-underline">
-						<Logo size="sm" variant="landing" className="opacity-90" />
+						<Logo size="sm" variant="landing" />
 					</Link>
-					<div className="flex items-center gap-4">
-						<Link
-							href="/faculty/login"
-							className="text-[13px] text-[rgba(148,163,184,0.40)] no-underline transition-colors hover:text-[rgba(148,163,184,0.70)]"
-						>
-							Panel wykładowcy
-						</Link>
-						<span className="text-[13px] text-[rgba(148,163,184,0.20)]">&middot;</span>
-						<span className="text-[13px] text-[rgba(148,163,184,0.40)]">
-							© 2026 SkillBridge&nbsp;&middot;&nbsp;Projekt EduTech Masters&nbsp;&middot;&nbsp;Grupa
-							Merito
-						</span>
-					</div>
+					<span className="text-[14px] text-ed-muted">© 2026 SkillBridge</span>
 				</div>
 			</footer>
-		</>
+		</div>
 	);
 }
