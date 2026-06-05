@@ -4,6 +4,7 @@ import { BookOpen, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CareerHelperFlow } from "@/components/career-helper/career-helper-flow";
 import { Button } from "@/components/ui/button";
 import {
 	type CompetencyItem,
@@ -16,16 +17,21 @@ import { StepSelfAssessment } from "./step-self-assessment";
 import { StepSyllabus } from "./step-syllabus";
 
 /**
- * Wizard onboardingu: 5 kroków (spec B4 §1 + §3.3).
- * Krok 1–3: Profil / Sylabus / Kompetencje — zbieranie danych i zapis profilu.
+ * Wizard onboardingu: 6 kroków (Krok 0 dodany w strumieniu E / #5).
+ * Krok 0: Cel kariery — CareerHelperFlow osadzony (embedded); ustala careerGoal
+ *   w pamięci (bez select-path — nowy student nie ma jeszcze rekordu; spec §1.3/§3.1).
+ * Krok 1–3: Profil (BEZ celu) / Sylabus / Kompetencje — zbieranie danych i zapis profilu.
  * Krok 4: Samoocena (StepSelfAssessment, B4) — ocena kompetencji po ich zapisie.
  * Krok 5: Wnioski — przekierowanie do dashboardu (brak osobnego ekranu w Becie).
  *
- * Spec: docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §1/§3
+ * Spec: docs/product/skillbridge-e-pomocnik-krok0-spec-v0.1.md (Krok 0),
+ *       docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §1/§3 (kroki 1–5).
  * Krok 4 wchodzi po handleSubmit (krok 3) — kompetencje muszą być w bazie
- * zanim GET /api/self-assessment je pobierze.
+ * zanim GET /api/self-assessment je pobierze. Numeracja kroków: 0–5 (6 punktów na pasku);
+ * careerGoal trzymany w pamięci od Kroku 0, persystowany dopiero w POST /api/onboarding.
  */
 const STEPS = [
+	{ label: "Cel kariery", num: 0 },
 	{ label: "Profil", num: 1 },
 	{ label: "Sylabus", num: 2 },
 	{ label: "Kompetencje", num: 3 },
@@ -33,47 +39,59 @@ const STEPS = [
 	{ label: "Wnioski", num: 5 },
 ];
 
+const LAST_STEP = 5;
+
 interface OnboardingWizardProps {
 	user: { id: string; name: string; email: string };
 }
 
 export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 	const router = useRouter();
-	const [step, setStep] = useState(1);
+	const [step, setStep] = useState(0);
 	const [submitting, setSubmitting] = useState(false);
 	const [analyzing, setAnalyzing] = useState(false);
 
+	// careerGoal trzymany w pamięci od Kroku 0 (Pomocnik). Nie ma już opcji „custom"
+	// ani customCareerGoal — Pomocnik zwraca gotową etykietę obszaru zawodowego (string).
 	const [profile, setProfile] = useState<ProfileData>({
 		university: "",
 		fieldOfStudy: "",
 		semester: "",
 		careerGoal: "",
-		customCareerGoal: "",
 	});
 	const [syllabusText, setSyllabusText] = useState("");
 	const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
 	const [competencies, setCompetencies] = useState<CompetencyItem[]>([]);
 
-	const resolvedCareerGoal =
-		profile.careerGoal === "custom" ? profile.customCareerGoal : profile.careerGoal;
-
 	// Validation
-	const isStep1Valid =
-		profile.university &&
-		profile.fieldOfStudy.trim() &&
-		profile.semester &&
-		profile.careerGoal &&
-		(profile.careerGoal !== "custom" || profile.customCareerGoal.trim());
+	// Krok 0: cel kariery musi być ustawiony (Pomocnik) zanim wejdzie się w Profil.
+	const isStep0Valid = Boolean(profile.careerGoal);
+	// Krok 1 (Profil): bez celu kariery — uczelnia + kierunek + semestr.
+	const isStep1Valid = Boolean(
+		profile.university && profile.fieldOfStudy.trim() && profile.semester,
+	);
 
 	const filledCompetencyCount = competencies.filter((c) => c.name.trim()).length;
 	const isStep3Valid = filledCompetencyCount >= MIN_COMPETENCIES;
 
 	const goToStep = (target: number) => {
+		// Wejście do Profilu (1) wymaga ustalonego celu w Kroku 0.
+		if (target === 1 && !isStep0Valid) {
+			toast.error("Najpierw ustal cel kariery w Pomocniku.");
+			return;
+		}
+		// Wejście do Sylabusa (2) wymaga kompletnego Profilu.
 		if (target === 2 && !isStep1Valid) {
 			toast.error("Wypełnij wszystkie wymagane pola.");
 			return;
 		}
 		setStep(target);
+	};
+
+	// Krok 0 → Krok 1: Pomocnik zwrócił etykietę celu. Zapisujemy w pamięci i wchodzimy w Profil.
+	const handleCareerGoalChosen = (careerLabel: string) => {
+		setProfile((prev) => ({ ...prev, careerGoal: careerLabel }));
+		setStep(1);
 	};
 
 	// AI analysis — dwie pełnoprawne ścieżki (ADR-007 (b)): plik PDF → multipart,
@@ -93,13 +111,13 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 				// — NIE ustawiamy go ręcznie, inaczej zniszczymy boundary.
 				const fd = new FormData();
 				fd.append("file", syllabusFile);
-				fd.append("careerGoal", resolvedCareerGoal);
+				fd.append("careerGoal", profile.careerGoal);
 				res = await fetch("/api/syllabus/parse", { method: "POST", body: fd });
 			} else {
 				res = await fetch("/api/syllabus/parse", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ syllabusText, careerGoal: resolvedCareerGoal }),
+					body: JSON.stringify({ syllabusText, careerGoal: profile.careerGoal }),
 				});
 			}
 			if (!res.ok) {
@@ -132,7 +150,7 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 					university: profile.university,
 					fieldOfStudy: profile.fieldOfStudy,
 					semester: Number(profile.semester),
-					careerGoal: resolvedCareerGoal,
+					careerGoal: profile.careerGoal,
 					syllabusText,
 					competencies: filledNames,
 				}),
@@ -184,15 +202,15 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 			{/* Progress bar */}
 			<div className="mb-10 w-full max-w-[560px]">
 				<div className="relative mb-3 flex items-center justify-between">
-					{/* Line — 5 kroków, progres = (step-1)/(5-1) */}
+					{/* Line — 6 kroków (0–5), progres = step / LAST_STEP. Krok 0 = 0% wypełnienia. */}
 					<div className="absolute left-6 right-6 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-muted">
 						<div
 							className="ob-progress-fill h-full rounded-full transition-all duration-500"
-							style={{ width: `${((step - 1) / 4) * 100}%` }}
+							style={{ width: `${(step / LAST_STEP) * 100}%` }}
 						/>
 					</div>
-					{/* Dots */}
-					{STEPS.map((s) => (
+					{/* Dots — numer wyświetlany 1-based (idx+1), żeby pasek nie pokazywał „0". */}
+					{STEPS.map((s, idx) => (
 						<div
 							key={s.num}
 							className={`ob-step-dot relative z-10 flex h-12 w-12 items-center justify-center rounded-full font-mono text-base font-bold transition-all duration-400 ${
@@ -203,7 +221,7 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 										: "border-2 border-muted bg-background text-muted-foreground"
 							}`}
 						>
-							{s.num < step ? <Check className="h-5 w-5" /> : s.num}
+							{s.num < step ? <Check className="h-5 w-5" /> : idx + 1}
 						</div>
 					))}
 				</div>
@@ -227,6 +245,20 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 
 			{/* Card */}
 			<div className="ob-wizard-card w-full max-w-[560px] animate-in fade-in slide-in-from-bottom-3 duration-400">
+				{/* Step 0 — Cel kariery (Pomocnik osadzony). Spec §3.1/§4.
+				    Tryb embedded: brak select-path; cel płynie w pamięci (handleCareerGoalChosen).
+				    Student wybiera obszar — AI nie narzuca (human-in-the-loop, CLAUDE.md §7). */}
+				{step === 0 && (
+					<>
+						<h2 className="font-heading text-2xl font-extrabold">Zacznijmy od celu</h2>
+						<p className="mb-8 mt-1.5 text-sm text-muted-foreground">
+							Pomocnik zada Ci kilka pytań i pomoże nazwać obszar zawodowy, który do Ciebie pasuje.
+							Ty wybierasz — to nie test.
+						</p>
+						<CareerHelperFlow onCareerGoalChosen={handleCareerGoalChosen} />
+					</>
+				)}
+
 				{/* Step 1 */}
 				{step === 1 && (
 					<>
@@ -234,8 +266,20 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 						<p className="mb-8 mt-1.5 text-sm text-muted-foreground">
 							Te informacje pomogą nam spersonalizować Twój Paszport Kompetencji i analizę luk.
 						</p>
+						{/* Mikrokopia HITL: cel ustalony w Kroku 0 jest widoczny i edytowalny (powrót). */}
+						{profile.careerGoal && (
+							<p className="mb-6 rounded-md bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+								Twój cel kariery:{" "}
+								<span className="font-medium text-foreground">{profile.careerGoal}</span>. Możesz go
+								zmienić, wracając do poprzedniego kroku.
+							</p>
+						)}
 						<StepProfile data={profile} onChange={setProfile} />
-						<div className="mt-8 flex justify-end">
+						<div className="mt-8 flex items-center justify-between">
+							<Button variant="ghost" onClick={() => goToStep(0)} className="gap-2">
+								<ChevronLeft className="h-4 w-4" />
+								Wstecz
+							</Button>
 							<Button
 								onClick={() => goToStep(2)}
 								disabled={!isStep1Valid}
