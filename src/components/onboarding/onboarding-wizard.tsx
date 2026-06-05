@@ -77,7 +77,7 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 	const goToStep = (target: number) => {
 		// Wejście do Profilu (1) wymaga ustalonego celu w Kroku 0.
 		if (target === 1 && !isStep0Valid) {
-			toast.error("Najpierw ustal cel kariery w Pomocniku.");
+			toast.error("Najpierw wybierz cel kariery — Pomocnik Ci w tym pomoże.");
 			return;
 		}
 		// Wejście do Sylabusa (2) wymaga kompletnego Profilu.
