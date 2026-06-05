@@ -51,6 +51,7 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 		customCareerGoal: "",
 	});
 	const [syllabusText, setSyllabusText] = useState("");
+	const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
 	const [competencies, setCompetencies] = useState<CompetencyItem[]>([]);
 
 	const resolvedCareerGoal =
@@ -75,19 +76,32 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 		setStep(target);
 	};
 
-	// AI analysis
+	// AI analysis — dwie pełnoprawne ścieżki (ADR-007 (b)): plik PDF → multipart,
+	// tekst ręczny → JSON. Walidacja klienta: „albo plik, albo tekst ≥ 100 znaków".
 	const handleAnalyze = async () => {
-		if (syllabusText.trim().length < 100) {
-			toast.error("Sylabus musi mieć co najmniej 100 znaków.");
+		const hasFile = syllabusFile !== null;
+		const hasText = syllabusText.trim().length >= 100;
+		if (!hasFile && !hasText) {
+			toast.error("Wgraj plik PDF albo wklej co najmniej 100 znaków sylabusa.");
 			return;
 		}
 		setAnalyzing(true);
 		try {
-			const res = await fetch("/api/syllabus/parse", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ syllabusText, careerGoal: resolvedCareerGoal }),
-			});
+			let res: Response;
+			if (hasFile && syllabusFile) {
+				// Multipart: przeglądarka sama ustawi Content-Type (multipart/form-data + boundary)
+				// — NIE ustawiamy go ręcznie, inaczej zniszczymy boundary.
+				const fd = new FormData();
+				fd.append("file", syllabusFile);
+				fd.append("careerGoal", resolvedCareerGoal);
+				res = await fetch("/api/syllabus/parse", { method: "POST", body: fd });
+			} else {
+				res = await fetch("/api/syllabus/parse", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ syllabusText, careerGoal: resolvedCareerGoal }),
+				});
+			}
 			if (!res.ok) {
 				const data = await res.json();
 				throw new Error(data.error || "Błąd analizy");
@@ -245,6 +259,8 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 						<StepSyllabus
 							syllabusText={syllabusText}
 							onSyllabusChange={setSyllabusText}
+							file={syllabusFile}
+							onFileChange={setSyllabusFile}
 							onAnalyze={handleAnalyze}
 							loading={analyzing}
 						/>

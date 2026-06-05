@@ -9,6 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 interface StepSyllabusProps {
 	syllabusText: string;
 	onSyllabusChange: (text: string) => void;
+	/**
+	 * Lift stanu pliku do wizarda (ADR-007 (a)) — plik musi opuścić komponent, by trafił do fetch.
+	 * Opcjonalne: gdy nie podane (np. ProfilEditor — re-analiza tylko tekstowa), komponent zarządza
+	 * własnym stanem pliku lokalnie i upload PDF nie jest wspierany (zachowanie sprzed strumienia C).
+	 */
+	file?: File | null;
+	onFileChange?: (f: File | null) => void;
 	onAnalyze: () => void;
 	loading: boolean;
 }
@@ -16,22 +23,41 @@ interface StepSyllabusProps {
 export function StepSyllabus({
 	syllabusText,
 	onSyllabusChange,
+	file: fileProp,
+	onFileChange,
 	onAnalyze,
 	loading,
 }: StepSyllabusProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const [file, setFile] = useState<File | null>(null);
 	const [dragOver, setDragOver] = useState(false);
+	// Tryb niekontrolowany (brak onFileChange) — lokalny stan; tryb kontrolowany — prop z wizarda.
+	const [localFile, setLocalFile] = useState<File | null>(null);
+	const isControlled = onFileChange !== undefined;
+	const file = isControlled ? (fileProp ?? null) : localFile;
 
-	const handleFile = useCallback((f: File) => {
-		if (f.type !== "application/pdf") {
-			return;
-		}
-		if (f.size > 10 * 1024 * 1024) {
-			return;
-		}
-		setFile(f);
-	}, []);
+	const setFile = useCallback(
+		(f: File | null) => {
+			if (isControlled) {
+				onFileChange?.(f);
+			} else {
+				setLocalFile(f);
+			}
+		},
+		[isControlled, onFileChange],
+	);
+
+	const handleFile = useCallback(
+		(f: File) => {
+			if (f.type !== "application/pdf") {
+				return;
+			}
+			if (f.size > 10 * 1024 * 1024) {
+				return;
+			}
+			setFile(f);
+		},
+		[setFile],
+	);
 
 	const removeFile = () => {
 		setFile(null);

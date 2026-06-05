@@ -92,32 +92,44 @@ async function uploadPdfAndAnalyze(page: import("@playwright/test").Page): Promi
 }
 
 test.describe("@dbwrite Onboarding — upload sylabusa PDF (błąd #2, warstwa klienta)", () => {
-	test("stan obecny: sam PDF (bez tekstu) → błąd, kompetencje NIE generowane (pozorne LUB)", async ({
+	// Po naprawie strumienia C: charakteryzacja „atrapy" (sam PDF → błąd, brak generacji) już
+	// NIEAKTUALNA. Ten test (BEZ @llm — nie woła modelu) dowodzi STRUKTURALNIE, że klient już
+	// NIE blokuje ścieżki plikowej: po wgraniu PDF (puste pole tekstowe) przycisk analizy jest
+	// aktywny i NIE pokazuje starego błędu „co najmniej 100 znaków". To kotwica de-mask dla testu
+	// @llm niżej: ścieżka do realnej analizy jest osiągalna, więc ew. czerwień @llm to luka modelu,
+	// nie zablokowany klient. NIE klikamy „Analizuj" tutaj — to wywołałoby model (osobny segment @llm).
+	test("po naprawie: sam PDF (bez tekstu) odblokowuje analizę — klient NIE blokuje ścieżki plikowej", async ({
 		page,
 	}) => {
 		await loginWithPassword(page, "b4");
 		await page.goto("/onboarding");
 
 		await fillProfileAndGoToSyllabus(page);
-		await uploadPdfAndAnalyze(page);
 
-		// Klient ignoruje plik: walidacja tekstu blokuje, mimo wgranego PDF.
-		await expect(page.getByText(/co najmniej 100 znaków/i)).toBeVisible();
-		// Pozostajemy na kroku 2 — krok „Twoje kompetencje" NIE został osiągnięty.
+		const pdf = await makeSyllabusPdfBuffer(SYLLABUS_TEXT);
+		await page.locator('input[type="file"]').setInputFiles({
+			name: "sylabus.pdf",
+			mimeType: "application/pdf",
+			buffer: pdf,
+		});
+
+		// Plik widoczny jako chip; przycisk analizy aktywny od samego pliku (puste pole tekstowe).
+		await expect(page.getByText("sylabus.pdf")).toBeVisible();
+		await expect(page.getByRole("button", { name: /Analizuj sylabus/i })).toBeEnabled();
+		// Stary błąd „atrapy" NIE pojawia się — nawet bez kliknięcia walidacja go nie pokazuje.
+		await expect(page.getByText(/co najmniej 100 znaków/i)).toHaveCount(0);
+		// Wciąż na kroku 2 (nie klikaliśmy analizy) — krok kompetencji osiąga test @llm niżej.
 		await expect(page.getByRole("heading", { name: /Wgraj swój sylabus/i })).toBeVisible();
-		await expect(page.getByRole("heading", { name: /Twoje kompetencje/i })).toHaveCount(0);
 	});
 
-	test("kontrakt docelowy: upload PDF zwraca krok kompetencji (brama strumienia C)", async ({
+	test("@llm kontrakt docelowy: upload PDF zwraca krok kompetencji (po naprawie strumienia C)", async ({
 		page,
 	}) => {
-		// test.fail(): znany defekt. Zielony, DOPÓKI upload nie działa; po naprawie
-		// strumienia C ta asercja przejdzie → test.fail zmieni się w czerwone (sygnał
-		// „zdejmij test.fail, potwierdź naprawę"). Charakteryzacja wyżej (zielona)
-		// dowodzi, że ścieżka do tego kroku działa — więc to luka zachowania, nie setup.
-		test.fail();
-		// Budżet testu > timeout asercji (60s), inaczej test.fail nie złapie czystego
-		// failu asercji (config ma timeout 30s — za mało na 60s oczekiwanie).
+		// test.fail() ZDJĘTY po naprawie strumienia C — upload PDF działa, test musi być zielony.
+		// Tag @llm: po naprawie upload realnie woła model (parseSyllabus). Bez klucza API na
+		// serwerze segment @llm się skipuje (konwencja e2e). Tu nie odpalany na żywo (wymaga
+		// klucza) — flip strukturalny. Tag @dbwrite zostaje (describe): onboarding pisze do bazy.
+		// Budżet testu > timeout asercji (60s): realne wywołanie modelu bywa wolne.
 		test.setTimeout(90_000);
 
 		await loginWithPassword(page, "b4");
@@ -126,12 +138,10 @@ test.describe("@dbwrite Onboarding — upload sylabusa PDF (błąd #2, warstwa k
 		await fillProfileAndGoToSyllabus(page);
 		await uploadPdfAndAnalyze(page);
 
-		// Kotwica punktu pomiaru (N1, review Leo): potwierdza, że DOSZLIŚMY do miejsca
-		// asercji (krok sylabusa, plik wgrany), więc czerwień docelowa bierze się z luki
-		// zachowania, nie z błędu setupu zamaskowanego przez test.fail(). Strukturalny
-		// de-mask pełni test charakteryzacji wyżej (osobny, BEZ test.fail). Przy zdejmowaniu
-		// test.fail() po naprawie strumienia C: potwierdź, że czerwień to brak nagłówka
-		// kompetencji, nie wcześniejszy krok.
+		// Kotwica punktu pomiaru: potwierdza, że DOSZLIŚMY do miejsca asercji (krok sylabusa,
+		// plik wgrany) — po naprawie przejście do kroku kompetencji ma wynikać z realnej analizy
+		// PDF, nie z przeskoczenia kroku. Test charakteryzacji wyżej (sam-PDF-bez-tekstu) został
+		// po stronie integracyjnej przeniesiony na kontrakt 200; tu dowodzimy pełnej ścieżki UI.
 		await expect(page).toHaveURL(/\/onboarding/);
 
 		// CEL: plik PDF realnie przeanalizowany → przejście do kroku kompetencji.
