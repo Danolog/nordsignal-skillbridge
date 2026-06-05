@@ -26,6 +26,17 @@ import { OnboardingWizard } from "../onboarding-wizard";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() } }));
 
+// Krok 0 (Pomocnik) ma własny przepływ sieciowy (ankieta→czat→podsumowanie); nie jest
+// przedmiotem tego testu (brama #3 = próg kompetencji w kroku 3). Stub CareerHelperFlow
+// natychmiast oddaje cel przez callback — tak jak po wyborze ścieżki przez studenta.
+vi.mock("@/components/career-helper/career-helper-flow", () => ({
+	CareerHelperFlow: ({ onCareerGoalChosen }: { onCareerGoalChosen?: (l: string) => void }) => (
+		<button type="button" onClick={() => onCareerGoalChosen?.("Data Analyst")}>
+			Wybierz cel (stub)
+		</button>
+	),
+}));
+
 // Radix Select w jsdom wymaga tych stubów (pointer capture + scrollIntoView).
 beforeAll(() => {
 	if (!Element.prototype.hasPointerCapture) Element.prototype.hasPointerCapture = () => false;
@@ -49,16 +60,18 @@ function mockSyllabusParse(competencyNames: string[]) {
 	return fetchMock;
 }
 
-/** Przeprowadza wizard z kroku 1 do kroku 3 (analiza sylabusa daje kompetencje). */
+/** Przeprowadza wizard z kroku 0 (Pomocnik stub) do kroku 3 (analiza sylabusa daje kompetencje). */
 async function goToStep3(user: ReturnType<typeof userEvent.setup>) {
-	// Krok 1 — profil (Radix Select przez userEvent + input kierunku).
+	// Krok 0 — Pomocnik (stub): klik oddaje cel kariery, wizard przechodzi do Profilu.
+	await user.click(screen.getByRole("button", { name: /Wybierz cel \(stub\)/i }));
+
+	// Krok 1 — profil (Radix Select przez userEvent + input kierunku). Bez celu kariery:
+	// tylko 2 comboboxy (uczelnia [0], semestr [1]).
 	await user.click(screen.getAllByRole("combobox")[0]);
 	await user.click(await screen.findByRole("option", { name: "WSB Merito Gdańsk" }));
 	await user.type(screen.getByPlaceholderText(/np\. Informatyka/), "Informatyka");
 	await user.click(screen.getAllByRole("combobox")[1]);
 	await user.click(await screen.findByRole("option", { name: "4" }));
-	await user.click(screen.getAllByRole("combobox")[2]);
-	await user.click(await screen.findByRole("option", { name: "Data Analyst" }));
 	await user.click(screen.getByRole("button", { name: /Dalej/i }));
 
 	// Krok 2 — sylabus (≥100 znaków, żeby handleAnalyze nie odrzucił), klik "Analizuj".
