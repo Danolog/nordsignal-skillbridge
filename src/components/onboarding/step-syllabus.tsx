@@ -2,6 +2,7 @@
 
 import { FileText, FileUp, Sparkles, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,9 +50,11 @@ export function StepSyllabus({
 	const handleFile = useCallback(
 		(f: File) => {
 			if (f.type !== "application/pdf") {
+				toast.error("To nie jest plik PDF. Wgraj sylabus w formacie PDF albo wklej treść ręcznie.");
 				return;
 			}
 			if (f.size > 10 * 1024 * 1024) {
+				toast.error("Plik jest za duży (limit 10 MB). Zmniejsz plik albo wklej treść ręcznie.");
 				return;
 			}
 			setFile(f);
@@ -150,7 +153,7 @@ export function StepSyllabus({
 					<div className="ob-spinner mb-6 h-14 w-14 rounded-full border-[3px] border-[#6366F1]/15 border-t-[#6366F1]" />
 					<p className="font-heading text-lg font-bold">Analizujemy Twój sylabus</p>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Nasza AI wyciąga kompetencje z Twojego programu studiów.
+						Wyciągamy kompetencje z Twojego programu studiów.
 						<br />
 						To może potrwać do 30 sekund…
 					</p>
