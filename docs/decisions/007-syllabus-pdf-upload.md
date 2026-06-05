@@ -1,8 +1,9 @@
 # Decision Document: Syllabus PDF Upload — Contract for `/api/syllabus/parse`
 
 **Status:** Accepted
+**Wersja:** v1.1 · 2026-06-05 — sprostowanie decyzji #4 (biblioteka): faktycznie użyto `pdf-parse` **v2** (klasa `PDFParse`), nie v1; v1 odrzucona empirycznie. Usunięta fałszywa nota „bez bindingów natywnych" — v2 ciągnie `@napi-rs/canvas` (binding natywny N-API) jako twardą zależność. Mitygacja: `pnpm audit` (Ryzyka). Reszta decyzji bez zmian.
 **Date:** 2026-06-05
-**Author:** Ethan (CTO nordsignal) — eskalacja N3 od Leo (nazwa pola multipart + tryb endpointu)
+**Author:** Ethan (CTO nordsignal) — eskalacja N3 od Leo (nazwa pola multipart + tryb endpointu); sprostowanie v1.1 Leo (Tech Lead) po inspekcji `package.json` + `route.ts`.
 **Powiązania:** błąd #2 strumień C (`docs/product/plan-naprawy-6-bledow.md`); bramy Z2 (`test/z2-syllabus-pdf-upload`); rozjazd §4 z Z5 (`tests/e2e-pw/50-rejestracja-onboarding.spec.ts`, komentarz §4 vs „z PDF").
 
 ---
@@ -34,7 +35,7 @@ Endpoint `/api/syllabus/parse` obsługuje **dwa tryby wejścia** rozróżniane p
 | 1 | **Nazwa pola multipart (pliku)** | `file` | Potwierdzam propozycję Z2. Neutralna, zgodna z konwencją HTML `<input type="file">`, brama integracyjna i e2e już jej używają (`fd.append("file", ...)`, `input[type="file"]`). Zmiana nazwy = bezcelowy koszt przepisania obu bram. |
 | 2 | **Nazwa pola celu kariery w multipart** | `careerGoal` (string field obok pliku) | Ten sam klucz co w trybie JSON — jeden model danych po stronie `parseSyllabus`. Brama Z2 już dokłada `fd.append("careerGoal", ...)`. |
 | 3 | **Tryb endpointu** | **OBA** (multipart PDF + JSON tekst), routing po `Content-Type` | PDF → multipart; ręczny tekst → JSON. NIE zastępujemy JSON — ścieżka tekstowa jest produkcyjnie używana (kontrola pozytywna Z2, ścieżka krytyczna Z5). Uspójnia rozjazd §4 (Z5): plan §4 mówi „sylabus z PDF", Z5 testuje tekst — po tej decyzji oba warianty są pełnoprawne i niezależnie pokryte. |
-| 4 | **Biblioteka PDF** | `pdf-parse` (NOWA zależność produkcyjna) | Czysto Node (bez bindingów natywnych, bez headless przeglądarki), tekstowa ekstrakcja przez `pdfjs`, działa w Node runtime Vercela. Lekka, sprawdzona w produkcji ekosystemu Next. Alternatywy odrzucone niżej. **Wymaga: `pnpm add pdf-parse` + `@types/pdf-parse` jako devDependency.** |
+| 4 | **Biblioteka PDF** | `pdf-parse` **v2** (klasa `PDFParse`, NOWA zależność produkcyjna) | Tekstowa ekstrakcja przez `pdfjs` w Node runtime Vercela. **v1 odrzucona empirycznie:** stary `pdfjs` w v1 nie czytał fixture'ów testowych (wyjścia `jspdf` z bram Z2 → „bad XRef entry") + footgun debug-branch przy imporcie ESM. **Korekta noty o bindingach (v1.1):** v2 NIE jest „czysto Node bez bindingów" — ciągnie `@napi-rs/canvas` (binding natywny N-API) jako twardą zależność. Ryzyko niskie: prebuilt binaries per-platforma (bez `node-gyp` na buildzie Vercela), `@napi-rs/canvas` używany do renderu/obrazów, **NIE** do `getText()` — nasza ścieżka (`route.ts` `parser.getText()`) go nie wykonuje. Mitygacja supply-chain: `pnpm audit` (Ryzyka). **Wymaga: `pnpm add pdf-parse` (v2; typy w paczce, bez osobnego `@types/pdf-parse`).** |
 | 5 | **Runtime endpointu** | Node.js runtime (nie Edge) | `pdf-parse` wymaga Node (Buffer, fs-like). Endpoint ma już `maxDuration = 60` (wywołanie LLM) — i tak jest Functions Node, więc bez zmiany kosztu/architektury. |
 | 6 | **Wspólny rdzeń** | Po ekstrakcji tekstu z PDF wchodzimy w **tę samą** ścieżkę walidacji długości i `parseSyllabus(text, careerGoal)` co JSON | Jeden punkt prawdy dla analizy. Tekst z PDF traktowany identycznie jak wklejony — min. 100 znaków po ekstrakcji (patrz walidacja). |
 
@@ -89,7 +90,8 @@ Kształt odpowiedzi błędu **niezmieniony** względem obecnego endpointu: `Next
 
 | Ryzyko | Wpływ | Mitygacja |
 |--------|-------|-----------|
-| `pdf-parse` zawiera CVE / słabo utrzymywany | Dług bezpieczeństwa | Audyt `pnpm audit` przy dodaniu; przypięta wersja; ścieżka migracji do `unpdf` udokumentowana wyżej. Wejście ograniczone (10 MB, tylko PDF, tylko zalogowany user za rate-limitem). |
+| `pdf-parse` v2 (lub tranzytywne `pdfjs-dist`/`@napi-rs/canvas`) zawiera CVE / słabo utrzymywany | Dług bezpieczeństwa | Audyt `pnpm audit` przy dodaniu i okresowo; przypięta wersja; ścieżka migracji do `unpdf` udokumentowana wyżej. Wejście ograniczone (10 MB, tylko PDF, tylko zalogowany user za rate-limitem). Wynik audytu z 2026-06-05 odnotowany przy tej decyzji (commit gałęzi `fix/c-syllabus-pdf-upload`). |
+| `@napi-rs/canvas` (binding natywny N-API, twarda zależność v2) nie zbuduje się / brak prebuilt na platformie Vercela | Build prod fails | Prebuilt binaries per-platforma (Linux x64 glibc = runtime Vercela), bez `node-gyp` na buildzie. Binding renderu obrazów — nasza ścieżka `getText()` go nie wywołuje; gdyby zniknął prebuilt → migracja do `unpdf` (czysto JS) wg sekcji Alternatywy. |
 | Złośliwy / zniekształcony PDF wywraca parser | DoS / 500 | Ekstrakcja w `try/catch` → `422` + log; limit rozmiaru przed odczytem; rate-limit `aiHeavy` już chroni. |
 | PDF-bomba (mały plik, ogromny tekst) | Koszt modelu | Limit 50 000 znaków po ekstrakcji przed `parseSyllabus`; sanityzacja do 8000 w warstwie modelu. |
 | Rozjazd front↔back (kontrakt na mocku) | Upload znów atrapą na prod | **JEDNA gałąź** front+back + **test integracyjny realnego kontraktu** (Z2 integration) przed merge — lekcja split-frontend-backend. |
@@ -119,6 +121,25 @@ Kolejność warstw:
 Zależność: `pnpm add pdf-parse` + `pnpm add -D @types/pdf-parse` na tej samej gałęzi (commit razem z `pnpm-lock.yaml`). Runtime Node (już jest — `maxDuration = 60`).
 
 Kolejność testów: integracyjny (Z2) zielony lokalnie PRZED merge; e2e `@llm` w nocnym/przed-Beta jobie (klucz API w CI = osobny sign-off Darka). Quinn weryfikuje flip obu bram realnym testem przed „go".
+
+---
+
+## Wynik `pnpm audit` — stack PDF (2026-06-05, gałąź `fix/c-syllabus-pdf-upload`)
+
+Audyt całego drzewa: **13 podatności (1 critical, 12 moderate)**. **Żadna nie dotyczy stacku PDF** dodanego tym ADR (`pdf-parse` v2 / `pdfjs-dist` / `@napi-rs/canvas`) — sprawdzone filtrem po nazwach pakietów, zero trafień. Decyzja #4 jest czysta od strony supply-chain.
+
+Findings (dla pełności, poza zakresem tego ADR — istniejący dług, nie wprowadzony tu):
+
+| Pakiet | Severity | Ścieżka | Charakter |
+|--------|----------|---------|-----------|
+| `vitest` (<4.1.0) | **critical** | `.>vitest` | devDependency (test runner); CVE wymaga aktywnego Vitest UI server — nie w runtime prod. |
+| `esbuild` (≤0.24.2) | moderate | `.>drizzle-kit>@esbuild-kit/...>esbuild` | build/dev tool (drizzle-kit). |
+| `brace-expansion` (×2) | moderate | `.>shadcn>ts-morph>...>brace-expansion` | dev tool (shadcn). |
+| `dompurify` (≤3.3.3, ×4) | moderate | `.>jspdf>dompurify` | tranzytywne przez `jspdf` (generowanie PDF, istniejące). |
+| `postcss` | moderate | (build) | build tool. |
+| `ip-address`, `better-auth` (<1.6.2), `qs` | moderate | runtime/build | istniejący dług poza stackiem PDF. |
+
+Rekomendacja (poza zakresem #2, do osobnej decyzji Ethana/Ryana): bump `vitest` ≥4.1.0 (critical, devDep) i `better-auth` ≥1.6.2 (runtime auth) jako kandydaci na osobny PR housekeeping. **Nie blokuje** domknięcia #2 — nic na ścieżce uploadu PDF.
 
 ---
 
