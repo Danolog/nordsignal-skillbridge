@@ -44,6 +44,21 @@
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
 	--font-heading: var(--font-nunito), "Nunito", sans-serif;
+
+	/* ── Landing #6 „Papierowy editorial" (kierunek A) — mapowanie tokenów na klasy Tailwind ──
+	   Daje klasy bg-ed-*, text-ed-*, border-ed-* (zero kolorów na sztywno w komponencie). */
+	--color-ed-cream: var(--ed-cream);
+	--color-ed-ink: var(--ed-ink);
+	--color-ed-amber: var(--ed-amber);
+	--color-ed-surface: var(--ed-surface);
+	--color-ed-border: var(--ed-border);
+	--color-ed-muted: var(--ed-muted);
+	--color-ed-warn: var(--ed-warn);
+	--color-ed-danger: var(--ed-danger);
+	--color-ed-badge-bg: var(--ed-badge-bg);
+	/* Fonty editorial: display = Playfair, body = DM Sans (next/font w layout.tsx). */
+	--font-ed-display: var(--font-playfair), "Playfair Display", Georgia, serif;
+	--font-ed-body: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
 }
 
 :root {
@@ -79,6 +94,22 @@
 	--sidebar-accent-foreground: oklch(0.205 0 0);
 	--sidebar-border: oklch(0.922 0 0);
 	--sidebar-ring: oklch(0.708 0 0);
+
+	/* ── Landing #6 „Papierowy editorial" (kierunek A) — paleta editorial ──
+	   oklch = wartość robocza (przybliżenie), hex obok = referencja obowiązkowa ze spec. */
+	--ed-cream: oklch(0.974 0.013 75.5); /* #FAF6F1 — tło strony, header, CTA-end bg */
+	--ed-ink: oklch(0.157 0.01 50); /* #1B1917 — tekst główny, nagłówki kart */
+	--ed-amber: oklch(0.636 0.127 57.3); /* #D0891E — akcent, CTA, paski, badge DZIŚ */
+	--ed-surface: oklch(0.951 0.019 75); /* #F5EFE6 — karty gain/uczelnia/pracodawca */
+	--ed-border: oklch(0.87 0.014 68); /* #D6CEC2 — separatory, obwódki, badge PEŁNA */
+	--ed-muted: oklch(0.503 0.017 55); /* #756E65 — tekst pomocniczy */
+	--ed-warn: oklch(0.851 0.12 87); /* #F4D04F — pasek 60–79% */
+	--ed-danger: oklch(0.54 0.18 25); /* #D0422B — pasek <40% */
+	--ed-badge-bg: oklch(0.971 0.049 84); /* #FDF3DD — tło badge w karcie Paszportu */
+
+	/* Gradient marki SkillBridge — JEDNO źródło prawdy dla NOWYCH komponentów.
+	   Stare ~40 instancji (dashboard/passport/onboarding) NIE tokenizowane — poza zakresem #6. */
+	--gradient-brand: linear-gradient(135deg, #6366f1 0%, #22d3ee 100%);
 }
 
 .dark {
@@ -186,27 +217,7 @@
 	z-index: 1;
 }
 
-.auth-logo-icon {
-	width: 36px;
-	height: 36px;
-	background: linear-gradient(135deg, #6366f1 0%, #22d3ee 100%);
-	border-radius: 10px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: white;
-	box-shadow: 0 0 18px rgba(99, 102, 241, 0.45);
-}
-
-.auth-logo-text {
-	font-family: var(--font-heading);
-	font-weight: 800;
-	font-size: 18px;
-	background: linear-gradient(135deg, #6366f1 0%, #22d3ee 100%);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-	background-clip: text;
-}
+/* (dług #6) .auth-logo-icon / .auth-logo-text — usunięte: martwe po wspólnym <Logo variant="auth"/>. */
 
 /* Card */
 .auth-card {
@@ -613,6 +624,67 @@
 }
 
 /* ============================================================
+   LANDING #6 „PAPIEROWY EDITORIAL" (kierunek A) — style dedykowane
+   Wszystkie animacje wyłączane przy prefers-reduced-motion: reduce.
+============================================================ */
+
+/* Hero staggered fade-up (label / H1 / body / CTA) — delay przez inline style w komponencie. */
+@keyframes ed-hero-up {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.ed-hero-up {
+	opacity: 0;
+	animation: ed-hero-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Pulsowanie kropki badge „DZIŚ" (nice-to-have, CSS-only). */
+.ed-pulse {
+	animation: pulse-dot 2.4s ease-in-out infinite;
+}
+
+/* Hover-lift kart „Co zyskujesz". */
+.ed-lift {
+	transition:
+		transform 0.25s ease,
+		box-shadow 0.25s ease;
+}
+.ed-lift:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 12px 28px rgba(27, 25, 23, 0.1);
+}
+
+/* Reduced motion: zero ruchu, treść od razu widoczna. */
+@media (prefers-reduced-motion: reduce) {
+	.ed-hero-up {
+		opacity: 1;
+		animation: none;
+		transform: none;
+	}
+	.ed-pulse {
+		animation: none;
+	}
+	.ed-lift:hover {
+		transform: none;
+	}
+	/* fade-up (scroll-reveal) też nieruchome — element widoczny bez animacji. */
+	.fade-up {
+		opacity: 1;
+		transform: none;
+	}
+	.fade-up.visible {
+		animation: none;
+	}
+}
+
+/* ============================================================
    ONBOARDING WIZARD STYLES
 ============================================================ */
 
@@ -770,27 +842,7 @@
 	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.db-sidebar-logo-icon {
-	width: 36px;
-	height: 36px;
-	background: linear-gradient(135deg, #6366f1 0%, #22d3ee 100%);
-	border-radius: 12px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	flex-shrink: 0;
-	color: white;
-}
-
-.db-sidebar-logo-text {
-	font-family: var(--font-heading);
-	font-weight: 800;
-	font-size: 18px;
-	background: linear-gradient(135deg, #6366f1 0%, #22d3ee 100%);
-	-webkit-background-clip: text;
-	-webkit-text-fill-color: transparent;
-	background-clip: text;
-}
+/* (dług #6) .db-sidebar-logo-icon / .db-sidebar-logo-text — usunięte: martwe po wspólnym <Logo variant="sidebar"/>. */
 
 .db-sidebar-close {
 	display: none;
