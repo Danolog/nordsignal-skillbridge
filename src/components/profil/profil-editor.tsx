@@ -102,7 +102,7 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 			return;
 		}
 		if (!resolvedCareerGoal) {
-			toast.error("Najpierw uzupełnij cel kariery w sekcji Profil.");
+			toast.error("Najpierw uzupełnij cel kariery w karcie „Cel kariery”.");
 			return;
 		}
 		setAnalyzing(true);
