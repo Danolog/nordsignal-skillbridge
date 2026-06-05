@@ -1,11 +1,10 @@
-import { BrainCircuit } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// FAZA 2 (Maya): wybór finalnego symbolu marki + tokenizacja gradientu
-// Kanoniczna ikona: BrainCircuit (lucide-react) — zgodna z 2/3 dotychczasowych użyć
-// (landing + auth) i publicznym wizerunkiem; sidebar miał własny inline <svg> (mortarboard),
-// który ujednolicamy do tej samej ikony. Wybór ikony (BrainCircuit vs mortarboard) oraz
-// tokenizacja gradientu (oklch @theme zamiast hexa) to decyzja Mili — punkt zaczepienia tu.
+// Kanoniczna ikona marki: GraduationCap (czapka studenta) — decyzja Darka, sesja #6 2026-06-05.
+// Jednorodna dla wszystkich wariantów (landing/sidebar/auth); zastępuje wcześniejszy BrainCircuit.
+// Kolor ikony różni się per wariant: landing = atrament (paleta editorial), sidebar/auth = gradient
+// marki (bez zmian). Tokenizacja gradientu na sidebar/auth pozostaje zakresem Fazy 2 (Maya).
 
 /** Gradient marki — JEDNO źródło prawdy (był rozsiany hexem po 4 plikach). */
 const LOGO_GRADIENT = "linear-gradient(135deg, #6366F1 0%, #22D3EE 100%)";
@@ -29,15 +28,37 @@ interface LogoProps {
 }
 
 /**
- * Wspólny znak marki SkillBridge: gradientowy box z ikoną BrainCircuit + wordmark.
+ * Wspólny znak marki SkillBridge: box z ikoną GraduationCap (czapka) + wordmark.
  * Jeden komponent dla landingu, sidebara i auth — wariant steruje kontekstem przez prop,
  * nie przez rozjazd dwóch wywołań (zgodnie z kontraktem Z4, błąd #1).
+ * Wariant „landing" renderuje na atrament (paleta editorial #6); „sidebar"/„auth" — gradient marki
+ * (bez zmian — nie psujemy istniejącego wyglądu poza samą ikoną).
  * Serwerowy (bez "use client") — czysty render, używalny też w komponentach klienckich.
  */
 export function Logo({ size = "md", variant = "landing", className }: LogoProps) {
 	const s = SIZE[size];
 	// sidebar ma nieco większe zaokrąglenie (12px) zgodnie z dawnym .db-sidebar-logo-icon.
 	const radius = variant === "sidebar" ? 12 : s.radius;
+	const isLanding = variant === "landing";
+
+	// Landing: pole atramentu + biała czapka, wordmark atramentem (editorial). Reszta: gradient marki.
+	const iconBg = isLanding ? "var(--color-ed-ink)" : LOGO_GRADIENT;
+	const iconShadow = isLanding
+		? undefined
+		: // Parytet glow: landing nigdy nie świeci (editorial), auth miał poświatę w dawnym
+			// .auth-logo-icon, sidebar nigdy jej nie miał.
+			variant !== "sidebar"
+			? "0 0 18px rgba(99,102,241,0.45)"
+			: undefined;
+	const wordmarkStyle = isLanding
+		? { fontSize: s.text, color: "var(--color-ed-ink)" }
+		: {
+				fontSize: s.text,
+				background: LOGO_GRADIENT,
+				WebkitBackgroundClip: "text" as const,
+				backgroundClip: "text" as const,
+				WebkitTextFillColor: "transparent",
+			};
 
 	return (
 		<span className={cn("inline-flex items-center gap-2.5", className)} data-logo-variant={variant}>
@@ -48,24 +69,13 @@ export function Logo({ size = "md", variant = "landing", className }: LogoProps)
 					width: s.box,
 					height: s.box,
 					borderRadius: radius,
-					background: LOGO_GRADIENT,
-					// Parytet glow: landing I auth dostają poświatę (auth miał ją w dawnym
-					// .auth-logo-icon — bez tego regresja wizualna). Sidebar nigdy jej nie miał.
-					boxShadow: variant !== "sidebar" ? "0 0 18px rgba(99,102,241,0.45)" : undefined,
+					background: iconBg,
+					boxShadow: iconShadow,
 				}}
 			>
-				<BrainCircuit size={s.icon} strokeWidth={1.8} />
+				<GraduationCap size={s.icon} strokeWidth={1.8} />
 			</span>
-			<span
-				className="font-heading font-extrabold tracking-tight"
-				style={{
-					fontSize: s.text,
-					background: LOGO_GRADIENT,
-					WebkitBackgroundClip: "text",
-					backgroundClip: "text",
-					WebkitTextFillColor: "transparent",
-				}}
-			>
+			<span className="font-heading font-extrabold tracking-tight" style={wordmarkStyle}>
 				SkillBridge
 			</span>
 		</span>
