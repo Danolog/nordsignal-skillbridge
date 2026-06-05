@@ -5,10 +5,15 @@
 // GENEZA (docs/product/skillbridge-poprawki-rynek-plan-v0.1.md §2, błąd #4):
 //   POST /api/projects/[id]/brief woła generateProjectBrief (model AI). Warstwa AI
 //   RZUCA opisowy błąd przy złym JSON modelu ("AI zwróciło nieprawidłowy JSON",
-//   generate-brief.ts:111). Ale route (route.ts:55) woła generateProjectBrief BEZ
-//   try/catch → błąd leci niezłapany → puste 500, ZERO logu z kontekstem. To jest
-//   "serwer połyka błąd modelu, zwraca puste 500; brak logowania" — mimo że istnieje
-//   PII-bezpieczny logger logError(scope, err, ctx) (src/lib/log.ts).
+//   generate-brief.ts:111). PRZED naprawą route wołał generateProjectBrief BEZ
+//   try/catch → błąd leciał niezłapany → puste 500, ZERO logu z kontekstem
+//   ("serwer połyka błąd modelu") — mimo że istnieje PII-bezpieczny logger
+//   logError(scope, err, ctx) (src/lib/log.ts).
+//   STAN PO NAPRAWIE (fix/b4-brief-observability, commity 558ec50 + 6b186b6):
+//   route.ts owija generowanie+persystencję w try/catch, w catch woła
+//   logError("brief.generate", err, { projectId, studentId }) i zwraca OPISOWY
+//   5xx (502) — surowy błąd modelu/stack NIE wychodzi do klienta. Ten plik jest
+//   teraz STRAŻNIKIEM REGRESJI tej naprawy (bramy B+C odwrócone z it.fails na it).
 //
 // CO TESTUJEMY (warstwa route — sedno ryzyka błędu #4 + Z3: auth + izolacja):
 //   Realny handler POST na realnej bazie testowej. Atrapujemy TYLKO to, co poza
@@ -17,20 +22,23 @@
 //   logowanie — realne. Rate-limit NIE atrapowany (rateLimiters.aiHeavy = null bez
 //   Upstash → applyRateLimit przepuszcza, rate-limit.ts:36).
 //
-// STRUKTURA:
+// STRUKTURA (po naprawie #4 — bramy B+C odwrócone z it.fails na it, strażnik regresji):
 //   A. Auth + lookup (ZIELONE) — 401 bez sesji; 404 nieznany user. Dowód izolacji:
 //      studentId pochodzi z SESJI, nie z requestu (nie da się podać cudzego).
-//   B. Charakteryzacja błędu #4 (ZIELONE) — model rzuca → route propaguje niezłapany
-//      i NIE loguje z kontekstem. Dowodzi, że błąd jest połknięty (brak obserwowalności).
-//   C. Kontrakt docelowy (it.fails — BRAMA strumienia D) — route łapie błąd modelu,
-//      loguje z kontekstem (projectId, studentId), zwraca OPISOWY 5xx (nie puste 500).
-//      it.fails zielone, dopóki route nie obsługuje błędu; auto-flip po naprawie.
+//   B. Strażnik regresji #4 (ZIELONE) — model rzuca → route NIE propaguje niezłapanego
+//      błędu (zwraca Response) i LOGUJE z kontekstem. Pilnuje, że błąd nie wraca do
+//      połknięcia. PRZED naprawą był charakteryzacją stanu-zepsutego (route propaguje +
+//      nie loguje); odwrócony, bo ten stan przestał być prawdą po try/catch.
+//   C. Kontrakt docelowy obserwowalności #4 (ZIELONE — była BRAMA it.fails) — route
+//      łapie błąd modelu, loguje z kontekstem (projectId, studentId), zwraca OPISOWY
+//      5xx (nie puste 500). it.fails → it: brama zaliczona po naprawie route.ts.
 //   D. Happy path + izolacja zapisu (ZIELONE) — brief zapisany pod studentem z sesji
 //      przez withTenantContext (RLS app_student).
 //
-// Konwencja scope logu ("brief") i kształt opisowego błędu — propozycja do
-// potwierdzenia z Leo/Ethanem (G1, standard ustala Ethan). NIE merge na main bez
-// naprawy strumienia D.
+// Konwencja scope logu ("brief.generate") i kształt opisowego błędu — uzgodnione w
+// review Ethana (6b186b6, G1 standard ustala Ethan). Naprawa #4 zrealizowana —
+// warunek "NIE merge bez naprawy" spełniony; ten plik dowodzi naprawy (anty-mask:
+// B+C realnie asertują złapanie+log+opisowy 5xx, nie maskują).
 
 import { Pool } from "pg";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
