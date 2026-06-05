@@ -101,3 +101,73 @@ test.describe("@dbwrite @llm B0 Pomocnik kariery — czat i podsumowanie", () =>
 		});
 	}
 });
+
+/**
+ * @dbwrite + KOSZT LLM — Pomocnik jako KROK 0 onboardingu (strumień E / #5, NOWY).
+ *
+ * Druga ścieżka Pomocnika (obok standalone wyżej): osadzony w wizardzie onboardingu
+ * dla NOWEGO studenta (onboardingCompleted=FALSE, konto "b4"). To sedno naprawy #5 —
+ * przed nią Pomocnik był sierotą nieosiągalną przed onboardingiem (spec §1.3).
+ *
+ * Co dowodzi (tryb embedded, spec §3.1):
+ *  - Pomocnik renderuje się jako Krok 0 wizarda (nagłówek „Zacznijmy od celu",
+ *    pasek „Cel kariery") — nie jako osobna trasa.
+ *  - Po wyborze ścieżki onCareerGoalChosen ustawia careerGoal w pamięci i przechodzi
+ *    do Kroku 1 (Profil) — NIE woła select-path (brak rekordu studenta), NIE robi
+ *    router.push("/onboarding"). Cel widoczny w mikrokopii HITL na Profilu.
+ *  - Profil NIE ma już selecta celu kariery (przeniesiony do Kroku 0).
+ *
+ * @llm: cały przepływ Pomocnika woła model (ankieta→czat→podsumowanie). Bez klucza
+ * serwerowego — skip (guard). Standalone (describe wyżej) zostaje nietknięty.
+ */
+test.describe("@dbwrite @llm Pomocnik jako Krok 0 onboardingu (#5, nowy student)", () => {
+	test.skip(
+		!process.env.ANTHROPIC_API_KEY && process.env.E2E_LLM_AVAILABLE !== "1",
+		"Krok 0 (Pomocnik osadzony) woła model. Ustaw E2E_LLM_AVAILABLE=1, gdy serwer ma ANTHROPIC_API_KEY.",
+	);
+
+	test("Krok 0: wybór ścieżki ustawia cel w pamięci i przechodzi do Profilu (bez select-path)", async ({
+		page,
+	}) => {
+		test.setTimeout(300_000); // Krok 0 = ~9 wywołań modelu (czat) + podsumowanie.
+		// Konto "b4": onboardingCompleted=FALSE → /onboarding wpuszcza w wizard od Kroku 0.
+		await loginWithPassword(page, "b4");
+		await page.goto("/onboarding");
+
+		// Krok 0 — Pomocnik osadzony w wizardzie (nie trasa /pomocnik-kariery).
+		await expect(page.getByRole("heading", { name: /Zacznijmy od celu/i })).toBeVisible({
+			timeout: 15_000,
+		});
+		await expect(page.getByText("Cel kariery").first()).toBeVisible(); // pasek postępu
+
+		// Pełny przepływ Pomocnika: ankieta → czat → podsumowanie.
+		await fillSurveyAndContinue(page);
+		await expect(page.getByRole("heading", { name: /krok 2 z 3: rozmowa/i })).toBeVisible({
+			timeout: 45_000,
+		});
+		await driveChatToSummaryCta(page);
+		await page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i }).click();
+		await expect(
+			page
+				.getByText(/Co rozumiem z naszej rozmowy/i)
+				.or(page.getByText(/Przygotuję to za chwilę/i)),
+		).toBeVisible({ timeout: 150_000 });
+
+		// Wybór ścieżki + „Idź dalej do samooceny" → tryb embedded (onCareerGoalChosen).
+		await page
+			.getByText(/Wybieram tę ścieżkę/i)
+			.first()
+			.click();
+		await page.getByRole("button", { name: /Idź dalej do samooceny/i }).click();
+
+		// DOWÓD wpięcia: trafiamy do Kroku 1 (Profil) WEWNĄTRZ /onboarding (nie redirect
+		// na osobną trasę), cel jest w pamięci (mikrokopia HITL), a Profil nie ma już celu.
+		await expect(page).toHaveURL(/\/onboarding/);
+		await expect(page.getByRole("heading", { name: /Opowiedz nam o sobie/i })).toBeVisible({
+			timeout: 15_000,
+		});
+		await expect(page.getByText(/Twój cel kariery:/i)).toBeVisible();
+		// Profil po #5: tylko 2 selecty (uczelnia, semestr) — cel zniknął z tego kroku.
+		await expect(page.getByRole("combobox")).toHaveCount(2);
+	});
+});
