@@ -145,24 +145,27 @@ describe("Inwentaryzacja nawigacji (błąd #5)", () => {
 });
 
 // ── B. Osiągalność — brama błędu #5 (wpięcie pomocnika w onboarding) ─────────────
+// FLIP (strumień E / #5): Pomocnik wpięty jako Krok 0 wizarda onboardingu. Brama `it.fails`
+// zdjęta — test musi być ZIELONY (wizard realnie importuje CareerHelperFlow). Charakteryzacja
+// „stan obecny" zaktualizowana na stan PO naprawie, w tym samym PR co fix (dyscyplina R3).
 describe("Osiągalność tras (brama błędu #5)", () => {
-	it("stan obecny: pomocnik NIE jest w sidebarze ANI w wizardzie onboardingu (dowód do bramy, N5)", () => {
-		// Symetryczna zielona charakteryzacja do bramy niżej (de-mask it.fails): dowodzi,
-		// że oba źródła czytania (sidebar render + WIZARD_SRC) żyją i dziś dają „nieosiągalny".
+	it("anty-mask: oba źródła czytania (sidebar render + WIZARD_SRC) żyją", () => {
+		// De-mask: dowodzi, że odczyt sidebara i WIZARD_SRC działają — gdyby któreś czytanie
+		// było martwe, brama niżej dałaby fałszywą zieleń. Sidebar nadal NIE zawiera Pomocnika
+		// (decyzja IA: brak kafelka w Becie — spec §6), osiągalność idzie wyłącznie z wizarda.
 		expect(sidebarNavHrefs()).not.toContain("/pomocnik-kariery");
-		expect(/pomocnik-kariery|career-helper/.test(WIZARD_SRC)).toBe(false);
+		expect(WIZARD_SRC.length).toBeGreaterThan(0);
 	});
 
-	it.fails(
-		"/pomocnik-kariery osiągalny: w sidebarze LUB wpięty w przepływ onboardingu (Krok 0)",
-		() => {
-			const inSidebar = sidebarNavHrefs().includes("/pomocnik-kariery");
-			// Wpięcie w wizard onboardingu — przez trasę albo komponent career-helper.
-			const inOnboardingFlow = /pomocnik-kariery|career-helper/.test(WIZARD_SRC);
-			// CEL: dziś żadne z dwóch (sierota); auto-flip, gdy strumień wepnie Krok 0.
-			expect(inSidebar || inOnboardingFlow).toBe(true);
-		},
-	);
+	it("/pomocnik-kariery osiągalny: wpięty w przepływ onboardingu jako Krok 0 (career-helper w wizardzie)", () => {
+		const inSidebar = sidebarNavHrefs().includes("/pomocnik-kariery");
+		// Wpięcie w wizard onboardingu — przez trasę albo komponent career-helper.
+		const inOnboardingFlow = /pomocnik-kariery|career-helper/.test(WIZARD_SRC);
+		// Po naprawie: osiągalny przez wizard (Krok 0). Anty-mask: NIE samo „true" —
+		// dowodzimy konkretnie, że osiągalność płynie z wpięcia w wizard, nie z sidebara.
+		expect(inOnboardingFlow).toBe(true);
+		expect(inSidebar || inOnboardingFlow).toBe(true);
+	});
 });
 
 // ── C. Spójność logo (błąd #1) ──────────────────────────────────────────────────
@@ -171,24 +174,24 @@ function usesSharedLogoComponent(src: string): boolean {
 	return /from\s+["'][^"']*logo["']/i.test(src) || /<Logo[\s/>]/.test(src);
 }
 
+// UWAGA (Leo, strumień E): sekcja C (#1 logo) NIE jest zakresem #5. Gdy ten plik Z4
+// powstawał na gałęzi `test/z4-ui-inventory`, logo było jeszcze rozjechane. Naprawa #1
+// (wspólny `@/components/ui/logo`) wlądowała na main NIEZALEŻNIE — landing i sidebar
+// używają już `<Logo/>`. Stara charakteryzacja „stan obecny" (BrainCircuit + inline svg)
+// i brama `it.fails` są więc nieaktualne. Aktualizuję je do stanu PO #1, żeby cały plik
+// inwentaryzacji był zielony i prawdziwy na bieżącym main; flip #1 jest tylko zsynchronizowaniem
+// testu z już-zmergowaną naprawą, nie nową pracą strumienia E.
 describe("Spójność logo landing↔dashboard (błąd #1)", () => {
-	it("stan obecny: landing i dashboard używają RÓŻNYCH źródeł logo (brak wspólnego <Logo/>)", () => {
-		// Landing: ikona BrainCircuit (lucide) w boxie gradientowym.
-		expect(LANDING_SRC).toContain("BrainCircuit");
-		// Dashboard: własny inline <svg> w obszarze logo, NIE BrainCircuit.
-		expect(SIDEBAR_SRC).toMatch(/db-sidebar-logo-icon[\s\S]*?<svg/);
+	it("stan po naprawie #1: landing i dashboard NIE mają już rozjechanych źródeł (BrainCircuit/inline svg)", () => {
+		// Po #1: landing nie używa już ikony BrainCircuit, sidebar nie ma własnego inline <svg> logo.
+		expect(LANDING_SRC).not.toContain("BrainCircuit");
 		expect(SIDEBAR_SRC).not.toContain("BrainCircuit");
-		// Żadne nie używa wspólnego komponentu — sedno rozjazdu.
-		expect(usesSharedLogoComponent(LANDING_SRC)).toBe(false);
-		expect(usesSharedLogoComponent(SIDEBAR_SRC)).toBe(false);
+		expect(SIDEBAR_SRC).not.toMatch(/db-sidebar-logo-icon[\s\S]*?<svg/);
 	});
 
-	it.fails(
-		"kontrakt docelowy: wspólny komponent <Logo/> używany na landingu I w dashboardzie",
-		() => {
-			// CEL (standard skills/qa/SKILL.md §2 #1): jeden <Logo/> importowany wszędzie.
-			expect(usesSharedLogoComponent(LANDING_SRC)).toBe(true);
-			expect(usesSharedLogoComponent(SIDEBAR_SRC)).toBe(true);
-		},
-	);
+	it("kontrakt docelowy #1 (spełniony): wspólny komponent <Logo/> używany na landingu I w dashboardzie", () => {
+		// CEL (standard skills/qa/SKILL.md §2 #1): jeden <Logo/> importowany wszędzie — już osiągnięty.
+		expect(usesSharedLogoComponent(LANDING_SRC)).toBe(true);
+		expect(usesSharedLogoComponent(SIDEBAR_SRC)).toBe(true);
+	});
 });

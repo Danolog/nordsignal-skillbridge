@@ -21,7 +21,7 @@ OBA: ten plik i mapę `EXPECTED_ROUTES` w teście (test pilnuje, że się nie ro
 | `/passport` | `nav` | sidebar |
 | `/profil` | `nav` | sidebar |
 | `/onboarding` | `flow` | CTA landingu „Stwórz swój Paszport" (`src/app/page.tsx`) |
-| `/pomocnik-kariery` | `flow` | **DOCELOWO: Krok 0 onboardingu** (decyzja Darka 2026-06-03, plan §1 pkt 2). **DZIŚ NIEOSIĄGALNY** — błąd #5: trasa działa, ale nie ma jej ani w sidebarze, ani w przepływie onboardingu (commit ukrycia `bbe4571`). Naprawa = wpięcie w wizard onboardingu. |
+| `/pomocnik-kariery` | `flow` | **Krok 0 onboardingu** (decyzja Darka 2026-06-03, plan §1 pkt 2; strumień E / #5). Pomocnik wpięty jako Krok 0 wizarda (`onboarding-wizard.tsx` renderuje `CareerHelperFlow` w trybie embedded). Trasa `/pomocnik-kariery` zostaje jako osobne wejście standalone dla już-onboardowanego studenta. Brak kafelka w sidebarze (decyzja IA: nie w Becie — spec §6). |
 | `/projects/[id]` | `child` | detal z `/projects` |
 
 ## Reguła osiągalności (egzekwowana testem)
@@ -32,5 +32,5 @@ Każda trasa `(dashboard)` MUSI być osiągalna:
 - `child` → ma rodzica `nav`/`flow`.
 
 Trasa, która istnieje w plikach, ale nie spełnia żadnego z powyższych = **sierota** (błąd #5).
-`/pomocnik-kariery` jest dziś sierotą — bramę `it.fails` w teście zdejmuje strumień, który wepnie
-go w Krok 0 onboardingu.
+`/pomocnik-kariery` **NIE jest już sierotą** — strumień E (#5) wpiął go jako Krok 0 wizarda
+onboardingu (`career-helper` w `onboarding-wizard.tsx`); brama `it.fails` w teście zdjęta (flip).
