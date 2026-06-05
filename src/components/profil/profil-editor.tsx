@@ -9,10 +9,36 @@ import {
 	createCompetencyItem,
 	StepCompetencies,
 } from "@/components/onboarding/step-competencies";
-import { CAREER_GOALS, type ProfileData, StepProfile } from "@/components/onboarding/step-profile";
+import { type ProfileData, StepProfile } from "@/components/onboarding/step-profile";
 import { StepSyllabus } from "@/components/onboarding/step-syllabus";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+
+// Lista celów kariery — lokalna dla edytora /profil. StepProfile NIE zbiera już celu
+// (przeniesiony do Kroku 0 onboardingu, strumień E / #5), ale edycja profilu przez
+// już-onboardowanego studenta musi pozwolić zmienić cel bez przechodzenia Pomocnika.
+// Edytor trzyma cel w SWOIM stanie (poza ProfileData), żeby nie reaktywować selektu
+// w onboardingu. (Po Becie: zmiana celu też przez Pomocnik — dług produktowy Sophii.)
+const CAREER_GOALS = [
+	"Data Analyst",
+	"Data Scientist",
+	"Frontend Developer",
+	"Backend Developer",
+	"Full-stack Developer",
+	"UX/UI Designer",
+	"Project Manager",
+	"DevOps Engineer",
+	"Cybersecurity Analyst",
+];
 
 export interface ProfilEditorInitial {
 	university: string;
@@ -28,19 +54,27 @@ interface ProfilEditorProps {
 }
 
 function buildInitialProfile(initial: ProfilEditorInitial): ProfileData {
-	const isPredefinedGoal = CAREER_GOALS.includes(initial.careerGoal);
 	return {
 		university: initial.university,
 		fieldOfStudy: initial.fieldOfStudy,
 		semester: String(initial.semester),
-		careerGoal: isPredefinedGoal ? initial.careerGoal : "custom",
-		customCareerGoal: isPredefinedGoal ? "" : initial.careerGoal,
+		// careerGoal trzymany w stanie wizarda/edytora; jego UI jest osobne (poniżej),
+		// nie w StepProfile. Zsynchronizowany z lokalnym stanem celu w handleSave.
+		careerGoal: initial.careerGoal,
 	};
 }
 
 export function ProfilEditor({ initial }: ProfilEditorProps) {
 	const router = useRouter();
 	const [profile, setProfile] = useState<ProfileData>(() => buildInitialProfile(initial));
+	// Cel kariery — lokalny stan edytora (poza StepProfile). select/custom jak dawniej.
+	const isPredefinedInitialGoal = CAREER_GOALS.includes(initial.careerGoal);
+	const [careerGoalSelect, setCareerGoalSelect] = useState<string>(
+		isPredefinedInitialGoal ? initial.careerGoal : "custom",
+	);
+	const [customCareerGoal, setCustomCareerGoal] = useState<string>(
+		isPredefinedInitialGoal ? "" : initial.careerGoal,
+	);
 	const [syllabusText, setSyllabusText] = useState(initial.syllabusText);
 	const [competencies, setCompetencies] = useState<CompetencyItem[]>(() =>
 		initial.competencies.map((name) => createCompetencyItem(name)),
@@ -49,7 +83,7 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 	const [saving, setSaving] = useState(false);
 
 	const resolvedCareerGoal =
-		profile.careerGoal === "custom" ? profile.customCareerGoal.trim() : profile.careerGoal;
+		careerGoalSelect === "custom" ? customCareerGoal.trim() : careerGoalSelect;
 
 	const filledCompetencies = competencies.filter((c) => c.name.trim() !== "");
 
@@ -57,8 +91,8 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 		profile.university &&
 		profile.fieldOfStudy.trim() &&
 		profile.semester &&
-		profile.careerGoal &&
-		(profile.careerGoal !== "custom" || profile.customCareerGoal.trim());
+		careerGoalSelect &&
+		(careerGoalSelect !== "custom" || customCareerGoal.trim());
 
 	const canSave = Boolean(isProfileValid) && filledCompetencies.length >= 5 && !saving;
 
@@ -142,10 +176,60 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 			<Card>
 				<CardHeader>
 					<CardTitle>Dane podstawowe</CardTitle>
-					<CardDescription>Uczelnia, kierunek, semestr i cel kariery.</CardDescription>
+					<CardDescription>Uczelnia, kierunek i semestr.</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<StepProfile data={profile} onChange={setProfile} />
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Cel kariery</CardTitle>
+					<CardDescription>
+						Obszar zawodowy, pod który dopasowujemy analizę luk. Możesz go tu zmienić.
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className="space-y-5">
+						<div className="space-y-1.5">
+							<Label>
+								Cel kariery <span className="text-destructive">*</span>
+							</Label>
+							<Select
+								value={careerGoalSelect}
+								onValueChange={(v) => {
+									setCareerGoalSelect(v);
+									if (v !== "custom") setCustomCareerGoal("");
+								}}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="Wybierz..." />
+								</SelectTrigger>
+								<SelectContent>
+									{CAREER_GOALS.map((g) => (
+										<SelectItem key={g} value={g}>
+											{g}
+										</SelectItem>
+									))}
+									<SelectItem value="custom">Inne (wpisz)</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+						{careerGoalSelect === "custom" && (
+							<div className="space-y-1.5 animate-in slide-in-from-top-2 duration-200">
+								<Label>
+									Twój cel kariery <span className="text-destructive">*</span>
+								</Label>
+								<Input
+									value={customCareerGoal}
+									onChange={(e) => setCustomCareerGoal(e.target.value)}
+									placeholder="Wpisz swój cel kariery..."
+									autoFocus
+								/>
+							</div>
+						)}
+					</div>
 				</CardContent>
 			</Card>
 
