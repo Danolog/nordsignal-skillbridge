@@ -1,6 +1,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
 import { eq } from "drizzle-orm";
+import { extractJsonObject } from "@/lib/ai/extract-json";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
 import { db } from "@/lib/db";
 import { competencies, projects, students } from "@/lib/db/schema";
@@ -91,26 +92,17 @@ Zwróć TYLKO JSON (bez markdown code block):
 }`,
 	});
 
-	const cleaned = text
-		.trim()
-		.replace(/^```(?:json)?\n?/, "")
-		.replace(/\n?```$/, "");
-	let parsed: {
+	// #4 cz. 2 (strumień D, Leo): odporne wyciągnięcie JSON z odpowiedzi modelu —
+	// tolerancja fence / prozy / trailing comma + wybór PIERWSZEGO zbalansowanego
+	// obiektu (zamiast greedy /\{[\s\S]*\}/, które sklejało wiele bloków). Przy
+	// naprawdę niepoprawnym / uciętym JSON rzuca jawnie — błąd łapie i loguje
+	// route.ts (#4 cz. 1, logError "brief.generate"). Szczegóły: extract-json.ts.
+	const parsed = extractJsonObject<{
 		objective: string;
 		inputData: string;
 		suggestedSteps: string[];
 		successDefinition: string;
-	};
-	try {
-		parsed = JSON.parse(cleaned);
-	} catch {
-		const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-		if (jsonMatch) {
-			parsed = JSON.parse(jsonMatch[0]);
-		} else {
-			throw new Error("AI zwróciło nieprawidłowy JSON");
-		}
-	}
+	}>(text);
 
 	return {
 		...parsed,
