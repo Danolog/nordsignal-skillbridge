@@ -39,7 +39,8 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
 	title: "SkillBridge — Twój Paszport Kompetencji",
-	description: "Platforma AI mapująca kompetencje studentów na wymagania rynku pracy.",
+	description:
+		"SkillBridge tłumaczy Twój program studiów na zawód, który chcesz wykonywać. Pokaż pracodawcy dowód umiejętności w paszporcie kompetencji.",
 };
 
 export default function RootLayout({

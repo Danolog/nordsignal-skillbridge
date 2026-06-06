@@ -135,8 +135,8 @@ const EMPLOYER_BENEFITS = [
 // Wspólny badge DZIŚ / W PEŁNEJ WERSJI (reuse — nie duplikuj stylów per sekcja).
 function BadgeToday() {
 	return (
-		<span className="absolute top-4 left-8 inline-flex items-center gap-2 rounded-full bg-ed-amber px-3 py-1 text-[11px] font-bold tracking-[1.65px] text-ed-cream uppercase">
-			<span className="ed-pulse h-1.5 w-1.5 rounded-full bg-ed-cream" aria-hidden="true" />
+		<span className="absolute top-4 left-8 inline-flex items-center gap-2 rounded-full bg-ed-amber px-3 py-1 text-[11px] font-bold tracking-[1.65px] text-ed-ink uppercase">
+			<span className="ed-pulse h-1.5 w-1.5 rounded-full bg-ed-ink" aria-hidden="true" />
 			Dziś
 		</span>
 	);
@@ -144,7 +144,7 @@ function BadgeToday() {
 
 function BadgeFull() {
 	return (
-		<span className="absolute top-4 left-8 inline-block rounded-full bg-ed-border px-3 py-1 text-[11px] font-bold tracking-[1.65px] text-ed-muted uppercase">
+		<span className="absolute top-4 left-8 inline-block rounded-full bg-ed-border px-3 py-1 text-[11px] font-bold tracking-[1.65px] text-ed-ink uppercase">
 			W pełnej wersji
 		</span>
 	);
@@ -297,8 +297,8 @@ export default function Home() {
 						Ścieżka studenta
 					</p>
 					<div className="mb-4 flex items-center gap-3">
-						<span className="inline-flex items-center gap-2 rounded-full bg-ed-amber px-3 py-1 text-[11px] font-bold tracking-[1.65px] text-ed-cream uppercase">
-							<span className="ed-pulse h-1.5 w-1.5 rounded-full bg-ed-cream" aria-hidden="true" />
+						<span className="inline-flex items-center gap-2 rounded-full bg-ed-amber px-3 py-1 text-[11px] font-bold tracking-[1.65px] text-ed-ink uppercase">
+							<span className="ed-pulse h-1.5 w-1.5 rounded-full bg-ed-ink" aria-hidden="true" />
 							Dziś
 						</span>
 					</div>
@@ -343,13 +343,13 @@ export default function Home() {
 						{/* Cel końcowy — „Pierwsza praca" (EFEKT) wyróżniony: amber pełny + strzałka */}
 						<li className="fade-up relative flex gap-4 lg:flex-col lg:gap-0">
 							<div
-								className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ed-amber font-ed-display text-[16px] font-bold text-ed-cream"
+								className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ed-amber font-ed-display text-[16px] font-bold text-ed-ink"
 								aria-hidden="true"
 							>
 								→
 							</div>
 							<div className="lg:mt-4 lg:pr-2">
-								<span className="mb-1 inline-block rounded-full bg-ed-amber px-2 py-0.5 text-[10px] font-bold tracking-[1.65px] text-ed-cream uppercase">
+								<span className="mb-1 inline-block rounded-full bg-ed-amber px-2 py-0.5 text-[10px] font-bold tracking-[1.65px] text-ed-ink uppercase">
 									Efekt
 								</span>
 								<h3 className="mt-1 mb-1 font-ed-display text-[16px] font-bold text-ed-ink">
@@ -583,7 +583,7 @@ export default function Home() {
 						{/* Brak trasy /paszport-demo w repo (spec Mili §11) → kotwica do końcowych ścieżek; TODO trasa po sign-offie Darka */}
 						<a
 							href="#cta-koniec"
-							className="inline-block rounded-sm border-2 border-ed-amber px-8 py-4 text-[16px] font-bold text-ed-amber-text no-underline transition-colors hover:bg-ed-amber hover:text-ed-cream focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
+							className="inline-block rounded-sm border-2 border-ed-amber px-8 py-4 text-[16px] font-bold text-ed-amber-text no-underline transition-colors hover:bg-ed-amber hover:text-ed-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
 						>
 							Zobacz, jak wygląda paszport kandydata
 						</a>
@@ -652,7 +652,9 @@ export default function Home() {
 					<p className="max-w-[640px] text-[15px] leading-[1.6] text-ed-border">
 						SkillBridge — tłumaczymy Twój program studiów na zawód, który chcesz wykonywać.
 					</p>
-					<span className="text-[14px] text-ed-muted">© 2026 SkillBridge · produkt nordsignal</span>
+					<span className="text-[14px] text-ed-border">
+						© 2026 SkillBridge · produkt nordsignal
+					</span>
 				</div>
 			</footer>
 		</div>
