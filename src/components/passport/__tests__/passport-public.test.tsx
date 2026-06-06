@@ -137,7 +137,9 @@ describe("PassportPublic", () => {
 	it("renders CTA description", () => {
 		render(<PassportPublic data={mockData} />);
 		expect(
-			screen.getByText("Odkryj swoje luki kompetencyjne i zamknij je z pomoca AI. Za darmo."),
+			screen.getByText(
+				"Odkryj swoje luki kompetencyjne i zamknij je projektami na realnych danych. Za darmo.",
+			),
 		).toBeInTheDocument();
 	});
 

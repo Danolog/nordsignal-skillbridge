@@ -76,10 +76,12 @@ const DEMO_DATA: PassportData = {
 export default function DemoPassportPage() {
 	return (
 		<>
-			{/* Adnotacja: to paszport przykładowy, nie dane prawdziwej osoby. */}
+			{/* Adnotacja: to paszport przykładowy, nie dane prawdziwej osoby.
+			    Cienki, dyskretny pasek amber NAD paszportem — jeden baner, nie drugi ciemny stos
+			    nad własnym górnym paskiem komponentu PassportPublic. */}
 			<p
 				role="note"
-				className="bg-ed-ink px-6 py-3 text-center text-[13px] leading-[1.6] text-ed-cream"
+				className="border-ed-amber/30 bg-ed-amber/10 px-6 py-2 text-center text-[12px] font-medium leading-[1.5] text-ed-amber-text border-b"
 			>
 				To paszport przykładowy — pokazujemy na nim, jak wygląda profil kandydata, nie dane
 				prawdziwej osoby.

@@ -176,7 +176,7 @@ export function PassportPublic({ data }: { data: PassportData }) {
 					<div className="pp-public-cta-card">
 						<h3 className="pp-public-cta-title">Stworz swoj Paszport Kompetencji</h3>
 						<p className="pp-public-cta-desc">
-							Odkryj swoje luki kompetencyjne i zamknij je z pomoca AI. Za darmo.
+							Odkryj swoje luki kompetencyjne i zamknij je projektami na realnych danych. Za darmo.
 						</p>
 						<Link href="/" className="pp-public-cta-btn">
 							Zacznij teraz
