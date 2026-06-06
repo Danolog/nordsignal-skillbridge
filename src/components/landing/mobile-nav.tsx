@@ -67,6 +67,13 @@ export function MobileNav() {
 					Dla uczelni
 				</Link>
 				<Link
+					href="#dla-pracodawcow"
+					onClick={() => setOpen(false)}
+					className="border-b border-ed-border py-1 pb-4 text-[16px] font-medium text-ed-ink no-underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
+				>
+					Dla firmy
+				</Link>
+				<Link
 					href="/login"
 					onClick={() => setOpen(false)}
 					className="py-1 text-[16px] font-medium text-ed-ink no-underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
@@ -76,10 +83,17 @@ export function MobileNav() {
 				<Link
 					href="/faculty/login"
 					onClick={() => setOpen(false)}
-					className="py-1 text-[16px] font-normal text-ed-muted no-underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
+					className="border-b border-ed-border py-1 pb-4 text-[16px] font-normal text-ed-muted no-underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
 				>
 					Panel uczelni
 				</Link>
+				<a
+					href="mailto:kontakt@nordsignal.cc"
+					onClick={() => setOpen(false)}
+					className="py-1 text-[16px] font-normal text-ed-muted no-underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
+				>
+					Kontakt
+				</a>
 			</div>
 		</div>
 	);

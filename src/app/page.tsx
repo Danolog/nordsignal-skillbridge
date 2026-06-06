@@ -155,13 +155,19 @@ export default function Home() {
 						<Logo size="sm" variant="landing" />
 					</Link>
 
-					{/* Nav desktop (5 pozycji) */}
-					<nav className="hidden items-center gap-6 md:flex xl:gap-8" aria-label="Nawigacja główna">
+					{/* Nav desktop */}
+					<nav className="hidden items-center gap-4 md:flex xl:gap-6" aria-label="Nawigacja główna">
 						<Link
 							href="#dla-uczelni"
 							className="text-[15px] font-medium text-ed-ink no-underline transition-colors duration-150 hover:text-ed-amber-text focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
 						>
 							Dla uczelni
+						</Link>
+						<Link
+							href="#dla-pracodawcow"
+							className="text-[15px] font-medium text-ed-ink no-underline transition-colors duration-150 hover:text-ed-amber-text focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
+						>
+							Dla firmy
 						</Link>
 						<Link
 							href="/login"
@@ -175,6 +181,12 @@ export default function Home() {
 						>
 							Panel uczelni
 						</Link>
+						<a
+							href="mailto:kontakt@nordsignal.cc"
+							className="text-[15px] font-normal text-ed-muted no-underline transition-colors duration-150 hover:text-ed-ink focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
+						>
+							Kontakt
+						</a>
 						<Link
 							href="/signup"
 							className="inline-block rounded-full bg-ed-ink px-5 py-2.5 text-[15px] font-bold whitespace-nowrap text-ed-cream no-underline transition-opacity duration-150 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
@@ -214,7 +226,8 @@ export default function Home() {
 								interesuje, pokazuje, czego Ci do niego brakuje, i zamienia te braki w projekty na
 								realnych danych. Każdy projekt jest oceniany i ląduje w Twoim paszporcie kompetencji
 								— konkretny, sprawdzony dowód, który pokażesz pracodawcy zamiast deklaracji z CV.
-								Swoje luki znajdujesz i nadrabiasz sam — zanim wychwyci je rekruter na rozmowie.
+								Swoje luki znajdujesz i nadrabiasz samodzielnie — zanim wychwyci je rekruter na
+								rozmowie.
 							</p>
 							<div className="ed-hero-up" style={{ animationDelay: "0.40s" }}>
 								<Link
@@ -450,9 +463,9 @@ export default function Home() {
 						</div>
 
 						{/* Karty DZIŚ / W PEŁNEJ WERSJI — kafel pełnej wersji rozbudowany (spec Mili v0.3 §4) */}
-						<div className="mb-12 grid grid-cols-1 items-start gap-6 md:grid-cols-2">
+						<div className="mb-12 grid grid-cols-1 items-stretch gap-6 md:grid-cols-2">
 							{/* DZIŚ — amber obwódka 2px (kotwica uwagi) */}
-							<div className="relative rounded-sm border-2 border-ed-amber bg-ed-cream p-8 pt-10">
+							<div className="relative flex h-full flex-col rounded-sm border-2 border-ed-amber bg-ed-cream p-8 pt-10">
 								<BadgeToday />
 								<p className="mb-3 text-[18px] font-bold text-ed-ink">
 									Panel-raport tylko do odczytu
@@ -461,10 +474,81 @@ export default function Home() {
 									Mapa pokrycia kompetencji + luki vs rynek. Zero nakładu dla uczelni — dane z
 									programu studiów i ofert pracy.
 								</p>
+
+								{/* Mini-panel „Pokrycie kompetencji — kierunek" (read-only, podgląd; dane przykładowe) */}
+								<div className="mt-6 rounded-sm border border-ed-border bg-ed-surface p-5">
+									<div className="mb-4 flex items-center justify-between gap-2">
+										<p className="text-[12px] font-bold tracking-[1.4px] text-ed-ink uppercase">
+											Pokrycie kompetencji — kierunek
+										</p>
+										<span className="shrink-0 rounded-full border border-ed-border px-2 py-0.5 text-[10px] font-medium tracking-wide text-ed-ink uppercase">
+											Podgląd
+										</span>
+									</div>
+
+									<div className="flex flex-col gap-3">
+										{[
+											{ label: "Analiza danych", value: 84 },
+											{ label: "Komunikacja biznesowa", value: 71 },
+											{ label: "Metody ilościowe", value: 55 },
+											{ label: "Prawo i etyka danych", value: 38 },
+											{ label: "Inżynieria danych", value: 22 },
+										].map((bar) => (
+											<div key={bar.label}>
+												<div className="mb-1 flex items-center justify-between gap-2">
+													<span className="text-[12px] font-medium text-ed-ink">{bar.label}</span>
+													<span className="text-[12px] text-ed-muted">{bar.value}%</span>
+												</div>
+												<div className="h-[6px] w-full rounded-full bg-ed-border">
+													<div
+														className="h-full rounded-full"
+														style={{
+															width: `${bar.value}%`,
+															background:
+																bar.value >= 80
+																	? "var(--color-ed-amber)"
+																	: bar.value >= 40
+																		? "var(--color-ed-warn)"
+																		: "var(--color-ed-danger)",
+														}}
+													/>
+												</div>
+											</div>
+										))}
+									</div>
+
+									{/* Legenda progów — kropki aria-hidden, tekst ed-ink dla kontrastu */}
+									<div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+										<span className="flex items-center gap-1.5 text-[11px] text-ed-ink">
+											<span
+												className="h-2 w-2 rounded-full"
+												style={{ background: "var(--color-ed-amber)" }}
+												aria-hidden="true"
+											/>
+											≥80% pokryte
+										</span>
+										<span className="flex items-center gap-1.5 text-[11px] text-ed-ink">
+											<span
+												className="h-2 w-2 rounded-full"
+												style={{ background: "var(--color-ed-warn)" }}
+												aria-hidden="true"
+											/>
+											40–79% częściowe
+										</span>
+										<span className="flex items-center gap-1.5 text-[11px] text-ed-ink">
+											<span
+												className="h-2 w-2 rounded-full"
+												style={{ background: "var(--color-ed-danger)" }}
+												aria-hidden="true"
+											/>
+											&lt;40% luka
+										</span>
+									</div>
+								</div>
 							</div>
 
 							{/* W PEŁNEJ WERSJI — dwa podbloki: Dla uczelni / Dla wykładowcy */}
-							<div className="relative flex flex-col gap-6 rounded-sm border border-ed-border bg-ed-surface p-8 pt-10">
+							<div className="relative flex h-full flex-col gap-6 rounded-sm border border-ed-border bg-ed-surface p-8 pt-10">
 								<BadgeFull />
 
 								<div>
@@ -686,9 +770,20 @@ export default function Home() {
 					<p className="max-w-[640px] text-[15px] leading-[1.6] text-ed-border">
 						SkillBridge — tłumaczymy Twój program studiów na zawód, który chcesz wykonywać.
 					</p>
-					<span className="text-[14px] text-ed-border">
-						© 2026 SkillBridge · produkt nordsignal
-					</span>
+					<div className="flex flex-col gap-1 md:flex-row md:items-center md:gap-2">
+						<a
+							href="mailto:kontakt@nordsignal.cc"
+							className="text-[14px] text-ed-border no-underline transition-colors hover:text-ed-cream focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
+						>
+							kontakt@nordsignal.cc
+						</a>
+						<span className="hidden text-[14px] text-ed-border md:inline" aria-hidden="true">
+							·
+						</span>
+						<span className="text-[14px] text-ed-border">
+							© 2026 SkillBridge · produkt nordsignal
+						</span>
+					</div>
 				</div>
 			</footer>
 		</div>
