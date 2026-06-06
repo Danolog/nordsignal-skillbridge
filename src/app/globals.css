@@ -50,6 +50,7 @@
 	--color-ed-cream: var(--ed-cream);
 	--color-ed-ink: var(--ed-ink);
 	--color-ed-amber: var(--ed-amber);
+	--color-ed-amber-text: var(--ed-amber-text);
 	--color-ed-surface: var(--ed-surface);
 	--color-ed-border: var(--ed-border);
 	--color-ed-muted: var(--ed-muted);
@@ -100,10 +101,11 @@
 	--ed-cream: oklch(0.974 0.013 75.5); /* #FAF6F1 — tło strony, header, CTA-end bg */
 	--ed-ink: oklch(0.157 0.01 50); /* #1B1917 — tekst główny, nagłówki kart */
 	--ed-amber: oklch(0.636 0.127 57.3); /* #D0891E — akcent, CTA, paski, badge DZIŚ */
+	--ed-amber-text: oklch(0.48 0.113 57.3); /* ≈ #8F5A0F — pochodna amber, ŚCIEMNIONA dla kontrastu AA tekstu na jasnym tle; NIE samodzielny kolor marki, stosować tylko do małych etykiet amber-na-jasnym */
 	--ed-surface: oklch(0.951 0.019 75); /* #F5EFE6 — karty gain/uczelnia/pracodawca */
 	--ed-border: oklch(0.87 0.014 68); /* #D6CEC2 — separatory, obwódki, badge PEŁNA */
-	--ed-muted: oklch(0.503 0.017 55); /* #756E65 — tekst pomocniczy */
-	--ed-warn: oklch(0.851 0.12 87); /* #F4D04F — pasek 60–79% */
+	--ed-muted: oklch(0.488 0.017 55); /* ≈ #6E6860 — tekst pomocniczy (ŚCIEMNIONY z 0.503 → kontrast ≥4,5:1 na surface) */
+	--ed-warn: oklch(0.851 0.12 87); /* #F4D04F — pasek 40–79% (próg warn od 40%, delta Mili #6) */
 	--ed-danger: oklch(0.54 0.18 25); /* #D0422B — pasek <40% */
 	--ed-badge-bg: oklch(0.971 0.049 84); /* #FDF3DD — tło badge w karcie Paszportu */
 
