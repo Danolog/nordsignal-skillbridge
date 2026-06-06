@@ -5,7 +5,7 @@ import { Logo } from "@/components/ui/logo";
 // Landing #6 „Papierowy editorial" (kierunek A). Bohater = STUDENT.
 // Copy zatwierdzone przez Mayę (spec docs/product/skillbridge-h-landing-spec-A-v0.1.md §0) — wstawione dokładnie.
 // Tokeny editorial (--color-ed-*) z globals.css; zero kolorów na sztywno.
-// CTA → rejestracja /signup. Liczby [XX]/[XXX] = placeholdery (do weryfikacji Darek/Sophia).
+// CTA → rejestracja /signup. Pasek dowodu = pojedynczy komunikat „Ty decydujesz" (decyzja Darka #6: placeholdery liczb usunięte).
 
 /** Paski kompetencji w karcie Paszportu — szerokość jako %, kolor wg progu (patrz barColor). */
 const PASSPORT_BARS: { label: string; value: number }[] = [
@@ -186,25 +186,11 @@ export default function Home() {
 
 				{/* ── Pasek dowodu ── */}
 				<section className="mx-auto max-w-[1440px] px-6 py-2 md:px-10 lg:px-20">
-					<div className="grid grid-cols-1 divide-y divide-ed-border border-y border-ed-border md:grid-cols-3 md:divide-x md:divide-y-0">
-						<div className="px-6 py-6 text-center">
-							<span className="font-ed-display text-[28px] font-bold text-ed-ink">[XX]</span>
-							<p className="mt-1 text-[15px] leading-[1.65] text-ed-muted">uczelni w programie</p>
-						</div>
-						<div className="px-6 py-6 text-center">
-							<span className="font-ed-display text-[28px] font-bold text-ed-ink">[XXX]</span>
-							<p className="mt-1 text-[15px] leading-[1.65] text-ed-muted">
-								ofert pracy analizowanych miesięcznie
-							</p>
-						</div>
-						<div className="px-6 py-6 text-center">
-							<span className="font-ed-display text-[18px] font-bold text-ed-ink">
-								Ty decydujesz
-							</span>
-							<p className="mt-1 text-[15px] leading-[1.65] text-ed-muted">
-								AI proponuje, ostatnie słowo masz Ty
-							</p>
-						</div>
+					<div className="border-y border-ed-border bg-ed-surface px-6 py-6 text-center">
+						<span className="font-ed-display text-[18px] font-bold text-ed-ink">Ty decydujesz</span>
+						<p className="mt-1 text-[15px] leading-[1.65] text-ed-muted">
+							AI proponuje, ostatnie słowo masz Ty
+						</p>
 					</div>
 				</section>
 
@@ -340,7 +326,7 @@ export default function Home() {
 					<Link href="/" className="no-underline">
 						<Logo size="sm" variant="landing" />
 					</Link>
-					<span className="text-[14px] text-ed-muted">© 2026 SkillBridge</span>
+					<span className="text-[14px] text-ed-muted">© 2026 SkillBridge · produkt nordsignal</span>
 				</div>
 			</footer>
 		</div>
