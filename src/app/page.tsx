@@ -148,48 +148,50 @@ export default function Home() {
 			{/* ── Header / Nav (fixed) — spec Mili v0.3 §3 ── */}
 			<header
 				id="header"
-				className="fixed top-0 right-0 left-0 z-50 flex h-[72px] items-center justify-between border-b border-ed-border bg-ed-cream px-6 md:px-20"
+				className="fixed top-0 right-0 left-0 z-50 h-[72px] border-b border-ed-border bg-ed-cream"
 			>
-				<Link href="/" aria-label="SkillBridge — strona główna" className="no-underline">
-					<Logo size="sm" variant="landing" />
-				</Link>
+				<div className="mx-auto flex h-full max-w-[1680px] items-center justify-between px-6 md:px-10 lg:px-16 xl:px-20 2xl:px-28">
+					<Link href="/" aria-label="SkillBridge — strona główna" className="no-underline">
+						<Logo size="sm" variant="landing" />
+					</Link>
 
-				{/* Nav desktop (5 pozycji) */}
-				<nav className="hidden items-center gap-6 md:flex xl:gap-8" aria-label="Nawigacja główna">
-					<Link
-						href="#dla-uczelni"
-						className="text-[15px] font-medium text-ed-ink no-underline transition-colors duration-150 hover:text-ed-amber-text focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
-					>
-						Dla uczelni
-					</Link>
-					<Link
-						href="/login"
-						className="text-[15px] font-medium text-ed-ink no-underline transition-colors duration-150 hover:text-ed-amber-text focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
-					>
-						Zaloguj się
-					</Link>
-					<Link
-						href="/faculty/login"
-						className="text-[15px] font-normal text-ed-muted no-underline transition-colors duration-150 hover:text-ed-ink focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
-					>
-						Panel uczelni
-					</Link>
-					<Link
-						href="/signup"
-						className="inline-block rounded-full bg-ed-ink px-5 py-2.5 text-[15px] font-bold whitespace-nowrap text-ed-cream no-underline transition-opacity duration-150 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
-					>
-						Sprawdź, czego Ci brakuje
-					</Link>
-				</nav>
+					{/* Nav desktop (5 pozycji) */}
+					<nav className="hidden items-center gap-6 md:flex xl:gap-8" aria-label="Nawigacja główna">
+						<Link
+							href="#dla-uczelni"
+							className="text-[15px] font-medium text-ed-ink no-underline transition-colors duration-150 hover:text-ed-amber-text focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
+						>
+							Dla uczelni
+						</Link>
+						<Link
+							href="/login"
+							className="text-[15px] font-medium text-ed-ink no-underline transition-colors duration-150 hover:text-ed-amber-text focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
+						>
+							Zaloguj się
+						</Link>
+						<Link
+							href="/faculty/login"
+							className="text-[15px] font-normal text-ed-muted no-underline transition-colors duration-150 hover:text-ed-ink focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
+						>
+							Panel uczelni
+						</Link>
+						<Link
+							href="/signup"
+							className="inline-block rounded-full bg-ed-ink px-5 py-2.5 text-[15px] font-bold whitespace-nowrap text-ed-cream no-underline transition-opacity duration-150 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
+						>
+							Sprawdź, czego Ci brakuje
+						</Link>
+					</nav>
 
-				{/* Pasek mobile: CTA student stale widoczne + hamburger (client) */}
-				<MobileNav />
+					{/* Pasek mobile: CTA student stale widoczne + hamburger (client) */}
+					<MobileNav />
+				</div>
 			</header>
 
 			<main id="main-content">
 				{/* ── Hero (copy v1.0 §1) ── */}
-				<section className="mx-auto max-w-[1440px] px-6 pt-[120px] pb-16 md:px-10 md:pt-[140px] lg:px-20">
-					<div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,520px)] lg:gap-10 xl:grid-cols-[minmax(0,680px)_minmax(0,560px)] xl:gap-16">
+				<section className="mx-auto max-w-[1680px] px-6 pt-[120px] pb-16 md:px-10 md:pt-[140px] lg:px-16 xl:px-20 2xl:px-28">
+					<div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,520px)] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,600px)] xl:gap-16 2xl:grid-cols-[minmax(0,1fr)_minmax(0,640px)] 2xl:gap-20">
 						{/* Lewa kolumna */}
 						<div>
 							<p
@@ -199,13 +201,13 @@ export default function Home() {
 								Dla studentów, uczelni i pracodawców
 							</p>
 							<h1
-								className="ed-hero-up mb-7 font-ed-display text-[clamp(36px,8vw,72px)] leading-[1.08] font-bold text-ed-ink"
+								className="ed-hero-up mb-7 max-w-[22ch] font-ed-display text-[clamp(36px,8vw,72px)] leading-[1.08] font-bold text-ed-ink"
 								style={{ animationDelay: "0.25s" }}
 							>
 								Studia uczą Cię wielu rzeczy. SkillBridge mówi Ci, których szuka rynek.
 							</h1>
 							<p
-								className="ed-hero-up mb-9 max-w-[560px] text-[18px] leading-[1.58] text-ed-muted"
+								className="ed-hero-up mb-9 max-w-[58ch] text-[18px] leading-[1.58] text-ed-muted"
 								style={{ animationDelay: "0.40s" }}
 							>
 								SkillBridge porównuje Twój program studiów z wymaganiami zawodu, który Cię
@@ -284,7 +286,7 @@ export default function Home() {
 				{/* ── INFOGRAFIKA „Droga studenta" (zastępuje pasek dowodu; copy kroków = wersja Darka) ── */}
 				<section
 					aria-labelledby="journey-heading"
-					className="mx-auto max-w-[1440px] px-6 py-16 md:px-10 lg:px-20"
+					className="mx-auto max-w-[1680px] px-6 py-16 md:px-10 lg:px-16 xl:px-20 2xl:px-28"
 				>
 					<p className="mb-3 text-[11px] font-bold tracking-[1.65px] text-ed-amber-text uppercase">
 						Ścieżka studenta
@@ -369,7 +371,7 @@ export default function Home() {
 				{/* ── Co zyskujesz — student (copy v1.0 §4) ── */}
 				<section
 					aria-labelledby="gains-heading"
-					className="mx-auto max-w-[1440px] px-6 py-12 md:px-10 lg:px-20"
+					className="mx-auto max-w-[1680px] px-6 py-12 md:px-10 lg:px-16 xl:px-20 2xl:px-28"
 				>
 					<div className="mb-8 h-[3px] w-full bg-ed-amber" />
 					<h2
@@ -409,13 +411,16 @@ export default function Home() {
 				</section>
 
 				{/* separator amber 3px przed blokiem instytucjonalnym */}
-				<div className="mx-auto max-w-[1440px] px-6 md:px-10 lg:px-20">
+				<div className="mx-auto max-w-[1680px] px-6 md:px-10 lg:px-16 xl:px-20 2xl:px-28">
 					<div className="h-[3px] w-full bg-ed-amber" />
 				</div>
 
 				{/* ── Dla uczelni (copy v1.0 §5; spec Mili v0.2 §2) ── */}
-				<section id="dla-uczelni" className="bg-ed-cream px-6 py-16 md:px-10 md:py-20 lg:px-20">
-					<div className="mx-auto max-w-[1440px]">
+				<section
+					id="dla-uczelni"
+					className="bg-ed-cream px-6 py-16 md:px-10 md:py-20 lg:px-16 xl:px-20 2xl:px-28"
+				>
+					<div className="mx-auto max-w-[1680px]">
 						<p className="mb-6 text-[11px] font-bold tracking-[1.65px] text-ed-amber-text uppercase">
 							Dla uczelni
 						</p>
@@ -534,9 +539,9 @@ export default function Home() {
 				{/* ── Dla pracodawcy (copy v1.0 §6; spec Mili v0.2 §3) ── */}
 				<section
 					id="dla-pracodawcow"
-					className="bg-ed-surface px-6 py-16 md:px-10 md:py-20 lg:px-20"
+					className="bg-ed-surface px-6 py-16 md:px-10 md:py-20 lg:px-16 xl:px-20 2xl:px-28"
 				>
-					<div className="mx-auto max-w-[1440px]">
+					<div className="mx-auto max-w-[1680px]">
 						<p className="mb-6 text-[11px] font-bold tracking-[1.65px] text-ed-amber-text uppercase">
 							Dla pracodawców
 						</p>
@@ -617,8 +622,11 @@ export default function Home() {
 				</section>
 
 				{/* ── CTA KOŃCOWE trójścieżkowe (copy v1.0 §7; spec Mili v0.2 §4) ── */}
-				<section id="cta-koniec" className="bg-ed-ink px-6 py-24 md:px-10 lg:px-20">
-					<div className="mx-auto max-w-[1440px]">
+				<section
+					id="cta-koniec"
+					className="bg-ed-ink px-6 py-24 md:px-10 lg:px-16 xl:px-20 2xl:px-28"
+				>
+					<div className="mx-auto max-w-[1680px]">
 						<h2 className="mx-auto mb-6 max-w-[800px] text-center font-ed-display text-[clamp(28px,7vw,44px)] leading-[1.1] font-bold text-ed-cream">
 							Rynek pracy nie czeka, aż skończysz studia. SkillBridge pomaga Ci być gotowym
 							wcześniej.
@@ -674,7 +682,7 @@ export default function Home() {
 
 			{/* ── Footer (copy v1.0 §8) ── */}
 			<footer className="bg-ed-ink">
-				<div className="mx-auto flex max-w-[1440px] flex-col gap-3 px-6 py-10 md:flex-row md:items-center md:justify-between md:px-10 lg:px-20">
+				<div className="mx-auto flex max-w-[1680px] flex-col gap-3 px-6 py-10 md:flex-row md:items-center md:justify-between md:px-10 lg:px-16 xl:px-20 2xl:px-28">
 					<p className="max-w-[640px] text-[15px] leading-[1.6] text-ed-border">
 						SkillBridge — tłumaczymy Twój program studiów na zawód, który chcesz wykonywać.
 					</p>
