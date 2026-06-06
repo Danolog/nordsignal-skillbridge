@@ -189,7 +189,7 @@ export default function Home() {
 			<main id="main-content">
 				{/* ── Hero (copy v1.0 §1) ── */}
 				<section className="mx-auto max-w-[1440px] px-6 pt-[120px] pb-16 md:px-10 md:pt-[140px] lg:px-20">
-					<div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[680px_560px] lg:gap-16">
+					<div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,520px)] lg:gap-10 xl:grid-cols-[minmax(0,680px)_minmax(0,560px)] xl:gap-16">
 						{/* Lewa kolumna */}
 						<div>
 							<p
