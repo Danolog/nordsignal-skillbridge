@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MobileNav } from "@/components/landing/mobile-nav";
 import { ScrollAnimations } from "@/components/landing/scroll-animations";
 import { Logo } from "@/components/ui/logo";
 
@@ -57,25 +58,6 @@ function nodeFill(n: number): string {
 	const opacity = 0.18 + (n / 5) * 0.82;
 	return `color-mix(in oklch, var(--color-ed-amber) ${Math.round(opacity * 100)}%, var(--color-ed-surface))`;
 }
-
-// ── Jak to działa (3 kroki) — copy v1.0 §3 ──
-const STEPS = [
-	{
-		n: "01",
-		title: "Pokazujemy, czego uczą Cię studia",
-		body: "Czytamy program i wypisujemy kompetencje, nie nazwy przedmiotów. Pierwszy raz widzisz kierunek jako listę umiejętności.",
-	},
-	{
-		n: "02",
-		title: "Pokazujemy, czego szuka zawód",
-		body: "Porównujemy program z kompetencjami zawodu i pokazujemy luki. Wiesz, nad czym popracować, zanim wyślesz pierwsze CV.",
-	},
-	{
-		n: "03",
-		title: "Zamykasz luki projektami na realnych danych",
-		body: "Robisz analizę, zgłaszasz link do kodu, dostajesz ocenę i feedback (wskazówki, co poprawić). Masz dowód, że potrafisz.",
-	},
-];
 
 // ── Co zyskujesz — student — copy v1.0 §4 ──
 const STUDENT_VALUE = [
@@ -163,34 +145,45 @@ export default function Home() {
 				Przejdź do treści
 			</a>
 
-			{/* ── Header / Nav (fixed) ── */}
+			{/* ── Header / Nav (fixed) — spec Mili v0.3 §3 ── */}
 			<header
 				id="header"
 				className="fixed top-0 right-0 left-0 z-50 flex h-[72px] items-center justify-between border-b border-ed-border bg-ed-cream px-6 md:px-20"
 			>
-				<Link href="/" className="no-underline">
+				<Link href="/" aria-label="SkillBridge — strona główna" className="no-underline">
 					<Logo size="sm" variant="landing" />
 				</Link>
-				<nav className="flex items-center gap-3">
+
+				{/* Nav desktop (5 pozycji) */}
+				<nav className="hidden items-center gap-6 md:flex xl:gap-8" aria-label="Nawigacja główna">
 					<Link
-						href="#jak"
-						className="hidden text-sm font-medium text-ed-muted no-underline transition-colors hover:text-ed-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber sm:inline"
+						href="#dla-uczelni"
+						className="text-[15px] font-medium text-ed-ink no-underline transition-colors duration-150 hover:text-ed-amber-text focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
 					>
-						Jak to działa
+						Dla uczelni
 					</Link>
 					<Link
 						href="/login"
-						className="hidden text-sm font-medium text-ed-muted no-underline transition-colors hover:text-ed-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber sm:inline"
+						className="text-[15px] font-medium text-ed-ink no-underline transition-colors duration-150 hover:text-ed-amber-text focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
 					>
 						Zaloguj się
 					</Link>
 					<Link
-						href="/signup"
-						className="rounded-full border border-ed-ink bg-ed-ink px-5 py-2 text-sm font-bold text-ed-cream no-underline transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
+						href="/faculty/login"
+						className="text-[15px] font-normal text-ed-muted no-underline transition-colors duration-150 hover:text-ed-ink focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
 					>
-						Sprawdź swój program
+						Panel uczelni
+					</Link>
+					<Link
+						href="/signup"
+						className="inline-block rounded-full bg-ed-ink px-5 py-2.5 text-[15px] font-bold whitespace-nowrap text-ed-cream no-underline transition-opacity duration-150 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ed-amber"
+					>
+						Sprawdź, czego Ci brakuje
 					</Link>
 				</nav>
+
+				{/* Pasek mobile: CTA student stale widoczne + hamburger (client) */}
+				<MobileNav />
 			</header>
 
 			<main id="main-content">
@@ -219,14 +212,14 @@ export default function Home() {
 								interesuje, pokazuje, czego Ci do niego brakuje, i zamienia te braki w projekty na
 								realnych danych. Każdy projekt jest oceniany i ląduje w Twoim paszporcie kompetencji
 								— konkretny, sprawdzony dowód, który pokażesz pracodawcy zamiast deklaracji z CV.
-								Wiesz, na czym stoisz, zanim wyśle to za Ciebie rekruter.
+								Swoje luki znajdujesz i nadrabiasz sam — zanim wychwyci je rekruter na rozmowie.
 							</p>
 							<div className="ed-hero-up" style={{ animationDelay: "0.40s" }}>
 								<Link
 									href="/signup"
 									className="inline-flex items-center rounded-full bg-ed-amber px-8 py-4 font-ed-body text-[16px] font-bold text-ed-ink no-underline transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
 								>
-									Sprawdź, czego Ci brakuje do zawodu
+									Sprawdź, czego Ci brakuje
 								</Link>
 								<p className="mt-3 max-w-[420px] text-[14px] leading-[1.6] text-ed-muted">
 									Pierwsza ocena startowa zajmuje kilka minut. Bez zobowiązań, bez CV.
@@ -359,42 +352,17 @@ export default function Home() {
 							</div>
 						</li>
 					</ol>
-				</section>
 
-				{/* ── Jak to działa (copy v1.0 §3) ── */}
-				<section id="jak" className="mx-auto max-w-[1440px] px-6 py-20 md:px-10 lg:px-20">
-					<h2 className="mb-2 font-ed-display text-[clamp(28px,7vw,44px)] leading-[1.1] font-bold text-ed-ink">
-						Jak to działa
-					</h2>
-					<p className="mb-6 max-w-[640px] text-[18px] leading-[1.58] text-ed-muted">
-						Trzy kroki od „uczę się czegoś” do „umiem coś, co widać”.
-					</p>
-					<div className="mb-12 h-[3px] w-20 bg-ed-amber" />
-					<div className="value-grid grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-3">
-						{STEPS.map((step) => (
-							<div key={step.n} className="fade-up">
-								<div className="font-ed-display text-[56px] leading-none font-bold text-ed-border">
-									{step.n}
-								</div>
-								<div className="my-4 h-px w-full bg-ed-border" />
-								<h3 className="mb-3 font-ed-display text-[20px] font-bold text-ed-ink">
-									{step.title}
-								</h3>
-								<p className="text-[15px] leading-[1.65] text-ed-muted">{step.body}</p>
-							</div>
-						))}
-					</div>
-					<p className="mt-10 max-w-[820px] text-[16px] leading-[1.6] text-ed-ink">
-						Na każdym kroku SkillBridge pokazuje i podpowiada — kierunek wybierasz Ty, a Twoją pracę
-						ocenia człowiek, nie automat zostawiony sam sobie.
-					</p>
-					<div className="mt-6">
-						<Link
-							href="/signup"
-							className="inline-flex items-center font-ed-body text-[16px] font-bold text-ed-amber-text no-underline transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
-						>
-							Zacznij od oceny startowej →
-						</Link>
+					{/* ── Filozofia pod osią (spec Mili v0.3 §2; copy v1.0 §2) — zdanie zamykające ścieżkę studenta ── */}
+					<div
+						className="fade-up mx-auto mt-10 flex max-w-[720px] flex-col items-center border-t-2 border-ed-amber pt-6 text-center"
+						style={{ animationDelay: "0.2s" }}
+					>
+						<p className="max-w-[600px] font-ed-body text-[15px] leading-[1.65] text-ed-muted">
+							Na każdym kroku SkillBridge pokazuje i podpowiada — ale ocenę projektu zatwierdza
+							wykładowca, nie automat zostawiony sam sobie. Ostatnie słowo ma człowiek.
+						</p>
+						<div className="mt-4 h-[2px] w-10 bg-ed-amber" />
 					</div>
 				</section>
 
@@ -476,8 +444,9 @@ export default function Home() {
 							))}
 						</div>
 
-						{/* Karty DZIŚ / W PEŁNEJ WERSJI */}
-						<div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+						{/* Karty DZIŚ / W PEŁNEJ WERSJI — kafel pełnej wersji rozbudowany (spec Mili v0.3 §4) */}
+						<div className="mb-12 grid grid-cols-1 items-start gap-6 md:grid-cols-2">
+							{/* DZIŚ — amber obwódka 2px (kotwica uwagi) */}
 							<div className="relative rounded-sm border-2 border-ed-amber bg-ed-cream p-8 pt-10">
 								<BadgeToday />
 								<p className="mb-3 text-[18px] font-bold text-ed-ink">
@@ -488,14 +457,56 @@ export default function Home() {
 									programu studiów i ofert pracy.
 								</p>
 							</div>
-							<div className="relative rounded-sm border border-ed-border bg-ed-surface p-8 pt-10">
+
+							{/* W PEŁNEJ WERSJI — dwa podbloki: Dla uczelni / Dla wykładowcy */}
+							<div className="relative flex flex-col gap-6 rounded-sm border border-ed-border bg-ed-surface p-8 pt-10">
 								<BadgeFull />
-								<p className="mb-3 text-[18px] font-bold text-ed-muted">
-									Pomiar retencji + model trójstronny
-								</p>
-								<p className="text-[15px] leading-[1.65] text-ed-muted">
-									Przed/po. Wykładowca potwierdza kompetencje jako trzecia strona.
-								</p>
+
+								<div>
+									<p className="mb-3 text-[11px] font-bold tracking-[1.65px] text-ed-muted uppercase">
+										Dla uczelni
+									</p>
+									<ul className="space-y-2">
+										{[
+											"Pomiar retencji przed i po — twardy dowód w liczbach, że program zatrzymuje studentów.",
+											"Gotowe dane do akredytacji: pokrycie programu względem rynku — to, z czego PKA i tak Was rozlicza.",
+											"Pełna pętla: program → projekt → losy absolwenta.",
+											"Paszport firmowany pieczęcią uczelni („poświadczone przez uczelnię”, nie tylko wynik narzędzia).",
+											"Wyróżnik w walce o kandydata.",
+										].map((point) => (
+											<li
+												key={point}
+												className="flex items-start gap-2 text-[15px] leading-[1.65] text-ed-muted"
+											>
+												<span className="mt-[6px] h-[5px] w-[5px] shrink-0 rounded-full bg-ed-muted" />
+												{point}
+											</li>
+										))}
+									</ul>
+								</div>
+
+								<div className="border-t border-ed-border" />
+
+								<div>
+									<p className="mb-3 text-[11px] font-bold tracking-[1.65px] text-ed-muted uppercase">
+										Dla wykładowcy
+									</p>
+									<ul className="space-y-2">
+										{[
+											"Gotowy szkic oceny zamiast pustej kartki — SkillBridge przygotowuje propozycję, Wy zatwierdzacie jednym kliknięciem albo korygujecie.",
+											"Mniej ręcznej pracy przy ocenie projektów.",
+											"Narzędzie wspiera Wasz osąd, nie zastępuje — ostatnie słowo ma wykładowca, zawsze.",
+										].map((point) => (
+											<li
+												key={point}
+												className="flex items-start gap-2 text-[15px] leading-[1.65] text-ed-muted"
+											>
+												<span className="mt-[6px] h-[5px] w-[5px] shrink-0 rounded-full bg-ed-muted" />
+												{point}
+											</li>
+										))}
+									</ul>
+								</div>
 							</div>
 						</div>
 
@@ -509,9 +520,9 @@ export default function Home() {
 									Pomiar przed i po. Jeden kierunek, żadnych zobowiązań poza pierwszym spotkaniem.
 								</p>
 							</div>
-							{/* Brak trasy /kontakt w repo (spec Mili §11) → kotwica do końcowych ścieżek; TODO trasa po sign-offie Darka */}
+							{/* Kontakt mailowy (spec Mili v0.3 §5 / copy v1.0 §5) */}
 							<a
-								href="#cta-koniec"
+								href="mailto:kontakt@nordsignal.cc"
 								className="inline-block shrink-0 rounded-sm bg-ed-amber px-8 py-4 text-[16px] font-bold whitespace-nowrap text-ed-ink no-underline transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-cream"
 							>
 								Umów rozmowę o pilotażu
@@ -579,14 +590,29 @@ export default function Home() {
 							</div>
 						</div>
 
-						{/* CTA pracodawca (outline amber, tekst amber-text dla kontrastu AA) */}
-						{/* Brak trasy /paszport-demo w repo (spec Mili §11) → kotwica do końcowych ścieżek; TODO trasa po sign-offie Darka */}
-						<a
-							href="#cta-koniec"
-							className="inline-block rounded-sm border-2 border-ed-amber px-8 py-4 text-[16px] font-bold text-ed-amber-text no-underline transition-colors hover:bg-ed-amber hover:text-ed-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
-						>
-							Zobacz, jak wygląda paszport kandydata
-						</a>
+						{/* CTA pracodawca → przykładowy paszport (spec Mili v0.3 §5; copy v1.0 §6) */}
+						<div className="flex flex-col items-start gap-2">
+							<a
+								href="/passport/demo"
+								aria-describedby="passport-demo-hint"
+								className="inline-block rounded-sm border-2 border-ed-amber px-8 py-4 text-[16px] font-bold text-ed-amber-text no-underline transition-colors hover:bg-ed-amber hover:text-ed-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
+							>
+								Zobacz, jak wygląda paszport kandydata
+							</a>
+							<p id="passport-demo-hint" className="text-[13px] leading-[1.65] text-ed-muted">
+								To paszport przykładowy — pokazujemy na nim, jak wygląda profil kandydata, nie dane
+								prawdziwej osoby.
+							</p>
+							<p className="mt-2 text-[15px] leading-[1.65] text-ed-ink">
+								Chcecie porozmawiać o dostępie do paszportów kandydatów?{" "}
+								<a
+									href="mailto:kontakt@nordsignal.cc"
+									className="font-bold text-ed-amber-text no-underline underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-amber"
+								>
+									kontakt@nordsignal.cc
+								</a>
+							</p>
+						</div>
 					</div>
 				</section>
 
@@ -609,17 +635,17 @@ export default function Home() {
 									href="/signup"
 									className="w-full rounded-sm bg-ed-amber px-8 py-4 text-[16px] font-bold text-ed-ink no-underline transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-cream"
 								>
-									Sprawdź swój program
+									Sprawdź, czego Ci brakuje
 								</a>
 								<p className="text-[13px] leading-[1.65] text-ed-border">
 									Zacznij od oceny startowej. Bez zobowiązań.
 								</p>
 							</div>
 
-							{/* 2. UCZELNIA — outline; przewija do sekcji uczelni (brak trasy kontaktu) */}
+							{/* 2. UCZELNIA — outline; kontakt mailowy */}
 							<div className="flex flex-col items-center gap-4 text-center">
 								<a
-									href="#dla-uczelni"
+									href="mailto:kontakt@nordsignal.cc"
 									className="w-full rounded-sm border-2 border-ed-amber px-8 py-4 text-[16px] font-bold text-ed-amber no-underline transition-colors hover:bg-ed-amber hover:text-ed-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-cream"
 								>
 									Umów rozmowę o pilotażu
@@ -629,10 +655,10 @@ export default function Home() {
 								</p>
 							</div>
 
-							{/* 3. PRACODAWCA — outline; przewija do sekcji pracodawcy (brak trasy demo) */}
+							{/* 3. PRACODAWCA — outline; link do przykładowego paszportu */}
 							<div className="flex flex-col items-center gap-4 text-center">
 								<a
-									href="#dla-pracodawcow"
+									href="/passport/demo"
 									className="w-full rounded-sm border-2 border-ed-amber px-8 py-4 text-[16px] font-bold text-ed-amber no-underline transition-colors hover:bg-ed-amber hover:text-ed-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ed-cream"
 								>
 									Zobacz paszport kandydata

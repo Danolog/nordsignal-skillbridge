@@ -665,6 +665,9 @@
 
 /* Reduced motion: zero ruchu, treść od razu widoczna. */
 @media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
 	.ed-hero-up {
 		opacity: 1;
 		animation: none;
