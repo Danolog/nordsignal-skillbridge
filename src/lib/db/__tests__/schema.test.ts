@@ -111,6 +111,8 @@ describe("DB Schema — Column presence", () => {
 		expect(colNames).toContain("semester");
 		expect(colNames).toContain("careerGoal");
 		expect(colNames).toContain("onboardingCompleted");
+		// Resume onboarding (migracja 0017): high-water-mark kroku kreatora.
+		expect(colNames).toContain("onboardingStep");
 	});
 
 	it("gaps has required columns", () => {
