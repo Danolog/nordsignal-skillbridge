@@ -38,6 +38,7 @@ const student = {
 	university: "WSB",
 	fieldOfStudy: "IT",
 	onboardingCompleted: true,
+	onboardingStep: 5,
 	syllabusText: null,
 	careerHelperCompletedAt: null,
 	createdAt: new Date(),
