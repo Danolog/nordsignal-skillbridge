@@ -43,62 +43,76 @@ beforeEach(() => {
 });
 
 describe("OnboardingWizard — Krok 0 (Pomocnik) → cel kariery dociera do submitu", () => {
-	it("body /api/onboarding niesie careerGoal ustalony w Kroku 0 (nie z Profilu)", async () => {
-		let onboardingBody: Record<string, unknown> | null = null;
-		const fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
-			if (url === "/api/syllabus/parse" && opts?.method === "POST") {
+	// Pełna ścieżka wizarda (Radix Select + analiza + submit) + autosave kroków 1–2 (fala B)
+	// to wiele hopów async; przy równoległym przebiegu suite domyślne 5 s bywa za mało
+	// (wzorzec TEST_TIMEOUT z onboarding-wizard-step3-gate). Hojny limit eliminuje flake.
+	it(
+		"body /api/onboarding niesie careerGoal ustalony w Kroku 0 (nie z Profilu)",
+		{ timeout: 20_000 },
+		async () => {
+			let onboardingBody: Record<string, unknown> | null = null;
+			const fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+				// Autosave kroków 1–2 (fala B): „Dalej" zapisuje profil, „Analizuj" zapisuje sylabus.
+				if (url === "/api/onboarding/progress" && opts?.method === "PATCH") {
+					return Promise.resolve({
+						ok: true,
+						json: () => Promise.resolve({ success: true }),
+					} as Response);
+				}
+				if (url === "/api/syllabus/parse" && opts?.method === "POST") {
+					return Promise.resolve({
+						ok: true,
+						json: () => Promise.resolve({ competencies: ["A", "B", "C", "D", "E"] }),
+					} as Response);
+				}
+				if (url === "/api/onboarding" && opts?.method === "POST") {
+					onboardingBody = JSON.parse(opts.body as string);
+					return Promise.resolve({
+						ok: true,
+						json: () => Promise.resolve({ success: true, studentId: "stu-1" }),
+					} as Response);
+				}
 				return Promise.resolve({
-					ok: true,
-					json: () => Promise.resolve({ competencies: ["A", "B", "C", "D", "E"] }),
+					ok: false,
+					status: 404,
+					json: () => Promise.resolve({}),
 				} as Response);
-			}
-			if (url === "/api/onboarding" && opts?.method === "POST") {
-				onboardingBody = JSON.parse(opts.body as string);
-				return Promise.resolve({
-					ok: true,
-					json: () => Promise.resolve({ success: true, studentId: "stu-1" }),
-				} as Response);
-			}
-			return Promise.resolve({
-				ok: false,
-				status: 404,
-				json: () => Promise.resolve({}),
-			} as Response);
-		});
-		vi.stubGlobal("fetch", fetchMock);
+			});
+			vi.stubGlobal("fetch", fetchMock);
 
-		const user = userEvent.setup();
-		render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
+			const user = userEvent.setup();
+			render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
 
-		// Krok 0 — Pomocnik (stub) oddaje cel kariery → wizard wchodzi w Profil.
-		await user.click(screen.getByRole("button", { name: /Wybierz cel \(stub\)/i }));
+			// Krok 0 — Pomocnik (stub) oddaje cel kariery → wizard wchodzi w Profil.
+			await user.click(screen.getByRole("button", { name: /Wybierz cel \(stub\)/i }));
 
-		// Krok 1 — Profil BEZ celu: tylko 2 comboboxy (uczelnia [0], semestr [1]).
-		const combos = screen.getAllByRole("combobox");
-		expect(combos).toHaveLength(2);
-		await user.click(combos[0]);
-		await user.click(await screen.findByRole("option", { name: "WSB Merito Gdańsk" }));
-		await user.type(screen.getByPlaceholderText(/np\. Informatyka/), "Informatyka");
-		await user.click(screen.getAllByRole("combobox")[1]);
-		await user.click(await screen.findByRole("option", { name: "4" }));
-		await user.click(screen.getByRole("button", { name: /Dalej/i }));
+			// Krok 1 — Profil BEZ celu: tylko 2 comboboxy (uczelnia [0], semestr [1]).
+			const combos = screen.getAllByRole("combobox");
+			expect(combos).toHaveLength(2);
+			await user.click(combos[0]);
+			await user.click(await screen.findByRole("option", { name: "WSB Merito Gdańsk" }));
+			await user.type(screen.getByPlaceholderText(/np\. Informatyka/), "Informatyka");
+			await user.click(screen.getAllByRole("combobox")[1]);
+			await user.click(await screen.findByRole("option", { name: "4" }));
+			await user.click(screen.getByRole("button", { name: /Dalej/i }));
 
-		// Krok 2 — Sylabus (≥100 znaków) → Analizuj → kompetencje → Krok 3.
-		const textarea = screen.getByRole("textbox");
-		await user.click(textarea);
-		await user.paste("x".repeat(150));
-		await user.click(screen.getByRole("button", { name: /Analizuj|Przeanalizuj/i }));
-		await screen.findByText("Twoje kompetencje");
+			// Krok 2 — Sylabus (≥100 znaków) → Analizuj → kompetencje → Krok 3.
+			const textarea = screen.getByRole("textbox");
+			await user.click(textarea);
+			await user.paste("x".repeat(150));
+			await user.click(screen.getByRole("button", { name: /Analizuj|Przeanalizuj/i }));
+			await screen.findByText("Twoje kompetencje");
 
-		// Krok 3 — submit.
-		await user.click(screen.getByRole("button", { name: /Zatwierdź i przejdź dalej/i }));
+			// Krok 3 — submit.
+			await user.click(screen.getByRole("button", { name: /Zatwierdź i przejdź dalej/i }));
 
-		// DOWÓD (anty-mask): body submitu ma wartość celu z Kroku 0, nie pusty/inny.
-		await vi.waitFor(() => {
-			expect(onboardingBody).not.toBeNull();
-		});
-		expect((onboardingBody as unknown as Record<string, unknown>).careerGoal).toBe(KROK0_GOAL);
-	});
+			// DOWÓD (anty-mask): body submitu ma wartość celu z Kroku 0, nie pusty/inny.
+			await vi.waitFor(() => {
+				expect(onboardingBody).not.toBeNull();
+			});
+			expect((onboardingBody as unknown as Record<string, unknown>).careerGoal).toBe(KROK0_GOAL);
+		},
+	);
 
 	it("powrót Krok 1 → Krok 0: przycisk Wstecz wraca do Pomocnika (cel edytowalny, HITL §3.3)", async () => {
 		vi.stubGlobal(

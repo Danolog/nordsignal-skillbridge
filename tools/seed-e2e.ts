@@ -54,9 +54,14 @@ const MAIN_EMAIL = process.env.E2E_TEST_EMAIL ?? "e2e-main@example.com";
 const MAIN_PASS = process.env.E2E_TEST_PASSWORD ?? "Test1234!e2e";
 const B4_EMAIL = process.env.E2E_TEST_EMAIL_B4 ?? "e2e-b4@example.com";
 const B4_PASS = process.env.E2E_TEST_PASSWORD_B4 ?? "Test1234!e2e";
+// Konto „resume" (fala B — wznawianie onboardingu): careerGoal≠"", onboardingCompleted=false,
+// onboardingStep>=1 → wejście /onboarding wznawia kreator od zapisanego kroku z danymi.
+const RESUME_EMAIL = process.env.E2E_TEST_EMAIL_RESUME ?? "e2e-resume@example.com";
+const RESUME_PASS = process.env.E2E_TEST_PASSWORD_RESUME ?? "Test1234!e2e";
 
 const COMPETENCIES_MAIN = ["Python", "SQL", "Pandas", "Statystyka", "Git", "Komunikacja wyników"];
 const COMPETENCIES_B4 = ["JavaScript", "TypeScript", "React", "HTML/CSS", "Git", "REST API"];
+const COMPETENCIES_RESUME = ["Python", "SQL", "Excel", "Statystyka", "Wizualizacja danych"];
 
 async function main() {
 	// drizzle na owner connection (jak src/lib/db/seed.ts) — owner zapisuje
@@ -109,11 +114,12 @@ async function main() {
 
 	const mainUserId = await ensureAccount(MAIN_EMAIL, MAIN_PASS, "E2E Main");
 	const b4UserId = await ensureAccount(B4_EMAIL, B4_PASS, "E2E B4");
+	const resumeUserId = await ensureAccount(RESUME_EMAIL, RESUME_PASS, "E2E Resume");
 
 	// ── Student MAIN (onboardingCompleted=TRUE) ────────────────────────────────
 	async function ensureStudent(
 		userId: string,
-		opts: { onboardingCompleted: boolean; comps: string[] },
+		opts: { onboardingCompleted: boolean; comps: string[]; onboardingStep?: number },
 	): Promise<string> {
 		// Sprzątanie idempotentne: skasuj poprzedniego studenta tego usera (cascade
 		// usuwa competencies/passport/submissions), utwórz świeżego.
@@ -130,6 +136,7 @@ async function main() {
 				semester: 4,
 				careerGoal: "Data Analyst",
 				onboardingCompleted: opts.onboardingCompleted,
+				onboardingStep: opts.onboardingStep ?? 0,
 				createdAt: now,
 				updatedAt: now,
 			})
@@ -156,6 +163,15 @@ async function main() {
 	await ensureStudent(b4UserId, {
 		onboardingCompleted: false,
 		comps: COMPETENCIES_B4,
+	});
+
+	// Student RESUME (fala B): onboardingCompleted=false, onboardingStep=3 (kompetencje
+	// już są — POST /api/onboarding wstawia je na kroku 3). Wejście /onboarding wznawia
+	// kreator od kroku 3 z profilem + kompetencjami. careerGoal≠"" (z ensureStudent).
+	await ensureStudent(resumeUserId, {
+		onboardingCompleted: false,
+		comps: COMPETENCIES_RESUME,
+		onboardingStep: 3,
 	});
 
 	// Paszport dla studenta MAIN (B1).
@@ -215,6 +231,9 @@ async function main() {
 	);
 	console.log(
 		`  b4:     ${B4_EMAIL} (onboardingCompleted=false, ${COMPETENCIES_B4.length} komp. nieocenione)`,
+	);
+	console.log(
+		`  resume: ${RESUME_EMAIL} (onboardingCompleted=false, onboardingStep=3, ${COMPETENCIES_RESUME.length} komp.)`,
 	);
 	console.log(`  projekt: ${PROJECT_SLUG} (+1 zgłoszenie)`);
 	console.log("  (connection string NIE drukowany — bezpieczeństwo)");

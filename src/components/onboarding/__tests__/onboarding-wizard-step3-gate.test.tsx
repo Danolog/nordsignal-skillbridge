@@ -48,6 +48,13 @@ beforeAll(() => {
 /** Mock fetch: POST /api/syllabus/parse zwraca `count` kompetencji (sterowanie granicą). */
 function mockSyllabusParse(competencyNames: string[]) {
 	const fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+		// Autosave kroków 1–2 (fala B): „Dalej" (profil) i „Analizuj" (sylabus) wołają PATCH /progress.
+		if (url === "/api/onboarding/progress" && opts?.method === "PATCH") {
+			return Promise.resolve({
+				ok: true,
+				json: () => Promise.resolve({ success: true }),
+			} as Response);
+		}
 		if (url === "/api/syllabus/parse" && opts?.method === "POST") {
 			return Promise.resolve({
 				ok: true,
