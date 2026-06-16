@@ -5,6 +5,16 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CareerHelperFlow } from "@/components/career-helper/career-helper-flow";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
 	type CompetencyItem,
@@ -22,13 +32,19 @@ import { StepSyllabus } from "./step-syllabus";
  *   w pamięci (bez select-path — nowy student nie ma jeszcze rekordu; spec §1.3/§3.1).
  * Krok 1–3: Profil (BEZ celu) / Sylabus / Kompetencje — zbieranie danych i zapis profilu.
  * Krok 4: Samoocena (StepSelfAssessment, B4) — ocena kompetencji po ich zapisie.
- * Krok 5: Wnioski — przekierowanie do dashboardu (brak osobnego ekranu w Becie).
+ * Krok 5: Wnioski — POST /api/onboarding/complete + przekierowanie do dashboardu.
+ *
+ * Trwałość/wznawianie (fala B planu):
+ *   - initialStep/initialData hydratują stan z bazy (czyta page.tsx z onboarding_step
+ *     + profilu + kompetencji). Bez nich kreator startuje pusty od Kroku 0.
+ *   - Autosave PATCH /api/onboarding/progress: krok 1 (profil) przed wejściem na 2,
+ *     krok 2 (sylabus) przed analizą. Bump high-water-marka przy ruchu w przód.
+ *   - Klikalny pasek: skok do dowolnego osiągniętego kroku (<= maxReached).
+ *   - Kaskada „ostrzeż i przelicz": zmiana sylabusa/kompetencji przy istniejącym
+ *     downstream pokazuje AlertDialog (przeliczy gaps/Skill Map, wyczyści samoocenę).
  *
  * Spec: docs/product/skillbridge-e-pomocnik-krok0-spec-v0.1.md (Krok 0),
  *       docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §1/§3 (kroki 1–5).
- * Krok 4 wchodzi po handleSubmit (krok 3) — kompetencje muszą być w bazie
- * zanim GET /api/self-assessment je pobierze. Numeracja kroków: 0–5 (6 punktów na pasku);
- * careerGoal trzymany w pamięci od Kroku 0, persystowany dopiero w POST /api/onboarding.
  */
 const STEPS = [
 	{ label: "Cel kariery", num: 0 },
@@ -41,27 +57,58 @@ const STEPS = [
 
 const LAST_STEP = 5;
 
-interface OnboardingWizardProps {
-	user: { id: string; name: string; email: string };
+/** Stan początkowy do hydratacji wznawianego kreatora (page.tsx → wizard). */
+export interface OnboardingInitialData {
+	profile: ProfileData;
+	syllabusText: string;
+	competencies: string[];
 }
 
-export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
+interface OnboardingWizardProps {
+	user: { id: string; name: string; email: string };
+	/** Krok, od którego wznawiamy (high-water-mark z onboarding_step). Domyślnie 0. */
+	initialStep?: number;
+	/** Dane wczytane z bazy (profil/sylabus/kompetencje). Brak = pusty start. */
+	initialData?: OnboardingInitialData;
+}
+
+export function OnboardingWizard({
+	user: _user,
+	initialStep = 0,
+	initialData,
+}: OnboardingWizardProps) {
 	const router = useRouter();
-	const [step, setStep] = useState(0);
+	const [step, setStep] = useState(initialStep);
+	// maxReached: najwyższy osiągnięty krok — granica skoku po pasku. Hydratacja
+	// startuje od initialStep (user już tam dotarł w poprzedniej sesji).
+	const [maxReached, setMaxReached] = useState(initialStep);
 	const [submitting, setSubmitting] = useState(false);
 	const [analyzing, setAnalyzing] = useState(false);
+	const [savingProfile, setSavingProfile] = useState(false);
+	const [completing, setCompleting] = useState(false);
 
-	// careerGoal trzymany w pamięci od Kroku 0 (Pomocnik). Nie ma już opcji „custom"
-	// ani customCareerGoal — Pomocnik zwraca gotową etykietę obszaru zawodowego (string).
-	const [profile, setProfile] = useState<ProfileData>({
-		university: "",
-		fieldOfStudy: "",
-		semester: "",
-		careerGoal: "",
-	});
-	const [syllabusText, setSyllabusText] = useState("");
+	// careerGoal trzymany w pamięci od Kroku 0 (Pomocnik). Hydratowany z initialData
+	// przy wznawianiu (po Kroku 0 careerGoal jest już w bazie).
+	const [profile, setProfile] = useState<ProfileData>(
+		initialData?.profile ?? {
+			university: "",
+			fieldOfStudy: "",
+			semester: "",
+			careerGoal: "",
+		},
+	);
+	const [syllabusText, setSyllabusText] = useState(initialData?.syllabusText ?? "");
+	// syllabusFile zostaje null przy wznawianiu — competencies są już w bazie, ponowna
+	// analiza pliku zbędna (user może wgrać nowy plik, jeśli chce przeliczyć).
 	const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
-	const [competencies, setCompetencies] = useState<CompetencyItem[]>([]);
+	const [competencies, setCompetencies] = useState<CompetencyItem[]>(
+		(initialData?.competencies ?? []).map((name) => createCompetencyItem(name)),
+	);
+
+	// Kaskada „ostrzeż i przelicz" — dialog widoczny, gdy zmiana sylabusa/kompetencji
+	// przy istniejącym downstream wymaga potwierdzenia. pendingAction = co zrobić po „Tak".
+	const [cascadeOpen, setCascadeOpen] = useState(false);
+	const [pendingAction, setPendingAction] = useState<null | (() => void)>(null);
 
 	// Validation
 	// Krok 0: cel kariery musi być ustawiony (Pomocnik) zanim wejdzie się w Profil.
@@ -74,29 +121,80 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 	const filledCompetencyCount = competencies.filter((c) => c.name.trim()).length;
 	const isStep3Valid = filledCompetencyCount >= MIN_COMPETENCIES;
 
-	const goToStep = (target: number) => {
+	// Autosave profilu (krok 1) — wołane PRZED wejściem na krok 2. Zwraca true gdy zapis OK.
+	const saveProfileProgress = async (): Promise<boolean> => {
+		try {
+			const res = await fetch("/api/onboarding/progress", {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					step: 1,
+					university: profile.university,
+					fieldOfStudy: profile.fieldOfStudy,
+					semester: Number(profile.semester),
+				}),
+			});
+			if (!res.ok) throw new Error("save_failed");
+			return true;
+		} catch {
+			toast.error("Nie udało się zapisać profilu. Spróbuj ponownie.");
+			return false;
+		}
+	};
+
+	// Bump high-water-marka kroku w bazie (czysty {step}) — ruch w przód poza krok 1/2.
+	const bumpStepProgress = (target: number) => {
+		// Tylko gdy przekracza dotychczasowy max. Kroki 1/2 mają własny payload (autosave).
+		if (target <= maxReached || target === 1 || target === 2) return;
+		void fetch("/api/onboarding/progress", {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ step: target }),
+		}).catch(() => {
+			/* bump nieblokujący — high-water-mark dogoni przy następnym zapisie */
+		});
+	};
+
+	const advanceTo = (target: number) => {
+		setStep(target);
+		if (target > maxReached) {
+			setMaxReached(target);
+			bumpStepProgress(target);
+		}
+	};
+
+	const goToStep = async (target: number) => {
+		// Skok wstecz / do osiągniętego kroku (klikalny pasek) — bez bramek forward,
+		// ale ruch DO PRZODU nadal je egzekwuje (target>step poniżej).
+		const isJumpBack = target <= maxReached && target < step;
+
 		// Wejście do Profilu (1) wymaga ustalonego celu w Kroku 0.
 		if (target === 1 && !isStep0Valid) {
 			toast.error("Najpierw wybierz cel kariery — Pomocnik Ci w tym pomoże.");
 			return;
 		}
-		// Wejście do Sylabusa (2) wymaga kompletnego Profilu.
-		if (target === 2 && !isStep1Valid) {
-			toast.error("Wypełnij wszystkie wymagane pola.");
-			return;
+		// Wejście do Sylabusa (2) wymaga kompletnego Profilu + autosave profilu.
+		if (target === 2 && !isJumpBack) {
+			if (!isStep1Valid) {
+				toast.error("Wypełnij wszystkie wymagane pola.");
+				return;
+			}
+			setSavingProfile(true);
+			const ok = await saveProfileProgress();
+			setSavingProfile(false);
+			if (!ok) return;
 		}
-		setStep(target);
+		advanceTo(target);
 	};
 
 	// Krok 0 → Krok 1: Pomocnik zwrócił etykietę celu. Zapisujemy w pamięci i wchodzimy w Profil.
 	const handleCareerGoalChosen = (careerLabel: string) => {
 		setProfile((prev) => ({ ...prev, careerGoal: careerLabel }));
-		setStep(1);
+		advanceTo(1);
 	};
 
-	// AI analysis — dwie pełnoprawne ścieżki (ADR-007 (b)): plik PDF → multipart,
-	// tekst ręczny → JSON. Walidacja klienta: „albo plik, albo tekst ≥ 100 znaków".
-	const handleAnalyze = async () => {
+	// Realna analiza sylabusa: autosave step 2 → parse → kompetencje → krok 3.
+	const runAnalyze = async () => {
 		const hasFile = syllabusFile !== null;
 		const hasText = syllabusText.trim().length >= 100;
 		if (!hasFile && !hasText) {
@@ -105,6 +203,13 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 		}
 		setAnalyzing(true);
 		try {
+			// Autosave sylabusa PRZED parse — tekst persystuje nawet jeśli analiza padnie.
+			await fetch("/api/onboarding/progress", {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ step: 2, syllabusText }),
+			});
+
 			let res: Response;
 			if (hasFile && syllabusFile) {
 				// Multipart: przeglądarka sama ustawi Content-Type (multipart/form-data + boundary)
@@ -126,7 +231,7 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 			}
 			const data = await res.json();
 			setCompetencies((data.competencies as string[]).map((name) => createCompetencyItem(name)));
-			setStep(3);
+			advanceTo(3);
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Nie udało się przeanalizować sylabusa.");
 		} finally {
@@ -134,8 +239,19 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 		}
 	};
 
-	// Submit
-	const handleSubmit = async () => {
+	// AI analysis (krok 2). Gdy istnieje downstream (maxReached>2: kompetencje/samoocena
+	// już są) — ostrzeż i przelicz (re-parse sylabusa unieważnia kompetencje + samoocenę).
+	const handleAnalyze = () => {
+		if (maxReached > 2) {
+			setPendingAction(() => runAnalyze);
+			setCascadeOpen(true);
+			return;
+		}
+		void runAnalyze();
+	};
+
+	// Submit kroku 3 — POST /api/onboarding (delete+insert competencies, re-gen gaps/skillMap).
+	const runSubmit = async () => {
 		const filledNames = competencies.filter((c) => c.name.trim()).map((c) => c.name.trim());
 		if (filledNames.length < MIN_COMPETENCIES) {
 			toast.error(`Pracodawcy oczekują min. ${MIN_COMPETENCIES} kompetencji.`);
@@ -164,20 +280,61 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 				toast.warning(
 					"Profil zapisany, ale generacja Skill Map nie powiodła się. Spróbuj ponownie ze strony Skill Map.",
 				);
-				// Mimo błędu generacji Skill Map przechodzimy do samooceny (krok 4)
-				// — kompetencje są zapisane, samoocena może działać.
-				setStep(4);
 			} else {
 				toast.success("Paszport Kompetencji utworzony!");
-				// Przejście do kroku 4 — Samoocena (B4, spec §1/§3).
-				// Kompetencje są już w bazie — GET /api/self-assessment może je pobrać.
-				setStep(4);
 			}
+			// Kompetencje są w bazie → GET /api/self-assessment może je pobrać. Krok 4.
+			advanceTo(4);
 			setSubmitting(false);
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Nie udało się zapisać danych.");
 			setSubmitting(false);
 		}
+	};
+
+	// Submit kroku 3. Gdy istnieje downstream (maxReached>3: samoocena już oceniona)
+	// — ostrzeż i przelicz (delete+insert kompetencji czyści selfAssessment + re-gen).
+	const handleSubmit = () => {
+		if (maxReached > 3) {
+			setPendingAction(() => runSubmit);
+			setCascadeOpen(true);
+			return;
+		}
+		void runSubmit();
+	};
+
+	// Krok 5 (Wnioski): domknięcie onboardingu — JEDYNE zapalenie onboardingCompleted.
+	const handleComplete = async () => {
+		setCompleting(true);
+		try {
+			const res = await fetch("/api/onboarding/complete", { method: "POST" });
+			if (res.status === 409) {
+				const data = (await res.json()) as { error?: string };
+				toast.error(
+					data.error ?? "Onboarding niekompletny — uzupełnij profil i minimum 5 kompetencji.",
+				);
+				setCompleting(false);
+				return;
+			}
+			if (!res.ok) throw new Error("complete_failed");
+			const data = (await res.json()) as { redirect?: string };
+			router.push(data.redirect ?? "/dashboard");
+		} catch {
+			toast.error("Nie udało się domknąć onboardingu. Spróbuj ponownie.");
+			setCompleting(false);
+		}
+	};
+
+	const handleCascadeConfirm = () => {
+		const action = pendingAction;
+		setCascadeOpen(false);
+		setPendingAction(null);
+		if (action) void action();
+	};
+
+	const handleCascadeCancel = () => {
+		setCascadeOpen(false);
+		setPendingAction(null);
 	};
 
 	if (submitting) {
@@ -209,21 +366,38 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 							style={{ width: `${(step / LAST_STEP) * 100}%` }}
 						/>
 					</div>
-					{/* Dots — numer wyświetlany 1-based (idx+1), żeby pasek nie pokazywał „0". */}
-					{STEPS.map((s, idx) => (
-						<div
-							key={s.num}
-							className={`ob-step-dot relative z-10 flex h-12 w-12 items-center justify-center rounded-full font-mono text-base font-bold transition-all duration-400 ${
-								s.num < step
-									? "bg-emerald-500 text-white shadow-[0_0_16px_rgba(16,185,129,0.3)]"
-									: s.num === step
-										? "ob-step-active text-white shadow-[0_0_24px_rgba(99,102,241,0.3)] scale-110"
-										: "border-2 border-muted bg-background text-muted-foreground"
-							}`}
-						>
-							{s.num < step ? <Check className="h-5 w-5" /> : idx + 1}
-						</div>
-					))}
+					{/* Dots — klikalne dla osiągniętych kroków (num <= maxReached). Numer 1-based (idx+1). */}
+					{STEPS.map((s, idx) => {
+						const reached = s.num <= maxReached;
+						const isCurrent = s.num === step;
+						return (
+							<button
+								type="button"
+								key={s.num}
+								onClick={() => {
+									if (reached) void goToStep(s.num);
+								}}
+								disabled={!reached}
+								aria-current={isCurrent ? "step" : undefined}
+								aria-label={
+									reached
+										? `Krok ${idx + 1}: ${s.label}`
+										: `Krok ${idx + 1}: ${s.label} (jeszcze niedostępny)`
+								}
+								className={`ob-step-dot relative z-10 flex h-12 w-12 items-center justify-center rounded-full font-mono text-base font-bold transition-all duration-400 ${
+									reached ? "cursor-pointer" : "cursor-not-allowed"
+								} ${
+									s.num < step
+										? "bg-emerald-500 text-white shadow-[0_0_16px_rgba(16,185,129,0.3)]"
+										: isCurrent
+											? "ob-step-active text-white shadow-[0_0_24px_rgba(99,102,241,0.3)] scale-110"
+											: "border-2 border-muted bg-background text-muted-foreground"
+								}`}
+							>
+								{s.num < step ? <Check className="h-5 w-5" /> : idx + 1}
+							</button>
+						);
+					})}
 				</div>
 				<div className="flex justify-between">
 					{STEPS.map((s) => (
@@ -282,11 +456,20 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 							</Button>
 							<Button
 								onClick={() => goToStep(2)}
-								disabled={!isStep1Valid}
+								disabled={!isStep1Valid || savingProfile}
 								className="ob-btn-primary gap-2"
 							>
-								Dalej
-								<ChevronRight className="h-4 w-4" />
+								{savingProfile ? (
+									<>
+										<BookOpen className="h-4 w-4 animate-spin" />
+										Zapisywanie…
+									</>
+								) : (
+									<>
+										Dalej
+										<ChevronRight className="h-4 w-4" />
+									</>
+								)}
 							</Button>
 						</div>
 					</>
@@ -365,14 +548,12 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 				    onAdvance: advance 4→5 powiódł się → krok 5 (Wnioski).
 				    onSkip: student chce ocenić później → krok 5 (Wnioski). */}
 				{step === 4 && (
-					<StepSelfAssessment onAdvance={() => setStep(5)} onSkip={() => setStep(5)} />
+					<StepSelfAssessment onAdvance={() => advanceTo(5)} onSkip={() => advanceTo(5)} />
 				)}
 
 				{/* Step 5 — Wnioski (OUT Beta: brak osobnego ekranu).
-				    Spec §3.4 S8: przejście do kroku 5 onboardingu (Wnioski).
-				    W Becie krok 5 = bezpośredni redirect do dashboardu.
-				    TODO: gdy spec §B5 "Moja droga" zostanie wdrożony, krok 5 zamieni się
-				    w pełny ekran Wniosków (Sophia/Jack w następnym sprincie). */}
+				    Domknięcie onboardingu: POST /api/onboarding/complete (jedyne zapalenie
+				    onboardingCompleted). Po 200 → redirect; 409 → komunikat (niekompletny). */}
 				{step === 5 && (
 					<div className="flex flex-col items-center gap-6 py-4 text-center">
 						<div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
@@ -385,13 +566,41 @@ export function OnboardingWizard({ user: _user }: OnboardingWizardProps) {
 								swoje kompetencje.
 							</p>
 						</div>
-						<Button onClick={() => router.push("/dashboard")} className="ob-btn-primary gap-2">
-							Przejdź do dashboardu
-							<ChevronRight className="h-4 w-4" />
+						<Button onClick={handleComplete} disabled={completing} className="ob-btn-primary gap-2">
+							{completing ? (
+								<>
+									<BookOpen className="h-4 w-4 animate-spin" />
+									Kończę…
+								</>
+							) : (
+								<>
+									Przejdź do dashboardu
+									<ChevronRight className="h-4 w-4" />
+								</>
+							)}
 						</Button>
 					</div>
 				)}
 			</div>
+
+			{/* Kaskada „ostrzeż i przelicz" — krok 2 (Analizuj) i krok 3 (ponowne zatwierdzenie)
+			    gdy istnieje downstream. Potwierdzenie → normalny przepływ (re-gen gaps/Skill Map
+			    + reset samooceny po stronie POST /api/onboarding). Anulowanie → no-op. */}
+			<AlertDialog open={cascadeOpen} onOpenChange={(open) => !open && handleCascadeCancel()}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Przeliczyć Twój profil?</AlertDialogTitle>
+						<AlertDialogDescription>
+							Zmiana sylabusa lub kompetencji przeliczy analizę luk i Skill Map oraz wyczyści Twoją
+							samoocenę poniżej. Kontynuować?
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel onClick={handleCascadeCancel}>Anuluj</AlertDialogCancel>
+						<AlertDialogAction onClick={handleCascadeConfirm}>Tak, przelicz</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }
