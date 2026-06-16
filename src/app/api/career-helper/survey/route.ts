@@ -1,7 +1,7 @@
 import { and, count, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { resolveStudent } from "@/lib/career-helper/session";
+import { resolveOrProvisionStudent } from "@/lib/career-helper/session";
 import { careerHelperSessions } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { logError } from "@/lib/log";
@@ -24,7 +24,11 @@ const SurveySchema = z.object({
  * Cap aplikacyjny: max 1 aktywna sesja (in_progress) per student (golden-adr §4.1).
  */
 export async function POST(req: Request) {
-	const studentAuth = await resolveStudent();
+	// Krok 0 onboardingu (strumień E / #5): nowy student NIE ma jeszcze rekordu
+	// `students` (powstaje w finalnym POST /api/onboarding). Sesja Pomocnika jest
+	// NOT NULL po student_id → tu prowizorycznie zakładamy wiersz (tenant __unmapped),
+	// nadpisywany przez UPSERT onboardingu. Bez tego nowy user dostaje 404 i utyka.
+	const studentAuth = await resolveOrProvisionStudent();
 	if (!studentAuth.ok) {
 		return NextResponse.json(
 			{ error: studentAuth.status === 401 ? "Unauthorized" : "Student not found" },
