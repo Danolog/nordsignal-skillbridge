@@ -30,6 +30,14 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+	// pdf-parse (v2) i jego natywna zależność @napi-rs/canvas (binding N-API) NIE mogą być
+	// bundlowane do funkcji serverless — muszą zostać zewnętrzne i dociągnięte przez tracing
+	// node_modules na Vercelu. Bez tego dynamiczny `import("pdf-parse")` w
+	// /api/syllabus/parse nie trafia do śladu funkcji (nft.json) → MODULE_NOT_FOUND na prod
+	// → handler łapie i zwraca 422 „Nie udało się odczytać tekstu z pliku PDF". Lokalnie
+	// (dev/vitest) działa, bo całe node_modules jest obecne — klasyczny prod-only crash.
+	// ADR-007 ryzyko „@napi-rs/canvas nie zbuduje się/brak prebuilt": tu domknięte.
+	serverExternalPackages: ["pdf-parse"],
 	async headers() {
 		return [
 			{

@@ -6,6 +6,11 @@ import { auth } from "@/lib/auth/server";
 import { logError } from "@/lib/log";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
+// Node.js runtime jawnie (ADR-007 #5): pdf-parse/pdfjs-dist wymaga Buffer i bindingu
+// natywnego @napi-rs/canvas — Edge by je wywalił. Jawna deklaracja = kontrakt, nie wniosek
+// z maxDuration. Razem z serverExternalPackages (next.config.ts) gwarantuje, że dynamiczny
+// import("pdf-parse") rozwiąże się w funkcji na Vercelu (poprawka prod-only 422).
+export const runtime = "nodejs";
 export const maxDuration = 60;
 
 // Wspólne granice długości tekstu sylabusa — identyczne dla ścieżki JSON i PDF
