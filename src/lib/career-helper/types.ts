@@ -30,7 +30,7 @@ export const SURVEY_QUESTIONS: readonly SurveyQuestionDef[] = [
 	{
 		id: "q1",
 		number: 1,
-		question: "Co jest dla Ciebie ważniejsze po studiach w najbliższym roku?",
+		question: "Co jest dla Ciebie najważniejsze po studiach?",
 		type: "single-choice",
 		options: [
 			"Praca w branży zgodnej ze studiami",
