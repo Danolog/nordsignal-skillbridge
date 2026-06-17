@@ -173,14 +173,19 @@ dBack("POST /api/career-helper/survey — NOWY user bez rekordu students (Krok 0
 		// DOWÓD braku sieroty: NADAL jeden wiersz studenta (UPSERT, nie INSERT obok),
 		// placeholdery nadpisane realnymi danymi, tenant re-resolve'owany.
 		const after = await pool?.query(
-			`SELECT s.university, s.career_goal, s.onboarding_completed, t.slug AS tenant_slug
+			`SELECT s.university, s.career_goal, s.onboarding_completed, s.onboarding_step, t.slug AS tenant_slug
 			   FROM students s JOIN tenants t ON t.id = s.tenant_id WHERE s.user_id = $1`,
 			[NEW_USER_ID],
 		);
 		expect(after?.rowCount).toBe(1);
 		expect(after?.rows[0].university).toBe("WSB Merito Szczecin");
 		expect(after?.rows[0].career_goal).toBe("Data Analyst");
-		expect(after?.rows[0].onboarding_completed).toBe(true);
+		// Fala A (krok 2): POST /api/onboarding NIE zapala już ukończenia przedwcześnie
+		// — ustawia tylko high-water-mark step=3. Ukończenie domyka osobno endpoint
+		// /api/onboarding/complete (krok 5 wizarda). Asercja zaktualizowana z dawnego
+		// (błędnego) onboarding_completed=true na nowy, poprawny kontrakt.
+		expect(after?.rows[0].onboarding_completed).toBe(false);
+		expect(after?.rows[0].onboarding_step).toBe(3);
 		expect(after?.rows[0].tenant_slug).toBe("wsb-merito-szczecin");
 	});
 });

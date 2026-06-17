@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -102,7 +102,10 @@ export async function POST(req: Request) {
 						semester,
 						careerGoal,
 						syllabusText,
-						onboardingCompleted: true,
+						// NIE zapalamy onboardingCompleted tu (krok 3) — zapala je dopiero
+						// POST /api/onboarding/complete na końcu kreatora. Tu tylko podnosimy
+						// high-water-mark do 3 (GREATEST = nie cofamy, gdy user był już dalej).
+						onboardingStep: sql`GREATEST(${students.onboardingStep}, 3)`,
 						updatedAt: new Date(),
 					})
 					.where(eq(students.userId, userId));
@@ -121,7 +124,10 @@ export async function POST(req: Request) {
 						semester,
 						careerGoal,
 						syllabusText,
-						onboardingCompleted: true,
+						// Nowy student dochodzący tu (bez prowizorycznego rekordu z Kroku 0)
+						// jest na kroku 3. onboardingCompleted ZOSTAJE false (default) —
+						// kreator domyka go dopiero przez POST /api/onboarding/complete.
+						onboardingStep: 3,
 					})
 					.returning({ id: students.id });
 				sid = newStudent.id;

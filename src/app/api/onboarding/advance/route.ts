@@ -9,7 +9,7 @@
  * PRD: docs/product/skillbridge-prd-panel-studenta-v0.1.md §4.3 US-B4.2 KA1
  * Logika: src/lib/self-assessment/index.ts
  */
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -55,8 +55,10 @@ export async function POST(req: Request) {
 	}
 
 	try {
-		// Sprawdzamy próg przez RLS (mechanizm izolacji danych — student widzi tylko swoje kompetencje)
-		const { total, ratedCount } = await withTenantContext(
+		// Próg + bump kroku ATOMOWO w jednej tx przez RLS (mechanizm izolacji danych —
+		// student widzi/zmienia tylko swoje wiersze). Najpierw liczymy ocenione, sprawdzamy
+		// próg; dopiero gdy OK — podnosimy onboardingStep do 5 (GREATEST = nie cofa).
+		const check = await withTenantContext(
 			{ userId, tenantId: studentMeta.tenantId, role: "student" },
 			async (tx) => {
 				const allRows = await tx
@@ -64,15 +66,23 @@ export async function POST(req: Request) {
 					.from(competencies)
 					.where(eq(competencies.studentId, studentMeta.id));
 
-				return {
-					total: allRows.length,
-					ratedCount: allRows.filter((c) => c.selfAssessment !== null).length,
-				};
+				const total = allRows.length;
+				const ratedCount = allRows.filter((c) => c.selfAssessment !== null).length;
+
+				// evaluateAdvance: bramka progu min(5, N) — logika w src/lib/self-assessment
+				const result = evaluateAdvance(ratedCount, total);
+				if (result.ok) {
+					// Krok 4 → 5 domknięty: high-water-mark = 5. onboardingCompleted
+					// NIE ruszamy — domyka go dopiero POST /api/onboarding/complete.
+					await tx
+						.update(students)
+						.set({ onboardingStep: sql`GREATEST(${students.onboardingStep}, 5)` })
+						.where(eq(students.userId, userId));
+				}
+				return result;
 			},
 		);
 
-		// evaluateAdvance: bramka progu min(5, N) — logika w src/lib/self-assessment
-		const check = evaluateAdvance(ratedCount, total);
 		if (!check.ok) {
 			return NextResponse.json(check.body, { status: 422 });
 		}

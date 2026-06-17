@@ -132,6 +132,12 @@ export const students = pgTable(
 		careerGoal: text("career_goal").notNull(),
 		syllabusText: text("syllabus_text"),
 		onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
+		// Resume onboarding (migracja 0017): high-water-mark „dokąd doszedł kreator".
+		// 0–5 = kroki wizarda (0 Cel kariery → 5 Wnioski). Tylko ROŚNIE (GREATEST),
+		// nigdy nie cofa się o krok. Niezależny od onboardingCompleted: step mówi
+		// „gdzie wznowić", completed mówi „czy w ogóle zakończony" (zapalany wyłącznie
+		// przez POST /api/onboarding/complete). DEFAULT 0 = non-breaking backfill.
+		onboardingStep: smallint("onboarding_step").notNull().default(0),
 		// B0: znacznik domknięcia Pomocnika Wyboru Kariery (NULL = nieukończony).
 		// Gate dla Phase 2 (reset Pomocnika z dashboardu) — zerowy koszt teraz.
 		careerHelperCompletedAt: timestamp("career_helper_completed_at", { withTimezone: true }),
@@ -141,6 +147,8 @@ export const students = pgTable(
 	(table) => [
 		index("idx_students_user_id").on(table.userId),
 		index("idx_students_tenant_id").on(table.tenantId),
+		// CHECK na onboardingStep: baza odrzuca wartości spoza 0–5 (jak self_assessment).
+		check("students_onboarding_step_range", sql`${table.onboardingStep} BETWEEN 0 AND 5`),
 	],
 );
 

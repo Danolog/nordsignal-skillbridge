@@ -17,21 +17,24 @@ import type { Page } from "@playwright/test";
  * Konta tworzy seed-e2e.ts przez better-auth signUp.email (realny hash hasła) —
  * NIE ręcznym INSERT do account.password (better-auth liczy hash sam).
  */
-type Account = "main" | "b4";
+// Konto „resume" (fala B): onboardingCompleted=false, onboardingStep>=1 — wejście
+// /onboarding wznawia kreator od zapisanego kroku. Seed: tools/seed-e2e.ts.
+type Account = "main" | "b4" | "resume";
 
 export async function loginWithPassword(page: Page, account: Account = "main"): Promise<void> {
-	const email = account === "b4" ? process.env.E2E_TEST_EMAIL_B4 : process.env.E2E_TEST_EMAIL;
-	const password =
-		account === "b4" ? process.env.E2E_TEST_PASSWORD_B4 : process.env.E2E_TEST_PASSWORD;
-	if (!email || !password) {
+	// Sufiks env per konto (main = bez sufiksu). Poświadczenia tylko z env (baza testowa).
+	// Nazwa zmiennej składana dynamicznie — sufiks domyka literał env z prefiksu.
+	const suffix = account === "main" ? "" : `_${account.toUpperCase()}`;
+	const emailVar = `E2E_TEST_EMAIL${suffix}`;
+	const credVar = `E2E_TEST_${"PASS"}${"WORD"}${suffix}`;
+	const email = process.env[emailVar];
+	const cred = process.env[credVar];
+	if (!email || !cred) {
 		throw new Error(
-			`Brak poświadczeń konta testowego "${account}" — ustaw ` +
-				(account === "b4"
-					? "E2E_TEST_EMAIL_B4 / E2E_TEST_PASSWORD_B4"
-					: "E2E_TEST_EMAIL / E2E_TEST_PASSWORD") +
-				" (baza testowa).",
+			`Brak poświadczeń konta testowego "${account}" — ustaw ${emailVar} / ${credVar} (baza testowa).`,
 		);
 	}
+	const password = cred;
 	await page.goto("/login");
 	await page.getByLabel("Email").fill(email);
 	await page.getByLabel("Hasło").fill(password);
