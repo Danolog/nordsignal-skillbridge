@@ -30,14 +30,14 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-	// pdf-parse (v2) i jego natywna zależność @napi-rs/canvas (binding N-API) NIE mogą być
-	// bundlowane do funkcji serverless — muszą zostać zewnętrzne i dociągnięte przez tracing
-	// node_modules na Vercelu. Bez tego dynamiczny `import("pdf-parse")` w
-	// /api/syllabus/parse nie trafia do śladu funkcji (nft.json) → MODULE_NOT_FOUND na prod
-	// → handler łapie i zwraca 422 „Nie udało się odczytać tekstu z pliku PDF". Lokalnie
-	// (dev/vitest) działa, bo całe node_modules jest obecne — klasyczny prod-only crash.
-	// ADR-007 ryzyko „@napi-rs/canvas nie zbuduje się/brak prebuilt": tu domknięte.
-	serverExternalPackages: ["pdf-parse"],
+	// pdf-parse (v2) ładuje pdfjs-dist/legacy/build/pdf.mjs, które na imporcie warunkowo
+	// require("@napi-rs/canvas"). Oba muszą zostać ZEWNĘTRZNE (nie bundlowane) i dociągnięte
+	// przez tracing node_modules na Vercelu — inaczej transformacja Next/Turbopack rozplątuje
+	// warunkowy require i import.meta.url, a dynamiczny `import("pdf-parse")` nie trafia do
+	// śladu funkcji. NIE potrzebujemy już canvasa do działania (extract-pdf-text shimuje
+	// DOMMatrix bez niego, Rekomendacja A) — pdfjs-dist external trzyma legacy build w
+	// node_modules nietknięty, a brakujący canvas na Linuxie jest teraz nieszkodliwy.
+	serverExternalPackages: ["pdf-parse", "pdfjs-dist"],
 	async headers() {
 		return [
 			{
