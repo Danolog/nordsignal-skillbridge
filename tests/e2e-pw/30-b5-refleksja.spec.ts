@@ -69,6 +69,13 @@ test.describe
 			await loginWithPassword(page, "main");
 			await openProjectByTitle(page, SUBMITTED_PROJECT);
 
+			// Kotwica: detal projektu faktycznie wyrenderowany (nagłówek tytułu). Bez niej
+			// asercja negatywna mogłaby przejść, zanim strona się załaduje — maskując regresję,
+			// w której callout błędnie pojawia się przy 'submitted'.
+			await expect(page.getByRole("heading", { name: SUBMITTED_PROJECT })).toBeVisible({
+				timeout: 10_000,
+			});
+
 			// status='submitted' → REFLECTION_TRIGGER_STATUSES.has('submitted')=false → null
 			const callout = page.getByRole("region", { name: "Refleksja po projekcie" });
 			await expect(callout).not.toBeVisible({ timeout: 5_000 });
@@ -152,6 +159,10 @@ test.describe
 			await expect(page.getByText(/Zaktualizowana odpowiedź po edycji/i)).toBeVisible({
 				timeout: 5_000,
 			});
+
+			// Dowód braku duplikatu (upsert = UPDATE istniejącej, nie drugi INSERT):
+			// tytuł projektu występuje DOKŁADNIE raz = jedna karta refleksji.
+			await expect(page.getByText(VERIFIED_PROJECT)).toHaveCount(1);
 		});
 
 		test("T6. Prywatność R1: brak afordancji 'pokaż wykładowcy' w Mojej drodze", async ({
@@ -187,8 +198,14 @@ test.describe
 			const surprised = page.getByLabel("Co cię w tym projekcie zaskoczyło?");
 			expect(await surprised.getAttribute("aria-describedby")).toBeTruthy();
 
-			// aria-live="polite" na kontenerze Mojej drogi (MyRoadView)
+			// aria-live="polite" na kontenerze Mojej drogi (MyRoadView). Zakotwiczone przez
+			// `has` na nagłówku „Moja droga" — zamiast .first(), które mogłoby trafić w region
+			// powiadomień Sonner (też aria-live="polite").
 			await page.goto("/moja-droga");
-			await expect(page.locator("[aria-live='polite']").first()).toBeVisible({ timeout: 10_000 });
+			await expect(
+				page
+					.locator("[aria-live='polite']")
+					.filter({ has: page.getByRole("heading", { name: "Moja droga" }) }),
+			).toBeVisible({ timeout: 10_000 });
 		});
 	});
