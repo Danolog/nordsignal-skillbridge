@@ -125,8 +125,15 @@ test.describe
 
 			await expect(page.getByText(/Refleksja zapisana/i)).toBeVisible({ timeout: 5_000 });
 
-			// Brak komunikatu błędu (InlineAlert role=alert — nie 500, nie 409 duplikat)
-			await expect(page.getByRole("alert")).not.toBeVisible({ timeout: 2_000 });
+			// Brak komunikatu błędu zapisu z ReflectionForm (errorMessage()) — nie 500/409/duplikat.
+			// Celujemy w konkretne teksty błędu, NIE w getByRole("alert"): Next.js renderuje pusty
+			// <div role="alert" id="__next-route-announcer__"> (a11y ogłaszanie trasy), który
+			// złapałby globalny selektor alertu i dał fałszywy fail.
+			await expect(
+				page.getByText(
+					/Nie udało się zapisać|Nie udało się połączyć|Sesja wygasła|Nie znaleziono zgłoszenia|dostępna tylko po zaakceptowaniu|Dane są nieprawidłowe/i,
+				),
+			).not.toBeVisible({ timeout: 2_000 });
 		});
 
 		test("T5. Moja droga: /moja-droga wyświetla zapisaną refleksję z tytułem projektu", async ({
