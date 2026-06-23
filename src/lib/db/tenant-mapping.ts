@@ -49,7 +49,16 @@ export async function resolveTenantId(university: string): Promise<string> {
 	const slug = resolveTenantSlug(university);
 	const [row] = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.slug, slug));
 	if (row) return row.id;
-	// Fallback: __unmapped musi istnieć (seed 0005). Jeśli brak — twardy błąd.
+	return resolveUnmappedTenantId();
+}
+
+/**
+ * Tenant `__unmapped` (seed 0005) — przejściowy „kosz" dla studenta bez znanej
+ * uczelni (np. prowizoryczny rekord przy wejściu w Krok 0 Pomocnika, zanim
+ * onboarding ustali realną uczelnię i re-resolve'uje tenant). Twardy błąd, jeśli
+ * brak — to inwariant seeda 0005.
+ */
+export async function resolveUnmappedTenantId(): Promise<string> {
 	const [unmapped] = await db
 		.select({ id: tenants.id })
 		.from(tenants)

@@ -49,14 +49,23 @@ try {
 // generuje własne user.id, więc nie narzucamy go ręcznie).
 const TENANT_SLUG = "e2e-test";
 const PROJECT_SLUG = "e2e-detal-projektu";
+// B5 — drugi projekt z zaakceptowanym (verified) zgłoszeniem. Callout refleksji
+// wyzwala się tylko przy status='verified' (REFLECTION_TRIGGER_STATUSES), więc B5
+// potrzebuje OSOBNEGO projektu — pierwszy zostaje 'submitted' (pod T2 + 20-spec).
+const PROJECT_SLUG_VERIFIED = "e2e-projekt-zaakceptowany";
 
 const MAIN_EMAIL = process.env.E2E_TEST_EMAIL ?? "e2e-main@example.com";
 const MAIN_PASS = process.env.E2E_TEST_PASSWORD ?? "Test1234!e2e";
 const B4_EMAIL = process.env.E2E_TEST_EMAIL_B4 ?? "e2e-b4@example.com";
 const B4_PASS = process.env.E2E_TEST_PASSWORD_B4 ?? "Test1234!e2e";
+// Konto „resume" (fala B — wznawianie onboardingu): careerGoal≠"", onboardingCompleted=false,
+// onboardingStep>=1 → wejście /onboarding wznawia kreator od zapisanego kroku z danymi.
+const RESUME_EMAIL = process.env.E2E_TEST_EMAIL_RESUME ?? "e2e-resume@example.com";
+const RESUME_PASS = process.env.E2E_TEST_PASSWORD_RESUME ?? "Test1234!e2e";
 
 const COMPETENCIES_MAIN = ["Python", "SQL", "Pandas", "Statystyka", "Git", "Komunikacja wyników"];
 const COMPETENCIES_B4 = ["JavaScript", "TypeScript", "React", "HTML/CSS", "Git", "REST API"];
+const COMPETENCIES_RESUME = ["Python", "SQL", "Excel", "Statystyka", "Wizualizacja danych"];
 
 async function main() {
 	// drizzle na owner connection (jak src/lib/db/seed.ts) — owner zapisuje
@@ -109,11 +118,12 @@ async function main() {
 
 	const mainUserId = await ensureAccount(MAIN_EMAIL, MAIN_PASS, "E2E Main");
 	const b4UserId = await ensureAccount(B4_EMAIL, B4_PASS, "E2E B4");
+	const resumeUserId = await ensureAccount(RESUME_EMAIL, RESUME_PASS, "E2E Resume");
 
 	// ── Student MAIN (onboardingCompleted=TRUE) ────────────────────────────────
 	async function ensureStudent(
 		userId: string,
-		opts: { onboardingCompleted: boolean; comps: string[] },
+		opts: { onboardingCompleted: boolean; comps: string[]; onboardingStep?: number },
 	): Promise<string> {
 		// Sprzątanie idempotentne: skasuj poprzedniego studenta tego usera (cascade
 		// usuwa competencies/passport/submissions), utwórz świeżego.
@@ -130,6 +140,7 @@ async function main() {
 				semester: 4,
 				careerGoal: "Data Analyst",
 				onboardingCompleted: opts.onboardingCompleted,
+				onboardingStep: opts.onboardingStep ?? 0,
 				createdAt: now,
 				updatedAt: now,
 			})
@@ -156,6 +167,15 @@ async function main() {
 	await ensureStudent(b4UserId, {
 		onboardingCompleted: false,
 		comps: COMPETENCIES_B4,
+	});
+
+	// Student RESUME (fala B): onboardingCompleted=false, onboardingStep=3 (kompetencje
+	// już są — POST /api/onboarding wstawia je na kroku 3). Wejście /onboarding wznawia
+	// kreator od kroku 3 z profilem + kompetencjami. careerGoal≠"" (z ensureStudent).
+	await ensureStudent(resumeUserId, {
+		onboardingCompleted: false,
+		comps: COMPETENCIES_RESUME,
+		onboardingStep: 3,
 	});
 
 	// Paszport dla studenta MAIN (B1).
@@ -197,16 +217,59 @@ async function main() {
 		{ projectId: projectRow.id, competencyName: "Pandas", role: "required" },
 	]);
 
-	// Jedno zgłoszenie studenta MAIN do projektu (status submitted).
-	await db.delete(projectSubmissions).where(eq(projectSubmissions.studentId, mainStudentId));
-	await db.insert(projectSubmissions).values({
-		studentId: mainStudentId,
-		tenantId,
-		projectId: projectRow.id,
-		repoUrl: "https://example.org/e2e/repo",
-		submittedAt: now,
-		status: "submitted",
+	// ── Drugi projekt: zgłoszenie ZAAKCEPTOWANE (verified) — pod B5 refleksję ─────
+	// Callout refleksji wyzwala się tylko przy status='verified'. Osobny projekt,
+	// żeby pierwszy mógł zostać 'submitted' (T2 „callout NIE pojawia się") nietknięty.
+	await db
+		.insert(projects)
+		.values({
+			slug: PROJECT_SLUG_VERIFIED,
+			title: "E2E — Refleksja: projekt zaakceptowany",
+			description: "Projekt testowy B5: zgłoszenie zaakceptowane (verified) → callout refleksji.",
+			level: "L1",
+			estimatedHours: 2,
+			sourceType: "open_data",
+			sourceUrl: "https://example.org/e2e-verified",
+			rubricJson: [{ criterion: "Wczytanie danych", weight: 100, description: "Dane wczytane" }],
+			status: "active",
+		})
+		.onConflictDoNothing();
+	const verifiedProjectRow = await db.query.projects.findFirst({
+		where: eq(projects.slug, PROJECT_SLUG_VERIFIED),
 	});
+	if (!verifiedProjectRow)
+		throw new Error("seed-e2e: nie udało się utworzyć projektu zaakceptowanego (B5)");
+
+	await db
+		.delete(projectCompetencies)
+		.where(eq(projectCompetencies.projectId, verifiedProjectRow.id));
+	await db.insert(projectCompetencies).values([
+		{ projectId: verifiedProjectRow.id, competencyName: "Python", role: "required" },
+		{ projectId: verifiedProjectRow.id, competencyName: "SQL", role: "required" },
+	]);
+
+	// Zgłoszenia studenta MAIN: jeden delete (FK ON DELETE CASCADE na project_reflections
+	// → kasuje też ewentualne refleksje z poprzedniego przebiegu = czysty start B5),
+	// potem dwa zgłoszenia: 'submitted' (projekt detalu) + 'verified' (projekt B5).
+	await db.delete(projectSubmissions).where(eq(projectSubmissions.studentId, mainStudentId));
+	await db.insert(projectSubmissions).values([
+		{
+			studentId: mainStudentId,
+			tenantId,
+			projectId: projectRow.id,
+			repoUrl: "https://example.org/e2e/repo",
+			submittedAt: now,
+			status: "submitted",
+		},
+		{
+			studentId: mainStudentId,
+			tenantId,
+			projectId: verifiedProjectRow.id,
+			repoUrl: "https://example.org/e2e/repo-verified",
+			submittedAt: now,
+			status: "verified",
+		},
+	]);
 
 	console.log("seed-e2e OK:");
 	console.log(`  tenant: ${TENANT_SLUG} (${tenantId})`);
@@ -216,7 +279,11 @@ async function main() {
 	console.log(
 		`  b4:     ${B4_EMAIL} (onboardingCompleted=false, ${COMPETENCIES_B4.length} komp. nieocenione)`,
 	);
-	console.log(`  projekt: ${PROJECT_SLUG} (+1 zgłoszenie)`);
+	console.log(
+		`  resume: ${RESUME_EMAIL} (onboardingCompleted=false, onboardingStep=3, ${COMPETENCIES_RESUME.length} komp.)`,
+	);
+	console.log(`  projekt: ${PROJECT_SLUG} (zgłoszenie 'submitted' — detal/T2)`);
+	console.log(`  projekt: ${PROJECT_SLUG_VERIFIED} (zgłoszenie 'verified' — B5 refleksja)`);
 	console.log("  (connection string NIE drukowany — bezpieczeństwo)");
 	process.exit(0);
 }
