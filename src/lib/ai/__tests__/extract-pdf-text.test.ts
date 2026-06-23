@@ -14,7 +14,17 @@
 // UWAGA: lokalnie (Windows/Node) canvas i tak nie rozwiązuje się z roota appki, a Node nie
 // ma natywnego DOMMatrix — więc ten test biegnie w TYM SAMYM warunku co Linux serverless
 // (brak canvasa). Dowodzi działania shimu w środowisku bez canvasa.
+//
+// DRUGI prod-only bug (preview go złapał): pdfjs w Node odpala „fake worker", który robi
+// `import("./pdf.worker.mjs")`. Plik istnieje w node_modules, ale tracing funkcji Vercela go
+// nie wciągał → „Cannot find module ... pdf.worker.mjs" → 500. Fix: outputFileTracingIncludes
+// w next.config.ts. Tego buga NIE da się odtworzyć lokalnie (lokalnie worker rozwiązuje się z
+// node_modules — dlatego pierwszy test ekstrakcji przechodził mimo buga). Najlepszy lokalny
+// strażnik regresji: plik workera MUSI istnieć pod ścieżką, którą pdfjs importuje (jeśli
+// pdf-parse bumpnie pdfjs i zmieni układ/ścieżkę, glob w next.config.ts trzeba zaktualizować —
+// ten test to wyłapie). Dowód właściwy = re-preview na Vercelu, jak przy DOMMatrix.
 
+import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 import { extractPdfText, PdfExtractionError } from "@/lib/ai/extract-pdf-text";
 
@@ -62,5 +72,21 @@ describe("extractPdfText — canvas-free (shim DOMMatrix)", () => {
 	it("uszkodzone bajty → PdfExtractionError (route mapuje na 500, nie maskuje jako skan)", async () => {
 		const garbage = Buffer.from("%PDF-1.4\nto nie jest poprawny PDF, tylko śmieci binarne");
 		await expect(extractPdfText(garbage)).rejects.toBeInstanceOf(PdfExtractionError);
+	});
+
+	// Strażnik DRUGIEGO prod-only buga: pdfjs (fake worker) importuje pdf.worker.mjs jako
+	// plik-rodzeństwo pdf.mjs. Plik MUSI istnieć pod tą ścieżką — na Vercelu wciągamy go do
+	// śladu funkcji (next.config.ts). Jeśli pdf-parse bumpnie pdfjs i zmieni układ/wersję,
+	// glob tracingu przestanie pasować i prod znów dostanie 500 — ten test to wyłapie lokalnie.
+	it("pdf.worker.mjs istnieje obok pdf.mjs (ścieżka, którą pdfjs importuje w fake-workerze)", async () => {
+		const require = createRequire(import.meta.url);
+		// Tę samą ścieżkę ładuje pdf-parse: 'pdfjs-dist/legacy/build/pdf.mjs'. Rozwiązujemy ją
+		// z perspektywy pakietu pdf-parse, bo pdfjs-dist nie jest naszą bezpośrednią zależnością.
+		const pdfParseEntry = require.resolve("pdf-parse");
+		const pdfParseRequire = createRequire(pdfParseEntry);
+		const workerPath = pdfParseRequire.resolve("pdfjs-dist/legacy/build/pdf.worker.mjs");
+		expect(workerPath).toMatch(/pdf\.worker\.mjs$/);
+		const { existsSync } = await import("node:fs");
+		expect(existsSync(workerPath)).toBe(true);
 	});
 });

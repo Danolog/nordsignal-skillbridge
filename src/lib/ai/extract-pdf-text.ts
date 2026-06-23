@@ -163,7 +163,19 @@ export async function extractPdfText(buffer: Buffer): Promise<string> {
 	let parser: import("pdf-parse").PDFParse | null = null;
 	try {
 		const { PDFParse } = await import("pdf-parse");
-		parser = new PDFParse({ data: new Uint8Array(buffer) });
+		parser = new PDFParse({
+			data: new Uint8Array(buffer),
+			// Twardzimy ścieżkę tekstową pod serverless (Vercel /var/task). pdfjs w Node i tak
+			// odpala „fake worker" (tam parsuje) — sam plik workera wciągamy do śladu funkcji
+			// w next.config.ts (outputFileTracingIncludes). Tu zamykamy pozostałe prod-only
+			// pułapki ładowania zasobów na żądanie:
+			//  - useWorkerFetch:false — żadnego runtime fetch() CMap/font/WASM (i tak default w Node,
+			//    ustawiamy jawnie, by nie polegać na defaultcie i nie ciągnąć zasobów spoza śladu).
+			//  - isEvalSupported:false — bez eval() funkcji PDF (spójne z CSP, bez 'unsafe-eval' na serwerze).
+			// Do ekstrakcji samej warstwy TEKSTOWEJ żadne z tych nie jest potrzebne.
+			useWorkerFetch: false,
+			isEvalSupported: false,
+		});
 		const result = await parser.getText();
 		return result.text.trim();
 	} catch (err) {
