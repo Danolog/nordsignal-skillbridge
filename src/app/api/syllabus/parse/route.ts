@@ -1,15 +1,15 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { extractPdfText, PdfExtractionError } from "@/lib/ai/extract-pdf-text";
 import { parseSyllabus } from "@/lib/ai/parse-syllabus";
 import { auth } from "@/lib/auth/server";
 import { logError } from "@/lib/log";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
-// Node.js runtime jawnie (ADR-007 #5): pdf-parse/pdfjs-dist wymaga Buffer i bindingu
-// natywnego @napi-rs/canvas — Edge by je wywalił. Jawna deklaracja = kontrakt, nie wniosek
-// z maxDuration. Razem z serverExternalPackages (next.config.ts) gwarantuje, że dynamiczny
-// import("pdf-parse") rozwiąże się w funkcji na Vercelu (poprawka prod-only 422).
+// Node.js runtime jawnie (ADR-007 #5): pdf-parse/pdfjs-dist wymaga Buffer (Edge by je wywalił).
+// Ekstrakcja tekstu idzie przez @/lib/ai/extract-pdf-text, który NIE zależy od @napi-rs/canvas
+// (shim DOMMatrix, Rekomendacja A) — usuwa prod-only crash „DOMMatrix is not defined" u korzenia.
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -116,33 +116,28 @@ async function handleMultipart(req: Request, userId: string): Promise<NextRespon
 		return NextResponse.json({ error: "Dozwolony jest wyłącznie plik PDF." }, { status: 415 });
 	}
 
-	// (4) Ekstrakcja tekstu — pdf-parse (v2, klasa PDFParse) w try/catch
-	//     (ADR-007 ryzyko: zniekształcony PDF → 422 + log). v2 zamiast v1: stary pdfjs w v1
-	//     nie czyta nowoczesnych PDF-ów (m.in. wyjścia jspdf z bram Z2 — „bad XRef entry") i
-	//     ma footgun debug-branch przy imporcie ESM. Biblioteka ta sama (pdf-parse), Node runtime.
+	// (4) Ekstrakcja tekstu — canvas-free (extract-pdf-text, Rekomendacja A). Rozróżniamy
+	//     DWIE klasy zdarzeń, których stary kod NIE rozróżniał (maskował crash jako „skan"):
+	//       (a) błąd TECHNICZNY (moduł/runtime/uszkodzony PDF) → PdfExtractionError → log + 500
+	//           „błąd serwera", bo to nasza awaria, nie wina pliku użytkownika;
+	//       (b) PDF bez warstwy tekstowej (skan/obraz/pusty) → ekstrakcja zwraca pusty/krótki
+	//           string (NIE błąd) → 422 „może być skanem, wklej ręcznie".
 	let extracted: string;
-	let parser: import("pdf-parse").PDFParse | null = null;
 	try {
-		// Import dynamiczny: pdf-parse to dep tylko-Node; trzyma poza grafem klienta.
-		const { PDFParse } = await import("pdf-parse");
-		parser = new PDFParse({ data: new Uint8Array(buffer) });
-		const result = await parser.getText();
-		extracted = result.text.trim();
+		extracted = await extractPdfText(buffer);
 	} catch (err) {
-		logError("syllabus-pdf", err, { userId, mode: "pdf" });
+		// (a) Błąd techniczny — uczciwe 500, koniec maskowania awarii jako „skan".
+		logError("syllabus-pdf", err instanceof PdfExtractionError ? (err.cause ?? err) : err, {
+			userId,
+			mode: "pdf",
+		});
 		return NextResponse.json(
-			{
-				error:
-					"Nie udało się odczytać tekstu z pliku PDF — może być skanem obrazu lub być zabezpieczony. Wklej treść sylabusa ręcznie.",
-			},
-			{ status: 422 },
+			{ error: "Błąd serwera przy odczycie pliku PDF. Spróbuj ponownie za chwilę." },
+			{ status: 500 },
 		);
-	} finally {
-		// Zwolnij dokument pdfjs (worker/pamięć) niezależnie od wyniku ekstrakcji.
-		await parser?.destroy().catch(() => {});
 	}
 
-	// (5) PDF bez wyciągalnego tekstu (skan/obraz/pusty) → 422 z jasnym komunikatem,
+	// (5) (b) PDF bez wyciągalnego tekstu (skan/obraz/pusty) → 422 z jasnym komunikatem,
 	//     nie ciche 200 z 0 kompetencji (ADR-007 ryzyko: „magia bez efektu").
 	if (extracted.length < MIN_TEXT) {
 		return NextResponse.json(

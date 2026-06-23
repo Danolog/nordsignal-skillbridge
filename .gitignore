@@ -58,3 +58,9 @@ skills-lock.json
 next-env.d.ts
 
 e2e-screenshots
+
+# Sekrety i lokalna konfiguracja — ignoruj wszystkie warianty .env,
+# ale zachowaj śledzone szablony (.env.example, .env.test.example).
+.env*
+!.env*.example
+.vercel
