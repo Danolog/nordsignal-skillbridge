@@ -1,0 +1,122 @@
+[
+	{
+		"slug": "analiza-wynagrodzen-gus",
+		"theory_md": "### Dane publiczne GUS i pierwsza analiza trendu\n\nBank Danych Lokalnych GUS (w skrócie BDL — publiczne repozytorium statystyki regionalnej Głównego Urzędu Statystycznego) udostępnia dane o wynagrodzeniach w podziale na branże, lata i regiony — za darmo, bez logowania. Dane pobierasz na dwa sposoby: ręcznie jako plik (CSV — *Comma-Separated Values*, tekstowy format tabeli z wartościami rozdzielonymi przecinkiem; albo XLSX — arkusz Excela) przez stronę BDL, albo automatycznie przez API BDL (*Application Programming Interface* — interfejs, przez który program pobiera dane bez klikania w przeglądarce). Dla pierwszej analizy ręczny eksport w zupełności wystarcza i jest szybszy. Zanim cokolwiek policzysz, sprawdź jedną rzecz: czy liczby są **nominalne** (kwoty w złotych z danego roku) czy **realne** (skorygowane o inflację). Wynagrodzenie, które rośnie z 5000 zł do 5500 zł, wcale nie oznacza, że ludzie mogą kupić więcej — jeśli ceny wzrosły w tym czasie o 12%, siła nabywcza spadła. To najczęstszy błąd interpretacyjny w analizie płac i warto go nazwać już we wnioskach.\n\nPo wczytaniu danych do `DataFrame` (ramka danych — tabela z nazwanymi kolumnami w bibliotece pandas) Twoim pierwszym narzędziem jest grupowanie. Metoda `groupby` dzieli wiersze na grupy według wybranej kolumny (np. branża albo rok) i pozwala policzyć agregat dla każdej grupy — średnią, medianę, sumę. **Mediana bywa uczciwsza niż średnia** przy płacach: kilka bardzo wysokich wynagrodzeń zawyża średnią i tworzy fałszywy obraz „typowej\" pensji, podczas gdy mediana (wartość środkowa) jest na takie skrajności odporna. Przy analizie trendu w czasie przydaje się też zmiana procentowa rok do roku — pandas liczy ją metodą `pct_change`, która dla każdego wiersza podaje, o ile procent wartość zmieniła się względem poprzedniego. To zamienia surowy szereg kwot w czytelną historię: gdzie płace rosły najszybciej, gdzie stały w miejscu.\n\nWizualizacja w tym projekcie ma jeden cel — pokazać trend i różnice między branżami tak, żeby były czytelne bez tabeli. Wykres liniowy nadaje się do zmiany w czasie (oś pozioma = lata), wykres słupkowy do porównania branż w jednym roku. Pandas ma wbudowaną metodę `.plot()` (nakładkę na bibliotekę Matplotlib), więc prosty wykres powstaje jedną linią kodu. Trzy nawyki, które odróżniają analizę od „ładnego obrazka\": zawsze podpisuj osie i jednostki (zł brutto? miesięcznie?), nie zaczynaj osi wartości od wartości innej niż zero bez wyraźnego powodu (ucięta oś wyolbrzymia różnice), i dodaj źródło danych z datą pobrania w podpisie wykresu — to ten sam standard wiarygodności, który stosuje każdy poważny raport.\n\n```python\nimport pandas as pd\n\n# Wczytanie eksportu z BDL (CSV; separator i kodowanie zależą od pliku z GUS)\ndf = pd.read_csv('wynagrodzenia_bdl.csv', sep=';', encoding='utf-8')\n\n# Mediana wynagrodzenia per branża — odporna na skrajne wartości\nmediana_branze = df.groupby('branza')['wynagrodzenie'].median().sort_values(ascending=False)\nprint(mediana_branze)\n\n# Trend rok do roku dla jednej branży: zmiana procentowa\nit = df[df['branza'] == 'Informacja i komunikacja'].sort_values('rok')\nit['zmiana_rdr_proc'] = it['wynagrodzenie'].pct_change() * 100\n\nax = it.plot(x='rok', y='wynagrodzenie', marker='o',\n             title='Wynagrodzenie brutto — branża IT (dane GUS BDL)')\nax.set_xlabel('Rok')\nax.set_ylabel('Wynagrodzenie brutto [zł/mies.]')\n```\n",
+		"learning_resources": [
+			{
+				"title": "GUS: API Banku Danych Lokalnych (BDL) — dokumentacja dostępu do danych",
+				"url": "https://api.stat.gov.pl/Home/BdlApi",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Pandas: grupowanie i agregacja danych (groupby) — oficjalna dokumentacja",
+				"url": "https://pandas.pydata.org/docs/getting_started/intro_tutorials/",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "Pandas: wykresy i wizualizacja danych — oficjalna dokumentacja",
+				"url": "https://pandas.pydata.org/docs/user_guide/visualization.html",
+				"type": "docs",
+				"position": 3
+			},
+			{
+				"title": "Corey Schafer: „Complete Python Pandas Data Science Tutorial\" — wideo (wczytywanie, sortowanie, groupby)",
+				"url": "https://www.youtube.com/watch?v=vmEHCJofslg",
+				"type": "video",
+				"position": 4
+			}
+		]
+	},
+	{
+		"slug": "portfolio-responsywne",
+		"theory_md": "### Responsywność: jeden układ, wiele ekranów\n\nResponsywność (ang. *responsive design* — projektowanie dopasowujące się do rozmiaru ekranu) oznacza, że ta sama strona czyta się dobrze i na telefonie, i na monitorze, bez osobnej wersji „mobilnej\". Filar pierwszy to **podejście mobile-first** (najpierw mobilny): piszesz domyślne style dla wąskiego ekranu, a dla szerszych dokładasz zmiany — bo łatwiej rozbudować prosty układ niż upychać rozbudowany w małym ekranie. Filar drugi to **media queries** (zapytania o medium — reguły CSS aktywne tylko przy określonej szerokości ekranu): `@media (min-width: 768px) { ... }` włącza style dopiero od 768 pikseli wzwyż. Filar trzeci, którego początkujący często zapominają, to znacznik `<meta name=\"viewport\">` w sekcji `<head>` HTML — bez niego telefon udaje, że ma szeroki ekran i pokazuje pomniejszoną stronę desktopową. To jedna linijka, ale bez niej cała responsywność nie zadziała na prawdziwym telefonie.\n\nDo układania elementów na stronie masz dziś dwa nowoczesne narzędzia CSS, które zastąpiły dawne sztuczki z `float`. **Flexbox** (elastyczne pudełko — układ w jednym wymiarze) świetnie sprawdza się tam, gdzie elementy idą w jednym kierunku: pasek nawigacji w rzędzie, lista kart, które mają się równo rozłożyć i zawijać. **CSS Grid** (siatka — układ w dwóch wymiarach) panuje tam, gdzie projektujesz układ jednocześnie w wierszach i kolumnach: cała struktura strony (nagłówek, treść, panel boczny, stopka) albo galeria miniatur. Prosta zasada wyboru: jeden kierunek → Flexbox, dwa kierunki naraz → Grid. Oba potrafią automatycznie zawijać i skalować elementy, więc dobrze zaprojektowany Grid albo Flexbox bywa responsywny niemal bez media queries.\n\nDwie rzeczy decydują o tym, czy portfolio wygląda na pracę profesjonalisty, czy amatora — a obie są niezależne od urody kolorów. Pierwsza to **semantyczny HTML** (znaczniki opisujące znaczenie treści, nie wygląd): `<header>`, `<nav>`, `<main>`, `<section>`, `<footer>` zamiast wszechobecnego `<div>`. Semantyka pomaga wyszukiwarkom zrozumieć stronę i jest podstawą dostępności (ang. *accessibility* — możliwość korzystania ze strony przez osoby z niepełnosprawnościami, np. czytnik ekranu odczytuje nawigację jako nawigację). Druga to **dostępność w praktyce**: każdy obrazek ma opis alternatywny `alt`, kontrast tekstu do tła jest wystarczający, a po stronie da się poruszać samą klawiaturą. To nie ozdoba — to standard zawodowy i często wymóg prawny.\n\n```html\n<!-- Bez tej linijki responsywność nie zadziała na telefonie -->\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n```\n",
+		"learning_resources": [
+			{
+				"title": "MDN: responsywny design (responsive design) — przewodnik podstaw",
+				"url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/CSS_layout/Responsive_Design",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "MDN: układ Flexbox (CSS flexible box layout) — dokumentacja",
+				"url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "web.dev (Google): „Learn Design\" — darmowy kurs responsywnych układów",
+				"url": "https://web.dev/learn/design/",
+				"type": "course",
+				"position": 3
+			},
+			{
+				"title": "Traversy Media: „Introduction To Responsive Web Design — HTML & CSS Tutorial\" — wideo",
+				"url": "https://www.youtube.com/watch?v=srvUrASNj0s",
+				"type": "video",
+				"position": 4
+			}
+		]
+	},
+	{
+		"slug": "skrypt-przetwarzania-danych",
+		"theory_md": "### Potok ETL w jednym skrypcie Pythona\n\nTen projekt to klasyczny **potok ETL** (ang. *Extract, Transform, Load* — wyciągnij dane ze źródła, przekształć je, załaduj do magazynu). Pobierasz dane z API portalu dane.gov.pl, czyścisz je i zapisujesz do bazy SQLite. Etap **Extract** (pobranie) realizujesz przez bibliotekę `requests` — wysyła ona żądanie HTTP i zwraca odpowiedź, zwykle w formacie JSON (ang. *JavaScript Object Notation* — tekstowy format danych w postaci par klucz–wartość). Tu pojawia się pierwsza różnica między skryptem-zabawką a skryptem produkcyjnym: **obsługa błędów sieci**. Serwer może odpowiedzieć kodem błędu (404 — nie znaleziono, 500 — błąd serwera), połączenie może się zerwać albo trwać w nieskończoność. Dlatego ustawiasz limit czasu (`timeout`), sprawdzasz kod odpowiedzi metodą `raise_for_status()` i obejmujesz całość blokiem `try/except`. Skrypt, który przy pierwszym problemie sieci wywala się bez czytelnego komunikatu, jest bezużyteczny w realnej pracy.\n\nEtap **Transform** (przekształcenie) to czyszczenie i normalizacja: usuwasz duplikaty, ujednolicasz formaty (daty, wielkość liter, kody pocztowe), zamieniasz puste pola na świadomą wartość zamiast losowego `None`. Etap **Load** (załadowanie) zapisuje wynik do SQLite — lekkiej bazy danych SQL, która mieści się w jednym pliku i nie wymaga osobnego serwera; Python ma jej obsługę wbudowaną w moduł `sqlite3`. Dwie rzeczy są tu krytyczne. Po pierwsze, **zaprojektuj schemat tabeli** (nazwy i typy kolumn, klucz główny) zanim zaczniesz wstawiać — baza bez przemyślanego schematu szybko staje się śmietnikiem. Po drugie, używaj **zapytań parametryzowanych** (znaki zapytania jako miejsca na wartości: `INSERT INTO adresy VALUES (?, ?)`) zamiast sklejania zapytania ze stringów — to zamyka lukę wstrzyknięcia kodu SQL (ang. *SQL injection* — atak przemycający złośliwe polecenie przez dane wejściowe) i poprawnie obsługuje znaki specjalne, np. polskie nazwy z apostrofem.\n\n**Logowanie** (ang. *logging* — zapisywanie przebiegu działania programu) odróżnia skrypt, który „chyba zadziałał\", od takiego, o którym wiesz, co dokładnie zrobił. Zamiast `print()` użyj wbudowanego modułu `logging`: pozwala on nadawać komunikatom poziomy ważności (INFO — normalny przebieg, WARNING — coś podejrzanego, ERROR — błąd) i kierować je jednocześnie na ekran i do pliku z datą. Dzięki temu po nocnym uruchomieniu skryptu rano widzisz w logu: ile rekordów pobrano, ile odrzucono przy czyszczeniu, czy któreś żądanie się nie powiodło. To podstawa diagnostyki — gdy potok przetwarza tysiące rekordów, log jest jedynym sposobem, żeby dowiedzieć się, gdzie i dlaczego coś poszło nie tak.\n\n```python\nimport requests, sqlite3, logging\n\nlogging.basicConfig(level=logging.INFO,\n                    format='%(asctime)s %(levelname)s %(message)s',\n                    handlers=[logging.FileHandler('etl.log'), logging.StreamHandler()])\n\ntry:\n    resp = requests.get('https://api.dane.gov.pl/1.4/datasets', timeout=15)\n    resp.raise_for_status()          # rzuca wyjątek przy kodzie 4xx/5xx\n    dane = resp.json()\n    logging.info('Pobrano %d rekordów', len(dane.get('data', [])))\nexcept requests.RequestException as e:\n    logging.error('Błąd pobierania danych: %s', e)\n    raise\n\nconn = sqlite3.connect('dane.db')\nconn.execute('CREATE TABLE IF NOT EXISTS adresy (id INTEGER PRIMARY KEY, miejscowosc TEXT, kod TEXT)')\n# Zapytanie parametryzowane — ? to miejsce na wartość, nie sklejanie stringa\nconn.execute('INSERT INTO adresy (miejscowosc, kod) VALUES (?, ?)', ('Gdańsk', '80-001'))\nconn.commit()\nconn.close()\n```\n",
+		"learning_resources": [
+			{
+				"title": "Python: moduł sqlite3 — oficjalna dokumentacja (baza SQL w jednym pliku)",
+				"url": "https://docs.python.org/3/library/sqlite3.html",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Python: moduł logging — oficjalna dokumentacja (zapis przebiegu programu)",
+				"url": "https://docs.python.org/3/library/logging.html",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "Requests: biblioteka HTTP dla Pythona — oficjalna dokumentacja",
+				"url": "https://requests.readthedocs.io/en/latest/",
+				"type": "docs",
+				"position": 3
+			},
+			{
+				"title": "Portal dane.gov.pl — katalog otwartych danych publicznych (źródło projektu)",
+				"url": "https://dane.gov.pl/pl",
+				"type": "docs",
+				"position": 4
+			}
+		]
+	},
+	{
+		"slug": "klasyfikator-iris-scikit-learn",
+		"theory_md": "### Pierwszy model klasyfikacji w Scikit-learn\n\nKlasyfikacja (ang. *classification* — przypisanie obserwacji do jednej z kilku kategorii) to zadanie, w którym model uczy się rozpoznawać, do której grupy należy próbka — tu: który z trzech gatunków irysa, na podstawie czterech wymiarów płatka i działki kielicha. To różni się od regresji, gdzie modelem przewidujesz liczbę. Zbiór Iris jest klasycznym „pierwszym zbiorem\" w uczeniu maszynowym: mały (150 wierszy), czysty, z trzema zrównoważonymi klasami — idealny, żeby skupić się na metodzie, nie na walce z danymi. Scikit-learn (popularna biblioteka uczenia maszynowego w Pythonie) ma ten zbiór wbudowany, więc nie musisz nic pobierać, by zacząć.\n\nFundament, którego nigdy nie pomijasz, to **podział na zbiór treningowy i testowy** (ang. *train/test split* — część danych do nauki, część odłożona do oceny). Model uczysz wyłącznie na danych treningowych, a jego jakość mierzysz na testowych — których model nigdy nie widział. Bez tego podziału ocena jest bezwartościowa: sprawdzałbyś, jak dobrze model „zapamiętał\" odpowiedzi, a nie jak radzi sobie z nowymi przypadkami (to pułapka zwana **przeuczeniem**, ang. *overfitting* — model dopasowany do danych treningowych aż za dobrze, słaby na nowych). W scikit-learn służy do tego funkcja `train_test_split`; przy klasyfikacji włącz parametr `stratify`, żeby proporcje gatunków były takie same w obu częściach. Drugi nawyk: **standaryzacja cech** przez `StandardScaler` (sprowadzenie kolumn do wspólnej skali — średnia 0, odchylenie 1), którą obliczasz tylko na zbiorze treningowym i stosujesz do testowego. Modele oparte na odległości, jak KNN, są na różnice skali bardzo wrażliwe.\n\nProjekt każe wytrenować i porównać trzy modele — i to jest sedno nauki, bo żaden z nich nie jest „najlepszy\" zawsze. **Regresja logistyczna** (ang. *Logistic Regression* — mimo nazwy to klasyfikator) szuka liniowej granicy między klasami; jest szybka i łatwa do interpretacji. **Las losowy** (ang. *Random Forest* — zespół wielu drzew decyzyjnych głosujących razem) radzi sobie z nieliniowymi zależnościami i rzadko się przeucza. **KNN** (ang. *k-Nearest Neighbors* — k najbliższych sąsiadów) klasyfikuje próbkę według tego, do jakich klas należą najbliższe jej obserwacje. Wszystkie trzy w scikit-learn mają tę samą prostą parę metod: `fit` (naucz na danych treningowych) i `predict` (przewiduj). Do oceny nie wystarcza jednak sama trafność (ang. *accuracy* — odsetek poprawnych prognoz): **macierz pomyłek** (ang. *confusion matrix* — tabela pokazująca, które klasy model myli z którymi) ujawnia, czy błędy są równomierne, czy model konsekwentnie myli dwa konkretne gatunki — a to zupełnie inna informacja niż jedna liczba trafności.\n\n```python\nfrom sklearn.datasets import load_iris\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.neighbors import KNeighborsClassifier\nfrom sklearn.metrics import accuracy_score, confusion_matrix\n\nX, y = load_iris(return_X_y=True)\n# stratify=y zachowuje proporcje gatunków w obu częściach\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)\n\nscaler = StandardScaler().fit(X_tr)          # parametry liczone TYLKO na treningu\nX_tr, X_te = scaler.transform(X_tr), scaler.transform(X_te)\n\nknn = KNeighborsClassifier(n_neighbors=5).fit(X_tr, y_tr)\npred = knn.predict(X_te)\nprint('Trafność (accuracy):', accuracy_score(y_te, pred))\nprint('Macierz pomyłek:\\n', confusion_matrix(y_te, pred))\n```\n",
+		"learning_resources": [
+			{
+				"title": "Scikit-learn: pierwsze kroki (getting started) — oficjalna dokumentacja",
+				"url": "https://scikit-learn.org/stable/getting_started.html",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Scikit-learn: macierz pomyłek (confusion_matrix) — dokumentacja metryki",
+				"url": "https://scikit-learn.org/stable/modules/generated/sklearn.metrics.confusion_matrix.html",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "UCI Machine Learning Repository: zbiór danych Iris (źródło projektu)",
+				"url": "https://archive.ics.uci.edu/dataset/53/iris",
+				"type": "docs",
+				"position": 3
+			},
+			{
+				"title": "StatQuest: „Machine Learning Fundamentals: Cross Validation\" — wideo (train/test, ocena modelu)",
+				"url": "https://www.youtube.com/watch?v=0Lt9w-BxKFQ",
+				"type": "video",
+				"position": 4
+			}
+		]
+	}
+]
