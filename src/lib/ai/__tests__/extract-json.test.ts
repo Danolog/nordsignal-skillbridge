@@ -29,11 +29,11 @@ describe("extractJsonObject — kształty, które model REALNIE zwraca", () => {
 	});
 
 	it("blok ```json ... ```", () => {
-		expect(extractJsonObject<Brief>("```json\n" + validJson + "\n```")).toEqual(valid);
+		expect(extractJsonObject<Brief>(`\`\`\`json\n${validJson}\n\`\`\``)).toEqual(valid);
 	});
 
 	it("blok ``` bez języka", () => {
-		expect(extractJsonObject<Brief>("```\n" + validJson + "\n```")).toEqual(valid);
+		expect(extractJsonObject<Brief>(`\`\`\`\n${validJson}\n\`\`\``)).toEqual(valid);
 	});
 
 	it("proza PRZED i PO obiekcie", () => {
@@ -43,7 +43,9 @@ describe("extractJsonObject — kształty, które model REALNIE zwraca", () => {
 	});
 
 	it("blok json + ogon prozy po zamknięciu fence", () => {
-		expect(extractJsonObject<Brief>("```json\n" + validJson + "\n```\nPowodzenia!")).toEqual(valid);
+		expect(extractJsonObject<Brief>(`\`\`\`json\n${validJson}\n\`\`\`\nPowodzenia!`)).toEqual(
+			valid,
+		);
 	});
 
 	// ── Udowodniony tryb awarii #1: trailing comma ──────────────────────────────
@@ -69,7 +71,7 @@ describe("extractJsonObject — kształty, które model REALNIE zwraca", () => {
 	});
 
 	it("nawiasy w prozie przed obiektem nie psują ekstrakcji", () => {
-		const dirty = "Uwaga (ważne) — oto brief: " + validJson;
+		const dirty = `Uwaga (ważne) — oto brief: ${validJson}`;
 		expect(extractJsonObject<Brief>(dirty)).toEqual(valid);
 	});
 

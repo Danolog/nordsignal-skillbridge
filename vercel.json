@@ -1,8 +1,9 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "git": {
-    "deploymentEnabled": {
-      "dependabot/*": false
-    }
-  }
+	"$schema": "https://openapi.vercel.sh/vercel.json",
+	"buildCommand": "next build --webpack",
+	"git": {
+		"deploymentEnabled": {
+			"dependabot/*": false
+		}
+	}
 }
