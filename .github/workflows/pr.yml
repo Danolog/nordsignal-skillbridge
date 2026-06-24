@@ -8,6 +8,13 @@ on:
     branches: [main]
   push:
     branches: [main]
+  # e2e-llm: tor nocny (Ethan Z6 §4 — „nocny TERAZ, blokujący per-PR PRZED Betą").
+  # schedule = przebieg bez kosztu per-PR; workflow_dispatch = ręczne odpalenie.
+  # NIGDY pull_request_target (audyt Ryana, warunek 2): ten trigger biega z sekretami
+  # repo + kodem z PR-a = wektor wycieku klucza. Zostajemy na pull_request.
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC ≈ 05:00 Europe/Warsaw — poza godzinami pracy
+  workflow_dispatch: {}
 
 # Anuluj starsze przebiegi tego samego PR-a/brancha (oszczędność minut runnera).
 concurrency:
@@ -158,3 +165,150 @@ jobs:
       # Blokuje na podatnościach high/critical; moderate/low raportowane,
       # nie wywalają PR-u (szum na Becie). Dependabot pilnuje reszty.
       - run: pnpm audit --audit-level high
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # e2e-llm — Playwright, sciezka krytyczna #1 (rejestracja -> onboarding ->
+  # dashboard) z REALNYM wolaniem modelu (Z5 spec, segment B @llm).
+  #
+  # TOPOLOGIA (decyzja Ethana Z6 §4): tor NOCNY teraz, per-PR przed Beta.
+  #   - schedule (nocny) + workflow_dispatch — przebieg bez kosztu per-PR;
+  #   - pull_request — biega tez na PR (warunek if: odcina fork/dependabot),
+  #     zeby udowodnic zielony job i miec szybka petle zwrotna;
+  #   - NON-BLOCKING na start: ten job NIE jest w required checks (branch protection
+  #     administruje Darek). Flip na required = osobna decyzja PRZED go-live Bety
+  #     (Z6 §4 opcja 1). Powod non-blocking: e2e z modelem bywa flaky/koszt — nie
+  #     wpuszczamy nowego, niesprawdzonego e2e od razu jako twardej bramki.
+  #
+  # BEZPIECZENSTWO (audyt Ryana 2026-06-23, trzy twarde warunki):
+  #   - klucz secrets.ANTHROPIC_API_KEY_CI (osobny od prod, sufit wydatkow u Darka);
+  #   - klucz WYLACZNIE przez env: — nigdy echo/print/log naglowkow (GitHub maskuje ***);
+  #   - warunek if: odcina PR-y z forkow i dependabota (higiena statusu): fork/dependabot
+  #     i tak nie dostaja sekretu (pull_request z forka go nie wstrzykuje, dependabot ma
+  #     osobny magazyn), warunek chroni przed czerwonym "brak klucza" na ich PR-ach.
+  #   - NIGDY pull_request_target.
+  #
+  # MODEL (Z6 §4 — cel: Haiku w CI): kod produktu hardkoduje claude-sonnet-4-6
+  # w src/lib/ai/* (parse-syllabus, generate-skill-map), a @ai-sdk/anthropic NIE
+  # honoruje override modelu przez env. Przelaczenie CI na Haiku = osobny PR kodu
+  # produktu (helper modelu env-driven, domena 14 standardu) — patrz opis PR. Do
+  # tego czasu nocny e2e-llm wola Sonnet 4.6; sufit wydatkow Darka chroni koszt.
+  e2e-llm:
+    name: e2e-llm (Playwright + onboarding sciezka #1)
+    runs-on: ubuntu-latest
+    # Biega dla: scheduled / push do main / workflow_dispatch ZAWSZE; dla PR tylko
+    # gdy z TEGO repo (nie fork) i nie od dependabota. Fork/dependabot bez sekretu
+    # = bez tego warunku swiecilyby czerwono na "missing key".
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor != 'dependabot[bot]')
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: skillbridge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Auth: placeholder testowy (32 znaki) — nie sekret. Realny prod bierze z Vercela.
+      BETTER_AUTH_SECRET: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      # Zawor @dbwrite: bez tego testy zapisujace sie pomijaja (helpers/guards.ts).
+      E2E_ALLOW_DB_WRITES: "1"
+      # Klucz modelu — TYLKO tutaj, przez env. Nigdy echo/print. (Ryan, warunek higieny.)
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_CI }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # DATABASE_URL bazy TESTOWEJ (usluga postgres, loopback) skladany z czesci
+      # i eksportowany do GITHUB_ENV — guard assert-test-db przepuszcza localhost,
+      # prod-Neon nigdy nie jest dotykany.
+      - name: Ustaw DATABASE_URL i E2E_DATABASE_URL bazy testowej
+        env:
+          PGUSER: test
+          PGPASS: test
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGDB: skillbridge_test
+        run: |
+          AT='@'
+          CREDS="${PGUSER}:${PGPASS}"
+          DSN="postgresql://${CREDS}${AT}${PGHOST}:${PGPORT}/${PGDB}"
+          echo "DATABASE_URL=${DSN}" >> "$GITHUB_ENV"
+          # seed:e2e czyta E2E_DATABASE_URL (osobna nazwa, ten sam loopback DSN).
+          echo "E2E_DATABASE_URL=${DSN}" >> "$GITHUB_ENV"
+          # Poswiadczenia kont testowych — IDENTYCZNE z domyslami seed-e2e.ts
+          # (main/b4/resume). Helper loginWithPassword (helpers/auth.ts) wymaga ich
+          # jawnie w procesie Playwright; bez nich rzuca "Brak poswiadczen konta".
+          # To dane konta TESTOWEGO na bazie loopback, nie sekret produkcyjny;
+          # eksport przez GITHUB_ENV (nie literal KEY: val), spojnie z DSN.
+          PW='Test1234!e2e'
+          echo "E2E_TEST_EMAIL=e2e-main@example.com" >> "$GITHUB_ENV"
+          echo "E2E_TEST_PASSWORD=${PW}" >> "$GITHUB_ENV"
+          echo "E2E_TEST_EMAIL_B4=e2e-b4@example.com" >> "$GITHUB_ENV"
+          echo "E2E_TEST_PASSWORD_B4=${PW}" >> "$GITHUB_ENV"
+          echo "E2E_TEST_EMAIL_RESUME=e2e-resume@example.com" >> "$GITHUB_ENV"
+          echo "E2E_TEST_PASSWORD_RESUME=${PW}" >> "$GITHUB_ENV"
+      # Przegladarka dla Playwright (chromium) + zaleznosci systemowe.
+      - run: pnpm exec playwright install --with-deps chromium
+      # Migracja schematu na bazie TESTOWEJ (guard allowlisty hostow testowych).
+      - run: pnpm db:migrate:test
+      # Seed kont testowych (main/b4/resume) + danych — aktualne testy @llm loguja
+      # sie na konta seed (loginWithPassword), nie rejestruja od zera. Idempotentny,
+      # guardowany allowlista hostow testowych.
+      - run: pnpm seed:e2e
+      # Build artefaktu produkcyjnego — `next start` go serwuje (Z6 §3, R2).
+      - run: pnpm build
+      # Twardy fail-fast: jesli sekret nie dotarl (np. usuniety z repo), NIE chcemy
+      # falszywie zielonego "pass" przez ciche test.skip segmentu @llm. Pusty klucz
+      # na PR-ze wewnetrznym = realny problem, zatrzymujemy job.
+      - name: Wymagaj klucza modelu (PR wewnetrzny / scheduled)
+        run: |
+          if [ -z "${ANTHROPIC_API_KEY}" ]; then
+            echo "::error::Brak klucza modelu (sekret ANTHROPIC_API_KEY_CI). Job e2e-llm nie moze zweryfikowac segmentu @llm."
+            exit 1
+          fi
+          echo "Klucz modelu obecny (wartosc zamaskowana przez GitHub)."
+      # ZAKRES TESTOW wg triggera (Z6 §4 — per-PR wasko/deterministycznie, nocny szeroko):
+      #   - pull_request: JEDEN stabilny test @llm z 40-onboarding (Krok 0 Pomocnik +
+      #     sam PDF odblokowuje analize) — najtanszy DETERMINISTYCZNY dowod, ze model
+      #     realnie odpowiada w CI. Drugi test w 40 ("kontrakt docelowy ... strumien C")
+      #     zalezy od niedomknietej logiki uploadu i bywa flaky na Kroku 0 — zostaje
+      #     na torze nocnym, nie blokuje per-PR.
+      #   - schedule / push / workflow_dispatch: PELNY pakiet @llm (10-b0, 20-B4, 40),
+      #     z wykluczeniem przeterminowanego 50 (Z5 — pomija nowy Krok 0, do przepisania).
+      # E2E_LLM_AVAILABLE=1 zdejmuje test.skip segmentow @llm (klucz po stronie serwera).
+      - name: Ustaw zakres testow per trigger
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "E2E_LLM_SPEC=tests/e2e-pw/40-onboarding-sylabus-pdf.spec.ts" >> "$GITHUB_ENV"
+            echo "E2E_LLM_GREP=sam PDF" >> "$GITHUB_ENV"
+          else
+            echo "E2E_LLM_SPEC=tests/e2e-pw/10-b0-pomocnik-kariery.spec.ts tests/e2e-pw/20-b1-b4-dashboard-projects.spec.ts tests/e2e-pw/40-onboarding-sylabus-pdf.spec.ts" >> "$GITHUB_ENV"
+            echo "E2E_LLM_GREP=@llm" >> "$GITHUB_ENV"
+          fi
+      - name: Playwright e2e-llm (sciezka onboarding + model)
+        env:
+          E2E_LLM_AVAILABLE: "1"
+        run: pnpm exec playwright test --config playwright.config.ci.ts --grep "${E2E_LLM_GREP}" ${E2E_LLM_SPEC}
+      # Artefakty diagnostyczne przy padzie (trace/screenshot — bez sekretow w logu).
+      - name: Upload raportu Playwright (przy padzie)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-e2e-llm
+          path: playwright-report/
+          retention-days: 7
