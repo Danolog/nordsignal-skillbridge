@@ -236,7 +236,7 @@ jobs:
       # DATABASE_URL bazy TESTOWEJ (usluga postgres, loopback) skladany z czesci
       # i eksportowany do GITHUB_ENV — guard assert-test-db przepuszcza localhost,
       # prod-Neon nigdy nie jest dotykany.
-      - name: Ustaw DATABASE_URL bazy testowej
+      - name: Ustaw DATABASE_URL i E2E_DATABASE_URL bazy testowej
         env:
           PGUSER: test
           PGPASS: test
@@ -248,10 +248,16 @@ jobs:
           CREDS="${PGUSER}:${PGPASS}"
           DSN="postgresql://${CREDS}${AT}${PGHOST}:${PGPORT}/${PGDB}"
           echo "DATABASE_URL=${DSN}" >> "$GITHUB_ENV"
+          # seed:e2e czyta E2E_DATABASE_URL (osobna nazwa, ten sam loopback DSN).
+          echo "E2E_DATABASE_URL=${DSN}" >> "$GITHUB_ENV"
       # Przegladarka dla Playwright (chromium) + zaleznosci systemowe.
       - run: pnpm exec playwright install --with-deps chromium
       # Migracja schematu na bazie TESTOWEJ (guard allowlisty hostow testowych).
       - run: pnpm db:migrate:test
+      # Seed kont testowych (main/b4/resume) + danych — aktualne testy @llm loguja
+      # sie na konta seed (loginWithPassword), nie rejestruja od zera. Idempotentny,
+      # guardowany allowlista hostow testowych.
+      - run: pnpm seed:e2e
       # Build artefaktu produkcyjnego — `next start` go serwuje (Z6 §3, R2).
       - run: pnpm build
       # Twardy fail-fast: jesli sekret nie dotarl (np. usuniety z repo), NIE chcemy
@@ -264,11 +270,25 @@ jobs:
             exit 1
           fi
           echo "Klucz modelu obecny (wartosc zamaskowana przez GitHub)."
-      # Pelna sciezka #1 z modelem. E2E_LLM_AVAILABLE=1 zdejmuje test.skip segmentu B.
-      - name: Playwright e2e-llm (sciezka rejestracja -> onboarding -> dashboard)
+      # ZAKRES TESTOW wg triggera (Z6 §4 — per-PR wasko/tanio, nocny szeroko):
+      #   - pull_request: TYLKO 40-onboarding-sylabus-pdf (@llm) — Krok 0 Pomocnik +
+      #     sylabus, najblizej sciezki krytycznej #1, najtanszy wiarygodny dowod modelu.
+      #   - schedule / push / workflow_dispatch: PELNY pakiet @llm (10-b0, 20-B4, 40),
+      #     z wykluczeniem przeterminowanego 50 (Z5 — pomija nowy Krok 0, do przepisania).
+      # E2E_LLM_AVAILABLE=1 zdejmuje test.skip segmentow @llm (klucz po stronie serwera).
+      - name: Ustaw zakres testow per trigger
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "E2E_LLM_SPEC=tests/e2e-pw/40-onboarding-sylabus-pdf.spec.ts" >> "$GITHUB_ENV"
+            echo "E2E_LLM_GREP=@llm" >> "$GITHUB_ENV"
+          else
+            echo "E2E_LLM_SPEC=tests/e2e-pw/10-b0-pomocnik-kariery.spec.ts tests/e2e-pw/20-b1-b4-dashboard-projects.spec.ts tests/e2e-pw/40-onboarding-sylabus-pdf.spec.ts" >> "$GITHUB_ENV"
+            echo "E2E_LLM_GREP=@llm" >> "$GITHUB_ENV"
+          fi
+      - name: Playwright e2e-llm (sciezka onboarding + model)
         env:
           E2E_LLM_AVAILABLE: "1"
-        run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/50-rejestracja-onboarding.spec.ts
+        run: pnpm exec playwright test --config playwright.config.ci.ts --grep "${E2E_LLM_GREP}" ${E2E_LLM_SPEC}
       # Artefakty diagnostyczne przy padzie (trace/screenshot — bez sekretow w logu).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
