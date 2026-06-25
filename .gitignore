@@ -59,6 +59,9 @@ next-env.d.ts
 
 e2e-screenshots
 
+# Roboczy scratchpad sesji (notatki produktowe, generatory diagramów) — poza repo
+scratchpad/
+
 # Sekrety i lokalna konfiguracja — ignoruj wszystkie warianty .env,
 # ale zachowaj śledzone szablony (.env.example, .env.test.example).
 .env*

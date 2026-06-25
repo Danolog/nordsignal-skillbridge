@@ -1,6 +1,8 @@
 import { config } from "dotenv";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { DEMO_CAREER_GOAL_REMAP } from "./data/anchor-config";
+import jobMarketArtifact from "./data/job-market-justjoinit.json";
 import * as schema from "./schema";
 import { DEMO_PROJECTS } from "./seed-projects";
 import { DEMO_STUDENTS, PARTNER_TENANTS, partnerTenantForIndex } from "./seed-students";
@@ -26,551 +28,19 @@ const {
 // bez połączenia z bazą); DoD §4 pilnuje __tests__/seed-tenants.test.ts.
 const db = drizzle(process.env.DATABASE_URL ?? "", { schema });
 
+// Dane rynku pracy: artefakt policzony przez tools/etl-justjoinit.ts z dwóch CSV
+// JustJoinIT (zrzut 2026-02, analiza Darka), model nearest-profile + hierarchia v4
+// + warstwa produktu v5. Zastępuje 9 wierszy demo. Prowenicja: docs/data/job-market-provenance.md.
+// v5 (decyzja Darka): BEZ widełek — kolumna `salary_range` w jobMarketData zostaje
+// NIEZAPEŁNIONA (NULL), bez zmiany schemy. % popytu zostaje (twardy sygnał).
 const DATA: Array<{
 	careerGoal: string;
 	competencies: Array<{
 		name: string;
 		demandPercentage: number;
 		category: string;
-		salaryRange: string;
 	}>;
-}> = [
-	{
-		careerGoal: "Data Analyst",
-		competencies: [
-			{
-				name: "Python",
-				demandPercentage: 78,
-				category: "Technical",
-				salaryRange: "8000-15000 PLN",
-			},
-			{ name: "SQL", demandPercentage: 89, category: "Technical", salaryRange: "8000-15000 PLN" },
-			{
-				name: "Excel/Arkusze kalkulacyjne",
-				demandPercentage: 72,
-				category: "Technical",
-				salaryRange: "7000-12000 PLN",
-			},
-			{
-				name: "Tableau/Power BI",
-				demandPercentage: 61,
-				category: "Technical",
-				salaryRange: "9000-16000 PLN",
-			},
-			{
-				name: "Statystyka",
-				demandPercentage: 67,
-				category: "Technical",
-				salaryRange: "8000-14000 PLN",
-			},
-			{
-				name: "Pandas",
-				demandPercentage: 55,
-				category: "Technical",
-				salaryRange: "9000-15000 PLN",
-			},
-			{
-				name: "Machine Learning (podstawy)",
-				demandPercentage: 43,
-				category: "Technical",
-				salaryRange: "10000-18000 PLN",
-			},
-			{
-				name: "Komunikacja wyników",
-				demandPercentage: 71,
-				category: "Soft Skills",
-				salaryRange: "8000-15000 PLN",
-			},
-			{
-				name: "Myślenie analityczne",
-				demandPercentage: 83,
-				category: "Soft Skills",
-				salaryRange: "8000-15000 PLN",
-			},
-			{
-				name: "Git/GitHub",
-				demandPercentage: 48,
-				category: "Technical",
-				salaryRange: "8000-15000 PLN",
-			},
-		],
-	},
-	{
-		careerGoal: "Frontend Developer",
-		competencies: [
-			{
-				name: "JavaScript",
-				demandPercentage: 95,
-				category: "Technical",
-				salaryRange: "8000-18000 PLN",
-			},
-			{
-				name: "TypeScript",
-				demandPercentage: 74,
-				category: "Technical",
-				salaryRange: "10000-20000 PLN",
-			},
-			{
-				name: "React",
-				demandPercentage: 82,
-				category: "Technical",
-				salaryRange: "10000-20000 PLN",
-			},
-			{
-				name: "HTML/CSS",
-				demandPercentage: 91,
-				category: "Technical",
-				salaryRange: "7000-15000 PLN",
-			},
-			{ name: "Git", demandPercentage: 88, category: "Technical", salaryRange: "8000-18000 PLN" },
-			{
-				name: "REST API",
-				demandPercentage: 71,
-				category: "Technical",
-				salaryRange: "9000-18000 PLN",
-			},
-			{
-				name: "Responsive Design",
-				demandPercentage: 79,
-				category: "Technical",
-				salaryRange: "8000-16000 PLN",
-			},
-			{
-				name: "Testowanie (Jest/Vitest)",
-				demandPercentage: 52,
-				category: "Technical",
-				salaryRange: "10000-19000 PLN",
-			},
-			{
-				name: "Figma (podstawy)",
-				demandPercentage: 58,
-				category: "Design",
-				salaryRange: "8000-16000 PLN",
-			},
-			{
-				name: "Optymalizacja wydajności",
-				demandPercentage: 45,
-				category: "Technical",
-				salaryRange: "12000-22000 PLN",
-			},
-		],
-	},
-	{
-		careerGoal: "Backend Developer",
-		competencies: [
-			{
-				name: "Node.js",
-				demandPercentage: 72,
-				category: "Technical",
-				salaryRange: "10000-22000 PLN",
-			},
-			{
-				name: "Python/Java",
-				demandPercentage: 68,
-				category: "Technical",
-				salaryRange: "10000-22000 PLN",
-			},
-			{ name: "SQL", demandPercentage: 85, category: "Technical", salaryRange: "9000-20000 PLN" },
-			{
-				name: "NoSQL (MongoDB/Redis)",
-				demandPercentage: 59,
-				category: "Technical",
-				salaryRange: "10000-21000 PLN",
-			},
-			{
-				name: "REST API",
-				demandPercentage: 88,
-				category: "Technical",
-				salaryRange: "10000-22000 PLN",
-			},
-			{
-				name: "Docker",
-				demandPercentage: 69,
-				category: "Technical",
-				salaryRange: "12000-24000 PLN",
-			},
-			{ name: "Git", demandPercentage: 90, category: "Technical", salaryRange: "10000-22000 PLN" },
-			{
-				name: "Bezpieczeństwo aplikacji",
-				demandPercentage: 56,
-				category: "Technical",
-				salaryRange: "12000-24000 PLN",
-			},
-			{
-				name: "Mikrousługi",
-				demandPercentage: 48,
-				category: "Technical",
-				salaryRange: "14000-26000 PLN",
-			},
-			{
-				name: "Cloud (AWS/GCP/Azure)",
-				demandPercentage: 61,
-				category: "Technical",
-				salaryRange: "13000-25000 PLN",
-			},
-		],
-	},
-	{
-		careerGoal: "Full-stack Developer",
-		competencies: [
-			{
-				name: "JavaScript/TypeScript",
-				demandPercentage: 92,
-				category: "Technical",
-				salaryRange: "12000-25000 PLN",
-			},
-			{
-				name: "React",
-				demandPercentage: 79,
-				category: "Technical",
-				salaryRange: "12000-25000 PLN",
-			},
-			{
-				name: "Node.js",
-				demandPercentage: 74,
-				category: "Technical",
-				salaryRange: "12000-25000 PLN",
-			},
-			{ name: "SQL", demandPercentage: 82, category: "Technical", salaryRange: "11000-24000 PLN" },
-			{ name: "Git", demandPercentage: 91, category: "Technical", salaryRange: "12000-25000 PLN" },
-			{
-				name: "Docker",
-				demandPercentage: 63,
-				category: "Technical",
-				salaryRange: "14000-27000 PLN",
-			},
-			{
-				name: "REST API",
-				demandPercentage: 85,
-				category: "Technical",
-				salaryRange: "12000-25000 PLN",
-			},
-			{
-				name: "CI/CD",
-				demandPercentage: 55,
-				category: "Technical",
-				salaryRange: "15000-28000 PLN",
-			},
-			{
-				name: "Testowanie",
-				demandPercentage: 58,
-				category: "Technical",
-				salaryRange: "13000-26000 PLN",
-			},
-			{
-				name: "Cloud (podstawy)",
-				demandPercentage: 54,
-				category: "Technical",
-				salaryRange: "14000-27000 PLN",
-			},
-		],
-	},
-	{
-		careerGoal: "UX/UI Designer",
-		competencies: [
-			{ name: "Figma", demandPercentage: 91, category: "Technical", salaryRange: "7000-16000 PLN" },
-			{
-				name: "User Research",
-				demandPercentage: 73,
-				category: "Research",
-				salaryRange: "8000-16000 PLN",
-			},
-			{
-				name: "Wireframing",
-				demandPercentage: 82,
-				category: "Design",
-				salaryRange: "7000-15000 PLN",
-			},
-			{
-				name: "Prototypowanie",
-				demandPercentage: 79,
-				category: "Design",
-				salaryRange: "8000-16000 PLN",
-			},
-			{
-				name: "Design Systems",
-				demandPercentage: 65,
-				category: "Design",
-				salaryRange: "9000-18000 PLN",
-			},
-			{
-				name: "Testy użyteczności",
-				demandPercentage: 61,
-				category: "Research",
-				salaryRange: "8000-16000 PLN",
-			},
-			{
-				name: "Architektura informacji",
-				demandPercentage: 57,
-				category: "Design",
-				salaryRange: "8000-16000 PLN",
-			},
-			{
-				name: "HTML/CSS (podstawy)",
-				demandPercentage: 48,
-				category: "Technical",
-				salaryRange: "8000-15000 PLN",
-			},
-			{
-				name: "Dostępność (WCAG)",
-				demandPercentage: 44,
-				category: "Design",
-				salaryRange: "9000-17000 PLN",
-			},
-			{
-				name: "Komunikacja z zespołem",
-				demandPercentage: 84,
-				category: "Soft Skills",
-				salaryRange: "8000-16000 PLN",
-			},
-		],
-	},
-	{
-		careerGoal: "Project Manager",
-		competencies: [
-			{
-				name: "Agile/Scrum",
-				demandPercentage: 81,
-				category: "Methodology",
-				salaryRange: "10000-22000 PLN",
-			},
-			{
-				name: "Zarządzanie ryzykiem",
-				demandPercentage: 73,
-				category: "Management",
-				salaryRange: "10000-22000 PLN",
-			},
-			{
-				name: "Komunikacja",
-				demandPercentage: 91,
-				category: "Soft Skills",
-				salaryRange: "10000-22000 PLN",
-			},
-			{
-				name: "Jira/MS Project",
-				demandPercentage: 76,
-				category: "Technical",
-				salaryRange: "9000-20000 PLN",
-			},
-			{
-				name: "Budżetowanie",
-				demandPercentage: 65,
-				category: "Management",
-				salaryRange: "11000-23000 PLN",
-			},
-			{
-				name: "Zarządzanie interesariuszami",
-				demandPercentage: 78,
-				category: "Management",
-				salaryRange: "11000-23000 PLN",
-			},
-			{
-				name: "Priorytetyzacja",
-				demandPercentage: 82,
-				category: "Management",
-				salaryRange: "10000-22000 PLN",
-			},
-			{
-				name: "Excel/Google Sheets",
-				demandPercentage: 69,
-				category: "Technical",
-				salaryRange: "9000-20000 PLN",
-			},
-			{
-				name: "Prezentacje",
-				demandPercentage: 74,
-				category: "Soft Skills",
-				salaryRange: "10000-22000 PLN",
-			},
-			{
-				name: "Negocjacje",
-				demandPercentage: 58,
-				category: "Soft Skills",
-				salaryRange: "12000-25000 PLN",
-			},
-		],
-	},
-	{
-		careerGoal: "Data Scientist",
-		competencies: [
-			{
-				name: "Python",
-				demandPercentage: 94,
-				category: "Technical",
-				salaryRange: "12000-25000 PLN",
-			},
-			{
-				name: "Machine Learning",
-				demandPercentage: 88,
-				category: "Technical",
-				salaryRange: "14000-28000 PLN",
-			},
-			{
-				name: "Deep Learning",
-				demandPercentage: 67,
-				category: "Technical",
-				salaryRange: "15000-30000 PLN",
-			},
-			{ name: "SQL", demandPercentage: 79, category: "Technical", salaryRange: "12000-25000 PLN" },
-			{
-				name: "Statystyka zaawansowana",
-				demandPercentage: 83,
-				category: "Technical",
-				salaryRange: "13000-27000 PLN",
-			},
-			{
-				name: "TensorFlow/PyTorch",
-				demandPercentage: 61,
-				category: "Technical",
-				salaryRange: "15000-30000 PLN",
-			},
-			{
-				name: "Pandas/NumPy",
-				demandPercentage: 87,
-				category: "Technical",
-				salaryRange: "12000-25000 PLN",
-			},
-			{ name: "Git", demandPercentage: 75, category: "Technical", salaryRange: "12000-25000 PLN" },
-			{
-				name: "Komunikacja wyników",
-				demandPercentage: 72,
-				category: "Soft Skills",
-				salaryRange: "13000-26000 PLN",
-			},
-			{
-				name: "Big Data (Spark/Hadoop)",
-				demandPercentage: 45,
-				category: "Technical",
-				salaryRange: "16000-32000 PLN",
-			},
-		],
-	},
-	{
-		careerGoal: "DevOps Engineer",
-		competencies: [
-			{
-				name: "Docker",
-				demandPercentage: 89,
-				category: "Technical",
-				salaryRange: "14000-28000 PLN",
-			},
-			{
-				name: "Kubernetes",
-				demandPercentage: 74,
-				category: "Technical",
-				salaryRange: "16000-32000 PLN",
-			},
-			{
-				name: "CI/CD (Jenkins/GitHub Actions)",
-				demandPercentage: 85,
-				category: "Technical",
-				salaryRange: "14000-28000 PLN",
-			},
-			{
-				name: "Linux",
-				demandPercentage: 91,
-				category: "Technical",
-				salaryRange: "13000-26000 PLN",
-			},
-			{
-				name: "Terraform/Ansible",
-				demandPercentage: 63,
-				category: "Technical",
-				salaryRange: "16000-30000 PLN",
-			},
-			{
-				name: "AWS/GCP/Azure",
-				demandPercentage: 78,
-				category: "Technical",
-				salaryRange: "16000-32000 PLN",
-			},
-			{ name: "Git", demandPercentage: 92, category: "Technical", salaryRange: "13000-26000 PLN" },
-			{
-				name: "Monitoring (Prometheus/Grafana)",
-				demandPercentage: 67,
-				category: "Technical",
-				salaryRange: "15000-28000 PLN",
-			},
-			{
-				name: "Sieci komputerowe",
-				demandPercentage: 71,
-				category: "Technical",
-				salaryRange: "14000-26000 PLN",
-			},
-			{
-				name: "Bezpieczeństwo infrastruktury",
-				demandPercentage: 59,
-				category: "Technical",
-				salaryRange: "16000-30000 PLN",
-			},
-		],
-	},
-	{
-		careerGoal: "Cybersecurity Analyst",
-		competencies: [
-			{
-				name: "Sieci komputerowe",
-				demandPercentage: 88,
-				category: "Technical",
-				salaryRange: "10000-22000 PLN",
-			},
-			{
-				name: "Protokoły bezpieczeństwa",
-				demandPercentage: 82,
-				category: "Technical",
-				salaryRange: "12000-24000 PLN",
-			},
-			{
-				name: "Testy penetracyjne",
-				demandPercentage: 71,
-				category: "Technical",
-				salaryRange: "13000-26000 PLN",
-			},
-			{
-				name: "SIEM (Splunk/QRadar)",
-				demandPercentage: 64,
-				category: "Technical",
-				salaryRange: "12000-24000 PLN",
-			},
-			{
-				name: "Linux",
-				demandPercentage: 85,
-				category: "Technical",
-				salaryRange: "11000-22000 PLN",
-			},
-			{
-				name: "Python/Bash",
-				demandPercentage: 67,
-				category: "Technical",
-				salaryRange: "12000-24000 PLN",
-			},
-			{
-				name: "Ocena ryzyka",
-				demandPercentage: 76,
-				category: "Management",
-				salaryRange: "12000-24000 PLN",
-			},
-			{
-				name: "Compliance (RODO/GDPR/ISO 27001)",
-				demandPercentage: 69,
-				category: "Legal",
-				salaryRange: "11000-22000 PLN",
-			},
-			{
-				name: "Reagowanie na incydenty",
-				demandPercentage: 73,
-				category: "Technical",
-				salaryRange: "12000-25000 PLN",
-			},
-			{
-				name: "Etyczny hacking",
-				demandPercentage: 58,
-				category: "Technical",
-				salaryRange: "14000-28000 PLN",
-			},
-		],
-	},
-];
+}> = jobMarketArtifact.data;
 
 async function seed() {
 	console.log("Seeding job market data...");
@@ -584,7 +54,7 @@ async function seed() {
 			competencyName: comp.name,
 			demandPercentage: comp.demandPercentage,
 			category: comp.category,
-			salaryRange: comp.salaryRange,
+			// v5: salaryRange NIE jest ustawiane → kolumna salary_range zostaje NULL.
 		})),
 	);
 
@@ -627,6 +97,11 @@ async function seed() {
 
 	for (let i = 0; i < DEMO_STUDENTS.length; i++) {
 		const demo = DEMO_STUDENTS[i];
+		// Migracja demo: stare cele kariery (np. „Full-stack Developer", „UX/UI
+		// Designer", „Cybersecurity Analyst") mapujemy na nazwy ścieżek w modelu
+		// nearest-profile (tabela DEMO_CAREER_GOAL_REMAP w anchor-config.ts), inaczej
+		// dashboard studenta nie znajdzie kompetencji rynkowych dla jego celu.
+		const careerGoal = DEMO_CAREER_GOAL_REMAP[demo.careerGoal] ?? demo.careerGoal;
 		// Round-robin przypisanie do 2 tenantów-partnerów; university spójne z tenantem.
 		const partner = partnerTenantForIndex(i);
 		const tenantId = tenantIdBySlug.get(partner.slug);
@@ -674,7 +149,7 @@ async function seed() {
 				university: partner.name,
 				fieldOfStudy: demo.fieldOfStudy,
 				semester: demo.semester,
-				careerGoal: demo.careerGoal,
+				careerGoal,
 				onboardingCompleted: true,
 			})
 			.returning({ id: students.id });
@@ -717,7 +192,7 @@ async function seed() {
 		});
 
 		console.log(
-			`  ✓ ${demo.name} (${demo.careerGoal}) — ${demo.acquired.length} kompetencji, ${demo.gaps.length} luk, ${coverage}% pokrycia`,
+			`  ✓ ${demo.name} (${careerGoal}) — ${demo.acquired.length} kompetencji, ${demo.gaps.length} luk, ${coverage}% pokrycia`,
 		);
 	}
 

@@ -1,0 +1,2980 @@
+{
+	"_meta": {
+		"source": "JustJoinIT",
+		"snapshot": "2026-02",
+		"model": "nearest-profile + hierarchia v4 + warstwa produktu v5 (e-CF/SFIA/ESCO + junior)",
+		"note": "Hierarchia obszar→liść (% obszaru = popyt ścieżki z danych; % liścia = w obrębie ścieżki, bez progu, 1 miejsce po przecinku; liść null = brak w zrzucie). v5: rodziny e-CF, ramy, warstwa juniora, bank projektów zakotwiczony na liściach. BEZ widełek (decyzja Darka). Patrz docs/data/job-market-provenance.md.",
+		"families": [
+			{
+				"id": "I",
+				"name": "Dane i Sztuczna Inteligencja",
+				"eCfArea": "PLAN / BUILD / ENABLE"
+			},
+			{
+				"id": "II",
+				"name": "Inżynieria Oprogramowania",
+				"eCfArea": "BUILD"
+			},
+			{
+				"id": "III",
+				"name": "Infrastruktura, Chmura i Bezpieczeństwo",
+				"eCfArea": "RUN / ENABLE"
+			},
+			{
+				"id": "IV",
+				"name": "Jakość, Testy i Architektura",
+				"eCfArea": "PLAN / ENABLE"
+			},
+			{
+				"id": "V",
+				"name": "Zarządzanie, Produkt i Systemy Biznesowe",
+				"eCfArea": "MANAGE / PLAN"
+			}
+		],
+		"paths": 23,
+		"leafThreshold": "brak (dyrektywa 1: % przy kazdym liściu obecnym w zrzucie)"
+	},
+	"paths": [
+		{
+			"careerGoal": "Cybersecurity Specialist",
+			"category": "III — Infrastruktura, Chmura i Bezpieczeństwo",
+			"pathDemandOffers": 329,
+			"frameworks": {
+				"family": "III — Infrastruktura, Chmura i Bezpieczeństwo",
+				"eCfArea": "RUN + ENABLE",
+				"sfiaCategory": "Security (Delivery & Operations / Strategy)",
+				"iscoCode": "ISCO 2529",
+				"iscoLabel": "ICT security specialists",
+				"escoOccupation": "ICT security specialist"
+			},
+			"juniorFriendliness": "Niska",
+			"targetRole": false,
+			"tShapePairs": [],
+			"areas": [
+				{
+					"name": "Cybersecurity",
+					"type": "knowledge-area",
+					"demandPercentage": 29,
+					"leaves": [
+						{
+							"name": "Burp Suite",
+							"type": "leaf",
+							"demandPercentage": 0.3,
+							"source": "dane"
+						},
+						{
+							"name": "Kali Linux",
+							"type": "leaf",
+							"demandPercentage": 0.6,
+							"source": "dane"
+						},
+						{
+							"name": "Metasploit",
+							"type": "leaf",
+							"demandPercentage": 0.3,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Security / IT Security",
+					"type": "knowledge-area",
+					"demandPercentage": 19,
+					"leaves": [
+						{
+							"name": "Wireshark",
+							"type": "leaf",
+							"demandPercentage": 0.6,
+							"source": "dane"
+						},
+						{
+							"name": "Nmap",
+							"type": "leaf",
+							"demandPercentage": 0.6,
+							"source": "dane"
+						},
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 14.9,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "SIEM / SoC",
+					"type": "knowledge-area",
+					"demandPercentage": 12,
+					"leaves": [
+						{
+							"name": "Splunk",
+							"type": "leaf",
+							"demandPercentage": 4.6,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "IAM",
+					"type": "knowledge-area",
+					"demandPercentage": 8,
+					"leaves": [
+						{
+							"name": "OAuth2",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						},
+						{
+							"name": "JWT",
+							"type": "leaf",
+							"demandPercentage": 0.3,
+							"source": "dane"
+						},
+						{
+							"name": "Keycloak",
+							"type": "leaf",
+							"demandPercentage": 0.3,
+							"source": "dane"
+						},
+						{
+							"name": "Active Directory",
+							"type": "leaf",
+							"demandPercentage": 3,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Cloud",
+					"type": "knowledge-area",
+					"demandPercentage": 5,
+					"leaves": [
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 10,
+							"source": "dane"
+						},
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 9.1,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Teoria sieci i bezpieczeństwa",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "OWASP Top 10",
+							"type": "leaf",
+							"demandPercentage": null,
+							"source": "kuracja ekspercka",
+							"note": "brak w zrzucie 2026-02"
+						},
+						{
+							"name": "Network",
+							"type": "leaf",
+							"demandPercentage": 3.3,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Cybersecurity Specialist",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: Burp Suite, Nmap, Wireshark, Metasploit, Splunk, Python. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "AI Engineer",
+			"category": "I — Dane i Sztuczna Inteligencja",
+			"pathDemandOffers": 189,
+			"frameworks": {
+				"family": "I — Dane i Sztuczna Inteligencja",
+				"eCfArea": "PLAN + BUILD",
+				"sfiaCategory": "Development & Implementation (Machine learning)",
+				"iscoCode": "ISCO 25",
+				"iscoLabel": "ICT professionals",
+				"escoOccupation": "Machine Learning Engineer"
+			},
+			"juniorFriendliness": "Niska",
+			"targetRole": false,
+			"tShapePairs": [],
+			"areas": [
+				{
+					"name": "AI",
+					"type": "knowledge-area",
+					"demandPercentage": 53,
+					"leaves": [
+						{
+							"name": "LangChain",
+							"type": "leaf",
+							"demandPercentage": 17.5,
+							"source": "dane"
+						},
+						{
+							"name": "Hugging Face",
+							"type": "leaf",
+							"demandPercentage": 4.2,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Machine Learning",
+					"type": "knowledge-area",
+					"demandPercentage": 23,
+					"leaves": [
+						{
+							"name": "Pandas",
+							"type": "leaf",
+							"demandPercentage": 5.8,
+							"source": "dane"
+						},
+						{
+							"name": "NumPy",
+							"type": "leaf",
+							"demandPercentage": 5.3,
+							"source": "dane"
+						},
+						{
+							"name": "Scikit-learn",
+							"type": "leaf",
+							"demandPercentage": 5.3,
+							"source": "dane"
+						},
+						{
+							"name": "XGBoost",
+							"type": "leaf",
+							"demandPercentage": 1.6,
+							"source": "dane"
+						},
+						{
+							"name": "PyTorch",
+							"type": "leaf",
+							"demandPercentage": 30.7,
+							"source": "dane"
+						},
+						{
+							"name": "TensorFlow",
+							"type": "leaf",
+							"demandPercentage": 27,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "LLM / RAG / GenAI",
+					"type": "knowledge-area",
+					"demandPercentage": 40,
+					"leaves": [
+						{
+							"name": "LangChain",
+							"type": "leaf",
+							"demandPercentage": 17.5,
+							"source": "dane"
+						},
+						{
+							"name": "FastAPI",
+							"type": "leaf",
+							"demandPercentage": 5.3,
+							"source": "dane"
+						},
+						{
+							"name": "Streamlit",
+							"type": "leaf",
+							"demandPercentage": 0.5,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Konkret bazowy",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 74.6,
+							"source": "dane"
+						},
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 19,
+							"source": "dane"
+						},
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 28.6,
+							"source": "dane"
+						},
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 15.9,
+							"source": "dane"
+						},
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 5.8,
+							"source": "dane"
+						},
+						{
+							"name": "Jupyter Notebook",
+							"type": "leaf",
+							"demandPercentage": null,
+							"source": "kuracja ekspercka",
+							"note": "brak w zrzucie 2026-02"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla AI Engineer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: Python, PyTorch, LangChain, Hugging Face, FastAPI. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Data Scientist",
+			"category": "I — Dane i Sztuczna Inteligencja",
+			"pathDemandOffers": 545,
+			"frameworks": {
+				"family": "I — Dane i Sztuczna Inteligencja",
+				"eCfArea": "PLAN + BUILD",
+				"sfiaCategory": "Development & Implementation (Data science, ML)",
+				"iscoCode": "ISCO 25",
+				"iscoLabel": "ICT professionals",
+				"escoOccupation": "data scientist"
+			},
+			"juniorFriendliness": "Niska",
+			"targetRole": false,
+			"tShapePairs": [],
+			"areas": [
+				{
+					"name": "Machine Learning",
+					"type": "knowledge-area",
+					"demandPercentage": 26,
+					"leaves": [
+						{
+							"name": "Pandas",
+							"type": "leaf",
+							"demandPercentage": 3.9,
+							"source": "dane"
+						},
+						{
+							"name": "NumPy",
+							"type": "leaf",
+							"demandPercentage": 1.3,
+							"source": "dane"
+						},
+						{
+							"name": "Scikit-learn",
+							"type": "leaf",
+							"demandPercentage": 0.2,
+							"source": "dane"
+						},
+						{
+							"name": "XGBoost",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						},
+						{
+							"name": "PyTorch",
+							"type": "leaf",
+							"demandPercentage": 1.3,
+							"source": "dane"
+						},
+						{
+							"name": "TensorFlow",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "AI / Data Science",
+					"type": "knowledge-area",
+					"demandPercentage": 42,
+					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 55.4,
+							"source": "dane"
+						},
+						{
+							"name": "Jupyter Notebook",
+							"type": "leaf",
+							"demandPercentage": null,
+							"source": "kuracja ekspercka",
+							"note": "brak w zrzucie 2026-02"
+						},
+						{
+							"name": "R",
+							"type": "leaf",
+							"demandPercentage": 0.2,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Konkret bazowy",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 25.5,
+							"source": "dane"
+						},
+						{
+							"name": "Databricks",
+							"type": "leaf",
+							"demandPercentage": 13,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Data Scientist",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: Pandas, Scikit-learn, XGBoost, PyTorch, Python, SQL. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Data Engineer",
+			"category": "I — Dane i Sztuczna Inteligencja",
+			"pathDemandOffers": 236,
+			"frameworks": {
+				"family": "I — Dane i Sztuczna Inteligencja",
+				"eCfArea": "BUILD + ENABLE",
+				"sfiaCategory": "Development & Implementation (Data engineering) · Strategy & Architecture",
+				"iscoCode": "ISCO 251 / 252",
+				"iscoLabel": "ICT professionals",
+				"escoOccupation": "data engineer"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": ["Data Scientist"],
+			"areas": [
+				{
+					"name": "Big Data / ETL",
+					"type": "knowledge-area",
+					"demandPercentage": 25,
+					"leaves": [
+						{
+							"name": "Apache Spark",
+							"type": "leaf",
+							"demandPercentage": 28,
+							"source": "dane"
+						},
+						{
+							"name": "PySpark",
+							"type": "leaf",
+							"demandPercentage": 22,
+							"source": "dane"
+						},
+						{
+							"name": "Airflow",
+							"type": "leaf",
+							"demandPercentage": 22.9,
+							"source": "dane"
+						},
+						{
+							"name": "dbt",
+							"type": "leaf",
+							"demandPercentage": 9.7,
+							"source": "dane"
+						},
+						{
+							"name": "Snowflake",
+							"type": "leaf",
+							"demandPercentage": 27.5,
+							"source": "dane"
+						},
+						{
+							"name": "BigQuery",
+							"type": "leaf",
+							"demandPercentage": 5.9,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Konkret bazowy",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 69.9,
+							"source": "dane"
+						},
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 50.4,
+							"source": "dane"
+						},
+						{
+							"name": "Databricks",
+							"type": "leaf",
+							"demandPercentage": 35.2,
+							"source": "dane"
+						},
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 1.3,
+							"source": "dane"
+						},
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 12.3,
+							"source": "dane"
+						},
+						{
+							"name": "Scala",
+							"type": "leaf",
+							"demandPercentage": 4.7,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Cloud",
+					"type": "knowledge-area",
+					"demandPercentage": 33,
+					"leaves": [
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 33.5,
+							"source": "dane"
+						},
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 33.1,
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 21.6,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "Pipeline czyszczący dane z publicznego API (Python + SQL)",
+					"anchorLeaves": ["Python", "SQL"],
+					"description": "Skrypt Python pobiera dane z 1 API, czyści (Pandas), ładuje do bazy SQL, podstawowe zapytania analityczne.",
+					"portfolioOutcome": "Powtarzalny skrypt ETL w repo.",
+					"marketRationale": "Python 70% + SQL 50% = dwie najczęstsze kompetencje ścieżki."
+				},
+				{
+					"level": "sredni",
+					"title": "ELT z orkiestracją (Airflow + dbt + Snowflake/BigQuery)",
+					"anchorLeaves": ["Python", "SQL", "Airflow", "dbt", "BigQuery"],
+					"description": "Airflow uruchamia cyklicznie pobranie z API → ładowanie do hurtowni chmurowej → transformacje w dbt → modele warstwowe.",
+					"portfolioOutcome": "Udokumentowany pipeline ELT.",
+					"marketRationale": "Airflow + dbt (DBT 45) + Snowflake/BigQuery = nowoczesny stos danych."
+				},
+				{
+					"level": "zaawansowany",
+					"title": "Mini-hurtownia end-to-end na Spark/Databricks",
+					"anchorLeaves": ["Python", "Apache Spark", "PySpark", "Databricks", "SQL", "dbt"],
+					"description": "Warstwy surowa→oczyszczona→martowa, przetwarzanie Spark/PySpark na Databricks, testy jakości danych, dashboard na wierzchu.",
+					"portfolioOutcome": "Repozytorium z architekturą warstwową.",
+					"marketRationale": "Databricks 35% + Spark 28% = rdzeń ofert senior DE."
+				}
+			]
+		},
+		{
+			"careerGoal": "Data Analyst",
+			"category": "I — Dane i Sztuczna Inteligencja",
+			"pathDemandOffers": 582,
+			"frameworks": {
+				"family": "I — Dane i Sztuczna Inteligencja",
+				"eCfArea": "BUILD + ENABLE",
+				"sfiaCategory": "Development & Implementation (Data engineering)",
+				"iscoCode": "ISCO 252",
+				"iscoLabel": "Database and network professionals",
+				"escoOccupation": "data analyst"
+			},
+			"juniorFriendliness": "Wysoka",
+			"targetRole": false,
+			"tShapePairs": ["Data Scientist"],
+			"areas": [
+				{
+					"name": "Wizualizacja BI",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Power BI",
+							"type": "leaf",
+							"demandPercentage": 24.1,
+							"source": "dane"
+						},
+						{
+							"name": "Tableau",
+							"type": "leaf",
+							"demandPercentage": 5.3,
+							"source": "dane"
+						},
+						{
+							"name": "MS Excel",
+							"type": "leaf",
+							"demandPercentage": 16.3,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "ETL",
+					"type": "knowledge-area",
+					"demandPercentage": 21,
+					"leaves": [
+						{
+							"name": "dbt",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"source": "dane"
+						},
+						{
+							"name": "Airflow",
+							"type": "leaf",
+							"demandPercentage": 2.7,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Konkret bazowy",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 48.6,
+							"source": "dane"
+						},
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 54.6,
+							"source": "dane"
+						},
+						{
+							"name": "BigQuery",
+							"type": "leaf",
+							"demandPercentage": 10.7,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Data Analyst",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: SQL, Python, Power BI, Tableau, MS Excel. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "DevOps Engineer",
+			"category": "III — Infrastruktura, Chmura i Bezpieczeństwo",
+			"pathDemandOffers": 528,
+			"frameworks": {
+				"family": "III — Infrastruktura, Chmura i Bezpieczeństwo",
+				"eCfArea": "RUN + BUILD",
+				"sfiaCategory": "Delivery & Operations (Systems / infrastructure)",
+				"iscoCode": "ISCO 2522",
+				"iscoLabel": "Systems administrators",
+				"escoOccupation": "DevOps engineer"
+			},
+			"juniorFriendliness": "Niska",
+			"targetRole": false,
+			"tShapePairs": [],
+			"areas": [
+				{
+					"name": "CI/CD",
+					"type": "knowledge-area",
+					"demandPercentage": 38,
+					"leaves": [
+						{
+							"name": "GitHub Actions",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"source": "dane"
+						},
+						{
+							"name": "Jenkins",
+							"type": "leaf",
+							"demandPercentage": 10.2,
+							"source": "dane"
+						},
+						{
+							"name": "GitLab CI",
+							"type": "leaf",
+							"demandPercentage": null,
+							"source": "kuracja ekspercka",
+							"note": "brak w zrzucie 2026-02"
+						}
+					]
+				},
+				{
+					"name": "Infrastruktura jako kod",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Terraform",
+							"type": "leaf",
+							"demandPercentage": 56.4,
+							"source": "dane"
+						},
+						{
+							"name": "Ansible",
+							"type": "leaf",
+							"demandPercentage": 25.8,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Konteneryzacja i orkiestracja",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 24.6,
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 40.7,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Cloud",
+					"type": "knowledge-area",
+					"demandPercentage": 28,
+					"leaves": [
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 27.7,
+							"source": "dane"
+						},
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 22.2,
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 7.2,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Monitoring",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Prometheus",
+							"type": "leaf",
+							"demandPercentage": 6.1,
+							"source": "dane"
+						},
+						{
+							"name": "Grafana",
+							"type": "leaf",
+							"demandPercentage": 7.6,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Konkret bazowy",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Linux",
+							"type": "leaf",
+							"demandPercentage": 18.6,
+							"source": "dane"
+						},
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 31.1,
+							"source": "dane"
+						},
+						{
+							"name": "Bash",
+							"type": "leaf",
+							"demandPercentage": 20.1,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla DevOps Engineer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: Terraform, Kubernetes, Docker, GitHub Actions, AWS, Ansible. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Java Developer",
+			"category": "II — Inżynieria Oprogramowania",
+			"pathDemandOffers": 457,
+			"frameworks": {
+				"family": "II — Inżynieria Oprogramowania",
+				"eCfArea": "BUILD",
+				"sfiaCategory": "Development & Implementation (Programming / software development)",
+				"iscoCode": "ISCO 2512",
+				"iscoLabel": "Software developers",
+				"escoOccupation": "software developer"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": ["DevOps Engineer"],
+			"areas": [
+				{
+					"name": "Język i framework",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 81.4,
+							"source": "dane"
+						},
+						{
+							"name": "Spring Boot",
+							"type": "leaf",
+							"demandPercentage": 48.1,
+							"source": "dane"
+						},
+						{
+							"name": "Spring",
+							"type": "leaf",
+							"demandPercentage": 45.1,
+							"source": "dane"
+						},
+						{
+							"name": "Hibernate",
+							"type": "leaf",
+							"demandPercentage": 24.5,
+							"source": "dane"
+						},
+						{
+							"name": "Maven",
+							"type": "leaf",
+							"demandPercentage": 9.4,
+							"source": "dane"
+						},
+						{
+							"name": "JUnit",
+							"type": "leaf",
+							"demandPercentage": 6.8,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Bazy danych",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 30.9,
+							"source": "dane"
+						},
+						{
+							"name": "PostgreSQL",
+							"type": "leaf",
+							"demandPercentage": 20.1,
+							"source": "dane"
+						},
+						{
+							"name": "Oracle",
+							"type": "leaf",
+							"demandPercentage": 24.5,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Konteneryzacja i integracja",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 19.9,
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 19,
+							"source": "dane"
+						},
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 19.3,
+							"source": "dane"
+						},
+						{
+							"name": "Swagger",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "REST API / Microservices",
+					"type": "knowledge-area",
+					"demandPercentage": 18,
+					"leaves": [
+						{
+							"name": "Swagger",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"source": "dane"
+						},
+						{
+							"name": "OpenAPI",
+							"type": "leaf",
+							"demandPercentage": 0.7,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "CI/CD",
+					"type": "knowledge-area",
+					"demandPercentage": 8,
+					"leaves": [
+						{
+							"name": "Jenkins",
+							"type": "leaf",
+							"demandPercentage": 6.3,
+							"source": "dane"
+						},
+						{
+							"name": "GitHub Actions",
+							"type": "leaf",
+							"demandPercentage": 0.2,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "REST API katalogu książek (Spring Boot + PostgreSQL)",
+					"anchorLeaves": ["Java", "Spring Boot", "PostgreSQL", "Swagger", "JUnit"],
+					"description": "Aplikacja CRUD: encje, repozytoria, kontrolery REST, walidacja, dokumentacja Swagger, kilka testów JUnit.",
+					"portfolioOutcome": "Działające API w repo z dokumentacją.",
+					"marketRationale": "Spring Boot 48% + PostgreSQL 20% = rdzeń ofert Java."
+				},
+				{
+					"level": "sredni",
+					"title": "System rezerwacji z autoryzacją (Spring Security + Hibernate + Docker)",
+					"anchorLeaves": ["Java", "Spring Boot", "Hibernate", "SQL", "Docker", "JUnit"],
+					"description": "Rezerwacje (sale/wizyty), warstwa Hibernate/JPA, autoryzacja ról JWT, konteneryzacja Docker, testy integracyjne.",
+					"portfolioOutcome": "Aplikacja z auth i bazą w kontenerze.",
+					"marketRationale": "Hibernate 25% + Docker 20% + Spring = typowy stack mid."
+				},
+				{
+					"level": "zaawansowany",
+					"title": "Mikrousługi zamówień z Kafka i CI/CD",
+					"anchorLeaves": ["Java", "Spring Boot", "Kafka", "Docker", "Kubernetes", "Jenkins"],
+					"description": "2-3 usługi Spring Boot komunikujące się przez Kafka, każda w Dockerze, deploy na Kubernetes (minikube), pipeline CI/CD (Jenkins), testy.",
+					"portfolioOutcome": "System mikrousługowy z pełną dokumentacją.",
+					"marketRationale": "Kafka 12% + Kubernetes 19% = sygnał ofert senior Java."
+				}
+			]
+		},
+		{
+			"careerGoal": ".NET Developer",
+			"category": "II — Inżynieria Oprogramowania",
+			"pathDemandOffers": 369,
+			"frameworks": {
+				"family": "II — Inżynieria Oprogramowania",
+				"eCfArea": "BUILD",
+				"sfiaCategory": "Development & Implementation (Programming / software development)",
+				"iscoCode": "ISCO 2512",
+				"iscoLabel": "Software developers",
+				"escoOccupation": "software developer"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": ["DevOps Engineer"],
+			"areas": [
+				{
+					"name": "Język i framework",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": ".Net",
+							"type": "leaf",
+							"demandPercentage": 61,
+							"source": "dane"
+						},
+						{
+							"name": "C#",
+							"type": "leaf",
+							"demandPercentage": 59.1,
+							"source": "dane"
+						},
+						{
+							"name": "ASP.NET",
+							"type": "leaf",
+							"demandPercentage": 15.2,
+							"source": "dane"
+						},
+						{
+							"name": "ASP.NET Core",
+							"type": "leaf",
+							"demandPercentage": 7.3,
+							"source": "dane"
+						},
+						{
+							"name": ".NET Core",
+							"type": "leaf",
+							"demandPercentage": 10,
+							"source": "dane"
+						},
+						{
+							"name": "Entity Framework",
+							"type": "leaf",
+							"demandPercentage": 5.1,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Bazy danych",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 28.7,
+							"source": "dane"
+						},
+						{
+							"name": "SQL Server",
+							"type": "leaf",
+							"demandPercentage": 7.6,
+							"source": "dane"
+						},
+						{
+							"name": "MS SQL",
+							"type": "leaf",
+							"demandPercentage": 6.2,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Konteneryzacja i chmura",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 11.7,
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 14.9,
+							"source": "dane"
+						},
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 22.5,
+							"source": "dane"
+						},
+						{
+							"name": "RabbitMQ",
+							"type": "leaf",
+							"demandPercentage": 5.1,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "REST API",
+					"type": "knowledge-area",
+					"demandPercentage": 14,
+					"leaves": [
+						{
+							"name": "Swagger",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						},
+						{
+							"name": "OAuth2",
+							"type": "leaf",
+							"demandPercentage": 0.3,
+							"source": "dane"
+						},
+						{
+							"name": "JWT",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla .NET Developer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: .Net, C#, SQL, Azure, ASP.NET, Entity Framework. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Backend Developer",
+			"category": "II — Inżynieria Oprogramowania",
+			"pathDemandOffers": 369,
+			"frameworks": {
+				"family": "II — Inżynieria Oprogramowania",
+				"eCfArea": "BUILD",
+				"sfiaCategory": "Development & Implementation",
+				"iscoCode": "ISCO 2512 / 2514",
+				"iscoLabel": "Software / applications developers",
+				"escoOccupation": "software developer"
+			},
+			"juniorFriendliness": "Wysoka",
+			"targetRole": false,
+			"tShapePairs": ["DevOps Engineer"],
+			"areas": [
+				{
+					"name": "Języki",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 38.8,
+							"source": "dane"
+						},
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 52.6,
+							"source": "dane"
+						},
+						{
+							"name": "TypeScript",
+							"type": "leaf",
+							"demandPercentage": 23.8,
+							"source": "dane"
+						},
+						{
+							"name": "Node.js",
+							"type": "leaf",
+							"demandPercentage": 18.7,
+							"source": "dane"
+						},
+						{
+							"name": "Django",
+							"type": "leaf",
+							"demandPercentage": 3.8,
+							"source": "dane"
+						},
+						{
+							"name": "FastAPI",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Bazy i cache",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 36.6,
+							"source": "dane"
+						},
+						{
+							"name": "PostgreSQL",
+							"type": "leaf",
+							"demandPercentage": 21.4,
+							"source": "dane"
+						},
+						{
+							"name": "MongoDB",
+							"type": "leaf",
+							"demandPercentage": 5.1,
+							"source": "dane"
+						},
+						{
+							"name": "Redis",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Konteneryzacja",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 30.1,
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 30.4,
+							"source": "dane"
+						},
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 33.1,
+							"source": "dane"
+						},
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 17.6,
+							"source": "dane"
+						},
+						{
+							"name": "Celery",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"source": "dane"
+						},
+						{
+							"name": "GraphQL",
+							"type": "leaf",
+							"demandPercentage": 3.3,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Backend Developer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: Python, Java, Node.js, SQL, Docker, Kubernetes, MongoDB, Redis. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Python Developer",
+			"category": "II — Inżynieria Oprogramowania",
+			"pathDemandOffers": 533,
+			"frameworks": {
+				"family": "II — Inżynieria Oprogramowania",
+				"eCfArea": "BUILD",
+				"sfiaCategory": "Development & Implementation",
+				"iscoCode": "ISCO 2512 / 2514",
+				"iscoLabel": "Software / applications developers",
+				"escoOccupation": "software developer"
+			},
+			"juniorFriendliness": "Wysoka",
+			"targetRole": false,
+			"tShapePairs": ["DevOps Engineer"],
+			"areas": [
+				{
+					"name": "Język i frameworki",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 46.3,
+							"source": "dane"
+						},
+						{
+							"name": "Django",
+							"type": "leaf",
+							"demandPercentage": 9.9,
+							"source": "dane"
+						},
+						{
+							"name": "Flask",
+							"type": "leaf",
+							"demandPercentage": 5.4,
+							"source": "dane"
+						},
+						{
+							"name": "FastAPI",
+							"type": "leaf",
+							"demandPercentage": 7.9,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Infrastruktura",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 31.1,
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 36,
+							"source": "dane"
+						},
+						{
+							"name": "Linux",
+							"type": "leaf",
+							"demandPercentage": 40.3,
+							"source": "dane"
+						},
+						{
+							"name": "PostgreSQL",
+							"type": "leaf",
+							"demandPercentage": 19.5,
+							"source": "dane"
+						},
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 28.1,
+							"source": "dane"
+						},
+						{
+							"name": "Git",
+							"type": "leaf",
+							"demandPercentage": 13.9,
+							"source": "dane"
+						},
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 6.4,
+							"source": "dane"
+						},
+						{
+							"name": "Redis",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"source": "dane"
+						},
+						{
+							"name": "MongoDB",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "CI/CD",
+					"type": "knowledge-area",
+					"demandPercentage": 23,
+					"leaves": [
+						{
+							"name": "GitHub Actions",
+							"type": "leaf",
+							"demandPercentage": 0.4,
+							"source": "dane"
+						},
+						{
+							"name": "Jenkins",
+							"type": "leaf",
+							"demandPercentage": 3.6,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Python Developer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: Python, Linux, Kubernetes, Docker, Django, FastAPI. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Frontend Developer",
+			"category": "II — Inżynieria Oprogramowania",
+			"pathDemandOffers": 460,
+			"frameworks": {
+				"family": "II — Inżynieria Oprogramowania",
+				"eCfArea": "BUILD",
+				"sfiaCategory": "Development & Implementation",
+				"iscoCode": "ISCO 2513",
+				"iscoLabel": "Web and multimedia developers",
+				"escoOccupation": "front-end developer"
+			},
+			"juniorFriendliness": "Wysoka",
+			"targetRole": false,
+			"tShapePairs": ["UX/UI Designer"],
+			"areas": [
+				{
+					"name": "Język i framework",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "JavaScript",
+							"type": "leaf",
+							"demandPercentage": 60.7,
+							"source": "dane"
+						},
+						{
+							"name": "TypeScript",
+							"type": "leaf",
+							"demandPercentage": 57.4,
+							"source": "dane"
+						},
+						{
+							"name": "React",
+							"type": "leaf",
+							"demandPercentage": 43.5,
+							"source": "dane"
+						},
+						{
+							"name": "Next.js",
+							"type": "leaf",
+							"demandPercentage": 14.3,
+							"source": "dane"
+						},
+						{
+							"name": "Angular",
+							"type": "leaf",
+							"demandPercentage": 22.2,
+							"source": "dane"
+						},
+						{
+							"name": "Node.js",
+							"type": "leaf",
+							"demandPercentage": 27.8,
+							"source": "dane"
+						},
+						{
+							"name": "Redux",
+							"type": "leaf",
+							"demandPercentage": 5.7,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Styling",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "CSS",
+							"type": "leaf",
+							"demandPercentage": 25.7,
+							"source": "dane"
+						},
+						{
+							"name": "CSS3",
+							"type": "leaf",
+							"demandPercentage": 5.9,
+							"source": "dane"
+						},
+						{
+							"name": "HTML",
+							"type": "leaf",
+							"demandPercentage": 24.6,
+							"source": "dane"
+						},
+						{
+							"name": "HTML5",
+							"type": "leaf",
+							"demandPercentage": 10.4,
+							"source": "dane"
+						},
+						{
+							"name": "Tailwind CSS",
+							"type": "leaf",
+							"demandPercentage": 0.7,
+							"source": "dane"
+						},
+						{
+							"name": "SASS",
+							"type": "leaf",
+							"demandPercentage": 0.9,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Testowanie",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Playwright",
+							"type": "leaf",
+							"demandPercentage": 1.3,
+							"source": "dane"
+						},
+						{
+							"name": "Cypress",
+							"type": "leaf",
+							"demandPercentage": 2,
+							"source": "dane"
+						},
+						{
+							"name": "Jest",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "Responsywny katalog filmów (React + TypeScript + Tailwind)",
+					"anchorLeaves": ["JavaScript", "TypeScript", "React", "Tailwind CSS"],
+					"description": "SPA pobierająca dane z publicznego API (TMDB), RWD, komponenty, routing.",
+					"portfolioOutcome": "Wdrożona strona (Vercel) w repo.",
+					"marketRationale": "TypeScript 57% + React 43% = najsilniejszy klaster frontu."
+				},
+				{
+					"level": "sredni",
+					"title": "Aplikacja z zarządzaniem stanem i autoryzacją (Next.js + Redux)",
+					"anchorLeaves": ["TypeScript", "React", "Next.js", "Redux", "Node.js"],
+					"description": "Next.js (SSR), logowanie, zarządzanie stanem (Redux), formularze, integracja REST API.",
+					"portfolioOutcome": "Aplikacja z auth i SSR.",
+					"marketRationale": "Next.js + Redux = typowe wymagania mid frontu."
+				},
+				{
+					"level": "zaawansowany",
+					"title": "Produkt SaaS frontend z testami E2E",
+					"anchorLeaves": ["TypeScript", "React", "Next.js", "Node.js", "Playwright"],
+					"description": "Pełna aplikacja (dashboard + płatności testowe), komponenty wielokrotnego użytku, testy E2E (Playwright), CI, deploy.",
+					"portfolioOutcome": "Produkt z testami i pipeline.",
+					"marketRationale": "Pokrycie większości top-liści + jakość produkcyjna."
+				}
+			]
+		},
+		{
+			"careerGoal": "Full-Stack Developer",
+			"category": "II — Inżynieria Oprogramowania",
+			"pathDemandOffers": 286,
+			"frameworks": {
+				"family": "II — Inżynieria Oprogramowania",
+				"eCfArea": "BUILD",
+				"sfiaCategory": "Development & Implementation",
+				"iscoCode": "ISCO 2513 / 2512",
+				"iscoLabel": "Web developers / software developers",
+				"escoOccupation": "full-stack developer"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": ["UX/UI Designer", "DevOps Engineer"],
+			"areas": [
+				{
+					"name": "Frontend",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "React",
+							"type": "leaf",
+							"demandPercentage": 58.4,
+							"source": "dane"
+						},
+						{
+							"name": "TypeScript",
+							"type": "leaf",
+							"demandPercentage": 44.1,
+							"source": "dane"
+						},
+						{
+							"name": "JavaScript",
+							"type": "leaf",
+							"demandPercentage": 28.7,
+							"source": "dane"
+						},
+						{
+							"name": "Next.js",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"source": "dane"
+						},
+						{
+							"name": "Tailwind CSS",
+							"type": "leaf",
+							"demandPercentage": 0.7,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Backend dla fullstacka",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Node.js",
+							"type": "leaf",
+							"demandPercentage": 21,
+							"source": "dane"
+						},
+						{
+							"name": "NestJS",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						},
+						{
+							"name": "Express",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						},
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 40.9,
+							"source": "dane"
+						},
+						{
+							"name": "Spring Boot",
+							"type": "leaf",
+							"demandPercentage": 9.1,
+							"source": "dane"
+						},
+						{
+							"name": ".Net",
+							"type": "leaf",
+							"demandPercentage": 21.3,
+							"source": "dane"
+						},
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 29,
+							"source": "dane"
+						},
+						{
+							"name": "MongoDB",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Bazy i infra",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 22.4,
+							"source": "dane"
+						},
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 10.1,
+							"source": "dane"
+						},
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 29,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Full-Stack Developer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: React, TypeScript, Node.js, Java, MongoDB. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Android Developer",
+			"category": "II — Inżynieria Oprogramowania",
+			"pathDemandOffers": 326,
+			"frameworks": {
+				"family": "II — Inżynieria Oprogramowania",
+				"eCfArea": "BUILD",
+				"sfiaCategory": "Development & Implementation",
+				"iscoCode": "ISCO 2514 / 2513",
+				"iscoLabel": "Applications programmers",
+				"escoOccupation": "mobile application developer"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": [],
+			"areas": [
+				{
+					"name": "Natywny Android",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Kotlin",
+							"type": "leaf",
+							"demandPercentage": 37.1,
+							"source": "dane"
+						},
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 54.6,
+							"source": "dane"
+						},
+						{
+							"name": "Android SDK",
+							"type": "leaf",
+							"demandPercentage": 9.8,
+							"source": "dane"
+						},
+						{
+							"name": "Jetpack Compose",
+							"type": "leaf",
+							"demandPercentage": 6.4,
+							"source": "dane"
+						},
+						{
+							"name": "Android Studio",
+							"type": "leaf",
+							"demandPercentage": 4.6,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "iOS / hybrydowy",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Swift",
+							"type": "leaf",
+							"demandPercentage": 8.6,
+							"source": "dane"
+						},
+						{
+							"name": "SwiftUI",
+							"type": "leaf",
+							"demandPercentage": 4.6,
+							"source": "dane"
+						},
+						{
+							"name": "Flutter",
+							"type": "leaf",
+							"demandPercentage": 4,
+							"source": "dane"
+						},
+						{
+							"name": "React Native",
+							"type": "leaf",
+							"demandPercentage": 5.2,
+							"source": "dane"
+						},
+						{
+							"name": "Firebase",
+							"type": "leaf",
+							"demandPercentage": 0.3,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Konkret bazowy",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Git",
+							"type": "leaf",
+							"demandPercentage": 15.6,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Android Developer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: Kotlin, Java, Android SDK, Jetpack Compose, Firebase. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "QA Engineer",
+			"category": "IV — Jakość, Testy i Architektura",
+			"pathDemandOffers": 362,
+			"frameworks": {
+				"family": "IV — Jakość, Testy i Architektura",
+				"eCfArea": "BUILD + ENABLE",
+				"sfiaCategory": "Development & Implementation (Testing) / Skills & Quality",
+				"iscoCode": "ISCO 251",
+				"iscoLabel": "ICT professionals",
+				"escoOccupation": "software tester"
+			},
+			"juniorFriendliness": "Wysoka",
+			"targetRole": false,
+			"tShapePairs": ["DevOps Engineer"],
+			"areas": [
+				{
+					"name": "Automatyzacja",
+					"type": "knowledge-area",
+					"demandPercentage": 20,
+					"leaves": [
+						{
+							"name": "Selenium",
+							"type": "leaf",
+							"demandPercentage": 26,
+							"source": "dane"
+						},
+						{
+							"name": "Playwright",
+							"type": "leaf",
+							"demandPercentage": 25.1,
+							"source": "dane"
+						},
+						{
+							"name": "Cypress",
+							"type": "leaf",
+							"demandPercentage": 6.4,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Testowanie API",
+					"type": "knowledge-area",
+					"demandPercentage": 18,
+					"leaves": [
+						{
+							"name": "Postman",
+							"type": "leaf",
+							"demandPercentage": 7.7,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Zarządzanie testami",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Xray",
+							"type": "leaf",
+							"demandPercentage": 0.3,
+							"source": "dane"
+						},
+						{
+							"name": "Zephyr",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						},
+						{
+							"name": "TestRail",
+							"type": "leaf",
+							"demandPercentage": 0.8,
+							"source": "dane"
+						},
+						{
+							"name": "Jira",
+							"type": "leaf",
+							"demandPercentage": 4.7,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Języki",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 43.6,
+							"source": "dane"
+						},
+						{
+							"name": "JavaScript",
+							"type": "leaf",
+							"demandPercentage": 29,
+							"source": "dane"
+						},
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 22.1,
+							"source": "dane"
+						},
+						{
+							"name": "TypeScript",
+							"type": "leaf",
+							"demandPercentage": 17.1,
+							"source": "dane"
+						},
+						{
+							"name": "C#",
+							"type": "leaf",
+							"demandPercentage": 18,
+							"source": "dane"
+						},
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 27.3,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla QA Engineer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: Selenium, Playwright, Cypress, Postman, Jira. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Business Analyst",
+			"category": "V — Zarządzanie, Produkt i Systemy Biznesowe",
+			"pathDemandOffers": 461,
+			"frameworks": {
+				"family": "V — Zarządzanie, Produkt i Systemy Biznesowe",
+				"eCfArea": "PLAN + ENABLE",
+				"sfiaCategory": "Change & Transformation (Business analysis)",
+				"iscoCode": "ISCO 2511",
+				"iscoLabel": "Systems analysts",
+				"escoOccupation": "business analyst"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": [],
+			"areas": [
+				{
+					"name": "Notacje i modelowanie",
+					"type": "knowledge-area",
+					"demandPercentage": 60,
+					"leaves": [
+						{
+							"name": "UML",
+							"type": "leaf",
+							"demandPercentage": 60.1,
+							"source": "dane"
+						},
+						{
+							"name": "BPMN",
+							"type": "leaf",
+							"demandPercentage": 51.2,
+							"source": "dane"
+						},
+						{
+							"name": "Enterprise Architect",
+							"type": "leaf",
+							"demandPercentage": 26.5,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Narzędzia analityka",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Jira",
+							"type": "leaf",
+							"demandPercentage": 31.2,
+							"source": "dane"
+						},
+						{
+							"name": "Confluence",
+							"type": "leaf",
+							"demandPercentage": 21.5,
+							"source": "dane"
+						},
+						{
+							"name": "Postman",
+							"type": "leaf",
+							"demandPercentage": 9.3,
+							"source": "dane"
+						},
+						{
+							"name": "Miro",
+							"type": "leaf",
+							"demandPercentage": null,
+							"source": "kuracja ekspercka",
+							"note": "brak w zrzucie 2026-02"
+						}
+					]
+				},
+				{
+					"name": "Dane",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 37.7,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "Model procesu biznesowego w BPMN",
+					"anchorLeaves": ["BPMN"],
+					"description": "Modelowanie realnego procesu (np. obsługa reklamacji) w BPMN: as-is, uczestnicy, punkty decyzyjne.",
+					"portfolioOutcome": "Czytelny diagram procesu w repo.",
+					"marketRationale": "BPMN 51% = druga najczęstsza kompetencja BA."
+				},
+				{
+					"level": "sredni",
+					"title": "Specyfikacja systemu (UML + SQL + Enterprise Architect)",
+					"anchorLeaves": ["UML", "BPMN", "SQL", "Enterprise Architect"],
+					"description": "Diagram przypadków użycia (UML), model danych (ERD/SQL), wymagania funkcjonalne/niefunkcjonalne, mapowanie as-is→to-be (BPMN), spięte w Enterprise Architect.",
+					"portfolioOutcome": "Pakiet dokumentacji gotowy dla developera.",
+					"marketRationale": "UML 60% + BPMN 51% + Enterprise Architect 26% = trójca BA."
+				},
+				{
+					"level": "zaawansowany",
+					"title": "Analiza usprawnienia end-to-end z integracjami (UML/BPMN + Postman + Jira)",
+					"anchorLeaves": ["UML", "BPMN", "SQL", "Postman", "Jira", "Enterprise Architect"],
+					"description": "Analiza luk as-is/to-be, projekt rozwiązania (UML/BPMN), specyfikacja integracji REST (testy w Postman), business case, backlog w Jira.",
+					"portfolioOutcome": "Kompletna analiza klasy korporacyjnej.",
+					"marketRationale": "Pełne pokrycie top-liści BA + integracje."
+				}
+			]
+		},
+		{
+			"careerGoal": "Project Manager",
+			"category": "V — Zarządzanie, Produkt i Systemy Biznesowe",
+			"pathDemandOffers": 520,
+			"frameworks": {
+				"family": "V — Zarządzanie, Produkt i Systemy Biznesowe",
+				"eCfArea": "MANAGE",
+				"sfiaCategory": "Change & Transformation + Relationships & Engagement",
+				"iscoCode": "ISCO 1330",
+				"iscoLabel": "ICT service managers",
+				"escoOccupation": "project manager"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": [],
+			"areas": [
+				{
+					"name": "Narzędzia śledzenia",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Jira",
+							"type": "leaf",
+							"demandPercentage": 38.8,
+							"source": "dane"
+						},
+						{
+							"name": "Trello",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						},
+						{
+							"name": "Asana",
+							"type": "leaf",
+							"demandPercentage": 0.2,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Dokumentacja",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Confluence",
+							"type": "leaf",
+							"demandPercentage": 22.9,
+							"source": "dane"
+						},
+						{
+							"name": "MS Project",
+							"type": "leaf",
+							"demandPercentage": 2.3,
+							"source": "dane"
+						},
+						{
+							"name": "Miro",
+							"type": "leaf",
+							"demandPercentage": null,
+							"source": "kuracja ekspercka",
+							"note": "brak w zrzucie 2026-02"
+						}
+					]
+				},
+				{
+					"name": "Agile",
+					"type": "knowledge-area",
+					"demandPercentage": 41,
+					"leaves": [
+						{
+							"name": "Scrum",
+							"type": "leaf",
+							"demandPercentage": 24,
+							"source": "dane"
+						},
+						{
+							"name": "Kanban",
+							"type": "leaf",
+							"demandPercentage": 5.2,
+							"source": "dane"
+						},
+						{
+							"name": "PRINCE2",
+							"type": "leaf",
+							"demandPercentage": 7.1,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "Kompletny backlog produktu w Jira",
+					"anchorLeaves": ["Jira"],
+					"description": "Darmowa instancja Jira: Epiki → User Stories → precyzyjne kryteria akceptacji dla wymyślonej aplikacji; konfiguracja tablicy.",
+					"portfolioOutcome": "Publiczny eksport/zrzut backlogu.",
+					"marketRationale": "Jira 39% = najczęstsze narzędzie ścieżki."
+				},
+				{
+					"level": "sredni",
+					"title": "Case study cyklu sprintu (Jira + Confluence)",
+					"anchorLeaves": ["Jira", "Confluence"],
+					"description": "Symulacja 1 sprintu: plan, rejestr ryzyk w Confluence, diagramy velocity/burndown, raport retrospektywy.",
+					"portfolioOutcome": "Dokumentacja sprintu pokazująca proces.",
+					"marketRationale": "Jira + Confluence 23% = rdzeń narzędziowy PM."
+				},
+				{
+					"level": "zaawansowany",
+					"title": "Symulacja prowadzenia mini-produktu (3 sprinty)",
+					"anchorLeaves": ["Jira", "Confluence", "MS Project"],
+					"description": "3 sprinty w Jira, roadmapa (MS Project/Confluence), metryki, rejestr decyzji, raport końcowy z wnioskami.",
+					"portfolioOutcome": "Pełna dokumentacja prowadzenia produktu.",
+					"marketRationale": "Dodanie MS Project (19) + roadmapa = poziom mid/senior PM."
+				}
+			]
+		},
+		{
+			"careerGoal": "Product Owner / Manager",
+			"category": "V — Zarządzanie, Produkt i Systemy Biznesowe",
+			"pathDemandOffers": 216,
+			"frameworks": {
+				"family": "V — Zarządzanie, Produkt i Systemy Biznesowe",
+				"eCfArea": "MANAGE / PLAN",
+				"sfiaCategory": "Change & Transformation",
+				"iscoCode": "ISCO 1330",
+				"iscoLabel": "ICT service managers",
+				"escoOccupation": "product owner"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": [],
+			"areas": [
+				{
+					"name": "Narzędzia produktowe",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Jira",
+							"type": "leaf",
+							"demandPercentage": 13.4,
+							"source": "dane"
+						},
+						{
+							"name": "Confluence",
+							"type": "leaf",
+							"demandPercentage": 6.5,
+							"source": "dane"
+						},
+						{
+							"name": "Miro",
+							"type": "leaf",
+							"demandPercentage": null,
+							"source": "kuracja ekspercka",
+							"note": "brak w zrzucie 2026-02"
+						}
+					]
+				},
+				{
+					"name": "Analiza danych produktu",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 1.4,
+							"source": "dane"
+						},
+						{
+							"name": "Power BI",
+							"type": "leaf",
+							"demandPercentage": 0.9,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Product Management",
+					"type": "knowledge-area",
+					"demandPercentage": 41,
+					"leaves": [
+						{
+							"name": "Scrum",
+							"type": "leaf",
+							"demandPercentage": 12.5,
+							"source": "dane"
+						},
+						{
+							"name": "SaaS",
+							"type": "leaf",
+							"demandPercentage": 13,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Product Owner / Manager",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: Jira, Confluence, SQL, Power BI. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "UX/UI Designer",
+			"category": "V — Zarządzanie, Produkt i Systemy Biznesowe",
+			"pathDemandOffers": 104,
+			"frameworks": {
+				"family": "V — Zarządzanie, Produkt i Systemy Biznesowe",
+				"eCfArea": "PLAN + ENABLE",
+				"sfiaCategory": "Development & Implementation (User experience)",
+				"iscoCode": "ISCO 2166",
+				"iscoLabel": "Graphic and multimedia designers",
+				"escoOccupation": "UX designer"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": ["Frontend Developer"],
+			"areas": [
+				{
+					"name": "Narzędzia projektowe",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Figma",
+							"type": "leaf",
+							"demandPercentage": 63.5,
+							"source": "dane"
+						},
+						{
+							"name": "Adobe XD",
+							"type": "leaf",
+							"demandPercentage": 14.4,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Współpraca",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Jira",
+							"type": "leaf",
+							"demandPercentage": 9.6,
+							"source": "dane"
+						},
+						{
+							"name": "Confluence",
+							"type": "leaf",
+							"demandPercentage": 6.7,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "UX",
+					"type": "knowledge-area",
+					"demandPercentage": 27,
+					"leaves": [
+						{
+							"name": "WCAG",
+							"type": "leaf",
+							"demandPercentage": 9.6,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla UX/UI Designer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: Figma, Adobe XD. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Salesforce Developer",
+			"category": "V — Zarządzanie, Produkt i Systemy Biznesowe",
+			"pathDemandOffers": 213,
+			"frameworks": {
+				"family": "V — Zarządzanie, Produkt i Systemy Biznesowe",
+				"eCfArea": "BUILD + ENABLE + MANAGE",
+				"sfiaCategory": "Change & Transformation (Business analysis) / Delivery & Operations",
+				"iscoCode": "ISCO 2511",
+				"iscoLabel": "Systems analysts",
+				"escoOccupation": "ERP/CRM consultant"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": [],
+			"areas": [
+				{
+					"name": "Ekosystem Salesforce",
+					"type": "knowledge-area",
+					"demandPercentage": 31,
+					"leaves": [
+						{
+							"name": "Salesforce",
+							"type": "leaf",
+							"demandPercentage": 31.5,
+							"source": "dane"
+						},
+						{
+							"name": "Apex",
+							"type": "leaf",
+							"demandPercentage": 15,
+							"source": "dane"
+						},
+						{
+							"name": "LWC",
+							"type": "leaf",
+							"demandPercentage": 8.5,
+							"source": "dane"
+						},
+						{
+							"name": "Visualforce",
+							"type": "leaf",
+							"demandPercentage": 2.3,
+							"source": "dane"
+						},
+						{
+							"name": "Aura",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Web i integracje",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "HTML",
+							"type": "leaf",
+							"demandPercentage": 9.9,
+							"source": "dane"
+						},
+						{
+							"name": "CSS",
+							"type": "leaf",
+							"demandPercentage": 8,
+							"source": "dane"
+						},
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 7.5,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "API",
+					"type": "knowledge-area",
+					"demandPercentage": 39,
+					"leaves": [
+						{
+							"name": "Swagger",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						},
+						{
+							"name": "Postman",
+							"type": "leaf",
+							"demandPercentage": 3.8,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "Konfiguracja CRM bez kodu (Salesforce Flow)",
+					"anchorLeaves": ["Salesforce"],
+					"description": "Salesforce Developer Org: własny obiekt (np. Zgłoszenie), pola, layout, automatyzacja Flow.",
+					"portfolioOutcome": "Działająca konfiguracja w org.",
+					"marketRationale": "Salesforce 31% = rdzeń platformy."
+				},
+				{
+					"level": "sredni",
+					"title": "Aplikacja CRM z logiką w Apex + LWC",
+					"anchorLeaves": ["Salesforce", "Apex", "LWC"],
+					"description": "Niestandardowe obiekty, trigger Apex (automatyczne przypisanie), interfejs w Lightning Web Components.",
+					"portfolioOutcome": "Aplikacja z własnym kodem.",
+					"marketRationale": "Apex 15% + LWC 8% = sygnał ról deweloperskich Salesforce."
+				},
+				{
+					"level": "zaawansowany",
+					"title": "Integracja Salesforce z zewnętrznym API (Apex REST + testy)",
+					"anchorLeaves": ["Salesforce", "Apex", "LWC"],
+					"description": "Wywołanie REST z Apex do zewnętrznego API, obsługa błędów/limitów, komponent LWC prezentujący dane, testy Apex (wymóg 75% pokrycia).",
+					"portfolioOutcome": "Integracja produkcyjnej klasy.",
+					"marketRationale": "Dodanie integracji API 39% (obszar) = poziom mid konsultanta."
+				}
+			]
+		},
+		{
+			"careerGoal": "PHP Developer",
+			"category": "II — Inżynieria Oprogramowania",
+			"pathDemandOffers": 405,
+			"frameworks": {
+				"family": "II — Inżynieria Oprogramowania",
+				"eCfArea": "BUILD",
+				"sfiaCategory": "Development & Implementation",
+				"iscoCode": "ISCO 2514",
+				"iscoLabel": "Applications programmers",
+				"escoOccupation": "software developer"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": [],
+			"areas": [
+				{
+					"name": "Język i framework",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "PHP",
+							"type": "leaf",
+							"demandPercentage": 22.2,
+							"source": "dane"
+						},
+						{
+							"name": "Symfony",
+							"type": "leaf",
+							"demandPercentage": 11.4,
+							"source": "dane"
+						},
+						{
+							"name": "Laravel",
+							"type": "leaf",
+							"demandPercentage": 5.2,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Bazy danych",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 44.2,
+							"source": "dane"
+						},
+						{
+							"name": "MySQL",
+							"type": "leaf",
+							"demandPercentage": 16.8,
+							"source": "dane"
+						},
+						{
+							"name": "PostgreSQL",
+							"type": "leaf",
+							"demandPercentage": 18.5,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Infra i front",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 14.8,
+							"source": "dane"
+						},
+						{
+							"name": "React",
+							"type": "leaf",
+							"demandPercentage": 13.8,
+							"source": "dane"
+						},
+						{
+							"name": "Git",
+							"type": "leaf",
+							"demandPercentage": 20.7,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla PHP Developer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: PHP, Symfony, MySQL, SQL, Docker. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Solution Architect",
+			"category": "IV — Jakość, Testy i Architektura",
+			"pathDemandOffers": 90,
+			"frameworks": {
+				"family": "IV — Jakość, Testy i Architektura",
+				"eCfArea": "PLAN",
+				"sfiaCategory": "Strategy & Architecture (Solution / Enterprise architecture)",
+				"iscoCode": "ISCO 2511 / 133",
+				"iscoLabel": "ICT system architect / ICT managers",
+				"escoOccupation": "ICT system architect"
+			},
+			"juniorFriendliness": "rola docelowa",
+			"targetRole": true,
+			"tShapePairs": [],
+			"note": "Rola docelowa, nie punkt startu — wymaga podstaw programistycznych. Widoczna jako cel awansu.",
+			"areas": [
+				{
+					"name": "Projektowanie (Architecture)",
+					"type": "knowledge-area",
+					"demandPercentage": 39,
+					"leaves": [
+						{
+							"name": "C4",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"source": "dane"
+						},
+						{
+							"name": "UML",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Komunikacja i integracja",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 34.4,
+							"source": "dane"
+						},
+						{
+							"name": "RabbitMQ",
+							"type": "leaf",
+							"demandPercentage": 3.3,
+							"source": "dane"
+						},
+						{
+							"name": "gRPC",
+							"type": "leaf",
+							"demandPercentage": 0,
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 22.2,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Języki",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 36.7,
+							"source": "dane"
+						},
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 33.3,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Cloud",
+					"type": "knowledge-area",
+					"demandPercentage": 29,
+					"leaves": [
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"source": "dane"
+						},
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 18.9,
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 2.2,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Solution Architect",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: C4, UML, Kafka, Kubernetes — projekty dokumentacyjne (rola docelowa). Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Embedded / C++ Developer",
+			"category": "II — Inżynieria Oprogramowania",
+			"pathDemandOffers": 170,
+			"frameworks": {
+				"family": "II — Inżynieria Oprogramowania",
+				"eCfArea": "BUILD",
+				"sfiaCategory": "Development & Implementation",
+				"iscoCode": "ISCO 2512",
+				"iscoLabel": "Software developers",
+				"escoOccupation": "embedded systems developer"
+			},
+			"juniorFriendliness": "Średnia",
+			"targetRole": false,
+			"tShapePairs": [],
+			"note": "Było „Software Engineer”; przemianowane (dyrektywa 3) — realny profil C++ 74%.",
+			"areas": [
+				{
+					"name": "Języki",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "C++",
+							"type": "leaf",
+							"demandPercentage": 73.5,
+							"source": "dane"
+						},
+						{
+							"name": "C",
+							"type": "leaf",
+							"demandPercentage": 34.7,
+							"source": "dane"
+						},
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 42.4,
+							"source": "dane"
+						},
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 24.1,
+							"source": "dane"
+						},
+						{
+							"name": "Kotlin",
+							"type": "leaf",
+							"demandPercentage": 12.9,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Systemy",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Linux",
+							"type": "leaf",
+							"demandPercentage": 33.5,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Embedded / C++ Developer",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: C++, C, Python, Linux. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		},
+		{
+			"careerGoal": "Engineering Manager",
+			"category": "IV — Jakość, Testy i Architektura",
+			"pathDemandOffers": 124,
+			"frameworks": {
+				"family": "IV — Jakość, Testy i Architektura",
+				"eCfArea": "MANAGE",
+				"sfiaCategory": "Change & Transformation + Relationships & Engagement",
+				"iscoCode": "ISCO 133 / 1330",
+				"iscoLabel": "ICT managers",
+				"escoOccupation": "ICT manager"
+			},
+			"juniorFriendliness": "rola docelowa",
+			"targetRole": true,
+			"tShapePairs": [],
+			"note": "Rola docelowa (po latach) — knowledge-heavy. Widoczna jako ścieżka awansu, nie punkt startu.",
+			"areas": [
+				{
+					"name": "Techniczne tło",
+					"type": "presentation-group",
+					"demandPercentage": null,
+					"leaves": [
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 32.3,
+							"source": "dane"
+						},
+						{
+							"name": "React",
+							"type": "leaf",
+							"demandPercentage": 23.4,
+							"source": "dane"
+						},
+						{
+							"name": "Kotlin",
+							"type": "leaf",
+							"demandPercentage": 20.2,
+							"source": "dane"
+						},
+						{
+							"name": "TypeScript",
+							"type": "leaf",
+							"demandPercentage": 13.7,
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Leadership",
+					"type": "knowledge-area",
+					"demandPercentage": 23,
+					"leaves": [
+						{
+							"name": "Agile",
+							"type": "leaf",
+							"demandPercentage": 24.2,
+							"source": "dane"
+						},
+						{
+							"name": "Scrum",
+							"type": "leaf",
+							"demandPercentage": 8.1,
+							"source": "dane"
+						}
+					]
+				}
+			],
+			"projects": [
+				{
+					"level": "latwy",
+					"title": "(do dopisania) Projekty 3-poziomowe dla Engineering Manager",
+					"anchorLeaves": [],
+					"description": "Szablon gotowy — top liście do zakotwiczenia: rola docelowa, knowledge-heavy — projekty z bazowej ścieżki technicznej. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"portfolioOutcome": "(do uzupełnienia)",
+					"todo": true
+				}
+			]
+		}
+	]
+}
