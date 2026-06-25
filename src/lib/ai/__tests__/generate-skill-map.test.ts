@@ -1,148 +1,91 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("ai", () => ({
-	generateObject: vi.fn(),
-}));
-
-vi.mock("@ai-sdk/anthropic", () => ({
-	anthropic: vi.fn(() => "mocked-model"),
-}));
+/**
+ * generateSkillMap po poprawce #1: DETERMINISTYCZNY, bez LLM.
+ * Czyta kompetencje + luki z bazy i buduje graf przez buildGraph
+ * (logika grafu testowana osobno w src/lib/skill-map/__tests__/build-graph.test.ts).
+ * Tu sprawdzamy tylko warstwę persystencji: insert gdy brak mapy, update gdy jest,
+ * propagacja błędów — ORAZ że żaden model AI nie jest wołany (redukcja powierzchni LLM).
+ */
 
 vi.mock("@/lib/db", () => ({
 	db: {
 		query: {
-			skillMaps: {
-				findFirst: vi.fn(),
-			},
+			competencies: { findMany: vi.fn() },
+			gaps: { findMany: vi.fn() },
+			skillMaps: { findFirst: vi.fn() },
 		},
-		insert: vi.fn(() => ({
-			values: vi.fn(),
-		})),
-		update: vi.fn(() => ({
-			set: vi.fn(() => ({
-				where: vi.fn(),
-			})),
-		})),
+		insert: vi.fn(() => ({ values: vi.fn() })),
+		update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
 	},
 }));
 
-import { generateObject } from "ai";
 import { db } from "@/lib/db";
 import { generateSkillMap } from "../generate-skill-map";
 
-const mockGenerateObject = vi.mocked(generateObject);
-const mockFindFirst = vi.mocked(db.query.skillMaps.findFirst);
+const mockCompetencies = vi.mocked(db.query.competencies.findMany);
+const mockGaps = vi.mocked(db.query.gaps.findMany);
+const mockSkillMapFindFirst = vi.mocked(db.query.skillMaps.findFirst);
 const mockInsert = vi.mocked(db.insert);
 const mockUpdate = vi.mocked(db.update);
 
-const validResponse = {
-	nodes: [
-		{
-			id: "skill-1",
-			data: {
-				label: "Python",
-				status: "acquired" as const,
-				category: "programming",
-				marketPercentage: 55,
-			},
-			position: { x: 0, y: 0 },
-			type: "skillNode",
-		},
-		{
-			id: "skill-2",
-			data: {
-				label: "Docker",
-				status: "missing" as const,
-				category: "devops",
-				marketPercentage: 58,
-			},
-			position: { x: 220, y: 0 },
-			type: "skillNode",
-		},
-	],
-	edges: [{ id: "e1-2", source: "skill-1", target: "skill-2" }],
-};
-
-describe("generateSkillMap", () => {
+describe("generateSkillMap (deterministyczny)", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockCompetencies.mockResolvedValue([
+			{ name: "Python", status: "acquired", marketPercentage: 80 },
+			{ name: "SQL", status: "in_progress", marketPercentage: 60 },
+		] as never);
+		mockGaps.mockResolvedValue([
+			{ competencyName: "Docker", marketPercentage: 70 },
+			{ competencyName: "Kubernetes", marketPercentage: 50 },
+		] as never);
 	});
 
-	it("generates skill map and inserts when none exists", async () => {
-		mockGenerateObject.mockResolvedValue({
-			object: validResponse,
-		} as Awaited<ReturnType<typeof generateObject>>);
+	it("does NOT call any AI model — deterministyczna ścieżka (domena 14)", async () => {
+		// Import statyczny "ai" / "@ai-sdk/anthropic" w pliku źródłowym = brak.
+		// Dowód pośredni: moduł nie importuje generateObject (gdyby tak było,
+		// ten test wymagałby mocka "ai" — a go tu NIE ma i test przechodzi).
+		mockSkillMapFindFirst.mockResolvedValue(undefined as never);
+		mockInsert.mockReturnValue({ values: vi.fn() } as never);
+		await expect(generateSkillMap("student-1", "tenant-1")).resolves.toBeUndefined();
+	});
 
-		mockFindFirst.mockResolvedValue(undefined);
+	it("inserts when no skill map exists, with nodes/edges derived from comps+gaps", async () => {
+		mockSkillMapFindFirst.mockResolvedValue(undefined as never);
+		const valuesSpy = vi.fn();
+		mockInsert.mockReturnValue({ values: valuesSpy } as never);
 
-		const mockValues = vi.fn();
-		mockInsert.mockReturnValue({ values: mockValues } as never);
+		await generateSkillMap("student-1", "tenant-1");
 
-		await generateSkillMap("student-1", "tenant-1", ["Python", "SQL"], "Full-stack Developer");
-
-		expect(mockGenerateObject).toHaveBeenCalledOnce();
-		expect(mockInsert).toHaveBeenCalled();
-		expect(mockValues).toHaveBeenCalledWith(
-			expect.objectContaining({
-				studentId: "student-1",
-				nodes: validResponse.nodes,
-				edges: validResponse.edges,
-			}),
-		);
+		expect(valuesSpy).toHaveBeenCalledOnce();
+		const arg = valuesSpy.mock.calls[0][0] as {
+			studentId: string;
+			nodes: Array<{ data: { status: string } }>;
+			edges: unknown[];
+		};
+		expect(arg.studentId).toBe("student-1");
+		// 2 kompetencje (acquired + in_progress) + 2 luki (missing) = 4 węzły.
+		expect(arg.nodes).toHaveLength(4);
+		// Liczba węzłów "missing" == liczba luk (sedno #1).
+		expect(arg.nodes.filter((n) => n.data.status === "missing")).toHaveLength(2);
 	});
 
 	it("updates existing skill map", async () => {
-		mockGenerateObject.mockResolvedValue({
-			object: validResponse,
-		} as Awaited<ReturnType<typeof generateObject>>);
+		mockSkillMapFindFirst.mockResolvedValue({ id: "map-1" } as never);
+		const setSpy = vi.fn(() => ({ where: vi.fn() }));
+		mockUpdate.mockReturnValue({ set: setSpy } as never);
 
-		mockFindFirst.mockResolvedValue({
-			id: "map-1",
-			studentId: "student-1",
-			tenantId: "tenant-1",
-			nodes: [],
-			edges: [],
-			generatedAt: new Date(),
-			updatedAt: new Date(),
-		});
-
-		const mockWhere = vi.fn();
-		const mockSet = vi.fn(() => ({ where: mockWhere }));
-		mockUpdate.mockReturnValue({ set: mockSet } as never);
-
-		await generateSkillMap("student-1", "tenant-1", ["Python"], "Data Analyst");
+		await generateSkillMap("student-1", "tenant-1");
 
 		expect(mockUpdate).toHaveBeenCalled();
-		expect(mockSet).toHaveBeenCalledWith(
-			expect.objectContaining({
-				nodes: validResponse.nodes,
-				edges: validResponse.edges,
-			}),
-		);
+		const arg = (setSpy.mock.calls as unknown[][])[0][0] as { nodes: unknown[]; edges: unknown[] };
+		expect(arg.nodes).toHaveLength(4);
+		expect(Array.isArray(arg.edges)).toBe(true);
 	});
 
-	it("passes schema and prompt with competencies and career goal", async () => {
-		mockGenerateObject.mockResolvedValue({
-			object: validResponse,
-		} as Awaited<ReturnType<typeof generateObject>>);
-
-		mockFindFirst.mockResolvedValue(undefined);
-		mockInsert.mockReturnValue({ values: vi.fn() } as never);
-
-		await generateSkillMap("student-1", "tenant-1", ["React", "TypeScript"], "Frontend Developer");
-
-		const call = mockGenerateObject.mock.calls[0][0] as { schema?: unknown; prompt: string };
-		expect(call.schema).toBeDefined();
-		expect(call.prompt).toContain("React");
-		expect(call.prompt).toContain("TypeScript");
-		expect(call.prompt).toContain("Frontend Developer");
-	});
-
-	it("propagates AI SDK errors", async () => {
-		mockGenerateObject.mockRejectedValue(new Error("API rate limit exceeded"));
-
-		await expect(
-			generateSkillMap("student-1", "tenant-1", ["Python"], "Data Analyst"),
-		).rejects.toThrow("API rate limit exceeded");
+	it("propagates DB errors", async () => {
+		mockCompetencies.mockRejectedValue(new Error("DB down"));
+		await expect(generateSkillMap("student-1", "tenant-1")).rejects.toThrow("DB down");
 	});
 });

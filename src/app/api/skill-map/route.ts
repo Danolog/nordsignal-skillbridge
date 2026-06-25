@@ -14,8 +14,8 @@ export const maxDuration = 60;
 /**
  * §8 #1 Phase 2 / issue #19c (refactor sub-issue): odczyt/zapis skill-map
  * przez withTenantContext({role: "student"}). generateSkillMap pozostaje
- * POZA tx (AI call + jego własne DB writes — własny refactor poza zakresem
- * tego PR; widzi commit nadrzędnej tx).
+ * POZA tx (buduje graf deterministycznie z kompetencji+luk i robi własne DB
+ * writes — własny refactor poza zakresem tego PR; widzi commit nadrzędnej tx).
  *
  * Pre-fetch studenta (id + tenantId) wykonywany owner-side przez `db` —
  * mała query po user_id, analogicznie do faculty-auth lookup w
@@ -65,19 +65,16 @@ export async function POST() {
 
 	const student = await db.query.students.findFirst({
 		where: eq(students.userId, userId),
-		with: { competencies: true },
 	});
 	if (!student) {
 		return NextResponse.json({ error: "Student not found" }, { status: 404 });
 	}
 
-	const competencyNames = student.competencies.map((c) => c.name);
-
-	// AI + persystencja skill-mapy w środku generateSkillMap — POZA
-	// withTenantContext (DB calls w nim idą jeszcze przez owner; do refactor
-	// w osobnym sub-issue dla warstwy lib/ai).
+	// Deterministyczne zbudowanie + persystencja mapy w środku generateSkillMap
+	// (czyta kompetencje + luki z bazy, bez LLM) — POZA withTenantContext (DB
+	// calls w nim idą jeszcze przez owner; refactor w osobnym sub-issue lib/ai).
 	try {
-		await generateSkillMap(student.id, student.tenantId, competencyNames, student.careerGoal);
+		await generateSkillMap(student.id, student.tenantId);
 	} catch (err) {
 		logError("skill-map.generate", err, { studentId: student.id });
 		return NextResponse.json({ error: "Generation failed" }, { status: 500 });
