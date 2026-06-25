@@ -44,19 +44,19 @@ describe("Sidebar", () => {
 
 	it("renders all 5 navigation items", () => {
 		render(<Sidebar user={user} />);
-		expect(screen.getByText("Dashboard")).toBeInTheDocument();
-		expect(screen.getByText("Skill Map")).toBeInTheDocument();
-		expect(screen.getByText("Gap Analysis")).toBeInTheDocument();
+		expect(screen.getByText("Pulpit")).toBeInTheDocument();
+		expect(screen.getByText("Mapa kompetencji")).toBeInTheDocument();
+		expect(screen.getByText("Analiza luk")).toBeInTheDocument();
 		expect(screen.getByText("Projekty")).toBeInTheDocument();
 		expect(screen.getByText("Paszport")).toBeInTheDocument();
 	});
 
 	it("highlights active nav item based on pathname", () => {
 		render(<Sidebar user={user} />);
-		const dashboardLink = screen.getByText("Dashboard").closest("a");
+		const dashboardLink = screen.getByText("Pulpit").closest("a");
 		expect(dashboardLink?.className).toContain("active");
 
-		const skillMapLink = screen.getByText("Skill Map").closest("a");
+		const skillMapLink = screen.getByText("Mapa kompetencji").closest("a");
 		expect(skillMapLink?.className).not.toContain("active");
 	});
 

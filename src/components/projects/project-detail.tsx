@@ -1,6 +1,7 @@
 "use client";
 
-import { Clock, Database, ExternalLink, Github, Loader2 } from "lucide-react";
+import { ArrowLeft, Clock, Database, ExternalLink, Github, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { LearningResource } from "@/components/skillbridge/b3/SourceLinkRow";
@@ -80,6 +81,10 @@ export function ProjectDetail({
 	return (
 		<div className="proj-detail">
 			<div className="proj-detail-header">
+				<Link href="/projects" className="proj-source-link proj-detail-back">
+					<ArrowLeft size={14} />
+					Wróć do projektów
+				</Link>
 				<div className="proj-detail-badges">
 					<span className={`proj-level-badge proj-level-${project.level.toLowerCase()}`}>
 						{project.level}
