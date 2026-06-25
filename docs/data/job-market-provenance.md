@@ -195,3 +195,17 @@ To czysto rekomendacja architektoniczna — **migracji NIE tworzyłem**. Decyzja
 3. **Iteracja 2** (Sophia §1/§5): Admin/Wsparcie IT + ERP Consultant jako ręczne kotwice (`MANUAL_ANCHORS`); kolejne kotwice ręczne (iOS, React Native).
 4. **Treść edukacyjna juniora** (Sophia §4d): 5 zasad strategii + rekomendacje „najlepsze wejścia" (QA, Wsparcie IT, Frontend, BI) + pary T-shape — pole `tShapePairs` już w modelu; copy onboardingu po stronie Mili/Chloe.
 5. **Cztery decyzje Maxa spoza kuracji** (do potwierdzenia Sophii): ML Engineer→AI Engineer; DevOps hierarchia (Sophia §1 jej nie miała); CI/CD→Jenkins w Java + Playwright/Cypress w Frontend (dodane liście, by projekty miały na czym kotwiczyć); Xray/Zephyr/TestRail jako realne liście QA (Sophia myślała, że nieobecne).
+
+---
+
+## 10. Wgranie na produkcję — 2026-06-25 (ZREALIZOWANE)
+
+Realny rynek wszedł na żywą bazę. Pełny zapis (Built-to-Sell — audytor odtworzy, **co i kiedy** poszło na prod):
+
+- **Kiedy / kto:** 2026-06-25, sign-off i wykonanie ręczne Darka (czerwona linia: `DELETE` bez `WHERE` na danych prod).
+- **Kanał:** Neon Console → SQL Editor (projekt `SkillBridge_AI` = id `long-pond-11214233`, org `org-snowy-credit-81923605`, gałąź `main`/`neondb`). **Nie** przez `pnpm db:seed` — ten skrypt jest niszczący (kasuje `projects`/`students`/`submissions`) i ma strażnika. Świadomie wąska operacja.
+- **Zakres:** **wyłącznie** tabela `job_market_data` — `DELETE` całości + `INSERT` 240 wierszy z artefaktu. Zero zmian w innych tabelach (brak FK przychodzących; `user`/`students`/`projects`/`project_submissions` nietknięte). Aplikacja czyta tę tabelę tylko do odczytu.
+- **Czym:** `tools/load-job-market-prod.sql` (sha256 `1c321cfe8543…`), wygenerowany deterministycznie przez `tools/gen-job-market-sql.mjs` z `src/lib/db/data/job-market-justjoinit.json` (sha256 `35bd9ab013b4…`). Transakcja atomowa `BEGIN … COMMIT` z backupem `job_market_data_bak` w tej samej transakcji.
+- **Wynik (zweryfikowany na prod osobnym zapytaniem):** `count(*) = 240`, `count(DISTINCT career_goal) = 23`, `salary_range` NULL we wszystkich 240. Poprzedni stan (90 wierszy) zabezpieczony w `job_market_data_bak` (do usunięcia po kilku dniach: `DROP TABLE job_market_data_bak;`).
+- **Atomowość zadziałała w praktyce.** Pierwsze podejście miało literówkę w zapytaniu kontrolnym (`SELECT count(DISTINCT career_goal) …` **bez** `FROM job_market_data`) → transakcja abortowała na sanity-checku, **prod został bez zmian** (mimo że `DELETE 90` i `INSERT 240` już „przeszły" w obrębie nieukończonej transakcji). Poprawka: dodane `FROM job_market_data` + `DROP TABLE IF EXISTS job_market_data_bak` (idempotencja ponownego uruchomienia). To dowód, że projekt „transakcja + kontrola liczb przed `COMMIT`" chroni produkcję przed niedoróbką w samym skrypcie.
+- **Rollback (gdyby zaszła potrzeba, póki `_bak` istnieje):** `BEGIN; DELETE FROM job_market_data; INSERT INTO job_market_data SELECT * FROM job_market_data_bak; COMMIT;`.
