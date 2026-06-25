@@ -19,9 +19,9 @@ import { Logo } from "@/components/ui/logo";
 import { authClient } from "@/lib/auth/client";
 
 const navItems = [
-	{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-	{ href: "/skill-map", label: "Skill Map", icon: MapIcon },
-	{ href: "/gap-analysis", label: "Gap Analysis", icon: TriangleAlert },
+	{ href: "/dashboard", label: "Pulpit", icon: LayoutDashboard },
+	{ href: "/skill-map", label: "Mapa kompetencji", icon: MapIcon },
+	{ href: "/gap-analysis", label: "Analiza luk", icon: TriangleAlert },
 	{ href: "/projects", label: "Projekty", icon: FolderKanban },
 	{ href: "/moja-droga", label: "Moja droga", icon: BookOpenCheck },
 	{ href: "/passport", label: "Paszport", icon: Award },

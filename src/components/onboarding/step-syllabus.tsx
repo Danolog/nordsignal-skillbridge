@@ -1,7 +1,7 @@
 "use client";
 
 import { FileText, FileUp, Sparkles, X } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -77,7 +77,12 @@ export function StepSyllabus({
 					value={syllabusText}
 					onChange={(e) => onSyllabusChange(e.target.value)}
 					placeholder="Wklej tutaj treść sylabusa — listę przedmiotów, opis efektów kształcenia, zakres tematyczny..."
-					className="min-h-[160px] resize-y"
+					// Stała wysokość okna z wewnętrznym suwakiem zamiast auto-grow.
+					// field-sizing musi być inline: bazowy textarea.tsx narzuca `field-sizing-content`,
+					// a tailwind-merge nie traktuje `[field-sizing:fixed]` jako kolizji (obie klasy
+					// zostają), więc tylko inline style pewnie nadpisuje natywne rozrastanie się pola.
+					style={{ fieldSizing: "fixed" } as CSSProperties}
+					className="h-44 max-h-44 resize-none overflow-y-auto"
 				/>
 				<p className="text-xs text-muted-foreground">
 					Minimum 100 znaków. Im więcej szczegółów, tym lepsza analiza.

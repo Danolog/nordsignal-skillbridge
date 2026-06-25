@@ -4369,6 +4369,9 @@
 	padding-bottom: 24px;
 	border-bottom: 1px solid rgba(148, 163, 184, 0.15);
 }
+.proj-detail-back {
+	margin-bottom: 16px;
+}
 .proj-detail-badges {
 	display: flex;
 	flex-direction: row;

@@ -466,7 +466,6 @@ export const DEMO_PROJECTS: DemoProject[] = [
 		competencies: [
 			{ name: "Docker", role: "required" },
 			{ name: "Node.js", role: "required" },
-			{ name: "SQL", role: "required" },
 		],
 	},
 	{

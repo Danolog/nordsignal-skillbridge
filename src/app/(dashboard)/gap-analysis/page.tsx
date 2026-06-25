@@ -36,7 +36,7 @@ export default async function GapAnalysisPage() {
 	return (
 		<>
 			<div className="ga-page-header">
-				<h1 className="ga-page-title">Gap Analysis</h1>
+				<h1 className="ga-page-title">Analiza luk</h1>
 				<p className="ga-page-desc">
 					Luki kompetencyjne między Twoim sylabusem a wymaganiami rynku pracy
 				</p>
