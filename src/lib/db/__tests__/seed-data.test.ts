@@ -1,97 +1,81 @@
 import { describe, expect, it } from "vitest";
+import { DEMO_CAREER_GOAL_REMAP } from "../data/anchor-config";
+// Dane rynku pracy = artefakt JustJoinIT (Partia 3, model nearest-profile #11),
+// który ładuje seed.ts. Testujemy realny artefakt, nie zduplikowane na sztywno
+// liczby — inaczej test nie chroni przed regresją w faktycznym seedzie (lens
+// Ethana: prowenicja danych).
+import jobMarket from "../data/job-market-justjoinit.json";
 import { DEMO_PROJECTS } from "../seed-projects";
 
-// Test seed data structure without DB connection
-// Import the DATA array from seed — we test the shape/content
-// Since seed.ts creates a db connection, we test the data inline here
+const DATA = jobMarket.data;
+const goals = DATA.map((e) => e.careerGoal);
 
-const CAREER_GOALS = [
-	"Data Analyst",
-	"Frontend Developer",
-	"Backend Developer",
-	"Full-stack Developer",
-	"UX/UI Designer",
-	"Project Manager",
-	"Data Scientist",
-	"DevOps Engineer",
-	"Cybersecurity Analyst",
-];
-
-const SEED_COMPETENCY_COUNTS: Record<string, number> = {
-	"Data Analyst": 10,
-	"Frontend Developer": 10,
-	"Backend Developer": 10,
-	"Full-stack Developer": 10,
-	"UX/UI Designer": 10,
-	"Project Manager": 10,
-	"Data Scientist": 10,
-	"DevOps Engineer": 10,
-	"Cybersecurity Analyst": 10,
-};
-
-describe("Seed data — structure validation", () => {
-	it("covers all 9 required career goals", () => {
-		expect(CAREER_GOALS).toHaveLength(9);
+describe("Seed job market — struktura (artefakt JustJoinIT)", () => {
+	it("liczba ścieżek zgadza się z _meta.paths (model nearest-profile)", () => {
+		expect(DATA.length).toBe(jobMarket._meta.paths);
+		expect(DATA.length).toBeGreaterThan(0);
 	});
 
-	it("each career goal has at least 10 competencies", () => {
-		for (const goal of CAREER_GOALS) {
-			const count = SEED_COMPETENCY_COUNTS[goal];
-			expect(count, `${goal} should have ≥10 competencies`).toBeGreaterThanOrEqual(10);
+	it("każda ścieżka ma ≥1 kompetencję (przeszła progi odcięcia)", () => {
+		for (const entry of DATA) {
+			expect(entry.competencies.length, `${entry.careerGoal} bez kompetencji`).toBeGreaterThan(0);
 		}
 	});
 
-	it("total records = 90 (9 goals × 10 each)", () => {
-		const total = Object.values(SEED_COMPETENCY_COUNTS).reduce((sum, c) => sum + c, 0);
-		expect(total).toBe(90);
-	});
-});
-
-describe("Seed data — career goal content", () => {
-	it("Data Analyst includes SQL and Python", () => {
-		// Key competencies that must be present
-		const required = ["SQL", "Python", "Myślenie analityczne"];
-		// Just verify the count is right — actual DB seed is tested by pnpm db:seed
-		expect(required).toHaveLength(3);
+	it("nazwy ścieżek są unikalne", () => {
+		expect(new Set(goals).size).toBe(goals.length);
 	});
 
-	it("Frontend Developer includes JavaScript and React", () => {
-		const required = ["JavaScript", "React", "TypeScript"];
-		expect(required).toHaveLength(3);
-	});
-
-	it("DevOps Engineer includes Docker and Kubernetes", () => {
-		const required = ["Docker", "Kubernetes", "CI/CD (Jenkins/GitHub Actions)"];
-		expect(required).toHaveLength(3);
-	});
-});
-
-describe("Seed data — demand percentages", () => {
-	it("SQL is high-demand for Data Analyst (>80%)", () => {
-		// SQL demand is 89% per seed data
-		expect(89).toBeGreaterThan(80);
-	});
-
-	it("JavaScript is top-demand for Frontend Developer (>90%)", () => {
-		// JavaScript demand is 95% per seed data
-		expect(95).toBeGreaterThan(90);
-	});
-
-	it("demand percentages are valid range 0-100", () => {
-		const samplePercentages = [78, 89, 72, 61, 67, 55, 43, 71, 83, 48, 95, 74, 82, 91];
-		for (const pct of samplePercentages) {
-			expect(pct).toBeGreaterThanOrEqual(0);
-			expect(pct).toBeLessThanOrEqual(100);
+	it("każdy cel remapowania demo wskazuje na ścieżkę istniejącą w artefakcie", () => {
+		// Migracja demo-studentów (anchor-config) musi celować w realne ścieżki —
+		// inaczej dashboard studenta nie znajdzie danych rynku dla jego celu.
+		for (const target of Object.values(DEMO_CAREER_GOAL_REMAP)) {
+			expect(goals, `remap → "${target}" nie istnieje w artefakcie`).toContain(target);
 		}
 	});
 });
 
-describe("Seed data — salary ranges format", () => {
-	it("salary ranges follow PLN format", () => {
-		const samples = ["8000-15000 PLN", "9000-16000 PLN", "10000-18000 PLN", "12000-25000 PLN"];
-		const regex = /^\d+-\d+ PLN$/;
-		for (const s of samples) {
-			expect(s, `"${s}" should match PLN format`).toMatch(regex);
+describe("Seed job market — treść kompetencji (dowód z danych)", () => {
+	function topNames(goal: string): string[] {
+		return DATA.find((e) => e.careerGoal === goal)?.competencies.map((c) => c.name) ?? [];
+	}
+
+	it("Java Developer ma Java jako top kompetencję", () => {
+		expect(topNames("Java Developer")[0]).toBe("Java");
+	});
+
+	it("Data Scientist zawiera liście Python i SQL (Machine Learning to OBSZAR, w hierarchii)", () => {
+		// v4.0: płaski artefakt jobMarketData trzyma LIŚCIE-konkrety. „Machine Learning"
+		// to obszar wiedzy (knowledge-area) — żyje w career-model.json, nie tu.
+		const names = topNames("Data Scientist");
+		expect(names).toContain("Python");
+		expect(names).toContain("SQL");
+	});
+
+	it("DevOps Engineer zawiera Kubernetes i Terraform", () => {
+		const names = topNames("DevOps Engineer");
+		expect(names).toContain("Kubernetes");
+		expect(names).toContain("Terraform");
+	});
+});
+
+describe("Seed job market — demand percentages", () => {
+	it("wszystkie demandPercentage w zakresie 0–100", () => {
+		for (const entry of DATA) {
+			for (const c of entry.competencies) {
+				expect(c.demandPercentage).toBeGreaterThanOrEqual(0);
+				expect(c.demandPercentage).toBeLessThanOrEqual(100);
+			}
+		}
+	});
+});
+
+describe("Seed job market — v5: BEZ widełek (decyzja Darka)", () => {
+	it("żaden wiersz kompetencji NIE ma już pola salaryRange", () => {
+		for (const entry of DATA) {
+			for (const c of entry.competencies) {
+				expect(c, `${entry.careerGoal}/${c.name}`).not.toHaveProperty("salaryRange");
+			}
 		}
 	});
 });
