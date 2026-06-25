@@ -172,16 +172,19 @@ export async function POST(req: Request) {
 		return NextResponse.json({ error: "Persistence failed" }, { status: 500 });
 	}
 
-	// Synchronous AI generation — Vercel serverless terminates the function after the response,
+	// Synchronous generation — Vercel serverless terminates the function after the response,
 	// so fire-and-forget would lose the work. Awaiting also lets us tell the client whether the
 	// skill map is ready or whether they need to retry from /skill-map.
-	// POZA withTenantContext: AI calls + ich własne DB writes idą przez owner db
+	// POZA withTenantContext: te calls + ich własne DB writes idą przez owner db
 	// (do czasu osobnych refactorów w #19c..#19f).
+	//
+	// KOLEJNOŚĆ, nie Promise.all (poprawka #1): generateGaps najpierw zapisuje luki
+	// i statusy kompetencji, a generateSkillMap dopiero z nich WYPROWADZA graf
+	// deterministycznie. Równoległość ścigałaby się: graf czytałby kompetencje
+	// sprzed aktualizacji statusów i bez luk ⇒ rozjazd liczb na trzech widokach.
 	try {
-		await Promise.all([
-			generateGaps(studentId, tenantId, competencyNames, careerGoal),
-			generateSkillMap(studentId, tenantId, competencyNames, careerGoal),
-		]);
+		await generateGaps(studentId, tenantId, competencyNames, careerGoal);
+		await generateSkillMap(studentId, tenantId);
 	} catch (err) {
 		logError("onboarding", err, { studentId });
 		return NextResponse.json({ success: true, studentId, aiGenerationFailed: true });

@@ -14,6 +14,14 @@ vi.mock("@/lib/db", () => ({
 			jobMarketData: {
 				findMany: vi.fn(),
 			},
+			// Poprawka #1: generateGaps po aktualizacji statusów odświeża zapisane
+			// pokrycie — czyta kompetencje i sprawdza istnienie paszportu.
+			competencies: {
+				findMany: vi.fn(),
+			},
+			passports: {
+				findFirst: vi.fn(),
+			},
 		},
 		insert: vi.fn(() => ({
 			values: vi.fn(),
@@ -35,6 +43,8 @@ import { generateGaps } from "../generate-gaps";
 
 const mockGenerateObject = vi.mocked(generateObject);
 const mockFindMany = vi.mocked(db.query.jobMarketData.findMany);
+const mockCompetenciesFindMany = vi.mocked(db.query.competencies.findMany);
+const mockPassportsFindFirst = vi.mocked(db.query.passports.findFirst);
 const mockInsert = vi.mocked(db.insert);
 const mockUpdate = vi.mocked(db.update);
 const mockDelete = vi.mocked(db.delete);
@@ -56,6 +66,9 @@ describe("generateGaps", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockFindMany.mockResolvedValue([]);
+		// Domyślnie: jedna kompetencja acquired, paszport już istnieje (UPDATE).
+		mockCompetenciesFindMany.mockResolvedValue([{ status: "acquired" }] as never);
+		mockPassportsFindFirst.mockResolvedValue({ id: "passport-1" } as never);
 		mockGenerateObject.mockResolvedValue({
 			object: validResponse,
 		} as Awaited<ReturnType<typeof generateObject>>);
@@ -106,17 +119,47 @@ describe("generateGaps", () => {
 		expect(inserted.every((row) => row.studentId === "student-42")).toBe(true);
 	});
 
-	it("does not write marketCoveragePercent — passport coverage is owned by passport route", async () => {
+	it("refreshes saved passport coverage (UPDATE) — value no longer frozen (poprawka #1)", async () => {
+		// 2 acquired + 2 luki ⇒ covered=2, total=4 ⇒ 50%.
+		mockCompetenciesFindMany.mockResolvedValue([
+			{ status: "acquired" },
+			{ status: "acquired" },
+		] as never);
+		mockPassportsFindFirst.mockResolvedValue({ id: "passport-1" } as never);
+
 		const setSpy = vi.fn(() => ({ where: vi.fn() }));
 		mockUpdate.mockReturnValue({ set: setSpy } as never);
 
 		await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
 
-		const passportUpdate = setSpy.mock.calls.find((call) => {
-			const arg = (call as unknown[])[0] as Record<string, unknown>;
+		const passportUpdate = (setSpy.mock.calls as unknown[][]).find((call) => {
+			const arg = call[0] as Record<string, unknown>;
 			return "marketCoveragePercent" in arg;
 		});
-		expect(passportUpdate).toBeUndefined();
+		expect(passportUpdate).toBeDefined();
+		expect((passportUpdate?.[0] as Record<string, unknown>).marketCoveragePercent).toBe(50);
+	});
+
+	it("inserts passport with coverage when none exists yet (regeneracja przed wizytą na /passport)", async () => {
+		mockCompetenciesFindMany.mockResolvedValue([{ status: "acquired" }] as never);
+		mockPassportsFindFirst.mockResolvedValue(undefined as never);
+
+		const valuesSpy = vi.fn();
+		// gaps insert + passport insert obie idą przez mockInsert — łapiemy wywołanie
+		// z marketCoveragePercent (passport), nie tablicę luk.
+		mockInsert.mockReturnValue({ values: valuesSpy } as never);
+
+		await generateGaps("student-7", "tenant-1", ["Python"], "Data Analyst");
+
+		const passportInsert = (valuesSpy.mock.calls as unknown[][]).find((call) => {
+			const arg = call[0] as Record<string, unknown> | unknown[] | undefined;
+			return arg != null && !Array.isArray(arg) && "marketCoveragePercent" in arg;
+		});
+		expect(passportInsert).toBeDefined();
+		const arg = passportInsert?.[0] as Record<string, unknown>;
+		expect(arg.studentId).toBe("student-7");
+		// 1 acquired + 2 luki ⇒ covered=1, total=3 ⇒ 33%.
+		expect(arg.marketCoveragePercent).toBe(33);
 	});
 
 	it("passes schema and prompt with competencies and career goal", async () => {

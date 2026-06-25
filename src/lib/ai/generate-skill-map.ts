@@ -1,61 +1,51 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
-import { z } from "zod";
 import { db } from "@/lib/db";
-import { skillMaps } from "@/lib/db/schema";
+import { competencies, gaps, skillMaps } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
+import { buildGraph } from "@/lib/skill-map/build-graph";
 
-const SkillMapSchema = z.object({
-	nodes: z.array(
-		z.object({
-			id: z.string(),
-			data: z.object({
-				label: z.string(),
-				status: z.enum(["acquired", "in_progress", "missing"]),
-				category: z.string(),
-				marketPercentage: z.number().optional(),
-			}),
-			position: z.object({ x: z.number(), y: z.number() }),
-			type: z.string(),
-		}),
-	),
-	edges: z.array(
-		z.object({
-			id: z.string(),
-			source: z.string(),
-			target: z.string(),
-		}),
-	),
-});
-
-export async function generateSkillMap(
-	studentId: string,
-	tenantId: string,
-	studentCompetencies: string[],
-	careerGoal: string,
-): Promise<void> {
+/**
+ * Generuje mapę kompetencji (skill map) studenta — DETERMINISTYCZNIE, bez LLM.
+ *
+ * Wcześniej tę mapę tworzył osobny model (`generateObject`), który sam wymyślał
+ * „brakujące" kompetencje i krawędzie — niezależnie od tabeli `gaps`. Skutkowało
+ * to rozjeżdżającymi się liczbami między dashboardem, mapą i analizą luk.
+ *
+ * Teraz graf jest WYPROWADZANY z jedynego źródła prawdy: bieżących kompetencji
+ * studenta (`competencies`, ze statusem) + luk (`gaps`). Dzięki temu liczba
+ * węzłów "missing" na mapie == liczba luk wszędzie indziej. Logika grafu w
+ * `src/lib/skill-map/build-graph.ts` (czysta funkcja, testowalna jednostkowo).
+ *
+ * WAŻNE: wołać PO `generateGaps` — graf czyta świeże luki i statusy, które
+ * `generateGaps` właśnie zapisał. Kolejność egzekwuje POST /api/onboarding
+ * (sekwencja zamiast Promise.all).
+ *
+ * Sygnatura uproszczona do (studentId, tenantId) — funkcja czyta kompetencje
+ * i luki z bazy sama; nie potrzebuje już listy nazw ani celu kariery (graf nie
+ * jest już budowany z promptu).
+ */
+export async function generateSkillMap(studentId: string, tenantId: string): Promise<void> {
 	try {
-		const { object } = await generateObject({
-			model: anthropic("claude-sonnet-4-6"),
-			schema: SkillMapSchema,
-			maxOutputTokens: 8000,
-			prompt: `Wygeneruj mapę umiejętności (skill map) jako graf React Flow dla studenta.
+		const [studentCompetencies, studentGaps] = await Promise.all([
+			db.query.competencies.findMany({
+				where: eq(competencies.studentId, studentId),
+			}),
+			db.query.gaps.findMany({
+				where: eq(gaps.studentId, studentId),
+			}),
+		]);
 
-Kompetencje studenta: ${JSON.stringify(studentCompetencies)}
-Cel kariery: ${careerGoal}
-
-Zasady:
-- Każda kompetencja studenta = 1 node ze status "acquired"
-- Dodaj 5-10 brakujących kompetencji ze status "missing" (na podstawie wymagań rynku dla ${careerGoal})
-- Możesz też oznaczyć kompetencje "in_progress" (student ma podstawy, ale wymaga rozwoju)
-- marketPercentage: procent ofert pracy wymagających tej kompetencji (0-100)
-- Kategorie: "programming", "data", "tools", "soft_skills", "frameworks", "devops"
-- Pozycje: grupuj po kategoriach, rozstaw x co 220px, y co 100px
-- Krawędzie: łącz powiązane kompetencje (np. Python→Pandas, SQL→Bazy danych)
-- Węzły root (kategoria) na górze, liście na dole
-- type każdego node: "skillNode"`,
-		});
+		const { nodes, edges } = buildGraph(
+			studentCompetencies.map((c) => ({
+				name: c.name,
+				status: c.status,
+				marketPercentage: c.marketPercentage,
+			})),
+			studentGaps.map((g) => ({
+				competencyName: g.competencyName,
+				marketPercentage: g.marketPercentage,
+			})),
+		);
 
 		const existing = await db.query.skillMaps.findFirst({
 			where: eq(skillMaps.studentId, studentId),
@@ -66,8 +56,8 @@ Zasady:
 				.update(skillMaps)
 				.set({
 					tenantId,
-					nodes: object.nodes,
-					edges: object.edges,
+					nodes,
+					edges,
 					updatedAt: new Date(),
 				})
 				.where(eq(skillMaps.studentId, studentId));
@@ -75,8 +65,8 @@ Zasady:
 			await db.insert(skillMaps).values({
 				studentId,
 				tenantId,
-				nodes: object.nodes,
-				edges: object.edges,
+				nodes,
+				edges,
 			});
 		}
 	} catch (err) {

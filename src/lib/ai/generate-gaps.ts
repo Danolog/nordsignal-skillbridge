@@ -4,8 +4,9 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
 import { db } from "@/lib/db";
-import { competencies, gaps, jobMarketData } from "@/lib/db/schema";
+import { competencies, gaps, jobMarketData, passports } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
+import { calculateCoverage } from "@/lib/passport-utils";
 
 const GapResultSchema = z.object({
 	gaps: z.array(
@@ -95,6 +96,33 @@ Zasady:
 					marketPercentage: update.marketPercentage,
 				})
 				.where(and(eq(competencies.studentId, studentId), eq(competencies.name, update.name)));
+		}
+
+		// Odśwież zapisane pokrycie rynkowe (passports.marketCoveragePercent).
+		// Wcześniej wartość była ZAMROŻONA (zapis tylko raz przy onboardingu) — publiczny
+		// paszport (bez sesji, src/app/passport/[id]/page.tsx) i metadane czytały starą
+		// liczbę nawet po regeneracji luk. Liczymy świeżo z tego samego źródła co reszta
+		// (calculateCoverage = ten sam wzór wszędzie: passport/page, api/passport,
+		// passport/[id]). Czytamy kompetencje PO aktualizacji statusów wyżej, żeby odbić
+		// stan właśnie zapisany. Idempotentne: dla istniejącego paszportu UPDATE, brak
+		// — INSERT z aktualnym pokryciem (np. gdy regeneracja poprzedza wizytę na /passport).
+		const freshComps = await db.query.competencies.findMany({
+			where: eq(competencies.studentId, studentId),
+			columns: { status: true },
+		});
+		const coverage = calculateCoverage(freshComps, result.gaps.length);
+
+		const existingPassport = await db.query.passports.findFirst({
+			where: eq(passports.studentId, studentId),
+			columns: { id: true },
+		});
+		if (existingPassport) {
+			await db
+				.update(passports)
+				.set({ marketCoveragePercent: coverage, updatedAt: new Date() })
+				.where(eq(passports.studentId, studentId));
+		} else {
+			await db.insert(passports).values({ studentId, tenantId, marketCoveragePercent: coverage });
 		}
 	} catch (err) {
 		logError("generate-gaps", err, { studentId });
