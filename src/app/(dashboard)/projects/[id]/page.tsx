@@ -26,6 +26,11 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 				columns: { title: true, url: true, type: true },
 				orderBy: (r, { asc }) => [asc(r.position)],
 			},
+			// #7 — linki źródła danych (2–3), posortowane po position. K-PUB (bez RLS) — czytamy przez db.
+			sourceLinks: {
+				columns: { url: true, label: true, isDead: true },
+				orderBy: (r, { asc }) => [asc(r.position)],
+			},
 		},
 	});
 	if (!project) notFound();
@@ -55,6 +60,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 				existingReflection={reflection ?? null}
 				theoryMd={project.theoryMd ?? null}
 				learningResources={project.learningResources}
+				sourceLinks={project.sourceLinks}
 			/>
 		</div>
 	);

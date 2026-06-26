@@ -3,13 +3,15 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { projectLearningResources, projects } from "@/lib/db/schema";
+import { projectLearningResources, projectSourceLinks, projects } from "@/lib/db/schema";
 
 // B3 — kontrakt API detalu projektu dla Jacka (frontend).
 // Odpowiedź zawiera:
 //   theoryMd: string | null — treść teorii w markdown; null = brak teorii (stan S4 empty_theory).
 //   learningResources: Array<{ title: string; url: string; type: string }> — materiały do nauki,
 //     posortowane rosnąco po `position`. type IN ('video','docs','course').
+//   sourceLinks: Array<{ url: string; label: string | null; isDead: boolean }> — linki źródła
+//     danych (#7, 2–3 per projekt), posortowane rosnąco po `position`. K-PUB jak wyżej.
 // Tabela project_learning_resources jest K-PUB (jak project_competencies) — brak RLS,
 // zapytanie może iść przez db (owner) bez withTenantContext.
 //
@@ -45,6 +47,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 		.where(eq(projectLearningResources.projectId, id))
 		.orderBy(asc(projectLearningResources.position));
 
+	// #7 — odporność linków: linki źródła danych (2–3) posortowane po position.
+	// Jawny .select — whitelist pól (url, label, isDead), tabela K-PUB (bez RLS).
+	const sourceLinks = await db
+		.select({
+			url: projectSourceLinks.url,
+			label: projectSourceLinks.label,
+			isDead: projectSourceLinks.isDead,
+		})
+		.from(projectSourceLinks)
+		.where(eq(projectSourceLinks.projectId, id))
+		.orderBy(asc(projectSourceLinks.position));
+
 	// B3: `...project` już niesie `theoryMd` (kolumna nullable bez defaultu →
 	// drizzle zwraca null, gdy projekt nie ma teorii). Front: theoryMd === null →
 	// render stanu S4 empty_theory (spec §2.4). Osobne `theoryMd: ... ?? null` było
@@ -52,5 +66,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 	return NextResponse.json({
 		project,
 		learningResources,
+		sourceLinks,
 	});
 }
