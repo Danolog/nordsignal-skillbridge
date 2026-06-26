@@ -35,15 +35,22 @@ export default async function OnboardingPage() {
 		// Placeholder profilu z Kroku 0 ma university="" → puste pola w formularzu.
 		const profileReal = student.university.trim() !== "";
 
-		const competencyNames =
-			student.onboardingStep >= 3
-				? (
-						await db.query.competencies.findMany({
-							where: eq(competencies.studentId, student.id),
-							orderBy: (c, { asc }) => [asc(c.createdAt)],
-						})
-					).map((c) => c.name)
-				: [];
+		// Partia 4: odtwarzamy WYBÓR z poziomem (nazwa → samoocena 2/3/4). Zapisane
+		// kompetencje zawsze mają poziom posiadania (Brak nie jest zapisywany). Katalog
+		// rynku dociąga się świeżo na wejściu w krok 3 (wizard) — tu tylko zaznaczenia.
+		const selections: Record<string, 2 | 3 | 4> = {};
+		if (student.onboardingStep >= 3) {
+			const rows = await db.query.competencies.findMany({
+				where: eq(competencies.studentId, student.id),
+				columns: { name: true, selfAssessment: true },
+				orderBy: (c, { asc }) => [asc(c.createdAt)],
+			});
+			for (const r of rows) {
+				if (r.selfAssessment === 2 || r.selfAssessment === 3 || r.selfAssessment === 4) {
+					selections[r.name] = r.selfAssessment;
+				}
+			}
+		}
 
 		initialData = {
 			profile: {
@@ -53,7 +60,7 @@ export default async function OnboardingPage() {
 				careerGoal: student.careerGoal,
 			},
 			syllabusText: student.syllabusText ?? "",
-			competencies: competencyNames,
+			selections,
 		};
 	}
 

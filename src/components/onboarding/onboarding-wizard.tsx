@@ -2,73 +2,62 @@
 
 import { BookOpen, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CareerHelperFlow } from "@/components/career-helper/career-helper-flow";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
-	type CompetencyItem,
-	createCompetencyItem,
-	MIN_COMPETENCIES,
-	StepCompetencies,
-} from "./step-competencies";
+	annotateWithSyllabus,
+	type MarketCatalogItem,
+	type PossessionLevel,
+	type SelectedCompetency,
+} from "@/lib/onboarding/market-catalog";
+import { CareerPathPicker } from "./career-path-picker";
+import { StepMarketCompetencies } from "./step-market-competencies";
 import { type ProfileData, StepProfile } from "./step-profile";
-import { StepSelfAssessment } from "./step-self-assessment";
 import { StepSyllabus } from "./step-syllabus";
 
 /**
- * Wizard onboardingu: 6 kroków (Krok 0 dodany w strumieniu E / #5).
- * Krok 0: Cel kariery — CareerHelperFlow osadzony (embedded); ustala careerGoal
- *   w pamięci (bez select-path — nowy student nie ma jeszcze rekordu; spec §1.3/§3.1).
- * Krok 1–3: Profil (BEZ celu) / Sylabus / Kompetencje — zbieranie danych i zapis profilu.
- * Krok 4: Samoocena (StepSelfAssessment, B4) — ocena kompetencji po ich zapisie.
- * Krok 5: Wnioski — POST /api/onboarding/complete + przekierowanie do dashboardu.
+ * Wizard onboardingu — REDESIGN na realny rynek pracy (Partia 4).
  *
- * Trwałość/wznawianie (fala B planu):
- *   - initialStep/initialData hydratują stan z bazy (czyta page.tsx z onboarding_step
- *     + profilu + kompetencji). Bez nich kreator startuje pusty od Kroku 0.
- *   - Autosave PATCH /api/onboarding/progress: krok 1 (profil) przed wejściem na 2,
- *     krok 2 (sylabus) przed analizą. Bump high-water-marka przy ruchu w przód.
- *   - Klikalny pasek: skok do dowolnego osiągniętego kroku (<= maxReached).
- *   - Kaskada „ostrzeż i przelicz": zmiana sylabusa/kompetencji przy istniejącym
- *     downstream pokazuje AlertDialog (przeliczy gaps/Skill Map, wyczyści samoocenę).
+ * 5 kroków (scalenie wyboru+poziomu znosi osobną samoocenę — D5):
+ *   0 Cel kariery — Pomocnik + deterministyczny picker 23 realnych ścieżek (D1, element 1).
+ *   1 Profil — uczelnia/kierunek/semestr (bez celu, bez pola „Inne" — D2).
+ *   2 Sylabus (opcjonalny) — ADNOTUJE katalog rynku flagą „w programie studiów" (D4),
+ *     już NIE generuje listy kompetencji (element 6).
+ *   3 Kompetencje + poziom — z KATALOGU RYNKU (element 2), scalony wybór z poziomem 1–4
+ *     (element 4); nagłówek pokrycia (element 5); próg „min 5" zniesiony (0 OK — element 3/D5).
+ *   4 Wnioski — POST /api/onboarding/complete + redirect na pulpit.
  *
- * Spec: docs/product/skillbridge-e-pomocnik-krok0-spec-v0.1.md (Krok 0),
- *       docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §1/§3 (kroki 1–5).
+ * Kontrakt front↔back zmieniony jedną gałęzią (lekcja split-frontend-backend):
+ *   POST /api/onboarding niesie competencies jako { name, level, marketPercentage, inSyllabus }[]
+ *   (poziom = samoocena 2/3/4), min 0. Patrz src/lib/onboarding/market-catalog.ts.
+ *
+ * UI minimalne/funkcjonalne — Jack restyluje wg makiet Mili (Partia 5).
  */
 const STEPS = [
 	{ label: "Cel kariery", num: 0 },
 	{ label: "Profil", num: 1 },
 	{ label: "Sylabus", num: 2 },
 	{ label: "Kompetencje", num: 3 },
-	{ label: "Samoocena", num: 4 },
-	{ label: "Wnioski", num: 5 },
+	{ label: "Wnioski", num: 4 },
 ];
 
-const LAST_STEP = 5;
+const LAST_STEP = 4;
 
 /** Stan początkowy do hydratacji wznawianego kreatora (page.tsx → wizard). */
 export interface OnboardingInitialData {
 	profile: ProfileData;
 	syllabusText: string;
-	competencies: string[];
+	/** Wybór kompetencji z poziomem (nazwa → 2/3/4) — odtwarzany z zapisanych samoocen. */
+	selections: Record<string, PossessionLevel>;
 }
 
 interface OnboardingWizardProps {
 	user: { id: string; name: string; email: string };
 	/** Krok, od którego wznawiamy (high-water-mark z onboarding_step). Domyślnie 0. */
 	initialStep?: number;
-	/** Dane wczytane z bazy (profil/sylabus/kompetencje). Brak = pusty start. */
+	/** Dane wczytane z bazy (profil/sylabus/wybór). Brak = pusty start. */
 	initialData?: OnboardingInitialData;
 }
 
@@ -79,16 +68,12 @@ export function OnboardingWizard({
 }: OnboardingWizardProps) {
 	const router = useRouter();
 	const [step, setStep] = useState(initialStep);
-	// maxReached: najwyższy osiągnięty krok — granica skoku po pasku. Hydratacja
-	// startuje od initialStep (user już tam dotarł w poprzedniej sesji).
 	const [maxReached, setMaxReached] = useState(initialStep);
 	const [submitting, setSubmitting] = useState(false);
 	const [analyzing, setAnalyzing] = useState(false);
 	const [savingProfile, setSavingProfile] = useState(false);
 	const [completing, setCompleting] = useState(false);
 
-	// careerGoal trzymany w pamięci od Kroku 0 (Pomocnik). Hydratowany z initialData
-	// przy wznawianiu (po Kroku 0 careerGoal jest już w bazie).
 	const [profile, setProfile] = useState<ProfileData>(
 		initialData?.profile ?? {
 			university: "",
@@ -98,30 +83,69 @@ export function OnboardingWizard({
 		},
 	);
 	const [syllabusText, setSyllabusText] = useState(initialData?.syllabusText ?? "");
-	// syllabusFile zostaje null przy wznawianiu — competencies są już w bazie, ponowna
-	// analiza pliku zbędna (user może wgrać nowy plik, jeśli chce przeliczyć).
 	const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
-	const [competencies, setCompetencies] = useState<CompetencyItem[]>(
-		(initialData?.competencies ?? []).map((name) => createCompetencyItem(name)),
+	// Nazwy z sylabusa (analiza AI) — ŹRÓDŁO ADNOTACJI „w programie studiów" (D4),
+	// nie generator listy. Efemeryczne (nie persystowane — brak kolumny, bez migracji).
+	const [syllabusCompetencies, setSyllabusCompetencies] = useState<string[]>([]);
+
+	// Katalog rynku dla wybranej ścieżki (element 2) — pobierany na wejściu w krok 3.
+	const [rawCatalog, setRawCatalog] = useState<MarketCatalogItem[]>([]);
+	const [catalogGoal, setCatalogGoal] = useState<string | null>(null);
+	const [catalogLoading, setCatalogLoading] = useState(false);
+	const [catalogError, setCatalogError] = useState(false);
+	const [isRealGoal, setIsRealGoal] = useState(true);
+
+	// Wybór studenta: nazwa kompetencji → poziom posiadania (2/3/4). Brak klucza = Brak = luka.
+	const [selections, setSelections] = useState<Record<string, PossessionLevel>>(
+		initialData?.selections ?? {},
 	);
 
-	// Kaskada „ostrzeż i przelicz" — dialog widoczny, gdy zmiana sylabusa/kompetencji
-	// przy istniejącym downstream wymaga potwierdzenia. pendingAction = co zrobić po „Tak".
-	const [cascadeOpen, setCascadeOpen] = useState(false);
-	const [pendingAction, setPendingAction] = useState<null | (() => void)>(null);
+	// Katalog z nałożoną adnotacją sylabusa (D4) — pochodna, nie osobny stan.
+	const catalog = useMemo(
+		() => annotateWithSyllabus(rawCatalog, syllabusCompetencies),
+		[rawCatalog, syllabusCompetencies],
+	);
 
-	// Validation
-	// Krok 0: cel kariery musi być ustawiony (Pomocnik) zanim wejdzie się w Profil.
 	const isStep0Valid = Boolean(profile.careerGoal);
-	// Krok 1 (Profil): bez celu kariery — uczelnia + kierunek + semestr.
 	const isStep1Valid = Boolean(
 		profile.university && profile.fieldOfStudy.trim() && profile.semester,
 	);
 
-	const filledCompetencyCount = competencies.filter((c) => c.name.trim()).length;
-	const isStep3Valid = filledCompetencyCount >= MIN_COMPETENCIES;
+	// ── Pobranie katalogu rynku (krok 3) ────────────────────────────────────
+	const loadCatalog = useCallback(async (careerGoal: string) => {
+		if (!careerGoal) return;
+		setCatalogLoading(true);
+		setCatalogError(false);
+		// Oznacz cel jako „obsłużony" OPTYMISTYCZNIE — inaczej efekt poniżej wpadłby w
+		// pętlę przy trwałym błędzie sieci (catalogGoal≠careerGoal ∧ !loading → ciągły
+		// refetch). Ponowna próba idzie wyłącznie jawnie przez onRetry (stan błędu).
+		setCatalogGoal(careerGoal);
+		try {
+			const res = await fetch(
+				`/api/onboarding/market-catalog?careerGoal=${encodeURIComponent(careerGoal)}`,
+			);
+			if (!res.ok) throw new Error("catalog_failed");
+			const data = (await res.json()) as {
+				isRealCareerGoal: boolean;
+				items: MarketCatalogItem[];
+			};
+			setRawCatalog(data.items);
+			setIsRealGoal(data.isRealCareerGoal);
+		} catch {
+			setCatalogError(true);
+		} finally {
+			setCatalogLoading(false);
+		}
+	}, []);
 
-	// Autosave profilu (krok 1) — wołane PRZED wejściem na krok 2. Zwraca true gdy zapis OK.
+	// Wejście na krok 3 (także przy wznawianiu) → pobierz katalog, jeśli nie ten cel.
+	useEffect(() => {
+		if (step === 3 && profile.careerGoal && catalogGoal !== profile.careerGoal && !catalogLoading) {
+			void loadCatalog(profile.careerGoal);
+		}
+	}, [step, profile.careerGoal, catalogGoal, catalogLoading, loadCatalog]);
+
+	// ── Autosave profilu (krok 1) ───────────────────────────────────────────
 	const saveProfileProgress = async (): Promise<boolean> => {
 		try {
 			const res = await fetch("/api/onboarding/progress", {
@@ -142,16 +166,14 @@ export function OnboardingWizard({
 		}
 	};
 
-	// Bump high-water-marka kroku w bazie (czysty {step}) — ruch w przód poza krok 1/2.
 	const bumpStepProgress = (target: number) => {
-		// Tylko gdy przekracza dotychczasowy max. Kroki 1/2 mają własny payload (autosave).
 		if (target <= maxReached || target === 1 || target === 2) return;
 		void fetch("/api/onboarding/progress", {
 			method: "PATCH",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ step: target }),
 		}).catch(() => {
-			/* bump nieblokujący — high-water-mark dogoni przy następnym zapisie */
+			/* bump nieblokujący */
 		});
 	};
 
@@ -164,16 +186,12 @@ export function OnboardingWizard({
 	};
 
 	const goToStep = async (target: number) => {
-		// Skok wstecz / do osiągniętego kroku (klikalny pasek) — bez bramek forward,
-		// ale ruch DO PRZODU nadal je egzekwuje (target>step poniżej).
 		const isJumpBack = target <= maxReached && target < step;
 
-		// Wejście do Profilu (1) wymaga ustalonego celu w Kroku 0.
 		if (target === 1 && !isStep0Valid) {
-			toast.error("Najpierw wybierz cel kariery — Pomocnik Ci w tym pomoże.");
+			toast.error("Najpierw wybierz cel kariery z listy realnych ścieżek.");
 			return;
 		}
-		// Wejście do Sylabusa (2) wymaga kompletnego Profilu + autosave profilu.
 		if (target === 2 && !isJumpBack) {
 			if (!isStep1Valid) {
 				toast.error("Wypełnij wszystkie wymagane pola.");
@@ -187,14 +205,22 @@ export function OnboardingWizard({
 		advanceTo(target);
 	};
 
-	// Krok 0 → Krok 1: Pomocnik zwrócił etykietę celu. Zapisujemy w pamięci i wchodzimy w Profil.
+	// Krok 0 → 1: cel ustalony (Pomocnik lub picker). Zmiana celu czyści wybór i katalog.
 	const handleCareerGoalChosen = (careerLabel: string) => {
-		setProfile((prev) => ({ ...prev, careerGoal: careerLabel }));
+		setProfile((prev) => {
+			if (prev.careerGoal && prev.careerGoal !== careerLabel) {
+				// Inny cel → katalog i wybór z poprzedniej ścieżki nieaktualne.
+				setSelections({});
+				setCatalogGoal(null);
+				setRawCatalog([]);
+			}
+			return { ...prev, careerGoal: careerLabel };
+		});
 		advanceTo(1);
 	};
 
-	// Realna analiza sylabusa: autosave step 2 → parse → kompetencje → krok 3.
-	const runAnalyze = async () => {
+	// ── Sylabus (krok 2) — adnotacja, opcjonalna ────────────────────────────
+	const runAnalyzeSyllabus = async () => {
 		const hasFile = syllabusFile !== null;
 		const hasText = syllabusText.trim().length >= 100;
 		if (!hasFile && !hasText) {
@@ -203,7 +229,6 @@ export function OnboardingWizard({
 		}
 		setAnalyzing(true);
 		try {
-			// Autosave sylabusa PRZED parse — tekst persystuje nawet jeśli analiza padnie.
 			await fetch("/api/onboarding/progress", {
 				method: "PATCH",
 				headers: { "Content-Type": "application/json" },
@@ -212,8 +237,6 @@ export function OnboardingWizard({
 
 			let res: Response;
 			if (hasFile && syllabusFile) {
-				// Multipart: przeglądarka sama ustawi Content-Type (multipart/form-data + boundary)
-				// — NIE ustawiamy go ręcznie, inaczej zniszczymy boundary.
 				const fd = new FormData();
 				fd.append("file", syllabusFile);
 				fd.append("careerGoal", profile.careerGoal);
@@ -229,8 +252,10 @@ export function OnboardingWizard({
 				const data = await res.json();
 				throw new Error(data.error || "Błąd analizy");
 			}
-			const data = await res.json();
-			setCompetencies((data.competencies as string[]).map((name) => createCompetencyItem(name)));
+			const data = (await res.json()) as { competencies: string[] };
+			// Wynik = ADNOTACJA (nazwy „w programie"), nie lista kompetencji (D4).
+			setSyllabusCompetencies(data.competencies);
+			toast.success("Sylabus zaznaczy, co masz z toku studiów. Resztę dobierasz z rynku.");
 			advanceTo(3);
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Nie udało się przeanalizować sylabusa.");
@@ -239,24 +264,37 @@ export function OnboardingWizard({
 		}
 	};
 
-	// AI analysis (krok 2). Gdy istnieje downstream (maxReached>2: kompetencje/samoocena
-	// już są) — ostrzeż i przelicz (re-parse sylabusa unieważnia kompetencje + samoocenę).
-	const handleAnalyze = () => {
-		if (maxReached > 2) {
-			setPendingAction(() => runAnalyze);
-			setCascadeOpen(true);
-			return;
-		}
-		void runAnalyze();
+	// Pominięcie sylabusa — pełny katalog rynku bez adnotacji (D4: sylabus opcjonalny).
+	const skipSyllabus = () => {
+		setSyllabusCompetencies([]);
+		advanceTo(3);
 	};
 
-	// Submit kroku 3 — POST /api/onboarding (delete+insert competencies, re-gen gaps/skillMap).
+	// ── Wybór kompetencji (krok 3) ──────────────────────────────────────────
+	const handleSelectionChange = (name: string, level: PossessionLevel | null) => {
+		setSelections((prev) => {
+			const next = { ...prev };
+			if (level === null) {
+				delete next[name]; // Brak = odznaczenie = luka
+			} else {
+				next[name] = level;
+			}
+			return next;
+		});
+	};
+
+	// Submit kroku 3 — POST /api/onboarding (delete+insert competencies z poziomem,
+	// deterministyczne luki + Skill Map). Próg „min 5" zniesiony — 0 dozwolone (D5).
 	const runSubmit = async () => {
-		const filledNames = competencies.filter((c) => c.name.trim()).map((c) => c.name.trim());
-		if (filledNames.length < MIN_COMPETENCIES) {
-			toast.error(`Pracodawcy oczekują min. ${MIN_COMPETENCIES} kompetencji.`);
-			return;
-		}
+		const selected: SelectedCompetency[] = catalog
+			.filter((item) => selections[item.competencyName] !== undefined)
+			.map((item) => ({
+				name: item.competencyName,
+				level: selections[item.competencyName],
+				marketPercentage: item.demandPercentage,
+				inSyllabus: Boolean(item.inSyllabus),
+			}));
+
 		setSubmitting(true);
 		try {
 			const res = await fetch("/api/onboarding", {
@@ -268,7 +306,7 @@ export function OnboardingWizard({
 					semester: Number(profile.semester),
 					careerGoal: profile.careerGoal,
 					syllabusText,
-					competencies: filledNames,
+					competencies: selected,
 				}),
 			});
 			if (!res.ok) {
@@ -283,7 +321,6 @@ export function OnboardingWizard({
 			} else {
 				toast.success("Paszport Kompetencji utworzony!");
 			}
-			// Kompetencje są w bazie → GET /api/self-assessment może je pobrać. Krok 4.
 			advanceTo(4);
 			setSubmitting(false);
 		} catch (err) {
@@ -292,27 +329,14 @@ export function OnboardingWizard({
 		}
 	};
 
-	// Submit kroku 3. Gdy istnieje downstream (maxReached>3: samoocena już oceniona)
-	// — ostrzeż i przelicz (delete+insert kompetencji czyści selfAssessment + re-gen).
-	const handleSubmit = () => {
-		if (maxReached > 3) {
-			setPendingAction(() => runSubmit);
-			setCascadeOpen(true);
-			return;
-		}
-		void runSubmit();
-	};
-
-	// Krok 5 (Wnioski): domknięcie onboardingu — JEDYNE zapalenie onboardingCompleted.
+	// Krok 4 (Wnioski): domknięcie onboardingu — JEDYNE zapalenie onboardingCompleted.
 	const handleComplete = async () => {
 		setCompleting(true);
 		try {
 			const res = await fetch("/api/onboarding/complete", { method: "POST" });
 			if (res.status === 409) {
 				const data = (await res.json()) as { error?: string };
-				toast.error(
-					data.error ?? "Onboarding niekompletny — uzupełnij profil i minimum 5 kompetencji.",
-				);
+				toast.error(data.error ?? "Onboarding niekompletny — uzupełnij profil.");
 				setCompleting(false);
 				return;
 			}
@@ -325,18 +349,6 @@ export function OnboardingWizard({
 		}
 	};
 
-	const handleCascadeConfirm = () => {
-		const action = pendingAction;
-		setCascadeOpen(false);
-		setPendingAction(null);
-		if (action) void action();
-	};
-
-	const handleCascadeCancel = () => {
-		setCascadeOpen(false);
-		setPendingAction(null);
-	};
-
 	if (submitting) {
 		return (
 			<div className="flex min-h-[calc(100vh-72px)] flex-col items-center justify-center px-5 py-10 gap-6">
@@ -344,9 +356,9 @@ export function OnboardingWizard({
 					<BookOpen className="h-8 w-8 text-indigo-500 animate-pulse" />
 				</div>
 				<div className="text-center max-w-md">
-					<h2 className="font-heading text-2xl font-extrabold mb-2">Analizujemy Twój profil…</h2>
+					<h2 className="font-heading text-2xl font-extrabold mb-2">Budujemy Twój Paszport…</h2>
 					<p className="text-sm text-muted-foreground">
-						AI porównuje Twoje kompetencje z wymaganiami rynku i buduje Skill Map. To zajmie 15-30
+						Porównujemy Twoje kompetencje z wymaganiami rynku i budujemy Skill Map. To zajmie 15-30
 						sekund.
 					</p>
 				</div>
@@ -359,14 +371,12 @@ export function OnboardingWizard({
 			{/* Progress bar */}
 			<div className="mb-10 w-full max-w-[560px]">
 				<div className="relative mb-3 flex items-center justify-between">
-					{/* Line — 6 kroków (0–5), progres = step / LAST_STEP. Krok 0 = 0% wypełnienia. */}
 					<div className="absolute left-6 right-6 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-muted">
 						<div
 							className="ob-progress-fill h-full rounded-full transition-all duration-500"
 							style={{ width: `${(step / LAST_STEP) * 100}%` }}
 						/>
 					</div>
-					{/* Dots — klikalne dla osiągniętych kroków (num <= maxReached). Numer 1-based (idx+1). */}
 					{STEPS.map((s, idx) => {
 						const reached = s.num <= maxReached;
 						const isCurrent = s.num === step;
@@ -419,28 +429,33 @@ export function OnboardingWizard({
 
 			{/* Card */}
 			<div className="ob-wizard-card w-full max-w-[560px] animate-in fade-in slide-in-from-bottom-3 duration-400">
-				{/* Step 0 — Cel kariery (Pomocnik osadzony). Spec §3.1/§4.
-				    Tryb embedded: brak select-path; cel płynie w pamięci (handleCareerGoalChosen).
-				    Student wybiera obszar — AI nie narzuca (human-in-the-loop, CLAUDE.md §7). */}
+				{/* Step 0 — Cel kariery: Pomocnik + deterministyczny picker 23 ścieżek (D1). */}
 				{step === 0 && (
 					<>
 						<h2 className="font-heading text-2xl font-extrabold">Zacznijmy od celu</h2>
-						<p className="mb-8 mt-1.5 text-sm text-muted-foreground">
-							Pomocnik zada Ci kilka pytań i pomoże nazwać obszar zawodowy, który do Ciebie pasuje.
-							Ty wybierasz — to nie test.
+						<p className="mb-6 mt-1.5 text-sm text-muted-foreground">
+							Pomocnik pomoże nazwać obszar, który do Ciebie pasuje — albo wybierz wprost z listy
+							realnych ścieżek z rynku. Ty decydujesz.
 						</p>
 						<CareerHelperFlow onCareerGoalChosen={handleCareerGoalChosen} />
+						<div className="my-6 flex items-center gap-4">
+							<div className="h-px flex-1 bg-border" />
+							<span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+								lub wybierz z listy
+							</span>
+							<div className="h-px flex-1 bg-border" />
+						</div>
+						<CareerPathPicker value={profile.careerGoal} onSelect={handleCareerGoalChosen} />
 					</>
 				)}
 
-				{/* Step 1 */}
+				{/* Step 1 — Profil */}
 				{step === 1 && (
 					<>
 						<h2 className="font-heading text-2xl font-extrabold">Opowiedz nam o sobie</h2>
 						<p className="mb-8 mt-1.5 text-sm text-muted-foreground">
 							Te informacje pomogą nam spersonalizować Twój Paszport Kompetencji i analizę luk.
 						</p>
-						{/* Mikrokopia HITL: cel ustalony w Kroku 0 jest widoczny i edytowalny (powrót). */}
 						{profile.careerGoal && (
 							<p className="mb-6 rounded-md bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
 								Twój cel kariery:{" "}
@@ -475,57 +490,64 @@ export function OnboardingWizard({
 					</>
 				)}
 
-				{/* Step 2 */}
+				{/* Step 2 — Sylabus (opcjonalny): ADNOTUJE katalog rynku, nie generuje listy (D4). */}
 				{step === 2 && (
 					<>
-						<h2 className="font-heading text-2xl font-extrabold">Wgraj swój sylabus</h2>
+						<h2 className="font-heading text-2xl font-extrabold">Sylabus (opcjonalny)</h2>
 						<p className="mb-8 mt-1.5 text-sm text-muted-foreground">
-							Wklej treść sylabusa lub prześlij plik PDF. Nasza AI przeanalizuje go i wyciągnie
-							Twoje kompetencje.
+							Wklej lub wgraj sylabus, a zaznaczymy na liście kompetencji rynku te, które masz z
+							toku studiów. Możesz też pominąć ten krok — katalog rynku dostajesz tak czy inaczej.
 						</p>
 						<StepSyllabus
 							syllabusText={syllabusText}
 							onSyllabusChange={setSyllabusText}
 							file={syllabusFile}
 							onFileChange={setSyllabusFile}
-							onAnalyze={handleAnalyze}
+							onAnalyze={runAnalyzeSyllabus}
 							loading={analyzing}
 						/>
 						{!analyzing && (
-							<div className="mt-6">
+							<div className="mt-6 flex items-center justify-between">
 								<Button variant="ghost" onClick={() => goToStep(1)} className="gap-2">
 									<ChevronLeft className="h-4 w-4" />
 									Wstecz
+								</Button>
+								<Button variant="ghost" onClick={skipSyllabus} className="gap-2">
+									Pomiń sylabus
+									<ChevronRight className="h-4 w-4" />
 								</Button>
 							</div>
 						)}
 					</>
 				)}
 
-				{/* Step 3 */}
+				{/* Step 3 — Kompetencje + poziom (scalone, z rynku). Element 2/4/5. */}
 				{step === 3 && (
 					<>
 						<h2 className="font-heading text-2xl font-extrabold">Twoje kompetencje</h2>
-						<p className="mb-8 mt-1.5 text-sm text-muted-foreground">
-							Przejrzyj wynik analizy AI. Możesz edytować, usuwać i dodawać kompetencje przed
-							zapisaniem.
+						<p className="mb-6 mt-1.5 text-sm text-muted-foreground">
+							Zaznacz przy każdej umiejętności poziom, jaki masz. Czego nie zaznaczysz, zostaje
+							Twoim planem nauki. Nie musisz zaznaczać nic — możesz zacząć od zera.
 						</p>
-						<StepCompetencies competencies={competencies} onChange={setCompetencies} />
+						<StepMarketCompetencies
+							careerGoal={profile.careerGoal}
+							catalog={catalog}
+							selections={selections}
+							onChange={handleSelectionChange}
+							loading={catalogLoading}
+							error={catalogError}
+							onRetry={() => loadCatalog(profile.careerGoal)}
+							isRealCareerGoal={isRealGoal}
+						/>
 						<div className="mt-8 flex items-center justify-between">
 							<Button variant="ghost" onClick={() => goToStep(2)} className="gap-2">
 								<ChevronLeft className="h-4 w-4" />
 								Wstecz
 							</Button>
 							<Button
-								onClick={handleSubmit}
-								disabled={!isStep3Valid || submitting}
+								onClick={runSubmit}
+								disabled={submitting || catalogLoading}
 								className="ob-btn-accent gap-2"
-								aria-describedby={!isStep3Valid ? "competencies-threshold-msg" : undefined}
-								title={
-									!isStep3Valid
-										? `Pracodawcy oczekują min. ${MIN_COMPETENCIES} kompetencji.`
-										: undefined
-								}
 							>
 								{submitting ? (
 									<>
@@ -543,18 +565,8 @@ export function OnboardingWizard({
 					</>
 				)}
 
-				{/* Step 4 — Samoocena (B4, spec §3).
-				    StepSelfAssessment zarządza własnym ładowaniem i autosave (GET/PATCH).
-				    onAdvance: advance 4→5 powiódł się → krok 5 (Wnioski).
-				    onSkip: student chce ocenić później → krok 5 (Wnioski). */}
+				{/* Step 4 — Wnioski: domknięcie onboardingu. */}
 				{step === 4 && (
-					<StepSelfAssessment onAdvance={() => advanceTo(5)} onSkip={() => advanceTo(5)} />
-				)}
-
-				{/* Step 5 — Wnioski (OUT Beta: brak osobnego ekranu).
-				    Domknięcie onboardingu: POST /api/onboarding/complete (jedyne zapalenie
-				    onboardingCompleted). Po 200 → redirect; 409 → komunikat (niekompletny). */}
-				{step === 5 && (
 					<div className="flex flex-col items-center gap-6 py-4 text-center">
 						<div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
 							<Check className="h-8 w-8 text-emerald-500" />
@@ -562,8 +574,8 @@ export function OnboardingWizard({
 						<div className="max-w-sm">
 							<h2 className="font-heading text-2xl font-extrabold mb-2">Profil gotowy!</h2>
 							<p className="text-sm text-muted-foreground">
-								Twój Paszport Kompetencji jest gotowy. Możesz teraz przeglądać projekty i rozwijać
-								swoje kompetencje.
+								Twój Paszport Kompetencji jest gotowy. Mapa pokaże, czego rynek wymaga, a czego
+								jeszcze nie masz — to Twój plan nauki.
 							</p>
 						</div>
 						<Button onClick={handleComplete} disabled={completing} className="ob-btn-primary gap-2">
@@ -582,25 +594,6 @@ export function OnboardingWizard({
 					</div>
 				)}
 			</div>
-
-			{/* Kaskada „ostrzeż i przelicz" — krok 2 (Analizuj) i krok 3 (ponowne zatwierdzenie)
-			    gdy istnieje downstream. Potwierdzenie → normalny przepływ (re-gen gaps/Skill Map
-			    + reset samooceny po stronie POST /api/onboarding). Anulowanie → no-op. */}
-			<AlertDialog open={cascadeOpen} onOpenChange={(open) => !open && handleCascadeCancel()}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Przeliczyć Twój profil?</AlertDialogTitle>
-						<AlertDialogDescription>
-							Zmiana sylabusa lub kompetencji przeliczy analizę luk i Skill Map oraz wyczyści Twoją
-							samoocenę poniżej. Kontynuować?
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel onClick={handleCascadeCancel}>Anuluj</AlertDialogCancel>
-						<AlertDialogAction onClick={handleCascadeConfirm}>Tak, przelicz</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
 		</div>
 	);
 }

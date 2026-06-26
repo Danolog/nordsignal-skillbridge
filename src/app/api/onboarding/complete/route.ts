@@ -8,18 +8,19 @@
  *
  * Guard (inaczej 409 Conflict — onboarding nie domyka się na niepełnym profilu):
  *   - profil realny: students.university != "" (prowizoryczny rekord z Kroku 0 ma "")
- *   - >= 5 kompetencji (próg spójny z OnboardingSchema.competencies.min(5))
+ *
+ * Partia 4 (D5): próg „min 5 kompetencji" ZNIESIONY — student może domknąć onboarding
+ * z 0 zaznaczonych kompetencji (0% pokrycia = prawidłowy, uczciwy stan startowy juniora;
+ * cały rynek jako luki). Jedyna brama domknięcia = realny profil (uczelnia wypełniona).
  *
  * Plan: fala A krok 4. Spójne z fix POST /api/onboarding (krok 3 nie zapala completed).
  */
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { resolveStudent } from "@/lib/career-helper/session";
-import { competencies, students } from "@/lib/db/schema";
+import { students } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { logError } from "@/lib/log";
-
-const MIN_COMPETENCIES = 5;
 
 export async function POST() {
 	const auth = await resolveStudent();
@@ -29,7 +30,7 @@ export async function POST() {
 			{ status: auth.status },
 		);
 	}
-	const { userId, studentId, tenantId } = auth;
+	const { userId, tenantId } = auth;
 
 	try {
 		const result = await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {
@@ -40,15 +41,10 @@ export async function POST() {
 			});
 			const profileReal = Boolean(student && student.university.trim() !== "");
 
-			// >= 5 kompetencji (próg z OnboardingSchema). RLS filtruje do własnych.
-			const rows = await tx
-				.select({ id: competencies.id })
-				.from(competencies)
-				.where(eq(competencies.studentId, studentId));
-			const enoughCompetencies = rows.length >= MIN_COMPETENCIES;
-
-			if (!profileReal || !enoughCompetencies) {
-				return { completed: false as const, profileReal, count: rows.length };
+			// D5: brak progu kompetencji — 0 zaznaczonych domyka onboarding. Jedyna brama
+			// = realny profil. Student z 0% pokrycia przechodzi (cały rynek jako luki).
+			if (!profileReal) {
+				return { completed: false as const };
 			}
 
 			// Domknięcie: jedyne zapalenie onboardingCompleted w całym systemie.
@@ -61,11 +57,7 @@ export async function POST() {
 
 		if (!result.completed) {
 			return NextResponse.json(
-				{
-					error: "Onboarding niekompletny — uzupełnij profil i minimum 5 kompetencji.",
-					profileReal: result.profileReal,
-					competencyCount: result.count,
-				},
+				{ error: "Onboarding niekompletny — uzupełnij profil (uczelnia, kierunek, semestr)." },
 				{ status: 409 },
 			);
 		}

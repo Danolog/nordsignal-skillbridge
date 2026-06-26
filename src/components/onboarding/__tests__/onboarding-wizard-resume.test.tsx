@@ -57,7 +57,10 @@ const RESUMED_DATA: OnboardingInitialData = {
 		careerGoal: "Data Analyst",
 	},
 	syllabusText: "x".repeat(150),
-	competencies: ["Python", "SQL", "Pandas", "Statystyka", "Git"],
+	// Partia 4: kontrakt zmieniony na `selections` (nazwa→poziom 2/3/4). Logika tego
+	// testu (stary nagłówek sylabusa, inputy kompetencji, stub samooceny, numeracja
+	// kroków) jest NIEAKTUALNA — do przepisania przez Quinna. Tu tylko zgodność typu.
+	selections: { Python: 3, SQL: 3, Pandas: 3, Statystyka: 3, Git: 3 },
 };
 
 describe("OnboardingWizard — hydratacja initialStep/initialData", () => {
