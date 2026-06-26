@@ -8,6 +8,8 @@ import type { LearningResource } from "@/components/skillbridge/b3/SourceLinkRow
 import { TheorySection } from "@/components/skillbridge/b3/TheorySection";
 import { ReflectionCallout } from "@/components/skillbridge/b5/ReflectionCallout";
 import type { ProjectBrief } from "@/lib/ai/generate-brief";
+import type { ProjectSourceLink } from "./project-source-links";
+import { ProjectSourceLinks } from "./project-source-links";
 import { SubmissionForm } from "./submission-form";
 
 interface ProjectCompetency {
@@ -46,6 +48,9 @@ interface ProjectDetailProps {
 	theoryMd: string | null;
 	/** B3 — źródła wiedzy, posortowane po position (backend). [] = stan S5 empty_sources. */
 	learningResources: LearningResource[];
+	/** #7 — linki źródła danych (2–3), posortowane po position (backend). [] = brak rekordów
+	 *  → widok degraduje do project.sourceUrl (kompatybilność wsteczna, projekty bez backfillu). */
+	sourceLinks: ProjectSourceLink[];
 }
 
 export function ProjectDetail({
@@ -54,6 +59,7 @@ export function ProjectDetail({
 	existingReflection,
 	theoryMd,
 	learningResources,
+	sourceLinks,
 }: ProjectDetailProps) {
 	const [brief, setBrief] = useState<ProjectBrief | null>(
 		submission?.aiReviewJson
@@ -100,16 +106,23 @@ export function ProjectDetail({
 				</div>
 				<h1 className="proj-detail-title">{project.title}</h1>
 				<p className="proj-detail-desc">{project.description}</p>
-				{project.sourceUrl && (
-					<a
-						href={project.sourceUrl}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="proj-source-link"
-					>
-						<ExternalLink size={14} />
-						Źródło danych
-					</a>
+				{/* #7 — odporność linków: lista 2–3 źródeł (padnie jeden, kończysz z drugiego).
+				    Brak rekordów w tabeli → degradacja do pojedynczego project.sourceUrl
+				    (kompatybilność wsteczna z projektami sprzed backfillu migracji 0018). */}
+				{sourceLinks.length > 0 ? (
+					<ProjectSourceLinks links={sourceLinks} />
+				) : (
+					project.sourceUrl && (
+						<a
+							href={project.sourceUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="proj-source-link"
+						>
+							<ExternalLink size={14} />
+							Źródło danych
+						</a>
+					)
 				)}
 			</div>
 

@@ -4408,6 +4408,32 @@
 	color: #4f46e5;
 	text-decoration: underline;
 }
+/* #7 — lista 2–3 linków źródła danych (odporność linków). */
+.proj-source-links {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 16px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+/* Martwy link: wyszarzony i przekreślony, ale wciąż klikalny (np. przez archive.org). */
+.proj-source-link-dead {
+	color: #94a3b8;
+}
+.proj-source-link-dead:hover {
+	color: #64748b;
+}
+.proj-source-link-dead .proj-source-link-text {
+	text-decoration: line-through;
+}
+.proj-source-link-dead-tag {
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
 .proj-detail-section {
 	padding: 24px;
 	background: white;
