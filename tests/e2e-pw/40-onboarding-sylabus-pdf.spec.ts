@@ -14,7 +14,7 @@ import { fillSurveyAndContinue } from "./helpers/survey";
  * test serwera zielony NIE znaczy, że interfejs realnie skonsumuje kontrakt).
  *
  * MECHANIKA BŁĘDU (onboarding-wizard.tsx handleAnalyze, step-syllabus.tsx):
- *   Krok 2 „Wgraj swój sylabus" pozwala wybrać PDF (przycisk „Analizuj sylabus"
+ *   Krok 2 „Sylabus (opcjonalny)" pozwala wybrać PDF (przycisk „Analizuj sylabus"
  *   włącza się od samego pliku: canAnalyze = text>=100 || file). Ale handleAnalyze
  *   przy pustym polu tekstowym robi toast.error("co najmniej 100 znaków") i return —
  *   plik NIGDY nie jest czytany ani wysyłany. Upload PDF to ślepa uliczka.
@@ -178,7 +178,7 @@ test.describe("@dbwrite @llm Onboarding — Krok 0 + upload sylabusa PDF (błęd
 		// Stary błąd „atrapy" NIE pojawia się — nawet bez kliknięcia walidacja go nie pokazuje.
 		await expect(page.getByText(/co najmniej 100 znaków/i)).toHaveCount(0);
 		// Wciąż na kroku 2 (nie klikaliśmy analizy) — krok kompetencji osiąga test @llm niżej.
-		await expect(page.getByRole("heading", { name: /Wgraj swój sylabus/i })).toBeVisible();
+		await expect(page.getByRole("heading", { name: /Sylabus \(opcjonalny\)/i })).toBeVisible();
 	});
 
 	test("kontrakt docelowy: upload PDF zwraca krok kompetencji (po naprawie strumienia C)", async ({

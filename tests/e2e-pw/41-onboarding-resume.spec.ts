@@ -17,11 +17,17 @@ import { dbWriteTest as test } from "./helpers/guards";
  *
  * Seed: tools/seed-e2e.ts → student „resume" (E2E_TEST_EMAIL_RESUME / ...).
  *
+ * PARTIA 4 (przebudowa): krok 3 (Kompetencje) NIE ma już inputów nazw — to wybór z
+ * KATALOGU RYNKU z poziomem (catalog dociągany na wejściu). Dlatego ten test dowodzi
+ * SEKWENCJI wznowienia (właściwy krok + pasek + trwałość), a hydratację poziomów wyboru
+ * (selections→przyciski) pokrywa unit (onboarding-wizard-resume.test.tsx z mockiem katalogu).
+ * Krok „Samoocena" scalony w krok 3 — w pasku 5 kroków ostatni to „Krok 5: Wnioski".
+ *
  * STRUKTURA:
- *   1. Wznowienie: login → /onboarding → render od kroku 3 (Kompetencje) z danymi z bazy,
+ *   1. Wznowienie: login → /onboarding → render od kroku 3 (Kompetencje) z bazy,
  *      NIE od Kroku 0. Dowodzi hydratacji initialStep/initialData (page.tsx → wizard).
  *   2. Pasek kroków klikalny: skok do kroku 1 (Profil, osiągnięty) pokazuje zapisany profil;
- *      krok 4/5 (nieosiągnięte z step=3) zablokowane.
+ *      krok 5 (Wnioski, nieosiągnięty z step=3) zablokowany.
  *   3. Trwałość po reload: skok do Profilu → reload → kreator nadal wznawia od kroku 3
  *      (high-water-mark z bazy nie cofa się; onboarding_step trwały).
  */
@@ -41,21 +47,16 @@ test.describe("@dbwrite Onboarding — wznawianie postępu (fala B, bez @llm)", 
 		});
 		// Pomocnik (Krok 0) NIE jest renderowany — wznowienie omija go (careerGoal≠"").
 		await expect(page.getByRole("heading", { name: /Zacznijmy od celu/i })).toHaveCount(0);
-		// Kompetencje z bazy wczytane do inputów (seed COMPETENCIES_RESUME, 5 pozycji).
-		const compInputs = page.getByPlaceholder("Nazwa kompetencji...");
-		await expect(compInputs).toHaveCount(5);
-		// Pierwsza i czwarta wartość z seed (Python, Statystyka) — dowód hydratacji danych.
-		await expect(compInputs.nth(0)).toHaveValue("Python");
-		await expect(compInputs.nth(3)).toHaveValue("Statystyka");
 
 		// 2. PASEK KLIKALNY — skok do Profilu (krok 1, osiągnięty: num <= maxReached=3).
 		await page.getByRole("button", { name: /^Krok 2: Profil$/i }).click();
 		await expect(page.getByRole("heading", { name: /Opowiedz nam o sobie/i })).toBeVisible();
 		// Profil z bazy odtworzony (kierunek z seed: „Informatyka").
 		await expect(page.getByPlaceholder(/np\. Informatyka/i)).toHaveValue("Informatyka");
-		// Krok nieosiągnięty (Samoocena, num=4 > maxReached=3) — zablokowany.
+		// Krok nieosiągnięty (Wnioski, num=4 > maxReached=3) — zablokowany. Partia 4: ostatni
+		// krok paska to „Krok 5: Wnioski" (samoocena scalona w krok 3, nie ma osobnego kroku).
 		await expect(
-			page.getByRole("button", { name: /Krok 5: Samoocena \(jeszcze niedostępny\)/i }),
+			page.getByRole("button", { name: /Krok 5: Wnioski \(jeszcze niedostępny\)/i }),
 		).toBeDisabled();
 
 		// 3. TRWAŁOŚĆ PO RELOAD — wracamy na /onboarding, kreator wznawia od kroku 3
@@ -64,6 +65,7 @@ test.describe("@dbwrite Onboarding — wznawianie postępu (fala B, bez @llm)", 
 		await expect(page.getByRole("heading", { name: /Twoje kompetencje/i })).toBeVisible({
 			timeout: 15_000,
 		});
-		await expect(page.locator('input[value="Python"]')).toBeVisible();
+		// Wznowienie wróciło na krok 3 (a nie Krok 0 / Profil) — sekwencja trwała.
+		await expect(page.getByRole("heading", { name: /Zacznijmy od celu/i })).toHaveCount(0);
 	});
 });
