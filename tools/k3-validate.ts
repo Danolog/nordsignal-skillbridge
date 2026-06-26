@@ -61,6 +61,11 @@ const K_PUB_TABLES = [
 	"project_sources", // konfiguracja źródeł, server-only
 	// B3 — materiały edukacyjne projektu (migracja 0016, dziecko projects, K-PUB)
 	"project_learning_resources",
+	// #7 — linki źródła danych projektu (migracja 0018, dziecko projects, K-PUB).
+	// 2–3 linki/projekt (odporność linków); te same prawa co project_learning_resources:
+	// globalny katalog, brak właściciela tenant-owego, zapis tylko seed/system,
+	// GRANT SELECT app_student/app_faculty. Uzasadnienie: rls-matrix §4.
+	"project_source_links",
 	// tenants — rejestr uczelni (slug/name). To rejestr najemców, nie dane
 	// studenta; sam nie ma właściciela tenant-owego, więc brak RLS tenant-owej
 	// jest poprawnym stanem (analogicznie do katalogu projects). Zapis tylko
