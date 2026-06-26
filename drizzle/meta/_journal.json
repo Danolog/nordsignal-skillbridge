@@ -127,6 +127,13 @@
       "when": 1781632062443,
       "tag": "0017_nebulous_living_mummy",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1782471235007,
+      "tag": "0018_glamorous_meteorite",
+      "breakpoints": true
     }
   ]
 }

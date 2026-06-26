@@ -338,6 +338,48 @@ export const projectLearningResources = pgTable(
 	],
 );
 
+// ============================================================================
+// #7 — Odporność linków źródła danych. Migracja 0018.
+//
+// Problem: dziś projekt ma JEDEN link do materiału źródłowego (projects.source_url).
+// Gdy padnie, student nie ma alternatywy. Model 1 link → 2–3 linki: padnie jeden,
+// student kończy z drugiego.
+//
+// Decyzja schematu (wzorzec project_learning_resources, §B3.2 Ethan): NOWA tabela
+// project_source_links — klasa K-PUB (dziecko katalogu projects, globalny katalog,
+// NIE dane studenta). Bez RLS tenant-owej; te same prawa co project_competencies
+// /project_learning_resources. Wyjątek RLS w rls-matrix §4 + k3-validate (analogicznie).
+// GRANT SELECT do app_student i app_faculty (dopisany ręcznie w migracji — drizzle-kit
+// nie generuje GRANT). Zapis tylko seed/system (brak endpointu zapisu klienta).
+//
+// projects.source_url ZOSTAJE (nie usuwamy kolumny — odwracalność): backfill przenosi
+// istniejący link do pierwszego wiersza (position 0), a widok degraduje do source_url,
+// gdy projekt nie ma jeszcze wierszy w tej tabeli.
+//
+// isDead: znacznik „link martwy" — widok pokazuje go przekreślonego i kieruje studenta
+// na kolejny działający (fallback wizualny). Nie weryfikujemy URL automatycznie.
+// ============================================================================
+
+export const projectSourceLinks = pgTable(
+	"project_source_links",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		projectId: uuid("project_id")
+			.notNull()
+			.references(() => projects.id, { onDelete: "cascade" }),
+		url: text("url").notNull(),
+		// Etykieta dla człowieka (np. „Źródło główne", „Kopia zapasowa", „Kaggle").
+		// NULL = widok pokaże host z URL jak dotąd.
+		label: text("label"),
+		// Kolejność wyświetlania; 0 = pierwszy (przeniesiony stary source_url).
+		position: integer("position").notNull().default(0),
+		// Znacznik martwego linku — widok degraduje wizualnie i kieruje na następny.
+		isDead: boolean("is_dead").notNull().default(false),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [index("idx_project_source_links_project_id").on(table.projectId)],
+);
+
 export const projectCompetencies = pgTable(
 	"project_competencies",
 	{
@@ -617,6 +659,7 @@ export const projectsRelations = relations(projects, ({ many }) => ({
 	competencies: many(projectCompetencies),
 	submissions: many(projectSubmissions),
 	learningResources: many(projectLearningResources),
+	sourceLinks: many(projectSourceLinks),
 }));
 
 export const projectCompetenciesRelations = relations(projectCompetencies, ({ one }) => ({
@@ -630,6 +673,14 @@ export const projectCompetenciesRelations = relations(projectCompetencies, ({ on
 export const projectLearningResourcesRelations = relations(projectLearningResources, ({ one }) => ({
 	project: one(projects, {
 		fields: [projectLearningResources.projectId],
+		references: [projects.id],
+	}),
+}));
+
+// #7 — Source links relations (odporność linków źródła danych)
+export const projectSourceLinksRelations = relations(projectSourceLinks, ({ one }) => ({
+	project: one(projects, {
+		fields: [projectSourceLinks.projectId],
 		references: [projects.id],
 	}),
 }));

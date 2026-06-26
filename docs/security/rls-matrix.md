@@ -1,9 +1,11 @@
 # Macierz RLS — SkillBridge Beta v0.1
 
-**Wersja:** v0.13 · 2026-06-02
+**Wersja:** v0.14 · 2026-06-26
 **Owner:** Ethan (CTO)
 **Status:** **Wdrożone i podpisane** — sign-off Ryana (CRCO, domena 8 / G6) wystawiony 2026-05-27. **R1/R2 doc-closed** (ADR-002 + ADR-004); migracje X/Y czekają na landing kolumn. **§8 #4 ZAMKNIĘTE** (TRUNCATE protection). **§8 #5 ZAMKNIĘTE** (rotacja share_token na disable). **§8 #1 LIVE na prod bez wyjątków** — Phase 1 (rola `app_runtime` + `dbRuntime` + `withTenantContext` rewire, `0011`) + Phase 2 w całości: 6 refaktorów tras studenta (#19b…#19g, PR-y #35-#40), FORCE RLS + `owner_passthrough` (#19h, `0012`, ADR-005), `k3-validate` 10/10 na prod, **#19a (ops: `app_runtime` LOGIN + `DATABASE_URL_RUNTIME` w Vercel) ZAMKNIĘTE** i **#19i (k3-validate w CI) ZAMKNIĘTE**. Issue #19 ZAMKNIĘTY. Runtime łączy się jako `app_runtime` (NOBYPASSRLS) — `POST /api/passport/share` = 200 na prod (weryfikacja 2026-05-31).
 **Wejście:** `schema.ts` (`main`, **16 tabel** po dropie micro-courses w `0004`) · ADR-001 sekcja 4.2 (multi-tenancy + RLS) · ADR-003 (strategia: WHERE primary + RLS defense-in-depth, 4 warstwy) · `docs/audyty/2026-05-20-skillbridge-ai-production-readiness.md` (K3) · ADR-008 (drop micro-courses — WYKONANY) · **ADR-002** (`docs/decisions/002-column-level-isolation-r1.md`, R1 read-side) · **ADR-004** (`docs/decisions/004-faculty-update-column-isolation-r2.md`, R2 write-side) · **ADR-005** (`docs/decisions/005-force-rls-seed-handling.md`, FORCE + owner_passthrough seed-handling, `Accepted` 2026-05-28).
+
+**Changelog v0.13 → v0.14 (2026-06-26) — #7 `project_source_links` dodana do §3 (#19) i §4 (wyjątki K-PUB); sign-off Ryan (CRCO) — GO z warunkami:** (1) Nowa tabela `project_source_links` (migracja `0018`, dziecko katalogu `projects`) — odporność linków źródła danych: model 1 link → 2–3 linki/projekt (#7). Klasa **K-PUB**, identyczna klasa dostępu co `project_competencies` i `project_learning_resources`. (2) Bez RLS tenant-owej — projekty to globalny katalog, nie dane studenta (taka sama logika jak `project_competencies`). (3) `GRANT SELECT` dla `app_student` i `app_faculty` (linki widoczne dla zalogowanych); **zapis tylko seed/system** (brak endpointu zapisu klienta — jak `projects`). (4) `k3-validate.ts`: `project_source_links` dodana do stałej `K_PUB_TABLES` (test #13, kompletność wyjątków RLS — bez tego CI FAIL po migracji). (5) Wiersz §3 #19 + §4 poniżej. **Sign-off Ryan (CRCO): GO z warunkami — klasa K-PUB, `GRANT SELECT` student+faculty, zapis tylko seed/system.** Migracja `0018` na prod = czerwona linia (sign-off Darka, osobno).
 
 **Changelog v0.12 → v0.13 (2026-06-02) — `tenants` dodana do §4 (wyjątki K-PUB); sign-off Ryana (CRCO):** Tabela `tenants` (migracja `0005`) — rejestr uczelni, korzeń tenantowości; brak własnego `tenant_id` (byłoby odwołanie kołowe), dane nieczułe (slug/name). Wzorzec identyczny jak `projects`: brak RLS tenant-owej jest poprawnym stanem. Leo dodał `tenants` do `K_PUB_TABLES` w `k3-validate.ts` (test #13); wiersz §4 domknięty tym sign-offem. **GO.**
 
@@ -82,6 +84,7 @@ Dziś izolacji między uczelniami **nie ma** (K3): zero `tenant_id`, zero polity
 | 16 | `account` (Better Auth) | K-SES (tokeny OAuth, hasło) | self | NIE | wyjątek warunkowy (6.4) | server | server |
 | 17 | `verification` (Better Auth) | K-SES | brak (identifier) | NIE | wyjątek warunkowy (6.4) | server | server |
 | 18 | `project_reflections` | K-PII+ | student (przez `student_id` → `students.user_id`) + tenant | **TAK** (`0015`) | ✅ FORCE | student: własne (CRUD); **app_faculty: brak grantu, brak polityki — fizyczny deny-by-default (R1 prywatności, PRD US-B5.1)** | student: własne; **faculty: BRAK** |
+| 19 | `project_source_links` | K-PUB | dziecko `projects` (katalog globalny) | NIE | wyjątek (sekcja 4) | wszyscy uwierzytelnieni | tylko system/seed |
 
 **`tenant_id` dodawany w `0006` → 6 tabel:** `students`, `competencies`, `gaps`, `skill_maps`, `passports`, `project_submissions`. (ADR-001 mówił o 7 — siódma to `micro_courses`, usunięta w `0004`, więc realnie 6.)
 
@@ -103,6 +106,7 @@ Skrypt CI sprawdza: każda tabela w `public.` ma `relrowsecurity = true` **lub**
 | `project_sources` | Konfiguracja źródeł, nie dane użytkownika | Server-only, brak ścieżki klienta |
 | `tenants` | Rejestr uczelni (slug/name) — korzeń tenantowości; sam nie ma `tenant_id` (byłoby odwołanie kołowe), brak właściciela tenant-owego. Dane nieczułe — nazwa i slug kampusu. Migracja `0005`. | Zapis tylko seed/system (brak endpointu klienta); odczyt server-side (login faculty po slug); `GRANT SELECT` dla `app_student`/`app_faculty` (pośrednio przez relacje FK w widokach dashboardu) |
 | `project_learning_resources` | Dziecko `projects`, te same prawa; materiały edukacyjne projektu — K-PUB, globalne, brak właściciela tenant-owego (migracja `0016`) | Jak `project_competencies`: filtr w warstwie zapytań (`project_id`); zapis tylko seed/system; `GRANT SELECT` dla `app_student` i `app_faculty` |
+| `project_source_links` | Dziecko `projects`, te same prawa; linki źródła danych projektu (2–3 per projekt, odporność linków #7) — K-PUB, globalne, brak właściciela tenant-owego (migracja `0018`) | Jak `project_competencies`/`project_learning_resources`: filtr w warstwie zapytań (`project_id`); zapis tylko seed/system; `GRANT SELECT` dla `app_student` i `app_faculty` |
 
 `faculty_sessions`, `audit_log`, Better Auth (`user`/`session`/`account`/`verification`) — **mają RLS** (deny-all dla klienta), ale nie tenant-ową — patrz 6.3/6.4.
 
