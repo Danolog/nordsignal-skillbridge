@@ -48,10 +48,12 @@ export function ProjectSourceLinks({ links }: ProjectSourceLinksProps) {
 
 	return (
 		<ul className="proj-source-links" aria-label="Źródła danych">
-			{links.map((link) => {
+			{links.map((link, idx) => {
 				const text = link.label ?? hostFromUrl(link.url);
 				return (
-					<li key={link.url}>
+					// Klucz po indeksie + url: lista statyczna, posortowana po position (backend);
+					// indeks chroni przed kolizją, gdy dwa wiersze mają ten sam url.
+					<li key={`${idx}::${link.url}`}>
 						{link.isDead ? (
 							<a
 								href={link.url}
