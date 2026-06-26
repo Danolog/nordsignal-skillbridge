@@ -1,5 +1,5 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
+import { getModel } from "@/lib/ai/model";
 
 // Kroki nauki — używane w briefach projektów (Project Marketplace).
 // Wydzielone z usuniętego modułu micro-courses (ADR-008, Z3) — generate-brief
@@ -19,7 +19,7 @@ export async function generateLearningSteps(
 	maxSteps = 3,
 ): Promise<LearningStep[]> {
 	const { text } = await generateText({
-		model: anthropic("claude-sonnet-4-6"),
+		model: getModel("standard"),
 		maxOutputTokens: 2000,
 		prompt: `Jesteś ekspertem edukacji technicznej. Stwórz ${maxSteps} krótkich kroków nauki dla studenta ${semester}. semestru, który chce zostać ${careerGoal}.
 

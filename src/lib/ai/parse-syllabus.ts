@@ -1,5 +1,5 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
+import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
 
 export async function parseSyllabus(syllabusText: string, careerGoal: string): Promise<string[]> {
@@ -7,7 +7,7 @@ export async function parseSyllabus(syllabusText: string, careerGoal: string): P
 	const safeSyllabus = sanitizeForPrompt(syllabusText, 8000);
 
 	const { text } = await generateText({
-		model: anthropic("claude-sonnet-4-6"),
+		model: getModel("standard"),
 		maxOutputTokens: 2000,
 		prompt: `Jesteś ekspertem od analizy programów studiów i wymagań rynku pracy w Polsce.
 

@@ -1,12 +1,12 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
+import { getModel } from "@/lib/ai/model";
 
 export async function generateFacultySuggestions(
 	topMissingCompetencies: Array<{ name: string; requiredByPercent: number }>,
 	studentCount: number,
 ): Promise<string[]> {
 	const { text } = await generateText({
-		model: anthropic("claude-sonnet-4-6"),
+		model: getModel("standard"),
 		maxOutputTokens: 600,
 		prompt: `Jesteś ekspertem ds. programów nauczania. Masz dane z ${studentCount} studentów uczelni.
 

@@ -1,7 +1,7 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateObject } from "ai";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
 import { db } from "@/lib/db";
 import { competencies, gaps, jobMarketData, passports } from "@/lib/db/schema";
@@ -48,7 +48,7 @@ export async function generateGaps(
 		const safeComps = sanitizeForPrompt(JSON.stringify(studentCompetencies), 4000);
 
 		const { object: result } = await generateObject({
-			model: anthropic("claude-sonnet-4-6"),
+			model: getModel("standard"),
 			schema: GapResultSchema,
 			maxOutputTokens: 6000,
 			prompt: `Jesteś ekspertem od rynku pracy IT w Polsce.

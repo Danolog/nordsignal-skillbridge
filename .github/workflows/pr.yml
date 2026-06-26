@@ -187,11 +187,12 @@ jobs:
   #     osobny magazyn), warunek chroni przed czerwonym "brak klucza" na ich PR-ach.
   #   - NIGDY pull_request_target.
   #
-  # MODEL (Z6 §4 — cel: Haiku w CI): kod produktu hardkoduje claude-sonnet-4-6
-  # w src/lib/ai/* (parse-syllabus, generate-skill-map), a @ai-sdk/anthropic NIE
-  # honoruje override modelu przez env. Przelaczenie CI na Haiku = osobny PR kodu
-  # produktu (helper modelu env-driven, domena 14 standardu) — patrz opis PR. Do
-  # tego czasu nocny e2e-llm wola Sonnet 4.6; sufit wydatkow Darka chroni koszt.
+  # MODEL (Z6 §4 — cel: Haiku w CI): ZREALIZOWANE. Cala warstwa AI (src/lib/ai/*)
+  # wybiera model przez centralny helper getModel (src/lib/ai/model.ts), sterowany
+  # zmienna srodowiskowa SKILLBRIDGE_AI_MODEL. Job e2e-llm ustawia ja na Haiku 4.5
+  # (env nizej) — caly dzial AI jedzie w CI na Haiku zamiast Sonnet/Opus. PRODUKCJA
+  # bez zmiany: Vercel NIE ustawia tej zmiennej, wiec modele prod (Sonnet/Haiku/Opus
+  # wg warstwy) zostaja bez regresji. Sufit wydatkow klucza CI dodatkowo chroni koszt.
   e2e-llm:
     name: e2e-llm (Playwright + onboarding sciezka #1)
     runs-on: ubuntu-latest
@@ -225,6 +226,10 @@ jobs:
       E2E_ALLOW_DB_WRITES: "1"
       # Klucz modelu — TYLKO tutaj, przez env. Nigdy echo/print. (Ryan, warunek higieny.)
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_CI }}
+      # Override modelu CALEJ warstwy AI (src/lib/ai/model.ts → getModel): w CI caly
+      # dzial AI jedzie na Haiku 4.5 zamiast Sonnet/Opus — ~3–5x tanszy token, ta sama
+      # sciezka kodu. Prod (Vercel) tej zmiennej NIE ma → modele prod bez zmiany.
+      SKILLBRIDGE_AI_MODEL: claude-haiku-4-5-20251001
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6

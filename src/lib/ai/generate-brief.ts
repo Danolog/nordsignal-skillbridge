@@ -1,7 +1,7 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
 import { eq } from "drizzle-orm";
 import { extractJsonObject } from "@/lib/ai/extract-json";
+import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
 import { db } from "@/lib/db";
 import { competencies, projects, students } from "@/lib/db/schema";
@@ -66,7 +66,7 @@ export async function generateProjectBrief(
 		sanitizeForPrompt(missingComps.join(", "), 1000) || "brak — student jest gotowy";
 
 	const { text } = await generateText({
-		model: anthropic("claude-sonnet-4-6"),
+		model: getModel("standard"),
 		maxOutputTokens: 3000,
 		prompt: `Jesteś mentorem projektów studenckich. Stwórz spersonalizowany brief projektu.
 
