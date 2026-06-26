@@ -170,22 +170,23 @@ jobs:
   # e2e-llm — Playwright, sciezka krytyczna #1 (rejestracja -> onboarding ->
   # dashboard) z REALNYM wolaniem modelu (Z5 spec, segment B @llm).
   #
-  # TOPOLOGIA (decyzja Ethana Z6 §4): tor NOCNY teraz, per-PR przed Beta.
-  #   - schedule (nocny) + workflow_dispatch — przebieg bez kosztu per-PR;
-  #   - pull_request — biega tez na PR (warunek if: odcina fork/dependabot),
-  #     zeby udowodnic zielony job i miec szybka petle zwrotna;
+  # TOPOLOGIA (decyzja Darka 2026-06-26): tor WYLACZNIE NOCNY (schedule) na Haiku.
+  #   - schedule (nocny 03:00 UTC) — jedyny automatyczny przebieg; bez kosztu per-PR/push;
+  #   - workflow_dispatch — reczny bezpiecznik (odpalany swiadomie, nie sam);
+  #   - NIE biega na pull_request ani push do main (warunek if: nizej). Pozostale joby
+  #     workflow (lint, typecheck, test, integration, build, secret-scan, deps-scan)
+  #     DALEJ leca na PR i push — przyciecie dotyczy WYLACZNIE tego joba, nie triggerow
+  #     `on:` calego workflow.
   #   - NON-BLOCKING na start: ten job NIE jest w required checks (branch protection
   #     administruje Darek). Flip na required = osobna decyzja PRZED go-live Bety
   #     (Z6 §4 opcja 1). Powod non-blocking: e2e z modelem bywa flaky/koszt — nie
   #     wpuszczamy nowego, niesprawdzonego e2e od razu jako twardej bramki.
   #
-  # BEZPIECZENSTWO (audyt Ryana 2026-06-23, trzy twarde warunki):
+  # BEZPIECZENSTWO (audyt Ryana 2026-06-23):
   #   - klucz secrets.ANTHROPIC_API_KEY_CI (osobny od prod, sufit wydatkow u Darka);
   #   - klucz WYLACZNIE przez env: — nigdy echo/print/log naglowkow (GitHub maskuje ***);
-  #   - warunek if: odcina PR-y z forkow i dependabota (higiena statusu): fork/dependabot
-  #     i tak nie dostaja sekretu (pull_request z forka go nie wstrzykuje, dependabot ma
-  #     osobny magazyn), warunek chroni przed czerwonym "brak klucza" na ich PR-ach.
-  #   - NIGDY pull_request_target.
+  #   - NIGDY pull_request_target. Job nie biega na pull_request, wiec fork/dependabot
+  #     i tak nigdy nie dotykaja tego toru (warunek antyforkowy stal sie zbedny).
   #
   # MODEL (Z6 §4 — cel: Haiku w CI): ZREALIZOWANE. Cala warstwa AI (src/lib/ai/*)
   # wybiera model przez centralny helper getModel (src/lib/ai/model.ts), sterowany
@@ -196,13 +197,9 @@ jobs:
   e2e-llm:
     name: e2e-llm (Playwright + onboarding sciezka #1)
     runs-on: ubuntu-latest
-    # Biega dla: scheduled / push do main / workflow_dispatch ZAWSZE; dla PR tylko
-    # gdy z TEGO repo (nie fork) i nie od dependabota. Fork/dependabot bez sekretu
-    # = bez tego warunku swiecilyby czerwono na "missing key".
-    if: >-
-      github.event_name != 'pull_request' ||
-      (github.event.pull_request.head.repo.full_name == github.repository &&
-       github.actor != 'dependabot[bot]')
+    # Tylko nocny cron (schedule) + reczne odpalenie (workflow_dispatch). NIE biega na
+    # pull_request ani push — koszt modelu trzymany na jednym nocnym przebiegu.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     services:
       postgres:
         image: postgres:16
@@ -279,32 +276,22 @@ jobs:
       - run: pnpm build
       # Twardy fail-fast: jesli sekret nie dotarl (np. usuniety z repo), NIE chcemy
       # falszywie zielonego "pass" przez ciche test.skip segmentu @llm. Pusty klucz
-      # na PR-ze wewnetrznym = realny problem, zatrzymujemy job.
-      - name: Wymagaj klucza modelu (PR wewnetrzny / scheduled)
+      # na nocnym przebiegu = realny problem, zatrzymujemy job.
+      - name: Wymagaj klucza modelu (nocny przebieg)
         run: |
           if [ -z "${ANTHROPIC_API_KEY}" ]; then
             echo "::error::Brak klucza modelu (sekret ANTHROPIC_API_KEY_CI). Job e2e-llm nie moze zweryfikowac segmentu @llm."
             exit 1
           fi
           echo "Klucz modelu obecny (wartosc zamaskowana przez GitHub)."
-      # ZAKRES TESTOW wg triggera (Z6 §4 — per-PR wasko/deterministycznie, nocny szeroko):
-      #   - pull_request: JEDEN stabilny test @llm z 40-onboarding (Krok 0 Pomocnik +
-      #     sam PDF odblokowuje analize) — najtanszy DETERMINISTYCZNY dowod, ze model
-      #     realnie odpowiada w CI. Drugi test w 40 ("kontrakt docelowy ... strumien C")
-      #     zalezy od niedomknietej logiki uploadu i bywa flaky na Kroku 0 — zostaje
-      #     na torze nocnym, nie blokuje per-PR.
-      #   - schedule / push / workflow_dispatch: PELNY pakiet @llm (10-b0, 20-B4, 40),
-      #     z wykluczeniem przeterminowanego 50 (Z5 — pomija nowy Krok 0, do przepisania).
+      # ZAKRES TESTOW: PELNY pakiet @llm (10-b0, 20-B4, 40), z wykluczeniem
+      # przeterminowanego 50 (Z5 — pomija nowy Krok 0, do przepisania). Job biega tylko
+      # nocnym cronem/recznie, wiec zawsze pelny zakres (brak juz wariantu per-PR).
       # E2E_LLM_AVAILABLE=1 zdejmuje test.skip segmentow @llm (klucz po stronie serwera).
-      - name: Ustaw zakres testow per trigger
+      - name: Ustaw zakres testow
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "E2E_LLM_SPEC=tests/e2e-pw/40-onboarding-sylabus-pdf.spec.ts" >> "$GITHUB_ENV"
-            echo "E2E_LLM_GREP=sam PDF" >> "$GITHUB_ENV"
-          else
-            echo "E2E_LLM_SPEC=tests/e2e-pw/10-b0-pomocnik-kariery.spec.ts tests/e2e-pw/20-b1-b4-dashboard-projects.spec.ts tests/e2e-pw/40-onboarding-sylabus-pdf.spec.ts" >> "$GITHUB_ENV"
-            echo "E2E_LLM_GREP=@llm" >> "$GITHUB_ENV"
-          fi
+          echo "E2E_LLM_SPEC=tests/e2e-pw/10-b0-pomocnik-kariery.spec.ts tests/e2e-pw/20-b1-b4-dashboard-projects.spec.ts tests/e2e-pw/40-onboarding-sylabus-pdf.spec.ts" >> "$GITHUB_ENV"
+          echo "E2E_LLM_GREP=@llm" >> "$GITHUB_ENV"
       - name: Playwright e2e-llm (sciezka onboarding + model)
         env:
           E2E_LLM_AVAILABLE: "1"
