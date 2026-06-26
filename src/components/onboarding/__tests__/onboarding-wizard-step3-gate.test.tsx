@@ -199,6 +199,25 @@ describe("Krok 3 (Partia 4) — próg min-5 zniesiony, wybór z katalogu rynku",
 	);
 
 	it(
+		"MUST-FIX: cel spoza 23 ścieżek / pusty katalog → przycisk Zatwierdź DISABLED (zakaz submit-on-empty)",
+		async () => {
+			// Wejście Pomocnikiem z celem spoza 23 ścieżek → katalog pusty, isRealCareerGoal=false.
+			mockFetch({ isRealCareerGoal: false, items: [] });
+			const user = userEvent.setup();
+			render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
+			await goToStep3(user);
+
+			// Krok pokazuje bursztynowy komunikat (katalog pusty / cel nierealny) zamiast listy.
+			await screen.findByText(/nie mamy jeszcze katalogu kompetencji z rynku/i);
+
+			// SEDNO: nie wolno domknąć onboardingu pustym paszportem + nierealnym careerGoal.
+			// Warunek wyłączenia = pusty katalog / nierealny cel, NIE liczba zaznaczeń (≠ flip min-5→0).
+			expect(submitButton()).toBeDisabled();
+		},
+		TEST_TIMEOUT,
+	);
+
+	it(
 		"trwające ładowanie katalogu blokuje przycisk Zatwierdź (catalogLoading)",
 		async () => {
 			mockFetch({ isRealCareerGoal: true, items: CATALOG_ITEMS }, { pending: true });

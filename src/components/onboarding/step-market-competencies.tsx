@@ -129,7 +129,10 @@ export function StepMarketCompetencies({
 				{catalog.map((item) => {
 					const level = selections[item.competencyName] ?? null;
 					return (
-						<li key={item.competencyName} className="rounded-lg border border-border bg-card p-3">
+						<li
+							key={`${item.competencyName}-${item.category}`}
+							className="rounded-lg border border-border bg-card p-3"
+						>
 							<div className="mb-2 flex items-center justify-between gap-2">
 								<span className="text-sm font-medium text-foreground">
 									{item.competencyName}

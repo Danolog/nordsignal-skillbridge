@@ -544,9 +544,15 @@ export function OnboardingWizard({
 								<ChevronLeft className="h-4 w-4" />
 								Wstecz
 							</Button>
+							{/* MUST-FIX (Leo): blokuj domknięcie pustym paszportem + nierealnym celem.
+							    Pusty katalog / cel spoza 23 ścieżek → krok pokazuje bursztynowy
+							    komunikat „wróć i wybierz realną ścieżkę", a submit jest WYŁĄCZONY.
+							    Warunek dotyczy KATALOGU (length===0) / realności celu — NIE liczby
+							    zaznaczeń: realny cel + niepusty katalog + 0 zaznaczeń zostaje aktywny
+							    (próg min-5→0, D5). Nie mylić tych dwóch. */}
 							<Button
 								onClick={runSubmit}
-								disabled={submitting || catalogLoading}
+								disabled={submitting || catalogLoading || !isRealGoal || catalog.length === 0}
 								className="ob-btn-accent gap-2"
 							>
 								{submitting ? (
