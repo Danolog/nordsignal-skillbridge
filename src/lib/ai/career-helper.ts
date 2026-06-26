@@ -1,6 +1,6 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateObject, type LanguageModel, NoObjectGeneratedError, streamText } from "ai";
 import { z } from "zod";
+import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
 import { extractValidationIssues, logError } from "@/lib/log";
 
@@ -31,22 +31,17 @@ export const MAX_RESTARTS = 2;
 /** Cap długości wiadomości studenta (kontrakt /turn). */
 export const USER_MESSAGE_MAX_LEN = 4000;
 
-const TURN_MODEL_ID = "claude-sonnet-4-6";
-// Opus 4.7 to wycofany identyfikator — Anthropic zwraca 404 „model not found",
-// co na /summary leciało jako 500 (tag career-helper.summary.generate). /turn
-// działał, bo Sonnet 4.6 jest ważny. Aktualny Opus = 4.8 (CLAUDE.md §10:
-// agent-as-judge na Opusie). Generator i sędzia muszą używać ważnego ID.
+// Modele warstw zbiera centralny helper `@/lib/ai/model` (getModel):
+//   - rozmowa (/turn)        → warstwa "standard" (prod: Sonnet 4.6, streaming),
+//   - podsumowanie + sędzia   → warstwa "premium"  (prod: Opus 4.8, agent-as-judge,
+//     HITL §7 CLAUDE.md). Generator i sędzia MUSZĄ używać ważnego ID — Opus 4.7 to
+//     wycofany identyfikator (404 „model not found" → /summary leciało jako 500,
+//     tag career-helper.summary.generate). Prod = Opus 4.8.
 //
-// Diagnostyka: jeśli /summary ponownie zwraca 500 z tagiem summary.generate,
-// sprawdź w logach Vercel pełną wiadomość błędu (teraz logujemy err.message).
-// Najczęstsze przyczyny:
-//   1. ANTHROPIC_API_KEY na Vercel prod nie ma dostępu do claude-opus-4-8
-//      → ustaw aktualny klucz w Vercel Dashboard → Settings → Environment Variables
+// Diagnostyka 500 z tagiem summary.generate (logujemy err.message): najczęściej
+//   1. ANTHROPIC_API_KEY na Vercel prod bez dostępu do modelu premium (ustaw klucz),
 //   2. Timeout (maxDuration=60): Opus 4.8 + 2× generateObject ≈ 20–40s typowo,
-//      ale przy dużym ruchu Anthropic może być wolniejszy → zwiększ do 300 (wymaga Vercel Pro)
-//   3. Rate limit (429 Anthropic) → redukcja concurrent requestów lub tier upgrade
-const SUMMARY_MODEL_ID = "claude-opus-4-8";
-const JUDGE_MODEL_ID = "claude-opus-4-8";
+//   3. Rate limit (429 Anthropic) → redukcja concurrent requestów lub tier upgrade.
 
 // --- Filtr kryzysowy (deterministyczny, PRZED modelem) -----------------------
 
@@ -138,7 +133,7 @@ export type RunTurnArgs = {
  * sekcji „nowa wiadomość studenta". Ten sam model, system prompt i streaming.
  */
 export function runTurn(args: RunTurnArgs) {
-	const model = args.model ?? anthropic(TURN_MODEL_ID);
+	const model = args.model ?? getModel("standard");
 	const safeAnswers = sanitizeForPrompt(JSON.stringify(args.answers ?? {}), 2000);
 	const transcript = args.history
 		.map(
@@ -395,8 +390,8 @@ export type GenerateSummaryArgs = {
  * nigdy nie wychodzą — typ SummaryResult ich nie ma.
  */
 export async function generateSummary(args: GenerateSummaryArgs): Promise<SummaryResult> {
-	const summaryModel = args.summaryModel ?? anthropic(SUMMARY_MODEL_ID);
-	const judgeModel = args.judgeModel ?? anthropic(JUDGE_MODEL_ID);
+	const summaryModel = args.summaryModel ?? getModel("premium");
+	const judgeModel = args.judgeModel ?? getModel("premium");
 
 	const safeAnswers = sanitizeForPrompt(JSON.stringify(args.answers ?? {}), 2000);
 	const transcript = args.history

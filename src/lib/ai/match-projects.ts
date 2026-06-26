@@ -1,6 +1,6 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
 import { eq } from "drizzle-orm";
+import { getModel } from "@/lib/ai/model";
 import { db } from "@/lib/db";
 import { competencies, gaps, projects, students } from "@/lib/db/schema";
 
@@ -75,7 +75,7 @@ export async function matchProjects(
 		.join("\n");
 
 	const { text } = await generateText({
-		model: anthropic("claude-haiku-4-5-20251001"),
+		model: getModel("fast"),
 		maxOutputTokens: 2000,
 		prompt: `Jesteś matchmakerem projektów edukacyjnych. Student chce zostać "${student.careerGoal}" (semestr ${student.semester}).
 

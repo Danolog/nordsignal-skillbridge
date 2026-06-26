@@ -1,5 +1,5 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
+import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
 
 export async function generateWhyImportant(
@@ -12,7 +12,7 @@ export async function generateWhyImportant(
 	const safePct = Math.max(0, Math.min(100, Math.round(marketPercentage)));
 
 	const { text } = await generateText({
-		model: anthropic("claude-sonnet-4-6"),
+		model: getModel("standard"),
 		maxOutputTokens: 400,
 		prompt: `Jesteś doradcą kariery dla studentów w Polsce.
 

@@ -1,6 +1,6 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
 import { z } from "zod";
+import { getModel } from "@/lib/ai/model";
 import { parseRepoUrl, sanitizeForPrompt } from "@/lib/ai/sanitize";
 
 const ReviewSchema = z.object({
@@ -67,7 +67,7 @@ export async function reviewSubmission(
 	const safeDescription = sanitizeForPrompt(projectDescription, 2000);
 
 	const { text } = await generateText({
-		model: anthropic("claude-sonnet-4-6"),
+		model: getModel("standard"),
 		maxOutputTokens: 3000,
 		prompt: `Jesteś recenzentem projektów studenckich. Oceń zgłoszenie projektu.
 
