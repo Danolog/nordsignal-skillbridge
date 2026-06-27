@@ -50,136 +50,221 @@
 			"juniorFriendliness": "Niska",
 			"targetRole": false,
 			"tShapePairs": [],
+			"note": "Polski rynek cyber = monitoring bezpieczeństwa (SIEM/SOC) + tożsamość (IAM/PAM) + zgodność (GRC/NIST), nie testy penetracyjne. Lista wg krotności w danych JustJoinIT 2026-02 — kuracja Sophii.",
 			"areas": [
 				{
-					"name": "Cybersecurity",
-					"type": "knowledge-area",
-					"demandPercentage": 29,
-					"leaves": [
-						{
-							"name": "Burp Suite",
-							"type": "leaf",
-							"demandPercentage": 0.3,
-							"source": "dane"
-						},
-						{
-							"name": "Kali Linux",
-							"type": "leaf",
-							"demandPercentage": 0.6,
-							"source": "dane"
-						},
-						{
-							"name": "Metasploit",
-							"type": "leaf",
-							"demandPercentage": 0.3,
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Security / IT Security",
-					"type": "knowledge-area",
-					"demandPercentage": 19,
-					"leaves": [
-						{
-							"name": "Wireshark",
-							"type": "leaf",
-							"demandPercentage": 0.6,
-							"source": "dane"
-						},
-						{
-							"name": "Nmap",
-							"type": "leaf",
-							"demandPercentage": 0.6,
-							"source": "dane"
-						},
-						{
-							"name": "Python",
-							"type": "leaf",
-							"demandPercentage": 14.9,
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "SIEM / SoC",
+					"name": "Monitoring i reagowanie (SIEM / SOC)",
 					"type": "knowledge-area",
 					"demandPercentage": 12,
 					"leaves": [
 						{
+							"name": "SIEM",
+							"type": "leaf",
+							"demandPercentage": 11.9,
+							"lift": 23.78364189002487,
+							"offers": 39,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SOC",
+							"type": "leaf",
+							"demandPercentage": 5.5,
+							"lift": 20.999603541694196,
+							"offers": 18,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
 							"name": "Splunk",
 							"type": "leaf",
-							"demandPercentage": 4.6,
+							"demandPercentage": 4.9,
+							"lift": 14.310840932117527,
+							"offers": 16,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SOAR",
+							"type": "leaf",
+							"demandPercentage": 2.7,
+							"lift": 26.832826747720368,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "EDR / XDR",
+							"type": "leaf",
+							"demandPercentage": 3.3,
+							"lift": 26.832826747720365,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Microsoft Defender",
+							"type": "leaf",
+							"demandPercentage": 1.8,
+							"lift": 22.99956578376031,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "CrowdStrike",
+							"type": "leaf",
+							"demandPercentage": 1.8,
+							"lift": 22.99956578376031,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Incident Response",
+							"type": "leaf",
+							"demandPercentage": 0.9,
+							"lift": 26.83282674772036,
+							"offers": 3,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "IAM",
+					"name": "Tożsamość i dostęp (IAM / PAM)",
 					"type": "knowledge-area",
 					"demandPercentage": 8,
 					"leaves": [
 						{
-							"name": "OAuth2",
+							"name": "PAM",
 							"type": "leaf",
-							"demandPercentage": 0,
+							"demandPercentage": 3,
+							"lift": 26.832826747720368,
+							"offers": 10,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "JWT",
+							"name": "CyberArk",
 							"type": "leaf",
-							"demandPercentage": 0.3,
-							"source": "dane"
-						},
-						{
-							"name": "Keycloak",
-							"type": "leaf",
-							"demandPercentage": 0.3,
+							"demandPercentage": 2.7,
+							"lift": 20.12462006079027,
+							"offers": 9,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Active Directory",
 							"type": "leaf",
-							"demandPercentage": 3,
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Cloud",
-					"type": "knowledge-area",
-					"demandPercentage": 5,
-					"leaves": [
-						{
-							"name": "AWS",
-							"type": "leaf",
-							"demandPercentage": 10,
+							"demandPercentage": 3.6,
+							"lift": 2.9540726694738013,
+							"offers": 12,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Azure",
+							"name": "IAM",
 							"type": "leaf",
-							"demandPercentage": 9.1,
+							"demandPercentage": 8.2,
+							"lift": 12.71028635418333,
+							"offers": 27,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Teoria sieci i bezpieczeństwa",
+					"name": "Zgodność i ład (GRC / standardy)",
+					"type": "knowledge-area",
+					"demandPercentage": 2,
+					"leaves": [
+						{
+							"name": "NIST",
+							"type": "leaf",
+							"demandPercentage": 2.7,
+							"lift": 24.14954407294833,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GRC",
+							"type": "leaf",
+							"demandPercentage": 1.5,
+							"lift": 22.360688956433638,
+							"offers": 5,
+							"kind": "cert",
+							"source": "dane"
+						},
+						{
+							"name": "DLP",
+							"type": "leaf",
+							"demandPercentage": 1.2,
+							"lift": 21.466261398176293,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "OWASP",
+							"type": "leaf",
+							"demandPercentage": 3.3,
+							"lift": 13.416413373860182,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "ISO 27001",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"lift": 15.333043855840208,
+							"offers": 8,
+							"kind": "cert",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Fundament: sieci i systemy",
 					"type": "presentation-group",
 					"demandPercentage": null,
 					"leaves": [
 						{
-							"name": "OWASP Top 10",
+							"name": "Linux",
 							"type": "leaf",
-							"demandPercentage": null,
-							"source": "kuracja ekspercka",
-							"note": "brak w zrzucie 2026-02"
+							"demandPercentage": 10,
+							"lift": 1.8409215856024366,
+							"offers": 33,
+							"kind": "tool",
+							"source": "dane"
 						},
 						{
 							"name": "Network",
 							"type": "leaf",
 							"demandPercentage": 3.3,
+							"lift": 5.465946189350444,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Firewall / IDS-IPS",
+							"type": "leaf",
+							"demandPercentage": 3,
+							"lift": 19.16630481980026,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "DevSecOps",
+							"type": "leaf",
+							"demandPercentage": 3,
+							"lift": 14.122540393537035,
+							"offers": 10,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -190,7 +275,7 @@
 					"level": "latwy",
 					"title": "(do dopisania) Projekty 3-poziomowe dla Cybersecurity Specialist",
 					"anchorLeaves": [],
-					"description": "Szablon gotowy — top liście do zakotwiczenia: Burp Suite, Nmap, Wireshark, Metasploit, Splunk, Python. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
+					"description": "Szablon gotowy — top liście do zakotwiczenia: SIEM, Splunk, IAM, PAM, NIST, Linux. Pełne 3 poziomy w kolejnej iteracji produktowej Sophii (metoda autorowania: projekt z top buildable-leaves ścieżki).",
 					"portfolioOutcome": "(do uzupełnienia)",
 					"todo": true
 				}
@@ -221,12 +306,18 @@
 							"name": "LangChain",
 							"type": "leaf",
 							"demandPercentage": 17.5,
+							"lift": 35.84643779992617,
+							"offers": 33,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Hugging Face",
 							"type": "leaf",
 							"demandPercentage": 4.2,
+							"lift": 24.911463844797176,
+							"offers": 8,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -240,36 +331,54 @@
 							"name": "Pandas",
 							"type": "leaf",
 							"demandPercentage": 5.8,
+							"lift": 7.446361475346983,
+							"offers": 11,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "NumPy",
 							"type": "leaf",
 							"demandPercentage": 5.3,
+							"lift": 11.677248677248677,
+							"offers": 10,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Scikit-learn",
 							"type": "leaf",
 							"demandPercentage": 5.3,
+							"lift": 27.47587924058512,
+							"offers": 10,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "XGBoost",
 							"type": "leaf",
 							"demandPercentage": 1.6,
+							"lift": 46.7089947089947,
+							"offers": 3,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "PyTorch",
 							"type": "leaf",
 							"demandPercentage": 30.7,
+							"lift": 38.15664356509427,
+							"offers": 58,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "TensorFlow",
 							"type": "leaf",
 							"demandPercentage": 27,
+							"lift": 45.81074481074481,
+							"offers": 51,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -283,18 +392,27 @@
 							"name": "LangChain",
 							"type": "leaf",
 							"demandPercentage": 17.5,
+							"lift": 35.84643779992617,
+							"offers": 33,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "FastAPI",
 							"type": "leaf",
 							"demandPercentage": 5.3,
+							"lift": 6.487360376249265,
+							"offers": 10,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Streamlit",
 							"type": "leaf",
 							"demandPercentage": 0.5,
+							"lift": 23.35449735449735,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -308,36 +426,54 @@
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 74.6,
+							"lift": 3.5773863411017133,
+							"offers": 141,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Docker",
 							"type": "leaf",
 							"demandPercentage": 19,
+							"lift": 2.3354497354497354,
+							"offers": 36,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "AWS",
 							"type": "leaf",
 							"demandPercentage": 28.6,
+							"lift": 2.992035248263006,
+							"offers": 54,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Azure",
 							"type": "leaf",
 							"demandPercentage": 15.9,
+							"lift": 1.948914939179195,
+							"offers": 30,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 5.8,
+							"lift": 0.3306299496775687,
+							"offers": 11,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Jupyter Notebook",
 							"type": "leaf",
 							"demandPercentage": null,
+							"lift": null,
+							"offers": null,
+							"kind": "tool",
 							"source": "kuracja ekspercka",
 							"note": "brak w zrzucie 2026-02"
 						}
@@ -380,36 +516,54 @@
 							"name": "Pandas",
 							"type": "leaf",
 							"demandPercentage": 3.9,
+							"lift": 4.9298763462305555,
+							"offers": 21,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "NumPy",
 							"type": "leaf",
 							"demandPercentage": 1.3,
+							"lift": 2.834678899082569,
+							"offers": 7,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Scikit-learn",
 							"type": "leaf",
 							"demandPercentage": 0.2,
+							"lift": 0.9528332433890988,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "XGBoost",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": 0,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "PyTorch",
 							"type": "leaf",
 							"demandPercentage": 1.3,
+							"lift": 1.5970021966662362,
+							"offers": 7,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "TensorFlow",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": 0,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -423,12 +577,18 @@
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 55.4,
+							"lift": 2.6571677737966506,
+							"offers": 302,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Jupyter Notebook",
 							"type": "leaf",
 							"demandPercentage": null,
+							"lift": null,
+							"offers": null,
+							"kind": "tool",
 							"source": "kuracja ekspercka",
 							"note": "brak w zrzucie 2026-02"
 						},
@@ -436,6 +596,9 @@
 							"name": "R",
 							"type": "leaf",
 							"demandPercentage": 0.2,
+							"lift": 2.6996941896024462,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -449,12 +612,18 @@
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 25.5,
+							"lift": 1.4488706268522784,
+							"offers": 139,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Databricks",
 							"type": "leaf",
 							"demandPercentage": 13,
+							"lift": 6.15010548005691,
+							"offers": 71,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -496,36 +665,54 @@
 							"name": "Apache Spark",
 							"type": "leaf",
 							"demandPercentage": 28,
+							"lift": 28.377556984219755,
+							"offers": 66,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "PySpark",
 							"type": "leaf",
 							"demandPercentage": 22,
+							"lift": 23.43557279967327,
+							"offers": 52,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Airflow",
 							"type": "leaf",
 							"demandPercentage": 22.9,
+							"lift": 19.80358923230309,
+							"offers": 54,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "dbt",
 							"type": "leaf",
 							"demandPercentage": 9.7,
+							"lift": 19.55354391371341,
+							"offers": 23,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Snowflake",
 							"type": "leaf",
 							"demandPercentage": 27.5,
+							"lift": 19.929841622672964,
+							"offers": 65,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "BigQuery",
 							"type": "leaf",
 							"demandPercentage": 5.9,
+							"lift": 4.84902699309479,
+							"offers": 14,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -539,36 +726,54 @@
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 69.9,
+							"lift": 3.3525902466419324,
+							"offers": 165,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 50.4,
+							"lift": 2.8644831271949918,
+							"offers": 119,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Databricks",
 							"type": "leaf",
 							"demandPercentage": 35.2,
+							"lift": 16.603009154355114,
+							"offers": 83,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Docker",
 							"type": "leaf",
 							"demandPercentage": 1.3,
+							"lift": 0.155861581920904,
+							"offers": 3,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kafka",
 							"type": "leaf",
 							"demandPercentage": 12.3,
+							"lift": 2.9558490740313124,
+							"offers": 29,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Scala",
 							"type": "leaf",
 							"demandPercentage": 4.7,
+							"lift": 4.675847457627119,
+							"offers": 11,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -582,18 +787,27 @@
 							"name": "Azure",
 							"type": "leaf",
 							"demandPercentage": 33.5,
+							"lift": 4.110063411989345,
+							"offers": 79,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "AWS",
 							"type": "leaf",
 							"demandPercentage": 33.1,
+							"lift": 3.4611255202364437,
+							"offers": 78,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "GCP",
 							"type": "leaf",
 							"demandPercentage": 21.6,
+							"lift": 5.677814769975788,
+							"offers": 51,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -651,18 +865,27 @@
 							"name": "Power BI",
 							"type": "leaf",
 							"demandPercentage": 24.1,
+							"lift": 12.204447604376508,
+							"offers": 140,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Tableau",
 							"type": "leaf",
 							"demandPercentage": 5.3,
+							"lift": 13.061664757541047,
+							"offers": 31,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "MS Excel",
 							"type": "leaf",
 							"demandPercentage": 16.3,
+							"lift": 13.723776795941744,
+							"offers": 95,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -676,12 +899,18 @@
 							"name": "dbt",
 							"type": "leaf",
 							"demandPercentage": 1.9,
+							"lift": 3.7920962199312713,
+							"offers": 11,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Airflow",
 							"type": "leaf",
 							"demandPercentage": 2.7,
+							"lift": 2.3793544909372684,
+							"offers": 16,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -695,18 +924,27 @@
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 48.6,
+							"lift": 2.762324916964092,
+							"offers": 283,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 54.6,
+							"lift": 2.6200686538579996,
+							"offers": 318,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "BigQuery",
 							"type": "leaf",
 							"demandPercentage": 10.7,
+							"lift": 8.707776505027363,
+							"offers": 62,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -748,18 +986,27 @@
 							"name": "GitHub Actions",
 							"type": "leaf",
 							"demandPercentage": 2.1,
+							"lift": 6.5684523809523805,
+							"offers": 11,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Jenkins",
 							"type": "leaf",
 							"demandPercentage": 10.2,
+							"lift": 5.0159090909090915,
+							"offers": 54,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "GitLab CI",
 							"type": "leaf",
 							"demandPercentage": null,
+							"lift": null,
+							"offers": null,
+							"kind": "tool",
 							"source": "kuracja ekspercka",
 							"note": "brak w zrzucie 2026-02"
 						}
@@ -774,12 +1021,18 @@
 							"name": "Terraform",
 							"type": "leaf",
 							"demandPercentage": 56.4,
+							"lift": 11.587138830162086,
+							"offers": 298,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Ansible",
 							"type": "leaf",
 							"demandPercentage": 25.8,
+							"lift": 14.391637897967012,
+							"offers": 136,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -793,12 +1046,18 @@
 							"name": "Docker",
 							"type": "leaf",
 							"demandPercentage": 24.6,
+							"lift": 3.018834175084175,
+							"offers": 130,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kubernetes",
 							"type": "leaf",
 							"demandPercentage": 40.7,
+							"lift": 4.567642755381002,
+							"offers": 215,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -812,18 +1071,27 @@
 							"name": "AWS",
 							"type": "leaf",
 							"demandPercentage": 27.7,
+							"lift": 2.895700780042417,
+							"offers": 146,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Azure",
 							"type": "leaf",
 							"demandPercentage": 22.2,
+							"lift": 2.7207295486155014,
+							"offers": 117,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "GCP",
 							"type": "leaf",
 							"demandPercentage": 7.2,
+							"lift": 1.89091810966811,
+							"offers": 38,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -837,12 +1105,18 @@
 							"name": "Prometheus",
 							"type": "leaf",
 							"demandPercentage": 6.1,
+							"lift": 9.727823691460054,
+							"offers": 32,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Grafana",
 							"type": "leaf",
 							"demandPercentage": 7.6,
+							"lift": 7.1912675138481585,
+							"offers": 40,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -856,18 +1130,27 @@
 							"name": "Linux",
 							"type": "leaf",
 							"demandPercentage": 18.6,
+							"lift": 3.4065079065079065,
+							"offers": 98,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 31.1,
+							"lift": 1.489424390565075,
+							"offers": 164,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Bash",
 							"type": "leaf",
 							"demandPercentage": 20.1,
+							"lift": 11.434115347018572,
+							"offers": 106,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -909,36 +1192,54 @@
 							"name": "Java",
 							"type": "leaf",
 							"demandPercentage": 81.4,
+							"lift": 5.640526400763975,
+							"offers": 372,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Spring Boot",
 							"type": "leaf",
 							"demandPercentage": 48.1,
+							"lift": 13.979615340320168,
+							"offers": 220,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Spring",
 							"type": "leaf",
 							"demandPercentage": 45.1,
+							"lift": 14.793163755867017,
+							"offers": 206,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Hibernate",
 							"type": "leaf",
 							"demandPercentage": 24.5,
+							"lift": 16.902625820568925,
+							"offers": 112,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Maven",
 							"type": "leaf",
 							"demandPercentage": 9.4,
+							"lift": 11.866333229134105,
+							"offers": 43,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "JUnit",
 							"type": "leaf",
 							"demandPercentage": 6.8,
+							"lift": 11.298790305932869,
+							"offers": 31,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -952,18 +1253,27 @@
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 30.9,
+							"lift": 1.7527267811731706,
+							"offers": 141,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "PostgreSQL",
 							"type": "leaf",
 							"demandPercentage": 20.1,
+							"lift": 4.0207926968127765,
+							"offers": 92,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Oracle",
 							"type": "leaf",
 							"demandPercentage": 24.5,
+							"lift": 9.701955627949877,
+							"offers": 112,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -977,24 +1287,36 @@
 							"name": "Docker",
 							"type": "leaf",
 							"demandPercentage": 19.9,
+							"lift": 2.441490396304401,
+							"offers": 91,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kubernetes",
 							"type": "leaf",
 							"demandPercentage": 19,
+							"lift": 2.1354560847914277,
+							"offers": 87,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kafka",
 							"type": "leaf",
 							"demandPercentage": 19.3,
+							"lift": 4.631937943822704,
+							"offers": 88,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Swagger",
 							"type": "leaf",
 							"demandPercentage": 1.1,
+							"lift": 2.2996769823903302,
+							"offers": 5,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1008,12 +1330,18 @@
 							"name": "Swagger",
 							"type": "leaf",
 							"demandPercentage": 1.1,
+							"lift": 2.2996769823903302,
+							"offers": 5,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "OpenAPI",
 							"type": "leaf",
 							"demandPercentage": 0.7,
+							"lift": 5.268350905112393,
+							"offers": 3,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1027,12 +1355,18 @@
 							"name": "Jenkins",
 							"type": "leaf",
 							"demandPercentage": 6.3,
+							"lift": 3.1122295161682474,
+							"offers": 29,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "GitHub Actions",
 							"type": "leaf",
 							"demandPercentage": 0.2,
+							"lift": 0.689903094717099,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1090,36 +1424,54 @@
 							"name": ".Net",
 							"type": "leaf",
 							"demandPercentage": 61,
+							"lift": 15.602686461647226,
+							"offers": 225,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "C#",
 							"type": "leaf",
 							"demandPercentage": 59.1,
+							"lift": 14.095832417783637,
+							"offers": 218,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "ASP.NET",
 							"type": "leaf",
 							"demandPercentage": 15.2,
+							"lift": 19.996278768757836,
+							"offers": 56,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "ASP.NET Core",
 							"type": "leaf",
 							"demandPercentage": 7.3,
+							"lift": 13.743642968344576,
+							"offers": 27,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": ".NET Core",
 							"type": "leaf",
 							"demandPercentage": 10,
+							"lift": 19.243313302698244,
+							"offers": 37,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Entity Framework",
 							"type": "leaf",
 							"demandPercentage": 5.1,
+							"lift": 15.151942186088528,
+							"offers": 19,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1133,18 +1485,27 @@
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 28.7,
+							"lift": 1.631889729450705,
+							"offers": 106,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "SQL Server",
 							"type": "leaf",
 							"demandPercentage": 7.6,
+							"lift": 10.149626344748295,
+							"offers": 28,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "MS SQL",
 							"type": "leaf",
 							"demandPercentage": 6.2,
+							"lift": 5.0023158413402316,
+							"offers": 23,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1158,24 +1519,36 @@
 							"name": "Docker",
 							"type": "leaf",
 							"demandPercentage": 11.7,
+							"lift": 1.4288015657934359,
+							"offers": 43,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kubernetes",
 							"type": "leaf",
 							"demandPercentage": 14.9,
+							"lift": 1.6719524247339044,
+							"offers": 55,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Azure",
 							"type": "leaf",
 							"demandPercentage": 22.5,
+							"lift": 2.7617550723490547,
+							"offers": 83,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "RabbitMQ",
 							"type": "leaf",
 							"demandPercentage": 5.1,
+							"lift": 4.456453584143684,
+							"offers": 19,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1189,18 +1562,27 @@
 							"name": "Swagger",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": 0,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "OAuth2",
 							"type": "leaf",
 							"demandPercentage": 0.3,
+							"lift": 4.784823848238482,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "JWT",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": 0,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1242,36 +1624,54 @@
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 38.8,
+							"lift": 1.8583101854918604,
+							"offers": 143,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Java",
 							"type": "leaf",
 							"demandPercentage": 52.6,
+							"lift": 3.643076242379378,
+							"offers": 194,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "TypeScript",
 							"type": "leaf",
 							"demandPercentage": 23.8,
+							"lift": 3.3847628508439427,
+							"offers": 88,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Node.js",
 							"type": "leaf",
 							"demandPercentage": 18.7,
+							"lift": 5.751791733945214,
+							"offers": 69,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Django",
 							"type": "leaf",
 							"demandPercentage": 3.8,
+							"lift": 4.407074597061761,
+							"offers": 14,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "FastAPI",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": 0,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1285,24 +1685,36 @@
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 36.6,
+							"lift": 2.078350127130615,
+							"offers": 135,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "PostgreSQL",
 							"type": "leaf",
 							"demandPercentage": 21.4,
+							"lift": 4.276030362113576,
+							"offers": 79,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "MongoDB",
 							"type": "leaf",
 							"demandPercentage": 5.1,
+							"lift": 4.784823848238482,
+							"offers": 19,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Redis",
 							"type": "leaf",
 							"demandPercentage": 1.9,
+							"lift": 2.61670054200542,
+							"offers": 7,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1316,36 +1728,54 @@
 							"name": "Docker",
 							"type": "leaf",
 							"demandPercentage": 30.1,
+							"lift": 3.6883017163504976,
+							"offers": 111,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kubernetes",
 							"type": "leaf",
 							"demandPercentage": 30.4,
+							"lift": 3.4047031194581323,
+							"offers": 112,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "AWS",
 							"type": "leaf",
 							"demandPercentage": 33.1,
+							"lift": 3.462328051513018,
+							"offers": 122,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kafka",
 							"type": "leaf",
 							"demandPercentage": 17.6,
+							"lift": 4.237241827459147,
+							"offers": 65,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Celery",
 							"type": "leaf",
 							"demandPercentage": 1.1,
+							"lift": 9.569647696476965,
+							"offers": 4,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "GraphQL",
 							"type": "leaf",
 							"demandPercentage": 3.3,
+							"lift": 3.5010906206623047,
+							"offers": 12,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1387,24 +1817,36 @@
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 46.3,
+							"lift": 2.22217511691684,
+							"offers": 247,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Django",
 							"type": "leaf",
 							"demandPercentage": 9.9,
+							"lift": 11.550409795595932,
+							"offers": 53,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Flask",
 							"type": "leaf",
 							"demandPercentage": 5.4,
+							"lift": 14.12713828495751,
+							"offers": 29,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "FastAPI",
 							"type": "leaf",
 							"demandPercentage": 7.9,
+							"lift": 9.661663539712322,
+							"offers": 42,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1418,54 +1860,81 @@
 							"name": "Docker",
 							"type": "leaf",
 							"demandPercentage": 31.1,
+							"lift": 3.8186574942672507,
+							"offers": 166,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kubernetes",
 							"type": "leaf",
 							"demandPercentage": 36,
+							"lift": 4.040746559356904,
+							"offers": 192,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Linux",
 							"type": "leaf",
 							"demandPercentage": 40.3,
+							"lift": 7.403353707293669,
+							"offers": 215,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "PostgreSQL",
 							"type": "leaf",
 							"demandPercentage": 19.5,
+							"lift": 3.8971415958503477,
+							"offers": 104,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "AWS",
 							"type": "leaf",
 							"demandPercentage": 28.1,
+							"lift": 2.947126651666188,
+							"offers": 150,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Git",
 							"type": "leaf",
 							"demandPercentage": 13.9,
+							"lift": 2.6586790279716577,
+							"offers": 74,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kafka",
 							"type": "leaf",
 							"demandPercentage": 6.4,
+							"lift": 1.5344331351508862,
+							"offers": 34,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Redis",
 							"type": "leaf",
 							"demandPercentage": 1.1,
+							"lift": 1.5527673545966227,
+							"offers": 6,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "MongoDB",
 							"type": "leaf",
 							"demandPercentage": 1.9,
+							"lift": 1.7434580823541028,
+							"offers": 10,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1479,12 +1948,18 @@
 							"name": "GitHub Actions",
 							"type": "leaf",
 							"demandPercentage": 0.4,
+							"lift": 1.1830608415974269,
+							"offers": 2,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Jenkins",
 							"type": "leaf",
 							"demandPercentage": 3.6,
+							"lift": 1.7483010214717534,
+							"offers": 19,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1526,42 +2001,63 @@
 							"name": "JavaScript",
 							"type": "leaf",
 							"demandPercentage": 60.7,
+							"lift": 8.650038631734214,
+							"offers": 279,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "TypeScript",
 							"type": "leaf",
 							"demandPercentage": 57.4,
+							"lift": 8.145505382357054,
+							"offers": 264,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "React",
 							"type": "leaf",
 							"demandPercentage": 43.5,
+							"lift": 6.606300980318791,
+							"offers": 200,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Next.js",
 							"type": "leaf",
 							"demandPercentage": 14.3,
+							"lift": 14.901483375959081,
+							"offers": 66,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Angular",
 							"type": "leaf",
 							"demandPercentage": 22.2,
+							"lift": 5.657552148781101,
+							"offers": 102,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Node.js",
 							"type": "leaf",
 							"demandPercentage": 27.8,
+							"lift": 8.559188001817907,
+							"offers": 128,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Redux",
 							"type": "leaf",
 							"demandPercentage": 5.7,
+							"lift": 14.675703324808184,
+							"offers": 26,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1575,36 +2071,54 @@
 							"name": "CSS",
 							"type": "leaf",
 							"demandPercentage": 25.7,
+							"lift": 14.898512585812359,
+							"offers": 118,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "CSS3",
 							"type": "leaf",
 							"demandPercentage": 5.9,
+							"lift": 13.286287625418062,
+							"offers": 27,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "HTML",
 							"type": "leaf",
 							"demandPercentage": 24.6,
+							"lift": 12.832055569848213,
+							"offers": 113,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "HTML5",
 							"type": "leaf",
 							"demandPercentage": 10.4,
+							"lift": 14.172040133779262,
+							"offers": 48,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Tailwind CSS",
 							"type": "leaf",
 							"demandPercentage": 0.7,
+							"lift": 8.224844720496893,
+							"offers": 3,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "SASS",
 							"type": "leaf",
 							"demandPercentage": 0.9,
+							"lift": 10.966459627329192,
+							"offers": 4,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1618,18 +2132,27 @@
 							"name": "Playwright",
 							"type": "leaf",
 							"demandPercentage": 1.3,
+							"lift": 0.9595652173913043,
+							"offers": 6,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Cypress",
 							"type": "leaf",
 							"demandPercentage": 2,
+							"lift": 3.925494071146246,
+							"offers": 9,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Jest",
 							"type": "leaf",
 							"demandPercentage": 2.4,
+							"lift": 12.417902813299232,
+							"offers": 11,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1687,30 +2210,45 @@
 							"name": "React",
 							"type": "leaf",
 							"demandPercentage": 58.4,
+							"lift": 8.87230841447709,
+							"offers": 167,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "TypeScript",
 							"type": "leaf",
 							"demandPercentage": 44.1,
+							"lift": 6.252827558293797,
+							"offers": 126,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "JavaScript",
 							"type": "leaf",
 							"demandPercentage": 28.7,
+							"lift": 4.08902244766542,
+							"offers": 82,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Next.js",
 							"type": "leaf",
 							"demandPercentage": 2.1,
+							"lift": 2.1788564376799675,
+							"offers": 6,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Tailwind CSS",
 							"type": "leaf",
 							"demandPercentage": 0.7,
+							"lift": 8.819180819180819,
+							"offers": 2,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1724,48 +2262,72 @@
 							"name": "Node.js",
 							"type": "leaf",
 							"demandPercentage": 21,
+							"lift": 6.453059135985966,
+							"offers": 60,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "NestJS",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": null,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Express",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": null,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Java",
 							"type": "leaf",
 							"demandPercentage": 40.9,
+							"lift": 2.834736691879549,
+							"offers": 117,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Spring Boot",
 							"type": "leaf",
 							"demandPercentage": 9.1,
+							"lift": 2.6399521531100483,
+							"offers": 26,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": ".Net",
 							"type": "leaf",
 							"demandPercentage": 21.3,
+							"lift": 5.4576669707104495,
+							"offers": 61,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 29,
+							"lift": 1.3916197870570495,
+							"offers": 83,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "MongoDB",
 							"type": "leaf",
 							"demandPercentage": 2.4,
+							"lift": 2.2744203165255796,
+							"offers": 7,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1779,18 +2341,27 @@
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 22.4,
+							"lift": 1.2712332712332712,
+							"offers": 64,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Docker",
 							"type": "leaf",
 							"demandPercentage": 10.1,
+							"lift": 1.2432595182595183,
+							"offers": 29,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "AWS",
 							"type": "leaf",
 							"demandPercentage": 29,
+							"lift": 3.039112725945466,
+							"offers": 83,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1832,30 +2403,45 @@
 							"name": "Kotlin",
 							"type": "leaf",
 							"demandPercentage": 37.1,
+							"lift": 14.826471976237404,
+							"offers": 121,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Java",
 							"type": "leaf",
 							"demandPercentage": 54.6,
+							"lift": 3.783513594205969,
+							"offers": 178,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Android SDK",
 							"type": "leaf",
 							"demandPercentage": 9.8,
+							"lift": 24.758632778264683,
+							"offers": 32,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Jetpack Compose",
 							"type": "leaf",
 							"demandPercentage": 6.4,
+							"lift": 27.079754601227,
+							"offers": 21,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Android Studio",
 							"type": "leaf",
 							"demandPercentage": 4.6,
+							"lift": 25.387269938650306,
+							"offers": 15,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1869,30 +2455,45 @@
 							"name": "Swift",
 							"type": "leaf",
 							"demandPercentage": 8.6,
+							"lift": 12.851408963294167,
+							"offers": 28,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "SwiftUI",
 							"type": "leaf",
 							"demandPercentage": 4.6,
+							"lift": 17.660709522539342,
+							"offers": 15,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Flutter",
 							"type": "leaf",
 							"demandPercentage": 4,
+							"lift": 13.539877300613496,
+							"offers": 13,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "React Native",
 							"type": "leaf",
 							"demandPercentage": 5.2,
+							"lift": 5.978647119751415,
+							"offers": 17,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Firebase",
 							"type": "leaf",
 							"demandPercentage": 0.3,
+							"lift": 3.3849693251533743,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1906,6 +2507,9 @@
 							"name": "Git",
 							"type": "leaf",
 							"demandPercentage": 15.6,
+							"lift": 2.99580799276047,
+							"offers": 51,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1947,18 +2551,27 @@
 							"name": "Selenium",
 							"type": "leaf",
 							"demandPercentage": 26,
+							"lift": 19.592765736412144,
+							"offers": 94,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Playwright",
 							"type": "leaf",
 							"demandPercentage": 25.1,
+							"lift": 18.49327808471455,
+							"offers": 91,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Cypress",
 							"type": "leaf",
 							"demandPercentage": 6.4,
+							"lift": 12.747614264188853,
+							"offers": 23,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1972,6 +2585,9 @@
 							"name": "Postman",
 							"type": "leaf",
 							"demandPercentage": 7.7,
+							"lift": 4.877348066298342,
+							"offers": 28,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -1985,24 +2601,36 @@
 							"name": "Xray",
 							"type": "leaf",
 							"demandPercentage": 0.3,
+							"lift": 1.7419100236779794,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Zephyr",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": 0,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "TestRail",
 							"type": "leaf",
 							"demandPercentage": 0.8,
+							"lift": 7.3160220994475145,
+							"offers": 3,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Jira",
 							"type": "leaf",
 							"demandPercentage": 4.7,
+							"lift": 0.8547929600729053,
+							"offers": 17,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2016,36 +2644,54 @@
 							"name": "Java",
 							"type": "leaf",
 							"demandPercentage": 43.6,
+							"lift": 3.024415205946382,
+							"offers": 158,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "JavaScript",
 							"type": "leaf",
 							"demandPercentage": 29,
+							"lift": 4.13668454734512,
+							"offers": 105,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 22.1,
+							"lift": 1.0597171246710142,
+							"offers": 80,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "TypeScript",
 							"type": "leaf",
 							"demandPercentage": 17.1,
+							"lift": 2.4308326375441904,
+							"offers": 62,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "C#",
 							"type": "leaf",
 							"demandPercentage": 18,
+							"lift": 4.284157085262057,
+							"offers": 65,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 27.3,
+							"lift": 1.5535954265236034,
+							"offers": 99,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2087,18 +2733,27 @@
 							"name": "UML",
 							"type": "leaf",
 							"demandPercentage": 60.1,
+							"lift": 16.680691414616845,
+							"offers": 277,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "BPMN",
 							"type": "leaf",
 							"demandPercentage": 51.2,
+							"lift": 17.516756629504446,
+							"offers": 236,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Enterprise Architect",
 							"type": "leaf",
 							"demandPercentage": 26.5,
+							"lift": 16.45253734991293,
+							"offers": 122,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2112,24 +2767,36 @@
 							"name": "Jira",
 							"type": "leaf",
 							"demandPercentage": 31.2,
+							"lift": 5.6856765883221145,
+							"offers": 144,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Confluence",
 							"type": "leaf",
 							"demandPercentage": 21.5,
+							"lift": 7.1271345391678755,
+							"offers": 99,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Postman",
 							"type": "leaf",
 							"demandPercentage": 9.3,
+							"lift": 5.881685776262783,
+							"offers": 43,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Miro",
 							"type": "leaf",
 							"demandPercentage": null,
+							"lift": null,
+							"offers": null,
+							"kind": "tool",
 							"source": "kuracja ekspercka",
 							"note": "brak w zrzucie 2026-02"
 						}
@@ -2144,6 +2811,9 @@
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 37.7,
+							"lift": 2.1441720617425606,
+							"offers": 174,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2201,18 +2871,27 @@
 							"name": "Jira",
 							"type": "leaf",
 							"demandPercentage": 38.8,
+							"lift": 7.070800951625694,
+							"offers": 202,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Trello",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": null,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Asana",
 							"type": "leaf",
 							"demandPercentage": 0.2,
+							"lift": 5.658974358974359,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2226,18 +2905,27 @@
 							"name": "Confluence",
 							"type": "leaf",
 							"demandPercentage": 22.9,
+							"lift": 7.59493927125506,
+							"offers": 119,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "MS Project",
 							"type": "leaf",
 							"demandPercentage": 2.3,
+							"lift": 11.31794871794872,
+							"offers": 12,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Miro",
 							"type": "leaf",
 							"demandPercentage": null,
+							"lift": null,
+							"offers": null,
+							"kind": "tool",
 							"source": "kuracja ekspercka",
 							"note": "brak w zrzucie 2026-02"
 						}
@@ -2252,18 +2940,27 @@
 							"name": "Scrum",
 							"type": "leaf",
 							"demandPercentage": 24,
+							"lift": 8.992014341590613,
+							"offers": 125,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kanban",
 							"type": "leaf",
 							"demandPercentage": 5.2,
+							"lift": 12.732692307692309,
+							"offers": 27,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "PRINCE2",
 							"type": "leaf",
 							"demandPercentage": 7.1,
+							"lift": 16.106311637080868,
+							"offers": 37,
+							"kind": "cert",
 							"source": "dane"
 						}
 					]
@@ -2321,18 +3018,27 @@
 							"name": "Jira",
 							"type": "leaf",
 							"demandPercentage": 13.4,
+							"lift": 2.443795341733486,
+							"offers": 29,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Confluence",
 							"type": "leaf",
 							"demandPercentage": 6.5,
+							"lift": 2.151072124756335,
+							"offers": 14,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Miro",
 							"type": "leaf",
 							"demandPercentage": null,
+							"lift": null,
+							"offers": null,
+							"kind": "tool",
 							"source": "kuracja ekspercka",
 							"note": "brak w zrzucie 2026-02"
 						}
@@ -2347,12 +3053,18 @@
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 1.4,
+							"lift": 0.0789003289003289,
+							"offers": 3,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Power BI",
 							"type": "leaf",
 							"demandPercentage": 0.9,
+							"lift": 0.46977437207322265,
+							"offers": 2,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2366,12 +3078,18 @@
 							"name": "Scrum",
 							"type": "leaf",
 							"demandPercentage": 12.5,
+							"lift": 4.6758474576271185,
+							"offers": 27,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "SaaS",
 							"type": "leaf",
 							"demandPercentage": 13,
+							"lift": 21.1920438957476,
+							"offers": 28,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2413,12 +3131,18 @@
 							"name": "Figma",
 							"type": "leaf",
 							"demandPercentage": 63.5,
+							"lift": 60.24069478908188,
+							"offers": 66,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Adobe XD",
 							"type": "leaf",
 							"demandPercentage": 14.4,
+							"lift": 84.88461538461537,
+							"offers": 15,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2432,12 +3156,18 @@
 							"name": "Jira",
 							"type": "leaf",
 							"demandPercentage": 9.6,
+							"lift": 1.7501982553528945,
+							"offers": 10,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Confluence",
 							"type": "leaf",
 							"demandPercentage": 6.7,
+							"lift": 2.233805668016194,
+							"offers": 7,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2451,6 +3181,9 @@
 							"name": "WCAG",
 							"type": "leaf",
 							"demandPercentage": 9.6,
+							"lift": 44.676113360323896,
+							"offers": 10,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2492,30 +3225,45 @@
 							"name": "Salesforce",
 							"type": "leaf",
 							"demandPercentage": 31.5,
+							"lift": 30.854251434533126,
+							"offers": 67,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Apex",
 							"type": "leaf",
 							"demandPercentage": 15,
+							"lift": 34.006982063320095,
+							"offers": 32,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "LWC",
 							"type": "leaf",
 							"demandPercentage": 8.5,
+							"lift": 41.44600938967137,
+							"offers": 18,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Visualforce",
 							"type": "leaf",
 							"demandPercentage": 2.3,
+							"lift": 41.44600938967136,
+							"offers": 5,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Aura",
 							"type": "leaf",
 							"demandPercentage": 1.9,
+							"lift": 41.44600938967136,
+							"offers": 4,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2529,18 +3277,27 @@
 							"name": "HTML",
 							"type": "leaf",
 							"demandPercentage": 9.9,
+							"lift": 5.15009584132011,
+							"offers": 21,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "CSS",
 							"type": "leaf",
 							"demandPercentage": 8,
+							"lift": 4.635408944897455,
+							"offers": 17,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 7.5,
+							"lift": 0.42672853940459576,
+							"offers": 16,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2554,12 +3311,18 @@
 							"name": "Swagger",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": 0,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Postman",
 							"type": "leaf",
 							"demandPercentage": 3.8,
+							"lift": 2.3683433936955067,
+							"offers": 8,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2617,18 +3380,27 @@
 							"name": "PHP",
 							"type": "leaf",
 							"demandPercentage": 22.2,
+							"lift": 15.694222222222221,
+							"offers": 90,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Symfony",
 							"type": "leaf",
 							"demandPercentage": 11.4,
+							"lift": 21.79753086419753,
+							"offers": 46,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Laravel",
 							"type": "leaf",
 							"demandPercentage": 5.2,
+							"lift": 18.309925925925924,
+							"offers": 21,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2642,18 +3414,27 @@
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 44.2,
+							"lift": 2.5107837996726885,
+							"offers": 179,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "MySQL",
 							"type": "leaf",
 							"demandPercentage": 16.8,
+							"lift": 12.3519341563786,
+							"offers": 68,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "PostgreSQL",
 							"type": "leaf",
 							"demandPercentage": 18.5,
+							"lift": 3.6986760516172277,
+							"offers": 75,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2667,18 +3448,27 @@
 							"name": "Docker",
 							"type": "leaf",
 							"demandPercentage": 14.8,
+							"lift": 1.8164609053497942,
+							"offers": 60,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "React",
 							"type": "leaf",
 							"demandPercentage": 13.8,
+							"lift": 2.100966830284099,
+							"offers": 56,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Git",
 							"type": "leaf",
 							"demandPercentage": 20.7,
+							"lift": 3.971784365710613,
+							"offers": 84,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2721,12 +3511,18 @@
 							"name": "C4",
 							"type": "leaf",
 							"demandPercentage": 1.1,
+							"lift": 49.044444444444444,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "UML",
 							"type": "leaf",
 							"demandPercentage": 1.1,
+							"lift": 0.30845562543675753,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2740,24 +3536,36 @@
 							"name": "Kafka",
 							"type": "leaf",
 							"demandPercentage": 34.4,
+							"lift": 8.285437481077809,
+							"offers": 31,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "RabbitMQ",
 							"type": "leaf",
 							"demandPercentage": 3.3,
+							"lift": 2.884967320261438,
+							"offers": 3,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "gRPC",
 							"type": "leaf",
 							"demandPercentage": 0,
+							"lift": 0,
+							"offers": 0,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kubernetes",
 							"type": "leaf",
 							"demandPercentage": 22.2,
+							"lift": 2.4927290696032753,
+							"offers": 20,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2771,12 +3579,18 @@
 							"name": "Java",
 							"type": "leaf",
 							"demandPercentage": 36.7,
+							"lift": 2.540763997906855,
+							"offers": 33,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 33.3,
+							"lift": 1.5984066630454463,
+							"offers": 30,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2790,18 +3604,27 @@
 							"name": "AWS",
 							"type": "leaf",
 							"demandPercentage": 1.1,
+							"lift": 0.11635692632133914,
+							"offers": 1,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Azure",
 							"type": "leaf",
 							"demandPercentage": 18.9,
+							"lift": 2.319208777623242,
+							"offers": 17,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "GCP",
 							"type": "leaf",
 							"demandPercentage": 2.2,
+							"lift": 0.583862433862434,
+							"offers": 2,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2844,30 +3667,45 @@
 							"name": "C++",
 							"type": "leaf",
 							"demandPercentage": 73.5,
+							"lift": 32.455882352941174,
+							"offers": 125,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "C",
 							"type": "leaf",
 							"demandPercentage": 34.7,
+							"lift": 46.42174688057041,
+							"offers": 59,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Python",
 							"type": "leaf",
 							"demandPercentage": 42.4,
+							"lift": 2.030916701281273,
+							"offers": 72,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Java",
 							"type": "leaf",
 							"demandPercentage": 24.1,
+							"lift": 1.671197709853172,
+							"offers": 41,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kotlin",
 							"type": "leaf",
 							"demandPercentage": 12.9,
+							"lift": 5.169443705083844,
+							"offers": 22,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2881,6 +3719,9 @@
 							"name": "Linux",
 							"type": "leaf",
 							"demandPercentage": 33.5,
+							"lift": 6.153797236150177,
+							"offers": 57,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2923,24 +3764,36 @@
 							"name": "Java",
 							"type": "leaf",
 							"demandPercentage": 32.3,
+							"lift": 2.2352762444928342,
+							"offers": 40,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "React",
 							"type": "leaf",
 							"demandPercentage": 23.4,
+							"lift": 3.553550607961801,
+							"offers": 29,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Kotlin",
 							"type": "leaf",
 							"demandPercentage": 20.2,
+							"lift": 8.05356882206977,
+							"offers": 25,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "TypeScript",
 							"type": "leaf",
 							"demandPercentage": 13.7,
+							"lift": 1.945804377139301,
+							"offers": 17,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
@@ -2954,12 +3807,18 @@
 							"name": "Agile",
 							"type": "leaf",
 							"demandPercentage": 24.2,
+							"lift": 4.3856395310326555,
+							"offers": 30,
+							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Scrum",
 							"type": "leaf",
 							"demandPercentage": 8.1,
+							"lift": 3.0166757791142698,
+							"offers": 10,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]

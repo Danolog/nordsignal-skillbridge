@@ -16,6 +16,7 @@
 
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
+import careerModel from "@/lib/db/data/career-model.json";
 import { competencies, gaps, jobMarketData, passports } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
 import {
@@ -23,8 +24,35 @@ import {
 	estimatedHoursForGap,
 	type GapPriority,
 	type MarketCatalogItem,
+	priorityRank,
 } from "@/lib/onboarding/market-catalog";
 import { calculateCoverage } from "@/lib/passport-utils";
+
+// ── Krotność (lift) per (careerGoal, competencyName) z career-model.json ──────
+// Lift NIE jest w `job_market_data` (brak kolumny — czerwona linia schemy), więc Reguła 2
+// priorytetu (podłoga krotności) czerpie go z hierarchii career-model.json. Mapa budowana
+// raz przy ładowaniu modułu (deterministyczna). Cast — odporność na inferencję kształtu JSON.
+const CAREER_MODEL = careerModel as unknown as {
+	paths: Array<{
+		careerGoal: string;
+		areas: Array<{ leaves: Array<{ name: string; lift: number | null }> }>;
+	}>;
+};
+const LIFT_BY_GOAL_NAME = new Map<string, number>();
+for (const path of CAREER_MODEL.paths) {
+	for (const area of path.areas) {
+		for (const leaf of area.leaves) {
+			if (typeof leaf.lift === "number") {
+				LIFT_BY_GOAL_NAME.set(`${path.careerGoal}|||${leaf.name}`, leaf.lift);
+			}
+		}
+	}
+}
+
+/** Krotność liścia dla (ścieżka, kompetencja); undefined gdy brak w modelu. */
+function liftFor(careerGoal: string, competencyName: string): number | undefined {
+	return LIFT_BY_GOAL_NAME.get(`${careerGoal}|||${competencyName}`);
+}
 
 /** Wiersz luki gotowy do zapisu (bez kluczy studenta/tenanta — dokłada je zapis). */
 export interface DerivedGap {
@@ -41,10 +69,13 @@ export interface DerivedGap {
  */
 export function deriveGaps(catalog: MarketCatalogItem[], selectedNames: string[]): DerivedGap[] {
 	const have = new Set(selectedNames.map((n) => n.trim().toLowerCase()));
+	// Reguła 1 priorytetu jest WZGLĘDNA — potrzebuje najwyższego popytu W ŚCIEŻCE (cały
+	// katalog, nie tylko luki). Liczymy raz.
+	const maxDemand = catalog.reduce((m, i) => Math.max(m, i.demandPercentage), 0);
 	return catalog
 		.filter((item) => !have.has(item.competencyName.trim().toLowerCase()))
 		.map((item) => {
-			const priority = demandToPriority(item.demandPercentage);
+			const priority = demandToPriority(item.demandPercentage, maxDemand, item.lift);
 			return {
 				competencyName: item.competencyName,
 				priority,
@@ -54,18 +85,31 @@ export function deriveGaps(catalog: MarketCatalogItem[], selectedNames: string[]
 		});
 }
 
-/** Katalog rynku dla ścieżki, posortowany malejąco wg popytu (oś priorytetu). */
+/**
+ * Katalog rynku dla ścieżki. Kolejność (Sophia/Oliver 2026-06-27): priorytet MALEJĄCO,
+ * w obrębie po popycie malejąco — rdzeń roli (krytyczne) na górze, nie najpopularniejszy
+ * generyk. Każda pozycja niesie krotność (lift) z career-model.json do Reguły 2 priorytetu.
+ */
 export async function loadMarketCatalog(careerGoal: string): Promise<MarketCatalogItem[]> {
 	const rows = await db.query.jobMarketData.findMany({
 		where: eq(jobMarketData.careerGoal, careerGoal),
 	});
-	return rows
-		.map((r) => ({
-			competencyName: r.competencyName,
-			demandPercentage: r.demandPercentage,
-			category: r.category,
-		}))
-		.sort((a, b) => b.demandPercentage - a.demandPercentage);
+	const items: MarketCatalogItem[] = rows.map((r) => ({
+		competencyName: r.competencyName,
+		demandPercentage: r.demandPercentage,
+		category: r.category,
+		lift: liftFor(careerGoal, r.competencyName),
+	}));
+	// Reguła 1 (względna) potrzebuje najwyższego popytu ścieżki.
+	const maxDemand = items.reduce((m, i) => Math.max(m, i.demandPercentage), 0);
+	const ranked = items.map((item) => ({
+		item,
+		rank: priorityRank(demandToPriority(item.demandPercentage, maxDemand, item.lift)),
+	}));
+	ranked.sort((a, b) =>
+		a.rank !== b.rank ? b.rank - a.rank : b.item.demandPercentage - a.item.demandPercentage,
+	);
+	return ranked.map((r) => r.item);
 }
 
 /**

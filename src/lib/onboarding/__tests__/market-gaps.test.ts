@@ -52,12 +52,12 @@ describe("deriveGaps — luki = katalog rynku \\ wybór studenta (czysta)", () =
 		expect(gaps.map((g) => g.competencyName)).toEqual(["Docker"]);
 	});
 
-	it("priorytet + godziny + % popytu wyprowadzone z demand (progi 60/40)", () => {
+	it("priorytet + godziny + % popytu (Reguła 1 względna, max=90)", () => {
 		const gaps = deriveGaps(catalog, []);
 		const sql = gaps.find((g) => g.competencyName === "SQL");
 		const py = gaps.find((g) => g.competencyName === "Python");
 		const docker = gaps.find((g) => g.competencyName === "Docker");
-		// SQL 90% → critical / 8h; Python 50% → important / 5h; Docker 20% → nice / 3h.
+		// max=90 (SQL). SQL r=1 → critical/8h; Python 50/90=0,56 → important/5h; Docker 20/90=0,22 → nice/3h.
 		expect(sql).toMatchObject({ priority: "critical", estimatedHours: 8, marketPercentage: 90 });
 		expect(py).toMatchObject({ priority: "important", estimatedHours: 5, marketPercentage: 50 });
 		expect(docker).toMatchObject({
@@ -65,6 +65,24 @@ describe("deriveGaps — luki = katalog rynku \\ wybór studenta (czysta)", () =
 			estimatedHours: 3,
 			marketPercentage: 20,
 		});
+	});
+
+	it("Reguła 1 rozdrobniona rola: najwyższy popyt = krytyczny mimo niskiego % bezwzględnego", () => {
+		// Cyber po kuracji: SIEM 12% to max ścieżki → krytyczna (stare progi 60/40 dałyby „miło-mieć").
+		const cyber = [item("SIEM", 12), item("SoC", 6), item("PAM", 3)];
+		const g = deriveGaps(cyber, []);
+		expect(g.find((x) => x.competencyName === "SIEM")?.priority).toBe("critical");
+		expect(g.find((x) => x.competencyName === "SoC")?.priority).toBe("important"); // 6/12=0,5
+		expect(g.find((x) => x.competencyName === "PAM")?.priority).toBe("nice_to_have"); // 3/12=0,25, bez lift
+	});
+
+	it("Reguła 2 podłoga krotności: PAM (krotność 26,8) → ważna, nie miło-mieć", () => {
+		const cyber: MarketCatalogItem[] = [
+			{ competencyName: "SIEM", demandPercentage: 12, category: "x", lift: 23.8 },
+			{ competencyName: "PAM", demandPercentage: 3, category: "x", lift: 26.8 },
+		];
+		const g = deriveGaps(cyber, []);
+		expect(g.find((x) => x.competencyName === "PAM")?.priority).toBe("important");
 	});
 
 	it("zachowuje oryginalną pisownię nazwy z katalogu (nie znormalizowaną)", () => {

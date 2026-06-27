@@ -4,7 +4,7 @@
  *
  * Zero DB, zero modelu: deterministyczne reguły (Built-to-Sell). Testujemy:
  *   • computeMarketCoverage / coverageWeight — wzór pokrycia (mirror calculateCoverage),
- *   • demandToPriority / estimatedHoursForGap — progi priorytetu z popytu (>60 / 40–60 / <40),
+ *   • demandToPriority / estimatedHoursForGap — priorytet luki (Reguła 1 względna + Reguła 2 krotności),
  *   • isPossessionLevel / POSSESSION_OPTIONS — kontrakt skali 3 poziomów posiadania,
  *   • annotateWithSyllabus — adnotacja „w programie studiów" (D4), dopasowanie jednostronne.
  */
@@ -60,22 +60,36 @@ describe("computeMarketCoverage — % pokrycia kompetencji rynku (9c B1)", () =>
 	});
 });
 
-describe("demandToPriority — priorytet luki z popytu (progi 60/40)", () => {
-	it(">60% → critical (granica: 61 critical, 60 NIE)", () => {
-		expect(demandToPriority(61)).toBe("critical");
-		expect(demandToPriority(100)).toBe("critical");
-		expect(demandToPriority(60)).not.toBe("critical");
+describe("demandToPriority — Reguła 1 (względna) + Reguła 2 (podłoga krotności)", () => {
+	it("Reguła 1: r = popyt/max — krytyczna ≥0,66, ważna 0,33–0,66, miło-mieć <0,33", () => {
+		// Rola rozdrobniona (max=12, jak cyber po kuracji): SIEM krytyczny mimo 12%.
+		expect(demandToPriority(12, 12)).toBe("critical"); // r=1
+		expect(demandToPriority(8, 12)).toBe("critical"); // r=0,67
+		expect(demandToPriority(6, 12)).toBe("important"); // r=0,5
+		expect(demandToPriority(4, 12)).toBe("important"); // r=0,33 (granica włącznie)
+		expect(demandToPriority(3, 12)).toBe("nice_to_have"); // r=0,25
 	});
 
-	it("40–60% → important (granice 40 i 60 włącznie)", () => {
-		expect(demandToPriority(60)).toBe("important");
-		expect(demandToPriority(40)).toBe("important");
-		expect(demandToPriority(50)).toBe("important");
+	it("Reguła 1 działa też dla ról skoncentrowanych (Java: max=81)", () => {
+		expect(demandToPriority(81, 81)).toBe("critical"); // Java r=1
+		expect(demandToPriority(48, 81)).toBe("important"); // Spring Boot r=0,59
+		expect(demandToPriority(19, 81)).toBe("nice_to_have"); // Kafka r=0,23
 	});
 
-	it("<40% → nice_to_have (granica: 39 nice, 0 nice)", () => {
-		expect(demandToPriority(39)).toBe("nice_to_have");
-		expect(demandToPriority(0)).toBe("nice_to_have");
+	it("Reguła 2: krotność ≥8 podnosi miło-mieć → ważna (rdzeń rozdrobnionej roli)", () => {
+		// PAM: popyt 3 z max 12 → r=0,25 (miło-mieć), ale krotność 26,8 → ważna.
+		expect(demandToPriority(3, 12, 26.8)).toBe("important");
+		expect(demandToPriority(3, 12, 8)).toBe("important"); // granica progu (8) włącznie
+		expect(demandToPriority(3, 12, 7.9)).toBe("nice_to_have"); // poniżej progu nie ratuje
+	});
+
+	it("Reguła 2 nigdy nie OBNIŻA — krytyczne/ważne z Reguły 1 zostają", () => {
+		expect(demandToPriority(8, 12, 50)).toBe("critical");
+		expect(demandToPriority(6, 12, 50)).toBe("important");
+	});
+
+	it("max=0 (pusty/zerowy katalog) → miło-mieć, bez dzielenia przez zero", () => {
+		expect(demandToPriority(0, 0)).toBe("nice_to_have");
 	});
 });
 

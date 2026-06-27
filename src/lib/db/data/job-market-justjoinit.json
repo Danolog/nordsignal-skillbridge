@@ -21,49 +21,99 @@
 			"studentSelectable": true,
 			"competencies": [
 				{
-					"name": "Python",
-					"demandPercentage": 15,
-					"category": "Security / IT Security"
+					"name": "SIEM",
+					"demandPercentage": 12,
+					"category": "Monitoring i reagowanie (SIEM / SOC)"
 				},
 				{
-					"name": "AWS",
+					"name": "Linux",
 					"demandPercentage": 10,
-					"category": "Cloud"
+					"category": "Fundament: sieci i systemy"
 				},
 				{
-					"name": "Azure",
-					"demandPercentage": 9,
-					"category": "Cloud"
+					"name": "IAM",
+					"demandPercentage": 8,
+					"category": "Tożsamość i dostęp (IAM / PAM)"
+				},
+				{
+					"name": "SOC",
+					"demandPercentage": 6,
+					"category": "Monitoring i reagowanie (SIEM / SOC)"
 				},
 				{
 					"name": "Splunk",
 					"demandPercentage": 5,
-					"category": "SIEM / SoC"
+					"category": "Monitoring i reagowanie (SIEM / SOC)"
 				},
 				{
 					"name": "Active Directory",
+					"demandPercentage": 4,
+					"category": "Tożsamość i dostęp (IAM / PAM)"
+				},
+				{
+					"name": "CyberArk",
 					"demandPercentage": 3,
-					"category": "IAM"
+					"category": "Tożsamość i dostęp (IAM / PAM)"
+				},
+				{
+					"name": "DevSecOps",
+					"demandPercentage": 3,
+					"category": "Fundament: sieci i systemy"
+				},
+				{
+					"name": "EDR / XDR",
+					"demandPercentage": 3,
+					"category": "Monitoring i reagowanie (SIEM / SOC)"
+				},
+				{
+					"name": "Firewall / IDS-IPS",
+					"demandPercentage": 3,
+					"category": "Fundament: sieci i systemy"
 				},
 				{
 					"name": "Network",
 					"demandPercentage": 3,
-					"category": "Teoria sieci i bezpieczeństwa"
+					"category": "Fundament: sieci i systemy"
 				},
 				{
-					"name": "Kali Linux",
-					"demandPercentage": 1,
-					"category": "Cybersecurity"
+					"name": "NIST",
+					"demandPercentage": 3,
+					"category": "Zgodność i ład (GRC / standardy)"
 				},
 				{
-					"name": "Nmap",
-					"demandPercentage": 1,
-					"category": "Security / IT Security"
+					"name": "OWASP",
+					"demandPercentage": 3,
+					"category": "Zgodność i ład (GRC / standardy)"
 				},
 				{
-					"name": "Wireshark",
-					"demandPercentage": 1,
-					"category": "Security / IT Security"
+					"name": "PAM",
+					"demandPercentage": 3,
+					"category": "Tożsamość i dostęp (IAM / PAM)"
+				},
+				{
+					"name": "SOAR",
+					"demandPercentage": 3,
+					"category": "Monitoring i reagowanie (SIEM / SOC)"
+				},
+				{
+					"name": "CrowdStrike",
+					"demandPercentage": 2,
+					"category": "Monitoring i reagowanie (SIEM / SOC)"
+				},
+				{
+					"name": "GRC",
+					"demandPercentage": 2,
+					"category": "Zgodność i ład (GRC / standardy)"
+				},
+				{
+					"name": "ISO 27001",
+					"demandPercentage": 2,
+					"category": "Zgodność i ład (GRC / standardy)"
+				},
+				{
+					"name": "Microsoft Defender",
+					"demandPercentage": 2,
+					"category": "Monitoring i reagowanie (SIEM / SOC)"
 				}
 			]
 		},
@@ -113,11 +163,6 @@
 					"category": "Machine Learning"
 				},
 				{
-					"name": "SQL",
-					"demandPercentage": 6,
-					"category": "Konkret bazowy"
-				},
-				{
 					"name": "FastAPI",
 					"demandPercentage": 5,
 					"category": "LLM / RAG / GenAI"
@@ -136,16 +181,6 @@
 					"name": "Hugging Face",
 					"demandPercentage": 4,
 					"category": "AI"
-				},
-				{
-					"name": "XGBoost",
-					"demandPercentage": 2,
-					"category": "Machine Learning"
-				},
-				{
-					"name": "Streamlit",
-					"demandPercentage": 1,
-					"category": "LLM / RAG / GenAI"
 				}
 			]
 		},
@@ -172,16 +207,6 @@
 				{
 					"name": "Pandas",
 					"demandPercentage": 4,
-					"category": "Machine Learning"
-				},
-				{
-					"name": "NumPy",
-					"demandPercentage": 1,
-					"category": "Machine Learning"
-				},
-				{
-					"name": "PyTorch",
-					"demandPercentage": 1,
 					"category": "Machine Learning"
 				}
 			]
@@ -259,11 +284,6 @@
 				{
 					"name": "Scala",
 					"demandPercentage": 5,
-					"category": "Konkret bazowy"
-				},
-				{
-					"name": "Docker",
-					"demandPercentage": 1,
 					"category": "Konkret bazowy"
 				}
 			]
@@ -461,16 +481,6 @@
 					"name": "Jenkins",
 					"demandPercentage": 6,
 					"category": "CI/CD"
-				},
-				{
-					"name": "OpenAPI",
-					"demandPercentage": 1,
-					"category": "REST API / Microservices"
-				},
-				{
-					"name": "Swagger",
-					"demandPercentage": 1,
-					"category": "Konteneryzacja i integracja"
 				}
 			]
 		},
@@ -620,11 +630,6 @@
 					"name": "Redis",
 					"demandPercentage": 2,
 					"category": "Bazy i cache"
-				},
-				{
-					"name": "Celery",
-					"demandPercentage": 1,
-					"category": "Konteneryzacja"
 				}
 			]
 		},
@@ -696,11 +701,6 @@
 				{
 					"name": "MongoDB",
 					"demandPercentage": 2,
-					"category": "Infrastruktura"
-				},
-				{
-					"name": "Redis",
-					"demandPercentage": 1,
 					"category": "Infrastruktura"
 				}
 			]
@@ -774,21 +774,6 @@
 					"name": "Jest",
 					"demandPercentage": 2,
 					"category": "Testowanie"
-				},
-				{
-					"name": "Playwright",
-					"demandPercentage": 1,
-					"category": "Testowanie"
-				},
-				{
-					"name": "SASS",
-					"demandPercentage": 1,
-					"category": "Styling"
-				},
-				{
-					"name": "Tailwind CSS",
-					"demandPercentage": 1,
-					"category": "Styling"
 				}
 			]
 		},
@@ -828,11 +813,6 @@
 					"category": "Backend dla fullstacka"
 				},
 				{
-					"name": "SQL",
-					"demandPercentage": 22,
-					"category": "Bazy i infra"
-				},
-				{
 					"name": ".Net",
 					"demandPercentage": 21,
 					"category": "Backend dla fullstacka"
@@ -841,11 +821,6 @@
 					"name": "Node.js",
 					"demandPercentage": 21,
 					"category": "Backend dla fullstacka"
-				},
-				{
-					"name": "Docker",
-					"demandPercentage": 10,
-					"category": "Bazy i infra"
 				},
 				{
 					"name": "Spring Boot",
@@ -860,11 +835,6 @@
 				{
 					"name": "Next.js",
 					"demandPercentage": 2,
-					"category": "Frontend"
-				},
-				{
-					"name": "Tailwind CSS",
-					"demandPercentage": 1,
 					"category": "Frontend"
 				}
 			]
@@ -957,11 +927,6 @@
 					"category": "Automatyzacja"
 				},
 				{
-					"name": "Python",
-					"demandPercentage": 22,
-					"category": "Języki"
-				},
-				{
 					"name": "C#",
 					"demandPercentage": 18,
 					"category": "Języki"
@@ -980,16 +945,6 @@
 					"name": "Cypress",
 					"demandPercentage": 6,
 					"category": "Automatyzacja"
-				},
-				{
-					"name": "Jira",
-					"demandPercentage": 5,
-					"category": "Zarządzanie testami"
-				},
-				{
-					"name": "TestRail",
-					"demandPercentage": 1,
-					"category": "Zarządzanie testami"
 				}
 			]
 		},
@@ -1096,16 +1051,6 @@
 					"name": "Confluence",
 					"demandPercentage": 7,
 					"category": "Narzędzia produktowe"
-				},
-				{
-					"name": "Power BI",
-					"demandPercentage": 1,
-					"category": "Analiza danych produktu"
-				},
-				{
-					"name": "SQL",
-					"demandPercentage": 1,
-					"category": "Analiza danych produktu"
 				}
 			]
 		},
@@ -1172,19 +1117,9 @@
 					"category": "Web i integracje"
 				},
 				{
-					"name": "SQL",
-					"demandPercentage": 8,
-					"category": "Web i integracje"
-				},
-				{
 					"name": "Postman",
 					"demandPercentage": 4,
 					"category": "API"
-				},
-				{
-					"name": "Aura",
-					"demandPercentage": 2,
-					"category": "Ekosystem Salesforce"
 				},
 				{
 					"name": "Visualforce",
@@ -1274,31 +1209,6 @@
 					"name": "Azure",
 					"demandPercentage": 19,
 					"category": "Cloud"
-				},
-				{
-					"name": "RabbitMQ",
-					"demandPercentage": 3,
-					"category": "Komunikacja i integracja"
-				},
-				{
-					"name": "GCP",
-					"demandPercentage": 2,
-					"category": "Cloud"
-				},
-				{
-					"name": "AWS",
-					"demandPercentage": 1,
-					"category": "Cloud"
-				},
-				{
-					"name": "C4",
-					"demandPercentage": 1,
-					"category": "Projektowanie (Architecture)"
-				},
-				{
-					"name": "UML",
-					"demandPercentage": 1,
-					"category": "Projektowanie (Architecture)"
 				}
 			]
 		},

@@ -18,6 +18,12 @@ export interface MarketCatalogItem {
 	/** % ofert ścieżki, w których kompetencja wystąpiła (popyt). Oś sortowania/priorytetu. */
 	demandPercentage: number;
 	category: string;
+	/**
+	 * Krotność (lift) = ile razy częściej kompetencja występuje w tej roli niż średnio na
+	 * rynku. Z `career-model.json` (NIE z `job_market_data` — brak kolumny, czerwona linia
+	 * schemy). Zasila Regułę 2 priorytetu (rdzeń rozdrobnionej roli nie spada do „miło-mieć").
+	 */
+	lift?: number;
 	/** Flaga adnotacji „w programie studiów" (D4) — nakładana przez sylabus, NIE generator. */
 	inSyllabus?: boolean;
 }
@@ -95,16 +101,47 @@ export function computeMarketCoverage(
 	return Math.round((covered / catalogSize) * 100);
 }
 
-// ── Priorytet luki z popytu (deterministycznie) ─────────────────────────────
+// ── Priorytet luki — DWIE reguły deterministyczne (Sophia, ratyfikacja Olivera 2026-06-27) ──
 //
-// Te same progi co dotychczasowy prompt generate-gaps (spójność): >60% critical,
-// 40–60% important, <40% nice_to_have. Bez modelu — popyt jest w danych.
+// Zastępują progi BEZWZGLĘDNE 60/40, które w rozdrobnionych rolach (cyber: max popytu ~12%)
+// robiły CAŁY rdzeń „miło-mieć" — absurd (SIEM dla specjalisty bezpieczeństwa jako „miło-mieć").
+//
+// Reguła 1 (WZGLĘDNA w ścieżce): r = popyt ÷ najwyższy popyt w tej ścieżce.
+//   r ≥ 0,66 → krytyczna · 0,33 ≤ r < 0,66 → ważna · r < 0,33 → miło-mieć.
+//   Auto-normalizacja: działa dla ról skoncentrowanych (Java) i rozdrobnionych (cyber).
+// Reguła 2 (PODŁOGA KROTNOŚCI): kompetencja silnie definiująca rolę (krotność ≥ próg) nie
+//   spada poniżej „ważna". Ratuje rdzeń rozdrobnionych ról (PAM krotność 26,8, NIST 24,
+//   SOAR/EDR >20 — niski udział, ale role-defining). Działa TYLKO na skuratorowanych liściach
+//   katalogu (już przeszły bramkę n≥countMin), więc nie wypromowuje szumu.
 export type GapPriority = "critical" | "important" | "nice_to_have";
 
-export function demandToPriority(demandPercentage: number): GapPriority {
-	if (demandPercentage > 60) return "critical";
-	if (demandPercentage >= 40) return "important";
-	return "nice_to_have";
+export const PRIORITY_R_CRITICAL = 0.66; // r = popyt / max_popyt_ścieżki
+export const PRIORITY_R_IMPORTANT = 0.33;
+export const PRIORITY_LIFT_FLOOR = 8; // krotność ≥ → min „ważna" (Reguła 2)
+
+export function demandToPriority(
+	demandPercentage: number,
+	maxDemandPercentage: number,
+	lift?: number,
+): GapPriority {
+	// Reguła 1 — pozycja względna w ścieżce.
+	const r = maxDemandPercentage > 0 ? demandPercentage / maxDemandPercentage : 0;
+	let priority: GapPriority =
+		r >= PRIORITY_R_CRITICAL
+			? "critical"
+			: r >= PRIORITY_R_IMPORTANT
+				? "important"
+				: "nice_to_have";
+	// Reguła 2 — podłoga krotności (tylko podnosi miło-mieć → ważna, nigdy nie obniża).
+	if (priority === "nice_to_have" && (lift ?? 0) >= PRIORITY_LIFT_FLOOR) {
+		priority = "important";
+	}
+	return priority;
+}
+
+/** Ranga priorytetu do sortowania katalogu (wyższa = ważniejsza, rdzeń roli na górze). */
+export function priorityRank(p: GapPriority): number {
+	return p === "critical" ? 3 : p === "important" ? 2 : 1;
 }
 
 /**

@@ -445,44 +445,71 @@ export const PATH_META: Record<string, PathMeta> = {
 
 export const PATHS: PathSpec[] = [
 	{
+		// KURACJA SOPHII 2026-06-27 (lift-branch, Tor 1) — zastępuje stereotyp pentest.
+		// Polski rynek cyber = monitoring (SIEM/SOC) + tożsamość (IAM/PAM) + zgodność
+		// (GRC/NIST), NIE testy penetracyjne. Lista wg krotności w danych JustJoinIT
+		// 2026-02; §7: silnik liczy %, człowiek (Sophia) zatwierdza zestaw. countAs
+		// zweryfikowane wobec realnych napisów w CSV (Ethan). Wyrzucone z uzasadnieniem:
+		// Burp/Kali/Metasploit/Nmap/Wireshark (n=1-2, pentest); Python (krotność 0,73 —
+		// rzadszy w cyber niż rynek); AWS/Azure (generyczna chmura); OAuth2/JWT/Keycloak
+		// (tagi backend-dev, ~0% w ofertach security).
 		label: "Cybersecurity Specialist",
+		note: "Polski rynek cyber = monitoring bezpieczeństwa (SIEM/SOC) + tożsamość (IAM/PAM) + zgodność (GRC/NIST), nie testy penetracyjne. Lista wg krotności w danych JustJoinIT 2026-02 — kuracja Sophii.",
 		areas: [
 			{
-				name: "Cybersecurity",
-				type: "knowledge-area",
-				leaves: [{ name: "Burp Suite" }, { name: "Kali Linux" }, { name: "Metasploit" }],
-			},
-			{
-				name: "Security / IT Security",
-				type: "knowledge-area",
-				demandAs: ["Security"],
-				leaves: [{ name: "Wireshark" }, { name: "Nmap" }, { name: "Python" }],
-			},
-			{
-				name: "SIEM / SoC",
+				// Filar 1 — najsilniejszy realny sygnał roli (obszar SIEM ~12% popytu ścieżki).
+				name: "Monitoring i reagowanie (SIEM / SOC)",
 				type: "knowledge-area",
 				demandAs: ["SIEM"],
-				leaves: [{ name: "Splunk" }],
-			},
-			{
-				name: "IAM",
-				type: "knowledge-area",
 				leaves: [
-					{ name: "OAuth2" },
-					{ name: "JWT" },
-					{ name: "Keycloak" },
-					{ name: "Active Directory" },
+					{ name: "SIEM" },
+					{ name: "SOC", countAs: ["SoC"] },
+					{ name: "Splunk", countAs: ["Splunk", "Splunk Enterprise Security"] },
+					{ name: "SOAR" },
+					{ name: "EDR / XDR", countAs: ["EDR", "EDR/XDR", "EDR / XDR"] },
+					{ name: "Microsoft Defender" },
+					{ name: "CrowdStrike", countAs: ["Crowdstrike"] },
+					{ name: "Incident Response" }, // n=3 < bramka — w hierarchii, poza katalogiem studenta
 				],
 			},
 			{
-				name: "Cloud",
+				// Filar 2 — tożsamość i dostęp (polski rynek = zarządzanie tożsamością, nie pentest).
+				name: "Tożsamość i dostęp (IAM / PAM)",
 				type: "knowledge-area",
-				leaves: [{ name: "AWS" }, { name: "Azure" }],
+				demandAs: ["IAM"],
+				leaves: [
+					{ name: "PAM" },
+					{ name: "CyberArk" }, // weryfikacja Ethan: n=9 ≥4 → present (Sophia: absent)
+					{ name: "Active Directory", countAs: ["Active Directory", "Active Directory (AD)"] },
+					{ name: "IAM" }, // weryfikacja Ethan: n=27 ≥4 → present (Sophia: absent)
+				],
 			},
 			{
-				name: "Teoria sieci i bezpieczeństwa",
+				// Filar 3 — zgodność i ład (banki, korpo, RODO definiują polski rynek cyber).
+				name: "Zgodność i ład (GRC / standardy)",
+				type: "knowledge-area",
+				demandAs: ["GRC"],
+				leaves: [
+					{ name: "NIST" },
+					{ name: "GRC" },
+					{ name: "DLP" }, // n=4 < bramka — w hierarchii, poza katalogiem studenta
+					{ name: "OWASP" }, // weryfikacja Ethan: n=11 ≥4 → present (Sophia: absent)
+					{
+						name: "ISO 27001", // weryfikacja Ethan: n=8 ≥4 → present (Sophia: absent)
+						countAs: ["ISO 27001", "ISO 27001 - Information Security Management", "ISO27001"],
+					},
+				],
+			},
+			{
+				// Filar 4 — fundament techniczny (wejście juniora: sieci/systemy; T-shape Admin→Cyber).
+				name: "Fundament: sieci i systemy",
 				type: "presentation-group",
-				leaves: [{ name: "OWASP Top 10", absent: true }, { name: "Network" }],
+				leaves: [
+					{ name: "Linux" },
+					{ name: "Network" },
+					{ name: "Firewall / IDS-IPS", countAs: ["Firewall", "IDS/IPS"] },
+					{ name: "DevSecOps" }, // weryfikacja Ethan: n=10 ≥4 → present (Sophia: absent)
+				],
 			},
 		],
 	},
@@ -1370,10 +1397,7 @@ export const PROJECT_BANK: Record<string, ProjectSpec[]> = {
 		todoProject("DevOps Engineer", "Terraform, Kubernetes, Docker, GitHub Actions, AWS, Ansible"),
 	],
 	"Cybersecurity Specialist": [
-		todoProject(
-			"Cybersecurity Specialist",
-			"Burp Suite, Nmap, Wireshark, Metasploit, Splunk, Python",
-		),
+		todoProject("Cybersecurity Specialist", "SIEM, Splunk, IAM, PAM, NIST, Linux"),
 	],
 	"QA Engineer": [todoProject("QA Engineer", "Selenium, Playwright, Cypress, Postman, Jira")],
 	"Solution Architect": [
