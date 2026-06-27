@@ -789,38 +789,126 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 4 2026-06-27 (scratchpad/sophia-a4-partia4.md) — 5 grup
+		// context-group na 226 ofertach, najczystsza ścieżka partii (Python 70%, SQL 53%). Domyka
+		// trio danych (Data Scientist + Data Analyst). Scalenia UNIĄ (countAsUnion): Spark←Apache
+		// Spark, Hadoop←Apache Hadoop, Kafka←Apache Kafka, Airflow←Apache Airflow, ETL (3 zapisy),
+		// dbt←DBT, chmury (Azure/AWS/GCP). PySpark NIE scalony ze Spark (silnik vs interfejs).
+		// `kind` Sophii. Wykluczone meta/szum: Power BI (przeciek BI), GPS (szum), gołe „Data".
 		label: "Data Engineer",
 		areas: [
 			{
-				name: "Big Data / ETL",
-				type: "knowledge-area",
-				demandAs: ["ETL"],
+				name: "Języki przetwarzania danych (rdzeń)",
+				type: "context-group",
+				description:
+					"Serce roli — języki, w których przepychasz i przekształcasz dane. Python rządzi (7 na 10 ofert) jako klej całego potoku danych (pipeline — taśma, którą dane płyną od źródła do hurtowni). SQL (język zapytań do baz relacyjnych) to drugi filar — co druga oferta. Scala pojawia się tam, gdzie liczy się wydajność przetwarzania rozproszonego (Apache Spark), Java w starszych systemach Big Data.",
 				leaves: [
-					{ name: "Apache Spark" },
-					{ name: "PySpark" },
-					{ name: "Airflow", countAs: ["Airflow", "Apache Airflow"] },
-					{ name: "dbt", countAs: ["DBT"] },
-					{ name: "Snowflake" },
-					{ name: "BigQuery" },
+					{ name: "Python", kind: "tool" },
+					{ name: "SQL", kind: "tool" },
+					{ name: "Scala", kind: "tool" },
+					{ name: "Java", kind: "tool" },
 				],
 			},
 			{
-				name: "Konkret bazowy",
-				type: "presentation-group",
+				name: "Big Data i przetwarzanie rozproszone",
+				type: "context-group",
+				description:
+					"Inżynier danych przetwarza wolumeny, których nie udźwignie jeden komputer — dzieli pracę na wiele maszyn (przetwarzanie rozproszone). Apache Spark to dziś standard tego świata, a PySpark to jego interfejs w Pythonie (piszesz po pythonowemu, liczy się rozproszenie). Hadoop i Hive to starsza, wciąż żywa generacja, Kafka dowozi dane strumieniem w czasie rzeczywistym (gdy nie czekasz na nocną paczkę).",
 				leaves: [
-					{ name: "Python" },
-					{ name: "SQL" },
-					{ name: "Databricks" },
-					{ name: "Docker" },
-					{ name: "Kafka", countAs: ["Kafka", "Apache Kafka"] },
-					{ name: "Scala" },
+					{
+						name: "Apache Spark",
+						countAs: ["Apache Spark", "Spark"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "PySpark", kind: "tool" },
+					{ name: "Big Data", kind: "concept" },
+					{
+						name: "Hadoop",
+						countAs: ["Hadoop", "Apache Hadoop"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Hive", kind: "tool" },
+					{
+						name: "Kafka",
+						countAs: ["Apache Kafka", "Kafka"],
+						countAsUnion: true,
+						kind: "tool",
+					},
 				],
 			},
 			{
-				name: "Cloud",
-				type: "knowledge-area",
-				demandAs: ["Azure"],
-				leaves: [{ name: "Azure" }, { name: "AWS" }, { name: "GCP" }],
+				name: "Orkiestracja i ETL",
+				type: "context-group",
+				description:
+					"Dane nie płyną same — ktoś układa kolejność kroków i pilnuje, że nocny przepływ się wykonał. To orkiestracja: Airflow (i jego zarządzana odmiana Cloud Composer w chmurze Google) planuje i nadzoruje zadania, Dagster to nowszy konkurent. ETL (Extract-Transform-Load: wyciągnij dane ze źródła, przekształć, załaduj do hurtowni) to fundamentalny wzorzec roli, a dbt przekształca dane już w hurtowni samym SQL-em.",
+				leaves: [
+					{
+						name: "ETL",
+						countAs: ["ETL", "ETL/ELT", "ETL tools"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{
+						name: "Airflow",
+						countAs: ["Airflow", "Apache Airflow"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "dbt",
+						countAs: ["DBT", "dbt"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Dagster", kind: "tool" },
+					{ name: "Cloud Composer", kind: "tool" },
+				],
+			},
+			{
+				name: "Hurtownie i platformy danych",
+				type: "context-group",
+				description:
+					"Gdzie dane lądują i skąd analityk je bierze. Databricks (37%) i Snowflake (30%) to dwie dominujące platformy nowej generacji — łączą magazyn danych z mocą obliczeniową. Delta Lake to format zapisu Databricks zapewniający spójność danych, BigQuery to hurtownia Google, Oracle — klasyczna baza w starszych systemach.",
+				leaves: [
+					{ name: "Databricks", kind: "tool" },
+					{ name: "Snowflake", kind: "tool" },
+					{ name: "Delta Lake", kind: "tool" },
+					{ name: "BigQuery", kind: "tool" },
+					{ name: "Oracle", kind: "tool" },
+				],
+			},
+			{
+				name: "Chmura i wdrażanie",
+				type: "context-group",
+				description:
+					"Współczesny inżynier danych pracuje w chmurze i sam wdraża swoje potoki. Azure (33%) i AWS (28%) to dwie najczęstsze platformy w PL, GCP za nimi. Azure Data Factory orkiestruje przepływy w świecie Microsoftu, Terraform opisuje infrastrukturę kodem (zamiast klikać w panelu — piszesz konfigurację), CI/CD (taśma automatycznego budowania i wdrażania) i Kubernetes (uruchamianie aplikacji na skalę) domykają warsztat.",
+				leaves: [
+					{
+						name: "Azure",
+						countAs: ["Azure", "Microsoft Azure"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "AWS",
+						countAs: ["AWS", "Amazon AWS"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "GCP",
+						countAs: ["GCP", "Google Cloud Platform"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Azure Data Factory", kind: "tool" },
+					{ name: "Azure DevOps", kind: "tool" },
+					{ name: "Terraform", kind: "tool" },
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Kubernetes", kind: "tool" },
+				],
 			},
 		],
 	},
@@ -1941,48 +2029,161 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 4 2026-06-27 (scratchpad/sophia-a4-partia4.md) — 5 grup
+		// context-group na 481 ofertach, most biznes-IT (UML 59%, BPMN 50%). Scalenia UNIĄ
+		// (countAsUnion): Business Analysis←Analiza Biznesowa, Analiza systemowa←System Analysis
+		// (zrzut dwujęzyczny), REST/API (3: REST API+REST+API). SQL osobną grupą mimo 1 liścia.
+		// `kind` Sophii (notacje/wzorce→concept). Wykluczone: Kafka/Java/OOP/Kibana (przeciek tech),
+		// Analytical Thinking (soft). Microservices: countAs bez unii (1 wariant w danych).
 		label: "Business Analyst",
 		areas: [
 			{
-				name: "Notacje i modelowanie",
-				type: "knowledge-area",
-				demandAs: ["UML"],
-				leaves: [{ name: "UML" }, { name: "BPMN" }, { name: "Enterprise Architect" }],
-			},
-			{
-				name: "Narzędzia analityka",
-				type: "presentation-group",
+				name: "Notacje i modelowanie (rdzeń)",
+				type: "context-group",
+				description:
+					"Serce roli analityka — rysowanie tego, jak system i proces mają działać, w umownym języku graficznym (notacji), który rozumie i biznes, i programista. UML (60% ofert) opisuje strukturę i zachowanie systemu, BPMN (50%) rysuje przebieg procesu biznesowego krok po kroku. Enterprise Architect to najpopularniejsze narzędzie, w którym się to rysuje (26% ofert), ArchiMate — notacja do architektury całej organizacji.",
 				leaves: [
-					{ name: "Jira" },
-					{ name: "Confluence" },
-					{ name: "Postman" },
-					{ name: "Miro", absent: true },
+					{ name: "UML", kind: "concept" },
+					{ name: "BPMN", kind: "concept" },
+					{ name: "Enterprise Architect", kind: "tool" },
+					{ name: "ArchiMate", kind: "concept" },
 				],
 			},
 			{
-				name: "Dane",
-				type: "presentation-group",
-				leaves: [{ name: "SQL" }],
+				name: "Analiza wymagań i dokumentacja",
+				type: "context-group",
+				description:
+					"Druga połowa roli — zamiana mglistych życzeń biznesu w precyzyjne wymagania, które programista wykona bez zgadywania. Analiza biznesowa i systemowa to rdzeń tej pracy; User Stories (historyjki użytkownika: „jako X chcę Y, żeby Z”) to format zapisu wymagań w zwinnych zespołach, a SDLC (cykl życia oprogramowania — od pomysłu po utrzymanie) to rama, w której analityk się porusza.",
+				leaves: [
+					{
+						name: "Business Analysis",
+						countAs: ["Business Analysis", "Analiza Biznesowa"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{
+						name: "Analiza systemowa",
+						countAs: ["analiza systemowa", "System Analysis"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "User Stories", kind: "concept" },
+					{ name: "SDLC", kind: "concept" },
+					{ name: "CASE", kind: "concept" },
+				],
+			},
+			{
+				name: "API, integracje i architektura usług",
+				type: "context-group",
+				description:
+					"Coraz częściej analityk projektuje, jak systemy gadają ze sobą — nie tylko z człowiekiem. API (interfejs, przez który jeden program woła drugi) w stylu REST to standard; analityk opisuje je i testuje (Postman, Swagger, SoapUI — narzędzia do „zawołania” API i sprawdzenia odpowiedzi). SOAP i ESB (szyna integracyjna spinająca wiele systemów) żyją w korporacjach, SOA i mikrousługi to style dzielenia systemu na współpracujące części, TOGAF — rama architektury korporacyjnej.",
+				leaves: [
+					{
+						name: "REST / API",
+						countAs: ["REST API", "REST", "API"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "Postman", kind: "tool" },
+					{ name: "Swagger", kind: "tool" },
+					{ name: "SoapUI", kind: "tool" },
+					{ name: "SOAP", kind: "tool" },
+					{ name: "SOA", kind: "concept" },
+					{ name: "ESB", kind: "concept" },
+					{ name: "XML", kind: "tool" },
+					{ name: "Microservices (Mikrousługi)", countAs: ["Microservices"], kind: "concept" },
+					{ name: "TOGAF", kind: "concept" },
+				],
+			},
+			{
+				name: "Bazy danych i zapytania",
+				type: "context-group",
+				description:
+					"Dobry analityk sam sięga do danych, zamiast czekać na programistę. SQL (język zapytań do baz relacyjnych) to jego najważniejsza umiejętność techniczna — co trzecia oferta go wymaga. Pozwala odpowiedzieć na pytanie biznesowe wprost z bazy: ilu klientów, jaki przychód, gdzie spadek.",
+				leaves: [{ name: "SQL", kind: "tool" }],
+			},
+			{
+				name: "Metodyka i narzędzia zespołowe",
+				type: "context-group",
+				description:
+					"Warsztat codziennej pracy w zespole IT. Jira (30% ofert) to system, w którym żyją zadania i wymagania, Confluence — wiki, gdzie analityk pisze dokumentację. Agile i Scrum to zwinne metodyki iteracyjne (praca w krótkich cyklach zamiast jednego wielkiego planu), MS Office — wciąż codzienne narzędzie analityka (Excel, prezentacje).",
+				leaves: [
+					{ name: "Jira", kind: "tool" },
+					{ name: "Confluence", kind: "tool" },
+					{ name: "Agile", kind: "concept" },
+					{ name: "Scrum", kind: "concept" },
+					{ name: "MS Office", kind: "tool" },
+				],
 			},
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 4 2026-06-27 (scratchpad/sophia-a4-partia4.md) — 4 grupy
+		// context-group na 700 ofertach (największy wolumen partii). Rola zarządcza — dominują
+		// metodyki/koncepcje. Scalenie UNIĄ (countAsUnion): Jira←Atlassian JIRA. Soft-kompetencje
+		// PM (Stakeholder Mgmt, Communication) jako `concept`-rdzeń, NIE do kubełka soft. PRINCE2
+		// → cert (kubełek certyfikatów). Wykluczone: AI (buzzword), Testing/QA/SAP/ServiceNow
+		// (przeciek tech/domenowy), gołe Documentation/training (soft generyczny), English (język).
 		label: "Project Manager",
 		areas: [
 			{
-				name: "Narzędzia śledzenia",
-				type: "presentation-group",
-				leaves: [{ name: "Jira" }, { name: "Trello" }, { name: "Asana" }],
+				name: "Metodyki i ramy zarządzania (rdzeń)",
+				type: "context-group",
+				description:
+					"Serce roli — sposób, w jaki prowadzisz projekt do końca. Project Management (38%) i Agile (36%, zwinne prowadzenie w krótkich cyklach) to dwa najsilniejsze sygnały. Scrum i Kanban to konkretne odmiany zwinności, Waterfall (kaskadowy: zaplanuj wszystko z góry, potem wykonaj) to klasyczne podejście wciąż żywe w korporacji. SAFe skaluje zwinność na wielkie organizacje, a PRINCE2 to sformalizowana metodyka prowadzenia projektu, znana głównie z certyfikatu o tej samej nazwie.",
+				leaves: [
+					{ name: "Project Management", kind: "concept" },
+					{ name: "Agile", kind: "concept" },
+					{ name: "Scrum", kind: "concept" },
+					{ name: "Kanban", kind: "concept" },
+					{ name: "Waterfall", kind: "concept" },
+					{ name: "SAFe", kind: "concept" },
+					{ name: "PRINCE2", kind: "cert" },
+					{ name: "Scrum Master", kind: "concept" },
+				],
 			},
 			{
-				name: "Dokumentacja",
-				type: "presentation-group",
-				leaves: [{ name: "Confluence" }, { name: "MS Project" }, { name: "Miro", absent: true }],
+				name: "Narzędzia pracy PM",
+				type: "context-group",
+				description:
+					"Oprogramowanie, w którym PM faktycznie prowadzi projekt. Jira (30%) trzyma zadania i postęp, Confluence (18%) to wiki z dokumentacją i decyzjami. MS Project to klasyczne narzędzie do harmonogramów (wykres Gantta — pasy zadań na osi czasu), a MS Office i Excel obsługują budżet, raporty i komunikację.",
+				leaves: [
+					{
+						name: "Jira",
+						countAs: ["Jira", "Atlassian JIRA"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Confluence", kind: "tool" },
+					{ name: "MS Project", kind: "tool" },
+					{ name: "MS Office", kind: "tool" },
+					{ name: "Microsoft Excel", kind: "tool" },
+				],
 			},
 			{
-				name: "Agile",
-				type: "knowledge-area",
-				leaves: [{ name: "Scrum" }, { name: "Kanban" }, { name: "PRINCE2" }],
+				name: "Zarządzanie interesariuszami i zespołem",
+				type: "context-group",
+				description:
+					"Najtrudniejsza, najbardziej ludzka część roli — i często ta, która decyduje o sukcesie projektu. Zarządzanie interesariuszami (stakeholders — wszyscy, których projekt dotyczy: klient, zarząd, zespół) i komunikacja to rdzeń. Change Management (zarządzanie zmianą — przeprowadzenie ludzi przez nowy sposób pracy), koordynacja, zarządzanie ryzykiem i governance (ład: zasady i nadzór nad tym, jak projekt jest prowadzony) domykają obraz.",
+				leaves: [
+					{ name: "Stakeholder Management", kind: "concept" },
+					{ name: "Communication", kind: "concept" },
+					{ name: "Change Management", kind: "concept" },
+					{ name: "Coordination", kind: "concept" },
+					{ name: "Risk Management", kind: "concept" },
+					{ name: "Governance", kind: "concept" },
+				],
+			},
+			{
+				name: "Styk z analizą i dostarczaniem",
+				type: "context-group",
+				description:
+					"PM nie pracuje w próżni — styka się z analizą biznesową (zrozumienie, co właściwie ma powstać) i z dostarczaniem (delivery — doprowadzenie do faktycznego wdrożenia). PMO to biuro zarządzania projektami (komórka pilnująca standardów i portfela projektów w firmie), Project Execution to faza realizacji planu.",
+				leaves: [
+					{ name: "Business Analysis", kind: "concept" },
+					{ name: "PMO", kind: "concept" },
+					{ name: "Project Execution", kind: "concept" },
+				],
 			},
 		],
 	},
@@ -2028,29 +2229,88 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 4 2026-06-27 (scratchpad/sophia-a4-partia4.md) — 5 grup
+		// context-group na 238 ofertach, kariera „na platformie". Scalenia UNIĄ (countAsUnion):
+		// REST/API (3), CRM←Customer Relationship Management (CRM) Suite, SAP←SAP HANA, chmury.
+		// LWC: countAs ["LWC"] (display rozwinięty). `kind` Sophii. Wykluczone: English/German/Polish
+		// (języki — Sygnał #2 rynek eksportowy), SQL/Java/PHP (przeciek, Salesforce używa SOQL),
+		// Programming/IT Support/Backend (meta/przeciek). Anchor projektu LWC→pełna nazwa liścia.
 		label: "Salesforce Developer",
 		areas: [
 			{
-				name: "Ekosystem Salesforce",
-				type: "knowledge-area",
-				demandAs: ["Salesforce"],
+				name: "Platforma Salesforce (rdzeń)",
+				type: "context-group",
+				description:
+					"Serce roli — programujesz wewnątrz Salesforce (najpopularniejszej na świecie platformy CRM, czyli systemu do zarządzania relacjami z klientami). Apex to język programowania tej platformy (przypomina Javę, ale działa tylko w Salesforce), LWC (Lightning Web Components) to nowoczesny sposób budowania ekranów, Visualforce — starszy. Sales Cloud i Service Cloud to dwa główne moduły (sprzedaż i obsługa klienta), które konfigurujesz i rozszerzasz.",
 				leaves: [
-					{ name: "Salesforce" },
-					{ name: "Apex" },
-					{ name: "LWC" },
-					{ name: "Visualforce" },
-					{ name: "Aura" },
+					{ name: "Salesforce", kind: "tool" },
+					{ name: "Apex", kind: "tool" },
+					{ name: "LWC (Lightning Web Components)", countAs: ["LWC"], kind: "tool" },
+					{ name: "Visualforce", kind: "tool" },
+					{ name: "Sales Cloud", kind: "tool" },
+					{ name: "Service Cloud", kind: "tool" },
 				],
 			},
 			{
-				name: "Web i integracje",
-				type: "presentation-group",
-				leaves: [{ name: "HTML" }, { name: "CSS" }, { name: "SQL" }],
+				name: "Integracje i API",
+				type: "context-group",
+				description:
+					"Salesforce rzadko stoi sam — łączy się z resztą firmowych systemów. To drugi najsilniejszy sygnał roli (API 29%): wystawiasz i konsumujesz API (interfejs, przez który systemy wymieniają dane) w stylu REST lub starszym SOAP, dane płyną w formacie JSON (lekki zapis), a Postman służy do testowania tych połączeń.",
+				leaves: [
+					{
+						name: "REST / API",
+						countAs: ["API", "REST API", "REST"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "SOAP", kind: "tool" },
+					{ name: "JSON", kind: "tool" },
+					{ name: "Postman", kind: "tool" },
+				],
 			},
 			{
-				name: "API",
-				type: "knowledge-area",
-				leaves: [{ name: "Swagger" }, { name: "Postman" }],
+				name: "Web i interfejs",
+				type: "context-group",
+				description:
+					"Część pracy Salesforce dewelopera to klasyczny front — ekrany, które widzi użytkownik. HTML (struktura strony) i CSS (jej wygląd) to podstawa, JavaScript dodaje interaktywność. Te umiejętności wykorzystasz, budując własne komponenty Lightning ponad standardem platformy.",
+				leaves: [
+					{ name: "HTML", kind: "tool" },
+					{ name: "CSS", kind: "tool" },
+					{ name: "JavaScript", kind: "tool" },
+				],
+			},
+			{
+				name: "Systemy korporacyjne i CRM",
+				type: "context-group",
+				description:
+					"Salesforce żyje w krajobrazie innych dużych systemów firmowych. CRM to kategoria, do której sam należy (zarządzanie relacjami z klientem), SAP i SAP HANA to dominujący system do zarządzania całą firmą (finanse, magazyn, kadry), ERP — ta sama kategoria, ServiceNow — platforma obsługi zgłoszeń. Integracja z nimi to częste zadanie roli.",
+				leaves: [
+					{
+						name: "CRM",
+						countAs: ["CRM", "Customer Relationship Management (CRM) Suite"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{
+						name: "SAP",
+						countAs: ["SAP", "SAP HANA"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "ERP", kind: "concept" },
+					{ name: "ServiceNow", kind: "tool" },
+				],
+			},
+			{
+				name: "Warsztat i metodyka",
+				type: "context-group",
+				description:
+					"Warsztat bazowy każdego dewelopera, też na platformie. Jira trzyma zadania, Agile (zwinna metodyka iteracyjna) organizuje pracę, CI/CD (taśma automatycznego budowania i wdrażania) automatyzuje publikację zmian na platformę.",
+				leaves: [
+					{ name: "Jira", kind: "tool" },
+					{ name: "Agile", kind: "concept" },
+					{ name: "CI/CD", kind: "concept" },
+				],
 			},
 		],
 	},
@@ -2312,7 +2572,7 @@ export const PROJECT_BANK: Record<string, ProjectSpec[]> = {
 		{
 			level: "sredni",
 			title: "Aplikacja CRM z logiką w Apex + LWC",
-			anchorLeaves: ["Salesforce", "Apex", "LWC"],
+			anchorLeaves: ["Salesforce", "Apex", "LWC (Lightning Web Components)"],
 			description:
 				"Niestandardowe obiekty, trigger Apex (automatyczne przypisanie), interfejs w Lightning Web Components.",
 			portfolioOutcome: "Aplikacja z własnym kodem.",
@@ -2321,7 +2581,7 @@ export const PROJECT_BANK: Record<string, ProjectSpec[]> = {
 		{
 			level: "zaawansowany",
 			title: "Integracja Salesforce z zewnętrznym API (Apex REST + testy)",
-			anchorLeaves: ["Salesforce", "Apex", "LWC"],
+			anchorLeaves: ["Salesforce", "Apex", "LWC (Lightning Web Components)"],
 			description:
 				"Wywołanie REST z Apex do zewnętrznego API, obsługa błędów/limitów, komponent LWC prezentujący dane, testy Apex (wymóg 75% pokrycia).",
 			portfolioOutcome: "Integracja produkcyjnej klasy.",

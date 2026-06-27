@@ -1136,17 +1136,63 @@
 			"tShapePairs": ["Data Scientist"],
 			"areas": [
 				{
-					"name": "Big Data / ETL",
-					"type": "knowledge-area",
-					"demandPercentage": 27,
-					"unionShare": 80.1,
+					"name": "Języki przetwarzania danych (rdzeń)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Serce roli — języki, w których przepychasz i przekształcasz dane. Python rządzi (7 na 10 ofert) jako klej całego potoku danych (pipeline — taśma, którą dane płyną od źródła do hurtowni). SQL (język zapytań do baz relacyjnych) to drugi filar — co druga oferta. Scala pojawia się tam, gdzie liczy się wydajność przetwarzania rozproszonego (Apache Spark), Java w starszych systemach Big Data.",
+					"unionShare": 83.6,
+					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 70.4,
+							"lift": 3.4694443955734617,
+							"offers": 159,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 53.1,
+							"lift": 3.0790874249390985,
+							"offers": 120,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Scala",
+							"type": "leaf",
+							"demandPercentage": 12.8,
+							"lift": 13.401863064741502,
+							"offers": 29,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 3.5,
+							"lift": 0.2535893421935402,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Big Data i przetwarzanie rozproszone",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Inżynier danych przetwarza wolumeny, których nie udźwignie jeden komputer — dzieli pracę na wiele maszyn (przetwarzanie rozproszone). Apache Spark to dziś standard tego świata, a PySpark to jego interfejs w Pythonie (piszesz po pythonowemu, liczy się rozproszenie). Hadoop i Hive to starsza, wciąż żywa generacja, Kafka dowozi dane strumieniem w czasie rzeczywistym (gdy nie czekasz na nocną paczkę).",
+					"unionShare": 60.6,
 					"leaves": [
 						{
 							"name": "Apache Spark",
 							"type": "leaf",
-							"demandPercentage": 27.9,
-							"lift": 31.07716018693447,
-							"offers": 63,
+							"demandPercentage": 33.2,
+							"lift": 19.599399494311,
+							"offers": 75,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -1157,6 +1203,60 @@
 							"lift": 26.24066727698098,
 							"offers": 52,
 							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Big Data",
+							"type": "leaf",
+							"demandPercentage": 17.3,
+							"lift": 16.152863583235934,
+							"offers": 39,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Hadoop",
+							"type": "leaf",
+							"demandPercentage": 6.6,
+							"lift": 12.664227365554801,
+							"offers": 15,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Hive",
+							"type": "leaf",
+							"demandPercentage": 2.2,
+							"lift": 14.634218289085545,
+							"offers": 5,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 9.3,
+							"lift": 2.388486404695309,
+							"offers": 21,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Orkiestracja i ETL",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Dane nie płyną same — ktoś układa kolejność kroków i pilnuje, że nocny przepływ się wykonał. To orkiestracja: Airflow (i jego zarządzana odmiana Cloud Composer w chmurze Google) planuje i nadzoruje zadania, Dagster to nowszy konkurent. ETL (Extract-Transform-Load: wyciągnij dane ze źródła, przekształć, załaduj do hurtowni) to fundamentalny wzorzec roli, a dbt przekształca dane już w hurtowni samym SQL-em.",
+					"unionShare": 52.7,
+					"leaves": [
+						{
+							"name": "ETL",
+							"type": "leaf",
+							"demandPercentage": 31,
+							"lift": 10.20991973657131,
+							"offers": 70,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
@@ -1178,11 +1278,56 @@
 							"source": "dane"
 						},
 						{
+							"name": "Dagster",
+							"type": "leaf",
+							"demandPercentage": 1.8,
+							"lift": 43.902654867256636,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Cloud Composer",
+							"type": "leaf",
+							"demandPercentage": 2.2,
+							"lift": 36.58554572271387,
+							"offers": 5,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Hurtownie i platformy danych",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Gdzie dane lądują i skąd analityk je bierze. Databricks (37%) i Snowflake (30%) to dwie dominujące platformy nowej generacji — łączą magazyn danych z mocą obliczeniową. Delta Lake to format zapisu Databricks zapewniający spójność danych, BigQuery to hurtownia Google, Oracle — klasyczna baza w starszych systemach.",
+					"unionShare": 64.6,
+					"leaves": [
+						{
+							"name": "Databricks",
+							"type": "leaf",
+							"demandPercentage": 37.2,
+							"lift": 18.911912865895168,
+							"offers": 84,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
 							"name": "Snowflake",
 							"type": "leaf",
 							"demandPercentage": 29.6,
 							"lift": 23.345062508779325,
 							"offers": 67,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Delta Lake",
+							"type": "leaf",
+							"demandPercentage": 3.5,
+							"lift": 21.951327433628318,
+							"offers": 8,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -1194,101 +1339,94 @@
 							"offers": 11,
 							"kind": "tool",
 							"source": "dane"
+						},
+						{
+							"name": "Oracle",
+							"type": "leaf",
+							"demandPercentage": 3.5,
+							"lift": 1.5073872915796271,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Konkret bazowy",
-					"type": "presentation-group",
+					"name": "Chmura i wdrażanie",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 92.5,
-					"leaves": [
-						{
-							"name": "Python",
-							"type": "leaf",
-							"demandPercentage": 70.4,
-							"lift": 3.4694443955734617,
-							"offers": 159,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "SQL",
-							"type": "leaf",
-							"demandPercentage": 53.1,
-							"lift": 3.0790874249390985,
-							"offers": 120,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Databricks",
-							"type": "leaf",
-							"demandPercentage": 37.2,
-							"lift": 18.911912865895168,
-							"offers": 84,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Docker",
-							"type": "leaf",
-							"demandPercentage": 1.8,
-							"lift": 0.23290533086077791,
-							"offers": 4,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Kafka",
-							"type": "leaf",
-							"demandPercentage": 9.3,
-							"lift": 2.382314605199973,
-							"offers": 21,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Scala",
-							"type": "leaf",
-							"demandPercentage": 12.8,
-							"lift": 13.401863064741502,
-							"offers": 29,
-							"kind": "tool",
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Cloud",
-					"type": "knowledge-area",
-					"demandPercentage": 33,
-					"unionShare": 54,
+					"description": "Współczesny inżynier danych pracuje w chmurze i sam wdraża swoje potoki. Azure (33%) i AWS (28%) to dwie najczęstsze platformy w PL, GCP za nimi. Azure Data Factory orkiestruje przepływy w świecie Microsoftu, Terraform opisuje infrastrukturę kodem (zamiast klikać w panelu — piszesz konfigurację), CI/CD (taśma automatycznego budowania i wdrażania) i Kubernetes (uruchamianie aplikacji na skalę) domykają warsztat.",
+					"unionShare": 65.5,
 					"leaves": [
 						{
 							"name": "Azure",
 							"type": "leaf",
-							"demandPercentage": 33.2,
-							"lift": 4.425670853554097,
-							"offers": 75,
+							"demandPercentage": 34.5,
+							"lift": 3.678203093067688,
+							"offers": 78,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "AWS",
 							"type": "leaf",
-							"demandPercentage": 28.3,
-							"lift": 3.211165613147914,
-							"offers": 64,
+							"demandPercentage": 30.1,
+							"lift": 3.0308431786532504,
+							"offers": 68,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "GCP",
 							"type": "leaf",
-							"demandPercentage": 8,
-							"lift": 2.2905732974220854,
-							"offers": 18,
+							"demandPercentage": 12.4,
+							"lift": 2.643600723189647,
+							"offers": 28,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Azure Data Factory",
+							"type": "leaf",
+							"demandPercentage": 3.1,
+							"lift": 11.38216978039987,
+							"offers": 7,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Azure DevOps",
+							"type": "leaf",
+							"demandPercentage": 3.5,
+							"lift": 1.8984931834489356,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Terraform",
+							"type": "leaf",
+							"demandPercentage": 3.1,
+							"lift": 0.690603559709655,
+							"offers": 7,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 6.2,
+							"lift": 0.6580697731708703,
+							"offers": 14,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 2.2,
+							"lift": 0.26967232719445106,
+							"offers": 5,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -4994,9 +5132,10 @@
 			"tShapePairs": [],
 			"areas": [
 				{
-					"name": "Notacje i modelowanie",
-					"type": "knowledge-area",
-					"demandPercentage": 59,
+					"name": "Notacje i modelowanie (rdzeń)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Serce roli analityka — rysowanie tego, jak system i proces mają działać, w umownym języku graficznym (notacji), który rozumie i biznes, i programista. UML (60% ofert) opisuje strukturę i zachowanie systemu, BPMN (50%) rysuje przebieg procesu biznesowego krok po kroku. Enterprise Architect to najpopularniejsze narzędzie, w którym się to rysuje (26% ofert), ArchiMate — notacja do architektury całej organizacji.",
 					"unionShare": 65.7,
 					"leaves": [
 						{
@@ -5005,7 +5144,7 @@
 							"demandPercentage": 59.3,
 							"lift": 17.978408895840087,
 							"offers": 285,
-							"kind": "tool",
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
@@ -5014,7 +5153,7 @@
 							"demandPercentage": 50.1,
 							"lift": 18.902334331992126,
 							"offers": 241,
-							"kind": "tool",
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
@@ -5025,14 +5164,195 @@
 							"offers": 127,
 							"kind": "tool",
 							"source": "dane"
+						},
+						{
+							"name": "ArchiMate",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 11.45992145992146,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Narzędzia analityka",
-					"type": "presentation-group",
+					"name": "Analiza wymagań i dokumentacja",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 33.5,
+					"description": "Druga połowa roli — zamiana mglistych życzeń biznesu w precyzyjne wymagania, które programista wykona bez zgadywania. Analiza biznesowa i systemowa to rdzeń tej pracy; User Stories (historyjki użytkownika: „jako X chcę Y, żeby Z”) to format zapisu wymagań w zwinnych zespołach, a SDLC (cykl życia oprogramowania — od pomysłu po utrzymanie) to rama, w której analityk się porusza.",
+					"unionShare": 31,
+					"leaves": [
+						{
+							"name": "Business Analysis",
+							"type": "leaf",
+							"demandPercentage": 26.6,
+							"lift": 12.396084058055889,
+							"offers": 128,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Analiza systemowa",
+							"type": "leaf",
+							"demandPercentage": 3.7,
+							"lift": 15.470893970893972,
+							"offers": 18,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "User Stories",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"lift": 14.280825203902129,
+							"offers": 9,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "SDLC",
+							"type": "leaf",
+							"demandPercentage": 1.7,
+							"lift": 2.5784823284823286,
+							"offers": 8,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "CASE",
+							"type": "leaf",
+							"demandPercentage": 1.2,
+							"lift": 15.470893970893972,
+							"offers": 6,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "API, integracje i architektura usług",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Coraz częściej analityk projektuje, jak systemy gadają ze sobą — nie tylko z człowiekiem. API (interfejs, przez który jeden program woła drugi) w stylu REST to standard; analityk opisuje je i testuje (Postman, Swagger, SoapUI — narzędzia do „zawołania” API i sprawdzenia odpowiedzi). SOAP i ESB (szyna integracyjna spinająca wiele systemów) żyją w korporacjach, SOA i mikrousługi to style dzielenia systemu na współpracujące części, TOGAF — rama architektury korporacyjnej.",
+					"unionShare": 28.3,
+					"leaves": [
+						{
+							"name": "REST / API",
+							"type": "leaf",
+							"demandPercentage": 17,
+							"lift": 1.8052128148179376,
+							"offers": 82,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Postman",
+							"type": "leaf",
+							"demandPercentage": 8.1,
+							"lift": 5.435719503287071,
+							"offers": 39,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Swagger",
+							"type": "leaf",
+							"demandPercentage": 3.1,
+							"lift": 7.032224532224532,
+							"offers": 15,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SoapUI",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 9.315807122258736,
+							"offers": 14,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SOAP",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 2.7768271229809693,
+							"offers": 14,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SOA",
+							"type": "leaf",
+							"demandPercentage": 3.1,
+							"lift": 11.050638550638551,
+							"offers": 15,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "ESB",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 14.734184734184733,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "XML",
+							"type": "leaf",
+							"demandPercentage": 2.3,
+							"lift": 3.3368594839183077,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Microservices (Mikrousługi)",
+							"type": "leaf",
+							"demandPercentage": 1.5,
+							"lift": 0.7256030673116101,
+							"offers": 7,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "TOGAF",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"lift": 6.875952875952877,
+							"offers": 9,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Bazy danych i zapytania",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Dobry analityk sam sięga do danych, zamiast czekać na programistę. SQL (język zapytań do baz relacyjnych) to jego najważniejsza umiejętność techniczna — co trzecia oferta go wymaga. Pozwala odpowiedzieć na pytanie biznesowe wprost z bazy: ilu klientów, jaki przychód, gdzie spadek.",
+					"unionShare": 37,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 37,
+							"lift": 2.1459724346924816,
+							"offers": 178,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Metodyka i narzędzia zespołowe",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Warsztat codziennej pracy w zespole IT. Jira (30% ofert) to system, w którym żyją zadania i wymagania, Confluence — wiki, gdzie analityk pisze dokumentację. Agile i Scrum to zwinne metodyki iteracyjne (praca w krótkich cyklach zamiast jednego wielkiego planu), MS Office — wciąż codzienne narzędzie analityka (Excel, prezentacje).",
+					"unionShare": 41.8,
 					"leaves": [
 						{
 							"name": "Jira",
@@ -5053,38 +5373,29 @@
 							"source": "dane"
 						},
 						{
-							"name": "Postman",
+							"name": "Agile",
 							"type": "leaf",
-							"demandPercentage": 8.1,
-							"lift": 5.435719503287071,
-							"offers": 39,
-							"kind": "tool",
+							"demandPercentage": 14.6,
+							"lift": 2.4767583258149295,
+							"offers": 70,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
-							"name": "Miro",
+							"name": "Scrum",
 							"type": "leaf",
-							"demandPercentage": null,
-							"lift": null,
-							"offers": null,
-							"kind": "tool",
-							"source": "kuracja ekspercka",
-							"note": "brak w zrzucie 2026-02"
-						}
-					]
-				},
-				{
-					"name": "Dane",
-					"type": "presentation-group",
-					"demandPercentage": null,
-					"unionShare": 37,
-					"leaves": [
+							"demandPercentage": 4.2,
+							"lift": 1.5279895279895281,
+							"offers": 20,
+							"kind": "concept",
+							"source": "dane"
+						},
 						{
-							"name": "SQL",
+							"name": "MS Office",
 							"type": "leaf",
-							"demandPercentage": 37,
-							"lift": 2.1459724346924816,
-							"offers": 178,
+							"demandPercentage": 1.7,
+							"lift": 2.89513805303279,
+							"offers": 8,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -5135,46 +5446,102 @@
 			"tShapePairs": [],
 			"areas": [
 				{
-					"name": "Narzędzia śledzenia",
-					"type": "presentation-group",
+					"name": "Metodyki i ramy zarządzania (rdzeń)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 30.6,
+					"description": "Serce roli — sposób, w jaki prowadzisz projekt do końca. Project Management (38%) i Agile (36%, zwinne prowadzenie w krótkich cyklach) to dwa najsilniejsze sygnały. Scrum i Kanban to konkretne odmiany zwinności, Waterfall (kaskadowy: zaplanuj wszystko z góry, potem wykonaj) to klasyczne podejście wciąż żywe w korporacji. SAFe skaluje zwinność na wielkie organizacje, a PRINCE2 to sformalizowana metodyka prowadzenia projektu, znana głównie z certyfikatu o tej samej nazwie.",
+					"unionShare": 69.3,
 					"leaves": [
 						{
-							"name": "Jira",
+							"name": "Project Management",
 							"type": "leaf",
-							"demandPercentage": 30.4,
-							"lift": 5.919848739495798,
-							"offers": 213,
-							"kind": "tool",
+							"demandPercentage": 37.7,
+							"lift": 10.22407494145199,
+							"offers": 264,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
-							"name": "Trello",
+							"name": "Agile",
 							"type": "leaf",
-							"demandPercentage": 0.3,
-							"lift": 14.174285714285714,
-							"offers": 2,
-							"kind": "tool",
+							"demandPercentage": 36.4,
+							"lift": 6.1997304582210235,
+							"offers": 255,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
-							"name": "Asana",
+							"name": "Scrum",
 							"type": "leaf",
-							"demandPercentage": 0.3,
-							"lift": 7.087142857142857,
-							"offers": 2,
-							"kind": "tool",
+							"demandPercentage": 20.4,
+							"lift": 7.507121693121693,
+							"offers": 143,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Kanban",
+							"type": "leaf",
+							"demandPercentage": 4.6,
+							"lift": 11.63018315018315,
+							"offers": 32,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Waterfall",
+							"type": "leaf",
+							"demandPercentage": 2,
+							"lift": 10.444210526315791,
+							"offers": 14,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "SAFe",
+							"type": "leaf",
+							"demandPercentage": 4.1,
+							"lift": 9.342142857142857,
+							"offers": 29,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "PRINCE2",
+							"type": "leaf",
+							"demandPercentage": 5.9,
+							"lift": 13.207857142857144,
+							"offers": 41,
+							"kind": "cert",
+							"source": "dane"
+						},
+						{
+							"name": "Scrum Master",
+							"type": "leaf",
+							"demandPercentage": 1.7,
+							"lift": 11.339428571428572,
+							"offers": 12,
+							"kind": "concept",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Dokumentacja",
-					"type": "presentation-group",
+					"name": "Narzędzia pracy PM",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 19.1,
+					"description": "Oprogramowanie, w którym PM faktycznie prowadzi projekt. Jira (30%) trzyma zadania i postęp, Confluence (18%) to wiki z dokumentacją i decyzjami. MS Project to klasyczne narzędzie do harmonogramów (wykres Gantta — pasy zadań na osi czasu), a MS Office i Excel obsługują budżet, raporty i komunikację.",
+					"unionShare": 37.4,
 					"leaves": [
+						{
+							"name": "Jira",
+							"type": "leaf",
+							"demandPercentage": 33.7,
+							"lift": 5.848131868131868,
+							"offers": 236,
+							"kind": "tool",
+							"source": "dane"
+						},
 						{
 							"name": "Confluence",
 							"type": "leaf",
@@ -5194,48 +5561,120 @@
 							"source": "dane"
 						},
 						{
-							"name": "Miro",
+							"name": "MS Office",
 							"type": "leaf",
-							"demandPercentage": null,
-							"lift": null,
-							"offers": null,
+							"demandPercentage": 2.7,
+							"lift": 4.7247619047619045,
+							"offers": 19,
 							"kind": "tool",
-							"source": "kuracja ekspercka",
-							"note": "brak w zrzucie 2026-02"
+							"source": "dane"
+						},
+						{
+							"name": "Microsoft Excel",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 5.428449848024316,
+							"offers": 18,
+							"kind": "tool",
+							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Agile",
-					"type": "knowledge-area",
-					"demandPercentage": 36,
-					"unionShare": 25,
+					"name": "Zarządzanie interesariuszami i zespołem",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Najtrudniejsza, najbardziej ludzka część roli — i często ta, która decyduje o sukcesie projektu. Zarządzanie interesariuszami (stakeholders — wszyscy, których projekt dotyczy: klient, zarząd, zespół) i komunikacja to rdzeń. Change Management (zarządzanie zmianą — przeprowadzenie ludzi przez nowy sposób pracy), koordynacja, zarządzanie ryzykiem i governance (ład: zasady i nadzór nad tym, jak projekt jest prowadzony) domykają obraz.",
+					"unionShare": 23.1,
 					"leaves": [
 						{
-							"name": "Scrum",
+							"name": "Stakeholder Management",
 							"type": "leaf",
-							"demandPercentage": 20.4,
-							"lift": 7.507121693121693,
-							"offers": 143,
-							"kind": "tool",
+							"demandPercentage": 7.9,
+							"lift": 11.635607675906183,
+							"offers": 55,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
-							"name": "Kanban",
+							"name": "Communication",
 							"type": "leaf",
-							"demandPercentage": 4.6,
-							"lift": 11.63018315018315,
-							"offers": 32,
-							"kind": "tool",
+							"demandPercentage": 6.3,
+							"lift": 9.171596638655464,
+							"offers": 44,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
-							"name": "PRINCE2",
+							"name": "Change Management",
 							"type": "leaf",
-							"demandPercentage": 5.9,
-							"lift": 13.207857142857144,
-							"offers": 41,
-							"kind": "cert",
+							"demandPercentage": 3.1,
+							"lift": 6.634772036474165,
+							"offers": 22,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Coordination",
+							"type": "leaf",
+							"demandPercentage": 6.6,
+							"lift": 5.927428571428571,
+							"offers": 46,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Risk Management",
+							"type": "leaf",
+							"demandPercentage": 2.7,
+							"lift": 4.343732718894009,
+							"offers": 19,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Governance",
+							"type": "leaf",
+							"demandPercentage": 3.3,
+							"lift": 4.527896825396826,
+							"offers": 23,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Styk z analizą i dostarczaniem",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "PM nie pracuje w próżni — styka się z analizą biznesową (zrozumienie, co właściwie ma powstać) i z dostarczaniem (delivery — doprowadzenie do faktycznego wdrożenia). PMO to biuro zarządzania projektami (komórka pilnująca standardów i portfela projektów w firmie), Project Execution to faza realizacji planu.",
+					"unionShare": 7.6,
+					"leaves": [
+						{
+							"name": "Business Analysis",
+							"type": "leaf",
+							"demandPercentage": 4.3,
+							"lift": 2.6411712511091396,
+							"offers": 30,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "PMO",
+							"type": "leaf",
+							"demandPercentage": 2,
+							"lift": 9.922,
+							"offers": 14,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Project Execution",
+							"type": "leaf",
+							"demandPercentage": 1.7,
+							"lift": 13.083956043956045,
+							"offers": 12,
+							"kind": "concept",
 							"source": "dane"
 						}
 					]
@@ -5498,10 +5937,11 @@
 			"tShapePairs": [],
 			"areas": [
 				{
-					"name": "Ekosystem Salesforce",
-					"type": "knowledge-area",
-					"demandPercentage": 34,
-					"unionShare": 36.6,
+					"name": "Platforma Salesforce (rdzeń)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Serce roli — programujesz wewnątrz Salesforce (najpopularniejszej na świecie platformy CRM, czyli systemu do zarządzania relacjami z klientami). Apex to język programowania tej platformy (przypomina Javę, ale działa tylko w Salesforce), LWC (Lightning Web Components) to nowoczesny sposób budowania ekranów, Visualforce — starszy. Sales Cloud i Service Cloud to dwa główne moduły (sprzedaż i obsługa klienta), które konfigurujesz i rozszerzasz.",
+					"unionShare": 37,
 					"leaves": [
 						{
 							"name": "Salesforce",
@@ -5522,7 +5962,7 @@
 							"source": "dane"
 						},
 						{
-							"name": "LWC",
+							"name": "LWC (Lightning Web Components)",
 							"type": "leaf",
 							"demandPercentage": 8,
 							"lift": 41.6890756302521,
@@ -5540,21 +5980,76 @@
 							"source": "dane"
 						},
 						{
-							"name": "Aura",
+							"name": "Sales Cloud",
 							"type": "leaf",
-							"demandPercentage": 1.7,
+							"demandPercentage": 3.4,
 							"lift": 41.6890756302521,
-							"offers": 4,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Service Cloud",
+							"type": "leaf",
+							"demandPercentage": 2.5,
+							"lift": 35.73349339735894,
+							"offers": 6,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Web i integracje",
-					"type": "presentation-group",
+					"name": "Integracje i API",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 16,
+					"description": "Salesforce rzadko stoi sam — łączy się z resztą firmowych systemów. To drugi najsilniejszy sygnał roli (API 29%): wystawiasz i konsumujesz API (interfejs, przez który systemy wymieniają dane) w stylu REST lub starszym SOAP, dane płyną w formacie JSON (lekki zapis), a Postman służy do testowania tych połączeń.",
+					"unionShare": 32.8,
+					"leaves": [
+						{
+							"name": "REST / API",
+							"type": "leaf",
+							"demandPercentage": 31.5,
+							"lift": 3.3369057334780226,
+							"offers": 75,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "SOAP",
+							"type": "leaf",
+							"demandPercentage": 4.6,
+							"lift": 4.40942146089205,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "JSON",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 3.8397832817337463,
+							"offers": 7,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Postman",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 1.9717806041335453,
+							"offers": 7,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Web i interfejs",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Część pracy Salesforce dewelopera to klasyczny front — ekrany, które widzi użytkownik. HTML (struktura strony) i CSS (jej wygląd) to podstawa, JavaScript dodaje interaktywność. Te umiejętności wykorzystasz, budując własne komponenty Lightning ponad standardem platformy.",
+					"unionShare": 14.3,
 					"leaves": [
 						{
 							"name": "HTML",
@@ -5575,38 +6070,93 @@
 							"source": "dane"
 						},
 						{
-							"name": "SQL",
+							"name": "JavaScript",
 							"type": "leaf",
-							"demandPercentage": 4.6,
-							"lift": 0.2680186042856652,
-							"offers": 11,
+							"demandPercentage": 4.2,
+							"lift": 0.611276768772025,
+							"offers": 10,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "API",
-					"type": "knowledge-area",
-					"demandPercentage": 29,
-					"unionShare": 2.9,
+					"name": "Systemy korporacyjne i CRM",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Salesforce żyje w krajobrazie innych dużych systemów firmowych. CRM to kategoria, do której sam należy (zarządzanie relacjami z klientem), SAP i SAP HANA to dominujący system do zarządzania całą firmą (finanse, magazyn, kadry), ERP — ta sama kategoria, ServiceNow — platforma obsługi zgłoszeń. Integracja z nimi to częste zadanie roli.",
+					"unionShare": 13.4,
 					"leaves": [
 						{
-							"name": "Swagger",
+							"name": "CRM",
 							"type": "leaf",
-							"demandPercentage": 0,
-							"lift": 0,
-							"offers": 0,
+							"demandPercentage": 2.9,
+							"lift": 3.393296853625171,
+							"offers": 7,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "SAP",
+							"type": "leaf",
+							"demandPercentage": 6.7,
+							"lift": 2.6681008403361344,
+							"offers": 16,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Postman",
+							"name": "ERP",
+							"type": "leaf",
+							"demandPercentage": 4.2,
+							"lift": 2.43795763919603,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "ServiceNow",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 1.8949579831932772,
+							"offers": 5,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Warsztat i metodyka",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Warsztat bazowy każdego dewelopera, też na platformie. Jira trzyma zadania, Agile (zwinna metodyka iteracyjna) organizuje pracę, CI/CD (taśma automatycznego budowania i wdrażania) automatyzuje publikację zmian na platformę.",
+					"unionShare": 8,
+					"leaves": [
+						{
+							"name": "Jira",
 							"type": "leaf",
 							"demandPercentage": 2.9,
-							"lift": 1.9717806041335453,
+							"lift": 0.5722029988465975,
 							"offers": 7,
 							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Agile",
+							"type": "leaf",
+							"demandPercentage": 2.5,
+							"lift": 0.42904709053432694,
+							"offers": 6,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 0.3124448923038166,
+							"offers": 7,
+							"kind": "concept",
 							"source": "dane"
 						}
 					]
@@ -5624,7 +6174,7 @@
 				{
 					"level": "sredni",
 					"title": "Aplikacja CRM z logiką w Apex + LWC",
-					"anchorLeaves": ["Salesforce", "Apex", "LWC"],
+					"anchorLeaves": ["Salesforce", "Apex", "LWC (Lightning Web Components)"],
 					"description": "Niestandardowe obiekty, trigger Apex (automatyczne przypisanie), interfejs w Lightning Web Components.",
 					"portfolioOutcome": "Aplikacja z własnym kodem.",
 					"marketRationale": "Apex 15% + LWC 8% = sygnał ról deweloperskich Salesforce."
@@ -5632,7 +6182,7 @@
 				{
 					"level": "zaawansowany",
 					"title": "Integracja Salesforce z zewnętrznym API (Apex REST + testy)",
-					"anchorLeaves": ["Salesforce", "Apex", "LWC"],
+					"anchorLeaves": ["Salesforce", "Apex", "LWC (Lightning Web Components)"],
 					"description": "Wywołanie REST z Apex do zewnętrznego API, obsługa błędów/limitów, komponent LWC prezentujący dane, testy Apex (wymóg 75% pokrycia).",
 					"portfolioOutcome": "Integracja produkcyjnej klasy.",
 					"marketRationale": "Dodanie integracji API 39% (obszar) = poziom mid konsultanta."

@@ -499,77 +499,142 @@
 				{
 					"name": "Python",
 					"demandPercentage": 70,
-					"category": "Konkret bazowy"
+					"category": "Języki przetwarzania danych (rdzeń)"
 				},
 				{
 					"name": "SQL",
 					"demandPercentage": 53,
-					"category": "Konkret bazowy"
+					"category": "Języki przetwarzania danych (rdzeń)"
 				},
 				{
 					"name": "Databricks",
 					"demandPercentage": 37,
-					"category": "Konkret bazowy"
+					"category": "Hurtownie i platformy danych"
 				},
 				{
 					"name": "Azure",
+					"demandPercentage": 35,
+					"category": "Chmura i wdrażanie"
+				},
+				{
+					"name": "Apache Spark",
 					"demandPercentage": 33,
-					"category": "Cloud"
+					"category": "Big Data i przetwarzanie rozproszone"
+				},
+				{
+					"name": "ETL",
+					"demandPercentage": 31,
+					"category": "Orkiestracja i ETL"
+				},
+				{
+					"name": "AWS",
+					"demandPercentage": 30,
+					"category": "Chmura i wdrażanie"
 				},
 				{
 					"name": "Snowflake",
 					"demandPercentage": 30,
-					"category": "Big Data / ETL"
-				},
-				{
-					"name": "Apache Spark",
-					"demandPercentage": 28,
-					"category": "Big Data / ETL"
-				},
-				{
-					"name": "AWS",
-					"demandPercentage": 28,
-					"category": "Cloud"
+					"category": "Hurtownie i platformy danych"
 				},
 				{
 					"name": "Airflow",
 					"demandPercentage": 24,
-					"category": "Big Data / ETL"
+					"category": "Orkiestracja i ETL"
 				},
 				{
 					"name": "PySpark",
 					"demandPercentage": 23,
-					"category": "Big Data / ETL"
+					"category": "Big Data i przetwarzanie rozproszone"
+				},
+				{
+					"name": "Big Data",
+					"demandPercentage": 17,
+					"category": "Big Data i przetwarzanie rozproszone"
 				},
 				{
 					"name": "Scala",
 					"demandPercentage": 13,
-					"category": "Konkret bazowy"
+					"category": "Języki przetwarzania danych (rdzeń)"
+				},
+				{
+					"name": "GCP",
+					"demandPercentage": 12,
+					"category": "Chmura i wdrażanie"
 				},
 				{
 					"name": "dbt",
 					"demandPercentage": 10,
-					"category": "Big Data / ETL"
+					"category": "Orkiestracja i ETL"
 				},
 				{
 					"name": "Kafka",
 					"demandPercentage": 9,
-					"category": "Konkret bazowy"
+					"category": "Big Data i przetwarzanie rozproszone"
 				},
 				{
-					"name": "GCP",
-					"demandPercentage": 8,
-					"category": "Cloud"
+					"name": "Hadoop",
+					"demandPercentage": 7,
+					"category": "Big Data i przetwarzanie rozproszone"
+				},
+				{
+					"name": "CI/CD",
+					"demandPercentage": 6,
+					"category": "Chmura i wdrażanie"
 				},
 				{
 					"name": "BigQuery",
 					"demandPercentage": 5,
-					"category": "Big Data / ETL"
+					"category": "Hurtownie i platformy danych"
 				},
 				{
-					"name": "Docker",
+					"name": "Azure DevOps",
+					"demandPercentage": 4,
+					"category": "Chmura i wdrażanie"
+				},
+				{
+					"name": "Delta Lake",
+					"demandPercentage": 4,
+					"category": "Hurtownie i platformy danych"
+				},
+				{
+					"name": "Java",
+					"demandPercentage": 4,
+					"category": "Języki przetwarzania danych (rdzeń)"
+				},
+				{
+					"name": "Oracle",
+					"demandPercentage": 4,
+					"category": "Hurtownie i platformy danych"
+				},
+				{
+					"name": "Azure Data Factory",
+					"demandPercentage": 3,
+					"category": "Chmura i wdrażanie"
+				},
+				{
+					"name": "Terraform",
+					"demandPercentage": 3,
+					"category": "Chmura i wdrażanie"
+				},
+				{
+					"name": "Cloud Composer",
 					"demandPercentage": 2,
-					"category": "Konkret bazowy"
+					"category": "Orkiestracja i ETL"
+				},
+				{
+					"name": "Dagster",
+					"demandPercentage": 2,
+					"category": "Orkiestracja i ETL"
+				},
+				{
+					"name": "Hive",
+					"demandPercentage": 2,
+					"category": "Big Data i przetwarzanie rozproszone"
+				},
+				{
+					"name": "Kubernetes",
+					"demandPercentage": 2,
+					"category": "Chmura i wdrażanie"
 				}
 			]
 		},
@@ -2191,37 +2256,127 @@
 				{
 					"name": "UML",
 					"demandPercentage": 59,
-					"category": "Notacje i modelowanie"
+					"category": "Notacje i modelowanie (rdzeń)"
 				},
 				{
 					"name": "BPMN",
 					"demandPercentage": 50,
-					"category": "Notacje i modelowanie"
+					"category": "Notacje i modelowanie (rdzeń)"
 				},
 				{
 					"name": "SQL",
 					"demandPercentage": 37,
-					"category": "Dane"
+					"category": "Bazy danych i zapytania"
 				},
 				{
 					"name": "Jira",
 					"demandPercentage": 30,
-					"category": "Narzędzia analityka"
+					"category": "Metodyka i narzędzia zespołowe"
+				},
+				{
+					"name": "Business Analysis",
+					"demandPercentage": 27,
+					"category": "Analiza wymagań i dokumentacja"
 				},
 				{
 					"name": "Enterprise Architect",
 					"demandPercentage": 26,
-					"category": "Notacje i modelowanie"
+					"category": "Notacje i modelowanie (rdzeń)"
 				},
 				{
 					"name": "Confluence",
 					"demandPercentage": 20,
-					"category": "Narzędzia analityka"
+					"category": "Metodyka i narzędzia zespołowe"
+				},
+				{
+					"name": "REST / API",
+					"demandPercentage": 17,
+					"category": "API, integracje i architektura usług"
+				},
+				{
+					"name": "Agile",
+					"demandPercentage": 15,
+					"category": "Metodyka i narzędzia zespołowe"
 				},
 				{
 					"name": "Postman",
 					"demandPercentage": 8,
-					"category": "Narzędzia analityka"
+					"category": "API, integracje i architektura usług"
+				},
+				{
+					"name": "Analiza systemowa",
+					"demandPercentage": 4,
+					"category": "Analiza wymagań i dokumentacja"
+				},
+				{
+					"name": "Scrum",
+					"demandPercentage": 4,
+					"category": "Metodyka i narzędzia zespołowe"
+				},
+				{
+					"name": "SOA",
+					"demandPercentage": 3,
+					"category": "API, integracje i architektura usług"
+				},
+				{
+					"name": "SOAP",
+					"demandPercentage": 3,
+					"category": "API, integracje i architektura usług"
+				},
+				{
+					"name": "SoapUI",
+					"demandPercentage": 3,
+					"category": "API, integracje i architektura usług"
+				},
+				{
+					"name": "Swagger",
+					"demandPercentage": 3,
+					"category": "API, integracje i architektura usług"
+				},
+				{
+					"name": "ArchiMate",
+					"demandPercentage": 2,
+					"category": "Notacje i modelowanie (rdzeń)"
+				},
+				{
+					"name": "ESB",
+					"demandPercentage": 2,
+					"category": "API, integracje i architektura usług"
+				},
+				{
+					"name": "Microservices (Mikrousługi)",
+					"demandPercentage": 2,
+					"category": "API, integracje i architektura usług"
+				},
+				{
+					"name": "MS Office",
+					"demandPercentage": 2,
+					"category": "Metodyka i narzędzia zespołowe"
+				},
+				{
+					"name": "SDLC",
+					"demandPercentage": 2,
+					"category": "Analiza wymagań i dokumentacja"
+				},
+				{
+					"name": "TOGAF",
+					"demandPercentage": 2,
+					"category": "API, integracje i architektura usług"
+				},
+				{
+					"name": "User Stories",
+					"demandPercentage": 2,
+					"category": "Analiza wymagań i dokumentacja"
+				},
+				{
+					"name": "XML",
+					"demandPercentage": 2,
+					"category": "API, integracje i architektura usług"
+				},
+				{
+					"name": "CASE",
+					"demandPercentage": 1,
+					"category": "Analiza wymagań i dokumentacja"
 				}
 			]
 		},
@@ -2231,34 +2386,114 @@
 			"studentSelectable": true,
 			"competencies": [
 				{
+					"name": "Project Management",
+					"demandPercentage": 38,
+					"category": "Metodyki i ramy zarządzania (rdzeń)"
+				},
+				{
+					"name": "Agile",
+					"demandPercentage": 36,
+					"category": "Metodyki i ramy zarządzania (rdzeń)"
+				},
+				{
 					"name": "Jira",
-					"demandPercentage": 30,
-					"category": "Narzędzia śledzenia"
+					"demandPercentage": 34,
+					"category": "Narzędzia pracy PM"
 				},
 				{
 					"name": "Scrum",
 					"demandPercentage": 20,
-					"category": "Agile"
+					"category": "Metodyki i ramy zarządzania (rdzeń)"
 				},
 				{
 					"name": "Confluence",
 					"demandPercentage": 18,
-					"category": "Dokumentacja"
+					"category": "Narzędzia pracy PM"
+				},
+				{
+					"name": "Stakeholder Management",
+					"demandPercentage": 8,
+					"category": "Zarządzanie interesariuszami i zespołem"
+				},
+				{
+					"name": "Coordination",
+					"demandPercentage": 7,
+					"category": "Zarządzanie interesariuszami i zespołem"
+				},
+				{
+					"name": "Communication",
+					"demandPercentage": 6,
+					"category": "Zarządzanie interesariuszami i zespołem"
 				},
 				{
 					"name": "PRINCE2",
 					"demandPercentage": 6,
-					"category": "Agile"
+					"category": "Metodyki i ramy zarządzania (rdzeń)"
 				},
 				{
 					"name": "Kanban",
 					"demandPercentage": 5,
-					"category": "Agile"
+					"category": "Metodyki i ramy zarządzania (rdzeń)"
+				},
+				{
+					"name": "Business Analysis",
+					"demandPercentage": 4,
+					"category": "Styk z analizą i dostarczaniem"
+				},
+				{
+					"name": "SAFe",
+					"demandPercentage": 4,
+					"category": "Metodyki i ramy zarządzania (rdzeń)"
+				},
+				{
+					"name": "Change Management",
+					"demandPercentage": 3,
+					"category": "Zarządzanie interesariuszami i zespołem"
+				},
+				{
+					"name": "Governance",
+					"demandPercentage": 3,
+					"category": "Zarządzanie interesariuszami i zespołem"
+				},
+				{
+					"name": "Microsoft Excel",
+					"demandPercentage": 3,
+					"category": "Narzędzia pracy PM"
+				},
+				{
+					"name": "MS Office",
+					"demandPercentage": 3,
+					"category": "Narzędzia pracy PM"
+				},
+				{
+					"name": "Risk Management",
+					"demandPercentage": 3,
+					"category": "Zarządzanie interesariuszami i zespołem"
 				},
 				{
 					"name": "MS Project",
 					"demandPercentage": 2,
-					"category": "Dokumentacja"
+					"category": "Narzędzia pracy PM"
+				},
+				{
+					"name": "PMO",
+					"demandPercentage": 2,
+					"category": "Styk z analizą i dostarczaniem"
+				},
+				{
+					"name": "Project Execution",
+					"demandPercentage": 2,
+					"category": "Styk z analizą i dostarczaniem"
+				},
+				{
+					"name": "Scrum Master",
+					"demandPercentage": 2,
+					"category": "Metodyki i ramy zarządzania (rdzeń)"
+				},
+				{
+					"name": "Waterfall",
+					"demandPercentage": 2,
+					"category": "Metodyki i ramy zarządzania (rdzeń)"
 				}
 			]
 		},
@@ -2339,47 +2574,102 @@
 				{
 					"name": "Salesforce",
 					"demandPercentage": 34,
-					"category": "Ekosystem Salesforce"
+					"category": "Platforma Salesforce (rdzeń)"
+				},
+				{
+					"name": "REST / API",
+					"demandPercentage": 32,
+					"category": "Integracje i API"
 				},
 				{
 					"name": "Apex",
 					"demandPercentage": 16,
-					"category": "Ekosystem Salesforce"
+					"category": "Platforma Salesforce (rdzeń)"
 				},
 				{
 					"name": "HTML",
 					"demandPercentage": 11,
-					"category": "Web i integracje"
+					"category": "Web i interfejs"
 				},
 				{
 					"name": "CSS",
 					"demandPercentage": 9,
-					"category": "Web i integracje"
+					"category": "Web i interfejs"
 				},
 				{
-					"name": "LWC",
+					"name": "LWC (Lightning Web Components)",
 					"demandPercentage": 8,
-					"category": "Ekosystem Salesforce"
+					"category": "Platforma Salesforce (rdzeń)"
 				},
 				{
-					"name": "SQL",
+					"name": "SAP",
+					"demandPercentage": 7,
+					"category": "Systemy korporacyjne i CRM"
+				},
+				{
+					"name": "SOAP",
 					"demandPercentage": 5,
-					"category": "Web i integracje"
+					"category": "Integracje i API"
+				},
+				{
+					"name": "ERP",
+					"demandPercentage": 4,
+					"category": "Systemy korporacyjne i CRM"
+				},
+				{
+					"name": "JavaScript",
+					"demandPercentage": 4,
+					"category": "Web i interfejs"
+				},
+				{
+					"name": "Agile",
+					"demandPercentage": 3,
+					"category": "Warsztat i metodyka"
+				},
+				{
+					"name": "CI/CD",
+					"demandPercentage": 3,
+					"category": "Warsztat i metodyka"
+				},
+				{
+					"name": "CRM",
+					"demandPercentage": 3,
+					"category": "Systemy korporacyjne i CRM"
+				},
+				{
+					"name": "Jira",
+					"demandPercentage": 3,
+					"category": "Warsztat i metodyka"
+				},
+				{
+					"name": "JSON",
+					"demandPercentage": 3,
+					"category": "Integracje i API"
 				},
 				{
 					"name": "Postman",
 					"demandPercentage": 3,
-					"category": "API"
+					"category": "Integracje i API"
+				},
+				{
+					"name": "Sales Cloud",
+					"demandPercentage": 3,
+					"category": "Platforma Salesforce (rdzeń)"
+				},
+				{
+					"name": "Service Cloud",
+					"demandPercentage": 3,
+					"category": "Platforma Salesforce (rdzeń)"
 				},
 				{
 					"name": "Visualforce",
 					"demandPercentage": 3,
-					"category": "Ekosystem Salesforce"
+					"category": "Platforma Salesforce (rdzeń)"
 				},
 				{
-					"name": "Aura",
+					"name": "ServiceNow",
 					"demandPercentage": 2,
-					"category": "Ekosystem Salesforce"
+					"category": "Systemy korporacyjne i CRM"
 				}
 			]
 		},

@@ -637,7 +637,7 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		}
 	});
 
-	it("KURACJA A5 (partia 1+2+3) zachowana: context-group z opisem + unionShare; kind Sophii (tool/concept)", () => {
+	it("KURACJA A5 (partia 1+2+3+4) zachowana: context-group z opisem + unionShare; kind Sophii (tool/concept/cert)", () => {
 		const expected: Record<string, number> = {
 			// Partia 1
 			"QA Engineer": 8,
@@ -653,6 +653,11 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 			".NET Developer": 6,
 			"Full-Stack Developer": 5,
 			"Android Developer": 5,
+			// Partia 4
+			"Data Engineer": 5,
+			"Business Analyst": 5,
+			"Salesforce Developer": 5,
+			"Project Manager": 4,
 		};
 		for (const [goal, n] of Object.entries(expected)) {
 			const path = model.paths.find((p) => p.careerGoal === goal);
@@ -671,11 +676,14 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 				expect(g.demandPercentage, `${goal}/${g.name}: dyskryminator → null`).toBeNull();
 				expect(typeof g.unionShare, `${goal}/${g.name}: unionShare number`).toBe("number");
 			}
-			// kind kuratorowany przez Sophię: tylko tool/concept, ≥1 concept, wszystko z danych.
+			// kind kuratorowany przez Sophię: tool/concept (+ cert dla PRINCE2 w PM), ≥1 concept, z danych.
 			let conceptSeen = 0;
 			for (const a of path?.areas ?? []) {
 				for (const l of a.leaves) {
-					expect(["tool", "concept"], `${goal}/${l.name}: kind ∈ {tool,concept}`).toContain(l.kind);
+					expect(
+						["tool", "concept", "cert"],
+						`${goal}/${l.name}: kind ∈ {tool,concept,cert}`,
+					).toContain(l.kind);
 					expect(l.source, `${goal}/${l.name}: z danych`).toBe("dane");
 					if (l.kind === "concept") conceptSeen++;
 				}
