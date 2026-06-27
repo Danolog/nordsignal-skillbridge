@@ -1,8 +1,14 @@
 # Prowenicja danych rynku pracy — `job_market_data` + `career-model` (JustJoinIT)
 
-**Wersja:** v5.0 · 2026-06-25
-**Owner:** Max (backend executor, dział Engineering) · lens jakości: Ethan (CTO)
-**Status:** Partia 3, zadanie #11 — narzędzie importu realnego rynku pracy.
+**Wersja:** v6.0 · 2026-06-27
+**Owner:** Ethan (CTO, ETAP A) · wcześniej Max (backend) · lens jakości / recenzja przed scaleniem: Leo (Tech Lead)
+**Status:** Partia 5, ETAP A — fundament danych: silnik na SUROWY rynek, regeneracja 23 ścieżek.
+
+**Changelog v5.0 → v6.0 (2026-06-27, ETAP A — Ethan):** **silnik przełączony na SUROWY rynek dla WSZYSTKICH 23 ścieżek (Decyzja A Darka).** To regeneracja artefaktów w repo — **schema bazy NIETKNIĘTA**, zaciąg na prod NEON = osobny ETAP H.
+- **KROK CZYSZCZENIA USUNIĘTY.** Filtry wzorem notebooka `175735_lab1.ipynb` (Pełny etat / geo PL+zdalne / typ umowy / widełki) wycięte z silnika. **Jedyna higiena = dedup po `Slug`** (pierwsze wystąpienie wygrywa). Powód: student ma widzieć, czego REALNIE wymaga rynek (pełny obraz), a mianownik ma być zgodny z liczbami referencyjnymi (371 ofert kategorii Security, nie 329 oczyszczonych). Usunięte z kodu: `WANTED_CONTRACTS`, `MIASTO_MAPPING`, `POLSKIE_MIASTA` (lista miast), `normalizeCity`, `passesGeoFilter`; `cleanOffers` → `dedupOffers`; `rawOffersByCategory` zlany w JEDNĄ ścieżkę surową (`groupByCategory` na zdeduplikowanym zbiorze).
+- **UJEDNOLICENIE.** Wcześniej kotwice ręczne (UX/Security) liczyły na surowym segmencie, a ~21 kotwic auto na OCZYSZCZONYCH ofertach — teraz **wszystkie 23 liczą na tym samym surowym, zdeduplikowanym zbiorze** (auto = oferty przypisane nearest-profile; ręczne = cały segment kategorii).
+- **DYSKRYMINATOR JAWNY (poprawka Leo, recenzja ETAP 0/B).** Silnik liczył `demandPercentage` obszaru po OBECNOŚCI `description` (`!area.description`) — krucha pułapka przy 23 ścieżkach (obszar z realnym popytem + opis po cichu gubił %). Zastąpione **jawnym typem węzła**: nowy `type: "context-group"` (grupa z kontekstem; metryką jest `unionShare`; % = null) obok `knowledge-area` (% popytu z danych) i `presentation-group` (etykieta legacy). O wartości %-vs-null decyduje WYŁĄCZNIE `type`, nie opis. 10 grup ścieżki cyber (kuracja Sophii, pilot `f1a9c5a`) przeniesione `knowledge-area`→`context-group` — **kuracja ZACHOWANA** (opisy + `unionShare` + % liści identyczne bajt-w-bajt; cyber był już surowy).
+- **NOWE LICZBY:** `9 922` surowych → `9 922` unikalnych (dedup — **0 duplikatów `Slug`** w zrzucie) → **`8 586` przypisanych** → **POKRYCIE 86,5%**. 23 ścieżki, 23 kotwice (21 auto + 2 ręczne), 295 liści (6 nieobecnych w zrzucie), 35 projektów (18 napisanych + 17 szablonów todo). Determinizm potwierdzony (dwa przebiegi = identyczny md5).
 
 **Changelog v4.0 → v5.0 (2026-06-25):** zastosowana **warstwa produktu Sophii v5** (`docs/data/career-model-decisions-sophia-v5.md`) nad ZAMROŻONĄ hierarchią v4. Silnik nearest-profile + hierarchia obszar→liść bez zmian. Dochodzi:
 - **5 rodzin e-CF** (PLAN/BUILD/RUN/ENABLE/MANAGE wg EN 16234) jako grupowanie nadrzędne — zastępuje dotychczasowe rodziny. Pole `category` w płaskim artefakcie = rodzina e-CF.
@@ -37,7 +43,7 @@ Pozostałe zmiany v4: **(1) koniec ramki junior/senior** — wszystkie 23 ście�
 | **Format** | separator `;`, kodowanie utf-8 z BOM (utf-8-sig), końce linii CRLF |
 | **Złączenie** | po kolumnie `Slug` (9 922 unikalnych slugów w obu plikach — pokrycie 1:1) |
 | **Data zrzutu (snapshot)** | **2026-02** (`Data_publikacji` ofert = 2026-03-19; przyjęty znacznik zrzutu „2026-02") |
-| **Pochodzenie** | analiza Darka (laboratorium WSB, notebook `175735_lab1.ipynb` — czyszczenie odtworzone 1:1) |
+| **Pochodzenie** | analiza Darka (laboratorium WSB, notebook `175735_lab1.ipynb` — był bazą czyszczenia w v1–v5; **od v6/ETAP A czyszczenie USUNIĘTE**, silnik liczy na surowym rynku) |
 | **Lokalizacja surowych plików** | dysk Darka, **POZA repozytorium** (`/mnt/c/Users/D/Documents/WSB MERITO/.../AI/`) |
 
 **Surowe CSV NIE są w repo.** Do repo trafia wyłącznie policzony artefakt (`src/lib/db/data/job-market-justjoinit.json`), konfiguracja kotwic (`src/lib/db/data/anchor-config.ts`) i ten dokument. Ścieżkę do CSV parametryzuje zmienna środowiskowa `JJIT_CSV_DIR`.
@@ -46,17 +52,14 @@ Pozostałe zmiany v4: **(1) koniec ramki junior/senior** — wszystkie 23 ście�
 
 ## 2. Łańcuch przetwarzania (narzędzie `tools/etl-justjoinit.ts`)
 
-### Krok 1 — czyszczenie ofert (1:1 z notebookiem Darka)
+### Krok 1 — dedup ofert (ETAP A: jedyna higiena, BEZ czyszczenia)
 
 | Krok | Reguła | Ofert po kroku |
 |---|---|---|
 | start | wszystkie wiersze `Oferty.csv` | 9 922 |
-| 1 | `Wymiar == "Pełny etat"` (odrzuca internship/freelance/pół etatu) | 9 476 |
-| 2 | `Typ_umowy ∈ {B2B, PERMANENT, ANY}` | 9 413 |
-| 3 | filtr geo: `Miasto ∈ lista PL` (po normalizacji pisowni) **LUB** `Tryb_pracy == "Zdalnie"` | 8 828 |
-| 4 | **dedup po `Slug`** (unikalne oferty) | **8 828** |
+| 1 | **dedup po `Slug`** (pierwsze wystąpienie wygrywa); wiersz bez `Slug` pomijany (integralność klucza) | **9 922** |
 
-**v5: widełki NIE są już czytane ani filtrowane (decyzja Darka „salary precz").** W v1–v4 zerowaliśmy widełki poza zakresem 4 000–100 000 PLN/mc do liczenia median; w v5 widełki nie wchodzą na wyjście, więc filtr stracił rację bytu (nie wpływał na % popytu) i został usunięty. Pozostałe filtry czyszczenia (Wymiar/umowa/geo/dedup) bez zmian. Normalizacja nazw miast i lista polskich miejscowości — odtworzone literalnie z notebooka (`tools/etl-justjoinit.ts`).
+**ETAP A (Decyzja A Darka, v6): krok czyszczenia USUNIĘTY.** W v1–v5 oferty przechodziły filtry wzorem notebooka `175735_lab1.ipynb` (Pełny etat → typ umowy → geo PL/zdalne) zanim weszły do liczenia. Od v6 **silnik liczy na SUROWYM rynku** — bez tych filtrów. Jedyna stała higiena to **dedup po `Slug`**: w tym zrzucie wszystkie 9 922 slugi są unikalne (0 duplikatów), więc dedup nic nie usuwa; gdyby duplikat się pojawił, wygrywa pierwsze wystąpienie (stabilnie). Wiersz bez `Slug` jest pomijany — nie da się go zdeduplikować (integralność klucza złączenia, NIE czyszczenie merytoryczne). Widełki nadal nieczytane (decyzja „salary precz", v5). Skutek: pełny obraz rynku i mianownik zgodny z liczbami referencyjnymi (np. **371 ofert kategorii Security**, nie 329 oczyszczonych). Usunięte z silnika: `WANTED_CONTRACTS`, `MIASTO_MAPPING`, `POLSKIE_MIASTA`, `normalizeCity`, `passesGeoFilter`.
 
 ### Krok 2 — grupowanie ofert w ścieżki: model „nearest profile" (#11) + kuracja Sophii v2
 
@@ -75,7 +78,7 @@ Pozostałe zmiany v4: **(1) koniec ramki junior/senior** — wszystkie 23 ście�
    - data architect → **Data Engineer**; cloud engineer → **DevOps Engineer**
    - **machine learning engineer → AI Engineer** *(dodane przez Maxa — nie było w snapshocie Sophii; uzasadnienie §7)*
 4. **Profil kotwicy** = jej **top-12 kompetencji** (po scaleniu/po kategorii).
-5. **Przypisanie**: każdą oczyszczoną ofertę → kotwica o **największym pokryciu profilu** = `|kompetencje_oferty ∩ profil12|`. **Tie-break v2 (anty-„magnes"):** przy równym pokryciu — kotwica **wybieralna** przed **zdegradowaną**, dalej **mniejsza** przed większą, dalej alfabetycznie (sekcja 5). **Pokrycie 0** → oferta NIEPRZYPISANA (pomijana).
+5. **Przypisanie**: każdą (surową, zdeduplikowaną) ofertę → kotwica o **największym pokryciu profilu** = `|kompetencje_oferty ∩ profil12|`. **Tie-break v2 (anty-„magnes"):** przy równym pokryciu — kotwica **wybieralna** przed **zdegradowaną**, dalej **mniejsza** przed większą, dalej alfabetycznie (sekcja 5). **Pokrycie 0** → oferta NIEPRZYPISANA (pomijana).
 6. **Degradacja z wyboru studenta** (`NON_SELECTABLE_PATHS`, Sophia §4): `Software Engineer`, `Solution Architect`, `Engineering Manager` dostają `studentSelectable: false` — oferty się do nich przypisują (pokrycie), ale onboarding ich NIE pokazuje (0% junior / profil zbyt ogólny → mylące jako cel wejścia). Software Engineer pełni rolę „jeszcze nie wiem / rola szeroka".
 
 ### Krok 3 — agregacja per ścieżka (z PRZYPISANYCH ofert)
@@ -91,45 +94,45 @@ Pozostałe zmiany v4: **(1) koniec ramki junior/senior** — wszystkie 23 ście�
 
 ## 3. Wynik (oba artefakty)
 
-`9 922` surowych → `8 828` oczyszczonych → **`7 764` przypisanych** → **POKRYCIE 87,9%** (1 064 oferty nieprzypisane). **23 ścieżki — WSZYSTKIE widoczne** (3 oznaczone „rola docelowa"). 23 kotwice (21 auto + 2 ręczne). 268 liści (7 nieobecnych w zrzucie). 67 projektów (6 zestawów napisanych × 3 poziomy + 17 szablonów todo). **ZERO widełek.**
+`9 922` surowych → `9 922` unikalnych (dedup, **0 duplikatów `Slug`**) → **`8 586` przypisanych** → **POKRYCIE 86,5%** (1 336 ofert nieprzypisanych). **23 ścieżki — WSZYSTKIE widoczne** (3 oznaczone „rola docelowa"). 23 kotwice (21 auto + 2 ręczne). 295 liści (6 nieobecnych w zrzucie). 35 projektów (18 napisanych: 6 zestawów × 3 poziomy + 17 szablonów todo). **ZERO widełek.** *(ETAP A: liczby z SUROWEGO rynku — bez czyszczenia.)*
 
 | Ścieżka | Rodzina e-CF | junior | ISCO | Komp. | Top 3 kompetencje (% popytu) |
 |---|---|---|---|---|---|
-| Java Developer | II | Średnia | 2512 | 25 | Java 81%, Spring Boot 48%, Spring 45% |
-| .NET Developer | II | Średnia | 2512 | 24 | .Net 61%, C# 59%, SQL 29% |
-| Python Developer | II | Wysoka | 2512/2514 | 17 | Python 46%, Linux 40%, Kubernetes 36% |
-| Backend Developer | II | Wysoka | 2512/2514 | 19 | Java 53%, Python 39%, SQL 37% |
-| PHP Developer | II | Średnia | 2514 | 12 | SQL 44%, PHP 22%, Git 21% |
-| Embedded / C++ Developer | II | Średnia | 2512 | 6 | C++ 74%, Python 42%, C 35% |
-| Frontend Developer | II | Wysoka | 2513 | 18 | JavaScript 61%, TypeScript 57%, React 43% |
-| Full-Stack Developer | II | Średnia | 2513/2512 | 16 | React 58%, TypeScript 44%, Java 41% |
-| Android Developer | II | Średnia | 2514 | 15 | Java 55%, Kotlin 37%, Android 28% |
-| Data Engineer | I | Średnia | 251/252 | 19 | Python 70%, SQL 50%, Databricks 35% |
-| Data Analyst | I | Wysoka | 252 | 10 | Python 55%, SQL 49%, Power BI 24% |
-| Data Scientist | I | Niska | 25 | 11 | Python 55%, SQL 26%, Databricks 13% |
-| AI Engineer | I | Niska | 25 | 15 | Python 75%, PyTorch 31%, AWS 29% |
-| DevOps Engineer | III | Niska | 2522 | 14 | Terraform 56%, Kubernetes 41%, Python 31% |
-| Cybersecurity Specialist *(ręczna)* | III | Niska | 2529 | 9 | Python 15%, AWS 10%, Azure 9% |
-| QA Engineer | IV | Wysoka | 251 | 12 | Java 44%, JavaScript 29%, SQL 27% |
-| Solution Architect | IV | **rola docelowa** | 2511/133 | 10 | Java 37%, Kafka 34%, Python 33% |
-| Engineering Manager | IV | **rola docelowa** | 133/1330 | 6 | Java 32%, Agile 24%, React 23% |
-| Business Analyst *(Rodzina V — Darek)* | V | Średnia | 2511 | 7 | UML 60%, BPMN 51%, SQL 38% |
-| Project Manager | V | Średnia | 1330 | 6 | Jira 39%, Scrum 24%, Confluence 23% |
-| Product Owner / Manager | V | Średnia | 1330 | 6 | Jira 13%, SaaS 13%, Scrum 13% |
-| Salesforce Developer | V | Średnia | 2511 | 9 | Salesforce 32%, Apex 15%, HTML 10% |
-| UX/UI Designer *(ręczna)* | V | Średnia | 2166 | 5 | Figma 64%, Adobe XD 14%, Jira 10% |
+| Java Developer | II | Średnia | 2512 | 15 | Java 89%, Spring Boot 48%, Spring 44% |
+| .NET Developer | II | Średnia | 2512 | 13 | C# 61%, .Net 51%, SQL 28% |
+| Python Developer | II | Wysoka | 2512/2514 | 13 | Linux 53%, Python 46%, Docker 31% |
+| Backend Developer | II | Wysoka | 2512/2514 | 13 | Python 38%, AWS 30%, Java 27% |
+| PHP Developer | II | Średnia | 2514 | 9 | SQL 41%, PHP 21%, Git 18% |
+| Embedded / C++ Developer | II | Średnia | 2512 | 6 | C++ 77%, Python 42%, C 34% |
+| Frontend Developer | II | Wysoka | 2513 | 15 | JavaScript 58%, TypeScript 58%, React 55% |
+| Full-Stack Developer | II | Średnia | 2513/2512 | 13 | React 60%, TypeScript 51%, Java 45% |
+| Android Developer | II | Średnia | 2514 | 10 | Java 55%, Kotlin 35%, Git 17% |
+| Data Engineer | I | Średnia | 251/252 | 15 | Python 70%, SQL 53%, Databricks 37% |
+| Data Analyst | I | Wysoka | 252 | 8 | Python 53%, SQL 48%, Power BI 23% |
+| Data Scientist | I | Niska | 25 | 6 | Python 55%, SQL 28%, Databricks 19% |
+| AI Engineer | I | Niska | 25 | 13 | Python 72%, AWS 21%, PyTorch 20% |
+| DevOps Engineer | III | Niska | 2522 | 14 | Terraform 54%, Kubernetes 43%, Python 32% |
+| Cybersecurity Specialist *(ręczna)* | III | Niska | 2529 | 37 | Python 15%, SIEM 11%, AWS 9% |
+| QA Engineer | IV | Wysoka | 251 | 11 | Java 47%, JavaScript 28%, SQL 27% |
+| Solution Architect | IV | **rola docelowa** | 2511/133 | 6 | Java 44%, Python 36%, Kubernetes 31% |
+| Engineering Manager | IV | **rola docelowa** | 133/1330 | 6 | Java 42%, Agile 31%, React 29% |
+| Business Analyst *(Rodzina V — Darek)* | V | Średnia | 2511 | 7 | UML 59%, BPMN 50%, SQL 37% |
+| Project Manager | V | Średnia | 1330 | 6 | Jira 30%, Scrum 20%, Confluence 18% |
+| Product Owner / Manager | V | Średnia | 1330 | 6 | Jira 12%, Scrum 12%, SaaS 11% |
+| Salesforce Developer | V | Średnia | 2511 | 9 | Salesforce 34%, Apex 16%, HTML 11% |
+| UX/UI Designer *(ręczna)* | V | Średnia | 2166 | 5 | Figma 61%, Adobe XD 13%, WCAG 9% |
 
-*Liczby z PŁASKIEGO artefaktu (top liście integer). Pełna hierarchia (obszary z dużym %, liście z 1 miejscem po przecinku) jest w `career-model.json` — np. AI Engineer: obszar AI 53% → liście PyTorch 30,7%, LangChain 17,5%, Pandas 5,8%.*
+*Liczby z PŁASKIEGO artefaktu (top liście integer, SUROWY udział). Pełna hierarchia (obszary z dużym %, liście z 1 miejscem po przecinku) jest w `career-model.json` — np. AI Engineer: obszar AI 66% → liście PyTorch 19,8%, LangChain 11,4%, Pandas 4,2%. Grupy z kontekstem (cyber) = `type: "context-group"`, % obszaru = null, miara = `unionShare`.*
 
 ---
 
 ## 4. Ograniczenia (uczciwie — wartość „Customer trust", CLAUDE.md sekcja 2)
 
 1. **IT-only.** JustJoinIT pokrywa wyłącznie rynek IT — nie udajemy pokrycia marketingu/HR/finansów.
-2. **Ogon nieprzypisany ~12,1% (1 064 oferty).** Oferta bez ani jednej kompetencji wspólnej z profilem którejkolwiek z 23 kotwic zostaje pominięta. To głównie role wąskie/spoza kuracji (iOS, React Native, Platform Engineer, oferty bez wpisanych technologii) — świadomie ich nie zgadujemy. Druga fala: rozszerzenie listy kotwic/scaleń (konfiguracja, bez ruszania silnika).
+2. **Ogon nieprzypisany ~13,5% (1 336 ofert; ETAP A — surowy rynek).** Oferta bez ani jednej kompetencji wspólnej z profilem którejkolwiek z 23 kotwic zostaje pominięta. To głównie role wąskie/spoza kuracji (iOS, React Native, Platform Engineer, oferty bez wpisanych technologii) — świadomie ich nie zgadujemy. Druga fala: rozszerzenie listy kotwic/scaleń (konfiguracja, bez ruszania silnika).
 3. **WIDEŁKI USUNIĘTE (v5, decyzja Darka).** Nie pokazujemy wynagrodzeń nigdzie — zmieniają się dynamicznie i rzadko mają pokrycie w rzeczywistości. Kolumna `salary_range` zostaje NULL. Konsekwencja: dawne ograniczenia „senior-skew zawyża medianę" i „braki widełek MNAR" **przestają być istotne** — nie liczymy median. Rozkład poziomów (Senior 54%/Junior 3,6%) zostaje jako sygnał do **warstwy juniora** (`juniorFriendliness`), nie do płac.
-4. **Ogon nieprzypisany ~12,1%** — patrz pkt 2.
-5. **Dylucja profilu w cienkich ścieżkach.** Przy małych kotwicach z szerokim profilem tie-break „mniejsza wygrywa" przyciąga oferty graniczne — np. `PHP Developer` SQL 44% > PHP 22%, `Salesforce Developer` API 39% > Salesforce 31% (płaski artefakt). Top-skill nadal widoczny, ale % rozmyty. Do poprawy: dalsze scalenia/ostrzejszy profil — konfiguracja, nie silnik.
+4. **Ogon nieprzypisany ~13,5%** — patrz pkt 2.
+5. **Dylucja profilu w cienkich ścieżkach.** Przy małych kotwicach z szerokim profilem tie-break „mniejsza wygrywa" przyciąga oferty graniczne, a surowy rynek (ETAP A) podbija generyki — np. `PHP Developer` SQL 41% > PHP 21%, `Backend Developer` Python 38% / AWS 30% > Java 27% (płaski artefakt). Top-skill specyficzny nadal widoczny, ale % rozmyty wśród generyków. To **świadomy efekt metody „surowy udział"** (Darek: „Python zostaje"), nie błąd. Do poprawy w prezentacji: kuracja liści Sophii (ETAP A4) + dalsze scalenia — konfiguracja, nie silnik.
 6. **Nazewnictwo „Technologia" ≠ kanon kompetencji.** Surowe etykiety JustJoinIT (`.Net`, `.NET C#`, `Amazon AWS` vs `AWS`) współistnieją. Scalanie nazw to osobna decyzja produktowa — narzędzie ich NIE scala (poza jawną tabelą wariantów do zliczania %).
 7. **Cienkie kotwice ręczne.** Cybersecurity Specialist i UX/UI liczone na ofertach kategorii (segment), nie podzbiorze profilu — inaczej rzadkie narzędzia (Splunk, Burp) znikają. To świadoma decyzja (sekcja 2 krok 3).
 
@@ -147,9 +150,9 @@ Pozostałe zmiany v4: **(1) koniec ramki junior/senior** — wszystkie 23 ście�
 2. **mniejsza przed większą** — wśród wybieralnych wygrywa bardziej specyficzna (intencja Sophii),
 3. **alfabetycznie po nazwie** — pełen determinizm.
 
-Pomiar (oferty wchłonięte przez 3 zdegradowane kotwice): literał „mniejsza wygrywa" = **1 368**; wariant z deprytetyzacją zdegradowanych = **341** (Software Eng 170 / Eng Mgr 124 / Solution Arch 90 — realne dopasowania, bez magnesu). Pokrycie identyczne (87,9%). Wybrałem wariant z deprytetyzacją — to ten, który realizuje cel Sophii. (Koordynator dopuścił: „wystarczy sam tie-break, opisz co wybrałeś".)
+Pomiar (oferty wchłonięte przez 3 zdegradowane kotwice): literał „mniejsza wygrywa" = **1 368**; wariant z deprytetyzacją zdegradowanych = **341** (Software Eng 170 / Eng Mgr 124 / Solution Arch 90 — realne dopasowania, bez magnesu). Pokrycie identyczne (87,9%). **Uwaga (v6 / ETAP A):** te konkretne liczby (1 368 / 341, pokrycie 87,9%) pochodzą z przebiegu v5 (oczyszczonego). Silnik na SUROWYM rynku zachowuje tę samą zasadę i `TIE_BREAK_DEPRIORITIZED` bez zmian (pokrycie v6 = 86,5%); dokładny re-pomiar magnesu na raw = osobny follow-up. Wybrałem wariant z deprytetyzacją — to ten, który realizuje cel Sophii. (Koordynator dopuścił: „wystarczy sam tie-break, opisz co wybrałeś".)
 
-- **Testy** (`src/lib/db/__tests__/etl-justjoinit.test.ts`): parser CSV (cudzysłowy, CRLF, BOM); czyszczenie (Wymiar/umowa/geo/dedup/kategoria/techs); normalizacja tytułu; scalenia (full-stack, ML→AI); **kotwice ręczne po kategorii** (mianownik = segment); tie-break (nie-deprytetyzowana bije deprytetyzowaną, mniejsza bije większą, alfabet); demand% liścia po wariancie nazwy; liście absent→null; hierarchia obszar→liść; **v5: ramy + warstwa juniora, BA w Rodzinie V, anchorLeaves ⊆ liście ścieżki, ZERO widełek**; determinizm; walidacja 5 rodzin e-CF.
+- **Testy** (`src/lib/db/__tests__/etl-justjoinit.test.ts`): parser CSV (cudzysłowy, CRLF, BOM); **dedup po Slug — surowe zostają, BEZ filtrów geo/etat/umowy (ETAP A); pusty Slug pomijany**; normalizacja tytułu; scalenia (full-stack, ML→AI); **kotwice ręczne po kategorii** (mianownik = segment); tie-break (nie-deprytetyzowana bije deprytetyzowaną, mniejsza bije większą, alfabet); demand% liścia po wariancie nazwy; liście absent→null; hierarchia obszar→liść; **jawny dyskryminator (poprawka Leo): knowledge-area→% liczbowy, context-group/presentation-group→null**; **kuracja cyber zachowana (10 grup `context-group` z opisem + unionShare)**; **v5: ramy + warstwa juniora, BA w Rodzinie V, anchorLeaves ⊆ liście ścieżki, ZERO widełek**; determinizm; walidacja 5 rodzin e-CF.
 
 ---
 
@@ -182,7 +185,7 @@ Model v5 (hierarchia obszar→liść + ramy e-CF/SFIA/ESCO + warstwa juniora + b
 
 **To wystarcza na teraz** (Beta, model read-only z artefaktu). Gdyby hierarchia/ramy/projekty miały trafić do bazy (zapytania per liść, edycja projektów przez panel), proponuję Ethanowi do rozważenia (**osobny sign-off Darka — migracja schemy to czerwona linia**, sekcja 4 CLAUDE.md):
 - **`career_paths`** (label, family, ecf_area, sfia, isco_code, isco_label, esco, junior_friendliness, target_role, path_demand_offers) — **bez salary** (decyzja Darka),
-- **`knowledge_areas`** (path_id FK, name, type ∈ {knowledge-area, presentation-group}, demand_percentage NULL),
+- **`knowledge_areas`** (path_id FK, name, type ∈ {knowledge-area, context-group, presentation-group}, demand_percentage NULL),
 - **`career_leaves`** (area_id FK, name, demand_percentage NUMERIC(4,1) NULL, source, note) — `NUMERIC` nie `integer`, by zmieścić 0,3%,
 - **`career_projects`** (path_id FK, level enum, title, description, portfolio_outcome, market_rationale, todo) + **`project_anchor_leaves`** (project_id FK, leaf_name).
 
