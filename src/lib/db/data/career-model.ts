@@ -19,6 +19,8 @@
 // projekty = osobny sign-off Ethana/Darka (patrz docs/data/job-market-provenance.md).
 // ============================================================================
 
+import type { LeafKind } from "./anchor-config";
+
 // ── Typy węzłów hierarchii ───────────────────────────────────────────────────
 //
 // Rozróżnienie Sophii (§0): obszar wiedzy z REALNYM % (z danych — np. AI 53%) vs
@@ -33,24 +35,31 @@ export type NodeType = "knowledge-area" | "presentation-group" | "leaf";
 /** Źródło % liścia. "dane" = policzone z CSV; "kuracja ekspercka" = brak w zrzucie. */
 export type LeafSource = "dane" | "kuracja ekspercka";
 
-/** Liść-konkret (narzędzie). % wlicza silnik; tu deklarujemy nazwę + wariant + źródło. */
+/** Liść-konkret. % wlicza silnik; tu deklarujemy nazwę + wariant + źródło + (opcj.) kind. */
 export type LeafSpec = {
 	name: string; // nazwa wyświetlana (jak w modelu/przewodniku)
 	// Nazwa(-y) do zliczania w danych (wariant obecny w zrzucie). Gdy brak — używa `name`.
 	// Tablica = sumuj warianty (np. Airflow + Apache Airflow).
 	countAs?: string[];
+	// Kuracja kind (Sophia §7): tool=obsługuję · concept=rozumiem/stosuję (SIEM/IAM/NIST) ·
+	// soft=miękka. Gdy brak — silnik auto-klasyfikuje po nazwie. cert/meta zawsze z auto.
+	kind?: LeafKind;
 	// true = narzędzie realnie nieobecne w zrzucie 2026-02 → demandPercentage:null,
 	// source:"kuracja ekspercka", label „brak w zrzucie 2026-02".
 	absent?: boolean;
 };
 
-/** Obszar wiedzy lub grupnik prezentacyjny → liście. */
+/** Obszar wiedzy / grupnik / GRUPA z kontekstem → liście. */
 export type AreaSpec = {
-	name: string; // nazwa obszaru/grupnika
+	name: string; // nazwa obszaru/grupnika/grupy
 	type: "knowledge-area" | "presentation-group";
 	// Dla "knowledge-area": nazwa(-y) liczone jako % popytu ścieżki (z danych).
 	// Brak → % liczony z `name`. Dla "presentation-group" ignorowane (% = null).
 	demandAs?: string[];
+	// GRUPA z kontekstem (wzorzec dla 23 ścieżek, decyzja Darka 2026-06-27): proza
+	// wyjaśniająca obszar studentowi. Gdy ustawiona, silnik liczy `unionShare` (udział
+	// ofert wymagających CO NAJMNIEJ JEDNEJ technologii z grupy) i renderuje opis w UI.
+	description?: string;
 	leaves: LeafSpec[];
 };
 
@@ -445,71 +454,135 @@ export const PATH_META: Record<string, PathMeta> = {
 
 export const PATHS: PathSpec[] = [
 	{
-		// KURACJA SOPHII 2026-06-27 (lift-branch, Tor 1) — zastępuje stereotyp pentest.
-		// Polski rynek cyber = monitoring (SIEM/SOC) + tożsamość (IAM/PAM) + zgodność
-		// (GRC/NIST), NIE testy penetracyjne. Lista wg krotności w danych JustJoinIT
-		// 2026-02; §7: silnik liczy %, człowiek (Sophia) zatwierdza zestaw. countAs
-		// zweryfikowane wobec realnych napisów w CSV (Ethan). Wyrzucone z uzasadnieniem:
-		// Burp/Kali/Metasploit/Nmap/Wireshark (n=1-2, pentest); Python (krotność 0,73 —
-		// rzadszy w cyber niż rynek); AWS/Azure (generyczna chmura); OAuth2/JWT/Keycloak
-		// (tagi backend-dev, ~0% w ofertach security).
+		// KURACJA SOPHII v2 2026-06-27 — METODA: SUROWY UDZIAŁ (decyzja Darka, nadpisuje
+		// poprzednią kurację po krotności). GRUPY z kontekstem, uszeregowane wg unii
+		// (udział ofert wymagających ≥1 technologii z grupy) na 371 ofertach kategorii
+		// Security. Unie policzone dokładnie przez Ethana (silnik liczy union z ofert).
+		// Wyrzucone: Burp/Kali/Metasploit/Nmap/Wireshark (n=1-2, pentest); Documentation
+		// (soft, biurowe tło). Meta poza katalogiem: Cybersecurity/Security/IT Security/Cloud.
 		label: "Cybersecurity Specialist",
-		note: "Polski rynek cyber = monitoring bezpieczeństwa (SIEM/SOC) + tożsamość (IAM/PAM) + zgodność (GRC/NIST), nie testy penetracyjne. Lista wg krotności w danych JustJoinIT 2026-02 — kuracja Sophii.",
+		note: "Polski rynek cyber = monitoring bezpieczeństwa (SIEM/SOC) + administracja + zgodność (GRC), nie testy penetracyjne. Grupy uszeregowane wg surowego udziału ofert (371 ofert kategorii Security, JustJoinIT 2026-02) — kuracja Sophii.",
 		areas: [
 			{
-				// Filar 1 — najsilniejszy realny sygnał roli (obszar SIEM ~12% popytu ścieżki).
-				name: "Monitoring i reagowanie (SIEM / SOC)",
+				name: "SIEM i Monitorowanie Zdarzeń",
 				type: "knowledge-area",
-				demandAs: ["SIEM"],
+				description:
+					"Codzienność tzw. Blue Team — zespołu broniącego firmy od środka — i pracy w SOC (Security Operations Center, centrum monitorowania bezpieczeństwa). System klasy SIEM (Security Information and Event Management — zbieranie i korelowanie zdarzeń) ściąga miliony wpisów z logów w jedno miejsce; Twoim zadaniem jest wypatrzyć w nich ślad włamania. Splunk to najczęściej wymagane narzędzie tej klasy — pierwszy realny warsztat analityka bezpieczeństwa.",
 				leaves: [
-					{ name: "SIEM" },
-					{ name: "SOC", countAs: ["SoC"] },
-					{ name: "Splunk", countAs: ["Splunk", "Splunk Enterprise Security"] },
-					{ name: "SOAR" },
-					{ name: "EDR / XDR", countAs: ["EDR", "EDR/XDR", "EDR / XDR"] },
-					{ name: "Microsoft Defender" },
-					{ name: "CrowdStrike", countAs: ["Crowdstrike"] },
-					{ name: "Incident Response" }, // n=3 < bramka — w hierarchii, poza katalogiem studenta
+					{ name: "SIEM", kind: "concept" },
+					{ name: "SOC", countAs: ["SoC"], kind: "concept" },
+					{ name: "Splunk", countAs: ["Splunk", "Splunk Enterprise Security"], kind: "tool" },
+					{ name: "SOAR", kind: "concept" },
+					{ name: "EDR / XDR", countAs: ["EDR", "EDR/XDR", "EDR / XDR"], kind: "tool" },
+					{ name: "Microsoft Defender", kind: "tool" },
+					{ name: "CrowdStrike", countAs: ["Crowdstrike"], kind: "tool" },
+					{ name: "Incident Response", kind: "concept" },
 				],
 			},
 			{
-				// Filar 2 — tożsamość i dostęp (polski rynek = zarządzanie tożsamością, nie pentest).
-				name: "Tożsamość i dostęp (IAM / PAM)",
+				name: "Administracja systemami i skrypty",
 				type: "knowledge-area",
-				demandAs: ["IAM"],
+				description:
+					"Zanim obronisz system, musisz wiedzieć, jak działa od środka. Linux i Windows to dwa światy serwerów spotykane w każdej firmie; PowerShell i Bash to języki poleceń (powłoki), którymi sterujesz nimi bez klikania. To fundament i najczęstsza brama wejścia do cyber — przez administrację przechodzi się do bezpieczeństwa (kariera w kształcie litery T: najpierw szeroka podstawa admina, potem głębia specjalisty).",
 				leaves: [
-					{ name: "PAM" },
-					{ name: "CyberArk" }, // weryfikacja Ethan: n=9 ≥4 → present (Sophia: absent)
-					{ name: "Active Directory", countAs: ["Active Directory", "Active Directory (AD)"] },
-					{ name: "IAM" }, // weryfikacja Ethan: n=27 ≥4 → present (Sophia: absent)
+					{ name: "Linux", kind: "tool" },
+					{ name: "Windows", kind: "tool" },
+					{ name: "PowerShell", countAs: ["PowerShell", "Powershell"], kind: "tool" },
+					{ name: "Bash", kind: "tool" },
 				],
 			},
 			{
-				// Filar 3 — zgodność i ład (banki, korpo, RODO definiują polski rynek cyber).
-				name: "Zgodność i ład (GRC / standardy)",
+				name: "Programowanie i automatyzacja",
 				type: "knowledge-area",
-				demandAs: ["GRC"],
+				description:
+					"Python to język, którym specjalista bezpieczeństwa automatyzuje powtarzalną robotę — przerabia logi, łączy się z innymi narzędziami przez ich API (interfejs do sterowania programem z kodu) i pisze własne skrypty wykrywające zagrożenia. Nie musisz być programistą aplikacji, ale bez podstaw Pythona zostajesz przy ręcznym klikaniu. To najczęściej wymieniana pojedyncza technologia w ofertach cyber.",
+				leaves: [{ name: "Python", kind: "tool" }],
+			},
+			{
+				name: "Audyt, ryzyko i zgodność (GRC)",
+				type: "knowledge-area",
+				description:
+					"Bezpieczeństwo widziane od strony zarządzania i prawa, nie konsoli. Zarządzanie ryzykiem i zgodność z normami (NIST, ISO 27001 — międzynarodowe normy bezpieczeństwa informacji; RODO i DORA — regulacje unijne) to ogromny rynek w Polsce, bo banki, ubezpieczyciele i korporacje muszą się z nich tłumaczyć przed audytorami. Tędy wchodzi się do cyber bez głębokiego kodu — bliżej procesów, dokumentów i analizy ryzyka.",
 				leaves: [
-					{ name: "NIST" },
-					{ name: "GRC" },
-					{ name: "DLP" }, // n=4 < bramka — w hierarchii, poza katalogiem studenta
-					{ name: "OWASP" }, // weryfikacja Ethan: n=11 ≥4 → present (Sophia: absent)
+					{ name: "Risk Management", kind: "concept" },
+					{ name: "NIST", kind: "concept" },
+					{ name: "GRC", kind: "concept" },
 					{
-						name: "ISO 27001", // weryfikacja Ethan: n=8 ≥4 → present (Sophia: absent)
+						name: "ISO 27001",
 						countAs: ["ISO 27001", "ISO 27001 - Information Security Management", "ISO27001"],
+						kind: "concept",
 					},
+					{ name: "RODO / GDPR", countAs: ["RODO", "GDPR"], kind: "concept" },
+					{ name: "DORA", kind: "concept" },
 				],
 			},
 			{
-				// Filar 4 — fundament techniczny (wejście juniora: sieci/systemy; T-shape Admin→Cyber).
-				name: "Fundament: sieci i systemy",
-				type: "presentation-group",
+				name: "Cloud Security",
+				type: "knowledge-area",
+				description:
+					"Firmy przeniosły dane i aplikacje do chmury (AWS, Azure, Google Cloud), więc bezpieczeństwo przeniosło się razem z nimi. Pilnujesz, kto ma dostęp do zasobów w chmurze, jak ustawione są uprawnienia i czy nic nie wycieka przez źle skonfigurowany serwer. Uczysz się przynajmniej jednej z trzech platform — źle ustawiona chmura to dziś jedna z najczęstszych przyczyn wycieków.",
 				leaves: [
-					{ name: "Linux" },
-					{ name: "Network" },
-					{ name: "Firewall / IDS-IPS", countAs: ["Firewall", "IDS/IPS"] },
-					{ name: "DevSecOps" }, // weryfikacja Ethan: n=10 ≥4 → present (Sophia: absent)
+					{ name: "AWS", kind: "tool" },
+					{ name: "Azure", kind: "tool" },
+					{ name: "GCP", countAs: ["GCP", "Google Cloud", "Google Cloud Platform"], kind: "tool" },
 				],
+			},
+			{
+				name: "Tożsamość i zarządzanie dostępem (IAM)",
+				type: "knowledge-area",
+				description:
+					"Większość włamań to nie spektakularny atak, tylko ktoś wszedł na cudze konto. IAM (Identity and Access Management — zarządzanie tożsamością i dostępem) to dyscyplina pilnowania, kto, do czego i jak długo ma dostęp; PAM (Privileged Access Management — zarządzanie dostępem uprzywilejowanym) chroni konta administratorów. Active Directory to katalog użytkowników Microsoftu obecny w prawie każdej polskiej firmie — przyjazny dla juniora.",
+				leaves: [
+					{ name: "IAM", kind: "concept" },
+					{ name: "PAM", kind: "concept" },
+					{
+						name: "Active Directory",
+						countAs: ["Active Directory", "Active Directory (AD)"],
+						kind: "tool",
+					},
+					{ name: "CyberArk", kind: "tool" },
+				],
+			},
+			{
+				name: "DevSecOps i konteneryzacja",
+				type: "knowledge-area",
+				description:
+					"Nowoczesne firmy wypuszczają nowe wersje aplikacji nawet codziennie, automatyczną taśmą (CI/CD — ciągła integracja i dostarczanie kodu). DevSecOps to wpięcie bezpieczeństwa w tę taśmę — sprawdzasz kod pod kątem dziur, zanim trafi do klienta. Kubernetes to system zarządzania kontenerami (lekkimi, odizolowanymi paczkami z aplikacją) — uczysz się go zabezpieczać, bo to standard uruchamiania aplikacji w chmurze.",
+				leaves: [
+					{ name: "Kubernetes", kind: "tool" },
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "DevSecOps", kind: "concept" },
+				],
+			},
+			{
+				name: "Infrastruktura i sieci",
+				type: "knowledge-area",
+				description:
+					"Sieć to autostrada, którą poruszają się dane — i którą porusza się atakujący. Rozumienie, jak komputery rozmawiają ze sobą (protokół TCP/IP — podstawowy język sieci) i jak ten ruch filtrować (firewall — zapora sieciowa), to fundament, na którym stoi reszta bezpieczeństwa. Bez tego SIEM pokazuje Ci alerty, których nie rozumiesz.",
+				leaves: [
+					{ name: "Network", kind: "concept" },
+					{ name: "TCP/IP", kind: "concept" },
+					{ name: "Firewall / IDS-IPS", countAs: ["Firewall", "IDS/IPS"], kind: "tool" },
+				],
+			},
+			{
+				name: "Bezpieczeństwo aplikacji (AppSec)",
+				type: "knowledge-area",
+				description:
+					"Aplikacje internetowe to najczęstszy cel ataku, więc bezpieczeństwo aplikacji (AppSec — application security) ma własny obszar. OWASP to organizacja utrzymująca słynną listę „OWASP Top 10” — dziesięć najczęstszych dziur w aplikacjach webowych. SAST, DAST i SCA to narzędzia automatycznie skanujące kod i działające aplikacje pod kątem tych dziur — uczysz się czytać ich wyniki i odróżniać realny problem od fałszywego alarmu.",
+				leaves: [
+					{ name: "OWASP", countAs: ["OWASP", "OWASP Top 10"], kind: "concept" },
+					{ name: "SAST", kind: "tool" },
+					{ name: "DAST", kind: "tool" },
+					{ name: "SCA", kind: "tool" },
+				],
+			},
+			{
+				name: "Bazy danych (SQL)",
+				type: "knowledge-area",
+				description:
+					"SQL to język, którym rozmawia się z bazami danych — a bazy trzymają to, co atakujący chce ukraść. W cyber używasz SQL z dwóch stron: rozumiesz atak przez wstrzyknięcie zapytania (SQL injection — jedna z dziur z listy OWASP) i sam odpytujesz bazy z logami, szukając śladów incydentu. To kompetencja wspierająca, nie rdzeń roli — ale realnie wymagana.",
+				leaves: [{ name: "SQL", kind: "tool" }],
 			},
 		],
 	},

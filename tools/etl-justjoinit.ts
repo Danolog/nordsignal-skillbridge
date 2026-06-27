@@ -54,7 +54,6 @@ import {
 	classifyLeafKind,
 	countMinFor,
 	type LeafKind,
-	LIFT_MIN,
 	MANUAL_ANCHORS,
 	PROFILE_SIZE,
 	TIE_BREAK_DEPRIORITIZED,
@@ -238,7 +237,7 @@ export type ModelLeaf = {
 	demandPercentage: number | null; // null = brak w zrzucie 2026-02
 	lift: number | null; // krotność: udział w ścieżce / udział globalny (null = brak danych)
 	offers: number | null; // bezwzględna liczba ofert ścieżki z liściem (mianownik bramki)
-	kind: LeafKind; // tool | cert | meta | soft — klasyfikacja konkretu
+	kind: LeafKind; // tool | concept | cert | meta | soft — klasyfikacja konkretu
 	source: "dane" | "kuracja ekspercka";
 	note?: string; // np. „brak w zrzucie 2026-02"
 };
@@ -247,6 +246,9 @@ export type ModelArea = {
 	type: "knowledge-area" | "presentation-group";
 	// knowledge-area: % popytu ścieżki (z danych). presentation-group: null (etykieta).
 	demandPercentage: number | null;
+	// GRUPA z kontekstem (Darek 2026-06-27): proza dla studenta + udział unii grupy.
+	description?: string; // kontekst grupy (gdy area jest grupą); brak → legacy obszar/grupnik
+	unionShare: number | null; // % ofert ścieżki z ≥1 technologią grupy (union); null gdy 0 ofert
 	leaves: ModelLeaf[];
 };
 export type ModelProject = {
@@ -675,42 +677,52 @@ export type PathStat = {
 	display: string;
 	offerCount: number; // mianownik % (oferty przypisane do ścieżki)
 	techCount: Map<string, number>; // technologia → liczba ofert ścieżki z nią
+	offers: CleanOffer[]; // oferty ścieżki (do liczenia unii grup — Darek 2026-06-27)
 };
 
+/** Grupuje oferty po surowej `Kategoria` JustJoinIT (źródło kotwic ręcznych). */
+function groupByCategory(offers: Iterable<CleanOffer>): Map<string, CleanOffer[]> {
+	const byCategory = new Map<string, CleanOffer[]>();
+	for (const offer of offers) {
+		const list = byCategory.get(offer.kategoria);
+		if (list) list.push(offer);
+		else byCategory.set(offer.kategoria, [offer]);
+	}
+	return byCategory;
+}
+
 /**
- * Liczy per ścieżkę: liczbę ofert + licznik ofert z każdą technologią.
+ * Liczy per ścieżkę: liczbę ofert + licznik ofert z każdą technologią + listę ofert.
  *
  * Dobór zbioru ofert (mianownik %):
  *  - kotwica AUTOMATYCZNA → oferty PRZYPISANE nearest-profile (assignment.byAnchor),
- *  - kotwica RĘCZNA (UX/Security) → oferty z jej KATEGORII JustJoinIT (definicja
- *    segmentu), nie podzbiór nearest-profile. Powód: ręczna kotwica reprezentuje
- *    cały segment (np. 329 ofert Security), a jej kompetencje powinny odzwierciedlać
- *    ten segment — inaczej rzadkie, ale charakterystyczne narzędzia (Splunk, Burp)
- *    znikają w podzbiorze profilowym.
+ *  - kotwica RĘCZNA (UX/Security) → oferty z jej KATEGORII JustJoinIT (cały segment).
+ *
+ * Darek 2026-06-27: kotwica ręczna źródłuje segment z RAW (np. 371 ofert Security, bez
+ * czyszczenia) — pełny obraz rynku, mianownik zgodny z liczbami referencyjnymi top-20.
+ * `manualByCategory` to ten raw segment; gdy brak (testy) → fallback z oczyszczonego
+ * `allOffers` (zachowanie wsteczne).
  */
 export function pathStats(
 	assignment: Assignment,
 	allOffers: Map<string, CleanOffer>,
+	manualByCategory?: Map<string, CleanOffer[]>,
 ): Map<string, PathStat> {
 	const manualCategory = new Map(MANUAL_ANCHORS.map((m) => [m.key, m.category]));
-	const offersByCategory = new Map<string, CleanOffer[]>();
-	for (const offer of allOffers.values()) {
-		const list = offersByCategory.get(offer.kategoria);
-		if (list) list.push(offer);
-		else offersByCategory.set(offer.kategoria, [offer]);
-	}
+	const manualSource = manualByCategory ?? groupByCategory(allOffers.values());
 
 	const stats = new Map<string, PathStat>();
 	for (const anchor of assignment.anchors) {
 		const category = manualCategory.get(anchor.norm);
 		const list = category
-			? (offersByCategory.get(category) ?? [])
+			? (manualSource.get(category) ?? [])
 			: (assignment.byAnchor.get(anchor.norm) ?? []);
 		if (list.length === 0) continue;
 		stats.set(anchor.display, {
 			display: anchor.display,
 			offerCount: list.length,
 			techCount: techCounts(list),
+			offers: list,
 		});
 	}
 	return stats;
@@ -774,6 +786,27 @@ export function globalTechFrequency(offers: Map<string, CleanOffer>): {
 }
 
 /**
+ * Udział UNII grupy (Darek 2026-06-27): % ofert ścieżki wymagających CO NAJMNIEJ JEDNEJ
+ * technologii z zadanego zbioru. To % grupy w widoku grupowym (np. Cloud = AWS∪Azure∪GCP).
+ * Liczone z ofert (nie sumą liczników — nakładające się oferty NIE są podwójnie liczone).
+ * 1 miejsce po przecinku. null gdy 0 ofert.
+ */
+export function unionShareOf(stat: PathStat, techNames: string[]): number | null {
+	if (stat.offerCount === 0) return null;
+	const set = new Set(techNames);
+	let count = 0;
+	for (const offer of stat.offers) {
+		for (const t of offer.techs) {
+			if (set.has(t)) {
+				count++;
+				break;
+			}
+		}
+	}
+	return Math.round((1000 * count) / stat.offerCount) / 10;
+}
+
+/**
  * Buduje hierarchiczny model kariery (v4.0) z deklaratywnej struktury PATHS +
  * statystyk z danych. Obszar wiedzy: % popytu ścieżki (z danych). Grupnik
  * prezentacyjny: % = null. Liść: % w obrębie ścieżki, BEZ progu (dyrektywa 1/2);
@@ -790,6 +823,8 @@ export function buildCareerModel(
 		if (!stat) continue; // ścieżka bez ofert (nie powinno się zdarzyć)
 		const areas: ModelArea[] = spec.areas.map((area) => {
 			const leaves: ModelLeaf[] = area.leaves.map((leaf) => {
+				// kind: kuracja (LeafSpec.kind, np. SIEM→concept) ma pierwszeństwo; brak → auto.
+				const kind = leaf.kind ?? classifyLeafKind(leaf.name);
 				if (leaf.absent) {
 					return {
 						name: leaf.name,
@@ -797,7 +832,7 @@ export function buildCareerModel(
 						demandPercentage: null,
 						lift: null,
 						offers: null,
-						kind: classifyLeafKind(leaf.name),
+						kind,
 						source: "kuracja ekspercka",
 						note: "brak w zrzucie 2026-02",
 					};
@@ -807,9 +842,9 @@ export function buildCareerModel(
 					name: leaf.name,
 					type: "leaf",
 					demandPercentage: demandPct(stat, names, 1), // 1 miejsce po przecinku dla liści
-					lift: liftOf(stat, names, globalFreq, globalTotal),
+					lift: liftOf(stat, names, globalFreq, globalTotal), // INFORMACYJNIE (nie rankuje)
 					offers: leafOfferCount(stat, names),
-					kind: classifyLeafKind(leaf.name),
+					kind,
 					source: "dane",
 				};
 			});
@@ -817,7 +852,20 @@ export function buildCareerModel(
 				area.type === "knowledge-area"
 					? demandPct(stat, area.demandAs && area.demandAs.length > 0 ? area.demandAs : [area.name])
 					: null;
-			return { name: area.name, type: area.type, demandPercentage: areaDemand, leaves };
+			// Unia grupy = % ofert ścieżki z ≥1 technologią dowolnego liścia obecnego w zrzucie
+			// (countAs/name). To % grupy w widoku grupowym (Darek 2026-06-27).
+			const unionNames = area.leaves
+				.filter((l) => !l.absent)
+				.flatMap((l) => (l.countAs && l.countAs.length > 0 ? l.countAs : [l.name]));
+			const unionShare = unionNames.length > 0 ? unionShareOf(stat, unionNames) : null;
+			return {
+				name: area.name,
+				type: area.type,
+				demandPercentage: areaDemand,
+				...(area.description ? { description: area.description } : {}),
+				unionShare,
+				leaves,
+			};
 		});
 		const meta = PATH_META[spec.label];
 		if (!meta) throw new Error(`career-model: brak PATH_META dla "${spec.label}"`);
@@ -857,20 +905,19 @@ export function buildCareerModel(
 export function flattenLeaves(model: CareerModel): CareerGoalEntry[] {
 	const entries: CareerGoalEntry[] = [];
 	for (const path of model.paths) {
-		// liść → {pct, areaName} (bierzemy max % po obszarach, stabilnie). Kolumna
-		// demand_percentage w bazie jest integer, więc zaokrąglamy do liczby całkowitej.
-		// BRAMKA LIFTOWA (Tor 1) zastępuje dawne „udział < 1% precz": liść zostaje, gdy
-		// jest ISTOTNIE częstszy w roli niż na rynku (lift ≥ LIFT_MIN) ORAZ ma realny
-		// wolumen (≥ countMin ofert ścieżki). Wpuszcza rzadkie-definiujące (SIEM/PAM),
-		// wycina generyki (Python w cyber: lift 0,73). META-tagi (np. „Cybersecurity")
-		// twardo blokowane. Pełna hierarchia z każdym liściem żyje w career-model.json.
+		// liść → {pct, areaName} (bierzemy max % po obszarach, stabilnie). Ranking = SUROWY
+		// UDZIAŁ (Darek 2026-06-27), malejąco — student widzi, czego realnie wymaga rynek
+		// (Python zostaje, 14,8% ofert cyber). Bramka katalogu (NIE hierarchii):
+		//  (1) META-tag → precz (etykieta-kategoria: „Cybersecurity"/„Cloud");
+		//  (2) wolumen < countMin (n≥4) → precz (ucina pentest-szum Kali/Nmap n=1-2);
+		//  (3) % po zaokrągleniu < 1 → precz (kolumna integer NOT NULL).
+		// BEZ bramki krotności — porzucona; krotność żyje jako pole informacyjne w hierarchii.
 		const countMin = countMinFor(path.pathDemandOffers);
 		const byLeaf = new Map<string, { pct: number; category: string }>();
 		for (const area of path.areas) {
 			for (const leaf of area.leaves) {
 				if (leaf.demandPercentage === null) continue; // absent — tylko w hierarchii
 				if (leaf.kind === "meta") continue; // twarda blokada etykiet-kategorii
-				if ((leaf.lift ?? 0) < LIFT_MIN) continue; // generyk (niska krotność) — precz
 				if ((leaf.offers ?? 0) < countMin) continue; // za mały wolumen (szum) — precz
 				const rounded = Math.round(leaf.demandPercentage);
 				if (rounded < 1) continue; // bezpiecznik kolumny integer NOT NULL
@@ -914,7 +961,7 @@ export type CandidateTech = {
 	pathPct: number; // udział w ścieżce (%)
 	globalPct: number; // udział globalny (%)
 	lift: number | null; // krotność (udział w ścieżce / udział globalny)
-	passesGate: boolean; // kind≠meta ∧ lift≥LIFT_MIN ∧ offers≥countMin
+	passesGate: boolean; // kind≠meta ∧ offers≥countMin (surowy udział; lift tylko informacyjnie)
 	variants?: string[]; // napisy scalone w tę kompetencję (gdy >1) — countAs do kuracji
 };
 export type PathCandidates = {
@@ -958,7 +1005,7 @@ export function buildCandidates(
 			const kind = classifyLeafKind(canon);
 			let gCount = 0;
 			for (const n of names) gCount += globalFreq.get(n) ?? 0;
-			const passesGate = kind !== "meta" && (lift ?? 0) >= LIFT_MIN && offers >= countMin;
+			const passesGate = kind !== "meta" && offers >= countMin; // surowy udział: meta + min-wolumen (BEZ krotności)
 			const merged = [...present].sort((a, b) => a.localeCompare(b, "en"));
 			cands.push({
 				name: canon,
@@ -1012,6 +1059,36 @@ export function buildTechIndex(techRows: Record<string, string>[]): Map<string, 
 }
 
 /**
+ * Surowe oferty pogrupowane po `Kategoria` (dedup po Slug, z techami) — BEZ filtrów
+ * czyszczenia (Pełny etat/geo/umowa). Mianownik kotwic RĘCZNYCH = pełny segment kategorii
+ * (Darek 2026-06-27: 371 ofert Security, nie 329 oczyszczonych). Auto-kotwice bez zmian.
+ */
+export function rawOffersByCategory(
+	offerRows: Record<string, string>[],
+	techBySlug: Map<string, Set<string>>,
+): Map<string, CleanOffer[]> {
+	const seen = new Set<string>();
+	const byCategory = new Map<string, CleanOffer[]>();
+	for (const row of offerRows) {
+		const slug = row.Slug ?? "";
+		if (slug === "" || seen.has(slug)) continue;
+		seen.add(slug);
+		const stanowisko = row.Stanowisko ?? "";
+		const offer: CleanOffer = {
+			slug,
+			stanowisko,
+			normTitle: normalizeTitle(stanowisko),
+			kategoria: row.Kategoria ?? "",
+			techs: techBySlug.get(slug) ?? new Set<string>(),
+		};
+		const list = byCategory.get(offer.kategoria);
+		if (list) list.push(offer);
+		else byCategory.set(offer.kategoria, [offer]);
+	}
+	return byCategory;
+}
+
+/**
  * Składa cały pipeline z już-wczytanych wierszy CSV → płaski artefakt jobMarketData
  * (liście-konkrety z realnym %) + hierarchiczny career-model (obszary+liście+projekty).
  */
@@ -1021,10 +1098,11 @@ export function buildArtifact(
 ): { artifact: Artifact; model: CareerModel } {
 	const techBySlug = buildTechIndex(techRows);
 	const { offers, rawCount } = cleanOffers(offerRows, techBySlug);
+	const rawByCategory = rawOffersByCategory(offerRows, techBySlug);
 
 	const anchors = buildAnchors(offers);
 	const assignment = assignAll(offers, anchors);
-	const stats = pathStats(assignment, offers);
+	const stats = pathStats(assignment, offers, rawByCategory);
 	const { freq: globalFreq, total: globalTotal } = globalTechFrequency(offers);
 	const model = buildCareerModel(stats, globalFreq, globalTotal);
 	const entries = flattenLeaves(model);

@@ -302,7 +302,7 @@ describe("buildCareerModel — hierarchia v4", () => {
 // ── liftOf: krotność (Tor 1) ──────────────────────────────────────────────────
 
 function makeStat(techCount: Record<string, number>, offerCount: number): PathStat {
-	return { display: "X", offerCount, techCount: new Map(Object.entries(techCount)) };
+	return { display: "X", offerCount, techCount: new Map(Object.entries(techCount)), offers: [] };
 }
 
 describe("liftOf — krotność", () => {
@@ -393,24 +393,33 @@ function modelWithLeaves(pathOffers: number, leaves: ModelLeaf[]): CareerModel {
 				juniorFriendliness: "Średnia",
 				targetRole: false,
 				tShapePairs: [],
-				areas: [{ name: "Obszar", type: "knowledge-area", demandPercentage: 10, leaves }],
+				areas: [
+					{
+						name: "Obszar",
+						type: "knowledge-area",
+						demandPercentage: 10,
+						unionShare: null,
+						leaves,
+					},
+				],
 				projects: [],
 			},
 		],
 	};
 }
 
-describe("flattenLeaves — bramka liftowa", () => {
-	it("wpuszcza rzadkie-definiujące, wycina generyk (niski lift) i mały wolumen", () => {
-		// pathOffers=300 → countMin = max(5, ceil(1,5%·300=4,5)=5) = 5.
+describe("flattenLeaves — bramka (surowy udział: meta + min-wolumen, BEZ krotności)", () => {
+	it("ranking po SUROWYM UDZIALE; BEZ bramki krotności (generyk wysokopopytowy zostaje); mały wolumen wycięty", () => {
+		// pathOffers=300 → countMin = max(4, ceil(1,0%·300=3)) = 4.
 		const flat = flattenLeaves(
 			modelWithLeaves(300, [
-				testLeaf({ name: "Generyk", demandPercentage: 20, lift: 0.7, offers: 60 }), // lift<1,3 → out
-				testLeaf({ name: "Definiujacy", demandPercentage: 11, lift: 12, offers: 33 }), // in
-				testLeaf({ name: "Niszowy", demandPercentage: 0.7, lift: 20, offers: 2 }), // wolumen<5 → out
+				testLeaf({ name: "Generyk", demandPercentage: 20, lift: 0.7, offers: 60 }), // niski lift, ale ZOSTAJE (raw share)
+				testLeaf({ name: "Rdzen", demandPercentage: 11, lift: 12, offers: 33 }), // zostaje
+				testLeaf({ name: "Niszowy", demandPercentage: 0.7, lift: 20, offers: 2 }), // n=2<4 → out (wolumen)
 			]),
 		);
-		expect(flat[0].competencies.map((c) => c.name)).toEqual(["Definiujacy"]);
+		// kolejność = surowy udział malejąco; niszowy wycięty wolumenem
+		expect(flat[0].competencies.map((c) => c.name)).toEqual(["Generyk", "Rdzen"]);
 	});
 
 	it("META twardo blokowane mimo wysokiego lift+wolumenu", () => {
@@ -429,11 +438,11 @@ describe("flattenLeaves — bramka liftowa", () => {
 		expect(flat[0].competencies.map((c) => c.name)).toEqual(["SIEM"]);
 	});
 
-	it("countMin skaluje z wielkością ścieżki (1,5%)", () => {
-		// pathOffers=1000 → countMin = max(5, ceil(15)) = 15.
+	it("countMin skaluje z wielkością ścieżki (1,0%)", () => {
+		// pathOffers=1000 → countMin = max(4, ceil(10)) = 10.
 		const flat = flattenLeaves(
 			modelWithLeaves(1000, [
-				testLeaf({ name: "Maly", demandPercentage: 1.2, lift: 5, offers: 12 }), // 12<15 → out
+				testLeaf({ name: "Maly", demandPercentage: 1, lift: 5, offers: 8 }), // 8<10 → out
 				testLeaf({ name: "Duzy", demandPercentage: 2, lift: 5, offers: 20 }), // in
 			]),
 		);

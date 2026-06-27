@@ -21,99 +21,189 @@
 			"studentSelectable": true,
 			"competencies": [
 				{
+					"name": "Python",
+					"demandPercentage": 15,
+					"category": "Programowanie i automatyzacja"
+				},
+				{
 					"name": "SIEM",
-					"demandPercentage": 12,
-					"category": "Monitoring i reagowanie (SIEM / SOC)"
+					"demandPercentage": 11,
+					"category": "SIEM i Monitorowanie Zdarzeń"
+				},
+				{
+					"name": "AWS",
+					"demandPercentage": 9,
+					"category": "Cloud Security"
 				},
 				{
 					"name": "Linux",
-					"demandPercentage": 10,
-					"category": "Fundament: sieci i systemy"
+					"demandPercentage": 9,
+					"category": "Administracja systemami i skrypty"
+				},
+				{
+					"name": "Azure",
+					"demandPercentage": 8,
+					"category": "Cloud Security"
 				},
 				{
 					"name": "IAM",
 					"demandPercentage": 8,
-					"category": "Tożsamość i dostęp (IAM / PAM)"
+					"category": "Tożsamość i zarządzanie dostępem (IAM)"
+				},
+				{
+					"name": "CI/CD",
+					"demandPercentage": 6,
+					"category": "DevSecOps i konteneryzacja"
+				},
+				{
+					"name": "Kubernetes",
+					"demandPercentage": 6,
+					"category": "DevSecOps i konteneryzacja"
+				},
+				{
+					"name": "GCP",
+					"demandPercentage": 5,
+					"category": "Cloud Security"
+				},
+				{
+					"name": "Risk Management",
+					"demandPercentage": 5,
+					"category": "Audyt, ryzyko i zgodność (GRC)"
 				},
 				{
 					"name": "SOC",
-					"demandPercentage": 6,
-					"category": "Monitoring i reagowanie (SIEM / SOC)"
-				},
-				{
-					"name": "Splunk",
 					"demandPercentage": 5,
-					"category": "Monitoring i reagowanie (SIEM / SOC)"
+					"category": "SIEM i Monitorowanie Zdarzeń"
 				},
 				{
 					"name": "Active Directory",
 					"demandPercentage": 4,
-					"category": "Tożsamość i dostęp (IAM / PAM)"
+					"category": "Tożsamość i zarządzanie dostępem (IAM)"
 				},
 				{
-					"name": "CyberArk",
+					"name": "Network",
+					"demandPercentage": 4,
+					"category": "Infrastruktura i sieci"
+				},
+				{
+					"name": "Splunk",
+					"demandPercentage": 4,
+					"category": "SIEM i Monitorowanie Zdarzeń"
+				},
+				{
+					"name": "SQL",
+					"demandPercentage": 4,
+					"category": "Bazy danych (SQL)"
+				},
+				{
+					"name": "Windows",
+					"demandPercentage": 4,
+					"category": "Administracja systemami i skrypty"
+				},
+				{
+					"name": "Bash",
 					"demandPercentage": 3,
-					"category": "Tożsamość i dostęp (IAM / PAM)"
+					"category": "Administracja systemami i skrypty"
 				},
 				{
 					"name": "DevSecOps",
 					"demandPercentage": 3,
-					"category": "Fundament: sieci i systemy"
+					"category": "DevSecOps i konteneryzacja"
 				},
 				{
 					"name": "EDR / XDR",
 					"demandPercentage": 3,
-					"category": "Monitoring i reagowanie (SIEM / SOC)"
+					"category": "SIEM i Monitorowanie Zdarzeń"
 				},
 				{
 					"name": "Firewall / IDS-IPS",
 					"demandPercentage": 3,
-					"category": "Fundament: sieci i systemy"
+					"category": "Infrastruktura i sieci"
 				},
 				{
-					"name": "Network",
+					"name": "ISO 27001",
 					"demandPercentage": 3,
-					"category": "Fundament: sieci i systemy"
+					"category": "Audyt, ryzyko i zgodność (GRC)"
 				},
 				{
 					"name": "NIST",
 					"demandPercentage": 3,
-					"category": "Zgodność i ład (GRC / standardy)"
+					"category": "Audyt, ryzyko i zgodność (GRC)"
 				},
 				{
 					"name": "OWASP",
 					"demandPercentage": 3,
-					"category": "Zgodność i ład (GRC / standardy)"
+					"category": "Bezpieczeństwo aplikacji (AppSec)"
 				},
 				{
 					"name": "PAM",
 					"demandPercentage": 3,
-					"category": "Tożsamość i dostęp (IAM / PAM)"
+					"category": "Tożsamość i zarządzanie dostępem (IAM)"
 				},
 				{
-					"name": "SOAR",
+					"name": "PowerShell",
 					"demandPercentage": 3,
-					"category": "Monitoring i reagowanie (SIEM / SOC)"
+					"category": "Administracja systemami i skrypty"
+				},
+				{
+					"name": "TCP/IP",
+					"demandPercentage": 3,
+					"category": "Infrastruktura i sieci"
 				},
 				{
 					"name": "CrowdStrike",
 					"demandPercentage": 2,
-					"category": "Monitoring i reagowanie (SIEM / SOC)"
+					"category": "SIEM i Monitorowanie Zdarzeń"
 				},
 				{
-					"name": "GRC",
+					"name": "CyberArk",
 					"demandPercentage": 2,
-					"category": "Zgodność i ład (GRC / standardy)"
+					"category": "Tożsamość i zarządzanie dostępem (IAM)"
 				},
 				{
-					"name": "ISO 27001",
+					"name": "DORA",
 					"demandPercentage": 2,
-					"category": "Zgodność i ład (GRC / standardy)"
+					"category": "Audyt, ryzyko i zgodność (GRC)"
 				},
 				{
 					"name": "Microsoft Defender",
 					"demandPercentage": 2,
-					"category": "Monitoring i reagowanie (SIEM / SOC)"
+					"category": "SIEM i Monitorowanie Zdarzeń"
+				},
+				{
+					"name": "RODO / GDPR",
+					"demandPercentage": 2,
+					"category": "Audyt, ryzyko i zgodność (GRC)"
+				},
+				{
+					"name": "SAST",
+					"demandPercentage": 2,
+					"category": "Bezpieczeństwo aplikacji (AppSec)"
+				},
+				{
+					"name": "SOAR",
+					"demandPercentage": 2,
+					"category": "SIEM i Monitorowanie Zdarzeń"
+				},
+				{
+					"name": "DAST",
+					"demandPercentage": 1,
+					"category": "Bezpieczeństwo aplikacji (AppSec)"
+				},
+				{
+					"name": "GRC",
+					"demandPercentage": 1,
+					"category": "Audyt, ryzyko i zgodność (GRC)"
+				},
+				{
+					"name": "Incident Response",
+					"demandPercentage": 1,
+					"category": "SIEM i Monitorowanie Zdarzeń"
+				},
+				{
+					"name": "SCA",
+					"demandPercentage": 1,
+					"category": "Bezpieczeństwo aplikacji (AppSec)"
 				}
 			]
 		},
@@ -163,6 +253,11 @@
 					"category": "Machine Learning"
 				},
 				{
+					"name": "SQL",
+					"demandPercentage": 6,
+					"category": "Konkret bazowy"
+				},
+				{
 					"name": "FastAPI",
 					"demandPercentage": 5,
 					"category": "LLM / RAG / GenAI"
@@ -207,6 +302,16 @@
 				{
 					"name": "Pandas",
 					"demandPercentage": 4,
+					"category": "Machine Learning"
+				},
+				{
+					"name": "NumPy",
+					"demandPercentage": 1,
+					"category": "Machine Learning"
+				},
+				{
+					"name": "PyTorch",
+					"demandPercentage": 1,
 					"category": "Machine Learning"
 				}
 			]
@@ -481,6 +586,11 @@
 					"name": "Jenkins",
 					"demandPercentage": 6,
 					"category": "CI/CD"
+				},
+				{
+					"name": "Swagger",
+					"demandPercentage": 1,
+					"category": "Konteneryzacja i integracja"
 				}
 			]
 		},
@@ -630,6 +740,11 @@
 					"name": "Redis",
 					"demandPercentage": 2,
 					"category": "Bazy i cache"
+				},
+				{
+					"name": "Celery",
+					"demandPercentage": 1,
+					"category": "Konteneryzacja"
 				}
 			]
 		},
@@ -701,6 +816,11 @@
 				{
 					"name": "MongoDB",
 					"demandPercentage": 2,
+					"category": "Infrastruktura"
+				},
+				{
+					"name": "Redis",
+					"demandPercentage": 1,
 					"category": "Infrastruktura"
 				}
 			]
@@ -774,6 +894,11 @@
 					"name": "Jest",
 					"demandPercentage": 2,
 					"category": "Testowanie"
+				},
+				{
+					"name": "Playwright",
+					"demandPercentage": 1,
+					"category": "Testowanie"
 				}
 			]
 		},
@@ -813,6 +938,11 @@
 					"category": "Backend dla fullstacka"
 				},
 				{
+					"name": "SQL",
+					"demandPercentage": 22,
+					"category": "Bazy i infra"
+				},
+				{
 					"name": ".Net",
 					"demandPercentage": 21,
 					"category": "Backend dla fullstacka"
@@ -821,6 +951,11 @@
 					"name": "Node.js",
 					"demandPercentage": 21,
 					"category": "Backend dla fullstacka"
+				},
+				{
+					"name": "Docker",
+					"demandPercentage": 10,
+					"category": "Bazy i infra"
 				},
 				{
 					"name": "Spring Boot",
@@ -927,6 +1062,11 @@
 					"category": "Automatyzacja"
 				},
 				{
+					"name": "Python",
+					"demandPercentage": 22,
+					"category": "Języki"
+				},
+				{
 					"name": "C#",
 					"demandPercentage": 18,
 					"category": "Języki"
@@ -945,6 +1085,11 @@
 					"name": "Cypress",
 					"demandPercentage": 6,
 					"category": "Automatyzacja"
+				},
+				{
+					"name": "Jira",
+					"demandPercentage": 5,
+					"category": "Zarządzanie testami"
 				}
 			]
 		},
@@ -1061,27 +1206,27 @@
 			"competencies": [
 				{
 					"name": "Figma",
-					"demandPercentage": 64,
+					"demandPercentage": 61,
 					"category": "Narzędzia projektowe"
 				},
 				{
 					"name": "Adobe XD",
-					"demandPercentage": 14,
+					"demandPercentage": 13,
 					"category": "Narzędzia projektowe"
 				},
 				{
-					"name": "Jira",
-					"demandPercentage": 10,
-					"category": "Współpraca"
-				},
-				{
 					"name": "WCAG",
-					"demandPercentage": 10,
+					"demandPercentage": 9,
 					"category": "UX"
 				},
 				{
+					"name": "Jira",
+					"demandPercentage": 8,
+					"category": "Współpraca"
+				},
+				{
 					"name": "Confluence",
-					"demandPercentage": 7,
+					"demandPercentage": 6,
 					"category": "Współpraca"
 				}
 			]
@@ -1117,9 +1262,19 @@
 					"category": "Web i integracje"
 				},
 				{
+					"name": "SQL",
+					"demandPercentage": 8,
+					"category": "Web i integracje"
+				},
+				{
 					"name": "Postman",
 					"demandPercentage": 4,
 					"category": "API"
+				},
+				{
+					"name": "Aura",
+					"demandPercentage": 2,
+					"category": "Ekosystem Salesforce"
 				},
 				{
 					"name": "Visualforce",

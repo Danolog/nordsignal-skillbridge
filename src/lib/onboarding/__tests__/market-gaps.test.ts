@@ -76,15 +76,6 @@ describe("deriveGaps — luki = katalog rynku \\ wybór studenta (czysta)", () =
 		expect(g.find((x) => x.competencyName === "PAM")?.priority).toBe("nice_to_have"); // 3/12=0,25, bez lift
 	});
 
-	it("Reguła 2 podłoga krotności: PAM (krotność 26,8) → ważna, nie miło-mieć", () => {
-		const cyber: MarketCatalogItem[] = [
-			{ competencyName: "SIEM", demandPercentage: 12, category: "x", lift: 23.8 },
-			{ competencyName: "PAM", demandPercentage: 3, category: "x", lift: 26.8 },
-		];
-		const g = deriveGaps(cyber, []);
-		expect(g.find((x) => x.competencyName === "PAM")?.priority).toBe("important");
-	});
-
 	it("zachowuje oryginalną pisownię nazwy z katalogu (nie znormalizowaną)", () => {
 		const gaps = deriveGaps([item("PostgreSQL", 40)], []);
 		expect(gaps[0].competencyName).toBe("PostgreSQL");

@@ -38,7 +38,7 @@
 		{
 			"careerGoal": "Cybersecurity Specialist",
 			"category": "III — Infrastruktura, Chmura i Bezpieczeństwo",
-			"pathDemandOffers": 329,
+			"pathDemandOffers": 371,
 			"frameworks": {
 				"family": "III — Infrastruktura, Chmura i Bezpieczeństwo",
 				"eCfArea": "RUN + ENABLE",
@@ -50,36 +50,38 @@
 			"juniorFriendliness": "Niska",
 			"targetRole": false,
 			"tShapePairs": [],
-			"note": "Polski rynek cyber = monitoring bezpieczeństwa (SIEM/SOC) + tożsamość (IAM/PAM) + zgodność (GRC/NIST), nie testy penetracyjne. Lista wg krotności w danych JustJoinIT 2026-02 — kuracja Sophii.",
+			"note": "Polski rynek cyber = monitoring bezpieczeństwa (SIEM/SOC) + administracja + zgodność (GRC), nie testy penetracyjne. Grupy uszeregowane wg surowego udziału ofert (371 ofert kategorii Security, JustJoinIT 2026-02) — kuracja Sophii.",
 			"areas": [
 				{
-					"name": "Monitoring i reagowanie (SIEM / SOC)",
+					"name": "SIEM i Monitorowanie Zdarzeń",
 					"type": "knowledge-area",
-					"demandPercentage": 12,
+					"demandPercentage": 0,
+					"description": "Codzienność tzw. Blue Team — zespołu broniącego firmy od środka — i pracy w SOC (Security Operations Center, centrum monitorowania bezpieczeństwa). System klasy SIEM (Security Information and Event Management — zbieranie i korelowanie zdarzeń) ściąga miliony wpisów z logów w jedno miejsce; Twoim zadaniem jest wypatrzyć w nich ślad włamania. Splunk to najczęściej wymagane narzędzie tej klasy — pierwszy realny warsztat analityka bezpieczeństwa.",
+					"unionShare": 18.3,
 					"leaves": [
 						{
 							"name": "SIEM",
 							"type": "leaf",
-							"demandPercentage": 11.9,
-							"lift": 23.78364189002487,
-							"offers": 39,
-							"kind": "tool",
+							"demandPercentage": 10.8,
+							"lift": 21.63195295270767,
+							"offers": 40,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
 							"name": "SOC",
 							"type": "leaf",
-							"demandPercentage": 5.5,
-							"lift": 20.999603541694196,
-							"offers": 18,
-							"kind": "tool",
+							"demandPercentage": 5.1,
+							"lift": 19.656861596156098,
+							"offers": 19,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
 							"name": "Splunk",
 							"type": "leaf",
-							"demandPercentage": 4.9,
-							"lift": 14.310840932117527,
+							"demandPercentage": 4.3,
+							"lift": 12.690745732255166,
 							"offers": 16,
 							"kind": "tool",
 							"source": "dane"
@@ -87,26 +89,26 @@
 						{
 							"name": "SOAR",
 							"type": "leaf",
-							"demandPercentage": 2.7,
-							"lift": 26.832826747720368,
+							"demandPercentage": 2.4,
+							"lift": 23.79514824797844,
 							"offers": 9,
-							"kind": "tool",
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
 							"name": "EDR / XDR",
 							"type": "leaf",
-							"demandPercentage": 3.3,
-							"lift": 26.832826747720365,
-							"offers": 11,
+							"demandPercentage": 3.2,
+							"lift": 25.958343543249207,
+							"offers": 12,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Microsoft Defender",
 							"type": "leaf",
-							"demandPercentage": 1.8,
-							"lift": 22.99956578376031,
+							"demandPercentage": 1.6,
+							"lift": 20.395841355410088,
 							"offers": 6,
 							"kind": "tool",
 							"source": "dane"
@@ -114,8 +116,8 @@
 						{
 							"name": "CrowdStrike",
 							"type": "leaf",
-							"demandPercentage": 1.8,
-							"lift": 22.99956578376031,
+							"demandPercentage": 1.6,
+							"lift": 20.395841355410088,
 							"offers": 6,
 							"kind": "tool",
 							"source": "dane"
@@ -123,147 +125,351 @@
 						{
 							"name": "Incident Response",
 							"type": "leaf",
-							"demandPercentage": 0.9,
-							"lift": 26.83282674772036,
-							"offers": 3,
+							"demandPercentage": 1.1,
+							"lift": 31.726864330637916,
+							"offers": 4,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Administracja systemami i skrypty",
+					"type": "knowledge-area",
+					"demandPercentage": 0,
+					"description": "Zanim obronisz system, musisz wiedzieć, jak działa od środka. Linux i Windows to dwa światy serwerów spotykane w każdej firmie; PowerShell i Bash to języki poleceń (powłoki), którymi sterujesz nimi bez klikania. To fundament i najczęstsza brama wejścia do cyber — przez administrację przechodzi się do bezpieczeństwa (kariera w kształcie litery T: najpierw szeroka podstawa admina, potem głębia specjalisty).",
+					"unionShare": 16.2,
+					"leaves": [
+						{
+							"name": "Linux",
+							"type": "leaf",
+							"demandPercentage": 9.4,
+							"lift": 1.7314556937198446,
+							"offers": 35,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Windows",
+							"type": "leaf",
+							"demandPercentage": 4,
+							"lift": 2.9256329813088238,
+							"offers": 15,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "PowerShell",
+							"type": "leaf",
+							"demandPercentage": 3.2,
+							"lift": 2.0691433259111687,
+							"offers": 12,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Bash",
+							"type": "leaf",
+							"demandPercentage": 3,
+							"lift": 1.688687940179115,
+							"offers": 11,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Tożsamość i dostęp (IAM / PAM)",
+					"name": "Programowanie i automatyzacja",
 					"type": "knowledge-area",
-					"demandPercentage": 8,
+					"demandPercentage": 0,
+					"description": "Python to język, którym specjalista bezpieczeństwa automatyzuje powtarzalną robotę — przerabia logi, łączy się z innymi narzędziami przez ich API (interfejs do sterowania programem z kodu) i pisze własne skrypty wykrywające zagrożenia. Nie musisz być programistą aplikacji, ale bez podstaw Pythona zostajesz przy ręcznym klikaniu. To najczęściej wymieniana pojedyncza technologia w ofertach cyber.",
+					"unionShare": 14.8,
 					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 14.8,
+							"lift": 0.710881669548514,
+							"offers": 55,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Audyt, ryzyko i zgodność (GRC)",
+					"type": "knowledge-area",
+					"demandPercentage": 0,
+					"description": "Bezpieczeństwo widziane od strony zarządzania i prawa, nie konsoli. Zarządzanie ryzykiem i zgodność z normami (NIST, ISO 27001 — międzynarodowe normy bezpieczeństwa informacji; RODO i DORA — regulacje unijne) to ogromny rynek w Polsce, bo banki, ubezpieczyciele i korporacje muszą się z nich tłumaczyć przed audytorami. Tędy wchodzi się do cyber bez głębokiego kodu — bliżej procesów, dokumentów i analizy ryzyka.",
+					"unionShare": 13.7,
+					"leaves": [
+						{
+							"name": "Risk Management",
+							"type": "leaf",
+							"demandPercentage": 4.9,
+							"lift": 10.982376114451586,
+							"offers": 18,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "NIST",
+							"type": "leaf",
+							"demandPercentage": 2.7,
+							"lift": 23.79514824797844,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "GRC",
+							"type": "leaf",
+							"demandPercentage": 1.3,
+							"lift": 19.829290206648697,
+							"offers": 5,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "ISO 27001",
+							"type": "leaf",
+							"demandPercentage": 3.2,
+							"lift": 20.395841355410088,
+							"offers": 12,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "RODO / GDPR",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"lift": 15.14236706689537,
+							"offers": 7,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "DORA",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"lift": 10.410377358490566,
+							"offers": 7,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Cloud Security",
+					"type": "knowledge-area",
+					"demandPercentage": 0,
+					"description": "Firmy przeniosły dane i aplikacje do chmury (AWS, Azure, Google Cloud), więc bezpieczeństwo przeniosło się razem z nimi. Pilnujesz, kto ma dostęp do zasobów w chmurze, jak ustawione są uprawnienia i czy nic nie wycieka przez źle skonfigurowany serwer. Uczysz się przynajmniej jednej z trzech platform — źle ustawiona chmura to dziś jedna z najczęstszych przyczyn wycieków.",
+					"unionShare": 13.5,
+					"leaves": [
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 9.2,
+							"lift": 0.9597094192541719,
+							"offers": 34,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 8.4,
+							"lift": 1.025938241567916,
+							"offers": 31,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 4.9,
+							"lift": 0.8831189040486842,
+							"offers": 18,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Tożsamość i zarządzanie dostępem (IAM)",
+					"type": "knowledge-area",
+					"demandPercentage": 0,
+					"description": "Większość włamań to nie spektakularny atak, tylko ktoś wszedł na cudze konto. IAM (Identity and Access Management — zarządzanie tożsamością i dostępem) to dyscyplina pilnowania, kto, do czego i jak długo ma dostęp; PAM (Privileged Access Management — zarządzanie dostępem uprzywilejowanym) chroni konta administratorów. Active Directory to katalog użytkowników Microsoftu obecny w prawie każdej polskiej firmie — przyjazny dla juniora.",
+					"unionShare": 12.7,
+					"leaves": [
+						{
+							"name": "IAM",
+							"type": "leaf",
+							"demandPercentage": 7.5,
+							"lift": 11.688844753392916,
+							"offers": 28,
+							"kind": "concept",
+							"source": "dane"
+						},
 						{
 							"name": "PAM",
 							"type": "leaf",
 							"demandPercentage": 3,
-							"lift": 26.832826747720368,
-							"offers": 10,
+							"lift": 26.174663072776283,
+							"offers": 11,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Active Directory",
+							"type": "leaf",
+							"demandPercentage": 4.3,
+							"lift": 3.4928657978683946,
+							"offers": 16,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "CyberArk",
 							"type": "leaf",
-							"demandPercentage": 2.7,
-							"lift": 20.12462006079027,
-							"offers": 9,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Active Directory",
-							"type": "leaf",
-							"demandPercentage": 3.6,
-							"lift": 2.9540726694738013,
-							"offers": 12,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "IAM",
-							"type": "leaf",
-							"demandPercentage": 8.2,
-							"lift": 12.71028635418333,
-							"offers": 27,
-							"kind": "tool",
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Zgodność i ład (GRC / standardy)",
-					"type": "knowledge-area",
-					"demandPercentage": 2,
-					"leaves": [
-						{
-							"name": "NIST",
-							"type": "leaf",
-							"demandPercentage": 2.7,
-							"lift": 24.14954407294833,
-							"offers": 9,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "GRC",
-							"type": "leaf",
-							"demandPercentage": 1.5,
-							"lift": 22.360688956433638,
-							"offers": 5,
-							"kind": "cert",
-							"source": "dane"
-						},
-						{
-							"name": "DLP",
-							"type": "leaf",
-							"demandPercentage": 1.2,
-							"lift": 21.466261398176293,
-							"offers": 4,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "OWASP",
-							"type": "leaf",
-							"demandPercentage": 3.3,
-							"lift": 13.416413373860182,
-							"offers": 11,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "ISO 27001",
-							"type": "leaf",
 							"demandPercentage": 2.4,
-							"lift": 15.333043855840208,
-							"offers": 8,
-							"kind": "cert",
+							"lift": 17.846361185983827,
+							"offers": 9,
+							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Fundament: sieci i systemy",
-					"type": "presentation-group",
-					"demandPercentage": null,
+					"name": "DevSecOps i konteneryzacja",
+					"type": "knowledge-area",
+					"demandPercentage": 0,
+					"description": "Nowoczesne firmy wypuszczają nowe wersje aplikacji nawet codziennie, automatyczną taśmą (CI/CD — ciągła integracja i dostarczanie kodu). DevSecOps to wpięcie bezpieczeństwa w tę taśmę — sprawdzasz kod pod kątem dziur, zanim trafi do klienta. Kubernetes to system zarządzania kontenerami (lekkimi, odizolowanymi paczkami z aplikacją) — uczysz się go zabezpieczać, bo to standard uruchamiania aplikacji w chmurze.",
+					"unionShare": 10.8,
 					"leaves": [
 						{
-							"name": "Linux",
+							"name": "Kubernetes",
 							"type": "leaf",
-							"demandPercentage": 10,
-							"lift": 1.8409215856024366,
-							"offers": 33,
+							"demandPercentage": 5.7,
+							"lift": 0.6349404233895136,
+							"offers": 21,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Network",
+							"name": "CI/CD",
 							"type": "leaf",
-							"demandPercentage": 3.3,
-							"lift": 5.465946189350444,
-							"offers": 11,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Firewall / IDS-IPS",
-							"type": "leaf",
-							"demandPercentage": 3,
-							"lift": 19.16630481980026,
-							"offers": 10,
-							"kind": "tool",
+							"demandPercentage": 5.7,
+							"lift": 0.6035001367240908,
+							"offers": 21,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
 							"name": "DevSecOps",
 							"type": "leaf",
 							"demandPercentage": 3,
-							"lift": 14.122540393537035,
+							"lift": 13.776138459355938,
+							"offers": 11,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Infrastruktura i sieci",
+					"type": "knowledge-area",
+					"demandPercentage": 0,
+					"description": "Sieć to autostrada, którą poruszają się dane — i którą porusza się atakujący. Rozumienie, jak komputery rozmawiają ze sobą (protokół TCP/IP — podstawowy język sieci) i jak ten ruch filtrować (firewall — zapora sieciowa), to fundament, na którym stoi reszta bezpieczeństwa. Bez tego SIEM pokazuje Ci alerty, których nie rozumiesz.",
+					"unionShare": 9.2,
+					"leaves": [
+						{
+							"name": "Network",
+							"type": "leaf",
+							"demandPercentage": 4.3,
+							"lift": 7.050414295697315,
+							"offers": 16,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "TCP/IP",
+							"type": "leaf",
+							"demandPercentage": 3,
+							"lift": 4.6740469772814786,
+							"offers": 11,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Firewall / IDS-IPS",
+							"type": "leaf",
+							"demandPercentage": 2.7,
+							"lift": 16.99653446284174,
 							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Bezpieczeństwo aplikacji (AppSec)",
+					"type": "knowledge-area",
+					"demandPercentage": 0,
+					"description": "Aplikacje internetowe to najczęstszy cel ataku, więc bezpieczeństwo aplikacji (AppSec — application security) ma własny obszar. OWASP to organizacja utrzymująca słynną listę „OWASP Top 10” — dziesięć najczęstszych dziur w aplikacjach webowych. SAST, DAST i SCA to narzędzia automatycznie skanujące kod i działające aplikacje pod kątem tych dziur — uczysz się czytać ich wyniki i odróżniać realny problem od fałszywego alarmu.",
+					"unionShare": 4.9,
+					"leaves": [
+						{
+							"name": "OWASP",
+							"type": "leaf",
+							"demandPercentage": 3.2,
+							"lift": 12.979171771624603,
+							"offers": 12,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "SAST",
+							"type": "leaf",
+							"demandPercentage": 1.6,
+							"lift": 20.395841355410088,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "DAST",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"lift": 23.795148247978435,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SCA",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"lift": 31.726864330637916,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Bazy danych (SQL)",
+					"type": "knowledge-area",
+					"demandPercentage": 0,
+					"description": "SQL to język, którym rozmawia się z bazami danych — a bazy trzymają to, co atakujący chce ukraść. W cyber używasz SQL z dwóch stron: rozumiesz atak przez wstrzyknięcie zapytania (SQL injection — jedna z dziur z listy OWASP) i sam odpytujesz bazy z logami, szukając śladów incydentu. To kompetencja wspierająca, nie rdzeń roli — ale realnie wymagana.",
+					"unionShare": 3.5,
+					"leaves": [
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 3.5,
+							"lift": 0.19905851172697533,
+							"offers": 13,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -301,6 +507,7 @@
 					"name": "AI",
 					"type": "knowledge-area",
 					"demandPercentage": 53,
+					"unionShare": 20.1,
 					"leaves": [
 						{
 							"name": "LangChain",
@@ -326,6 +533,7 @@
 					"name": "Machine Learning",
 					"type": "knowledge-area",
 					"demandPercentage": 23,
+					"unionShare": 34.4,
 					"leaves": [
 						{
 							"name": "Pandas",
@@ -387,6 +595,7 @@
 					"name": "LLM / RAG / GenAI",
 					"type": "knowledge-area",
 					"demandPercentage": 40,
+					"unionShare": 19.6,
 					"leaves": [
 						{
 							"name": "LangChain",
@@ -421,6 +630,7 @@
 					"name": "Konkret bazowy",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 87.3,
 					"leaves": [
 						{
 							"name": "Python",
@@ -511,6 +721,7 @@
 					"name": "Machine Learning",
 					"type": "knowledge-area",
 					"demandPercentage": 26,
+					"unionShare": 4.4,
 					"leaves": [
 						{
 							"name": "Pandas",
@@ -572,6 +783,7 @@
 					"name": "AI / Data Science",
 					"type": "knowledge-area",
 					"demandPercentage": 42,
+					"unionShare": 55.4,
 					"leaves": [
 						{
 							"name": "Python",
@@ -607,6 +819,7 @@
 					"name": "Konkret bazowy",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 31.9,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -660,6 +873,7 @@
 					"name": "Big Data / ETL",
 					"type": "knowledge-area",
 					"demandPercentage": 25,
+					"unionShare": 78.8,
 					"leaves": [
 						{
 							"name": "Apache Spark",
@@ -721,6 +935,7 @@
 					"name": "Konkret bazowy",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 87.7,
 					"leaves": [
 						{
 							"name": "Python",
@@ -782,6 +997,7 @@
 					"name": "Cloud",
 					"type": "knowledge-area",
 					"demandPercentage": 33,
+					"unionShare": 61.4,
 					"leaves": [
 						{
 							"name": "Azure",
@@ -860,6 +1076,7 @@
 					"name": "Wizualizacja BI",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 38.8,
 					"leaves": [
 						{
 							"name": "Power BI",
@@ -894,6 +1111,7 @@
 					"name": "ETL",
 					"type": "knowledge-area",
 					"demandPercentage": 21,
+					"unionShare": 4.5,
 					"leaves": [
 						{
 							"name": "dbt",
@@ -919,6 +1137,7 @@
 					"name": "Konkret bazowy",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 74.7,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -981,6 +1200,7 @@
 					"name": "CI/CD",
 					"type": "knowledge-area",
 					"demandPercentage": 38,
+					"unionShare": 12.1,
 					"leaves": [
 						{
 							"name": "GitHub Actions",
@@ -1016,6 +1236,7 @@
 					"name": "Infrastruktura jako kod",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 67.2,
 					"leaves": [
 						{
 							"name": "Terraform",
@@ -1041,6 +1262,7 @@
 					"name": "Konteneryzacja i orkiestracja",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 45.1,
 					"leaves": [
 						{
 							"name": "Docker",
@@ -1066,6 +1288,7 @@
 					"name": "Cloud",
 					"type": "knowledge-area",
 					"demandPercentage": 28,
+					"unionShare": 46.8,
 					"leaves": [
 						{
 							"name": "AWS",
@@ -1100,6 +1323,7 @@
 					"name": "Monitoring",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 8.7,
 					"leaves": [
 						{
 							"name": "Prometheus",
@@ -1125,6 +1349,7 @@
 					"name": "Konkret bazowy",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 47.5,
 					"leaves": [
 						{
 							"name": "Linux",
@@ -1187,6 +1412,7 @@
 					"name": "Język i framework",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 87.3,
 					"leaves": [
 						{
 							"name": "Java",
@@ -1248,6 +1474,7 @@
 					"name": "Bazy danych",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 58.9,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -1282,6 +1509,7 @@
 					"name": "Konteneryzacja i integracja",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 39.6,
 					"leaves": [
 						{
 							"name": "Docker",
@@ -1325,6 +1553,7 @@
 					"name": "REST API / Microservices",
 					"type": "knowledge-area",
 					"demandPercentage": 18,
+					"unionShare": 1.8,
 					"leaves": [
 						{
 							"name": "Swagger",
@@ -1350,6 +1579,7 @@
 					"name": "CI/CD",
 					"type": "knowledge-area",
 					"demandPercentage": 8,
+					"unionShare": 6.6,
 					"leaves": [
 						{
 							"name": "Jenkins",
@@ -1419,6 +1649,7 @@
 					"name": "Język i framework",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 85.6,
 					"leaves": [
 						{
 							"name": ".Net",
@@ -1480,6 +1711,7 @@
 					"name": "Bazy danych",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 42,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -1514,6 +1746,7 @@
 					"name": "Konteneryzacja i chmura",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 41.5,
 					"leaves": [
 						{
 							"name": "Docker",
@@ -1557,6 +1790,7 @@
 					"name": "REST API",
 					"type": "knowledge-area",
 					"demandPercentage": 14,
+					"unionShare": 0.3,
 					"leaves": [
 						{
 							"name": "Swagger",
@@ -1619,6 +1853,7 @@
 					"name": "Języki",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 89.4,
 					"leaves": [
 						{
 							"name": "Python",
@@ -1680,6 +1915,7 @@
 					"name": "Bazy i cache",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 57.5,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -1723,6 +1959,7 @@
 					"name": "Konteneryzacja",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 65,
 					"leaves": [
 						{
 							"name": "Docker",
@@ -1812,6 +2049,7 @@
 					"name": "Język i frameworki",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 46.9,
 					"leaves": [
 						{
 							"name": "Python",
@@ -1855,6 +2093,7 @@
 					"name": "Infrastruktura",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 91.6,
 					"leaves": [
 						{
 							"name": "Docker",
@@ -1943,6 +2182,7 @@
 					"name": "CI/CD",
 					"type": "knowledge-area",
 					"demandPercentage": 23,
+					"unionShare": 3.9,
 					"leaves": [
 						{
 							"name": "GitHub Actions",
@@ -1996,6 +2236,7 @@
 					"name": "Język i framework",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 99.3,
 					"leaves": [
 						{
 							"name": "JavaScript",
@@ -2066,6 +2307,7 @@
 					"name": "Styling",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 40,
 					"leaves": [
 						{
 							"name": "CSS",
@@ -2127,6 +2369,7 @@
 					"name": "Testowanie",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 3.7,
 					"leaves": [
 						{
 							"name": "Playwright",
@@ -2205,6 +2448,7 @@
 					"name": "Frontend",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 75.5,
 					"leaves": [
 						{
 							"name": "React",
@@ -2257,6 +2501,7 @@
 					"name": "Backend dla fullstacka",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 91.6,
 					"leaves": [
 						{
 							"name": "Node.js",
@@ -2336,6 +2581,7 @@
 					"name": "Bazy i infra",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 50.7,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -2398,6 +2644,7 @@
 					"name": "Natywny Android",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 77.6,
 					"leaves": [
 						{
 							"name": "Kotlin",
@@ -2450,6 +2697,7 @@
 					"name": "iOS / hybrydowy",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 15,
 					"leaves": [
 						{
 							"name": "Swift",
@@ -2502,6 +2750,7 @@
 					"name": "Konkret bazowy",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 15.6,
 					"leaves": [
 						{
 							"name": "Git",
@@ -2546,6 +2795,7 @@
 					"name": "Automatyzacja",
 					"type": "knowledge-area",
 					"demandPercentage": 20,
+					"unionShare": 43.6,
 					"leaves": [
 						{
 							"name": "Selenium",
@@ -2580,6 +2830,7 @@
 					"name": "Testowanie API",
 					"type": "knowledge-area",
 					"demandPercentage": 18,
+					"unionShare": 7.7,
 					"leaves": [
 						{
 							"name": "Postman",
@@ -2596,6 +2847,7 @@
 					"name": "Zarządzanie testami",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 5.2,
 					"leaves": [
 						{
 							"name": "Xray",
@@ -2639,6 +2891,7 @@
 					"name": "Języki",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 81.2,
 					"leaves": [
 						{
 							"name": "Java",
@@ -2728,6 +2981,7 @@
 					"name": "Notacje i modelowanie",
 					"type": "knowledge-area",
 					"demandPercentage": 60,
+					"unionShare": 66.2,
 					"leaves": [
 						{
 							"name": "UML",
@@ -2762,6 +3016,7 @@
 					"name": "Narzędzia analityka",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 34.9,
 					"leaves": [
 						{
 							"name": "Jira",
@@ -2806,6 +3061,7 @@
 					"name": "Dane",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 37.7,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -2866,6 +3122,7 @@
 					"name": "Narzędzia śledzenia",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 38.8,
 					"leaves": [
 						{
 							"name": "Jira",
@@ -2900,6 +3157,7 @@
 					"name": "Dokumentacja",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 23.8,
 					"leaves": [
 						{
 							"name": "Confluence",
@@ -2935,6 +3193,7 @@
 					"name": "Agile",
 					"type": "knowledge-area",
 					"demandPercentage": 41,
+					"unionShare": 29.8,
 					"leaves": [
 						{
 							"name": "Scrum",
@@ -3013,6 +3272,7 @@
 					"name": "Narzędzia produktowe",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 13.9,
 					"leaves": [
 						{
 							"name": "Jira",
@@ -3048,6 +3308,7 @@
 					"name": "Analiza danych produktu",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 2.3,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -3073,6 +3334,7 @@
 					"name": "Product Management",
 					"type": "knowledge-area",
 					"demandPercentage": 41,
+					"unionShare": 25,
 					"leaves": [
 						{
 							"name": "Scrum",
@@ -3109,7 +3371,7 @@
 		{
 			"careerGoal": "UX/UI Designer",
 			"category": "V — Zarządzanie, Produkt i Systemy Biznesowe",
-			"pathDemandOffers": 104,
+			"pathDemandOffers": 119,
 			"frameworks": {
 				"family": "V — Zarządzanie, Produkt i Systemy Biznesowe",
 				"eCfArea": "PLAN + ENABLE",
@@ -3126,22 +3388,23 @@
 					"name": "Narzędzia projektowe",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 62.2,
 					"leaves": [
 						{
 							"name": "Figma",
 							"type": "leaf",
-							"demandPercentage": 63.5,
-							"lift": 60.24069478908188,
-							"offers": 66,
+							"demandPercentage": 61.3,
+							"lift": 58.23113761633686,
+							"offers": 73,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Adobe XD",
 							"type": "leaf",
-							"demandPercentage": 14.4,
-							"lift": 84.88461538461537,
-							"offers": 15,
+							"demandPercentage": 13.4,
+							"lift": 79.13053221288514,
+							"offers": 16,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -3151,12 +3414,13 @@
 					"name": "Współpraca",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 8.4,
 					"leaves": [
 						{
 							"name": "Jira",
 							"type": "leaf",
-							"demandPercentage": 9.6,
-							"lift": 1.7501982553528945,
+							"demandPercentage": 8.4,
+							"lift": 1.529585029888244,
 							"offers": 10,
 							"kind": "tool",
 							"source": "dane"
@@ -3164,8 +3428,8 @@
 						{
 							"name": "Confluence",
 							"type": "leaf",
-							"demandPercentage": 6.7,
-							"lift": 2.233805668016194,
+							"demandPercentage": 5.9,
+							"lift": 1.9522335249889429,
 							"offers": 7,
 							"kind": "tool",
 							"source": "dane"
@@ -3175,14 +3439,15 @@
 				{
 					"name": "UX",
 					"type": "knowledge-area",
-					"demandPercentage": 27,
+					"demandPercentage": 24,
+					"unionShare": 9.2,
 					"leaves": [
 						{
 							"name": "WCAG",
 							"type": "leaf",
-							"demandPercentage": 9.6,
-							"lift": 44.676113360323896,
-							"offers": 10,
+							"demandPercentage": 9.2,
+							"lift": 42.94913754975675,
+							"offers": 11,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -3220,6 +3485,7 @@
 					"name": "Ekosystem Salesforce",
 					"type": "knowledge-area",
 					"demandPercentage": 31,
+					"unionShare": 34.3,
 					"leaves": [
 						{
 							"name": "Salesforce",
@@ -3272,6 +3538,7 @@
 					"name": "Web i integracje",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 17.4,
 					"leaves": [
 						{
 							"name": "HTML",
@@ -3306,6 +3573,7 @@
 					"name": "API",
 					"type": "knowledge-area",
 					"demandPercentage": 39,
+					"unionShare": 3.8,
 					"leaves": [
 						{
 							"name": "Swagger",
@@ -3375,6 +3643,7 @@
 					"name": "Język i framework",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 25.9,
 					"leaves": [
 						{
 							"name": "PHP",
@@ -3409,6 +3678,7 @@
 					"name": "Bazy danych",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 69.6,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -3443,6 +3713,7 @@
 					"name": "Infra i front",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 38,
 					"leaves": [
 						{
 							"name": "Docker",
@@ -3506,6 +3777,7 @@
 					"name": "Projektowanie (Architecture)",
 					"type": "knowledge-area",
 					"demandPercentage": 39,
+					"unionShare": 1.1,
 					"leaves": [
 						{
 							"name": "C4",
@@ -3531,6 +3803,7 @@
 					"name": "Komunikacja i integracja",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 45.6,
 					"leaves": [
 						{
 							"name": "Kafka",
@@ -3574,6 +3847,7 @@
 					"name": "Języki",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 57.8,
 					"leaves": [
 						{
 							"name": "Java",
@@ -3599,6 +3873,7 @@
 					"name": "Cloud",
 					"type": "knowledge-area",
 					"demandPercentage": 29,
+					"unionShare": 22.2,
 					"leaves": [
 						{
 							"name": "AWS",
@@ -3662,6 +3937,7 @@
 					"name": "Języki",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 98.8,
 					"leaves": [
 						{
 							"name": "C++",
@@ -3714,6 +3990,7 @@
 					"name": "Systemy",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 33.5,
 					"leaves": [
 						{
 							"name": "Linux",
@@ -3759,6 +4036,7 @@
 					"name": "Techniczne tło",
 					"type": "presentation-group",
 					"demandPercentage": null,
+					"unionShare": 49.2,
 					"leaves": [
 						{
 							"name": "Java",
@@ -3802,6 +4080,7 @@
 					"name": "Leadership",
 					"type": "knowledge-area",
 					"demandPercentage": 23,
+					"unionShare": 28.2,
 					"leaves": [
 						{
 							"name": "Agile",

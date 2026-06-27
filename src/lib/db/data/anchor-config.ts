@@ -21,31 +21,29 @@ export const ANCHOR_COUNT = 30;
 /** Rozmiar profilu kompetencji kotwicy (top-K technologii wśród jej ofert). */
 export const PROFILE_SIZE = 12;
 
-// ── Bramka liftowa (Ethan, Tor 1 — zastępuje martwe progi udziału) ───────────
-// Zastępuje dawne THRESHOLD_PCT/ABS/TOP_N (były zdefiniowane, ale NIEUŻYWANE przez
-// silnik — flatten ciął tylko „udział < 1% precz"). Nowa miara: kompetencja zostaje
-// w PŁASKIM katalogu (job-market-justjoinit.json → onboarding) tylko gdy jest ISTOTNIE
-// częstsza w roli niż na całym rynku (lift = krotność) ORAZ ma realny wolumen ofert.
-// To wpuszcza rzadkie-ale-definiujące narzędzia, które stary próg wycinał (np. SIEM/PAM
-// w cyber), i wycina generyki (Python w cyber: lift 0,73 → out). Hierarchia
-// career-model.json zachowuje WSZYSTKIE liście z % — bramka dotyczy tylko płaskiego
-// katalogu studenta. Progi STARTOWE — ratyfikacja Olivera po teście przed/po (Tor 1).
-export const LIFT_MIN = 1.3; // krotność: min ile razy częściej w roli niż średnia rynku
-export const COUNT_MIN_ABS = 5; // bezwzględna podłoga liczby ofert (anty-szum: Kali n=2 precz)
-export const COUNT_MIN_PCT = 1.5; // względna podłoga: % ofert ścieżki (skaluje do dużych ścieżek)
+// ── Miara rankingu + próg minimum ofert (decyzja Darka 2026-06-27: SUROWY UDZIAŁ) ──
+// Metoda rankingu = surowy udział technologii w kategorii (% ofert), malejąco. Student
+// ma widzieć, czego REALNIE wymaga rynek (Python zostaje — 14,8% ofert cyber), nie co
+// statystycznie wyróżnia rolę. PORZUCONA krotność (lift) jako miara rankingu i bramki
+// (była w Torze 1) — zostaje TYLKO jako pole INFORMACYJNE w career-model.json, nie rankuje
+// i nie bramkuje. Bramka katalogu = próg minimum ofert (ucina szum typu Kali/Nmap n=1-2)
+// + twarda blokada meta-tagów. Hierarchia career-model.json zachowuje wszystkie liście.
+export const COUNT_MIN_ABS = 4; // bezwzględna podłoga liczby ofert (Darek: n≥4-5; ucina Kali/Nmap n=1-2)
+export const COUNT_MIN_PCT = 1.0; // względna podłoga: % ofert ścieżki (skaluje do dużych ścieżek)
 
 /** Próg liczby ofert dla ścieżki o danym wolumenie: max(bezwzględny, względny %). */
 export function countMinFor(pathOffers: number): number {
 	return Math.max(COUNT_MIN_ABS, Math.ceil((COUNT_MIN_PCT / 100) * pathOffers));
 }
 
-// ── Klasyfikacja konkretu: tool | cert | meta | soft (Ethan, Tor 1) ──────────
-// Po co: (a) META-TAGI to etykiety-kategorie, NIE kompetencje do nauki — twarda blokada
-// (inaczej ranking po lifcie wstawia „Cybersecurity" jako kompetencję #1); (b) CERTYFIKATY
-// to cele certyfikacyjne (osobny kubełek `kind:"cert"`), nie narzędzie; (c) SOFT to
-// umiejętności miękkie/procesowe. Listy świadomie wąskie i jawne (HITL, Built-to-Sell) —
-// rozszerza je kuracja Sophii, nie model.
-export type LeafKind = "tool" | "cert" | "meta" | "soft";
+// ── Klasyfikacja konkretu: tool | concept | cert | meta | soft ───────────────
+// (a) META-TAGI to etykiety-kategorie, NIE kompetencje do nauki — twarda blokada (inaczej
+// ranking wstawia „Cybersecurity"/„Cloud" jako kompetencję #1); (b) CONCEPT to koncepcja/
+// standard, który się ROZUMIE i STOSUJE (SIEM, IAM, NIST, OWASP) — inna etykieta samooceny
+// niż narzędzie, które się OBSŁUGUJE; (c) CERT to cel certyfikacyjny (osobny kubełek,
+// odłożone); (d) SOFT to umiejętność miękka/proces. kind bywa kuratorowany per liść
+// (LeafSpec.kind, Sophia §7); brak → auto-klasyfikacja po nazwie. Listy jawne (HITL).
+export type LeafKind = "tool" | "concept" | "cert" | "meta" | "soft";
 
 /** Etykiety-kategorie udające technologię — NIE są kompetencją do nauki (twarda blokada). */
 export const META_TAGS = new Set<string>([
@@ -53,6 +51,7 @@ export const META_TAGS = new Set<string>([
 	"it security",
 	"security",
 	"information security",
+	"cloud",
 	"devops",
 	"test automation",
 ]);

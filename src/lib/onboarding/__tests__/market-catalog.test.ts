@@ -60,9 +60,9 @@ describe("computeMarketCoverage — % pokrycia kompetencji rynku (9c B1)", () =>
 	});
 });
 
-describe("demandToPriority — Reguła 1 (względna) + Reguła 2 (podłoga krotności)", () => {
-	it("Reguła 1: r = popyt/max — krytyczna ≥0,66, ważna 0,33–0,66, miło-mieć <0,33", () => {
-		// Rola rozdrobniona (max=12, jak cyber po kuracji): SIEM krytyczny mimo 12%.
+describe("demandToPriority — reguła WZGLĘDNA (r = popyt/max ścieżki)", () => {
+	it("krytyczna ≥0,66, ważna 0,33–0,66, miło-mieć <0,33 (rola rozdrobniona, max=12)", () => {
+		// Cyber po kuracji: SIEM krytyczny mimo 12% (max ścieżki).
 		expect(demandToPriority(12, 12)).toBe("critical"); // r=1
 		expect(demandToPriority(8, 12)).toBe("critical"); // r=0,67
 		expect(demandToPriority(6, 12)).toBe("important"); // r=0,5
@@ -70,22 +70,10 @@ describe("demandToPriority — Reguła 1 (względna) + Reguła 2 (podłoga krotn
 		expect(demandToPriority(3, 12)).toBe("nice_to_have"); // r=0,25
 	});
 
-	it("Reguła 1 działa też dla ról skoncentrowanych (Java: max=81)", () => {
+	it("działa też dla ról skoncentrowanych (Java: max=81)", () => {
 		expect(demandToPriority(81, 81)).toBe("critical"); // Java r=1
 		expect(demandToPriority(48, 81)).toBe("important"); // Spring Boot r=0,59
 		expect(demandToPriority(19, 81)).toBe("nice_to_have"); // Kafka r=0,23
-	});
-
-	it("Reguła 2: krotność ≥8 podnosi miło-mieć → ważna (rdzeń rozdrobnionej roli)", () => {
-		// PAM: popyt 3 z max 12 → r=0,25 (miło-mieć), ale krotność 26,8 → ważna.
-		expect(demandToPriority(3, 12, 26.8)).toBe("important");
-		expect(demandToPriority(3, 12, 8)).toBe("important"); // granica progu (8) włącznie
-		expect(demandToPriority(3, 12, 7.9)).toBe("nice_to_have"); // poniżej progu nie ratuje
-	});
-
-	it("Reguła 2 nigdy nie OBNIŻA — krytyczne/ważne z Reguły 1 zostają", () => {
-		expect(demandToPriority(8, 12, 50)).toBe("critical");
-		expect(demandToPriority(6, 12, 50)).toBe("important");
 	});
 
 	it("max=0 (pusty/zerowy katalog) → miło-mieć, bez dzielenia przez zero", () => {
