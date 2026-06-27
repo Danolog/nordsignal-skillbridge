@@ -262,16 +262,23 @@ describe("buildCareerModel — hierarchia v4", () => {
 		expect(lc?.demandPercentage).toBe(44);
 	});
 
-	it("liść absent → null + source kuracja ekspercka", () => {
+	it("context-group: demandPercentage null + unionShare number (ETAP A5)", () => {
+		// AI przeszedł na kurację context-group (A5). Grupa z LangChain to context-group:
+		// % obszaru = null (dyskryminator jawny), miara grupy = unionShare (unia ofert).
 		const ai = builtModelForTest().paths.find((p) => p.careerGoal === "AI Engineer");
-		const jup = ai?.areas.flatMap((a) => a.leaves).find((l) => l.name === "Jupyter Notebook");
-		expect(jup?.demandPercentage).toBeNull();
-		expect(jup?.source).toBe("kuracja ekspercka");
+		const grp = ai?.areas.find((a) => a.leaves.some((l) => l.name === "LangChain"));
+		expect(grp?.type).toBe("context-group");
+		expect(grp?.demandPercentage).toBeNull();
+		expect(typeof grp?.unionShare).toBe("number");
 	});
 
-	it("grupnik prezentacyjny ma demandPercentage null", () => {
-		const ai = builtModelForTest().paths.find((p) => p.careerGoal === "AI Engineer");
-		expect(ai?.areas.find((a) => a.type === "presentation-group")?.demandPercentage).toBeNull();
+	it("grupnik prezentacyjny ma demandPercentage null (Java — A5 przeniósł AI/DS/QA na context-group)", () => {
+		// AI/DS/QA są teraz context-group; presentation-group testujemy na ścieżce, która go
+		// zachowała (Java Developer „Język i framework"), bo fixtura buduje też Javę.
+		const java = builtModelForTest().paths.find((p) => p.careerGoal === "Java Developer");
+		const pg = java?.areas.find((a) => a.type === "presentation-group");
+		expect(pg).toBeDefined();
+		expect(pg?.demandPercentage).toBeNull();
 	});
 
 	it("każdy liść z danych ma lift, offers i kind (Tor 1)", () => {
@@ -584,6 +591,42 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		}
 	});
 
+	it("KURACJA QA/DS/AI zachowana (A5): context-group z opisem + unionShare; kind Sophii (tool/concept)", () => {
+		const expected: Record<string, number> = {
+			"QA Engineer": 8,
+			"Data Scientist": 4,
+			"AI Engineer": 6,
+		};
+		for (const [goal, n] of Object.entries(expected)) {
+			const path = model.paths.find((p) => p.careerGoal === goal);
+			expect(path, `${goal} obecny w artefakcie`).toBeDefined();
+			// Pełna wymiana starej struktury: wszystkie obszary to context-group (jak cyber).
+			expect(
+				path?.areas.every((a) => a.type === "context-group"),
+				`${goal}: brak starej knowledge/presentation`,
+			).toBe(true);
+			const groups = (path?.areas ?? []).filter((a) => a.type === "context-group");
+			expect(groups.length, `${goal}: ${n} grup context-group`).toBe(n);
+			for (const g of groups) {
+				const desc = (g as { description?: string }).description;
+				expect(typeof desc, `${goal}/${g.name}: opis`).toBe("string");
+				expect((desc ?? "").length, `${goal}/${g.name}: opis niepusty`).toBeGreaterThan(40);
+				expect(g.demandPercentage, `${goal}/${g.name}: dyskryminator → null`).toBeNull();
+				expect(typeof g.unionShare, `${goal}/${g.name}: unionShare number`).toBe("number");
+			}
+			// kind kuratorowany przez Sophię: tylko tool/concept, ≥1 concept, wszystko z danych.
+			let conceptSeen = 0;
+			for (const a of path?.areas ?? []) {
+				for (const l of a.leaves) {
+					expect(["tool", "concept"], `${goal}/${l.name}: kind ∈ {tool,concept}`).toContain(l.kind);
+					expect(l.source, `${goal}/${l.name}: z danych`).toBe("dane");
+					if (l.kind === "concept") conceptSeen++;
+				}
+			}
+			expect(conceptSeen, `${goal}: ≥1 concept`).toBeGreaterThan(0);
+		}
+	});
+
 	it("liście absent: null + kuracja ekspercka; obecne: number + dane", () => {
 		let absentSeen = 0;
 		let presentSeen = 0;
@@ -604,13 +647,25 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		expect(presentSeen).toBeGreaterThan(0);
 	});
 
-	it("AI Engineer: hierarchia Darka (AI obszar → ML → Pandas z liczbą)", () => {
+	it("AI Engineer: kuracja A5 — wszystkie grupy context-group, Pandas z danych, brak nagiej dyscypliny", () => {
 		const ai = model.paths.find((p) => p.careerGoal === "AI Engineer");
-		expect(ai?.areas.find((a) => a.name === "AI")?.demandPercentage).toBeGreaterThan(0);
+		expect(ai, "ścieżka AI obecna").toBeDefined();
+		// ETAP A5: cała ścieżka na wzorcu cyber — context-group, bez knowledge/presentation.
+		expect(
+			ai?.areas.every((a) => a.type === "context-group"),
+			"wszystkie grupy context-group",
+		).toBe(true);
+		// Naga nazwa dyscypliny wyrzucona jako obszar (jak „Security" w cyber).
+		expect(
+			ai?.areas.some((a) => a.name === "AI" || a.name === "Machine Learning"),
+			"brak obszaru o nagiej nazwie dyscypliny",
+		).toBe(false);
+		// Pandas dalej jest liściem z realnym % z danych.
 		const pandas = ai?.areas
-			.find((a) => a.name === "Machine Learning")
+			.find((a) => a.leaves.some((l) => l.name === "Pandas"))
 			?.leaves.find((l) => l.name === "Pandas");
-		expect(typeof pandas?.demandPercentage).toBe("number");
+		expect(typeof pandas?.demandPercentage, "Pandas % z danych").toBe("number");
+		expect(pandas?.source).toBe("dane");
 	});
 
 	it("6 zestawów v5 (Java/Data Engineer/Frontend/PM/BA/Salesforce) mają 3 poziomy bez todo", () => {

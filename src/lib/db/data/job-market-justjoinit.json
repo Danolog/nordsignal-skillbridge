@@ -215,67 +215,167 @@
 				{
 					"name": "Python",
 					"demandPercentage": 72,
-					"category": "Konkret bazowy"
+					"category": "Python i praca z danymi"
+				},
+				{
+					"name": "LLM",
+					"demandPercentage": 39,
+					"category": "Aplikacje LLM i GenAI"
 				},
 				{
 					"name": "AWS",
 					"demandPercentage": 21,
-					"category": "Konkret bazowy"
+					"category": "Wdrażanie modeli: chmura, kontenery i MLOps"
+				},
+				{
+					"name": "RAG",
+					"demandPercentage": 21,
+					"category": "Aplikacje LLM i GenAI"
 				},
 				{
 					"name": "PyTorch",
 					"demandPercentage": 20,
-					"category": "Machine Learning"
+					"category": "Uczenie głębokie i modele ML"
 				},
 				{
 					"name": "TensorFlow",
 					"demandPercentage": 18,
-					"category": "Machine Learning"
+					"category": "Uczenie głębokie i modele ML"
 				},
 				{
 					"name": "Docker",
 					"demandPercentage": 17,
-					"category": "Konkret bazowy"
+					"category": "Wdrażanie modeli: chmura, kontenery i MLOps"
+				},
+				{
+					"name": "CI/CD",
+					"demandPercentage": 16,
+					"category": "Wdrażanie modeli: chmura, kontenery i MLOps"
 				},
 				{
 					"name": "Azure",
 					"demandPercentage": 14,
-					"category": "Konkret bazowy"
+					"category": "Wdrażanie modeli: chmura, kontenery i MLOps"
 				},
 				{
 					"name": "LangChain",
 					"demandPercentage": 11,
-					"category": "AI"
+					"category": "Aplikacje LLM i GenAI"
+				},
+				{
+					"name": "API / REST",
+					"demandPercentage": 10,
+					"category": "Udostępnianie modeli jako API"
+				},
+				{
+					"name": "NLP",
+					"demandPercentage": 8,
+					"category": "Uczenie głębokie i modele ML"
+				},
+				{
+					"name": "GenAI",
+					"demandPercentage": 7,
+					"category": "Aplikacje LLM i GenAI"
+				},
+				{
+					"name": "Kubernetes",
+					"demandPercentage": 7,
+					"category": "Wdrażanie modeli: chmura, kontenery i MLOps"
+				},
+				{
+					"name": "MLOps",
+					"demandPercentage": 7,
+					"category": "Wdrażanie modeli: chmura, kontenery i MLOps"
+				},
+				{
+					"name": "LangGraph",
+					"demandPercentage": 6,
+					"category": "Aplikacje LLM i GenAI"
 				},
 				{
 					"name": "SQL",
 					"demandPercentage": 6,
-					"category": "Konkret bazowy"
+					"category": "Python i praca z danymi"
+				},
+				{
+					"name": "GCP",
+					"demandPercentage": 5,
+					"category": "Wdrażanie modeli: chmura, kontenery i MLOps"
+				},
+				{
+					"name": "Java",
+					"demandPercentage": 5,
+					"category": "Języki dodatkowe"
+				},
+				{
+					"name": "TypeScript",
+					"demandPercentage": 5,
+					"category": "Języki dodatkowe"
 				},
 				{
 					"name": "FastAPI",
 					"demandPercentage": 4,
-					"category": "LLM / RAG / GenAI"
+					"category": "Udostępnianie modeli jako API"
+				},
+				{
+					"name": "GitHub",
+					"demandPercentage": 4,
+					"category": "Udostępnianie modeli jako API"
 				},
 				{
 					"name": "Hugging Face",
 					"demandPercentage": 4,
-					"category": "AI"
+					"category": "Aplikacje LLM i GenAI"
+				},
+				{
+					"name": "IaC",
+					"demandPercentage": 4,
+					"category": "Wdrażanie modeli: chmura, kontenery i MLOps"
 				},
 				{
 					"name": "Pandas",
 					"demandPercentage": 4,
-					"category": "Machine Learning"
+					"category": "Python i praca z danymi"
+				},
+				{
+					"name": "C++",
+					"demandPercentage": 3,
+					"category": "Języki dodatkowe"
+				},
+				{
+					"name": "Go",
+					"demandPercentage": 3,
+					"category": "Języki dodatkowe"
+				},
+				{
+					"name": "JavaScript",
+					"demandPercentage": 3,
+					"category": "Języki dodatkowe"
 				},
 				{
 					"name": "NumPy",
 					"demandPercentage": 3,
-					"category": "Machine Learning"
+					"category": "Python i praca z danymi"
 				},
 				{
-					"name": "Scikit-learn",
+					"name": "React",
 					"demandPercentage": 3,
-					"category": "Machine Learning"
+					"category": "Języki dodatkowe"
+				},
+				{
+					"name": "scikit-learn",
+					"demandPercentage": 3,
+					"category": "Uczenie głębokie i modele ML"
+				},
+				{
+					"name": "Uczenie głębokie (Deep Learning)",
+					"demandPercentage": 3,
+					"category": "Uczenie głębokie i modele ML"
+				},
+				{
+					"name": "MLflow",
+					"demandPercentage": 2,
+					"category": "Wdrażanie modeli: chmura, kontenery i MLOps"
 				}
 			]
 		},
@@ -287,32 +387,107 @@
 				{
 					"name": "Python",
 					"demandPercentage": 55,
-					"category": "AI / Data Science"
+					"category": "Python, SQL i praca z danymi"
+				},
+				{
+					"name": "Azure",
+					"demandPercentage": 32,
+					"category": "Chmura i platformy danych"
 				},
 				{
 					"name": "SQL",
 					"demandPercentage": 28,
-					"category": "Konkret bazowy"
+					"category": "Python, SQL i praca z danymi"
+				},
+				{
+					"name": "GCP",
+					"demandPercentage": 20,
+					"category": "Chmura i platformy danych"
 				},
 				{
 					"name": "Databricks",
 					"demandPercentage": 19,
-					"category": "Konkret bazowy"
+					"category": "Chmura i platformy danych"
+				},
+				{
+					"name": "LLM",
+					"demandPercentage": 12,
+					"category": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe"
+				},
+				{
+					"name": "GenAI",
+					"demandPercentage": 10,
+					"category": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe"
+				},
+				{
+					"name": "Git",
+					"demandPercentage": 9,
+					"category": "Python, SQL i praca z danymi"
+				},
+				{
+					"name": "AWS",
+					"demandPercentage": 7,
+					"category": "Chmura i platformy danych"
+				},
+				{
+					"name": "CI/CD",
+					"demandPercentage": 5,
+					"category": "Wielkie zbiory danych i wdrażanie (Big Data / MLOps)"
 				},
 				{
 					"name": "Pandas",
 					"demandPercentage": 5,
-					"category": "Machine Learning"
+					"category": "Python, SQL i praca z danymi"
+				},
+				{
+					"name": "Spark",
+					"demandPercentage": 4,
+					"category": "Wielkie zbiory danych i wdrażanie (Big Data / MLOps)"
+				},
+				{
+					"name": "Kafka",
+					"demandPercentage": 3,
+					"category": "Wielkie zbiory danych i wdrażanie (Big Data / MLOps)"
+				},
+				{
+					"name": "Kubernetes",
+					"demandPercentage": 3,
+					"category": "Wielkie zbiory danych i wdrażanie (Big Data / MLOps)"
+				},
+				{
+					"name": "MLOps",
+					"demandPercentage": 3,
+					"category": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe"
+				},
+				{
+					"name": "PySpark",
+					"demandPercentage": 3,
+					"category": "Wielkie zbiory danych i wdrażanie (Big Data / MLOps)"
+				},
+				{
+					"name": "Terraform",
+					"demandPercentage": 3,
+					"category": "Wielkie zbiory danych i wdrażanie (Big Data / MLOps)"
+				},
+				{
+					"name": "NLP",
+					"demandPercentage": 2,
+					"category": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe"
 				},
 				{
 					"name": "NumPy",
 					"demandPercentage": 2,
-					"category": "Machine Learning"
+					"category": "Python, SQL i praca z danymi"
 				},
 				{
-					"name": "PyTorch",
-					"demandPercentage": 1,
-					"category": "Machine Learning"
+					"name": "Snowflake",
+					"demandPercentage": 2,
+					"category": "Chmura i platformy danych"
+				},
+				{
+					"name": "Statystyka (Statistics)",
+					"demandPercentage": 2,
+					"category": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe"
 				}
 			]
 		},
@@ -1039,57 +1214,137 @@
 				{
 					"name": "Java",
 					"demandPercentage": 47,
-					"category": "Języki"
+					"category": "Języki programowania testera"
 				},
 				{
 					"name": "JavaScript",
 					"demandPercentage": 28,
-					"category": "Języki"
+					"category": "Języki programowania testera"
+				},
+				{
+					"name": "Selenium",
+					"demandPercentage": 28,
+					"category": "Automatyzacja testów interfejsu"
 				},
 				{
 					"name": "SQL",
 					"demandPercentage": 27,
-					"category": "Języki"
+					"category": "Bazy danych (SQL)"
 				},
 				{
 					"name": "Python",
 					"demandPercentage": 25,
-					"category": "Języki"
+					"category": "Języki programowania testera"
 				},
 				{
-					"name": "Selenium",
-					"demandPercentage": 25,
-					"category": "Automatyzacja"
+					"name": "CI/CD",
+					"demandPercentage": 23,
+					"category": "CI/CD i narzędzia inżynierskie"
 				},
 				{
 					"name": "Playwright",
 					"demandPercentage": 23,
-					"category": "Automatyzacja"
+					"category": "Automatyzacja testów interfejsu"
 				},
 				{
-					"name": "C#",
-					"demandPercentage": 19,
-					"category": "Języki"
+					"name": "C# (.NET)",
+					"demandPercentage": 21,
+					"category": "Języki programowania testera"
+				},
+				{
+					"name": "Testowanie API (API Testing)",
+					"demandPercentage": 18,
+					"category": "Testowanie API i usług"
+				},
+				{
+					"name": "Automatyzacja testów (Automated Testing)",
+					"demandPercentage": 17,
+					"category": "Automatyzacja testów interfejsu"
 				},
 				{
 					"name": "TypeScript",
 					"demandPercentage": 17,
-					"category": "Języki"
+					"category": "Języki programowania testera"
+				},
+				{
+					"name": "API / REST",
+					"demandPercentage": 12,
+					"category": "Testowanie API i usług"
 				},
 				{
 					"name": "Postman",
 					"demandPercentage": 8,
-					"category": "Testowanie API"
+					"category": "Testowanie API i usług"
+				},
+				{
+					"name": "Testy manualne (Manual Testing)",
+					"demandPercentage": 8,
+					"category": "Testy manualne i projektowanie testów"
 				},
 				{
 					"name": "Cypress",
 					"demandPercentage": 6,
-					"category": "Automatyzacja"
+					"category": "Automatyzacja testów interfejsu"
 				},
 				{
 					"name": "Jira",
+					"demandPercentage": 6,
+					"category": "Metodyki i organizacja pracy"
+				},
+				{
+					"name": "Agile",
 					"demandPercentage": 4,
-					"category": "Zarządzanie testami"
+					"category": "Metodyki i organizacja pracy"
+				},
+				{
+					"name": "Appium",
+					"demandPercentage": 4,
+					"category": "Automatyzacja testów interfejsu"
+				},
+				{
+					"name": "Cucumber",
+					"demandPercentage": 4,
+					"category": "Frameworki testowe i BDD"
+				},
+				{
+					"name": "Git",
+					"demandPercentage": 3,
+					"category": "CI/CD i narzędzia inżynierskie"
+				},
+				{
+					"name": "Jenkins",
+					"demandPercentage": 3,
+					"category": "CI/CD i narzędzia inżynierskie"
+				},
+				{
+					"name": "Oracle",
+					"demandPercentage": 3,
+					"category": "Bazy danych (SQL)"
+				},
+				{
+					"name": "C++",
+					"demandPercentage": 2,
+					"category": "Języki programowania testera"
+				},
+				{
+					"name": "ISTQB",
+					"demandPercentage": 2,
+					"category": "Testy manualne i projektowanie testów"
+				},
+				{
+					"name": "JUnit",
+					"demandPercentage": 2,
+					"category": "Frameworki testowe i BDD"
+				},
+				{
+					"name": "Projektowanie przypadków testowych (Test Cases)",
+					"demandPercentage": 2,
+					"category": "Testy manualne i projektowanie testów"
+				},
+				{
+					"name": "pytest",
+					"demandPercentage": 2,
+					"category": "Frameworki testowe i BDD"
 				}
 			]
 		},

@@ -504,37 +504,30 @@
 			"tShapePairs": [],
 			"areas": [
 				{
-					"name": "AI",
-					"type": "knowledge-area",
-					"demandPercentage": 66,
-					"unionShare": 14,
+					"name": "Python i praca z danymi",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Python to wspólny język całego AI — prawie trzy na cztery oferty go wymagają. Pandas i NumPy obsługują dane, którymi karmisz modele, a SQL wyciąga je z baz. To fundament, na którym stoi wszystko inne; bez Pythona nie wejdziesz do tej roli w ogóle.",
+					"unionShare": 72.4,
 					"leaves": [
 						{
-							"name": "LangChain",
+							"name": "Python",
 							"type": "leaf",
-							"demandPercentage": 11.4,
-							"lift": 25.625,
-							"offers": 35,
+							"demandPercentage": 71.8,
+							"lift": 3.538447884123829,
+							"offers": 221,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Hugging Face",
+							"name": "SQL",
 							"type": "leaf",
-							"demandPercentage": 3.6,
-							"lift": 22.147321428571427,
-							"offers": 11,
+							"demandPercentage": 5.5,
+							"lift": 0.32007180429155885,
+							"offers": 17,
 							"kind": "tool",
 							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Machine Learning",
-					"type": "knowledge-area",
-					"demandPercentage": 28,
-					"unionShare": 23.1,
-					"leaves": [
+						},
 						{
 							"name": "Pandas",
 							"type": "leaf",
@@ -552,25 +545,169 @@
 							"offers": 10,
 							"kind": "tool",
 							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Aplikacje LLM i GenAI",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Serce dzisiejszego AI Engineera: wpinanie dużych modeli językowych (LLM) w produkty. RAG (Retrieval-Augmented Generation — generacja wsparta wyszukiwaniem) podaje modelowi Twoje własne dane, żeby nie zmyślał; LangChain i LangGraph to biblioteki, którymi spina się model z resztą aplikacji w wieloetapowy proces; Hugging Face to największe repozytorium gotowych modeli do pobrania. To kompetencja, która najmocniej odróżnia tę rolę od „klasycznego” uczenia maszynowego — i najszybciej rośnie.",
+					"unionShare": 51.6,
+					"leaves": [
+						{
+							"name": "LLM",
+							"type": "leaf",
+							"demandPercentage": 39.3,
+							"lift": 19.29667609618105,
+							"offers": 121,
+							"kind": "concept",
+							"source": "dane"
 						},
 						{
-							"name": "Scikit-learn",
+							"name": "RAG",
 							"type": "leaf",
-							"demandPercentage": 3.2,
-							"lift": 17.896825396825395,
-							"offers": 10,
+							"demandPercentage": 21.4,
+							"lift": 24.160714285714285,
+							"offers": 66,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "LangChain",
+							"type": "leaf",
+							"demandPercentage": 11.4,
+							"lift": 25.625,
+							"offers": 35,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "XGBoost",
+							"name": "GenAI",
 							"type": "leaf",
-							"demandPercentage": 1,
-							"lift": 32.214285714285715,
-							"offers": 3,
+							"demandPercentage": 6.5,
+							"lift": 11.714285714285712,
+							"offers": 20,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "LangGraph",
+							"type": "leaf",
+							"demandPercentage": 5.5,
+							"lift": 28.82330827067669,
+							"offers": 17,
 							"kind": "tool",
 							"source": "dane"
 						},
+						{
+							"name": "Hugging Face",
+							"type": "leaf",
+							"demandPercentage": 3.6,
+							"lift": 22.147321428571427,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Wdrażanie modeli: chmura, kontenery i MLOps",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Model jest bezużyteczny, dopóki działa tylko na Twoim laptopie. Tu uczysz się go wypchnąć na produkcję i utrzymać: Docker pakuje go w kontener (odizolowaną paczkę), Kubernetes uruchamia i skaluje, jedna z chmur (AWS / Azure / GCP) go hostuje, a MLOps (operacjonalizacja uczenia maszynowego) pilnuje, żeby działał niezawodnie po wdrożeniu. IaC (infrastruktura jako kod) i MLflow (śledzenie eksperymentów) domykają warsztat.",
+					"unionShare": 54.2,
+					"leaves": [
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 20.8,
+							"lift": 2.3562448979591837,
+							"offers": 64,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 16.6,
+							"lift": 2.1789503599848428,
+							"offers": 51,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 16.2,
+							"lift": 1.7245334964821046,
+							"offers": 50,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 13.6,
+							"lift": 1.818548387096774,
+							"offers": 42,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 6.8,
+							"lift": 0.8310810810810809,
+							"offers": 21,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "MLOps",
+							"type": "leaf",
+							"demandPercentage": 6.5,
+							"lift": 14.642857142857142,
+							"offers": 20,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 5.2,
+							"lift": 1.4939958592132505,
+							"offers": 16,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "IaC",
+							"type": "leaf",
+							"demandPercentage": 3.6,
+							"lift": 4.269363166953528,
+							"offers": 11,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "MLflow",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"lift": 17.57142857142857,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Uczenie głębokie i modele ML",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Warstwa „buduję i trenuję model”, nie tylko „wołam gotowy”. PyTorch i TensorFlow to dwa wielkie frameworki sieci neuronowych (uczenia głębokiego), scikit-learn obsługuje klasyczne uczenie maszynowe (klasyfikacja, regresja), a NLP i uczenie głębokie to koncepcje, które rozumiesz, żeby wiedzieć, co te narzędzia robią pod spodem. Wciąż mocny popyt, choć rynek przesuwa ciężar ku aplikacjom LLM.",
+					"unionShare": 27.6,
+					"leaves": [
 						{
 							"name": "PyTorch",
 							"type": "leaf",
@@ -588,22 +725,50 @@
 							"offers": 55,
 							"kind": "tool",
 							"source": "dane"
+						},
+						{
+							"name": "NLP",
+							"type": "leaf",
+							"demandPercentage": 7.8,
+							"lift": 14.868131868131869,
+							"offers": 24,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "scikit-learn",
+							"type": "leaf",
+							"demandPercentage": 3.2,
+							"lift": 17.896825396825395,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Uczenie głębokie (Deep Learning)",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 28.634920634920636,
+							"offers": 8,
+							"kind": "concept",
+							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "LLM / RAG / GenAI",
-					"type": "knowledge-area",
-					"demandPercentage": 36,
-					"unionShare": 13,
+					"name": "Udostępnianie modeli jako API",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Gotowy model trafia do reszty firmy jako API (interfejs, przez który inne programy go wołają) w stylu REST. FastAPI to pythonowy standard wystawiania modelu jako usługi webowej — najkrótsza droga od „mam model” do „inni mogą go używać”. GitHub to miejsce, gdzie ten kod żyje i jest wspólnie rozwijany.",
+					"unionShare": 17.5,
 					"leaves": [
 						{
-							"name": "LangChain",
+							"name": "API / REST",
 							"type": "leaf",
-							"demandPercentage": 11.4,
-							"lift": 25.625,
-							"offers": 35,
-							"kind": "tool",
+							"demandPercentage": 10.4,
+							"lift": 1.3671845395983329,
+							"offers": 32,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
@@ -616,76 +781,76 @@
 							"source": "dane"
 						},
 						{
-							"name": "Streamlit",
+							"name": "GitHub",
 							"type": "leaf",
-							"demandPercentage": 0.3,
-							"lift": 10.738095238095239,
-							"offers": 1,
+							"demandPercentage": 3.6,
+							"lift": 3.440360610263523,
+							"offers": 11,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Konkret bazowy",
-					"type": "presentation-group",
+					"name": "Języki dodatkowe",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 82.1,
+					"description": "Rdzeń modeli pisze się w Pythonie, ale produkcyjne systemy AI bywają wielojęzyczne: Java i Go w usługach zaplecza, TypeScript / JavaScript / React w warstwie webowej, którą użytkownik klika, C++ tam, gdzie liczy się szybkość. Nie musisz znać wszystkich — to mapa, dokąd prowadzi rola, gdy AI staje się częścią większego produktu.",
+					"unionShare": 16.9,
 					"leaves": [
 						{
-							"name": "Python",
+							"name": "TypeScript",
 							"type": "leaf",
-							"demandPercentage": 71.8,
-							"lift": 3.538447884123829,
-							"offers": 221,
+							"demandPercentage": 4.9,
+							"lift": 0.7266380236305048,
+							"offers": 15,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Docker",
+							"name": "Java",
 							"type": "leaf",
-							"demandPercentage": 16.6,
-							"lift": 2.1789503599848428,
-							"offers": 51,
+							"demandPercentage": 4.5,
+							"lift": 0.3256317689530686,
+							"offers": 14,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "AWS",
+							"name": "Go",
 							"type": "leaf",
-							"demandPercentage": 20.8,
-							"lift": 2.3562448979591837,
-							"offers": 64,
+							"demandPercentage": 3.2,
+							"lift": 3.540031397174254,
+							"offers": 10,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Azure",
+							"name": "JavaScript",
 							"type": "leaf",
-							"demandPercentage": 13.6,
-							"lift": 1.818548387096774,
-							"offers": 42,
+							"demandPercentage": 2.6,
+							"lift": 0.3778801843317972,
+							"offers": 8,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "SQL",
+							"name": "C++",
 							"type": "leaf",
-							"demandPercentage": 5.5,
-							"lift": 0.32007180429155885,
-							"offers": 17,
+							"demandPercentage": 2.6,
+							"lift": 1.1060698957694668,
+							"offers": 8,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Jupyter Notebook",
+							"name": "React",
 							"type": "leaf",
-							"demandPercentage": null,
-							"lift": null,
-							"offers": null,
+							"demandPercentage": 2.6,
+							"lift": 0.41566820276497696,
+							"offers": 8,
 							"kind": "tool",
-							"source": "kuracja ekspercka",
-							"note": "brak w zrzucie 2026-02"
+							"source": "dane"
 						}
 					]
 				}
@@ -718,11 +883,39 @@
 			"tShapePairs": [],
 			"areas": [
 				{
-					"name": "Machine Learning",
-					"type": "knowledge-area",
-					"demandPercentage": 24,
-					"unionShare": 5,
+					"name": "Python, SQL i praca z danymi",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Codzienna klawiatura analityka: Python to język numer jeden (ponad połowa ofert), SQL wyciąga dane z baz (co trzecia oferta), Pandas to jedyna klasyczna biblioteka analityczna, która realnie pojawia się w ogłoszeniach — służy do pracy z danymi w tabelach. Git wersjonuje Twój kod. To jedyna grupa o naprawdę masowym popycie i pierwsza rzecz do nauki.",
+					"unionShare": 61.6,
 					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 54.8,
+							"lift": 2.70053488592256,
+							"offers": 207,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 28,
+							"lift": 1.6261600165749786,
+							"offers": 106,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Git",
+							"type": "leaf",
+							"demandPercentage": 9,
+							"lift": 1.7707441001091793,
+							"offers": 34,
+							"kind": "tool",
+							"source": "dane"
+						},
 						{
 							"name": "Pandas",
 							"type": "leaf",
@@ -740,93 +933,22 @@
 							"offers": 6,
 							"kind": "tool",
 							"source": "dane"
-						},
-						{
-							"name": "Scikit-learn",
-							"type": "leaf",
-							"demandPercentage": 0.3,
-							"lift": 1.458259847148736,
-							"offers": 1,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "XGBoost",
-							"type": "leaf",
-							"demandPercentage": 0,
-							"lift": 0,
-							"offers": 0,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "PyTorch",
-							"type": "leaf",
-							"demandPercentage": 1.1,
-							"lift": 1.4382836848590272,
-							"offers": 4,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "TensorFlow",
-							"type": "leaf",
-							"demandPercentage": 0,
-							"lift": 0,
-							"offers": 0,
-							"kind": "tool",
-							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "AI / Data Science",
-					"type": "knowledge-area",
-					"demandPercentage": 8,
-					"unionShare": 54.8,
-					"leaves": [
-						{
-							"name": "Python",
-							"type": "leaf",
-							"demandPercentage": 54.8,
-							"lift": 2.70053488592256,
-							"offers": 207,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Jupyter Notebook",
-							"type": "leaf",
-							"demandPercentage": null,
-							"lift": null,
-							"offers": null,
-							"kind": "tool",
-							"source": "kuracja ekspercka",
-							"note": "brak w zrzucie 2026-02"
-						},
-						{
-							"name": "R",
-							"type": "leaf",
-							"demandPercentage": 0,
-							"lift": 0,
-							"offers": 0,
-							"kind": "tool",
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Konkret bazowy",
-					"type": "presentation-group",
+					"name": "Chmura i platformy danych",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 37.8,
+					"description": "W polskim „data science” pracuje się nie na laptopie, tylko na platformie chmurowej. Databricks to dziś dominujący warsztat danych i uczenia maszynowego (prawie co piąta oferta), a do tego jedna z trzech wielkich chmur: Azure (najczęstsza w polskich korporacjach), GCP lub AWS. To często ważniejszy wymóg niż konkretna biblioteka uczenia maszynowego — wybierasz przynajmniej jedną platformę.",
+					"unionShare": 48.9,
 					"leaves": [
 						{
-							"name": "SQL",
+							"name": "Azure",
 							"type": "leaf",
-							"demandPercentage": 28,
-							"lift": 1.6261600165749786,
-							"offers": 106,
+							"demandPercentage": 31.7,
+							"lift": 2.8073451602863364,
+							"offers": 120,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -836,6 +958,150 @@
 							"demandPercentage": 18.5,
 							"lift": 9.422602089268755,
 							"offers": 70,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 19.8,
+							"lift": 4.162052417866372,
+							"offers": 75,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 6.9,
+							"lift": 0.6697405382390661,
+							"offers": 26,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Snowflake",
+							"type": "leaf",
+							"demandPercentage": 1.6,
+							"lift": 1.2499370118417736,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Rdzeń dziedziny widziany przez to, co rynek faktycznie nazywa. W tym zrzucie „uczenie maszynowe” pojawia się głównie jako ogólny tag, nie jako konkretne biblioteki (scikit-learn/PyTorch ledwo się przebijają) — dlatego grupa opiera się na nazwanych pod-technikach. Najmocniejszy realny sygnał to LLM (duże modele językowe) i GenAI (sztuczna inteligencja generatywna): polski „data scientist” coraz częściej znaczy „ktoś, kto umie wpiąć model językowy”. NLP (przetwarzanie języka naturalnego) i statystyka to fundament metodyczny, choć w tagach cienki.",
+					"unionShare": 21.2,
+					"leaves": [
+						{
+							"name": "LLM",
+							"type": "leaf",
+							"demandPercentage": 12.4,
+							"lift": 6.815954865678622,
+							"offers": 47,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "GenAI",
+							"type": "leaf",
+							"demandPercentage": 9.5,
+							"lift": 8.914645103324348,
+							"offers": 36,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "MLOps",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 5.965608465608465,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "NLP",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"lift": 4.543040293040293,
+							"offers": 9,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Statystyka (Statistics)",
+							"type": "leaf",
+							"demandPercentage": 1.6,
+							"lift": 19.686507936507937,
+							"offers": 6,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Wielkie zbiory danych i wdrażanie (Big Data / MLOps)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Granica, na której „data science” styka się z inżynierią danych. Gdy danych jest za dużo na jedną maszynę, przetwarza się je narzędziem Spark (i jego pythonowym interfejsem PySpark); Kafka przesyła strumienie danych na żywo. Kubernetes i Terraform pakują i uruchamiają modele w chmurze. To pokazuje studentowi prawdę: w PL od „data scientist” często oczekuje się też kawałka roboty inżyniera danych.",
+					"unionShare": 16.4,
+					"leaves": [
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 5,
+							"lift": 0.5339666677996442,
+							"offers": 19,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 3.2,
+							"lift": 0.3869583869583869,
+							"offers": 12,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Spark",
+							"type": "leaf",
+							"demandPercentage": 4,
+							"lift": 2.3436318972033257,
+							"offers": 15,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "PySpark",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 3.3187982728212613,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Terraform",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 0.5898579157006123,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 0.6782603940226679,
+							"offers": 10,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -2792,106 +3058,11 @@
 			"tShapePairs": ["DevOps Engineer"],
 			"areas": [
 				{
-					"name": "Automatyzacja",
-					"type": "knowledge-area",
-					"demandPercentage": 20,
-					"unionShare": 41.7,
-					"leaves": [
-						{
-							"name": "Selenium",
-							"type": "leaf",
-							"demandPercentage": 25.4,
-							"lift": 20.197455470737914,
-							"offers": 100,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Playwright",
-							"type": "leaf",
-							"demandPercentage": 23.4,
-							"lift": 19.038585074875904,
-							"offers": 92,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Cypress",
-							"type": "leaf",
-							"demandPercentage": 5.9,
-							"lift": 12.903929884082556,
-							"offers": 23,
-							"kind": "tool",
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Testowanie API",
-					"type": "knowledge-area",
-					"demandPercentage": 18,
-					"unionShare": 7.6,
-					"leaves": [
-						{
-							"name": "Postman",
-							"type": "leaf",
-							"demandPercentage": 7.6,
-							"lift": 5.1175985145450795,
-							"offers": 30,
-							"kind": "tool",
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Zarządzanie testami",
-					"type": "presentation-group",
+					"name": "Języki programowania testera",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 4.8,
-					"leaves": [
-						{
-							"name": "Xray",
-							"type": "leaf",
-							"demandPercentage": 0.3,
-							"lift": 1.8033442384587424,
-							"offers": 1,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Zephyr",
-							"type": "leaf",
-							"demandPercentage": 0,
-							"lift": 0,
-							"offers": 0,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "TestRail",
-							"type": "leaf",
-							"demandPercentage": 0.8,
-							"lift": 6.311704834605598,
-							"offers": 3,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Jira",
-							"type": "leaf",
-							"demandPercentage": 4.3,
-							"lift": 0.8415606446140798,
-							"offers": 17,
-							"kind": "tool",
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Języki",
-					"type": "presentation-group",
-					"demandPercentage": null,
-					"unionShare": 82.2,
+					"description": "Automatyzacja testów to pisanie kodu — bez języka zostajesz przy testach manualnych. Na polskim rynku QA króluje Java (prawie co druga oferta), bo testuje się nią ogromne systemy bankowe i korporacyjne; zaraz za nią JavaScript/TypeScript (testy aplikacji webowych narzędziami Playwright/Cypress) oraz C# (świat .NET). Python jest językiem najszybszego wejścia i testów API (interfejsów usług). Wybierasz przynajmniej jeden — i to on zwykle decyduje, które narzędzia automatyzacji poznasz.",
+					"unionShare": 78.6,
 					"leaves": [
 						{
 							"name": "Java",
@@ -2921,6 +3092,15 @@
 							"source": "dane"
 						},
 						{
+							"name": "C# (.NET)",
+							"type": "leaf",
+							"demandPercentage": 20.9,
+							"lift": 2.552699365907073,
+							"offers": 82,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
 							"name": "TypeScript",
 							"type": "leaf",
 							"demandPercentage": 16.5,
@@ -2930,20 +3110,263 @@
 							"source": "dane"
 						},
 						{
-							"name": "C#",
+							"name": "C++",
 							"type": "leaf",
-							"demandPercentage": 18.8,
-							"lift": 4.385597725453654,
-							"offers": 74,
+							"demandPercentage": 2.3,
+							"lift": 0.9751990302394915,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Automatyzacja testów interfejsu",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Rdzeń nowoczesnej roli QA: piszesz program, który klika po aplikacji jak użytkownik i sam sprawdza, czy wszystko działa — codziennie, bez ręcznej pracy. Selenium to weteran i wciąż najczęstszy wymóg, Playwright to jego nowocześniejszy następca (rośnie najszybciej), Cypress to ulubieniec front-endu. Appium przenosi to samo na aplikacje mobilne.",
+					"unionShare": 53.4,
+					"leaves": [
+						{
+							"name": "Selenium",
+							"type": "leaf",
+							"demandPercentage": 27.7,
+							"lift": 18.4691497173694,
+							"offers": 109,
 							"kind": "tool",
 							"source": "dane"
 						},
+						{
+							"name": "Playwright",
+							"type": "leaf",
+							"demandPercentage": 23.4,
+							"lift": 19.038585074875904,
+							"offers": 92,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Automatyzacja testów (Automated Testing)",
+							"type": "leaf",
+							"demandPercentage": 17.3,
+							"lift": 17.167837150127227,
+							"offers": 68,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Cypress",
+							"type": "leaf",
+							"demandPercentage": 5.9,
+							"lift": 12.903929884082556,
+							"offers": 23,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Appium",
+							"type": "leaf",
+							"demandPercentage": 3.6,
+							"lift": 11.40178937864237,
+							"offers": 14,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Bazy danych (SQL)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Co trzecia oferta QA wymaga SQL — języka zapytań do baz danych. Tester sprawdza nie tylko ekran, ale i to, co aplikacja realnie zapisała w bazie: czy zamówienie trafiło z właściwą kwotą, czy nic się nie zdublowało. Bez SQL widzisz tylko połowę prawdy o systemie. Oracle to najczęstsza konkretna baza w polskich ofertach korporacyjnych.",
+					"unionShare": 27.2,
+					"leaves": [
 						{
 							"name": "SQL",
 							"type": "leaf",
 							"demandPercentage": 27.2,
 							"lift": 1.5788484332035044,
 							"offers": 107,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Oracle",
+							"type": "leaf",
+							"demandPercentage": 2.5,
+							"lift": 1.0835544780438795,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Testowanie API i usług",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Nowoczesna aplikacja to nie jeden program, tylko usługi gadające ze sobą przez API (interfejs do sterowania programem z innego programu) w stylu REST. Coraz więcej błędów łapie się zanim powstanie ekran — testując same te usługi. Postman to najpopularniejsze narzędzie do ręcznego odpytywania API; testowanie API jako kompetencja jest tu silniejsze niż Cypress.",
+					"unionShare": 31.6,
+					"leaves": [
+						{
+							"name": "Testowanie API (API Testing)",
+							"type": "leaf",
+							"demandPercentage": 17.6,
+							"lift": 18.731511122055323,
+							"offers": 69,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Postman",
+							"type": "leaf",
+							"demandPercentage": 7.6,
+							"lift": 5.1175985145450795,
+							"offers": 30,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "API / REST",
+							"type": "leaf",
+							"demandPercentage": 11.5,
+							"lift": 1.172452910453052,
+							"offers": 45,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "CI/CD i narzędzia inżynierskie",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Twoje testy mają sens tylko, jeśli uruchamiają się automatycznie przy każdej zmianie kodu — to jest CI/CD (ciągła integracja i dostarczanie, taśma montażowa oprogramowania). QA wpina testy w tę taśmę narzędziem Jenkins i wersjonuje swój kod w Git. Bez tego automatyzacja zostaje skryptem na Twoim laptopie, którego nikt nie odpala.",
+					"unionShare": 27,
+					"leaves": [
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 22.6,
+							"lift": 2.405746168222262,
+							"offers": 89,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Jenkins",
+							"type": "leaf",
+							"demandPercentage": 3.3,
+							"lift": 1.7005629606191246,
+							"offers": 13,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Git",
+							"type": "leaf",
+							"demandPercentage": 2.8,
+							"lift": 0.5510218506401713,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Testy manualne i projektowanie testów",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Zanim cokolwiek zautomatyzujesz, musisz wiedzieć co i dlaczego testować — to jest projektowanie przypadków testowych. Testy manualne to najczęstsza brama wejścia juniora do QA, a ISTQB to międzynarodowy certyfikat-kanon teorii testów, który większość pracodawców rozpoznaje jako dowód podstaw. Tu uczysz się myśleć jak tester, nie tylko obsługiwać narzędzie.",
+					"unionShare": 11.5,
+					"leaves": [
+						{
+							"name": "Testy manualne (Manual Testing)",
+							"type": "leaf",
+							"demandPercentage": 7.9,
+							"lift": 10.721252047823208,
+							"offers": 31,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Projektowanie przypadków testowych (Test Cases)",
+							"type": "leaf",
+							"demandPercentage": 1.8,
+							"lift": 4.310432569974554,
+							"offers": 7,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "ISTQB",
+							"type": "leaf",
+							"demandPercentage": 2,
+							"lift": 6.732485156912638,
+							"offers": 8,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Metodyki i organizacja pracy",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "QA pracuje w zespole produktowym w trybie Agile (zwinnym — krótkie iteracje zamiast jednego wielkiego wydania) i raportuje błędy oraz zadania w Jira (najpopularniejszy w PL system śledzenia zgłoszeń). To nie technika testowania, ale bez tego nie wpasujesz się w rytm zespołu.",
+					"unionShare": 9.7,
+					"leaves": [
+						{
+							"name": "Agile",
+							"type": "leaf",
+							"demandPercentage": 4.1,
+							"lift": 0.6928801190647655,
+							"offers": 16,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Jira",
+							"type": "leaf",
+							"demandPercentage": 6.4,
+							"lift": 1.1034449011548249,
+							"offers": 25,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Frameworki testowe i BDD",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Biblioteki, które nadają strukturę Twoim testom i je uruchamiają: JUnit (świat Javy), pytest (świat Pythona). Cucumber realizuje podejście BDD (Behaviour-Driven Development — testy opisane zdaniami zrozumiałymi dla biznesu, np. „gdy klient kliknie Zapłać, to…”), żeby nietechniczny członek zespołu rozumiał, co jest sprawdzane.",
+					"unionShare": 7.6,
+					"leaves": [
+						{
+							"name": "Cucumber",
+							"type": "leaf",
+							"demandPercentage": 4.3,
+							"lift": 13.412372773536894,
+							"offers": 17,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "JUnit",
+							"type": "leaf",
+							"demandPercentage": 2.3,
+							"lift": 3.8512097295898564,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "pytest",
+							"type": "leaf",
+							"demandPercentage": 1.8,
+							"lift": 5.700894689321185,
+							"offers": 7,
 							"kind": "tool",
 							"source": "dane"
 						}

@@ -594,74 +594,175 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 1 2026-06-27 — 6 grup context-group na 308 ofertach AI.
+		// Najczystsza z trzech ścieżek. `kind` z dokumentu Sophii, liczby z danych. Scalenia:
+		// LLM←LLMs, API/REST←API+REST API, LangChain←Langchain, LangGraph←Langgraph, FastAPI←fastapi.
+		// Wyrzucone meta/szum: AI (65.6%!), Machine Learning, ML, Artificial Intelligence,
+		// AI frameworks, Vibe Coding. Konkretne pod-techniki (LLM/RAG/NLP/Deep Learning) zostają.
 		label: "AI Engineer",
 		areas: [
 			{
-				name: "AI",
-				type: "knowledge-area",
-				leaves: [{ name: "LangChain", countAs: ["Langchain"] }, { name: "Hugging Face" }],
-			},
-			{
-				name: "Machine Learning",
-				type: "knowledge-area",
+				name: "Python i praca z danymi",
+				type: "context-group",
+				description:
+					"Python to wspólny język całego AI — prawie trzy na cztery oferty go wymagają. Pandas i NumPy obsługują dane, którymi karmisz modele, a SQL wyciąga je z baz. To fundament, na którym stoi wszystko inne; bez Pythona nie wejdziesz do tej roli w ogóle.",
 				leaves: [
-					{ name: "Pandas" },
-					{ name: "NumPy" },
-					{ name: "Scikit-learn", countAs: ["scikit-learn"] },
-					{ name: "XGBoost" },
-					{ name: "PyTorch" },
-					{ name: "TensorFlow" },
+					{ name: "Python", kind: "tool" },
+					{ name: "SQL", kind: "tool" },
+					{ name: "Pandas", kind: "tool" },
+					{ name: "NumPy", kind: "tool" },
 				],
 			},
 			{
-				name: "LLM / RAG / GenAI",
-				type: "knowledge-area",
-				demandAs: ["LLM"],
+				name: "Aplikacje LLM i GenAI",
+				type: "context-group",
+				description:
+					"Serce dzisiejszego AI Engineera: wpinanie dużych modeli językowych (LLM) w produkty. RAG (Retrieval-Augmented Generation — generacja wsparta wyszukiwaniem) podaje modelowi Twoje własne dane, żeby nie zmyślał; LangChain i LangGraph to biblioteki, którymi spina się model z resztą aplikacji w wieloetapowy proces; Hugging Face to największe repozytorium gotowych modeli do pobrania. To kompetencja, która najmocniej odróżnia tę rolę od „klasycznego” uczenia maszynowego — i najszybciej rośnie.",
 				leaves: [
-					{ name: "LangChain", countAs: ["Langchain"] },
-					{ name: "FastAPI", countAs: ["fastapi"] },
-					{ name: "Streamlit" },
+					{ name: "LLM", countAs: ["LLM", "LLMs"], kind: "concept" },
+					{ name: "RAG", kind: "concept" },
+					{ name: "LangChain", countAs: ["Langchain"], kind: "tool" },
+					{ name: "GenAI", kind: "concept" },
+					{ name: "LangGraph", countAs: ["Langgraph"], kind: "tool" },
+					{ name: "Hugging Face", kind: "tool" },
 				],
 			},
 			{
-				name: "Konkret bazowy",
-				type: "presentation-group",
+				name: "Wdrażanie modeli: chmura, kontenery i MLOps",
+				type: "context-group",
+				description:
+					"Model jest bezużyteczny, dopóki działa tylko na Twoim laptopie. Tu uczysz się go wypchnąć na produkcję i utrzymać: Docker pakuje go w kontener (odizolowaną paczkę), Kubernetes uruchamia i skaluje, jedna z chmur (AWS / Azure / GCP) go hostuje, a MLOps (operacjonalizacja uczenia maszynowego) pilnuje, żeby działał niezawodnie po wdrożeniu. IaC (infrastruktura jako kod) i MLflow (śledzenie eksperymentów) domykają warsztat.",
 				leaves: [
-					{ name: "Python" },
-					{ name: "Docker" },
-					{ name: "AWS" },
-					{ name: "Azure" },
-					{ name: "SQL" },
-					{ name: "Jupyter Notebook", absent: true },
+					{ name: "AWS", kind: "tool" },
+					{ name: "Docker", kind: "tool" },
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Azure", kind: "tool" },
+					{ name: "Kubernetes", kind: "tool" },
+					{ name: "MLOps", kind: "concept" },
+					{ name: "GCP", kind: "tool" },
+					{ name: "IaC", kind: "concept" },
+					{ name: "MLflow", kind: "tool" },
+				],
+			},
+			{
+				name: "Uczenie głębokie i modele ML",
+				type: "context-group",
+				description:
+					"Warstwa „buduję i trenuję model”, nie tylko „wołam gotowy”. PyTorch i TensorFlow to dwa wielkie frameworki sieci neuronowych (uczenia głębokiego), scikit-learn obsługuje klasyczne uczenie maszynowe (klasyfikacja, regresja), a NLP i uczenie głębokie to koncepcje, które rozumiesz, żeby wiedzieć, co te narzędzia robią pod spodem. Wciąż mocny popyt, choć rynek przesuwa ciężar ku aplikacjom LLM.",
+				leaves: [
+					{ name: "PyTorch", kind: "tool" },
+					{ name: "TensorFlow", kind: "tool" },
+					{ name: "NLP", kind: "concept" },
+					{ name: "scikit-learn", kind: "tool" },
+					{ name: "Uczenie głębokie (Deep Learning)", countAs: ["Deep Learning"], kind: "concept" },
+				],
+			},
+			{
+				name: "Udostępnianie modeli jako API",
+				type: "context-group",
+				description:
+					"Gotowy model trafia do reszty firmy jako API (interfejs, przez który inne programy go wołają) w stylu REST. FastAPI to pythonowy standard wystawiania modelu jako usługi webowej — najkrótsza droga od „mam model” do „inni mogą go używać”. GitHub to miejsce, gdzie ten kod żyje i jest wspólnie rozwijany.",
+				leaves: [
+					{ name: "API / REST", countAs: ["API", "REST API"], kind: "concept" },
+					{ name: "FastAPI", countAs: ["fastapi"], kind: "tool" },
+					{ name: "GitHub", kind: "tool" },
+				],
+			},
+			{
+				name: "Języki dodatkowe",
+				type: "context-group",
+				description:
+					"Rdzeń modeli pisze się w Pythonie, ale produkcyjne systemy AI bywają wielojęzyczne: Java i Go w usługach zaplecza, TypeScript / JavaScript / React w warstwie webowej, którą użytkownik klika, C++ tam, gdzie liczy się szybkość. Nie musisz znać wszystkich — to mapa, dokąd prowadzi rola, gdy AI staje się częścią większego produktu.",
+				leaves: [
+					{ name: "TypeScript", kind: "tool" },
+					{ name: "Java", kind: "tool" },
+					{ name: "Go", kind: "tool" },
+					{ name: "JavaScript", kind: "tool" },
+					{ name: "C++", kind: "tool" },
+					{ name: "React", kind: "tool" },
 				],
 			},
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 1 2026-06-27 — ⚠ KATALOG CIENKI I NIETYPOWY. Polski tag
+		// „Data Scientist" w JJIT ≠ podręcznikowy profil: klasyczny stos (scikit-learn/R/Jupyter/
+		// Tableau/PowerBI) prawie nie istnieje w danych — to Python+SQL na chmurze, dryfujący ku
+		// LLM/GenAI, z nakładką Data/AI Engineer. 4 grupy = minimum oparte WYŁĄCZNIE na danych
+		// (nie dopisuję kompetencji spoza zrzutu). Ogon poniżej top-40 (NumPy/Statistics/Snowflake/
+		// Apache Spark) zweryfikowany buildCandidates(...,200). `kind` z dokumentu Sophii. Scalenia:
+		// Azure←Microsoft Azure/MS Azure/Microsoft Platform/Microsoft Azure Cloud, GCP←Google Cloud
+		// Platform, AWS←Amazon AWS/Amazon Web Services (AWS), GenAI←Generative AI/Gen AI, Spark←
+		// Apache Spark, Kafka←Apache Kafka. Wyrzucone meta/szum: Machine Learning(24%!)/Data Science/
+		// AI/Data, miękkie zarządcze, Active Directory/Linux/Bash/SAP/ITIL (administracja obca roli).
 		label: "Data Scientist",
 		areas: [
 			{
-				name: "Machine Learning",
-				type: "knowledge-area",
+				name: "Python, SQL i praca z danymi",
+				type: "context-group",
+				description:
+					"Codzienna klawiatura analityka: Python to język numer jeden (ponad połowa ofert), SQL wyciąga dane z baz (co trzecia oferta), Pandas to jedyna klasyczna biblioteka analityczna, która realnie pojawia się w ogłoszeniach — służy do pracy z danymi w tabelach. Git wersjonuje Twój kod. To jedyna grupa o naprawdę masowym popycie i pierwsza rzecz do nauki.",
 				leaves: [
-					{ name: "Pandas" },
-					{ name: "NumPy" },
-					{ name: "Scikit-learn", countAs: ["scikit-learn"] },
-					{ name: "XGBoost" },
-					{ name: "PyTorch" },
-					{ name: "TensorFlow" },
+					{ name: "Python", kind: "tool" },
+					{ name: "SQL", kind: "tool" },
+					{ name: "Git", kind: "tool" },
+					{ name: "Pandas", kind: "tool" },
+					{ name: "NumPy", kind: "tool" },
 				],
 			},
 			{
-				name: "AI / Data Science",
-				type: "knowledge-area",
-				demandAs: ["AI"],
-				leaves: [{ name: "Python" }, { name: "Jupyter Notebook", absent: true }, { name: "R" }],
+				name: "Chmura i platformy danych",
+				type: "context-group",
+				description:
+					"W polskim „data science” pracuje się nie na laptopie, tylko na platformie chmurowej. Databricks to dziś dominujący warsztat danych i uczenia maszynowego (prawie co piąta oferta), a do tego jedna z trzech wielkich chmur: Azure (najczęstsza w polskich korporacjach), GCP lub AWS. To często ważniejszy wymóg niż konkretna biblioteka uczenia maszynowego — wybierasz przynajmniej jedną platformę.",
+				leaves: [
+					{
+						name: "Azure",
+						countAs: [
+							"Azure",
+							"Microsoft Azure",
+							"MS Azure",
+							"Microsoft Platform",
+							"Microsoft Azure Cloud",
+						],
+						kind: "tool",
+					},
+					{ name: "Databricks", kind: "tool" },
+					{ name: "GCP", countAs: ["GCP", "Google Cloud Platform"], kind: "tool" },
+					{
+						name: "AWS",
+						countAs: ["AWS", "Amazon AWS", "Amazon Web Services (AWS)"],
+						kind: "tool",
+					},
+					{ name: "Snowflake", kind: "tool" },
+				],
 			},
 			{
-				name: "Konkret bazowy",
-				type: "presentation-group",
-				leaves: [{ name: "SQL" }, { name: "Databricks" }],
+				name: "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe",
+				type: "context-group",
+				description:
+					"Rdzeń dziedziny widziany przez to, co rynek faktycznie nazywa. W tym zrzucie „uczenie maszynowe” pojawia się głównie jako ogólny tag, nie jako konkretne biblioteki (scikit-learn/PyTorch ledwo się przebijają) — dlatego grupa opiera się na nazwanych pod-technikach. Najmocniejszy realny sygnał to LLM (duże modele językowe) i GenAI (sztuczna inteligencja generatywna): polski „data scientist” coraz częściej znaczy „ktoś, kto umie wpiąć model językowy”. NLP (przetwarzanie języka naturalnego) i statystyka to fundament metodyczny, choć w tagach cienki.",
+				leaves: [
+					{ name: "LLM", kind: "concept" },
+					{ name: "GenAI", countAs: ["GenAI", "Generative AI", "Gen AI"], kind: "concept" },
+					{ name: "MLOps", kind: "concept" },
+					{ name: "NLP", kind: "concept" },
+					{ name: "Statystyka (Statistics)", countAs: ["Statistics"], kind: "concept" },
+				],
+			},
+			{
+				name: "Wielkie zbiory danych i wdrażanie (Big Data / MLOps)",
+				type: "context-group",
+				description:
+					"Granica, na której „data science” styka się z inżynierią danych. Gdy danych jest za dużo na jedną maszynę, przetwarza się je narzędziem Spark (i jego pythonowym interfejsem PySpark); Kafka przesyła strumienie danych na żywo. Kubernetes i Terraform pakują i uruchamiają modele w chmurze. To pokazuje studentowi prawdę: w PL od „data scientist” często oczekuje się też kawałka roboty inżyniera danych.",
+				leaves: [
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Kubernetes", kind: "tool" },
+					{ name: "Spark", countAs: ["Spark", "Apache Spark"], kind: "tool" },
+					{ name: "PySpark", kind: "tool" },
+					{ name: "Terraform", kind: "tool" },
+					{ name: "Kafka", countAs: ["Kafka", "Apache Kafka"], kind: "tool" },
+				],
 			},
 		],
 	},
@@ -1024,35 +1125,111 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 1 2026-06-27 (scratchpad/sophia-a4-partia1-qa-ds-ai.md) —
+		// METODA SUROWY UDZIAŁ, wzorzec cyber. 8 grup context-group na 393 ofertach QA.
+		// `kind` z dokumentu Sophii (tool/concept), liczby z danych (silnik). Scalenia: Selenium
+		// ←Selenium WebDriver, C#←.Net, API/REST←REST API/API/REST, Jira←Atlassian JIRA. Wyrzucone
+		// meta/szum: Testing/QA/Quality Assurance, AI, English, Spring, GCP (technologia SUT, nie
+		// warsztat testera). Test Automation (meta) zablokowany — zostaje Automated Testing.
 		label: "QA Engineer",
 		areas: [
 			{
-				name: "Automatyzacja",
-				type: "knowledge-area",
-				demandAs: ["Test Automation"],
-				leaves: [{ name: "Selenium" }, { name: "Playwright" }, { name: "Cypress" }],
-			},
-			{
-				name: "Testowanie API",
-				type: "knowledge-area",
-				demandAs: ["API Testing"],
-				leaves: [{ name: "Postman" }],
-			},
-			{
-				name: "Zarządzanie testami",
-				type: "presentation-group",
-				leaves: [{ name: "Xray" }, { name: "Zephyr" }, { name: "TestRail" }, { name: "Jira" }],
-			},
-			{
-				name: "Języki",
-				type: "presentation-group",
+				name: "Języki programowania testera",
+				type: "context-group",
+				description:
+					"Automatyzacja testów to pisanie kodu — bez języka zostajesz przy testach manualnych. Na polskim rynku QA króluje Java (prawie co druga oferta), bo testuje się nią ogromne systemy bankowe i korporacyjne; zaraz za nią JavaScript/TypeScript (testy aplikacji webowych narzędziami Playwright/Cypress) oraz C# (świat .NET). Python jest językiem najszybszego wejścia i testów API (interfejsów usług). Wybierasz przynajmniej jeden — i to on zwykle decyduje, które narzędzia automatyzacji poznasz.",
 				leaves: [
-					{ name: "Java" },
-					{ name: "JavaScript" },
-					{ name: "Python" },
-					{ name: "TypeScript" },
-					{ name: "C#" },
-					{ name: "SQL" },
+					{ name: "Java", kind: "tool" },
+					{ name: "JavaScript", kind: "tool" },
+					{ name: "Python", kind: "tool" },
+					{ name: "C# (.NET)", countAs: ["C#", ".Net"], kind: "tool" },
+					{ name: "TypeScript", kind: "tool" },
+					{ name: "C++", kind: "tool" },
+				],
+			},
+			{
+				name: "Automatyzacja testów interfejsu",
+				type: "context-group",
+				description:
+					"Rdzeń nowoczesnej roli QA: piszesz program, który klika po aplikacji jak użytkownik i sam sprawdza, czy wszystko działa — codziennie, bez ręcznej pracy. Selenium to weteran i wciąż najczęstszy wymóg, Playwright to jego nowocześniejszy następca (rośnie najszybciej), Cypress to ulubieniec front-endu. Appium przenosi to samo na aplikacje mobilne.",
+				leaves: [
+					{ name: "Selenium", countAs: ["Selenium", "Selenium WebDriver"], kind: "tool" },
+					{ name: "Playwright", kind: "tool" },
+					{
+						name: "Automatyzacja testów (Automated Testing)",
+						countAs: ["Automated Testing"],
+						kind: "concept",
+					},
+					{ name: "Cypress", kind: "tool" },
+					{ name: "Appium", kind: "tool" },
+				],
+			},
+			{
+				name: "Bazy danych (SQL)",
+				type: "context-group",
+				description:
+					"Co trzecia oferta QA wymaga SQL — języka zapytań do baz danych. Tester sprawdza nie tylko ekran, ale i to, co aplikacja realnie zapisała w bazie: czy zamówienie trafiło z właściwą kwotą, czy nic się nie zdublowało. Bez SQL widzisz tylko połowę prawdy o systemie. Oracle to najczęstsza konkretna baza w polskich ofertach korporacyjnych.",
+				leaves: [
+					{ name: "SQL", kind: "tool" },
+					{ name: "Oracle", kind: "tool" },
+				],
+			},
+			{
+				name: "Testowanie API i usług",
+				type: "context-group",
+				description:
+					"Nowoczesna aplikacja to nie jeden program, tylko usługi gadające ze sobą przez API (interfejs do sterowania programem z innego programu) w stylu REST. Coraz więcej błędów łapie się zanim powstanie ekran — testując same te usługi. Postman to najpopularniejsze narzędzie do ręcznego odpytywania API; testowanie API jako kompetencja jest tu silniejsze niż Cypress.",
+				leaves: [
+					{ name: "Testowanie API (API Testing)", countAs: ["API Testing"], kind: "concept" },
+					{ name: "Postman", kind: "tool" },
+					{ name: "API / REST", countAs: ["REST API", "API", "REST"], kind: "concept" },
+				],
+			},
+			{
+				name: "CI/CD i narzędzia inżynierskie",
+				type: "context-group",
+				description:
+					"Twoje testy mają sens tylko, jeśli uruchamiają się automatycznie przy każdej zmianie kodu — to jest CI/CD (ciągła integracja i dostarczanie, taśma montażowa oprogramowania). QA wpina testy w tę taśmę narzędziem Jenkins i wersjonuje swój kod w Git. Bez tego automatyzacja zostaje skryptem na Twoim laptopie, którego nikt nie odpala.",
+				leaves: [
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Jenkins", kind: "tool" },
+					{ name: "Git", kind: "tool" },
+				],
+			},
+			{
+				name: "Testy manualne i projektowanie testów",
+				type: "context-group",
+				description:
+					"Zanim cokolwiek zautomatyzujesz, musisz wiedzieć co i dlaczego testować — to jest projektowanie przypadków testowych. Testy manualne to najczęstsza brama wejścia juniora do QA, a ISTQB to międzynarodowy certyfikat-kanon teorii testów, który większość pracodawców rozpoznaje jako dowód podstaw. Tu uczysz się myśleć jak tester, nie tylko obsługiwać narzędzie.",
+				leaves: [
+					{ name: "Testy manualne (Manual Testing)", countAs: ["Manual Testing"], kind: "concept" },
+					{
+						name: "Projektowanie przypadków testowych (Test Cases)",
+						countAs: ["Test Cases"],
+						kind: "concept",
+					},
+					{ name: "ISTQB", kind: "concept" },
+				],
+			},
+			{
+				name: "Metodyki i organizacja pracy",
+				type: "context-group",
+				description:
+					"QA pracuje w zespole produktowym w trybie Agile (zwinnym — krótkie iteracje zamiast jednego wielkiego wydania) i raportuje błędy oraz zadania w Jira (najpopularniejszy w PL system śledzenia zgłoszeń). To nie technika testowania, ale bez tego nie wpasujesz się w rytm zespołu.",
+				leaves: [
+					{ name: "Agile", kind: "concept" },
+					{ name: "Jira", countAs: ["Jira", "Atlassian JIRA"], kind: "tool" },
+				],
+			},
+			{
+				name: "Frameworki testowe i BDD",
+				type: "context-group",
+				description:
+					"Biblioteki, które nadają strukturę Twoim testom i je uruchamiają: JUnit (świat Javy), pytest (świat Pythona). Cucumber realizuje podejście BDD (Behaviour-Driven Development — testy opisane zdaniami zrozumiałymi dla biznesu, np. „gdy klient kliknie Zapłać, to…”), żeby nietechniczny członek zespołu rozumiał, co jest sprawdzane.",
+				leaves: [
+					{ name: "Cucumber", kind: "tool" },
+					{ name: "JUnit", kind: "tool" },
+					{ name: "pytest", kind: "tool" },
 				],
 			},
 		],
