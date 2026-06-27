@@ -28,6 +28,11 @@ vi.mock("@/lib/onboarding/market-gaps", () => ({
 	loadMarketCatalog: (...a: unknown[]) => mockLoadMarketCatalog(...a),
 }));
 
+const mockBuildCatalogGroups = vi.fn();
+vi.mock("@/lib/onboarding/competency-groups", () => ({
+	buildCatalogGroups: (...a: unknown[]) => mockBuildCatalogGroups(...a),
+}));
+
 const mockLogError = vi.fn();
 vi.mock("@/lib/log", () => ({ logError: (...a: unknown[]) => mockLogError(...a) }));
 
@@ -45,10 +50,25 @@ const CATALOG = [
 	{ competencyName: "Docker", demandPercentage: 20, category: "DevOps" },
 ];
 
+// Widok grupowy (B2) — passthrough z buildCatalogGroups (zmockowane; realne złączenie
+// pokryte w src/lib/onboarding/__tests__/competency-groups.test.ts).
+const GROUPS = [
+	{
+		name: "Konkret bazowy",
+		unionShare: 87.3,
+		description: null,
+		items: [
+			{ competencyName: "SQL", demandPercentage: 90, kind: "tool" },
+			{ competencyName: "Python", demandPercentage: 70, kind: "tool" },
+		],
+	},
+];
+
 beforeEach(() => {
 	vi.clearAllMocks();
 	mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
 	mockLoadMarketCatalog.mockResolvedValue(CATALOG);
+	mockBuildCatalogGroups.mockReturnValue(GROUPS);
 });
 
 describe("GET /api/onboarding/market-catalog", () => {
@@ -70,28 +90,43 @@ describe("GET /api/onboarding/market-catalog", () => {
 		expect(mockLoadMarketCatalog).not.toHaveBeenCalled();
 	});
 
-	it("cel realny → 200, isRealCareerGoal=true, items z katalogu (kolejność zachowana)", async () => {
+	it("cel realny → 200, isRealCareerGoal=true, items (z kind) + groups (kolejność zachowana)", async () => {
 		const res = await GET(makeReq("Data Analyst"));
 		expect(res.status).toBe(200);
 		const json = (await res.json()) as {
 			careerGoal: string;
 			isRealCareerGoal: boolean;
-			items: { competencyName: string; demandPercentage: number; category: string }[];
+			items: {
+				competencyName: string;
+				demandPercentage: number;
+				category: string;
+				kind: string | null;
+			}[];
+			groups: unknown[];
 		};
 		expect(json.isRealCareerGoal).toBe(true);
 		expect(json.careerGoal).toBe("Data Analyst");
 		expect(mockLoadMarketCatalog).toHaveBeenCalledWith("Data Analyst");
-		// Passthrough kolejności (sort robi loadMarketCatalog) + tylko 3 pola kontraktu.
-		expect(json.items).toEqual(CATALOG);
+		// Passthrough kolejności (sort robi loadMarketCatalog) + kind (tu null — mock bez kind).
+		expect(json.items).toEqual(CATALOG.map((i) => ({ ...i, kind: null })));
+		// groups (B2) zbudowane z płaskich items; passthrough z buildCatalogGroups.
+		expect(mockBuildCatalogGroups).toHaveBeenCalledWith("Data Analyst", CATALOG);
+		expect(json.groups).toEqual(GROUPS);
 	});
 
-	it("cel spoza 23 ścieżek → 200, isRealCareerGoal=false, items PUSTE, DB nie pytana", async () => {
+	it("cel spoza 23 ścieżek → 200, isRealCareerGoal=false, items+groups PUSTE, DB nie pytana", async () => {
 		const res = await GET(makeReq("Zostać astronautą NASA"));
 		expect(res.status).toBe(200);
-		const json = (await res.json()) as { isRealCareerGoal: boolean; items: unknown[] };
+		const json = (await res.json()) as {
+			isRealCareerGoal: boolean;
+			items: unknown[];
+			groups: unknown[];
+		};
 		expect(json.isRealCareerGoal).toBe(false);
 		expect(json.items).toEqual([]);
+		expect(json.groups).toEqual([]);
 		expect(mockLoadMarketCatalog).not.toHaveBeenCalled();
+		expect(mockBuildCatalogGroups).not.toHaveBeenCalled();
 	});
 
 	it("awaria DB (loadMarketCatalog rzuca) → 500", async () => {

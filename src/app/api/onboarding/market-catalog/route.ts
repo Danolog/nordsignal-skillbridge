@@ -9,14 +9,17 @@
  * tenant-owej. Wymagamy sesji (endpoint onboardingu), ale nie kontekstu tenanta.
  *
  * Kontrakt (front↔back, jedna gałąź — lekcja split-frontend-backend):
- *   { careerGoal, isRealCareerGoal, items: [{ competencyName, demandPercentage, category }] }
- * Pusty `items` przy realnym celu = brak danych rynku dla ścieżki (sygnał do UI).
+ *   { careerGoal, isRealCareerGoal,
+ *     items:  [{ competencyName, demandPercentage, category, kind }],   // płaska lista (pokrycie)
+ *     groups: [{ name, unionShare, description, items: [{ competencyName, demandPercentage, kind }] }] }
+ * Pusty `items`/`groups` przy realnym celu = brak danych rynku dla ścieżki (sygnał do UI).
  */
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { isRealCareerGoal } from "@/lib/db/data/career-paths";
 import { logError } from "@/lib/log";
+import { buildCatalogGroups } from "@/lib/onboarding/competency-groups";
 import { loadMarketCatalog } from "@/lib/onboarding/market-gaps";
 
 export async function GET(req: Request) {
@@ -37,6 +40,9 @@ export async function GET(req: Request) {
 
 	try {
 		const items = real ? await loadMarketCatalog(careerGoal) : [];
+		// B2: widok grupowy z kontekstem (unionShare + opis + kind) OBOK płaskiego items[].
+		// Płaska lista ZOSTAJE źródłem pokrycia (computeMarketCoverage) — groups[] to dodatek.
+		const groups = real ? buildCatalogGroups(careerGoal, items) : [];
 		return NextResponse.json({
 			careerGoal,
 			isRealCareerGoal: real,
@@ -44,7 +50,9 @@ export async function GET(req: Request) {
 				competencyName: i.competencyName,
 				demandPercentage: i.demandPercentage,
 				category: i.category,
+				kind: i.kind ?? null,
 			})),
+			groups,
 		});
 	} catch (err) {
 		logError("market-catalog", err, { careerGoal });

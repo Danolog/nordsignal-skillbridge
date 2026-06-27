@@ -103,7 +103,9 @@ function main(): void {
 	);
 
 	console.log("=== PRZED/PO — liczba kompetencji w płaskim katalogu per ścieżka ===");
-	console.log("(PO = obecne liście + bramka min-wolumenu; kuracja Sophii dopiero doda właściwe liście)");
+	console.log(
+		"(PO = obecne liście + bramka min-wolumenu; kuracja Sophii dopiero doda właściwe liście)",
+	);
 	const goals = before.map((e) => e.careerGoal);
 	const emptied: string[] = [];
 	for (const goal of goals) {

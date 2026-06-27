@@ -18,6 +18,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { competencies, gaps, jobMarketData, passports } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
+import { enrichWithKind } from "@/lib/onboarding/competency-groups";
 import {
 	demandToPriority,
 	estimatedHoursForGap,
@@ -80,7 +81,10 @@ export async function loadMarketCatalog(careerGoal: string): Promise<MarketCatal
 	ranked.sort((a, b) =>
 		a.rank !== b.rank ? b.rank - a.rank : b.item.demandPercentage - a.item.demandPercentage,
 	);
-	return ranked.map((r) => r.item);
+	const sorted = ranked.map((r) => r.item);
+	// B1: dołącz `kind` (tool/concept/…) z career-model.json (złączenie po nazwie liścia).
+	// Nie zmienia kolejności ani liczby pozycji — deriveGaps/pokrycie liczą jak dotąd.
+	return enrichWithKind(careerGoal, sorted);
 }
 
 /**

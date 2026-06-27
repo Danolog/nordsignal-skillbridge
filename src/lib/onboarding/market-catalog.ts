@@ -12,6 +12,8 @@
 // zaznacza tylko to, co ma; reszta = luka. Liczby deterministyczne (Built-to-Sell).
 // ============================================================================
 
+import type { LeafKind } from "@/lib/db/data/anchor-config";
+
 /** Jedna pozycja katalogu rynku dla wybranej ścieżki (wiersz `job_market_data`). */
 export interface MarketCatalogItem {
 	competencyName: string;
@@ -20,6 +22,32 @@ export interface MarketCatalogItem {
 	category: string;
 	/** Flaga adnotacji „w programie studiów" (D4) — nakładana przez sylabus, NIE generator. */
 	inSyllabus?: boolean;
+	/**
+	 * Rodzaj kompetencji z career-model.json (B1): tool=narzędzie · concept=koncepcja
+	 * (np. SIEM/IAM/NIST) · cert · meta · soft. Dokładany złączeniem z hierarchią
+	 * (competency-groups); nieobecny gdy brak dopasowania. Typ-only — zero kosztu w bundlu.
+	 */
+	kind?: LeafKind;
+}
+
+/** Pozycja w widoku grupowym (B2) — podzbiór MarketCatalogItem + jawny kind. */
+export interface GroupCatalogItem {
+	competencyName: string;
+	demandPercentage: number;
+	kind: LeafKind | null;
+}
+
+/**
+ * Grupa kompetencji z kontekstem (B2) — odpowiada obszarowi (area) z career-model.json.
+ * `unionShare` = % ofert ścieżki z ≥1 technologią grupy (unia); `description` = proza
+ * „po co się uczysz" (kuracja Sophii). Widok grupowy NIE zastępuje płaskiego `items[]`
+ * (pokrycie liczy się na płaskiej liście) — to dodatkowa warstwa opisowa prezentacji.
+ */
+export interface GroupCatalog {
+	name: string;
+	unionShare: number | null;
+	description: string | null;
+	items: GroupCatalogItem[];
 }
 
 // ── Skala biegłości: 4 stany / 3 poziomy posiadania ─────────────────────────
