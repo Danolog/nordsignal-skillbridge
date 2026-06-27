@@ -5,19 +5,30 @@ import {
 	assignToAnchor,
 	buildAnchors,
 	buildArtifact,
+	buildCandidates,
 	buildCareerModel,
 	buildTechIndex,
+	type CareerModel,
 	type CleanOffer,
 	cleanOffers,
 	displayName,
 	flattenLeaves,
+	globalTechFrequency,
+	liftOf,
+	type ModelLeaf,
 	normalizeCity,
 	normalizeTitle,
+	type PathStat,
 	parseCsv,
 	passesGeoFilter,
 	pathStats,
 } from "../../../../tools/etl-justjoinit";
-import { MANUAL_ANCHORS, PROFILE_SIZE, TIE_BREAK_DEPRIORITIZED } from "../data/anchor-config";
+import {
+	classifyLeafKind,
+	MANUAL_ANCHORS,
+	PROFILE_SIZE,
+	TIE_BREAK_DEPRIORITIZED,
+} from "../data/anchor-config";
 import careerModelJson from "../data/career-model.json";
 import artifactJson from "../data/job-market-justjoinit.json";
 
@@ -226,7 +237,11 @@ describe("v5 — salary PRECZ (decyzja Darka)", () => {
 
 // ── buildCareerModel: hierarchia, % obszaru vs liścia, warianty, absent ──────
 
-function statsForModel(): ReturnType<typeof pathStats> {
+function statsForModel(): {
+	stats: ReturnType<typeof pathStats>;
+	freq: Map<string, number>;
+	total: number;
+} {
 	const specs: Array<{ title: string; kat: string; techs: string[] }> = [];
 	// AI: wariant Langchain liczony jako LangChain (22/50 = 44%)
 	for (let i = 0; i < 50; i++) {
@@ -237,60 +252,225 @@ function statsForModel(): ReturnType<typeof pathStats> {
 	for (let i = 0; i < 40; i++)
 		specs.push({ title: "Java Developer", kat: "Java", techs: ["Java"] });
 	const offers = makeOffers(specs);
-	return pathStats(assignAll(offers, buildAnchors(offers)), offers);
+	const stats = pathStats(assignAll(offers, buildAnchors(offers)), offers);
+	const { freq, total } = globalTechFrequency(offers);
+	return { stats, freq, total };
+}
+
+/** Pełny model z fikstury (skleja stats + global freq pod nową sygnaturę buildCareerModel). */
+function builtModelForTest(): CareerModel {
+	const { stats, freq, total } = statsForModel();
+	return buildCareerModel(stats, freq, total);
 }
 
 describe("buildCareerModel — hierarchia v4", () => {
 	it("liść liczony po wariancie (Langchain → LangChain 44%)", () => {
-		const ai = buildCareerModel(statsForModel()).paths.find((p) => p.careerGoal === "AI Engineer");
+		const ai = builtModelForTest().paths.find((p) => p.careerGoal === "AI Engineer");
 		const lc = ai?.areas.flatMap((a) => a.leaves).find((l) => l.name === "LangChain");
 		expect(lc?.demandPercentage).toBe(44);
 	});
 
 	it("liść absent → null + source kuracja ekspercka", () => {
-		const ai = buildCareerModel(statsForModel()).paths.find((p) => p.careerGoal === "AI Engineer");
+		const ai = builtModelForTest().paths.find((p) => p.careerGoal === "AI Engineer");
 		const jup = ai?.areas.flatMap((a) => a.leaves).find((l) => l.name === "Jupyter Notebook");
 		expect(jup?.demandPercentage).toBeNull();
 		expect(jup?.source).toBe("kuracja ekspercka");
 	});
 
 	it("grupnik prezentacyjny ma demandPercentage null", () => {
-		const ai = buildCareerModel(statsForModel()).paths.find((p) => p.careerGoal === "AI Engineer");
+		const ai = builtModelForTest().paths.find((p) => p.careerGoal === "AI Engineer");
 		expect(ai?.areas.find((a) => a.type === "presentation-group")?.demandPercentage).toBeNull();
+	});
+
+	it("każdy liść z danych ma lift, offers i kind (Tor 1)", () => {
+		const ai = builtModelForTest().paths.find((p) => p.careerGoal === "AI Engineer");
+		const py = ai?.areas.flatMap((a) => a.leaves).find((l) => l.name === "Python");
+		expect(py?.kind).toBe("tool");
+		expect(typeof py?.offers).toBe("number");
+		expect(py?.lift === null || typeof py?.lift === "number").toBe(true);
 	});
 
 	it("dołącza bank projektów; napisane projekty kotwiczą na liściach", () => {
 		// Java ma 3 napisane projekty (anchorLeaves niepuste). AI ma na razie szablon todo.
-		const model = buildCareerModel(statsForModel());
+		const model = builtModelForTest();
 		const java = model.paths.find((p) => p.careerGoal === "Java Developer");
 		expect(java?.projects.length).toBe(3);
 		for (const p of java?.projects ?? []) expect(p.anchorLeaves.length).toBeGreaterThan(0);
 	});
 });
 
-// ── flattenLeaves: płaski artefakt ────────────────────────────────────────────
+// ── liftOf: krotność (Tor 1) ──────────────────────────────────────────────────
 
-describe("flattenLeaves — płaski jobMarketData", () => {
-	it("zaokrągla do integer, pomija 0% i absent, studentSelectable=true", () => {
-		const specs: Array<{ title: string; kat: string; techs: string[] }> = [];
-		for (let i = 0; i < 100; i++) {
-			const techs = ["Cybersecurity"];
-			if (i < 1) techs.push("Burp Suite"); // 1% → ~0 graniczne, ale Cybersecurity 100%
-			specs.push({ title: `Sec ${i}`, kat: "Security", techs });
-		}
-		for (let i = 0; i < 40; i++)
-			specs.push({ title: "Java Developer", kat: "Java", techs: ["Java"] });
-		const offers = makeOffers(specs);
+function makeStat(techCount: Record<string, number>, offerCount: number): PathStat {
+	return { display: "X", offerCount, techCount: new Map(Object.entries(techCount)) };
+}
+
+describe("liftOf — krotność", () => {
+	it("lift = udział w ścieżce / udział globalny", () => {
+		// SIEM: 40/100=40% w ścieżce; 50/1000=5% globalnie → lift 8.
+		expect(
+			liftOf(makeStat({ SIEM: 40 }, 100), ["SIEM"], new Map([["SIEM", 50]]), 1000),
+		).toBeCloseTo(8);
+	});
+	it("generyk rzadszy w roli niż na rynku → lift < 1 (cyber-efekt Pythona)", () => {
+		// Python: 15% w roli, 20% globalnie → 0,75.
+		expect(
+			liftOf(makeStat({ Python: 15 }, 100), ["Python"], new Map([["Python", 200]]), 1000),
+		).toBeCloseTo(0.75);
+	});
+	it("sumuje warianty w liczniku i mianowniku", () => {
+		// AD + AD(AD): 12/100=12% w roli; 18/1000=1,8% globalnie → lift ~6,67.
+		const s = makeStat({ "Active Directory": 8, "Active Directory (AD)": 4 }, 100);
+		const g = new Map([
+			["Active Directory", 12],
+			["Active Directory (AD)", 6],
+		]);
+		expect(liftOf(s, ["Active Directory", "Active Directory (AD)"], g, 1000)).toBeCloseTo(6.667, 2);
+	});
+	it("brak w globalnej częstości → null (bez dzielenia przez zero)", () => {
+		expect(liftOf(makeStat({ X: 0 }, 100), ["X"], new Map(), 1000)).toBeNull();
+	});
+});
+
+// ── classifyLeafKind: meta/cert/soft/tool (Tor 1) ─────────────────────────────
+
+describe("classifyLeafKind", () => {
+	it("meta-tagi → meta (twarda blokada)", () => {
+		expect(classifyLeafKind("Cybersecurity")).toBe("meta");
+		expect(classifyLeafKind("IT Security")).toBe("meta");
+		expect(classifyLeafKind("DevOps")).toBe("meta");
+	});
+	it("certyfikaty (też warianty po prefiksie) → cert", () => {
+		expect(classifyLeafKind("CISSP")).toBe("cert");
+		expect(classifyLeafKind("ISTQB Foundation")).toBe("cert");
+		expect(classifyLeafKind("ISO 27001 - Information Security Management")).toBe("cert");
+	});
+	it("miękkie → soft; narzędzia → tool", () => {
+		expect(classifyLeafKind("Risk Management")).toBe("soft");
+		expect(classifyLeafKind("SIEM")).toBe("tool");
+		expect(classifyLeafKind("Splunk")).toBe("tool");
+	});
+});
+
+// ── flattenLeaves: bramka liftowa (Tor 1 — zastępuje „udział < 1%") ────────────
+
+function testLeaf(over: Partial<ModelLeaf> & Pick<ModelLeaf, "name">): ModelLeaf {
+	return {
+		type: "leaf",
+		demandPercentage: 10,
+		lift: 5,
+		offers: 50,
+		kind: "tool",
+		source: "dane",
+		...over,
+	};
+}
+
+function modelWithLeaves(pathOffers: number, leaves: ModelLeaf[]): CareerModel {
+	return {
+		_meta: {
+			source: "test",
+			snapshot: "2026-02",
+			model: "test",
+			note: "test",
+			families: [],
+			paths: 1,
+			leafThreshold: "test",
+		},
+		paths: [
+			{
+				careerGoal: "Test Path",
+				category: "I — Test",
+				pathDemandOffers: pathOffers,
+				frameworks: {
+					family: "I — Test",
+					eCfArea: "",
+					sfiaCategory: "",
+					iscoCode: "",
+					iscoLabel: "",
+					escoOccupation: "",
+				},
+				juniorFriendliness: "Średnia",
+				targetRole: false,
+				tShapePairs: [],
+				areas: [{ name: "Obszar", type: "knowledge-area", demandPercentage: 10, leaves }],
+				projects: [],
+			},
+		],
+	};
+}
+
+describe("flattenLeaves — bramka liftowa", () => {
+	it("wpuszcza rzadkie-definiujące, wycina generyk (niski lift) i mały wolumen", () => {
+		// pathOffers=300 → countMin = max(5, ceil(1,5%·300=4,5)=5) = 5.
 		const flat = flattenLeaves(
-			buildCareerModel(pathStats(assignAll(offers, buildAnchors(offers)), offers)),
+			modelWithLeaves(300, [
+				testLeaf({ name: "Generyk", demandPercentage: 20, lift: 0.7, offers: 60 }), // lift<1,3 → out
+				testLeaf({ name: "Definiujacy", demandPercentage: 11, lift: 12, offers: 33 }), // in
+				testLeaf({ name: "Niszowy", demandPercentage: 0.7, lift: 20, offers: 2 }), // wolumen<5 → out
+			]),
 		);
-		for (const entry of flat) {
-			expect(entry.studentSelectable).toBe(true);
-			for (const c of entry.competencies) {
-				expect(Number.isInteger(c.demandPercentage)).toBe(true);
-				expect(c.demandPercentage).toBeGreaterThanOrEqual(1);
-			}
-		}
+		expect(flat[0].competencies.map((c) => c.name)).toEqual(["Definiujacy"]);
+	});
+
+	it("META twardo blokowane mimo wysokiego lift+wolumenu", () => {
+		const flat = flattenLeaves(
+			modelWithLeaves(300, [
+				testLeaf({
+					name: "Cybersecurity",
+					demandPercentage: 26,
+					lift: 20,
+					offers: 80,
+					kind: "meta",
+				}),
+				testLeaf({ name: "SIEM", demandPercentage: 11, lift: 23, offers: 33 }),
+			]),
+		);
+		expect(flat[0].competencies.map((c) => c.name)).toEqual(["SIEM"]);
+	});
+
+	it("countMin skaluje z wielkością ścieżki (1,5%)", () => {
+		// pathOffers=1000 → countMin = max(5, ceil(15)) = 15.
+		const flat = flattenLeaves(
+			modelWithLeaves(1000, [
+				testLeaf({ name: "Maly", demandPercentage: 1.2, lift: 5, offers: 12 }), // 12<15 → out
+				testLeaf({ name: "Duzy", demandPercentage: 2, lift: 5, offers: 20 }), // in
+			]),
+		);
+		expect(flat[0].competencies.map((c) => c.name)).toEqual(["Duzy"]);
+	});
+
+	it("absent (% null) pomijany; % zaokrąglany do integer; studentSelectable=true", () => {
+		const flat = flattenLeaves(
+			modelWithLeaves(300, [
+				testLeaf({
+					name: "Absent",
+					demandPercentage: null,
+					lift: null,
+					offers: null,
+					source: "kuracja ekspercka",
+				}),
+				testLeaf({ name: "Obecny", demandPercentage: 5.6, lift: 5, offers: 30 }),
+			]),
+		);
+		expect(flat[0].studentSelectable).toBe(true);
+		expect(flat[0].competencies.map((c) => c.name)).toEqual(["Obecny"]);
+		expect(flat[0].competencies[0].demandPercentage).toBe(6);
+	});
+});
+
+// ── buildCandidates: ściąga do kuracji (Tor 1) ────────────────────────────────
+
+describe("buildCandidates — ściąga do kuracji Sophii", () => {
+	it("zwraca kandydatów per ścieżka z kind/lift/offers i flagą passesGate", () => {
+		const { stats, freq, total } = statsForModel();
+		const cands = buildCandidates(stats, freq, total);
+		const ai = cands.find((c) => c.careerGoal === "AI Engineer");
+		expect(ai).toBeDefined();
+		const py = ai?.candidates.find((c) => c.name === "Python");
+		expect(py?.kind).toBe("tool");
+		expect(typeof py?.lift).toBe("number");
+		expect(py?.passesGate).toBe(true);
 	});
 });
 
