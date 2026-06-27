@@ -28,6 +28,7 @@ import {
 	PROFILE_SIZE,
 	TIE_BREAK_DEPRIORITIZED,
 } from "../data/anchor-config";
+import { PATH_META, PATHS, type PathSpec } from "../data/career-model";
 import careerModelJson from "../data/career-model.json";
 import artifactJson from "../data/job-market-justjoinit.json";
 
@@ -510,6 +511,53 @@ describe("flattenLeaves — bramka (surowy udział: meta + min-wolumen, BEZ krot
 		expect(flat[0].studentSelectable).toBe(true);
 		expect(flat[0].competencies.map((c) => c.name)).toEqual(["Obecny"]);
 		expect(flat[0].competencies[0].demandPercentage).toBe(6);
+	});
+});
+
+// ── buildCareerModel: tłumaczenie liścia absent → null + „kuracja ekspercka" ──
+
+describe("buildCareerModel — gałąź BUILD liścia absent", () => {
+	it("absent:true przez buildCareerModel → null + 'kuracja ekspercka'", () => {
+		// Pokrycie gałęzi BUILD (silnik, ~736–746): `if (leaf.absent)` → demandPercentage:null
+		// + source:"kuracja ekspercka". Po kuracji partii 5 żadna committed ścieżka nie ma już
+		// liścia absent (jedyny — Miro — usunięty), więc wstrzykujemy SYNTETYCZNĄ ścieżkę do
+		// module-level PATHS/PATH_META (silnik czyta je globalnie, nie z argumentu), wołamy tę
+		// samą funkcję co produkcja i przywracamy stan w finally. stats zawiera TYLKO etykietę
+		// syntetyczną → wszystkie realne ścieżki w pętli `continue` (model = 1 ścieżka).
+		const LABEL = "__TEST_ABSENT_BRANCH__";
+		const spec: PathSpec = {
+			label: LABEL,
+			areas: [{ name: "Obszar", type: "context-group", leaves: [{ name: "X", absent: true }] }],
+		};
+		const stats: Map<string, PathStat> = new Map([
+			[LABEL, { display: LABEL, offerCount: 100, techCount: new Map(), offers: [] }],
+		]);
+		PATHS.push(spec);
+		PATH_META[LABEL] = {
+			frameworks: {
+				family: "I — Test",
+				eCfArea: "",
+				sfiaCategory: "",
+				iscoCode: "",
+				iscoLabel: "",
+				escoOccupation: "",
+			},
+			juniorFriendliness: "Średnia",
+			targetRole: false,
+			tShapePairs: [],
+		};
+		try {
+			const model = buildCareerModel(stats, new Map(), 0, new Map());
+			const path = model.paths.find((p) => p.careerGoal === LABEL);
+			expect(path).toBeDefined();
+			const leaf = path?.areas[0].leaves.find((l) => l.name === "X");
+			expect(leaf?.demandPercentage).toBeNull();
+			expect(leaf?.source).toBe("kuracja ekspercka");
+		} finally {
+			// Przywróć współdzielony stan modułu — inne testy (buildArtifact) liczą na czyste PATHS.
+			PATHS.pop();
+			delete PATH_META[LABEL];
+		}
 	});
 });
 
