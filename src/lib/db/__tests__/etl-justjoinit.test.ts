@@ -245,6 +245,10 @@ function statsForModel(): {
 	}
 	for (let i = 0; i < 40; i++)
 		specs.push({ title: "Java Developer", kat: "Java", techs: ["Java"] });
+	// Python Developer: ścieżka NIESKURATOROWANA (A5 partia 3 wziął Java/.NET/Full-Stack/
+	// Android) — zostaje na presentation-group, więc testuje grupnik prezentacyjny.
+	for (let i = 0; i < 30; i++)
+		specs.push({ title: "Python Developer", kat: "Python", techs: ["Python"] });
 	const offers = makeOffers(specs);
 	const stats = pathStats(assignAll(offers, buildAnchors(offers)), offers);
 	const { freq, total } = globalTechFrequency(offers);
@@ -313,11 +317,12 @@ describe("buildCareerModel — hierarchia v4", () => {
 		expect(typeof grp?.unionShare).toBe("number");
 	});
 
-	it("grupnik prezentacyjny ma demandPercentage null (Java — A5 przeniósł AI/DS/QA na context-group)", () => {
-		// AI/DS/QA są teraz context-group; presentation-group testujemy na ścieżce, która go
-		// zachowała (Java Developer „Język i framework"), bo fixtura buduje też Javę.
-		const java = builtModelForTest().paths.find((p) => p.careerGoal === "Java Developer");
-		const pg = java?.areas.find((a) => a.type === "presentation-group");
+	it("grupnik prezentacyjny ma demandPercentage null (Python — A5 partia 3 przeniósł Java na context-group)", () => {
+		// A5 partia 3 skuratorował Java/.NET/Full-Stack/Android na context-group; presentation-group
+		// testujemy na ścieżce wciąż nieskuratorowanej (Python Developer „Język i frameworki"),
+		// bo fixtura buduje też Pythona.
+		const py = builtModelForTest().paths.find((p) => p.careerGoal === "Python Developer");
+		const pg = py?.areas.find((a) => a.type === "presentation-group");
 		expect(pg).toBeDefined();
 		expect(pg?.demandPercentage).toBeNull();
 	});
@@ -632,7 +637,7 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		}
 	});
 
-	it("KURACJA A5 (partia 1+2) zachowana: context-group z opisem + unionShare; kind Sophii (tool/concept)", () => {
+	it("KURACJA A5 (partia 1+2+3) zachowana: context-group z opisem + unionShare; kind Sophii (tool/concept)", () => {
 		const expected: Record<string, number> = {
 			// Partia 1
 			"QA Engineer": 8,
@@ -643,6 +648,11 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 			"Data Analyst": 7,
 			"Frontend Developer": 7,
 			"DevOps Engineer": 8,
+			// Partia 3
+			"Java Developer": 6,
+			".NET Developer": 6,
+			"Full-Stack Developer": 5,
+			"Android Developer": 5,
 		};
 		for (const [goal, n] of Object.entries(expected)) {
 			const path = model.paths.find((p) => p.careerGoal === goal);

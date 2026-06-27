@@ -1,7 +1,7 @@
 // @vitest-environment node
 /**
  * Partia 5 ETAP B — złączenie płaskiego katalogu z hierarchią career-model.json
- * (competency-groups.ts). Test na REALNYM artefakcie (pilot cyber + kontrola Java):
+ * (competency-groups.ts). Test na REALNYM artefakcie (pilot cyber + kontrola Python):
  *   • enrichWithKind (B1) — dokłada kind, nie mutuje, nie zmienia kolejności/liczby,
  *   • buildCatalogGroups (B2) — grupy z kontekstem; niezmiennik suma==płaska lista,
  *   • getCompetencyContext (B3) — opis grupy + unionShare + kind po nazwie.
@@ -97,11 +97,10 @@ describe("buildCatalogGroups — grupy z kontekstem (B2)", () => {
 		expect(buildCatalogGroups("Nieistniejąca", flat)).toEqual([]);
 	});
 
-	it("ścieżka bez prozy-opisów (Java) → grupy z description null (kontrola: tylko cyber ma opis)", () => {
-		const groups = buildCatalogGroups("Java Developer", [
-			item("Java", 81),
-			item("Spring Boot", 48),
-		]);
+	it("ścieżka bez prozy-opisów (Python) → grupy z description null (kontrola: skuratorowane mają opis)", () => {
+		// A5 partia 3 skuratorował Java na context-group — kontrolą „bez opisów" jest teraz
+		// Python Developer (wciąż presentation-group, bez prozy).
+		const groups = buildCatalogGroups("Python Developer", [item("Python", 46), item("Django", 12)]);
 		expect(groups.length).toBeGreaterThan(0);
 		for (const g of groups) expect(g.description).toBeNull();
 	});
@@ -128,9 +127,10 @@ describe("getCompetencyContext — kontekst panelu studenta (B3)", () => {
 		expect(getCompetencyContext("Nieistniejąca", "Splunk")).toBeNull();
 	});
 
-	it("liść w dwóch obszarach (Swagger w Java) → pierwszy obszar w kolejności modelu (determinizm)", () => {
-		expect(getCompetencyContext("Java Developer", "Swagger")?.groupName).toBe(
-			"Konteneryzacja i integracja",
-		);
+	it("liść ścieżki → obszar wg modelu (Python: Docker → Infrastruktura)", () => {
+		// Po A5 partii 3 (dedup liści Java) żadna ścieżka nie ma już liścia w dwóch obszarach;
+		// determinizm „pierwszy obszar" pilnuje kod (leafToGroup zapisuje pierwsze trafienie).
+		// Tu sprawdzamy poprawne rozwiązanie obszaru dla liścia ścieżki nieskuratorowanej.
+		expect(getCompetencyContext("Python Developer", "Docker")?.groupName).toBe("Infrastruktura");
 	});
 });

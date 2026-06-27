@@ -1108,84 +1108,228 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 3 2026-06-27 (scratchpad/sophia-a4-partia3.md) — 6 grup
+		// context-group na 494 ofertach, najczystsza ścieżka partii (Java 89%). Scalenia UNIĄ
+		// (countAsUnion): Spring/Spring Boot (zawyża ~2×), chmury (AWS/Azure/GCP), REST/API,
+		// Kafka←Apache Kafka, PostgreSQL←PostreSQL (literówka w zrzucie). `kind` z dokumentu
+		// Sophii. Wykluczone meta/szum: gołe „Backend”. JPA/NoSQL/CI-CD/REST-API/Microservices/
+		// Agile → concept (style/wzorce/metodyki, nie narzędzia).
 		label: "Java Developer",
 		areas: [
 			{
-				name: "Język i framework",
-				type: "presentation-group",
+				name: "Język i ekosystem JVM (rdzeń)",
+				type: "context-group",
+				description:
+					"Serce roli — język Java i biblioteki, które wyrastają wprost z niego. Java to fundament wielkich systemów bankowych i korporacyjnych w PL: prawie 9 na 10 ofert jej wymaga. Na Javie stoi Spring (i jego nowsza odsłona Spring Boot) — rusztowanie, które obsługuje za Ciebie routing, bazę i bezpieczeństwo; oraz Hibernate/JPA — warstwa, która mapuje obiekty kodu na tabele bazy. Maven składa projekt i pobiera zależności. To zestaw, od którego zaczyna każdy junior Java.",
 				leaves: [
-					{ name: "Java" },
-					{ name: "Spring Boot" },
-					{ name: "Spring" },
-					{ name: "Hibernate" },
-					{ name: "Maven" },
-					{ name: "JUnit" },
+					{ name: "Java", kind: "tool" },
+					{
+						name: "Spring / Spring Boot",
+						countAs: ["Spring", "Spring Boot"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Hibernate", kind: "tool" },
+					{ name: "JPA", kind: "concept" },
+					{ name: "Maven", kind: "tool" },
+					{ name: "Groovy", kind: "tool" },
+					{ name: "Kotlin", kind: "tool" },
 				],
 			},
 			{
 				name: "Bazy danych",
-				type: "presentation-group",
-				leaves: [{ name: "SQL" }, { name: "PostgreSQL" }, { name: "Oracle" }],
-			},
-			{
-				name: "Konteneryzacja i integracja",
-				type: "presentation-group",
+				type: "context-group",
+				description:
+					"Java istnieje, żeby przetwarzać i zapisywać dane — bez baz nie ma roli. Co trzecia oferta wymaga SQL-a (języka zapytań do baz relacyjnych). PostgreSQL to dziś domyślny wybór nowych projektów, Oracle dominuje w starszych systemach bankowych. NoSQL (bazy bez sztywnej struktury, np. MongoDB) pojawia się tam, gdzie liczy się szybkość odczytu. PL/SQL to proceduralny dialekt Oracle.",
 				leaves: [
-					{ name: "Docker" },
-					{ name: "Kubernetes" },
-					{ name: "Kafka", countAs: ["Kafka", "Apache Kafka"] },
-					{ name: "Swagger" },
+					{ name: "SQL", kind: "tool" },
+					{
+						name: "PostgreSQL",
+						countAs: ["PostgreSQL", "PostreSQL"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Oracle", kind: "tool" },
+					{ name: "MongoDB", kind: "tool" },
+					{ name: "NoSQL", kind: "concept" },
+					{ name: "PL/SQL", kind: "tool" },
 				],
 			},
 			{
-				name: "REST API / Microservices",
-				type: "knowledge-area",
-				demandAs: ["REST API"],
-				leaves: [{ name: "Swagger" }, { name: "OpenAPI" }],
+				name: "Chmura i wdrażanie (DevOps backendu)",
+				type: "context-group",
+				description:
+					"Drugi najsilniejszy sygnał po języku. Współczesny dev Java sam wdraża swój kod do chmury i utrzymuje go — nie „oddaje adminowi”. Docker pakuje aplikację w kontener, Kubernetes uruchamia ją na skalę, CI/CD (taśma automatycznego budowania i wdrażania) z Jenkinsem domyka proces. AWS to najczęstsza chmura w PL, Azure i GCP za nią. Linux to system, na którym to wszystko działa.",
+				leaves: [
+					{ name: "Docker", kind: "tool" },
+					{ name: "Kubernetes", kind: "tool" },
+					{ name: "AWS", countAs: ["AWS", "Amazon AWS"], countAsUnion: true, kind: "tool" },
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Jenkins", kind: "tool" },
+					{
+						name: "Azure",
+						countAs: ["Azure", "Microsoft Azure"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "GCP",
+						countAs: ["GCP", "Google Cloud Platform"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Linux", kind: "tool" },
+				],
 			},
 			{
-				// DODANE w v5 (Max): projekt zaawansowany Java kotwiczy na CI/CD; CI/CD
-				// jest realnym obszarem dla Java (8% ofert), liść buildable = Jenkins (6%).
-				name: "CI/CD",
-				type: "knowledge-area",
-				leaves: [{ name: "Jenkins" }, { name: "GitHub Actions" }],
+				name: "Architektura usług i komunikacja",
+				type: "context-group",
+				description:
+					"Duży system Java to rzadko jeden program — to zbiór usług gadających ze sobą. Dzielisz system na mikrousługi (małe, niezależne kawałki), wystawiasz API (interfejs, przez który inne programy Cię wołają) w stylu REST, a do komunikacji asynchronicznej (gdy usługa nie czeka na odpowiedź) używasz kolejek Kafka i RabbitMQ. SOAP to starszy styl integracji wciąż żywy w bankach, Elasticsearch — wyszukiwarka pełnotekstowa.",
+				leaves: [
+					{ name: "Mikrousługi (Microservices)", countAs: ["Microservices"], kind: "concept" },
+					{
+						name: "REST / API",
+						countAs: ["REST API", "REST"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "Kafka", countAs: ["Kafka", "Apache Kafka"], countAsUnion: true, kind: "tool" },
+					{ name: "RabbitMQ", kind: "tool" },
+					{ name: "SOAP", kind: "tool" },
+					{ name: "Elasticsearch", kind: "tool" },
+				],
+			},
+			{
+				name: "Testy i jakość kodu",
+				type: "context-group",
+				description:
+					"Profesjonalny kod Java jest pokryty testami — to standard, nie luksus. JUnit to podstawowe narzędzie testów jednostkowych (sprawdzających pojedyncze fragmenty kodu w izolacji); znajomość go odróżnia juniora „klikającego” od inżyniera. Spring Security domyka warstwę uwierzytelniania i autoryzacji.",
+				leaves: [
+					{ name: "JUnit", kind: "tool" },
+					{ name: "Spring Security", kind: "tool" },
+				],
+			},
+			{
+				name: "Frontend i warsztat (styk full-stack)",
+				type: "context-group",
+				description:
+					"W PL granica między backendem a frontem często się zaciera — część ofert Java wymaga też Angulara, Reacta czy JavaScriptu. Git (system kontroli wersji, czyli historia zmian w kodzie) i praca w Agile (zwinna metodyka iteracyjna) to dziś warsztat bazowy każdego dewelopera, niezależnie od stosu.",
+				leaves: [
+					{ name: "Angular", kind: "tool" },
+					{ name: "React", kind: "tool" },
+					{ name: "JavaScript", kind: "tool" },
+					{ name: "Git", kind: "tool" },
+					{ name: "Agile", kind: "concept" },
+				],
 			},
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 3 2026-06-27 (scratchpad/sophia-a4-partia3.md) — 6 grup
+		// context-group na 397 ofertach, świat Microsoftu (C# 60%+). Scalenia UNIĄ (countAsUnion):
+		// C#/.NET (4 warianty C#+.Net+.NET C#+.NET Core, suma →~138%), ASP.NET←ASP.NET Core,
+		// MS SQL Server (4 zapisy), Azure/AWS, REST/API (3), Kafka←Apache Kafka. `kind` Sophii.
+		// Wykluczone override'em: Active Server Pages (classic ASP, martwa), Dynamics/CRM (osobna
+		// rola), gołe „Backend”/„Testing”. CI-CD/REST-API/Microservices/NoSQL/Agile → concept.
 		label: ".NET Developer",
 		areas: [
 			{
-				name: "Język i framework",
-				type: "presentation-group",
+				name: "Język i platforma .NET (rdzeń)",
+				type: "context-group",
+				description:
+					"Serce roli — język C# i platforma .NET, na której piszesz logikę aplikacji. To filar „świata Microsoftu” w PL: dwie na trzy oferty wymagają C#. ASP.NET to webowy framework tej platformy (rusztowanie pod aplikacje i API), Entity Framework — warstwa mapująca obiekty kodu na tabele bazy. .NET Core to nowoczesna, wieloplatformowa odsłona runtime’u (środowiska uruchomieniowego).",
 				leaves: [
-					{ name: ".Net" },
-					{ name: "C#" },
-					{ name: "ASP.NET" },
-					{ name: "ASP.NET Core" },
-					{ name: ".NET Core" },
-					{ name: "Entity Framework" },
+					{
+						name: "C# / .NET",
+						countAs: ["C#", ".Net", ".NET C#", ".NET Core"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "ASP.NET",
+						countAs: ["ASP.NET", "ASP.NET Core"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Entity Framework", kind: "tool" },
 				],
 			},
 			{
 				name: "Bazy danych",
-				type: "presentation-group",
-				leaves: [{ name: "SQL" }, { name: "SQL Server" }, { name: "MS SQL" }],
-			},
-			{
-				name: "Konteneryzacja i chmura",
-				type: "presentation-group",
+				type: "context-group",
+				description:
+					"Aplikacja .NET istnieje, żeby zapisywać i wydawać dane. W świecie Microsoftu domyślną bazą jest MS SQL Server, ale rynek wymaga też ogólnego SQL-a (języka zapytań) i PostgreSQL (otwartej bazy relacyjnej). NoSQL pojawia się tam, gdzie liczy się szybkość ponad sztywną strukturę.",
 				leaves: [
-					{ name: "Docker" },
-					{ name: "Kubernetes" },
-					{ name: "Azure" },
-					{ name: "RabbitMQ" },
+					{ name: "SQL", kind: "tool" },
+					{
+						name: "MS SQL Server",
+						countAs: ["MS SQL Server", "SQL Server", "MS SQL", "Microsoft SQL Server"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "PostgreSQL", kind: "tool" },
+					{ name: "NoSQL", kind: "concept" },
 				],
 			},
 			{
-				name: "REST API",
-				type: "knowledge-area",
-				leaves: [{ name: "Swagger" }, { name: "OAuth2" }, { name: "JWT" }],
+				name: "Chmura i wdrażanie",
+				type: "context-group",
+				description:
+					"Nowoczesny dev .NET wdraża sam do chmury. W tym stosie naturalną platformą jest Azure (chmura Microsoftu) — z Azure DevOps jako zintegrowaną taśmą CI/CD (automatycznego budowania i wdrażania). Docker pakuje aplikację w kontener, Kubernetes uruchamia ją na skalę, Terraform opisuje infrastrukturę kodem. AWS pojawia się jako druga chmura.",
+				leaves: [
+					{
+						name: "Azure",
+						countAs: ["Azure", "Microsoft Azure"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Azure DevOps", kind: "tool" },
+					{ name: "Docker", kind: "tool" },
+					{ name: "Kubernetes", kind: "tool" },
+					{ name: "AWS", countAs: ["AWS", "Amazon AWS"], countAsUnion: true, kind: "tool" },
+					{ name: "Terraform", kind: "tool" },
+					{ name: "CI/CD", kind: "concept" },
+				],
+			},
+			{
+				name: "Architektura usług i komunikacja",
+				type: "context-group",
+				description:
+					"System .NET to zbiór usług gadających ze sobą. Wystawiasz API (interfejs dla innych programów) w stylu REST, dzielisz aplikację na mikrousługi (małe, niezależne kawałki), a do komunikacji asynchronicznej używasz kolejek RabbitMQ czy Kafka.",
+				leaves: [
+					{
+						name: "REST / API",
+						countAs: ["REST API", "REST", "API (Application Programming Interface)"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "Mikrousługi (Microservices)", countAs: ["Microservices"], kind: "concept" },
+					{ name: "RabbitMQ", kind: "tool" },
+					{ name: "Kafka", countAs: ["Kafka", "Apache Kafka"], countAsUnion: true, kind: "tool" },
+				],
+			},
+			{
+				name: "Frontend (styk full-stack)",
+				type: "context-group",
+				description:
+					"Część ofert .NET oczekuje, że dotkniesz też frontu — najczęściej Angulara (historycznie blisko świata Microsoftu) lub Reacta, w TypeScripcie (JavaScript z typami). Nie musisz być ekspertem, ale podstawy poszerzają Twoją wartość.",
+				leaves: [
+					{ name: "React", kind: "tool" },
+					{ name: "Angular", kind: "tool" },
+					{ name: "JavaScript", kind: "tool" },
+					{ name: "TypeScript", kind: "tool" },
+				],
+			},
+			{
+				name: "Warsztat i metodyka",
+				type: "context-group",
+				description:
+					"Git (historia zmian w kodzie) i praca w Agile (zwinna metodyka iteracyjna) to warsztat bazowy każdego dewelopera niezależnie od stosu.",
+				leaves: [
+					{ name: "Git", kind: "tool" },
+					{ name: "Agile", kind: "concept" },
+				],
 			},
 		],
 	},
@@ -1488,69 +1632,196 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 3 2026-06-27 (scratchpad/sophia-a4-partia3.md) — 5 grup
+		// context-group na 308 ofertach, web end-to-end (React 60%, TS 51%). Scalenia UNIĄ
+		// (countAsUnion): Vue.js←Vue, Node.js←Node, Spring/Spring Boot, Golang←Go, PostgreSQL←
+		// PostreSQL, chmury (AWS/GCP/Azure), REST/API (3), Kafka←Apache Kafka. `kind` Sophii.
+		// Wykluczone override'em: AI (7.8%) i RAG (2.3%) jako buzzword/meta (spójne z partią 2),
+		// gołe „Backend”. CI-CD/REST-API/Microservices/NoSQL → concept.
 		label: "Full-Stack Developer",
 		areas: [
 			{
 				name: "Frontend",
-				type: "presentation-group",
+				type: "context-group",
+				description:
+					"Połowa roli full-stack — ekran, który użytkownik klika. React dominuje (6 na 10 ofert), pisany w TypeScripcie (JavaScript z typami, który łapie błędy przed uruchomieniem). Angular to drugi duży framework (świat korporacyjny), Vue.js i Next.js uzupełniają obraz. React Native przenosi te same umiejętności na aplikacje mobilne.",
 				leaves: [
-					{ name: "React" },
-					{ name: "TypeScript" },
-					{ name: "JavaScript" },
-					{ name: "Next.js" },
-					{ name: "Tailwind CSS" },
+					{ name: "React", kind: "tool" },
+					{ name: "TypeScript", kind: "tool" },
+					{ name: "JavaScript", kind: "tool" },
+					{ name: "Angular", kind: "tool" },
+					{ name: "Vue.js", countAs: ["Vue.js", "Vue"], countAsUnion: true, kind: "tool" },
+					{ name: "Next.js", kind: "tool" },
+					{ name: "React Native", kind: "tool" },
 				],
 			},
 			{
-				name: "Backend dla fullstacka",
-				type: "presentation-group",
+				name: "Backend i języki serwera",
+				type: "context-group",
+				description:
+					"Druga połowa roli — logika serwera. W PL rynek full-stack jest wielojęzyczny: Java (wielkie systemy, 45% ofert), Python (najszybciej rosnący), Node.js z Nest.js (backend w JavaScripcie/TypeScripcie — ten sam język po obu stronach). Spring Boot to framework Javy, Hibernate mapuje obiekty na bazę. Wybierasz główny język serwera — on zwykle decyduje resztę.",
 				leaves: [
-					{ name: "Node.js" },
-					{ name: "NestJS" },
-					{ name: "Express" },
-					{ name: "Java" },
-					{ name: "Spring Boot" },
-					{ name: ".Net" },
-					{ name: "Python" },
-					{ name: "MongoDB" },
+					{ name: "Java", kind: "tool" },
+					{ name: "Python", kind: "tool" },
+					{ name: "Node.js", countAs: ["Node.js", "Node"], countAsUnion: true, kind: "tool" },
+					{
+						name: "Spring / Spring Boot",
+						countAs: ["Spring Boot", "Spring"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Nest.js", kind: "tool" },
+					{ name: "Golang", countAs: ["Golang", "Go"], countAsUnion: true, kind: "tool" },
+					{ name: "Hibernate", kind: "tool" },
+					{ name: "Kotlin", kind: "tool" },
 				],
 			},
 			{
-				name: "Bazy i infra",
-				type: "presentation-group",
-				leaves: [{ name: "SQL" }, { name: "Docker" }, { name: "AWS" }],
+				name: "Bazy danych",
+				type: "context-group",
+				description:
+					"Full-stack zapisuje i wydaje dane po obu stronach. Co piąta oferta wymaga SQL-a (zapytań do baz relacyjnych), PostgreSQL to domyślny wybór nowych projektów. NoSQL (bazy bez sztywnej struktury, np. MongoDB) i Redis (szybka pamięć podręczna) pojawiają się tam, gdzie liczy się szybkość.",
+				leaves: [
+					{ name: "SQL", kind: "tool" },
+					{
+						name: "PostgreSQL",
+						countAs: ["PostgreSQL", "PostreSQL"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "NoSQL", kind: "concept" },
+					{ name: "Redis", kind: "tool" },
+					{ name: "Oracle", kind: "tool" },
+					{ name: "MySQL", kind: "tool" },
+				],
+			},
+			{
+				name: "Chmura i wdrażanie",
+				type: "context-group",
+				description:
+					"Full-stack dev sam wdraża aplikację do chmury. AWS to najczęstsza platforma w PL (co trzecia oferta), Docker pakuje aplikację w kontener, CI/CD (taśma automatycznego budowania i wdrażania) domyka proces. Kubernetes, GCP i Azure uzupełniają obraz.",
+				leaves: [
+					{ name: "AWS", countAs: ["AWS", "Amazon AWS"], countAsUnion: true, kind: "tool" },
+					{ name: "Docker", kind: "tool" },
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Kubernetes", kind: "tool" },
+					{
+						name: "GCP",
+						countAs: ["GCP", "Google Cloud Platform"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "Azure",
+						countAs: ["Azure", "Microsoft Azure"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+				],
+			},
+			{
+				name: "Architektura usług i komunikacja",
+				type: "context-group",
+				description:
+					"Front i back gadają ze sobą przez API (interfejs, przez który ekran woła serwer). Projektujesz je w stylu REST lub GraphQL, dzielisz system na mikrousługi (małe, niezależne kawałki), a Kafka obsługuje komunikację asynchroniczną.",
+				leaves: [
+					{
+						name: "REST / API",
+						countAs: ["REST", "REST API", "API"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "Mikrousługi (Microservices)", countAs: ["Microservices"], kind: "concept" },
+					{ name: "GraphQL", kind: "tool" },
+					{ name: "Kafka", countAs: ["Kafka", "Apache Kafka"], countAsUnion: true, kind: "tool" },
+				],
 			},
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 3 2026-06-27 (scratchpad/sophia-a4-partia3.md) — 5 grup
+		// context-group na 376 ofertach, mobile. Sygnał rynkowy: Java (54%) > Kotlin (35%) —
+		// wbrew narracji „Kotlin first”, wyeksponowane w opisie Grupy 1 (brand voice: prawda o
+		// rynku). Scalenia UNIĄ (countAsUnion): Kotlin Multiplatform←Kotlin multiplatform (zapis),
+		// REST/API, Kafka. `kind` Sophii. Wykluczone override'em: gołe „Android” (27.4%, meta jak
+		// „Testing”), Gosu/Guidewire (szum ubezpieczeń), Scala (przeciek backendu). MVVM/Coroutines/
+		// CI-CD/REST-API → concept.
 		label: "Android Developer",
 		areas: [
 			{
-				name: "Natywny Android",
-				type: "presentation-group",
+				name: "Języki Androida (rdzeń)",
+				type: "context-group",
+				description:
+					"Serce roli — język aplikacji. Wbrew obietnicy „Kotlin first” z konferencji, polski rynek Androida wciąż stoi na Javie (więcej ofert niż Kotlin) — bo żywych aplikacji napisanych dawniej w Javie jest więcej niż nowych. Kotlin to oficjalny, nowocześniejszy język Androida (zwięźlejszy, bezpieczniejszy), rosnący najszybciej. Coroutines to mechanizm Kotlina do zadań działających w tle (np. pobieranie danych bez zacinania ekranu). Kotlin Multiplatform pozwala dzielić kod między Android a iOS.",
 				leaves: [
-					{ name: "Kotlin" },
-					{ name: "Java" },
-					{ name: "Android SDK" },
-					{ name: "Jetpack Compose" },
-					{ name: "Android Studio" },
+					{ name: "Java", kind: "tool" },
+					{ name: "Kotlin", kind: "tool" },
+					{ name: "Coroutines", kind: "concept" },
+					{
+						name: "Kotlin Multiplatform",
+						countAs: ["Kotlin Multiplatform", "Kotlin multiplatform"],
+						countAsUnion: true,
+						kind: "tool",
+					},
 				],
 			},
 			{
-				name: "iOS / hybrydowy",
-				type: "presentation-group",
+				name: "SDK i komponenty natywne Androida",
+				type: "context-group",
+				description:
+					"Rdzeń warsztatu androidowego: Android SDK to zestaw narzędzi i bibliotek platformy, Android Studio to środowisko, w którym piszesz (IDE). Jetpack Compose to nowoczesny sposób budowania ekranów kodem (zastępuje stary XML). MVVM to wzorzec architektury aplikacji (rozdziela dane, logikę i ekran), Gradle składa projekt w gotową aplikację.",
 				leaves: [
-					{ name: "Swift" },
-					{ name: "SwiftUI" },
-					{ name: "Flutter" },
-					{ name: "React Native" },
-					{ name: "Firebase" },
+					{ name: "Android SDK", kind: "tool" },
+					{ name: "Jetpack Compose", kind: "tool" },
+					{ name: "Android Studio", kind: "tool" },
+					{ name: "MVVM", kind: "concept" },
+					{ name: "Gradle", kind: "tool" },
+					{ name: "XML", kind: "tool" },
 				],
 			},
 			{
-				name: "Konkret bazowy",
-				type: "presentation-group",
-				leaves: [{ name: "Git" }],
+				name: "Wieloplatformowość i iOS (styk mobilny)",
+				type: "context-group",
+				description:
+					"Część rynku mobile nie dzieli ostro Androida i iOS — szuka dewelopera, który dowiezie aplikację na oba systemy. Swift i SwiftUI to język i framework iOS-a, Flutter i React Native to technologie wieloplatformowe (jeden kod → dwa systemy). To uczciwy obraz rynku: znajomość drugiego świata mobilnego realnie poszerza Twoją wartość.",
+				leaves: [
+					{ name: "iOS", kind: "tool" },
+					{ name: "Swift", kind: "tool" },
+					{ name: "SwiftUI", kind: "tool" },
+					{ name: "Flutter", kind: "tool" },
+					{ name: "React Native", kind: "tool" },
+					{ name: "XCode", kind: "tool" },
+				],
+			},
+			{
+				name: "Komunikacja z backendem",
+				type: "context-group",
+				description:
+					"Aplikacja mobilna prawie zawsze rozmawia z serwerem — pobiera i wysyła dane. Robi to przez API (interfejs serwera) w stylu REST lub GraphQL, w formacie JSON (lekki zapis danych). SOAP to starszy styl integracji wciąż obecny w korporacjach.",
+				leaves: [
+					{
+						name: "REST / API",
+						countAs: ["REST API", "REST"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "GraphQL", kind: "tool" },
+					{ name: "JSON", kind: "tool" },
+					{ name: "SOAP", kind: "tool" },
+				],
+			},
+			{
+				name: "Warsztat, testy i CI/CD",
+				type: "context-group",
+				description:
+					"Git (historia zmian w kodzie) to baza pracy zespołowej. CI/CD (taśma automatycznego budowania i wdrażania) z Jenkinsem buduje gotową aplikację, Maven składa zależności, Appium automatyzuje testy aplikacji mobilnej (program, który sam klika po ekranie i sprawdza, czy działa).",
+				leaves: [
+					{ name: "Git", kind: "tool" },
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Jenkins", kind: "tool" },
+					{ name: "Maven", kind: "tool" },
+					{ name: "Appium", kind: "tool" },
+				],
 			},
 		],
 	},
@@ -1888,7 +2159,7 @@ export const PROJECT_BANK: Record<string, ProjectSpec[]> = {
 		{
 			level: "latwy",
 			title: "REST API katalogu książek (Spring Boot + PostgreSQL)",
-			anchorLeaves: ["Java", "Spring Boot", "PostgreSQL", "Swagger", "JUnit"],
+			anchorLeaves: ["Java", "Spring / Spring Boot", "PostgreSQL", "JUnit"],
 			description:
 				"Aplikacja CRUD: encje, repozytoria, kontrolery REST, walidacja, dokumentacja Swagger, kilka testów JUnit.",
 			portfolioOutcome: "Działające API w repo z dokumentacją.",
@@ -1897,7 +2168,7 @@ export const PROJECT_BANK: Record<string, ProjectSpec[]> = {
 		{
 			level: "sredni",
 			title: "System rezerwacji z autoryzacją (Spring Security + Hibernate + Docker)",
-			anchorLeaves: ["Java", "Spring Boot", "Hibernate", "SQL", "Docker", "JUnit"],
+			anchorLeaves: ["Java", "Spring / Spring Boot", "Hibernate", "SQL", "Docker", "JUnit"],
 			description:
 				"Rezerwacje (sale/wizyty), warstwa Hibernate/JPA, autoryzacja ról JWT, konteneryzacja Docker, testy integracyjne.",
 			portfolioOutcome: "Aplikacja z auth i bazą w kontenerze.",
@@ -1906,7 +2177,7 @@ export const PROJECT_BANK: Record<string, ProjectSpec[]> = {
 		{
 			level: "zaawansowany",
 			title: "Mikrousługi zamówień z Kafka i CI/CD",
-			anchorLeaves: ["Java", "Spring Boot", "Kafka", "Docker", "Kubernetes", "Jenkins"],
+			anchorLeaves: ["Java", "Spring / Spring Boot", "Kafka", "Docker", "Kubernetes", "Jenkins"],
 			description:
 				"2-3 usługi Spring Boot komunikujące się przez Kafka, każda w Dockerze, deploy na Kubernetes (minikube), pipeline CI/CD (Jenkins), testy.",
 			portfolioOutcome: "System mikrousługowy z pełną dokumentacją.",

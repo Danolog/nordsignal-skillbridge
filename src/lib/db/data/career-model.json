@@ -404,9 +404,9 @@
 						{
 							"name": "Firewall / IDS-IPS",
 							"type": "leaf",
-							"demandPercentage": 2.7,
-							"lift": 17.829290206648697,
-							"offers": 10,
+							"demandPercentage": 2.4,
+							"lift": 17.192529842125527,
+							"offers": 9,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -558,9 +558,9 @@
 						{
 							"name": "LLM",
 							"type": "leaf",
-							"demandPercentage": 39.3,
-							"lift": 19.29667609618105,
-							"offers": 121,
+							"demandPercentage": 39,
+							"lift": 19.232409381663114,
+							"offers": 120,
 							"kind": "concept",
 							"source": "dane"
 						},
@@ -946,9 +946,9 @@
 						{
 							"name": "Azure",
 							"type": "leaf",
-							"demandPercentage": 31.7,
-							"lift": 2.8073451602863364,
-							"offers": 120,
+							"demandPercentage": 29.1,
+							"lift": 2.6660706346763594,
+							"offers": 110,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -964,9 +964,9 @@
 						{
 							"name": "GCP",
 							"type": "leaf",
-							"demandPercentage": 19.8,
-							"lift": 4.162052417866372,
-							"offers": 75,
+							"demandPercentage": 19.3,
+							"lift": 4.120760084200945,
+							"offers": 73,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -1009,9 +1009,9 @@
 						{
 							"name": "GenAI",
 							"type": "leaf",
-							"demandPercentage": 9.5,
-							"lift": 8.914645103324348,
-							"offers": 36,
+							"demandPercentage": 9,
+							"lift": 8.664611907330354,
+							"offers": 34,
 							"kind": "concept",
 							"source": "dane"
 						},
@@ -2223,10 +2223,11 @@
 			"tShapePairs": ["DevOps Engineer"],
 			"areas": [
 				{
-					"name": "Język i framework",
-					"type": "presentation-group",
+					"name": "Język i ekosystem JVM (rdzeń)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 94.1,
+					"description": "Serce roli — język Java i biblioteki, które wyrastają wprost z niego. Java to fundament wielkich systemów bankowych i korporacyjnych w PL: prawie 9 na 10 ofert jej wymaga. Na Javie stoi Spring (i jego nowsza odsłona Spring Boot) — rusztowanie, które obsługuje za Ciebie routing, bazę i bezpieczeństwo; oraz Hibernate/JPA — warstwa, która mapuje obiekty kodu na tabele bazy. Maven składa projekt i pobiera zależności. To zestaw, od którego zaczyna każdy junior Java.",
+					"unionShare": 94.3,
 					"leaves": [
 						{
 							"name": "Java",
@@ -2238,20 +2239,11 @@
 							"source": "dane"
 						},
 						{
-							"name": "Spring Boot",
+							"name": "Spring / Spring Boot",
 							"type": "leaf",
-							"demandPercentage": 48,
-							"lift": 15.063765182186234,
-							"offers": 237,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Spring",
-							"type": "leaf",
-							"demandPercentage": 44.1,
-							"lift": 15.417374693505161,
-							"offers": 218,
+							"demandPercentage": 77.1,
+							"lift": 14.60380288654696,
+							"offers": 381,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -2265,6 +2257,15 @@
 							"source": "dane"
 						},
 						{
+							"name": "JPA",
+							"type": "leaf",
+							"demandPercentage": 3.4,
+							"lift": 14.845449744763245,
+							"offers": 17,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
 							"name": "Maven",
 							"type": "leaf",
 							"demandPercentage": 9.9,
@@ -2274,11 +2275,20 @@
 							"source": "dane"
 						},
 						{
-							"name": "JUnit",
+							"name": "Groovy",
 							"type": "leaf",
-							"demandPercentage": 7.1,
-							"lift": 11.914842516983462,
-							"offers": 35,
+							"demandPercentage": 2.4,
+							"lift": 10.479140996303467,
+							"offers": 12,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Kotlin",
+							"type": "leaf",
+							"demandPercentage": 4,
+							"lift": 1.6878168271357126,
+							"offers": 20,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -2286,9 +2296,10 @@
 				},
 				{
 					"name": "Bazy danych",
-					"type": "presentation-group",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 51.8,
+					"description": "Java istnieje, żeby przetwarzać i zapisywać dane — bez baz nie ma roli. Co trzecia oferta wymaga SQL-a (języka zapytań do baz relacyjnych). PostgreSQL to dziś domyślny wybór nowych projektów, Oracle dominuje w starszych systemach bankowych. NoSQL (bazy bez sztywnej struktury, np. MongoDB) pojawia się tam, gdzie liczy się szybkość odczytu. PL/SQL to proceduralny dialekt Oracle.",
+					"unionShare": 55.9,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -2302,9 +2313,9 @@
 						{
 							"name": "PostgreSQL",
 							"type": "leaf",
-							"demandPercentage": 21.1,
-							"lift": 4.4921335597057155,
-							"offers": 104,
+							"demandPercentage": 23.1,
+							"lift": 4.437388193202147,
+							"offers": 114,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -2316,14 +2327,42 @@
 							"offers": 54,
 							"kind": "tool",
 							"source": "dane"
+						},
+						{
+							"name": "MongoDB",
+							"type": "leaf",
+							"demandPercentage": 3.4,
+							"lift": 3.2831283089380254,
+							"offers": 17,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "NoSQL",
+							"type": "leaf",
+							"demandPercentage": 4,
+							"lift": 3.43333679366068,
+							"offers": 20,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "PL/SQL",
+							"type": "leaf",
+							"demandPercentage": 2,
+							"lift": 1.9886158656351467,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Konteneryzacja i integracja",
-					"type": "presentation-group",
+					"name": "Chmura i wdrażanie (DevOps backendu)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 54.7,
+					"description": "Drugi najsilniejszy sygnał po języku. Współczesny dev Java sam wdraża swój kod do chmury i utrzymuje go — nie „oddaje adminowi”. Docker pakuje aplikację w kontener, Kubernetes uruchamia ją na skalę, CI/CD (taśma automatycznego budowania i wdrażania) z Jenkinsem domyka proces. AWS to najczęstsza chmura w PL, Azure i GCP za nią. Linux to system, na którym to wszystko działa.",
+					"unionShare": 52.2,
 					"leaves": [
 						{
 							"name": "Docker",
@@ -2344,57 +2383,23 @@
 							"source": "dane"
 						},
 						{
-							"name": "Kafka",
+							"name": "AWS",
 							"type": "leaf",
-							"demandPercentage": 33,
-							"lift": 8.45958216949649,
-							"offers": 163,
+							"demandPercentage": 11.5,
+							"lift": 1.162280359234674,
+							"offers": 57,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Swagger",
+							"name": "CI/CD",
 							"type": "leaf",
-							"demandPercentage": 1.8,
-							"lift": 4.1082995951417,
-							"offers": 9,
-							"kind": "tool",
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "REST API / Microservices",
-					"type": "knowledge-area",
-					"demandPercentage": 16,
-					"unionShare": 2.4,
-					"leaves": [
-						{
-							"name": "Swagger",
-							"type": "leaf",
-							"demandPercentage": 1.8,
-							"lift": 4.1082995951417,
-							"offers": 9,
-							"kind": "tool",
+							"demandPercentage": 7.9,
+							"lift": 0.8386678688155077,
+							"offers": 39,
+							"kind": "concept",
 							"source": "dane"
 						},
-						{
-							"name": "OpenAPI",
-							"type": "leaf",
-							"demandPercentage": 1,
-							"lift": 6.695006747638327,
-							"offers": 5,
-							"kind": "tool",
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "CI/CD",
-					"type": "knowledge-area",
-					"demandPercentage": 8,
-					"unionShare": 6.9,
-					"leaves": [
 						{
 							"name": "Jenkins",
 							"type": "leaf",
@@ -2405,12 +2410,174 @@
 							"source": "dane"
 						},
 						{
-							"name": "GitHub Actions",
+							"name": "Azure",
 							"type": "leaf",
-							"demandPercentage": 0.2,
-							"lift": 0.6925869049281027,
-							"offers": 1,
+							"demandPercentage": 4.9,
+							"lift": 0.5177663650160682,
+							"offers": 24,
 							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 6.3,
+							"lift": 1.3390013495276654,
+							"offers": 31,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Linux",
+							"type": "leaf",
+							"demandPercentage": 3.6,
+							"lift": 0.6757576904158311,
+							"offers": 18,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Architektura usług i komunikacja",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Duży system Java to rzadko jeden program — to zbiór usług gadających ze sobą. Dzielisz system na mikrousługi (małe, niezależne kawałki), wystawiasz API (interfejs, przez który inne programy Cię wołają) w stylu REST, a do komunikacji asynchronicznej (gdy usługa nie czeka na odpowiedź) używasz kolejek Kafka i RabbitMQ. SOAP to starszy styl integracji wciąż żywy w bankach, Elasticsearch — wyszukiwarka pełnotekstowa.",
+					"unionShare": 64.4,
+					"leaves": [
+						{
+							"name": "Mikrousługi (Microservices)",
+							"type": "leaf",
+							"demandPercentage": 20.2,
+							"lift": 10.092974996439688,
+							"offers": 100,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "REST / API",
+							"type": "leaf",
+							"demandPercentage": 24.9,
+							"lift": 3.5393373780494874,
+							"offers": 123,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 33,
+							"lift": 8.48149818547964,
+							"offers": 163,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "RabbitMQ",
+							"type": "leaf",
+							"demandPercentage": 5.5,
+							"lift": 5.068182678118734,
+							"offers": 27,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SOAP",
+							"type": "leaf",
+							"demandPercentage": 2.8,
+							"lift": 2.703752725007786,
+							"offers": 14,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Elasticsearch",
+							"type": "leaf",
+							"demandPercentage": 2,
+							"lift": 4.366308748459779,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Testy i jakość kodu",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Profesjonalny kod Java jest pokryty testami — to standard, nie luksus. JUnit to podstawowe narzędzie testów jednostkowych (sprawdzających pojedyncze fragmenty kodu w izolacji); znajomość go odróżnia juniora „klikającego” od inżyniera. Spring Security domyka warstwę uwierzytelniania i autoryzacji.",
+					"unionShare": 9.1,
+					"leaves": [
+						{
+							"name": "JUnit",
+							"type": "leaf",
+							"demandPercentage": 7.1,
+							"lift": 11.914842516983462,
+							"offers": 35,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Spring Security",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"lift": 20.08502024291498,
+							"offers": 12,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Frontend i warsztat (styk full-stack)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "W PL granica między backendem a frontem często się zaciera — część ofert Java wymaga też Angulara, Reacta czy JavaScriptu. Git (system kontroli wersji, czyli historia zmian w kodzie) i praca w Agile (zwinna metodyka iteracyjna) to dziś warsztat bazowy każdego dewelopera, niezależnie od stosu.",
+					"unionShare": 33,
+					"leaves": [
+						{
+							"name": "Angular",
+							"type": "leaf",
+							"demandPercentage": 11.9,
+							"lift": 3.2466197104985857,
+							"offers": 59,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "React",
+							"type": "leaf",
+							"demandPercentage": 7.1,
+							"lift": 1.1338317879064908,
+							"offers": 35,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "JavaScript",
+							"type": "leaf",
+							"demandPercentage": 3.6,
+							"lift": 0.5301031735666709,
+							"offers": 18,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Git",
+							"type": "leaf",
+							"demandPercentage": 13.2,
+							"lift": 2.590329991645781,
+							"offers": 65,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Agile",
+							"type": "leaf",
+							"demandPercentage": 4,
+							"lift": 0.6890229928958826,
+							"offers": 20,
+							"kind": "concept",
 							"source": "dane"
 						}
 					]
@@ -2420,7 +2587,7 @@
 				{
 					"level": "latwy",
 					"title": "REST API katalogu książek (Spring Boot + PostgreSQL)",
-					"anchorLeaves": ["Java", "Spring Boot", "PostgreSQL", "Swagger", "JUnit"],
+					"anchorLeaves": ["Java", "Spring / Spring Boot", "PostgreSQL", "JUnit"],
 					"description": "Aplikacja CRUD: encje, repozytoria, kontrolery REST, walidacja, dokumentacja Swagger, kilka testów JUnit.",
 					"portfolioOutcome": "Działające API w repo z dokumentacją.",
 					"marketRationale": "Spring Boot 48% + PostgreSQL 20% = rdzeń ofert Java."
@@ -2428,7 +2595,7 @@
 				{
 					"level": "sredni",
 					"title": "System rezerwacji z autoryzacją (Spring Security + Hibernate + Docker)",
-					"anchorLeaves": ["Java", "Spring Boot", "Hibernate", "SQL", "Docker", "JUnit"],
+					"anchorLeaves": ["Java", "Spring / Spring Boot", "Hibernate", "SQL", "Docker", "JUnit"],
 					"description": "Rezerwacje (sale/wizyty), warstwa Hibernate/JPA, autoryzacja ról JWT, konteneryzacja Docker, testy integracyjne.",
 					"portfolioOutcome": "Aplikacja z auth i bazą w kontenerze.",
 					"marketRationale": "Hibernate 25% + Docker 20% + Spring = typowy stack mid."
@@ -2436,7 +2603,14 @@
 				{
 					"level": "zaawansowany",
 					"title": "Mikrousługi zamówień z Kafka i CI/CD",
-					"anchorLeaves": ["Java", "Spring Boot", "Kafka", "Docker", "Kubernetes", "Jenkins"],
+					"anchorLeaves": [
+						"Java",
+						"Spring / Spring Boot",
+						"Kafka",
+						"Docker",
+						"Kubernetes",
+						"Jenkins"
+					],
 					"description": "2-3 usługi Spring Boot komunikujące się przez Kafka, każda w Dockerze, deploy na Kubernetes (minikube), pipeline CI/CD (Jenkins), testy.",
 					"portfolioOutcome": "System mikrousługowy z pełną dokumentacją.",
 					"marketRationale": "Kafka 12% + Kubernetes 19% = sygnał ofert senior Java."
@@ -2460,53 +2634,27 @@
 			"tShapePairs": ["DevOps Engineer"],
 			"areas": [
 				{
-					"name": "Język i framework",
-					"type": "presentation-group",
+					"name": "Język i platforma .NET (rdzeń)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 77.1,
+					"description": "Serce roli — język C# i platforma .NET, na której piszesz logikę aplikacji. To filar „świata Microsoftu” w PL: dwie na trzy oferty wymagają C#. ASP.NET to webowy framework tej platformy (rusztowanie pod aplikacje i API), Entity Framework — warstwa mapująca obiekty kodu na tabele bazy. .NET Core to nowoczesna, wieloplatformowa odsłona runtime’u (środowiska uruchomieniowego).",
+					"unionShare": 86.1,
 					"leaves": [
 						{
-							"name": ".Net",
+							"name": "C# / .NET",
 							"type": "leaf",
-							"demandPercentage": 51.4,
-							"lift": 13.242749190356243,
-							"offers": 204,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "C#",
-							"type": "leaf",
-							"demandPercentage": 60.5,
-							"lift": 14.080249760527904,
-							"offers": 240,
+							"demandPercentage": 84.9,
+							"lift": 11.845926020399126,
+							"offers": 337,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "ASP.NET",
 							"type": "leaf",
-							"demandPercentage": 16.1,
-							"lift": 21.615086118864458,
-							"offers": 64,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "ASP.NET Core",
-							"type": "leaf",
-							"demandPercentage": 6.5,
-							"lift": 13.537573467674223,
-							"offers": 26,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": ".NET Core",
-							"type": "leaf",
-							"demandPercentage": 10.1,
-							"lift": 20.827036104114192,
-							"offers": 40,
+							"demandPercentage": 20.7,
+							"lift": 18.13610931544103,
+							"offers": 82,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -2523,9 +2671,10 @@
 				},
 				{
 					"name": "Bazy danych",
-					"type": "presentation-group",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 38.8,
+					"description": "Aplikacja .NET istnieje, żeby zapisywać i wydawać dane. W świecie Microsoftu domyślną bazą jest MS SQL Server, ale rynek wymaga też ogólnego SQL-a (języka zapytań) i PostgreSQL (otwartej bazy relacyjnej). NoSQL pojawia się tam, gdzie liczy się szybkość ponad sztywną strukturę.",
+					"unionShare": 42.3,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -2537,31 +2686,59 @@
 							"source": "dane"
 						},
 						{
-							"name": "SQL Server",
+							"name": "MS SQL Server",
 							"type": "leaf",
-							"demandPercentage": 6,
-							"lift": 9.08816120906801,
-							"offers": 24,
+							"demandPercentage": 15.6,
+							"lift": 5.959736485177292,
+							"offers": 62,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "MS SQL",
+							"name": "PostgreSQL",
 							"type": "leaf",
-							"demandPercentage": 5.3,
-							"lift": 4.603871138804188,
-							"offers": 21,
+							"demandPercentage": 2.5,
+							"lift": 0.5374718994610114,
+							"offers": 10,
 							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "NoSQL",
+							"type": "leaf",
+							"demandPercentage": 2.8,
+							"lift": 2.349716893797498,
+							"offers": 11,
+							"kind": "concept",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Konteneryzacja i chmura",
-					"type": "presentation-group",
+					"name": "Chmura i wdrażanie",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 43.3,
+					"description": "Nowoczesny dev .NET wdraża sam do chmury. W tym stosie naturalną platformą jest Azure (chmura Microsoftu) — z Azure DevOps jako zintegrowaną taśmą CI/CD (automatycznego budowania i wdrażania). Docker pakuje aplikację w kontener, Kubernetes uruchamia ją na skalę, Terraform opisuje infrastrukturę kodem. AWS pojawia się jako druga chmura.",
+					"unionShare": 62,
 					"leaves": [
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 24.9,
+							"lift": 2.657628237560436,
+							"offers": 99,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Azure DevOps",
+							"type": "leaf",
+							"demandPercentage": 4.3,
+							"lift": 2.2966029001293484,
+							"offers": 17,
+							"kind": "tool",
+							"source": "dane"
+						},
 						{
 							"name": "Docker",
 							"type": "leaf",
@@ -2581,12 +2758,57 @@
 							"source": "dane"
 						},
 						{
-							"name": "Azure",
+							"name": "AWS",
 							"type": "leaf",
-							"demandPercentage": 18.9,
-							"lift": 2.5193995287234907,
-							"offers": 75,
+							"demandPercentage": 15.6,
+							"lift": 1.5731284123310616,
+							"offers": 62,
 							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Terraform",
+							"type": "leaf",
+							"demandPercentage": 4.5,
+							"lift": 1.0109302917952057,
+							"offers": 18,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 29.5,
+							"lift": 3.130745041774767,
+							"offers": 117,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Architektura usług i komunikacja",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "System .NET to zbiór usług gadających ze sobą. Wystawiasz API (interfejs dla innych programów) w stylu REST, dzielisz aplikację na mikrousługi (małe, niezależne kawałki), a do komunikacji asynchronicznej używasz kolejek RabbitMQ czy Kafka.",
+					"unionShare": 26.7,
+					"leaves": [
+						{
+							"name": "REST / API",
+							"type": "leaf",
+							"demandPercentage": 20.2,
+							"lift": 2.6170097722447148,
+							"offers": 80,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Mikrousługi (Microservices)",
+							"type": "leaf",
+							"demandPercentage": 3.3,
+							"lift": 1.6326721770059363,
+							"offers": 13,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
@@ -2597,40 +2819,86 @@
 							"offers": 19,
 							"kind": "tool",
 							"source": "dane"
+						},
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 4.8,
+							"lift": 1.2301979874969002,
+							"offers": 19,
+							"kind": "tool",
+							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "REST API",
-					"type": "knowledge-area",
-					"demandPercentage": 14,
-					"unionShare": 0.3,
+					"name": "Frontend (styk full-stack)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Część ofert .NET oczekuje, że dotkniesz też frontu — najczęściej Angulara (historycznie blisko świata Microsoftu) lub Reacta, w TypeScripcie (JavaScript z typami). Nie musisz być ekspertem, ale podstawy poszerzają Twoją wartość.",
+					"unionShare": 20.4,
 					"leaves": [
 						{
-							"name": "Swagger",
+							"name": "React",
 							"type": "leaf",
-							"demandPercentage": 0,
-							"lift": 0,
-							"offers": 0,
+							"demandPercentage": 7.6,
+							"lift": 1.2093117737872756,
+							"offers": 30,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "OAuth2",
+							"name": "Angular",
 							"type": "leaf",
-							"demandPercentage": 0.3,
-							"lift": 4.165407220822838,
-							"offers": 1,
+							"demandPercentage": 6.5,
+							"lift": 1.7802836341051032,
+							"offers": 26,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "JWT",
+							"name": "JavaScript",
 							"type": "leaf",
-							"demandPercentage": 0.3,
-							"lift": 3.1240554156171285,
-							"offers": 1,
+							"demandPercentage": 6.5,
+							"lift": 0.9527910944990655,
+							"offers": 26,
 							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "TypeScript",
+							"type": "leaf",
+							"demandPercentage": 2.5,
+							"lift": 0.3758262154125869,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Warsztat i metodyka",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Git (historia zmian w kodzie) i praca w Agile (zwinna metodyka iteracyjna) to warsztat bazowy każdego dewelopera niezależnie od stosu.",
+					"unionShare": 5.3,
+					"leaves": [
+						{
+							"name": "Git",
+							"type": "leaf",
+							"demandPercentage": 2.8,
+							"lift": 0.5454699932029907,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Agile",
+							"type": "leaf",
+							"demandPercentage": 2.5,
+							"lift": 0.4286868494843401,
+							"offers": 10,
+							"kind": "concept",
 							"source": "dane"
 						}
 					]
@@ -3734,9 +4002,10 @@
 			"areas": [
 				{
 					"name": "Frontend",
-					"type": "presentation-group",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 81.2,
+					"description": "Połowa roli full-stack — ekran, który użytkownik klika. React dominuje (6 na 10 ofert), pisany w TypeScripcie (JavaScript z typami, który łapie błędy przed uruchomieniem). Angular to drugi duży framework (świat korporacyjny), Vue.js i Next.js uzupełniają obraz. React Native przenosi te same umiejętności na aplikacje mobilne.",
+					"unionShare": 94.5,
 					"leaves": [
 						{
 							"name": "React",
@@ -3766,6 +4035,24 @@
 							"source": "dane"
 						},
 						{
+							"name": "Angular",
+							"type": "leaf",
+							"demandPercentage": 33.4,
+							"lift": 9.090606653620352,
+							"offers": 103,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Vue.js",
+							"type": "leaf",
+							"demandPercentage": 3.2,
+							"lift": 3.835034013605442,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
 							"name": "Next.js",
 							"type": "leaf",
 							"demandPercentage": 2.3,
@@ -3775,73 +4062,29 @@
 							"source": "dane"
 						},
 						{
-							"name": "Tailwind CSS",
+							"name": "React Native",
 							"type": "leaf",
-							"demandPercentage": 0.6,
-							"lift": 7.158730158730159,
-							"offers": 2,
+							"demandPercentage": 2.9,
+							"lift": 3.579365079365079,
+							"offers": 9,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Backend dla fullstacka",
-					"type": "presentation-group",
+					"name": "Backend i języki serwera",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 89,
+					"description": "Druga połowa roli — logika serwera. W PL rynek full-stack jest wielojęzyczny: Java (wielkie systemy, 45% ofert), Python (najszybciej rosnący), Node.js z Nest.js (backend w JavaScripcie/TypeScripcie — ten sam język po obu stronach). Spring Boot to framework Javy, Hibernate mapuje obiekty na bazę. Wybierasz główny język serwera — on zwykle decyduje resztę.",
+					"unionShare": 90.6,
 					"leaves": [
-						{
-							"name": "Node.js",
-							"type": "leaf",
-							"demandPercentage": 27.6,
-							"lift": 8.919264774313634,
-							"offers": 85,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "NestJS",
-							"type": "leaf",
-							"demandPercentage": 0,
-							"lift": null,
-							"offers": 0,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Express",
-							"type": "leaf",
-							"demandPercentage": 0,
-							"lift": null,
-							"offers": 0,
-							"kind": "tool",
-							"source": "dane"
-						},
 						{
 							"name": "Java",
 							"type": "leaf",
 							"demandPercentage": 44.8,
 							"lift": 3.2097988653945335,
 							"offers": 138,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Spring Boot",
-							"type": "leaf",
-							"demandPercentage": 10.1,
-							"lift": 3.1602622061482823,
-							"offers": 31,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": ".Net",
-							"type": "leaf",
-							"demandPercentage": 1.3,
-							"lift": 0.3346938775510204,
-							"offers": 4,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -3855,21 +4098,67 @@
 							"source": "dane"
 						},
 						{
-							"name": "MongoDB",
+							"name": "Node.js",
 							"type": "leaf",
-							"demandPercentage": 1.9,
-							"lift": 1.8585164835164836,
-							"offers": 6,
+							"demandPercentage": 27.9,
+							"lift": 8.657589285714284,
+							"offers": 86,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Spring / Spring Boot",
+							"type": "leaf",
+							"demandPercentage": 15.3,
+							"lift": 2.8894492911668483,
+							"offers": 47,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Nest.js",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 6.136054421768708,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Golang",
+							"type": "leaf",
+							"demandPercentage": 4.5,
+							"lift": 2.652941176470588,
+							"offers": 14,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Hibernate",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 1.937701396348013,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Kotlin",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 1.0828331332533014,
+							"offers": 8,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Bazy i infra",
-					"type": "presentation-group",
+					"name": "Bazy danych",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 57.1,
+					"description": "Full-stack zapisuje i wydaje dane po obu stronach. Co piąta oferta wymaga SQL-a (zapytań do baz relacyjnych), PostgreSQL to domyślny wybór nowych projektów. NoSQL (bazy bez sztywnej struktury, np. MongoDB) i Redis (szybka pamięć podręczna) pojawiają się tam, gdzie liczy się szybkość.",
+					"unionShare": 39.9,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -3877,6 +4166,69 @@
 							"demandPercentage": 20.8,
 							"lift": 1.2049762043917511,
 							"offers": 64,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "PostgreSQL",
+							"type": "leaf",
+							"demandPercentage": 17.9,
+							"lift": 3.4336932447397563,
+							"offers": 55,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "NoSQL",
+							"type": "leaf",
+							"demandPercentage": 3.2,
+							"lift": 2.753357753357753,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Redis",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 4.263655462184874,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Oracle",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 1.1060698957694668,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "MySQL",
+							"type": "leaf",
+							"demandPercentage": 2.3,
+							"lift": 1.7213740458015268,
+							"offers": 7,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Chmura i wdrażanie",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Full-stack dev sam wdraża aplikację do chmury. AWS to najczęstsza platforma w PL (co trzecia oferta), Docker pakuje aplikację w kontener, CI/CD (taśma automatycznego budowania i wdrażania) domyka proces. Kubernetes, GCP i Azure uzupełniają obraz.",
+					"unionShare": 62.3,
+					"leaves": [
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 33.4,
+							"lift": 3.3686004350978966,
+							"offers": 103,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -3890,11 +4242,83 @@
 							"source": "dane"
 						},
 						{
-							"name": "AWS",
+							"name": "CI/CD",
 							"type": "leaf",
-							"demandPercentage": 31.5,
-							"lift": 3.5711836734693883,
-							"offers": 97,
+							"demandPercentage": 21.4,
+							"lift": 2.276384215356378,
+							"offers": 66,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 5.2,
+							"lift": 0.6332046332046332,
+							"offers": 16,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 6.8,
+							"lift": 1.4548387096774194,
+							"offers": 21,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 3.2,
+							"lift": 0.34601810649071657,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Architektura usług i komunikacja",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Front i back gadają ze sobą przez API (interfejs, przez który ekran woła serwer). Projektujesz je w stylu REST lub GraphQL, dzielisz system na mikrousługi (małe, niezależne kawałki), a Kafka obsługuje komunikację asynchroniczną.",
+					"unionShare": 22.4,
+					"leaves": [
+						{
+							"name": "REST / API",
+							"type": "leaf",
+							"demandPercentage": 11.4,
+							"lift": 1.203308431163287,
+							"offers": 35,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Mikrousługi (Microservices)",
+							"type": "leaf",
+							"demandPercentage": 4.9,
+							"lift": 2.4282124910265614,
+							"offers": 15,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "GraphQL",
+							"type": "leaf",
+							"demandPercentage": 2.3,
+							"lift": 2.6845238095238098,
+							"offers": 7,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 4.2,
+							"lift": 1.084937083641747,
+							"offers": 13,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -3929,11 +4353,21 @@
 			"tShapePairs": [],
 			"areas": [
 				{
-					"name": "Natywny Android",
-					"type": "presentation-group",
+					"name": "Języki Androida (rdzeń)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 76.9,
+					"description": "Serce roli — język aplikacji. Wbrew obietnicy „Kotlin first” z konferencji, polski rynek Androida wciąż stoi na Javie (więcej ofert niż Kotlin) — bo żywych aplikacji napisanych dawniej w Javie jest więcej niż nowych. Kotlin to oficjalny, nowocześniejszy język Androida (zwięźlejszy, bezpieczniejszy), rosnący najszybciej. Coroutines to mechanizm Kotlina do zadań działających w tle (np. pobieranie danych bez zacinania ekranu). Kotlin Multiplatform pozwala dzielić kod między Android a iOS.",
+					"unionShare": 74.7,
 					"leaves": [
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 54.5,
+							"lift": 3.9058491435594136,
+							"offers": 205,
+							"kind": "tool",
+							"source": "dane"
+						},
 						{
 							"name": "Kotlin",
 							"type": "leaf",
@@ -3944,14 +4378,32 @@
 							"source": "dane"
 						},
 						{
-							"name": "Java",
+							"name": "Coroutines",
 							"type": "leaf",
-							"demandPercentage": 54.5,
-							"lift": 3.9058491435594136,
-							"offers": 205,
-							"kind": "tool",
+							"demandPercentage": 2.1,
+							"lift": 26.388297872340424,
+							"offers": 8,
+							"kind": "concept",
 							"source": "dane"
 						},
+						{
+							"name": "Kotlin Multiplatform",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"lift": 26.388297872340427,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "SDK i komponenty natywne Androida",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Rdzeń warsztatu androidowego: Android SDK to zestaw narzędzi i bibliotek platformy, Android Studio to środowisko, w którym piszesz (IDE). Jetpack Compose to nowoczesny sposób budowania ekranów kodem (zastępuje stary XML). MVVM to wzorzec architektury aplikacji (rozdziela dane, logikę i ekran), Gradle składa projekt w gotową aplikację.",
+					"unionShare": 21,
+					"leaves": [
 						{
 							"name": "Android SDK",
 							"type": "leaf",
@@ -3978,15 +4430,52 @@
 							"offers": 15,
 							"kind": "tool",
 							"source": "dane"
+						},
+						{
+							"name": "MVVM",
+							"type": "leaf",
+							"demandPercentage": 5.6,
+							"lift": 24.093663274745605,
+							"offers": 21,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Gradle",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 9.178538390379279,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "XML",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"lift": 3.492568836045056,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "iOS / hybrydowy",
-					"type": "presentation-group",
+					"name": "Wieloplatformowość i iOS (styk mobilny)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 13.8,
+					"description": "Część rynku mobile nie dzieli ostro Androida i iOS — szuka dewelopera, który dowiezie aplikację na oba systemy. Swift i SwiftUI to język i framework iOS-a, Flutter i React Native to technologie wieloplatformowe (jeden kod → dwa systemy). To uczciwy obraz rynku: znajomość drugiego świata mobilnego realnie poszerza Twoją wartość.",
+					"unionShare": 17.8,
 					"leaves": [
+						{
+							"name": "iOS",
+							"type": "leaf",
+							"demandPercentage": 9.3,
+							"lift": 10.739423552696683,
+							"offers": 35,
+							"kind": "tool",
+							"source": "dane"
+						},
 						{
 							"name": "Swift",
 							"type": "leaf",
@@ -4024,21 +4513,67 @@
 							"source": "dane"
 						},
 						{
-							"name": "Firebase",
+							"name": "XCode",
 							"type": "leaf",
-							"demandPercentage": 0.3,
-							"lift": 3.298537234042553,
-							"offers": 1,
+							"demandPercentage": 2.9,
+							"lift": 18.14195478723404,
+							"offers": 11,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Konkret bazowy",
-					"type": "presentation-group",
+					"name": "Komunikacja z backendem",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 16.8,
+					"description": "Aplikacja mobilna prawie zawsze rozmawia z serwerem — pobiera i wysyła dane. Robi to przez API (interfejs serwera) w stylu REST lub GraphQL, w formacie JSON (lekki zapis danych). SOAP to starszy styl integracji wciąż obecny w korporacjach.",
+					"unionShare": 15.7,
+					"leaves": [
+						{
+							"name": "REST / API",
+							"type": "leaf",
+							"demandPercentage": 13.6,
+							"lift": 1.9280848015606897,
+							"offers": 51,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "GraphQL",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 2.5131712259371835,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "JSON",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"lift": 3.1249300111982086,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SOAP",
+							"type": "leaf",
+							"demandPercentage": 2.7,
+							"lift": 2.5373363338788875,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Warsztat, testy i CI/CD",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Git (historia zmian w kodzie) to baza pracy zespołowej. CI/CD (taśma automatycznego budowania i wdrażania) z Jenkinsem buduje gotową aplikację, Maven składa zależności, Appium automatyzuje testy aplikacji mobilnej (program, który sam klika po ekranie i sprawdza, czy działa).",
+					"unionShare": 35.9,
 					"leaves": [
 						{
 							"name": "Git",
@@ -4046,6 +4581,42 @@
 							"demandPercentage": 16.8,
 							"lift": 3.2985372340425534,
 							"offers": 63,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 24.7,
+							"lift": 2.627528589001777,
+							"offers": 93,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Jenkins",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 1.5039962517914232,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Maven",
+							"type": "leaf",
+							"demandPercentage": 3.2,
+							"lift": 3.958244680851063,
+							"offers": 12,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Appium",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"lift": 7.661118737131091,
+							"offers": 9,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -4116,9 +4687,9 @@
 						{
 							"name": "C# (.NET)",
 							"type": "leaf",
-							"demandPercentage": 20.9,
-							"lift": 2.552699365907073,
-							"offers": 82,
+							"demandPercentage": 19.1,
+							"lift": 3.0540507264220635,
+							"offers": 75,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -4152,9 +4723,9 @@
 						{
 							"name": "Selenium",
 							"type": "leaf",
-							"demandPercentage": 27.7,
-							"lift": 18.4691497173694,
-							"offers": 109,
+							"demandPercentage": 27.5,
+							"lift": 18.42335465236229,
+							"offers": 108,
 							"kind": "tool",
 							"source": "dane"
 						},
