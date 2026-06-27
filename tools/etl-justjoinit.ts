@@ -808,8 +808,9 @@ export function unionShareOf(stat: PathStat, techNames: string[]): number | null
 
 /**
  * Buduje hierarchiczny model kariery (v4.0) z deklaratywnej struktury PATHS +
- * statystyk z danych. Obszar wiedzy: % popytu ścieżki (z danych). Grupnik
- * prezentacyjny: % = null. Liść: % w obrębie ścieżki, BEZ progu (dyrektywa 1/2);
+ * statystyk z danych. Obszar wiedzy (bez opisu): % popytu ścieżki (z danych). Grupnik
+ * prezentacyjny ORAZ grupa z kontekstem (`description`): % = null (miara grupy to unionShare).
+ * Liść: % w obrębie ścieżki, BEZ progu (dyrektywa 1/2);
  * liść `absent` → % null + source „kuracja ekspercka". Projekt kotwiczy na liściu.
  */
 export function buildCareerModel(
@@ -848,8 +849,12 @@ export function buildCareerModel(
 					source: "dane",
 				};
 			});
+			// GRUPA z kontekstem (ma `description`) → metryką widoku jest unionShare, nie %
+			// pojedynczej nazwy; nazwa grupy to proza (nie technologia), więc demandPct dałby 0.
+			// demandPercentage = null, by UI NIE renderowało „0%" dla całego obszaru (pilot cyber).
+			// Inaczej: knowledge-area legacy (bez opisu) = % popytu ścieżki z danych; grupnik = null.
 			const areaDemand =
-				area.type === "knowledge-area"
+				area.type === "knowledge-area" && !area.description
 					? demandPct(stat, area.demandAs && area.demandAs.length > 0 ? area.demandAs : [area.name])
 					: null;
 			// Unia grupy = % ofert ścieżki z ≥1 technologią dowolnego liścia obecnego w zrzucie

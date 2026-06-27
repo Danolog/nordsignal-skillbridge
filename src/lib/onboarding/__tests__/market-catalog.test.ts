@@ -4,7 +4,7 @@
  *
  * Zero DB, zero modelu: deterministyczne reguły (Built-to-Sell). Testujemy:
  *   • computeMarketCoverage / coverageWeight — wzór pokrycia (mirror calculateCoverage),
- *   • demandToPriority / estimatedHoursForGap — priorytet luki (Reguła 1 względna + Reguła 2 krotności),
+ *   • demandToPriority / estimatedHoursForGap — priorytet luki (reguła WZGLĘDNA r = popyt/max, bez krotności),
  *   • isPossessionLevel / POSSESSION_OPTIONS — kontrakt skali 3 poziomów posiadania,
  *   • annotateWithSyllabus — adnotacja „w programie studiów" (D4), dopasowanie jednostronne.
  */

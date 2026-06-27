@@ -1,13 +1,13 @@
 /**
- * lift-candidates — generator ARTEFAKTU-KANDYDATA do kuracji liftowej (Tor 1, Ethan).
+ * lift-candidates — generator ARTEFAKTU-KANDYDATA do ręcznej kuracji liści (Tor 1, Ethan).
  *
- * Dla każdej z 23 ścieżek liczy WSZYSTKIE technologie po bramce liftowej (anchor-config:
- * LIFT_MIN / countMinFor) z klasyfikacją kind (tool/cert/meta/soft) i scaleniem wariantów
+ * Dla każdej z 23 ścieżek liczy WSZYSTKIE technologie po bramce min-wolumenu (anchor-config:
+ * countMinFor) z klasyfikacją kind (tool/cert/meta/soft) i scaleniem wariantów
  * nazw. Wynik = ściąga dla Sophii do RĘCZNEJ kuracji liści w career-model.ts (HITL,
  * Built-to-Sell — silnik podpowiada, człowiek decyduje).
  *
  * Dodatkowo na stdout: raport PRZED/PO dla płaskiego katalogu studenta — stary
- * (committowany) artefakt vs nowy z bramką liftową. Pokazuje wpływ bramki na cyber i
+ * (committowany) artefakt vs nowy z bramką min-wolumenu. Pokazuje wpływ bramki na cyber i
  * sygnalizuje ścieżki, które bramka OPRÓŻNIA przy obecnych (jeszcze nieskuratorowanych)
  * liściach — lista priorytetów do kuracji Sophii.
  *
@@ -68,7 +68,7 @@ function main(): void {
 	const stats = pathStats(assignment, offers);
 	const { freq, total } = globalTechFrequency(offers);
 
-	// AFTER: nowy płaski katalog z bramką liftową (te same skuratorowane liście, nowa miara).
+	// AFTER: nowy płaski katalog z bramką min-wolumenu (te same skuratorowane liście, nowa miara).
 	const model = buildCareerModel(stats, freq, total);
 	const after = flattenLeaves(model);
 
@@ -103,7 +103,7 @@ function main(): void {
 	);
 
 	console.log("=== PRZED/PO — liczba kompetencji w płaskim katalogu per ścieżka ===");
-	console.log("(PO = obecne liście + bramka liftowa; kuracja Sophii dopiero doda właściwe liście)");
+	console.log("(PO = obecne liście + bramka min-wolumenu; kuracja Sophii dopiero doda właściwe liście)");
 	const goals = before.map((e) => e.careerGoal);
 	const emptied: string[] = [];
 	for (const goal of goals) {

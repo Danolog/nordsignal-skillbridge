@@ -73,7 +73,7 @@ describe("deriveGaps — luki = katalog rynku \\ wybór studenta (czysta)", () =
 		const g = deriveGaps(cyber, []);
 		expect(g.find((x) => x.competencyName === "SIEM")?.priority).toBe("critical");
 		expect(g.find((x) => x.competencyName === "SoC")?.priority).toBe("important"); // 6/12=0,5
-		expect(g.find((x) => x.competencyName === "PAM")?.priority).toBe("nice_to_have"); // 3/12=0,25, bez lift
+		expect(g.find((x) => x.competencyName === "PAM")?.priority).toBe("nice_to_have"); // 3/12=0,25 → miło-mieć (r<0,33)
 	});
 
 	it("zachowuje oryginalną pisownię nazwy z katalogu (nie znormalizowaną)", () => {

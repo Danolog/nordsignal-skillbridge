@@ -352,7 +352,7 @@ describe("classifyLeafKind", () => {
 	});
 });
 
-// ── flattenLeaves: bramka liftowa (Tor 1 — zastępuje „udział < 1%") ────────────
+// ── flattenLeaves: bramka min-wolumenu (Tor 1 — zastępuje „udział < 1%") ──────
 
 function testLeaf(over: Partial<ModelLeaf> & Pick<ModelLeaf, "name">): ModelLeaf {
 	return {
@@ -559,11 +559,17 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		}
 	});
 
-	it("knowledge-area mają % (number), grupniki null", () => {
+	it("knowledge-area legacy (bez opisu) mają % (number); grupniki i grupy z opisem → null", () => {
 		for (const path of model.paths) {
 			for (const area of path.areas) {
-				if (area.type === "knowledge-area") expect(typeof area.demandPercentage).toBe("number");
-				else expect(area.demandPercentage).toBeNull();
+				// Grupa z kontekstem (ma `description`) renderuje unionShare, nie %-pojedynczej-nazwy
+				// → demandPercentage null (pilot cyber). Legacy knowledge-area bez opisu = liczba.
+				const isGroup = typeof (area as { description?: string }).description === "string";
+				if (area.type === "knowledge-area" && !isGroup) {
+					expect(typeof area.demandPercentage).toBe("number");
+				} else {
+					expect(area.demandPercentage).toBeNull();
+				}
 			}
 		}
 	});

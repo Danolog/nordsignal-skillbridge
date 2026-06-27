@@ -55,7 +55,7 @@
 				{
 					"name": "SIEM i Monitorowanie Zdarzeń",
 					"type": "knowledge-area",
-					"demandPercentage": 0,
+					"demandPercentage": null,
 					"description": "Codzienność tzw. Blue Team — zespołu broniącego firmy od środka — i pracy w SOC (Security Operations Center, centrum monitorowania bezpieczeństwa). System klasy SIEM (Security Information and Event Management — zbieranie i korelowanie zdarzeń) ściąga miliony wpisów z logów w jedno miejsce; Twoim zadaniem jest wypatrzyć w nich ślad włamania. Splunk to najczęściej wymagane narzędzie tej klasy — pierwszy realny warsztat analityka bezpieczeństwa.",
 					"unionShare": 18.3,
 					"leaves": [
@@ -136,7 +136,7 @@
 				{
 					"name": "Administracja systemami i skrypty",
 					"type": "knowledge-area",
-					"demandPercentage": 0,
+					"demandPercentage": null,
 					"description": "Zanim obronisz system, musisz wiedzieć, jak działa od środka. Linux i Windows to dwa światy serwerów spotykane w każdej firmie; PowerShell i Bash to języki poleceń (powłoki), którymi sterujesz nimi bez klikania. To fundament i najczęstsza brama wejścia do cyber — przez administrację przechodzi się do bezpieczeństwa (kariera w kształcie litery T: najpierw szeroka podstawa admina, potem głębia specjalisty).",
 					"unionShare": 16.2,
 					"leaves": [
@@ -181,7 +181,7 @@
 				{
 					"name": "Programowanie i automatyzacja",
 					"type": "knowledge-area",
-					"demandPercentage": 0,
+					"demandPercentage": null,
 					"description": "Python to język, którym specjalista bezpieczeństwa automatyzuje powtarzalną robotę — przerabia logi, łączy się z innymi narzędziami przez ich API (interfejs do sterowania programem z kodu) i pisze własne skrypty wykrywające zagrożenia. Nie musisz być programistą aplikacji, ale bez podstaw Pythona zostajesz przy ręcznym klikaniu. To najczęściej wymieniana pojedyncza technologia w ofertach cyber.",
 					"unionShare": 14.8,
 					"leaves": [
@@ -199,7 +199,7 @@
 				{
 					"name": "Audyt, ryzyko i zgodność (GRC)",
 					"type": "knowledge-area",
-					"demandPercentage": 0,
+					"demandPercentage": null,
 					"description": "Bezpieczeństwo widziane od strony zarządzania i prawa, nie konsoli. Zarządzanie ryzykiem i zgodność z normami (NIST, ISO 27001 — międzynarodowe normy bezpieczeństwa informacji; RODO i DORA — regulacje unijne) to ogromny rynek w Polsce, bo banki, ubezpieczyciele i korporacje muszą się z nich tłumaczyć przed audytorami. Tędy wchodzi się do cyber bez głębokiego kodu — bliżej procesów, dokumentów i analizy ryzyka.",
 					"unionShare": 13.7,
 					"leaves": [
@@ -262,7 +262,7 @@
 				{
 					"name": "Cloud Security",
 					"type": "knowledge-area",
-					"demandPercentage": 0,
+					"demandPercentage": null,
 					"description": "Firmy przeniosły dane i aplikacje do chmury (AWS, Azure, Google Cloud), więc bezpieczeństwo przeniosło się razem z nimi. Pilnujesz, kto ma dostęp do zasobów w chmurze, jak ustawione są uprawnienia i czy nic nie wycieka przez źle skonfigurowany serwer. Uczysz się przynajmniej jednej z trzech platform — źle ustawiona chmura to dziś jedna z najczęstszych przyczyn wycieków.",
 					"unionShare": 13.5,
 					"leaves": [
@@ -298,7 +298,7 @@
 				{
 					"name": "Tożsamość i zarządzanie dostępem (IAM)",
 					"type": "knowledge-area",
-					"demandPercentage": 0,
+					"demandPercentage": null,
 					"description": "Większość włamań to nie spektakularny atak, tylko ktoś wszedł na cudze konto. IAM (Identity and Access Management — zarządzanie tożsamością i dostępem) to dyscyplina pilnowania, kto, do czego i jak długo ma dostęp; PAM (Privileged Access Management — zarządzanie dostępem uprzywilejowanym) chroni konta administratorów. Active Directory to katalog użytkowników Microsoftu obecny w prawie każdej polskiej firmie — przyjazny dla juniora.",
 					"unionShare": 12.7,
 					"leaves": [
@@ -343,7 +343,7 @@
 				{
 					"name": "DevSecOps i konteneryzacja",
 					"type": "knowledge-area",
-					"demandPercentage": 0,
+					"demandPercentage": null,
 					"description": "Nowoczesne firmy wypuszczają nowe wersje aplikacji nawet codziennie, automatyczną taśmą (CI/CD — ciągła integracja i dostarczanie kodu). DevSecOps to wpięcie bezpieczeństwa w tę taśmę — sprawdzasz kod pod kątem dziur, zanim trafi do klienta. Kubernetes to system zarządzania kontenerami (lekkimi, odizolowanymi paczkami z aplikacją) — uczysz się go zabezpieczać, bo to standard uruchamiania aplikacji w chmurze.",
 					"unionShare": 10.8,
 					"leaves": [
@@ -379,7 +379,7 @@
 				{
 					"name": "Infrastruktura i sieci",
 					"type": "knowledge-area",
-					"demandPercentage": 0,
+					"demandPercentage": null,
 					"description": "Sieć to autostrada, którą poruszają się dane — i którą porusza się atakujący. Rozumienie, jak komputery rozmawiają ze sobą (protokół TCP/IP — podstawowy język sieci) i jak ten ruch filtrować (firewall — zapora sieciowa), to fundament, na którym stoi reszta bezpieczeństwa. Bez tego SIEM pokazuje Ci alerty, których nie rozumiesz.",
 					"unionShare": 9.2,
 					"leaves": [
@@ -415,7 +415,7 @@
 				{
 					"name": "Bezpieczeństwo aplikacji (AppSec)",
 					"type": "knowledge-area",
-					"demandPercentage": 0,
+					"demandPercentage": null,
 					"description": "Aplikacje internetowe to najczęstszy cel ataku, więc bezpieczeństwo aplikacji (AppSec — application security) ma własny obszar. OWASP to organizacja utrzymująca słynną listę „OWASP Top 10” — dziesięć najczęstszych dziur w aplikacjach webowych. SAST, DAST i SCA to narzędzia automatycznie skanujące kod i działające aplikacje pod kątem tych dziur — uczysz się czytać ich wyniki i odróżniać realny problem od fałszywego alarmu.",
 					"unionShare": 4.9,
 					"leaves": [
@@ -460,7 +460,7 @@
 				{
 					"name": "Bazy danych (SQL)",
 					"type": "knowledge-area",
-					"demandPercentage": 0,
+					"demandPercentage": null,
 					"description": "SQL to język, którym rozmawia się z bazami danych — a bazy trzymają to, co atakujący chce ukraść. W cyber używasz SQL z dwóch stron: rozumiesz atak przez wstrzyknięcie zapytania (SQL injection — jedna z dziur z listy OWASP) i sam odpytujesz bazy z logami, szukając śladów incydentu. To kompetencja wspierająca, nie rdzeń roli — ale realnie wymagana.",
 					"unionShare": 3.5,
 					"leaves": [
