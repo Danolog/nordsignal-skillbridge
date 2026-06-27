@@ -28,9 +28,11 @@ import type { LeafKind } from "./anchor-config";
 // UI renderuje liczbę tylko tam, gdzie jest realny %.
 //
 //  - "knowledge-area"        — obszar wiedzy; % = popyt ścieżki na tę nazwę (z danych).
-//  - "presentation-group"    — grupnik prezentacyjny; % = null (etykieta Sophii).
+//  - "context-group"         — grupa z kontekstem (proza + unionShare); % = null. Wzorzec
+//                              23 ścieżek (kuracja Sophii): obszar mierzony udziałem unii.
+//  - "presentation-group"    — grupnik prezentacyjny (etykieta legacy Sophii); % = null.
 //  - "leaf"                  — narzędzie-konkret; % liczony w obrębie ścieżki (bez progu).
-export type NodeType = "knowledge-area" | "presentation-group" | "leaf";
+export type NodeType = "knowledge-area" | "presentation-group" | "context-group" | "leaf";
 
 /** Źródło % liścia. "dane" = policzone z CSV; "kuracja ekspercka" = brak w zrzucie. */
 export type LeafSource = "dane" | "kuracja ekspercka";
@@ -52,13 +54,18 @@ export type LeafSpec = {
 /** Obszar wiedzy / grupnik / GRUPA z kontekstem → liście. */
 export type AreaSpec = {
 	name: string; // nazwa obszaru/grupnika/grupy
-	type: "knowledge-area" | "presentation-group";
+	// Dyskryminator JAWNY (poprawka Leo, ETAP A): silnik liczy % WYŁĄCZNIE po tym typie,
+	// NIE po obecności `description`. knowledge-area → % popytu ścieżki; context-group /
+	// presentation-group → null (metryką jest unionShare). Obszar z realnym popytem MOŻE
+	// mieć opis i nie traci wtedy % — bo o %-vs-null decyduje `type`, nie opis.
+	type: "knowledge-area" | "presentation-group" | "context-group";
 	// Dla "knowledge-area": nazwa(-y) liczone jako % popytu ścieżki (z danych).
-	// Brak → % liczony z `name`. Dla "presentation-group" ignorowane (% = null).
+	// Brak → % liczony z `name`. Dla context-group / presentation-group ignorowane (% = null).
 	demandAs?: string[];
 	// GRUPA z kontekstem (wzorzec dla 23 ścieżek, decyzja Darka 2026-06-27): proza
-	// wyjaśniająca obszar studentowi. Gdy ustawiona, silnik liczy `unionShare` (udział
-	// ofert wymagających CO NAJMNIEJ JEDNEJ technologii z grupy) i renderuje opis w UI.
+	// wyjaśniająca obszar studentowi. Idzie w parze z type:"context-group" — silnik liczy
+	// `unionShare` (udział ofert wymagających ≥1 technologii grupy) i renderuje opis w UI.
+	// UWAGA: `description` to TYLKO UI — NIE decyduje już o %-vs-null (decyduje `type`).
 	description?: string;
 	leaves: LeafSpec[];
 };
@@ -465,7 +472,7 @@ export const PATHS: PathSpec[] = [
 		areas: [
 			{
 				name: "SIEM i Monitorowanie Zdarzeń",
-				type: "knowledge-area",
+				type: "context-group",
 				description:
 					"Codzienność tzw. Blue Team — zespołu broniącego firmy od środka — i pracy w SOC (Security Operations Center, centrum monitorowania bezpieczeństwa). System klasy SIEM (Security Information and Event Management — zbieranie i korelowanie zdarzeń) ściąga miliony wpisów z logów w jedno miejsce; Twoim zadaniem jest wypatrzyć w nich ślad włamania. Splunk to najczęściej wymagane narzędzie tej klasy — pierwszy realny warsztat analityka bezpieczeństwa.",
 				leaves: [
@@ -481,7 +488,7 @@ export const PATHS: PathSpec[] = [
 			},
 			{
 				name: "Administracja systemami i skrypty",
-				type: "knowledge-area",
+				type: "context-group",
 				description:
 					"Zanim obronisz system, musisz wiedzieć, jak działa od środka. Linux i Windows to dwa światy serwerów spotykane w każdej firmie; PowerShell i Bash to języki poleceń (powłoki), którymi sterujesz nimi bez klikania. To fundament i najczęstsza brama wejścia do cyber — przez administrację przechodzi się do bezpieczeństwa (kariera w kształcie litery T: najpierw szeroka podstawa admina, potem głębia specjalisty).",
 				leaves: [
@@ -493,14 +500,14 @@ export const PATHS: PathSpec[] = [
 			},
 			{
 				name: "Programowanie i automatyzacja",
-				type: "knowledge-area",
+				type: "context-group",
 				description:
 					"Python to język, którym specjalista bezpieczeństwa automatyzuje powtarzalną robotę — przerabia logi, łączy się z innymi narzędziami przez ich API (interfejs do sterowania programem z kodu) i pisze własne skrypty wykrywające zagrożenia. Nie musisz być programistą aplikacji, ale bez podstaw Pythona zostajesz przy ręcznym klikaniu. To najczęściej wymieniana pojedyncza technologia w ofertach cyber.",
 				leaves: [{ name: "Python", kind: "tool" }],
 			},
 			{
 				name: "Audyt, ryzyko i zgodność (GRC)",
-				type: "knowledge-area",
+				type: "context-group",
 				description:
 					"Bezpieczeństwo widziane od strony zarządzania i prawa, nie konsoli. Zarządzanie ryzykiem i zgodność z normami (NIST, ISO 27001 — międzynarodowe normy bezpieczeństwa informacji; RODO i DORA — regulacje unijne) to ogromny rynek w Polsce, bo banki, ubezpieczyciele i korporacje muszą się z nich tłumaczyć przed audytorami. Tędy wchodzi się do cyber bez głębokiego kodu — bliżej procesów, dokumentów i analizy ryzyka.",
 				leaves: [
@@ -518,7 +525,7 @@ export const PATHS: PathSpec[] = [
 			},
 			{
 				name: "Cloud Security",
-				type: "knowledge-area",
+				type: "context-group",
 				description:
 					"Firmy przeniosły dane i aplikacje do chmury (AWS, Azure, Google Cloud), więc bezpieczeństwo przeniosło się razem z nimi. Pilnujesz, kto ma dostęp do zasobów w chmurze, jak ustawione są uprawnienia i czy nic nie wycieka przez źle skonfigurowany serwer. Uczysz się przynajmniej jednej z trzech platform — źle ustawiona chmura to dziś jedna z najczęstszych przyczyn wycieków.",
 				leaves: [
@@ -529,7 +536,7 @@ export const PATHS: PathSpec[] = [
 			},
 			{
 				name: "Tożsamość i zarządzanie dostępem (IAM)",
-				type: "knowledge-area",
+				type: "context-group",
 				description:
 					"Większość włamań to nie spektakularny atak, tylko ktoś wszedł na cudze konto. IAM (Identity and Access Management — zarządzanie tożsamością i dostępem) to dyscyplina pilnowania, kto, do czego i jak długo ma dostęp; PAM (Privileged Access Management — zarządzanie dostępem uprzywilejowanym) chroni konta administratorów. Active Directory to katalog użytkowników Microsoftu obecny w prawie każdej polskiej firmie — przyjazny dla juniora.",
 				leaves: [
@@ -545,7 +552,7 @@ export const PATHS: PathSpec[] = [
 			},
 			{
 				name: "DevSecOps i konteneryzacja",
-				type: "knowledge-area",
+				type: "context-group",
 				description:
 					"Nowoczesne firmy wypuszczają nowe wersje aplikacji nawet codziennie, automatyczną taśmą (CI/CD — ciągła integracja i dostarczanie kodu). DevSecOps to wpięcie bezpieczeństwa w tę taśmę — sprawdzasz kod pod kątem dziur, zanim trafi do klienta. Kubernetes to system zarządzania kontenerami (lekkimi, odizolowanymi paczkami z aplikacją) — uczysz się go zabezpieczać, bo to standard uruchamiania aplikacji w chmurze.",
 				leaves: [
@@ -556,7 +563,7 @@ export const PATHS: PathSpec[] = [
 			},
 			{
 				name: "Infrastruktura i sieci",
-				type: "knowledge-area",
+				type: "context-group",
 				description:
 					"Sieć to autostrada, którą poruszają się dane — i którą porusza się atakujący. Rozumienie, jak komputery rozmawiają ze sobą (protokół TCP/IP — podstawowy język sieci) i jak ten ruch filtrować (firewall — zapora sieciowa), to fundament, na którym stoi reszta bezpieczeństwa. Bez tego SIEM pokazuje Ci alerty, których nie rozumiesz.",
 				leaves: [
@@ -567,7 +574,7 @@ export const PATHS: PathSpec[] = [
 			},
 			{
 				name: "Bezpieczeństwo aplikacji (AppSec)",
-				type: "knowledge-area",
+				type: "context-group",
 				description:
 					"Aplikacje internetowe to najczęstszy cel ataku, więc bezpieczeństwo aplikacji (AppSec — application security) ma własny obszar. OWASP to organizacja utrzymująca słynną listę „OWASP Top 10” — dziesięć najczęstszych dziur w aplikacjach webowych. SAST, DAST i SCA to narzędzia automatycznie skanujące kod i działające aplikacje pod kątem tych dziur — uczysz się czytać ich wyniki i odróżniać realny problem od fałszywego alarmu.",
 				leaves: [
@@ -579,7 +586,7 @@ export const PATHS: PathSpec[] = [
 			},
 			{
 				name: "Bazy danych (SQL)",
-				type: "knowledge-area",
+				type: "context-group",
 				description:
 					"SQL to język, którym rozmawia się z bazami danych — a bazy trzymają to, co atakujący chce ukraść. W cyber używasz SQL z dwóch stron: rozumiesz atak przez wstrzyknięcie zapytania (SQL injection — jedna z dziur z listy OWASP) i sam odpytujesz bazy z logami, szukając śladów incydentu. To kompetencja wspierająca, nie rdzeń roli — ale realnie wymagana.",
 				leaves: [{ name: "SQL", kind: "tool" }],

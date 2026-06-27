@@ -29,7 +29,7 @@ import {
 	buildCareerModel,
 	buildTechIndex,
 	type CareerGoalEntry,
-	cleanOffers,
+	dedupOffers,
 	flattenLeaves,
 	globalTechFrequency,
 	parseCsv,
@@ -62,7 +62,7 @@ function main(): void {
 
 	// Pełny pipeline (funkcje czyste z silnika).
 	const techBySlug = buildTechIndex(techRows);
-	const { offers } = cleanOffers(offerRows, techBySlug);
+	const { offers } = dedupOffers(offerRows, techBySlug);
 	const anchors = buildAnchors(offers);
 	const assignment = assignAll(offers, anchors);
 	const stats = pathStats(assignment, offers);
@@ -88,7 +88,7 @@ function main(): void {
 		_meta: {
 			generator: "tools/lift-candidates.ts (Tor 1, Ethan)",
 			snapshot: "2026-02",
-			cleanedOffers: total,
+			uniqueOffers: total,
 			countMinAbs: COUNT_MIN_ABS,
 			note: "Kandydaci po bramce (meta + min-wolumen, BEZ krotności) + kind. passesGate=true → silne kandydatury do liści. lift = pole INFORMACYJNE (nie rankuje). variants = napisy scalone (countAs do kuracji). NIE jest artefaktem produktu.",
 		},
@@ -99,7 +99,7 @@ function main(): void {
 	// ── Raport stdout ─────────────────────────────────────────────────────────
 	console.log(`\n=== KANDYDACI zapisani: ${outPath} (${candidates.length} ścieżek) ===`);
 	console.log(
-		`Oczyszczonych ofert (mianownik globalny): ${total} | COUNT_MIN_ABS=${COUNT_MIN_ABS}\n`,
+		`Surowych ofert po dedup (mianownik globalny): ${total} | COUNT_MIN_ABS=${COUNT_MIN_ABS}\n`,
 	);
 
 	console.log("=== PRZED/PO — liczba kompetencji w płaskim katalogu per ścieżka ===");

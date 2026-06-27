@@ -10,17 +10,15 @@ import {
 	buildTechIndex,
 	type CareerModel,
 	type CleanOffer,
-	cleanOffers,
+	dedupOffers,
 	displayName,
 	flattenLeaves,
 	globalTechFrequency,
 	liftOf,
 	type ModelLeaf,
-	normalizeCity,
 	normalizeTitle,
 	type PathStat,
 	parseCsv,
-	passesGeoFilter,
 	pathStats,
 } from "../../../../tools/etl-justjoinit";
 import {
@@ -44,15 +42,7 @@ describe("parseCsv", () => {
 	});
 });
 
-// ── Czyszczenie ──────────────────────────────────────────────────────────
-
-describe("normalizeCity / passesGeoFilter", () => {
-	it("normalizeCity + geo", () => {
-		expect(normalizeCity("Warsaw")).toBe("Warszawa");
-		expect(passesGeoFilter("Berlin", "Zdalnie")).toBe(true);
-		expect(passesGeoFilter("Berlin", "Biuro")).toBe(false);
-	});
-});
+// ── Dedup (ETAP A — surowy rynek) ──────────────────────────────────────────
 
 function offerRow(over: Partial<Record<string, string>>): Record<string, string> {
 	return {
@@ -70,20 +60,22 @@ function offerRow(over: Partial<Record<string, string>>): Record<string, string>
 	};
 }
 
-describe("cleanOffers", () => {
+describe("dedupOffers — surowy rynek (jedyna higiena = dedup po Slug)", () => {
 	const noTech = new Map<string, Set<string>>();
-	it("filtruje Pełny etat + umowa + geo, dedup, zapisuje kategorię; v5: bez widełek", () => {
-		const { offers } = cleanOffers(
+	it("dedup po Slug; BEZ filtrów geo/etat/umowy (surowe zostają); v5: bez widełek", () => {
+		const { offers } = dedupOffers(
 			[
 				offerRow({ Slug: "a", Kategoria: "Security" }),
-				offerRow({ Slug: "b", Wymiar: "freelance" }),
-				offerRow({ Slug: "c", Typ_umowy: "INTERNSHIP" }),
-				offerRow({ Slug: "e", Miasto: "Berlin", Tryb_pracy: "Biuro" }), // zagraniczna stacjonarna
-				offerRow({ Slug: "a", Stanowisko: "dup" }),
+				offerRow({ Slug: "b", Wymiar: "freelance" }), // niepełny etat — ZOSTAJE (zero czyszczenia)
+				offerRow({ Slug: "c", Typ_umowy: "INTERNSHIP" }), // inna umowa — ZOSTAJE
+				offerRow({ Slug: "e", Miasto: "Berlin", Tryb_pracy: "Biuro" }), // zagraniczna — ZOSTAJE
+				offerRow({ Slug: "", Kategoria: "Brak" }), // brak Slug — pomijany (integralność klucza)
+				offerRow({ Slug: "a", Stanowisko: "dup" }), // duplikat Slug — pomijany (pierwszy wygrywa)
 			],
 			noTech,
 		);
-		expect([...offers.keys()].sort()).toEqual(["a"]);
+		// surowe a,b,c,e zostają (Decyzja A: bez geo/etat/umowy); dup „a" i pusty Slug poza wynikiem
+		expect([...offers.keys()].sort()).toEqual(["a", "b", "c", "e"]);
 		expect(offers.get("a")?.kategoria).toBe("Security");
 		// v5: CleanOffer NIE ma już pól salary
 		expect(offers.get("a")).not.toHaveProperty("salaryFrom");
@@ -504,7 +496,7 @@ describe("buildArtifact — determinizm i kontrakt", () => {
 		const { artifact, model } = buildArtifact(offerRows, techRows);
 		expect(artifact._meta.model).toContain("v5");
 		expect(artifact._meta.snapshot).toBe("2026-02");
-		expect(artifact._meta.cleanedOffers).toBe(13);
+		expect(artifact._meta.uniqueOffers).toBe(13);
 		expect(artifact._meta.assignedOffers).toBe(12); // orphan bez techs → nieprzypisana
 		expect(model._meta.families.length).toBe(5);
 		const java = model.paths.find((p) => p.careerGoal === "Java Developer");
@@ -559,18 +551,36 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		}
 	});
 
-	it("knowledge-area legacy (bez opisu) mają % (number); grupniki i grupy z opisem → null", () => {
+	it("DYSKRYMINATOR JAWNY (poprawka Leo): knowledge-area → % (number); context-group/presentation-group → null", () => {
+		// % zależy WYŁĄCZNIE od `area.type`, NIE od obecności `description` (krucha pułapka
+		// usunięta) — obszar z realnym popytem mógłby mieć opis i nie traci wtedy %.
 		for (const path of model.paths) {
 			for (const area of path.areas) {
-				// Grupa z kontekstem (ma `description`) renderuje unionShare, nie %-pojedynczej-nazwy
-				// → demandPercentage null (pilot cyber). Legacy knowledge-area bez opisu = liczba.
-				const isGroup = typeof (area as { description?: string }).description === "string";
-				if (area.type === "knowledge-area" && !isGroup) {
-					expect(typeof area.demandPercentage).toBe("number");
+				const where = `${path.careerGoal}/${area.name}`;
+				if (area.type === "knowledge-area") {
+					expect(typeof area.demandPercentage, where).toBe("number");
 				} else {
-					expect(area.demandPercentage).toBeNull();
+					// context-group | presentation-group — metryką jest unionShare, % = null
+					expect(area.demandPercentage, where).toBeNull();
 				}
 			}
+		}
+	});
+
+	it("KURACJA CYBER zachowana: 10 grup context-group z opisem + unionShare (ETAP A nie nadpisał)", () => {
+		const cyber = model.paths.find((p) => p.careerGoal === "Cybersecurity Specialist");
+		expect(cyber, "ścieżka cyber obecna w artefakcie").toBeDefined();
+		const groups = (cyber?.areas ?? []).filter((a) => a.type === "context-group");
+		expect(groups.length, "10 skuratorowanych grup Sophii").toBe(10);
+		for (const g of groups) {
+			const desc = (g as { description?: string }).description;
+			expect(typeof desc, `${g.name}: opis grupy`).toBe("string");
+			expect((desc ?? "").length, `${g.name}: opis niepusty`).toBeGreaterThan(40);
+			expect(g.demandPercentage, `${g.name}: dyskryminator jawny → null`).toBeNull();
+			expect(
+				g.unionShare === null || typeof g.unionShare === "number",
+				`${g.name}: unionShare obecny`,
+			).toBe(true);
 		}
 	});
 
