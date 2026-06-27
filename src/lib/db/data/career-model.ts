@@ -575,7 +575,12 @@ export const PATHS: PathSpec[] = [
 				leaves: [
 					{ name: "Network", kind: "concept" },
 					{ name: "TCP/IP", kind: "concept" },
-					{ name: "Firewall / IDS-IPS", countAs: ["Firewall", "IDS/IPS"], kind: "tool" },
+					{
+						name: "Firewall / IDS-IPS",
+						countAs: ["Firewall", "IDS/IPS"],
+						countAsUnion: true,
+						kind: "tool",
+					},
 				],
 			},
 			{
@@ -625,7 +630,7 @@ export const PATHS: PathSpec[] = [
 				description:
 					"Serce dzisiejszego AI Engineera: wpinanie dużych modeli językowych (LLM) w produkty. RAG (Retrieval-Augmented Generation — generacja wsparta wyszukiwaniem) podaje modelowi Twoje własne dane, żeby nie zmyślał; LangChain i LangGraph to biblioteki, którymi spina się model z resztą aplikacji w wieloetapowy proces; Hugging Face to największe repozytorium gotowych modeli do pobrania. To kompetencja, która najmocniej odróżnia tę rolę od „klasycznego” uczenia maszynowego — i najszybciej rośnie.",
 				leaves: [
-					{ name: "LLM", countAs: ["LLM", "LLMs"], kind: "concept" },
+					{ name: "LLM", countAs: ["LLM", "LLMs"], countAsUnion: true, kind: "concept" },
 					{ name: "RAG", kind: "concept" },
 					{ name: "LangChain", countAs: ["Langchain"], kind: "tool" },
 					{ name: "GenAI", kind: "concept" },
@@ -731,10 +736,16 @@ export const PATHS: PathSpec[] = [
 							"Microsoft Platform",
 							"Microsoft Azure Cloud",
 						],
+						countAsUnion: true,
 						kind: "tool",
 					},
 					{ name: "Databricks", kind: "tool" },
-					{ name: "GCP", countAs: ["GCP", "Google Cloud Platform"], kind: "tool" },
+					{
+						name: "GCP",
+						countAs: ["GCP", "Google Cloud Platform"],
+						countAsUnion: true,
+						kind: "tool",
+					},
 					{
 						name: "AWS",
 						countAs: ["AWS", "Amazon AWS", "Amazon Web Services (AWS)"],
@@ -750,7 +761,12 @@ export const PATHS: PathSpec[] = [
 					"Rdzeń dziedziny widziany przez to, co rynek faktycznie nazywa. W tym zrzucie „uczenie maszynowe” pojawia się głównie jako ogólny tag, nie jako konkretne biblioteki (scikit-learn/PyTorch ledwo się przebijają) — dlatego grupa opiera się na nazwanych pod-technikach. Najmocniejszy realny sygnał to LLM (duże modele językowe) i GenAI (sztuczna inteligencja generatywna): polski „data scientist” coraz częściej znaczy „ktoś, kto umie wpiąć model językowy”. NLP (przetwarzanie języka naturalnego) i statystyka to fundament metodyczny, choć w tagach cienki.",
 				leaves: [
 					{ name: "LLM", kind: "concept" },
-					{ name: "GenAI", countAs: ["GenAI", "Generative AI", "Gen AI"], kind: "concept" },
+					{
+						name: "GenAI",
+						countAs: ["GenAI", "Generative AI", "Gen AI"],
+						countAsUnion: true,
+						kind: "concept",
+					},
 					{ name: "MLOps", kind: "concept" },
 					{ name: "NLP", kind: "concept" },
 					{ name: "Statystyka (Statistics)", countAs: ["Statistics"], kind: "concept" },
@@ -1556,7 +1572,7 @@ export const PATHS: PathSpec[] = [
 					{ name: "Java", kind: "tool" },
 					{ name: "JavaScript", kind: "tool" },
 					{ name: "Python", kind: "tool" },
-					{ name: "C# (.NET)", countAs: ["C#", ".Net"], kind: "tool" },
+					{ name: "C# (.NET)", countAs: ["C#", ".Net"], countAsUnion: true, kind: "tool" },
 					{ name: "TypeScript", kind: "tool" },
 					{ name: "C++", kind: "tool" },
 				],
@@ -1567,7 +1583,12 @@ export const PATHS: PathSpec[] = [
 				description:
 					"Rdzeń nowoczesnej roli QA: piszesz program, który klika po aplikacji jak użytkownik i sam sprawdza, czy wszystko działa — codziennie, bez ręcznej pracy. Selenium to weteran i wciąż najczęstszy wymóg, Playwright to jego nowocześniejszy następca (rośnie najszybciej), Cypress to ulubieniec front-endu. Appium przenosi to samo na aplikacje mobilne.",
 				leaves: [
-					{ name: "Selenium", countAs: ["Selenium", "Selenium WebDriver"], kind: "tool" },
+					{
+						name: "Selenium",
+						countAs: ["Selenium", "Selenium WebDriver"],
+						countAsUnion: true,
+						kind: "tool",
+					},
 					{ name: "Playwright", kind: "tool" },
 					{
 						name: "Automatyzacja testów (Automated Testing)",
