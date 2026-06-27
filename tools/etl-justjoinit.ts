@@ -661,16 +661,14 @@ export function globalTechFrequency(offers: Map<string, CleanOffer>): {
 }
 
 /**
- * Udział UNII grupy (Darek 2026-06-27): % ofert ścieżki wymagających CO NAJMNIEJ JEDNEJ
- * technologii z zadanego zbioru. To % grupy w widoku grupowym (np. Cloud = AWS∪Azure∪GCP).
- * Liczone z ofert (nie sumą liczników — nakładające się oferty NIE są podwójnie liczone).
- * 1 miejsce po przecinku. null gdy 0 ofert.
+ * Liczba ofert z listy zawierających CO NAJMNIEJ JEDEN napis ze zbioru (DEDUP — oferta
+ * z dwoma wariantami liczona RAZ). Rdzeń unii: używany i przez `unionShare` grupy, i przez
+ * liść w trybie `countAsUnion` (scalenie synonimów = unia ofert, nie suma liczników).
  */
-export function unionShareOf(stat: PathStat, techNames: string[]): number | null {
-	if (stat.offerCount === 0) return null;
-	const set = new Set(techNames);
+export function unionOffersCount(offers: Iterable<CleanOffer>, names: string[]): number {
+	const set = new Set(names);
 	let count = 0;
-	for (const offer of stat.offers) {
+	for (const offer of offers) {
 		for (const t of offer.techs) {
 			if (set.has(t)) {
 				count++;
@@ -678,7 +676,36 @@ export function unionShareOf(stat: PathStat, techNames: string[]): number | null
 			}
 		}
 	}
-	return Math.round((1000 * count) / stat.offerCount) / 10;
+	return count;
+}
+
+/**
+ * Udział UNII grupy (Darek 2026-06-27): % ofert ścieżki wymagających CO NAJMNIEJ JEDNEJ
+ * technologii z zadanego zbioru. To % grupy w widoku grupowym (np. Cloud = AWS∪Azure∪GCP).
+ * Liczone z ofert (nie sumą liczników — nakładające się oferty NIE są podwójnie liczone).
+ * 1 miejsce po przecinku. null gdy 0 ofert.
+ */
+export function unionShareOf(stat: PathStat, techNames: string[]): number | null {
+	if (stat.offerCount === 0) return null;
+	return Math.round((1000 * unionOffersCount(stat.offers, techNames)) / stat.offerCount) / 10;
+}
+
+/**
+ * Krotność (lift) liścia w trybie `countAsUnion`: udział UNII w ścieżce ÷ udział UNII
+ * globalnie (oba dedup po ofertach). Spójne z `offers`/`demandPercentage` liczonymi unią —
+ * gdy liść scala synonimy, mianownik i licznik krotności też są unią, nie sumą. Informacyjnie.
+ */
+function unionLift(
+	stat: PathStat,
+	names: string[],
+	allOffers: Map<string, CleanOffer>,
+	globalTotal: number,
+): number | null {
+	if (stat.offerCount === 0 || globalTotal === 0) return null;
+	const globalUnion = unionOffersCount(allOffers.values(), names);
+	if (globalUnion === 0) return null;
+	const pathUnion = unionOffersCount(stat.offers, names);
+	return pathUnion / stat.offerCount / (globalUnion / globalTotal);
 }
 
 /**
@@ -692,6 +719,7 @@ export function buildCareerModel(
 	stats: Map<string, PathStat>,
 	globalFreq: Map<string, number>,
 	globalTotal: number,
+	allOffers: Map<string, CleanOffer>,
 ): CareerModel {
 	const paths: ModelPath[] = [];
 	for (const spec of PATHS) {
@@ -714,12 +742,27 @@ export function buildCareerModel(
 					};
 				}
 				const names = leaf.countAs && leaf.countAs.length > 0 ? leaf.countAs : [leaf.name];
+				// countAsUnion (Sophia/Leo, partia 2): scalenie SYNONIMÓW liczone jako UNIA ofert
+				// (dedup — oferta z dwoma wariantami RAZ), nie suma liczników. Domyślnie (brak flagi)
+				// liść SUMUJE warianty — zgodność wsteczna: cyber/partia 1 zatwierdzone na sumie.
+				const useUnion = leaf.countAsUnion === true && names.length > 1;
+				const offers = useUnion
+					? unionOffersCount(stat.offers, names)
+					: leafOfferCount(stat, names);
+				const demandPercentage = useUnion
+					? stat.offerCount === 0
+						? null
+						: Math.round((1000 * offers) / stat.offerCount) / 10
+					: demandPct(stat, names, 1); // 1 miejsce po przecinku dla liści
+				const lift = useUnion
+					? unionLift(stat, names, allOffers, globalTotal)
+					: liftOf(stat, names, globalFreq, globalTotal); // INFORMACYJNIE (nie rankuje)
 				return {
 					name: leaf.name,
 					type: "leaf",
-					demandPercentage: demandPct(stat, names, 1), // 1 miejsce po przecinku dla liści
-					lift: liftOf(stat, names, globalFreq, globalTotal), // INFORMACYJNIE (nie rankuje)
-					offers: leafOfferCount(stat, names),
+					demandPercentage,
+					lift,
+					offers,
 					kind,
 					source: "dane",
 				};
@@ -958,7 +1001,7 @@ export function buildArtifact(
 	const assignment = assignAll(offers, anchors);
 	const stats = pathStats(assignment, offers);
 	const { freq: globalFreq, total: globalTotal } = globalTechFrequency(offers);
-	const model = buildCareerModel(stats, globalFreq, globalTotal);
+	const model = buildCareerModel(stats, globalFreq, globalTotal, offers);
 	const entries = flattenLeaves(model);
 
 	const unique = offers.size;

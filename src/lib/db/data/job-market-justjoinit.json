@@ -581,42 +581,182 @@
 				{
 					"name": "Python",
 					"demandPercentage": 53,
-					"category": "Konkret bazowy"
+					"category": "Język i zapytania do danych (fundament)"
 				},
 				{
 					"name": "SQL",
 					"demandPercentage": 48,
-					"category": "Konkret bazowy"
+					"category": "Język i zapytania do danych (fundament)"
+				},
+				{
+					"name": "ETL / ELT",
+					"demandPercentage": 24,
+					"category": "ETL i hurtownie danych (przepływy)"
 				},
 				{
 					"name": "Power BI",
-					"demandPercentage": 23,
-					"category": "Wizualizacja BI"
+					"demandPercentage": 24,
+					"category": "Business Intelligence i wizualizacja"
 				},
 				{
 					"name": "MS Excel",
 					"demandPercentage": 15,
-					"category": "Wizualizacja BI"
+					"category": "Arkusze kalkulacyjne (Excel)"
 				},
 				{
 					"name": "BigQuery",
 					"demandPercentage": 10,
-					"category": "Konkret bazowy"
+					"category": "Chmurowe platformy danych"
+				},
+				{
+					"name": "Modelowanie danych (Data modeling)",
+					"demandPercentage": 10,
+					"category": "ETL i hurtownie danych (przepływy)"
+				},
+				{
+					"name": "GCP",
+					"demandPercentage": 7,
+					"category": "Chmurowe platformy danych"
+				},
+				{
+					"name": "Azure",
+					"demandPercentage": 6,
+					"category": "Chmurowe platformy danych"
+				},
+				{
+					"name": "Wielkie zbiory danych (Big Data)",
+					"demandPercentage": 6,
+					"category": "Chmurowe platformy danych"
+				},
+				{
+					"name": "Business Intelligence (BI)",
+					"demandPercentage": 5,
+					"category": "Business Intelligence i wizualizacja"
+				},
+				{
+					"name": "Hurtownia danych (Data Warehousing)",
+					"demandPercentage": 5,
+					"category": "ETL i hurtownie danych (przepływy)"
+				},
+				{
+					"name": "Oracle",
+					"demandPercentage": 5,
+					"category": "Bazy danych i dialekty SQL"
 				},
 				{
 					"name": "Tableau",
 					"demandPercentage": 5,
-					"category": "Wizualizacja BI"
+					"category": "Business Intelligence i wizualizacja"
 				},
 				{
-					"name": "Airflow",
+					"name": "DAX",
+					"demandPercentage": 4,
+					"category": "Business Intelligence i wizualizacja"
+				},
+				{
+					"name": "Apache Airflow",
 					"demandPercentage": 3,
-					"category": "ETL"
+					"category": "ETL i hurtownie danych (przepływy)"
+				},
+				{
+					"name": "AWS",
+					"demandPercentage": 3,
+					"category": "Chmurowe platformy danych"
+				},
+				{
+					"name": "DataStage",
+					"demandPercentage": 3,
+					"category": "ETL i hurtownie danych (przepływy)"
+				},
+				{
+					"name": "MS SQL Server",
+					"demandPercentage": 3,
+					"category": "Bazy danych i dialekty SQL"
+				},
+				{
+					"name": "Pandas",
+					"demandPercentage": 3,
+					"category": "Język i zapytania do danych (fundament)"
+				},
+				{
+					"name": "Snowflake",
+					"demandPercentage": 3,
+					"category": "Chmurowe platformy danych"
+				},
+				{
+					"name": "Databricks",
+					"demandPercentage": 2,
+					"category": "Chmurowe platformy danych"
 				},
 				{
 					"name": "dbt",
 					"demandPercentage": 2,
-					"category": "ETL"
+					"category": "ETL i hurtownie danych (przepływy)"
+				},
+				{
+					"name": "Google Analytics",
+					"demandPercentage": 2,
+					"category": "Narzędzia specjalistyczne"
+				},
+				{
+					"name": "PL/SQL",
+					"demandPercentage": 2,
+					"category": "Bazy danych i dialekty SQL"
+				},
+				{
+					"name": "PostgreSQL",
+					"demandPercentage": 2,
+					"category": "Bazy danych i dialekty SQL"
+				},
+				{
+					"name": "Power Query",
+					"demandPercentage": 2,
+					"category": "Business Intelligence i wizualizacja"
+				},
+				{
+					"name": "Spark",
+					"demandPercentage": 2,
+					"category": "Chmurowe platformy danych"
+				},
+				{
+					"name": "Bazy relacyjne (Relational Databases)",
+					"demandPercentage": 1,
+					"category": "Bazy danych i dialekty SQL"
+				},
+				{
+					"name": "Integracja danych (Data Integration)",
+					"demandPercentage": 1,
+					"category": "ETL i hurtownie danych (przepływy)"
+				},
+				{
+					"name": "Looker",
+					"demandPercentage": 1,
+					"category": "Business Intelligence i wizualizacja"
+				},
+				{
+					"name": "NumPy",
+					"demandPercentage": 1,
+					"category": "Język i zapytania do danych (fundament)"
+				},
+				{
+					"name": "PySpark",
+					"demandPercentage": 1,
+					"category": "Chmurowe platformy danych"
+				},
+				{
+					"name": "SAS",
+					"demandPercentage": 1,
+					"category": "Narzędzia specjalistyczne"
+				},
+				{
+					"name": "SSIS",
+					"demandPercentage": 1,
+					"category": "ETL i hurtownie danych (przepływy)"
+				},
+				{
+					"name": "T-SQL",
+					"demandPercentage": 1,
+					"category": "Bazy danych i dialekty SQL"
 				}
 			]
 		},
@@ -628,7 +768,7 @@
 				{
 					"name": "Terraform",
 					"demandPercentage": 54,
-					"category": "Infrastruktura jako kod"
+					"category": "Infrastruktura jako kod (IaC) — rdzeń roli"
 				},
 				{
 					"name": "Kubernetes",
@@ -636,14 +776,24 @@
 					"category": "Konteneryzacja i orkiestracja"
 				},
 				{
+					"name": "CI/CD",
+					"demandPercentage": 40,
+					"category": "CI/CD i automatyzacja wydań"
+				},
+				{
 					"name": "Python",
 					"demandPercentage": 32,
-					"category": "Konkret bazowy"
+					"category": "Systemy operacyjne i skrypty"
 				},
 				{
 					"name": "AWS",
-					"demandPercentage": 27,
-					"category": "Cloud"
+					"demandPercentage": 29,
+					"category": "Chmury"
+				},
+				{
+					"name": "Azure",
+					"demandPercentage": 28,
+					"category": "Chmury"
 				},
 				{
 					"name": "Docker",
@@ -653,47 +803,172 @@
 				{
 					"name": "Ansible",
 					"demandPercentage": 24,
-					"category": "Infrastruktura jako kod"
-				},
-				{
-					"name": "Azure",
-					"demandPercentage": 21,
-					"category": "Cloud"
+					"category": "Infrastruktura jako kod (IaC) — rdzeń roli"
 				},
 				{
 					"name": "Linux",
 					"demandPercentage": 21,
-					"category": "Konkret bazowy"
+					"category": "Systemy operacyjne i skrypty"
 				},
 				{
 					"name": "Bash",
-					"demandPercentage": 19,
-					"category": "Konkret bazowy"
+					"demandPercentage": 20,
+					"category": "Systemy operacyjne i skrypty"
+				},
+				{
+					"name": "Azure DevOps",
+					"demandPercentage": 17,
+					"category": "CI/CD i automatyzacja wydań"
+				},
+				{
+					"name": "GCP",
+					"demandPercentage": 13,
+					"category": "Chmury"
 				},
 				{
 					"name": "Jenkins",
 					"demandPercentage": 10,
-					"category": "CI/CD"
+					"category": "CI/CD i automatyzacja wydań"
 				},
 				{
-					"name": "GCP",
-					"demandPercentage": 8,
-					"category": "Cloud"
+					"name": "PowerShell",
+					"demandPercentage": 10,
+					"category": "Systemy operacyjne i skrypty"
 				},
 				{
 					"name": "Grafana",
 					"demandPercentage": 8,
-					"category": "Monitoring"
+					"category": "Monitoring i obserwowalność"
+				},
+				{
+					"name": "GitHub",
+					"demandPercentage": 7,
+					"category": "CI/CD i automatyzacja wydań"
+				},
+				{
+					"name": "GitLab",
+					"demandPercentage": 7,
+					"category": "CI/CD i automatyzacja wydań"
+				},
+				{
+					"name": "IaC",
+					"demandPercentage": 6,
+					"category": "Infrastruktura jako kod (IaC) — rdzeń roli"
 				},
 				{
 					"name": "Prometheus",
 					"demandPercentage": 6,
-					"category": "Monitoring"
+					"category": "Monitoring i obserwowalność"
 				},
 				{
-					"name": "GitHub Actions",
+					"name": "Go",
+					"demandPercentage": 4,
+					"category": "Systemy operacyjne i skrypty"
+				},
+				{
+					"name": "Helm",
+					"demandPercentage": 4,
+					"category": "Infrastruktura jako kod (IaC) — rdzeń roli"
+				},
+				{
+					"name": "Sieci (Network)",
+					"demandPercentage": 4,
+					"category": "Sieci"
+				},
+				{
+					"name": "VMware",
+					"demandPercentage": 3,
+					"category": "Systemy operacyjne i skrypty"
+				},
+				{
+					"name": "Windows Server",
+					"demandPercentage": 3,
+					"category": "Systemy operacyjne i skrypty"
+				},
+				{
+					"name": "ArgoCD",
 					"demandPercentage": 2,
-					"category": "CI/CD"
+					"category": "Infrastruktura jako kod (IaC) — rdzeń roli"
+				},
+				{
+					"name": "DNS",
+					"demandPercentage": 2,
+					"category": "Sieci"
+				},
+				{
+					"name": "GitOps",
+					"demandPercentage": 2,
+					"category": "Infrastruktura jako kod (IaC) — rdzeń roli"
+				},
+				{
+					"name": "TCP/IP",
+					"demandPercentage": 2,
+					"category": "Sieci"
+				},
+				{
+					"name": "Zabbix",
+					"demandPercentage": 2,
+					"category": "Monitoring i obserwowalność"
+				},
+				{
+					"name": "Active Directory",
+					"demandPercentage": 1,
+					"category": "Niezawodność i bezpieczeństwo (SRE / DevSecOps)"
+				},
+				{
+					"name": "AKS",
+					"demandPercentage": 1,
+					"category": "Konteneryzacja i orkiestracja"
+				},
+				{
+					"name": "Cisco",
+					"demandPercentage": 1,
+					"category": "Sieci"
+				},
+				{
+					"name": "Datadog",
+					"demandPercentage": 1,
+					"category": "Monitoring i obserwowalność"
+				},
+				{
+					"name": "DevSecOps",
+					"demandPercentage": 1,
+					"category": "Niezawodność i bezpieczeństwo (SRE / DevSecOps)"
+				},
+				{
+					"name": "IAM",
+					"demandPercentage": 1,
+					"category": "Niezawodność i bezpieczeństwo (SRE / DevSecOps)"
+				},
+				{
+					"name": "OpenShift",
+					"demandPercentage": 1,
+					"category": "Konteneryzacja i orkiestracja"
+				},
+				{
+					"name": "OpenStack",
+					"demandPercentage": 1,
+					"category": "Systemy operacyjne i skrypty"
+				},
+				{
+					"name": "Proxmox",
+					"demandPercentage": 1,
+					"category": "Systemy operacyjne i skrypty"
+				},
+				{
+					"name": "Puppet",
+					"demandPercentage": 1,
+					"category": "Infrastruktura jako kod (IaC) — rdzeń roli"
+				},
+				{
+					"name": "Red Hat",
+					"demandPercentage": 1,
+					"category": "Systemy operacyjne i skrypty"
+				},
+				{
+					"name": "SRE",
+					"demandPercentage": 1,
+					"category": "Niezawodność i bezpieczeństwo (SRE / DevSecOps)"
 				}
 			]
 		},
@@ -859,67 +1134,197 @@
 				{
 					"name": "Python",
 					"demandPercentage": 38,
-					"category": "Języki"
+					"category": "Języki backendu"
 				},
 				{
 					"name": "AWS",
-					"demandPercentage": 30,
-					"category": "Konteneryzacja"
+					"demandPercentage": 32,
+					"category": "Chmura i wdrażanie (DevOps backendu)"
+				},
+				{
+					"name": "Azure",
+					"demandPercentage": 28,
+					"category": "Chmura i wdrażanie (DevOps backendu)"
 				},
 				{
 					"name": "Java",
 					"demandPercentage": 27,
-					"category": "Języki"
+					"category": "Języki backendu"
 				},
 				{
 					"name": "SQL",
 					"demandPercentage": 26,
-					"category": "Bazy i cache"
+					"category": "Bazy danych"
+				},
+				{
+					"name": "C# / .NET",
+					"demandPercentage": 21,
+					"category": "Języki backendu"
+				},
+				{
+					"name": "Node.js",
+					"demandPercentage": 19,
+					"category": "Frameworki i środowiska uruchomieniowe"
 				},
 				{
 					"name": "TypeScript",
 					"demandPercentage": 19,
-					"category": "Języki"
-				},
-				{
-					"name": "Node.js",
-					"demandPercentage": 18,
-					"category": "Języki"
+					"category": "Języki backendu"
 				},
 				{
 					"name": "PostgreSQL",
-					"demandPercentage": 15,
-					"category": "Bazy i cache"
+					"demandPercentage": 16,
+					"category": "Bazy danych"
+				},
+				{
+					"name": "GCP",
+					"demandPercentage": 10,
+					"category": "Chmura i wdrażanie (DevOps backendu)"
 				},
 				{
 					"name": "MongoDB",
 					"demandPercentage": 8,
-					"category": "Bazy i cache"
+					"category": "Bazy danych"
+				},
+				{
+					"name": "REST / API",
+					"demandPercentage": 8,
+					"category": "API, architektura i komunikacja usług"
+				},
+				{
+					"name": "React",
+					"demandPercentage": 7,
+					"category": "Frontend (styk full-stack)"
 				},
 				{
 					"name": "Django",
 					"demandPercentage": 6,
-					"category": "Języki"
+					"category": "Frameworki i środowiska uruchomieniowe"
+				},
+				{
+					"name": "Angular",
+					"demandPercentage": 5,
+					"category": "Frontend (styk full-stack)"
+				},
+				{
+					"name": "MS SQL Server",
+					"demandPercentage": 5,
+					"category": "Bazy danych"
+				},
+				{
+					"name": "Nest.js",
+					"demandPercentage": 5,
+					"category": "Frameworki i środowiska uruchomieniowe"
+				},
+				{
+					"name": "NoSQL",
+					"demandPercentage": 5,
+					"category": "Bazy danych"
 				},
 				{
 					"name": "Kafka",
 					"demandPercentage": 4,
-					"category": "Konteneryzacja"
+					"category": "API, architektura i komunikacja usług"
+				},
+				{
+					"name": "Spring / Spring Boot",
+					"demandPercentage": 4,
+					"category": "Frameworki i środowiska uruchomieniowe"
+				},
+				{
+					"name": "Next.js",
+					"demandPercentage": 3,
+					"category": "Frontend (styk full-stack)"
+				},
+				{
+					"name": "CI/CD",
+					"demandPercentage": 2,
+					"category": "Chmura i wdrażanie (DevOps backendu)"
 				},
 				{
 					"name": "GraphQL",
 					"demandPercentage": 2,
-					"category": "Konteneryzacja"
+					"category": "API, architektura i komunikacja usług"
+				},
+				{
+					"name": "JavaScript",
+					"demandPercentage": 2,
+					"category": "Języki backendu"
+				},
+				{
+					"name": "Jenkins",
+					"demandPercentage": 2,
+					"category": "Chmura i wdrażanie (DevOps backendu)"
 				},
 				{
 					"name": "Kubernetes",
 					"demandPercentage": 2,
-					"category": "Konteneryzacja"
+					"category": "Chmura i wdrażanie (DevOps backendu)"
+				},
+				{
+					"name": "Mikrousługi (Microservices)",
+					"demandPercentage": 2,
+					"category": "API, architektura i komunikacja usług"
+				},
+				{
+					"name": "MySQL",
+					"demandPercentage": 2,
+					"category": "Bazy danych"
+				},
+				{
+					"name": "Oracle",
+					"demandPercentage": 2,
+					"category": "Bazy danych"
+				},
+				{
+					"name": "RabbitMQ",
+					"demandPercentage": 2,
+					"category": "API, architektura i komunikacja usług"
 				},
 				{
 					"name": "Redis",
 					"demandPercentage": 2,
-					"category": "Bazy i cache"
+					"category": "Bazy danych"
+				},
+				{
+					"name": "Scala",
+					"demandPercentage": 2,
+					"category": "Języki backendu"
+				},
+				{
+					"name": "Terraform",
+					"demandPercentage": 2,
+					"category": "Chmura i wdrażanie (DevOps backendu)"
+				},
+				{
+					"name": "C++",
+					"demandPercentage": 1,
+					"category": "Języki backendu"
+				},
+				{
+					"name": "DDD",
+					"demandPercentage": 1,
+					"category": "API, architektura i komunikacja usług"
+				},
+				{
+					"name": "Flask",
+					"demandPercentage": 1,
+					"category": "Frameworki i środowiska uruchomieniowe"
+				},
+				{
+					"name": "GitLab",
+					"demandPercentage": 1,
+					"category": "Chmura i wdrażanie (DevOps backendu)"
+				},
+				{
+					"name": "Go",
+					"demandPercentage": 1,
+					"category": "Języki backendu"
+				},
+				{
+					"name": "Helm",
+					"demandPercentage": 1,
+					"category": "Chmura i wdrażanie (DevOps backendu)"
 				}
 			]
 		},
@@ -1002,78 +1407,193 @@
 			"competencies": [
 				{
 					"name": "JavaScript",
-					"demandPercentage": 58,
-					"category": "Język i framework"
+					"demandPercentage": 60,
+					"category": "Języki frontendu (rdzeń)"
 				},
 				{
 					"name": "TypeScript",
 					"demandPercentage": 58,
-					"category": "Język i framework"
+					"category": "Języki frontendu (rdzeń)"
 				},
 				{
 					"name": "React",
 					"demandPercentage": 55,
-					"category": "Język i framework"
-				},
-				{
-					"name": "CSS",
-					"demandPercentage": 31,
-					"category": "Styling"
+					"category": "Frameworki interfejsu i zarządzanie stanem"
 				},
 				{
 					"name": "HTML",
-					"demandPercentage": 29,
-					"category": "Styling"
+					"demandPercentage": 39,
+					"category": "HTML i CSS (struktura i wygląd)"
+				},
+				{
+					"name": "CSS",
+					"demandPercentage": 37,
+					"category": "HTML i CSS (struktura i wygląd)"
 				},
 				{
 					"name": "Angular",
 					"demandPercentage": 26,
-					"category": "Język i framework"
+					"category": "Frameworki interfejsu i zarządzanie stanem"
 				},
 				{
 					"name": "Node.js",
+					"demandPercentage": 22,
+					"category": "Node.js i komunikacja z API"
+				},
+				{
+					"name": "REST / API",
 					"demandPercentage": 20,
-					"category": "Język i framework"
+					"category": "Node.js i komunikacja z API"
+				},
+				{
+					"name": "Git",
+					"demandPercentage": 15,
+					"category": "Narzędzia, budowanie i testy"
 				},
 				{
 					"name": "Next.js",
 					"demandPercentage": 14,
-					"category": "Język i framework"
+					"category": "Frameworki interfejsu i zarządzanie stanem"
 				},
 				{
-					"name": "HTML5",
-					"demandPercentage": 10,
-					"category": "Styling"
+					"name": "C# / .NET",
+					"demandPercentage": 12,
+					"category": "Inne języki i stacki (styk full-stack)"
 				},
 				{
-					"name": "CSS3",
+					"name": "CI/CD",
+					"demandPercentage": 11,
+					"category": "Narzędzia, budowanie i testy"
+				},
+				{
+					"name": "React Native",
 					"demandPercentage": 6,
-					"category": "Styling"
+					"category": "Specjalizacje frontendu"
 				},
 				{
 					"name": "Redux",
 					"demandPercentage": 6,
-					"category": "Język i framework"
+					"category": "Frameworki interfejsu i zarządzanie stanem"
+				},
+				{
+					"name": "Vue.js",
+					"demandPercentage": 6,
+					"category": "Frameworki interfejsu i zarządzanie stanem"
+				},
+				{
+					"name": "GraphQL",
+					"demandPercentage": 5,
+					"category": "Node.js i komunikacja z API"
+				},
+				{
+					"name": "Java",
+					"demandPercentage": 5,
+					"category": "Inne języki i stacki (styk full-stack)"
+				},
+				{
+					"name": "Python",
+					"demandPercentage": 5,
+					"category": "Inne języki i stacki (styk full-stack)"
+				},
+				{
+					"name": "PHP",
+					"demandPercentage": 4,
+					"category": "Inne języki i stacki (styk full-stack)"
+				},
+				{
+					"name": "ASP.NET Core",
+					"demandPercentage": 3,
+					"category": "Inne języki i stacki (styk full-stack)"
+				},
+				{
+					"name": "Ruby on Rails",
+					"demandPercentage": 3,
+					"category": "Inne języki i stacki (styk full-stack)"
+				},
+				{
+					"name": "RxJS",
+					"demandPercentage": 3,
+					"category": "Frameworki interfejsu i zarządzanie stanem"
+				},
+				{
+					"name": "UX/UI",
+					"demandPercentage": 3,
+					"category": "Specjalizacje frontendu"
+				},
+				{
+					"name": "Webpack",
+					"demandPercentage": 3,
+					"category": "Narzędzia, budowanie i testy"
+				},
+				{
+					"name": "WordPress",
+					"demandPercentage": 3,
+					"category": "Specjalizacje frontendu"
 				},
 				{
 					"name": "Cypress",
 					"demandPercentage": 2,
-					"category": "Testowanie"
+					"category": "Narzędzia, budowanie i testy"
 				},
 				{
 					"name": "Jest",
 					"demandPercentage": 2,
-					"category": "Testowanie"
+					"category": "Narzędzia, budowanie i testy"
+				},
+				{
+					"name": "Nest.js",
+					"demandPercentage": 2,
+					"category": "Node.js i komunikacja z API"
 				},
 				{
 					"name": "Playwright",
 					"demandPercentage": 2,
-					"category": "Testowanie"
+					"category": "Narzędzia, budowanie i testy"
+				},
+				{
+					"name": "Sass / SCSS",
+					"demandPercentage": 2,
+					"category": "HTML i CSS (struktura i wygląd)"
+				},
+				{
+					"name": "Testy jednostkowe (Unit Testing)",
+					"demandPercentage": 2,
+					"category": "Narzędzia, budowanie i testy"
+				},
+				{
+					"name": "Bootstrap",
+					"demandPercentage": 1,
+					"category": "HTML i CSS (struktura i wygląd)"
+				},
+				{
+					"name": "Figma",
+					"demandPercentage": 1,
+					"category": "Specjalizacje frontendu"
+				},
+				{
+					"name": "Go",
+					"demandPercentage": 1,
+					"category": "Inne języki i stacki (styk full-stack)"
+				},
+				{
+					"name": "NgRx",
+					"demandPercentage": 1,
+					"category": "Frameworki interfejsu i zarządzanie stanem"
+				},
+				{
+					"name": "SEO",
+					"demandPercentage": 1,
+					"category": "Specjalizacje frontendu"
+				},
+				{
+					"name": "System zarządzania treścią (CMS)",
+					"demandPercentage": 1,
+					"category": "Specjalizacje frontendu"
 				},
 				{
 					"name": "Tailwind CSS",
 					"demandPercentage": 1,
-					"category": "Styling"
+					"category": "HTML i CSS (struktura i wygląd)"
 				}
 			]
 		},

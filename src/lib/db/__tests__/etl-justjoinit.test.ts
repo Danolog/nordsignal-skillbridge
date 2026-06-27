@@ -20,6 +20,7 @@ import {
 	type PathStat,
 	parseCsv,
 	pathStats,
+	unionOffersCount,
 } from "../../../../tools/etl-justjoinit";
 import {
 	classifyLeafKind,
@@ -233,6 +234,7 @@ function statsForModel(): {
 	stats: ReturnType<typeof pathStats>;
 	freq: Map<string, number>;
 	total: number;
+	offers: ReturnType<typeof makeOffers>;
 } {
 	const specs: Array<{ title: string; kat: string; techs: string[] }> = [];
 	// AI: wariant Langchain liczony jako LangChain (22/50 = 44%)
@@ -246,14 +248,53 @@ function statsForModel(): {
 	const offers = makeOffers(specs);
 	const stats = pathStats(assignAll(offers, buildAnchors(offers)), offers);
 	const { freq, total } = globalTechFrequency(offers);
-	return { stats, freq, total };
+	return { stats, freq, total, offers };
 }
 
 /** Pełny model z fikstury (skleja stats + global freq pod nową sygnaturę buildCareerModel). */
 function builtModelForTest(): CareerModel {
-	const { stats, freq, total } = statsForModel();
-	return buildCareerModel(stats, freq, total);
+	const { stats, freq, total, offers } = statsForModel();
+	return buildCareerModel(stats, freq, total, offers);
 }
+
+// ── unionOffersCount: dedup ofert dla countAsUnion (Sophia/Leo, partia 2) ─────
+describe("unionOffersCount — scalenie synonimów = UNIA ofert (nie suma liczników)", () => {
+	const mk = (techs: string[]): CleanOffer => ({
+		slug: techs.join("-"),
+		stanowisko: "X",
+		normTitle: "x",
+		kategoria: "Java",
+		techs: new Set(techs),
+	});
+	it("oferta z dwoma wariantami liczona RAZ (unia < suma)", () => {
+		// 3 oferty; pierwsza ma OBA warianty C#/.Net. Suma liczników = 2+2 = 4; unia = 3.
+		const offers = [mk(["C#", ".Net"]), mk(["C#"]), mk([".Net"])];
+		expect(unionOffersCount(offers, ["C#", ".Net"])).toBe(3);
+	});
+	it("brak nakładania → unia == suma", () => {
+		const offers = [mk(["AWS"]), mk(["Amazon AWS"]), mk(["Java"])];
+		expect(unionOffersCount(offers, ["AWS", "Amazon AWS"])).toBe(2);
+	});
+	it("countAsUnion w buildCareerModel: liść Backend C#/.NET = unia (offers < suma wariantów)", () => {
+		// Fixtura Backend: 5 ofert C#, 5 ofert .Net, 3 oferty z OBOMA. Suma = (5+3)+(5+3)=16; unia=13.
+		const specs: Array<{ title: string; kat: string; techs: string[] }> = [];
+		for (let i = 0; i < 5; i++)
+			specs.push({ title: "Backend Developer", kat: "Backend", techs: ["C#"] });
+		for (let i = 0; i < 5; i++)
+			specs.push({ title: "Backend Developer", kat: "Backend", techs: [".Net"] });
+		for (let i = 0; i < 3; i++)
+			specs.push({ title: "Backend Developer", kat: "Backend", techs: ["C#", ".Net"] });
+		const offers = makeOffers(specs);
+		const stats = pathStats(assignAll(offers, buildAnchors(offers)), offers);
+		const { freq, total } = globalTechFrequency(offers);
+		const model = buildCareerModel(stats, freq, total, offers);
+		const be = model.paths.find((p) => p.careerGoal === "Backend Developer");
+		const csharp = be?.areas
+			.find((a) => a.leaves.some((l) => l.name === "C# / .NET"))
+			?.leaves.find((l) => l.name === "C# / .NET");
+		expect(csharp?.offers, "C#/.NET liczone UNIĄ (13), nie sumą (16)").toBe(13);
+	});
+});
 
 describe("buildCareerModel — hierarchia v4", () => {
 	it("liść liczony po wariancie (Langchain → LangChain 44%)", () => {
@@ -591,11 +632,17 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		}
 	});
 
-	it("KURACJA QA/DS/AI zachowana (A5): context-group z opisem + unionShare; kind Sophii (tool/concept)", () => {
+	it("KURACJA A5 (partia 1+2) zachowana: context-group z opisem + unionShare; kind Sophii (tool/concept)", () => {
 		const expected: Record<string, number> = {
+			// Partia 1
 			"QA Engineer": 8,
 			"Data Scientist": 4,
 			"AI Engineer": 6,
+			// Partia 2
+			"Backend Developer": 6,
+			"Data Analyst": 7,
+			"Frontend Developer": 7,
+			"DevOps Engineer": 8,
 		};
 		for (const [goal, n] of Object.entries(expected)) {
 			const path = model.paths.find((p) => p.careerGoal === goal);

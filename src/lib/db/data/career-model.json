@@ -1339,17 +1339,63 @@
 			"tShapePairs": ["Data Scientist"],
 			"areas": [
 				{
-					"name": "Wizualizacja BI",
-					"type": "presentation-group",
+					"name": "Język i zapytania do danych (fundament)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 35.8,
+					"description": "Dwa najmocniejsze sygnały całej ścieżki. SQL (język zapytań do baz) wyciąga dane — to absolutne minimum analityka, prawie co druga oferta. Python je przerabia i automatyzuje, a biblioteka Pandas obsługuje dane w tabelach. To pierwsza rzecz do nauki i fundament wszystkich pozostałych grup.",
+					"unionShare": 71.9,
+					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 53.4,
+							"lift": 2.6352671934011975,
+							"offers": 373,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SQL",
+							"type": "leaf",
+							"demandPercentage": 47.9,
+							"lift": 2.774854765808296,
+							"offers": 334,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Pandas",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 4.061399918133443,
+							"offers": 20,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "NumPy",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"lift": 2.8429799426934097,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Business Intelligence i wizualizacja",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Druga połowa roli: surowe dane są bezużyteczne, dopóki ktoś z biznesu ich nie zrozumie. Business Intelligence (BI) to dyscyplina zamiany danych w pulpity (dashboardy) i raporty, na których menedżer podejmuje decyzję. Power BI dominuje w polskich firmach (co piąta oferta), z własnym językiem formuł DAX i narzędziem Power Query do wczytywania danych; Tableau i Looker to konkurenci. To często ważniejsza kompetencja niż zaawansowana statystyka.",
+					"unionShare": 30.7,
 					"leaves": [
 						{
 							"name": "Power BI",
 							"type": "leaf",
-							"demandPercentage": 22.6,
-							"lift": 12.010450025282317,
-							"offers": 158,
+							"demandPercentage": 23.6,
+							"lift": 11.668947525980412,
+							"offers": 165,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -1363,6 +1409,132 @@
 							"source": "dane"
 						},
 						{
+							"name": "DAX",
+							"type": "leaf",
+							"demandPercentage": 3.7,
+							"lift": 10.266316459726204,
+							"offers": 26,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Business Intelligence (BI)",
+							"type": "leaf",
+							"demandPercentage": 5.2,
+							"lift": 6.092099877200163,
+							"offers": 36,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Power Query",
+							"type": "leaf",
+							"demandPercentage": 2,
+							"lift": 13.267239732569246,
+							"offers": 14,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Looker",
+							"type": "leaf",
+							"demandPercentage": 1.4,
+							"lift": 11.845749761222542,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "ETL i hurtownie danych (przepływy)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Zanim dane trafią do raportu, ktoś musi je zebrać z wielu systemów, oczyścić i załadować w jedno miejsce — to ETL (Extract-Transform-Load — pobierz, przekształć, załaduj) lub ELT. Wynik ląduje w hurtowni danych (centralnym magazynie do analiz). Modelowanie danych to projektowanie, jak te dane mają być ułożone. To rdzeń pracy „analityka inżynierskiego” — DataStage, dbt, SSIS, Airflow to narzędzia, którymi te rurociągi się buduje.",
+					"unionShare": 33.8,
+					"leaves": [
+						{
+							"name": "ETL / ELT",
+							"type": "leaf",
+							"demandPercentage": 23.6,
+							"lift": 7.792220773163,
+							"offers": 165,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Modelowanie danych (Data modeling)",
+							"type": "leaf",
+							"demandPercentage": 9.7,
+							"lift": 10.86082225298606,
+							"offers": 68,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "DataStage",
+							"type": "leaf",
+							"demandPercentage": 3.3,
+							"lift": 8.173567335243552,
+							"offers": 23,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Hurtownia danych (Data Warehousing)",
+							"type": "leaf",
+							"demandPercentage": 4.6,
+							"lift": 8.27048710601719,
+							"offers": 32,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "dbt",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"lift": 4.106526583890481,
+							"offers": 13,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Apache Airflow",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 2.733634560282125,
+							"offers": 20,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Integracja danych (Data Integration)",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"lift": 3.790639923591213,
+							"offers": 8,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "SSIS",
+							"type": "leaf",
+							"demandPercentage": 1,
+							"lift": 9.045845272206304,
+							"offers": 7,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Arkusze kalkulacyjne (Excel)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Mimo całej nowoczesnej analityki Excel wciąż pojawia się w 15% ofert — to nie wstyd, tylko prawda o rynku. Dla wielu analityków to pierwsze narzędzie i codzienny warsztat: szybka analiza, tabela przestawna, wykres na już. Najczęstsza brama wejścia do roli i kompetencja, której pracodawcy realnie oczekują obok Power BI.",
+					"unionShare": 15.3,
+					"leaves": [
+						{
 							"name": "MS Excel",
 							"type": "leaf",
 							"demandPercentage": 15.3,
@@ -1374,61 +1546,180 @@
 					]
 				},
 				{
-					"name": "ETL",
-					"type": "knowledge-area",
-					"demandPercentage": 22,
-					"unionShare": 4.6,
+					"name": "Bazy danych i dialekty SQL",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Dane, które analizujesz, leżą w konkretnych bazach — i każda mówi nieco innym dialektem SQL. Oracle (z dialektem PL/SQL) i MS SQL Server (z dialektem T-SQL) to dwa najczęstsze w polskich korporacjach, PostgreSQL w nowszych projektach. Rozumienie baz relacyjnych (dane powiązane w tabelach) to fundament, na którym stoi cała reszta.",
+					"unionShare": 10.7,
 					"leaves": [
 						{
-							"name": "dbt",
+							"name": "Oracle",
 							"type": "leaf",
-							"demandPercentage": 1.9,
-							"lift": 4.106526583890481,
-							"offers": 13,
+							"demandPercentage": 4.7,
+							"lift": 2.0132690581305264,
+							"offers": 33,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Airflow",
+							"name": "MS SQL Server",
 							"type": "leaf",
-							"demandPercentage": 2.9,
-							"lift": 2.733634560282125,
-							"offers": 20,
+							"demandPercentage": 2.6,
+							"lift": 2.2845374539500614,
+							"offers": 18,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "PL/SQL",
+							"type": "leaf",
+							"demandPercentage": 2,
+							"lift": 1.9703821385003832,
+							"offers": 14,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "PostgreSQL",
+							"type": "leaf",
+							"demandPercentage": 1.7,
+							"lift": 0.36683612163785934,
+							"offers": 12,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Bazy relacyjne (Relational Databases)",
+							"type": "leaf",
+							"demandPercentage": 1.4,
+							"lift": 6.461318051575931,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "T-SQL",
+							"type": "leaf",
+							"demandPercentage": 1.4,
+							"lift": 2.900999941523888,
+							"offers": 10,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Konkret bazowy",
-					"type": "presentation-group",
+					"name": "Chmurowe platformy danych",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 73.8,
+					"description": "Analityka coraz częściej żyje w chmurze, gdzie dane są za duże na jedną maszynę. BigQuery (Google) i Snowflake to hurtownie chmurowe, w których odpytujesz miliardy wierszy bez własnego serwera; Databricks dokłada do tego przetwarzanie wielkich zbiorów narzędziem Spark. To granica, na której analityk styka się z inżynierią danych — i kierunek, w którym rynek się przesuwa.",
+					"unionShare": 29.9,
 					"leaves": [
-						{
-							"name": "SQL",
-							"type": "leaf",
-							"demandPercentage": 47.9,
-							"lift": 2.774854765808296,
-							"offers": 334,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Python",
-							"type": "leaf",
-							"demandPercentage": 53.4,
-							"lift": 2.6352671934011975,
-							"offers": 373,
-							"kind": "tool",
-							"source": "dane"
-						},
 						{
 							"name": "BigQuery",
 							"type": "leaf",
 							"demandPercentage": 9.6,
 							"lift": 8.818502600021226,
 							"offers": 67,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Wielkie zbiory danych (Big Data)",
+							"type": "leaf",
+							"demandPercentage": 6.3,
+							"lift": 5.900524409363681,
+							"offers": 44,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 7,
+							"lift": 1.4979141633545923,
+							"offers": 49,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Snowflake",
+							"type": "leaf",
+							"demandPercentage": 3,
+							"lift": 2.369149952244508,
+							"offers": 21,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 6,
+							"lift": 0.5824641833810887,
+							"offers": 42,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 2.9,
+							"lift": 0.28862740534958475,
+							"offers": 20,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Databricks",
+							"type": "leaf",
+							"demandPercentage": 1.7,
+							"lift": 0.8747630592902799,
+							"offers": 12,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Spark",
+							"type": "leaf",
+							"demandPercentage": 1.7,
+							"lift": 2.1592252729317036,
+							"offers": 12,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "PySpark",
+							"type": "leaf",
+							"demandPercentage": 1.3,
+							"lift": 1.4705068669103845,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Narzędzia specjalistyczne",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Obszary węższe, ale realne w danych: SAS to weteran analizy statystycznej wciąż obecny w bankach i farmacji; Google Analytics to standard analityki ruchu na stronach i w marketingu. Niszowe względem rdzenia, ale dla części ofert decydujące.",
+					"unionShare": 3.2,
+					"leaves": [
+						{
+							"name": "Google Analytics",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"lift": 6.844210973150802,
+							"offers": 13,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SAS",
+							"type": "leaf",
+							"demandPercentage": 1.3,
+							"lift": 8.52893982808023,
+							"offers": 9,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -1463,46 +1754,11 @@
 			"tShapePairs": [],
 			"areas": [
 				{
-					"name": "CI/CD",
-					"type": "knowledge-area",
-					"demandPercentage": 40,
-					"unionShare": 11.3,
-					"leaves": [
-						{
-							"name": "GitHub Actions",
-							"type": "leaf",
-							"demandPercentage": 1.8,
-							"lift": 6.272528735632184,
-							"offers": 11,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Jenkins",
-							"type": "leaf",
-							"demandPercentage": 9.7,
-							"lift": 4.969568221070811,
-							"offers": 58,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "GitLab CI",
-							"type": "leaf",
-							"demandPercentage": null,
-							"lift": null,
-							"offers": null,
-							"kind": "tool",
-							"source": "kuracja ekspercka",
-							"note": "brak w zrzucie 2026-02"
-						}
-					]
-				},
-				{
-					"name": "Infrastruktura jako kod",
-					"type": "presentation-group",
+					"name": "Infrastruktura jako kod (IaC) — rdzeń roli",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 64.3,
+					"description": "Serce nowoczesnego DevOps i najsilniejszy sygnał rynku. Zamiast ręcznie klikać serwery w panelu, opisujesz całą infrastrukturę kodem — plik mówi „chcę trzy serwery, bazę i sieć”, a narzędzie to tworzy, powtarzalnie i bez pomyłek. Terraform dominuje (ponad połowa ofert!), Ansible konfiguruje już istniejące maszyny, a GitOps (z narzędziami jak ArgoCD) sprawia, że stan infrastruktury jest sterowany przez repozytorium kodu. Od tego zaczyna się ta rola.",
+					"unionShare": 69,
 					"leaves": [
 						{
 							"name": "Terraform",
@@ -1521,15 +1777,70 @@
 							"offers": 145,
 							"kind": "tool",
 							"source": "dane"
+						},
+						{
+							"name": "IaC",
+							"type": "leaf",
+							"demandPercentage": 6,
+							"lift": 7.172530120481928,
+							"offers": 36,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Helm",
+							"type": "leaf",
+							"demandPercentage": 3.7,
+							"lift": 8.662063492063492,
+							"offers": 22,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GitOps",
+							"type": "leaf",
+							"demandPercentage": 2.3,
+							"lift": 12.184912280701756,
+							"offers": 14,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "ArgoCD",
+							"type": "leaf",
+							"demandPercentage": 1.5,
+							"lift": 12.4025,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Puppet",
+							"type": "leaf",
+							"demandPercentage": 1,
+							"lift": 11.024444444444445,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
 						}
 					]
 				},
 				{
 					"name": "Konteneryzacja i orkiestracja",
-					"type": "presentation-group",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 47.3,
+					"description": "Sposób, w jaki dziś uruchamia się aplikacje. Docker pakuje aplikację w kontener — lekką, odizolowaną paczkę, która działa tak samo wszędzie. Kubernetes (w prawie połowie ofert!) zarządza setkami takich kontenerów na skalę: sam je uruchamia, restartuje, skaluje pod obciążeniem. OpenShift i AKS to gotowe odmiany Kubernetesa. To druga obowiązkowa kompetencja roli zaraz po IaC.",
+					"unionShare": 48.2,
 					"leaves": [
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 42.8,
+							"lift": 5.221036036036036,
+							"offers": 257,
+							"kind": "tool",
+							"source": "dane"
+						},
 						{
 							"name": "Docker",
 							"type": "leaf",
@@ -1540,92 +1851,122 @@
 							"source": "dane"
 						},
 						{
-							"name": "Kubernetes",
+							"name": "OpenShift",
 							"type": "leaf",
-							"demandPercentage": 42.8,
-							"lift": 5.221036036036036,
-							"offers": 257,
+							"demandPercentage": 1.3,
+							"lift": 4.134166666666667,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "AKS",
+							"type": "leaf",
+							"demandPercentage": 1.2,
+							"lift": 11.575666666666667,
+							"offers": 7,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Cloud",
-					"type": "knowledge-area",
-					"demandPercentage": 27,
-					"unionShare": 45.3,
+					"name": "CI/CD i automatyzacja wydań",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Taśma montażowa oprogramowania: CI/CD (ciągła integracja i dostarczanie) automatycznie buduje, testuje i wdraża kod przy każdej zmianie, bez ręcznej roboty. To Ty jako DevOps tę taśmę budujesz i utrzymujesz — narzędziami Azure DevOps, Jenkins, GitLab czy GitHub Actions. W 40% ofert wprost; w praktyce w każdej.",
+					"unionShare": 61,
+					"leaves": [
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 40,
+							"lift": 4.249250535331906,
+							"offers": 240,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Azure DevOps",
+							"type": "leaf",
+							"demandPercentage": 16.7,
+							"lift": 8.938738738738738,
+							"offers": 100,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Jenkins",
+							"type": "leaf",
+							"demandPercentage": 9.7,
+							"lift": 4.969568221070811,
+							"offers": 58,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GitLab",
+							"type": "leaf",
+							"demandPercentage": 6.5,
+							"lift": 6.514444444444445,
+							"offers": 39,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GitHub",
+							"type": "leaf",
+							"demandPercentage": 7.2,
+							"lift": 5.599028871391076,
+							"offers": 43,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Chmury",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Na czym stoi cała infrastruktura, którą zarządzasz. AWS i Azure dominują w PL (każda w co czwartej–piątej ofercie), GCP trzeci. Uczysz się przynajmniej jednej — to ona dyktuje konkretne usługi, sieci i sposób rozliczania. DevOps bez chmury dziś praktycznie nie istnieje.",
+					"unionShare": 55.7,
 					"leaves": [
 						{
 							"name": "AWS",
 							"type": "leaf",
-							"demandPercentage": 26.5,
-							"lift": 3.0049485714285717,
-							"offers": 159,
+							"demandPercentage": 28.8,
+							"lift": 2.9044094754653127,
+							"offers": 173,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "Azure",
 							"type": "leaf",
-							"demandPercentage": 21.3,
-							"lift": 2.8450179211469537,
-							"offers": 128,
+							"demandPercentage": 27.7,
+							"lift": 2.7756184698348503,
+							"offers": 166,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "GCP",
 							"type": "leaf",
-							"demandPercentage": 7.8,
-							"lift": 2.252821256038647,
-							"offers": 47,
+							"demandPercentage": 13.2,
+							"lift": 2.6606856754921924,
+							"offers": 79,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Monitoring",
-					"type": "presentation-group",
+					"name": "Systemy operacyjne i skrypty",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 8.7,
+					"description": "Fundament pod wszystkim wyżej — żeby zarządzać serwerami, musisz rozumieć ich system. Linux to dom większości serwerów (co piąta oferta), a Bash to język poleceń, którym się nim steruje; PowerShell robi to samo w świecie Windows. Python to język automatyzacji DevOps (drugi po Terraform), którym piszesz własne narzędzia. VMware i OpenStack to wirtualizacja — wiele maszyn na jednym fizycznym serwerze.",
+					"unionShare": 56,
 					"leaves": [
-						{
-							"name": "Prometheus",
-							"type": "leaf",
-							"demandPercentage": 5.8,
-							"lift": 10.154093567251461,
-							"offers": 35,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Grafana",
-							"type": "leaf",
-							"demandPercentage": 7.5,
-							"lift": 7.7515625,
-							"offers": 45,
-							"kind": "tool",
-							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Konkret bazowy",
-					"type": "presentation-group",
-					"demandPercentage": null,
-					"unionShare": 50,
-					"leaves": [
-						{
-							"name": "Linux",
-							"type": "leaf",
-							"demandPercentage": 20.8,
-							"lift": 3.8637071651090347,
-							"offers": 125,
-							"kind": "tool",
-							"source": "dane"
-						},
 						{
 							"name": "Python",
 							"type": "leaf",
@@ -1636,11 +1977,218 @@
 							"source": "dane"
 						},
 						{
+							"name": "Linux",
+							"type": "leaf",
+							"demandPercentage": 20.8,
+							"lift": 3.8637071651090347,
+							"offers": 125,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
 							"name": "Bash",
 							"type": "leaf",
-							"demandPercentage": 19,
-							"lift": 11.709192546583852,
-							"offers": 114,
+							"demandPercentage": 19.5,
+							"lift": 10.869606741573033,
+							"offers": 117,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "PowerShell",
+							"type": "leaf",
+							"demandPercentage": 9.5,
+							"lift": 5.965759493670886,
+							"offers": 57,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Windows Server",
+							"type": "leaf",
+							"demandPercentage": 2.8,
+							"lift": 3.6041452991452987,
+							"offers": 17,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "VMware",
+							"type": "leaf",
+							"demandPercentage": 2.7,
+							"lift": 3.8345893719806767,
+							"offers": 16,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Go",
+							"type": "leaf",
+							"demandPercentage": 3.5,
+							"lift": 2.042764705882353,
+							"offers": 21,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Red Hat",
+							"type": "leaf",
+							"demandPercentage": 1,
+							"lift": 8.268333333333334,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "OpenStack",
+							"type": "leaf",
+							"demandPercentage": 1,
+							"lift": 9.02,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Proxmox",
+							"type": "leaf",
+							"demandPercentage": 1,
+							"lift": 7.632307692307693,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Monitoring i obserwowalność",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Gdy system już działa, ktoś musi pilnować, czy nie umiera o trzeciej w nocy. Prometheus zbiera metryki (ile pamięci, ile żądań), Grafana rysuje z nich pulpity i alarmy, Datadog i Zabbix to gotowe platformy do tego samego. To dyscyplina „obserwowalności” (observability) — widzisz, co dzieje się w środku systemu, zanim zauważy to użytkownik.",
+					"unionShare": 10,
+					"leaves": [
+						{
+							"name": "Grafana",
+							"type": "leaf",
+							"demandPercentage": 7.5,
+							"lift": 7.7515625,
+							"offers": 45,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Prometheus",
+							"type": "leaf",
+							"demandPercentage": 5.8,
+							"lift": 10.154093567251461,
+							"offers": 35,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Datadog",
+							"type": "leaf",
+							"demandPercentage": 1.3,
+							"lift": 7.34962962962963,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Zabbix",
+							"type": "leaf",
+							"demandPercentage": 1.5,
+							"lift": 4.37735294117647,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Sieci",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Serwery muszą się ze sobą komunikować — a Ty musisz rozumieć, jak. TCP/IP to podstawowy język sieci, DNS tłumaczy nazwy stron na adresy, a sieci w ogóle (routing, zapory) to fundament, bez którego nie zdiagnozujesz, czemu dwie usługi się nie widzą. Cisco to najczęstszy sprzęt sieciowy w korporacjach.",
+					"unionShare": 6.7,
+					"leaves": [
+						{
+							"name": "Sieci (Network)",
+							"type": "leaf",
+							"demandPercentage": 4,
+							"lift": 2.2678857142857147,
+							"offers": 24,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "DNS",
+							"type": "leaf",
+							"demandPercentage": 1.7,
+							"lift": 4.593518518518518,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "TCP/IP",
+							"type": "leaf",
+							"demandPercentage": 1.7,
+							"lift": 2.5055555555555555,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Cisco",
+							"type": "leaf",
+							"demandPercentage": 1.2,
+							"lift": 2.756111111111111,
+							"offers": 7,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Niezawodność i bezpieczeństwo (SRE / DevSecOps)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Dojrzała warstwa roli. SRE (Site Reliability Engineering — inżynieria niezawodności) to podejście, w którym niezawodność systemu traktuje się jak problem inżynierski z miarami i budżetem błędów. DevSecOps wpina bezpieczeństwo w taśmę CI/CD, a IAM (zarządzanie tożsamością i dostępem) pilnuje, kto i do czego ma dostęp w chmurze. Kierunek rozwoju seniora DevOps.",
+					"unionShare": 4,
+					"leaves": [
+						{
+							"name": "DevSecOps",
+							"type": "leaf",
+							"demandPercentage": 1.2,
+							"lift": 5.512222222222222,
+							"offers": 7,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "SRE",
+							"type": "leaf",
+							"demandPercentage": 1,
+							"lift": 5.8364705882352945,
+							"offers": 6,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "IAM",
+							"type": "leaf",
+							"demandPercentage": 1,
+							"lift": 1.6816949152542373,
+							"offers": 6,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Active Directory",
+							"type": "leaf",
+							"demandPercentage": 1,
+							"lift": 1.0022222222222223,
+							"offers": 6,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -2116,10 +2664,11 @@
 			"tShapePairs": ["DevOps Engineer"],
 			"areas": [
 				{
-					"name": "Języki",
-					"type": "presentation-group",
+					"name": "Języki backendu",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 70.5,
+					"description": "Serce roli — język, w którym piszesz logikę serwera. W PL rynek jest podzielony: Python (najszybciej rosnący, też AI/dane), Java (wielkie systemy bankowe i korporacyjne), C#/.NET (świat Microsoftu), TypeScript (backend w Node.js). Wybierasz jeden główny — on zwykle decyduje, który framework i bazę poznasz. Nie ma tu jednego „słusznego” wyboru; każdy otwiera inną część rynku.",
+					"unionShare": 79.3,
 					"leaves": [
 						{
 							"name": "Python",
@@ -2140,6 +2689,15 @@
 							"source": "dane"
 						},
 						{
+							"name": "C# / .NET",
+							"type": "leaf",
+							"demandPercentage": 21.2,
+							"lift": 3.002539007720355,
+							"offers": 123,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
 							"name": "TypeScript",
 							"type": "leaf",
 							"demandPercentage": 18.5,
@@ -2149,39 +2707,139 @@
 							"source": "dane"
 						},
 						{
-							"name": "Node.js",
+							"name": "JavaScript",
 							"type": "leaf",
-							"demandPercentage": 18,
-							"lift": 5.805179096836622,
-							"offers": 104,
+							"demandPercentage": 1.7,
+							"lift": 0.2512674800824558,
+							"offers": 10,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Django",
+							"name": "Go",
 							"type": "leaf",
-							"demandPercentage": 6.2,
-							"lift": 7.711398963730569,
-							"offers": 36,
+							"demandPercentage": 1,
+							"lift": 1.1298753060411093,
+							"offers": 6,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "FastAPI",
+							"name": "Scala",
 							"type": "leaf",
-							"demandPercentage": 0.5,
-							"lift": 0.6947206273631145,
-							"offers": 3,
+							"demandPercentage": 2.1,
+							"lift": 2.164603217889283,
+							"offers": 12,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "C++",
+							"type": "leaf",
+							"demandPercentage": 1.4,
+							"lift": 0.5883756958497335,
+							"offers": 8,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Bazy i cache",
-					"type": "presentation-group",
+					"name": "Chmura i wdrażanie (DevOps backendu)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 42.7,
+					"description": "Drugi najsilniejszy sygnał rynku zaraz po języku. Współczesny backend dev nie „oddaje kodu adminowi” — sam go wdraża do chmury i utrzymuje. AWS i Azure to dwie dominujące platformy w PL (każda w co czwartej ofercie), Kubernetes uruchamia aplikacje na skalę, CI/CD (taśma automatycznego budowania i wdrażania) i Terraform (infrastruktura opisana kodem) domykają warsztat. To dziś nieodłączna część roli, nie dodatek.",
+					"unionShare": 57.7,
+					"leaves": [
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 31.8,
+							"lift": 3.2011221868616464,
+							"offers": 184,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 27.6,
+							"lift": 2.9450383916860994,
+							"offers": 160,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 9.5,
+							"lift": 2.0268910059984773,
+							"offers": 55,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 0.22016842151978788,
+							"offers": 12,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"lift": 0.2947299631237455,
+							"offers": 14,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Terraform",
+							"type": "leaf",
+							"demandPercentage": 2.4,
+							"lift": 0.5391240224330985,
+							"offers": 14,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Jenkins",
+							"type": "leaf",
+							"demandPercentage": 1.7,
+							"lift": 0.8878985565608025,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GitLab",
+							"type": "leaf",
+							"demandPercentage": 1.4,
+							"lift": 1.3847630013433123,
+							"offers": 8,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Helm",
+							"type": "leaf",
+							"demandPercentage": 1,
+							"lift": 2.4480631630890697,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Bazy danych",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Backend istnieje po to, żeby zapisywać i wydawać dane — bez baz nie ma roli. Świat dzieli się na relacyjny (SQL, PostgreSQL, Oracle, MS SQL Server — dane w tabelach z relacjami) i NoSQL (MongoDB, Redis — dane bez sztywnej struktury, szybkie odczyty). Co trzecia oferta wymaga SQL-a, a PostgreSQL to dziś domyślny wybór nowych projektów. Uczysz się obu światów, bo realny system zwykle używa kilku baz naraz.",
+					"unionShare": 47,
 					"leaves": [
 						{
 							"name": "SQL",
@@ -2195,9 +2853,9 @@
 						{
 							"name": "PostgreSQL",
 							"type": "leaf",
-							"demandPercentage": 15,
-							"lift": 3.206173045852137,
-							"offers": 87,
+							"demandPercentage": 16.2,
+							"lift": 3.121754963784124,
+							"offers": 94,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -2207,6 +2865,42 @@
 							"demandPercentage": 7.9,
 							"lift": 7.579580178025774,
 							"offers": 46,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "NoSQL",
+							"type": "leaf",
+							"demandPercentage": 4.5,
+							"lift": 3.8080982536941086,
+							"offers": 26,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "MySQL",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"lift": 1.438937889754644,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Oracle",
+							"type": "leaf",
+							"demandPercentage": 1.9,
+							"lift": 0.8090165817933836,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "MS SQL Server",
+							"type": "leaf",
+							"demandPercentage": 4.5,
+							"lift": 1.9802110919209366,
+							"offers": 26,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -2222,54 +2916,82 @@
 					]
 				},
 				{
-					"name": "Konteneryzacja",
-					"type": "presentation-group",
+					"name": "Frameworki i środowiska uruchomieniowe",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 34.2,
+					"description": "Nikt nie pisze backendu od zera — używasz frameworka, czyli gotowego rusztowania, które obsługuje typowe zadania (routing, bazę, bezpieczeństwo) za Ciebie. Każdy język ma swój: Spring/Spring Boot (Java), Django/Flask (Python), Nest.js na Node.js (TypeScript/JavaScript). Wybór frameworka idzie w parze z wyborem języka z grupy języków backendu.",
+					"unionShare": 30.4,
 					"leaves": [
 						{
-							"name": "Docker",
+							"name": "Node.js",
 							"type": "leaf",
-							"demandPercentage": 0.9,
-							"lift": 0.11363688422827246,
-							"offers": 5,
+							"demandPercentage": 19,
+							"lift": 5.890651986183074,
+							"offers": 110,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "Kubernetes",
+							"name": "Django",
 							"type": "leaf",
-							"demandPercentage": 2.4,
-							"lift": 0.2947299631237455,
-							"offers": 14,
+							"demandPercentage": 6.2,
+							"lift": 7.711398963730569,
+							"offers": 36,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "AWS",
+							"name": "Nest.js",
 							"type": "leaf",
-							"demandPercentage": 30.2,
+							"demandPercentage": 4.5,
+							"lift": 10.608273706719302,
+							"offers": 26,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Spring / Spring Boot",
+							"type": "leaf",
+							"demandPercentage": 4.3,
+							"lift": 0.8175783464515023,
+							"offers": 25,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Flask",
+							"type": "leaf",
+							"demandPercentage": 1.2,
 							"lift": 3.427288428324698,
-							"offers": 175,
+							"offers": 7,
 							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "API, architektura i komunikacja usług",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Backend rzadko jest jednym programem — to zbiór usług gadających ze sobą. Projektujesz API (interfejs, przez który inne programy Cię wołają) w stylu REST lub GraphQL, dzielisz system na mikrousługi (małe, niezależne kawałki), a do komunikacji asynchronicznej (gdy usługa nie czeka na odpowiedź) używasz kolejek Kafka czy RabbitMQ. DDD (projektowanie sterowane dziedziną) to sposób układania kodu wokół realnych pojęć biznesowych.",
+					"unionShare": 15.9,
+					"leaves": [
+						{
+							"name": "REST / API",
+							"type": "leaf",
+							"demandPercentage": 7.9,
+							"lift": 1.0317753121919901,
+							"offers": 46,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
-							"name": "Kafka",
+							"name": "Mikrousługi (Microservices)",
 							"type": "leaf",
-							"demandPercentage": 4.1,
-							"lift": 1.06272509405417,
-							"offers": 24,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Celery",
-							"type": "leaf",
-							"demandPercentage": 0.7,
-							"lift": 6.854576856649395,
-							"offers": 4,
-							"kind": "tool",
+							"demandPercentage": 2.1,
+							"lift": 1.0333532949722706,
+							"offers": 12,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
@@ -2278,6 +3000,69 @@
 							"demandPercentage": 1.9,
 							"lift": 2.244057899498314,
 							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Kafka",
+							"type": "leaf",
+							"demandPercentage": 4,
+							"lift": 1.0210833400449228,
+							"offers": 23,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "RabbitMQ",
+							"type": "leaf",
+							"demandPercentage": 1.6,
+							"lift": 1.441382983874873,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "DDD",
+							"type": "leaf",
+							"demandPercentage": 1,
+							"lift": 2.4480631630890697,
+							"offers": 6,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Frontend (styk full-stack)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "W PL granica między backendem a frontem często się zaciera — co czternasta oferta backendu wymaga też React, Angular lub Next.js. To sygnał, że rynek ceni „pełny stos” (full-stack): umiesz nie tylko serwer, ale i ekran, który użytkownik klika. Nie musisz być ekspertem frontu, ale podstawy poszerzają Twoją wartość.",
+					"unionShare": 14,
+					"leaves": [
+						{
+							"name": "React",
+							"type": "leaf",
+							"demandPercentage": 7.3,
+							"lift": 1.1608557579809458,
+							"offers": 42,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Angular",
+							"type": "leaf",
+							"demandPercentage": 5.4,
+							"lift": 1.4554238531241868,
+							"offers": 31,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Next.js",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 2.763942280907014,
+							"offers": 15,
 							"kind": "tool",
 							"source": "dane"
 						}
@@ -2499,17 +3284,18 @@
 			"tShapePairs": ["UX/UI Designer"],
 			"areas": [
 				{
-					"name": "Język i framework",
-					"type": "presentation-group",
+					"name": "Języki frontendu (rdzeń)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 98.9,
+					"description": "Dwa języki, którymi mówi przeglądarka. JavaScript to oryginał — ożywia stronę, reaguje na kliknięcia. TypeScript to JavaScript z typami (sprawdzaniem, że nie wstawisz tekstu tam, gdzie ma być liczba) — dziś standard w poważnych projektach, w równie wielu ofertach co JS. Uczysz się obu; TypeScript jest nadbudową, nie alternatywą.",
+					"unionShare": 83.5,
 					"leaves": [
 						{
 							"name": "JavaScript",
 							"type": "leaf",
-							"demandPercentage": 57.6,
-							"lift": 8.375332938739271,
-							"offers": 251,
+							"demandPercentage": 59.9,
+							"lift": 8.509378039483714,
+							"offers": 261,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -2521,93 +3307,40 @@
 							"offers": 251,
 							"kind": "tool",
 							"source": "dane"
-						},
-						{
-							"name": "React",
-							"type": "leaf",
-							"demandPercentage": 55,
-							"lift": 8.809115122817401,
-							"offers": 240,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Next.js",
-							"type": "leaf",
-							"demandPercentage": 14.2,
-							"lift": 15.171253822629971,
-							"offers": 62,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Angular",
-							"type": "leaf",
-							"demandPercentage": 25.7,
-							"lift": 6.982933266306397,
-							"offers": 112,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Node.js",
-							"type": "leaf",
-							"demandPercentage": 20.4,
-							"lift": 6.597271613423781,
-							"offers": 89,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Redux",
-							"type": "leaf",
-							"demandPercentage": 5.5,
-							"lift": 16.063680518078794,
-							"offers": 24,
-							"kind": "tool",
-							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Styling",
-					"type": "presentation-group",
+					"name": "HTML i CSS (struktura i wygląd)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 45.4,
+					"description": "Fundament, od którego zaczyna każdy frontendowiec. HTML to szkielet strony (co jest nagłówkiem, co przyciskiem), CSS to jej wygląd (kolory, układ, responsywność na telefonie). Nowoczesny CSS pisze się szybciej narzędziami Sass/SCSS (rozszerzenie CSS) i Tailwind czy Bootstrap (gotowe zestawy styli). Bez solidnego HTML/CSS żaden framework nie pomoże.",
+					"unionShare": 45.6,
 					"leaves": [
 						{
 							"name": "CSS",
 							"type": "leaf",
-							"demandPercentage": 30.7,
-							"lift": 16.84763546048963,
-							"offers": 134,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "CSS3",
-							"type": "leaf",
-							"demandPercentage": 6.2,
-							"lift": 15.360894495412845,
-							"offers": 27,
+							"demandPercentage": 36.9,
+							"lift": 16.57854207314542,
+							"offers": 161,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
 							"name": "HTML",
 							"type": "leaf",
-							"demandPercentage": 29.4,
-							"lift": 14.420201653192844,
-							"offers": 128,
+							"demandPercentage": 39.4,
+							"lift": 14.714975512174934,
+							"offers": 172,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "HTML5",
+							"name": "Sass / SCSS",
 							"type": "leaf",
-							"demandPercentage": 10.3,
-							"lift": 15.754763585038814,
-							"offers": 45,
+							"demandPercentage": 1.8,
+							"lift": 14.004234297812282,
+							"offers": 8,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -2621,29 +3354,183 @@
 							"source": "dane"
 						},
 						{
-							"name": "SASS",
+							"name": "Bootstrap",
 							"type": "leaf",
-							"demandPercentage": 0.9,
-							"lift": 13.003931847968545,
-							"offers": 4,
+							"demandPercentage": 1.1,
+							"lift": 7.585626911314985,
+							"offers": 5,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Testowanie",
-					"type": "presentation-group",
+					"name": "Frameworki interfejsu i zarządzanie stanem",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 3.7,
+					"description": "Nikt nie buduje dziś interfejsu „gołym” JavaScriptem — używasz frameworka, który składa stronę z gotowych klocków (komponentów). React dominuje w PL (ponad połowa ofert), Angular to druga droga (całościowy, korporacyjny), Vue to lżejsza alternatywa. Next.js rozszerza React o wydajność i renderowanie po stronie serwera. Gdy aplikacja rośnie, pojawia się zarządzanie stanem (Redux, NgRx, RxJS) — sposób panowania nad danymi krążącymi po całym interfejsie.",
+					"unionShare": 77.8,
 					"leaves": [
 						{
-							"name": "Playwright",
+							"name": "React",
+							"type": "leaf",
+							"demandPercentage": 55,
+							"lift": 8.809115122817401,
+							"offers": 240,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Angular",
+							"type": "leaf",
+							"demandPercentage": 25.7,
+							"lift": 6.982933266306397,
+							"offers": 112,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Next.js",
+							"type": "leaf",
+							"demandPercentage": 14.2,
+							"lift": 15.171253822629971,
+							"offers": 62,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Redux",
+							"type": "leaf",
+							"demandPercentage": 5.5,
+							"lift": 16.063680518078794,
+							"offers": 24,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Vue.js",
+							"type": "leaf",
+							"demandPercentage": 6,
+							"lift": 7.043796417649629,
+							"offers": 26,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "RxJS",
+							"type": "leaf",
+							"demandPercentage": 3,
+							"lift": 15.570497344278127,
+							"offers": 13,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "NgRx",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"lift": 12.64271151885831,
+							"offers": 5,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Node.js i komunikacja z API",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Front nie żyje sam — pobiera dane z serwera. API (interfejs, przez który prosisz serwer o dane) w stylu REST lub GraphQL to sposób tej rozmowy. Node.js pozwala pisać też backend w tym samym języku co front (JavaScript), a Nest.js to popularny framework na nim — stąd krok do roli full-stack (pełny stos: front i backend naraz).",
+					"unionShare": 39.7,
+					"leaves": [
+						{
+							"name": "Node.js",
+							"type": "leaf",
+							"demandPercentage": 21.6,
+							"lift": 6.68483371559633,
+							"offers": 94,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "REST / API",
+							"type": "leaf",
+							"demandPercentage": 19.7,
+							"lift": 1.83420032157382,
+							"offers": 86,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "GraphQL",
+							"type": "leaf",
+							"demandPercentage": 4.6,
+							"lift": 5.418304936653561,
+							"offers": 20,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Nest.js",
 							"type": "leaf",
 							"demandPercentage": 1.6,
-							"lift": 1.3057226650624154,
+							"lift": 3.7928134556574924,
 							"offers": 7,
 							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Narzędzia, budowanie i testy",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Codzienny warsztat inżynierski frontu. Git wersjonuje kod (co siódma oferta wymienia go wprost), CI/CD automatycznie buduje i wdraża stronę przy każdej zmianie, Webpack skleja dziesiątki plików w jedną szybką paczkę. Testy — Jest (komponentów), Cypress i Playwright (całych ścieżek użytkownika) — pilnują, żeby nowa zmiana nie zepsuła starego.",
+					"unionShare": 28.2,
+					"leaves": [
+						{
+							"name": "Git",
+							"type": "leaf",
+							"demandPercentage": 15.1,
+							"lift": 2.9800677151594583,
+							"offers": 66,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 11,
+							"lift": 1.16951849596291,
+							"offers": 48,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Webpack",
+							"type": "leaf",
+							"demandPercentage": 2.5,
+							"lift": 17.88040629095675,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Jest",
+							"type": "leaf",
+							"demandPercentage": 2.3,
+							"lift": 11.977305649444714,
+							"offers": 10,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Testy jednostkowe (Unit Testing)",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 5.535457475824449,
+							"offers": 9,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
@@ -2656,12 +3543,147 @@
 							"source": "dane"
 						},
 						{
-							"name": "Jest",
+							"name": "Playwright",
 							"type": "leaf",
-							"demandPercentage": 2.3,
-							"lift": 11.977305649444714,
-							"offers": 10,
+							"demandPercentage": 1.6,
+							"lift": 1.3057226650624154,
+							"offers": 7,
 							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Inne języki i stacki (styk full-stack)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Co dwudziesta oferta frontu wymaga też C#/.NET, PHP, Java, Python czy Go — to sygnał ról „pełny stos”, gdzie ta sama osoba pisze front i backend. ASP.NET (świat .NET) i Ruby on Rails to całościowe frameworki webowe. Nie musisz znać wszystkich, ale jeden dodatkowy język znacząco poszerza, gdzie się załapiesz.",
+					"unionShare": 28,
+					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 5.3,
+							"lift": 0.2601432688274026,
+							"offers": 23,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "C# / .NET",
+							"type": "leaf",
+							"demandPercentage": 11.5,
+							"lift": 1.6208604511356806,
+							"offers": 50,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Java",
+							"type": "leaf",
+							"demandPercentage": 4.8,
+							"lift": 0.34505017719338926,
+							"offers": 21,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "PHP",
+							"type": "leaf",
+							"demandPercentage": 3.7,
+							"lift": 2.4769393996130566,
+							"offers": 16,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Ruby on Rails",
+							"type": "leaf",
+							"demandPercentage": 2.8,
+							"lift": 6.827064220183487,
+							"offers": 12,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "ASP.NET Core",
+							"type": "leaf",
+							"demandPercentage": 3.4,
+							"lift": 3.0208248761873833,
+							"offers": 15,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Go",
+							"type": "leaf",
+							"demandPercentage": 1.4,
+							"lift": 0.8031840259039396,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Specjalizacje frontendu",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Boczne, ale wyraźne ścieżki. React Native pozwala z wiedzy reactowej budować aplikacje mobilne (jeden kod na iOS i Androida). WordPress i systemy zarządzania treścią (CMS) to ogromny rynek prostszych stron firmowych. SEO (optymalizacja pod wyszukiwarki) i współpraca z projektantami w Figmie to kompetencje na styku z marketingiem i designem.",
+					"unionShare": 13.1,
+					"leaves": [
+						{
+							"name": "React Native",
+							"type": "leaf",
+							"demandPercentage": 5.7,
+							"lift": 7.023728621587949,
+							"offers": 25,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "WordPress",
+							"type": "leaf",
+							"demandPercentage": 2.5,
+							"lift": 8.631920278392913,
+							"offers": 11,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "UX/UI",
+							"type": "leaf",
+							"demandPercentage": 2.8,
+							"lift": 4.551376146788991,
+							"offers": 12,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "System zarządzania treścią (CMS)",
+							"type": "leaf",
+							"demandPercentage": 1.4,
+							"lift": 6.206422018348624,
+							"offers": 6,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Figma",
+							"type": "leaf",
+							"demandPercentage": 1.4,
+							"lift": 1.3386400431732328,
+							"offers": 6,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "SEO",
+							"type": "leaf",
+							"demandPercentage": 1.1,
+							"lift": 14.223050458715598,
+							"offers": 5,
+							"kind": "concept",
 							"source": "dane"
 						}
 					]

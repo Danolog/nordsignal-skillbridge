@@ -69,7 +69,7 @@ function main(): void {
 	const { freq, total } = globalTechFrequency(offers);
 
 	// AFTER: nowy płaski katalog z bramką min-wolumenu (te same skuratorowane liście, nowa miara).
-	const model = buildCareerModel(stats, freq, total);
+	const model = buildCareerModel(stats, freq, total, offers);
 	const after = flattenLeaves(model);
 
 	// BEFORE: committowany artefakt (stary próg „udział < 1%").

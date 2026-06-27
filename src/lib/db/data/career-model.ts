@@ -41,10 +41,16 @@ export type LeafSource = "dane" | "kuracja ekspercka";
 export type LeafSpec = {
 	name: string; // nazwa wyświetlana (jak w modelu/przewodniku)
 	// Nazwa(-y) do zliczania w danych (wariant obecny w zrzucie). Gdy brak — używa `name`.
-	// Tablica = sumuj warianty (np. Airflow + Apache Airflow).
+	// Tablica = warianty zliczane razem (np. Airflow + Apache Airflow). DOMYŚLNIE silnik
+	// SUMUJE liczniki wariantów; gdy synonimy bywają w jednej ofercie, włącz `countAsUnion`.
 	countAs?: string[];
+	// true = scalenie wariantów liczone jako UNIA ofert (dedup — oferta z dwoma napisami RAZ),
+	// nie suma liczników (Sophia/Leo, partia 2: C#/.NET, ETL/ELT, REST/API, chmury). Działa
+	// tylko z `countAs` >1. Domyślnie false = suma (zgodność wsteczna: cyber/partia 1).
+	countAsUnion?: boolean;
 	// Kuracja kind (Sophia §7): tool=obsługuję · concept=rozumiem/stosuję (SIEM/IAM/NIST) ·
-	// soft=miękka. Gdy brak — silnik auto-klasyfikuje po nazwie. cert/meta zawsze z auto.
+	// soft=miękka. Silnik bierze `leaf.kind ?? auto-klasyfikacja-po-nazwie` — kuracja NADPISUJE
+	// auto BEZ wyjątku (także dla cert/meta: ISTQB→concept działa, bo kuracja ma pierwszeństwo).
 	kind?: LeafKind;
 	// true = narzędzie realnie nieobecne w zrzucie 2026-02 → demandPercentage:null,
 	// source:"kuracja ekspercka", label „brak w zrzucie 2026-02".
@@ -803,69 +809,285 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 2 2026-06-27 — 7 grup context-group na 698 ofertach (najbogatszy
+		// katalog partii). Rdzeń klasyczny: Python+SQL → BI (Power BI) → ETL/hurtownie. Gęstwina
+		// synonimów BI/ETL/hurtowni → scalenia UNIĄ (countAsUnion): ETL/ELT (4 warianty), BI (3),
+		// Power BI←PowerBi, Data Warehousing (3), chmury. `kind` z dokumentu Sophii. Wyrzucone meta:
+		// Data (11.3%!), Data analysis, Analytics, AI, Business Analysis, Jira/Scrum/SAP/ERP.
 		label: "Data Analyst",
 		areas: [
 			{
-				name: "Wizualizacja BI",
-				type: "presentation-group",
-				leaves: [{ name: "Power BI" }, { name: "Tableau" }, { name: "MS Excel" }],
-			},
-			{
-				name: "ETL",
-				type: "knowledge-area",
+				name: "Język i zapytania do danych (fundament)",
+				type: "context-group",
+				description:
+					"Dwa najmocniejsze sygnały całej ścieżki. SQL (język zapytań do baz) wyciąga dane — to absolutne minimum analityka, prawie co druga oferta. Python je przerabia i automatyzuje, a biblioteka Pandas obsługuje dane w tabelach. To pierwsza rzecz do nauki i fundament wszystkich pozostałych grup.",
 				leaves: [
-					{ name: "dbt", countAs: ["DBT"] },
-					{ name: "Airflow", countAs: ["Airflow", "Apache Airflow"] },
+					{ name: "Python", kind: "tool" },
+					{ name: "SQL", kind: "tool" },
+					{ name: "Pandas", kind: "tool" },
+					{ name: "NumPy", kind: "tool" },
 				],
 			},
 			{
-				name: "Konkret bazowy",
-				type: "presentation-group",
-				leaves: [{ name: "SQL" }, { name: "Python" }, { name: "BigQuery" }],
+				name: "Business Intelligence i wizualizacja",
+				type: "context-group",
+				description:
+					"Druga połowa roli: surowe dane są bezużyteczne, dopóki ktoś z biznesu ich nie zrozumie. Business Intelligence (BI) to dyscyplina zamiany danych w pulpity (dashboardy) i raporty, na których menedżer podejmuje decyzję. Power BI dominuje w polskich firmach (co piąta oferta), z własnym językiem formuł DAX i narzędziem Power Query do wczytywania danych; Tableau i Looker to konkurenci. To często ważniejsza kompetencja niż zaawansowana statystyka.",
+				leaves: [
+					{ name: "Power BI", countAs: ["Power BI", "PowerBi"], countAsUnion: true, kind: "tool" },
+					{ name: "Tableau", kind: "tool" },
+					{ name: "DAX", kind: "tool" },
+					{
+						name: "Business Intelligence (BI)",
+						countAs: ["Business Intelligence (BI)", "BI", "Business Intelligence"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "Power Query", kind: "tool" },
+					{ name: "Looker", kind: "tool" },
+				],
+			},
+			{
+				name: "ETL i hurtownie danych (przepływy)",
+				type: "context-group",
+				description:
+					"Zanim dane trafią do raportu, ktoś musi je zebrać z wielu systemów, oczyścić i załadować w jedno miejsce — to ETL (Extract-Transform-Load — pobierz, przekształć, załaduj) lub ELT. Wynik ląduje w hurtowni danych (centralnym magazynie do analiz). Modelowanie danych to projektowanie, jak te dane mają być ułożone. To rdzeń pracy „analityka inżynierskiego” — DataStage, dbt, SSIS, Airflow to narzędzia, którymi te rurociągi się buduje.",
+				leaves: [
+					{
+						name: "ETL / ELT",
+						countAs: ["ETL", "ELT", "ETL tools", "ETL/ELT"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{
+						name: "Modelowanie danych (Data modeling)",
+						countAs: ["Data modeling"],
+						kind: "concept",
+					},
+					{ name: "DataStage", countAs: ["DataStage (ETL)"], kind: "tool" },
+					{
+						name: "Hurtownia danych (Data Warehousing)",
+						countAs: ["Data Warehousing", "Data Warehouse (DW)", "Data Warehouse"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "dbt", countAs: ["DBT"], kind: "tool" },
+					{
+						name: "Apache Airflow",
+						countAs: ["Apache Airflow", "Airflow"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "Integracja danych (Data Integration)",
+						countAs: ["Data Integration"],
+						kind: "concept",
+					},
+					{ name: "SSIS", kind: "tool" },
+				],
+			},
+			{
+				name: "Arkusze kalkulacyjne (Excel)",
+				type: "context-group",
+				description:
+					"Mimo całej nowoczesnej analityki Excel wciąż pojawia się w 15% ofert — to nie wstyd, tylko prawda o rynku. Dla wielu analityków to pierwsze narzędzie i codzienny warsztat: szybka analiza, tabela przestawna, wykres na już. Najczęstsza brama wejścia do roli i kompetencja, której pracodawcy realnie oczekują obok Power BI.",
+				leaves: [{ name: "MS Excel", kind: "tool" }],
+			},
+			{
+				name: "Bazy danych i dialekty SQL",
+				type: "context-group",
+				description:
+					"Dane, które analizujesz, leżą w konkretnych bazach — i każda mówi nieco innym dialektem SQL. Oracle (z dialektem PL/SQL) i MS SQL Server (z dialektem T-SQL) to dwa najczęstsze w polskich korporacjach, PostgreSQL w nowszych projektach. Rozumienie baz relacyjnych (dane powiązane w tabelach) to fundament, na którym stoi cała reszta.",
+				leaves: [
+					{ name: "Oracle", kind: "tool" },
+					{
+						name: "MS SQL Server",
+						countAs: ["MS SQL Server", "SQL Server"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "PL/SQL", kind: "tool" },
+					{ name: "PostgreSQL", kind: "tool" },
+					{
+						name: "Bazy relacyjne (Relational Databases)",
+						countAs: ["Relational Databases"],
+						kind: "concept",
+					},
+					{ name: "T-SQL", kind: "tool" },
+				],
+			},
+			{
+				name: "Chmurowe platformy danych",
+				type: "context-group",
+				description:
+					"Analityka coraz częściej żyje w chmurze, gdzie dane są za duże na jedną maszynę. BigQuery (Google) i Snowflake to hurtownie chmurowe, w których odpytujesz miliardy wierszy bez własnego serwera; Databricks dokłada do tego przetwarzanie wielkich zbiorów narzędziem Spark. To granica, na której analityk styka się z inżynierią danych — i kierunek, w którym rynek się przesuwa.",
+				leaves: [
+					{ name: "BigQuery", kind: "tool" },
+					{ name: "Wielkie zbiory danych (Big Data)", countAs: ["Big Data"], kind: "concept" },
+					{
+						name: "GCP",
+						countAs: ["GCP", "Google Cloud Platform"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Snowflake", kind: "tool" },
+					{
+						name: "Azure",
+						countAs: ["Azure", "Microsoft Azure", "Microsoft Platform"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "AWS", countAs: ["AWS", "Amazon AWS"], countAsUnion: true, kind: "tool" },
+					{ name: "Databricks", kind: "tool" },
+					{ name: "Spark", kind: "tool" },
+					{ name: "PySpark", kind: "tool" },
+				],
+			},
+			{
+				name: "Narzędzia specjalistyczne",
+				type: "context-group",
+				description:
+					"Obszary węższe, ale realne w danych: SAS to weteran analizy statystycznej wciąż obecny w bankach i farmacji; Google Analytics to standard analityki ruchu na stronach i w marketingu. Niszowe względem rdzenia, ale dla części ofert decydujące.",
+				leaves: [
+					{ name: "Google Analytics", kind: "tool" },
+					{ name: "SAS", kind: "tool" },
+				],
 			},
 		],
 	},
 	{
-		// DODANE przez Maxa: sekcja 1 Sophii NIE zawierała bloku DevOps (przeoczenie —
-		// DevOps jest w jej §3 rodzinach i banku projektów oraz jest jedną z największych
-		// kotwic, 528 ofert). Hierarchię złożyłem z liści banku projektów Sophii + profilu
-		// DevOps z danych. Do potwierdzenia przez Sophię (prowenicja §7).
+		// KURACJA SOPHII A4 partia 2 2026-06-27 — 8 grup context-group na 600 ofertach. Najbardziej
+		// inżynierska/jednorodna ścieżka: Terraform (54%!) → Kubernetes (43%) → CI/CD (40%). Wymienia
+		// placeholder Maxa (presentation/knowledge) na kurację z danych. Scalenia chmur UNIĄ
+		// (countAsUnion): Azure (4 warianty), GCP (3), Bash←Shell, Go←Golang, GitHub←GitHub Actions,
+		// GitOps←GitOPS, Network←Networking. `kind` z dokumentu Sophii. Wyrzucone meta: AI, DevOps
+		// tools, Java/C++ (aplikacja), bazy (rozproszone), Kafka (pogranicze). Brak liści absent.
 		label: "DevOps Engineer",
 		areas: [
 			{
-				name: "CI/CD",
-				type: "knowledge-area",
+				name: "Infrastruktura jako kod (IaC) — rdzeń roli",
+				type: "context-group",
+				description:
+					"Serce nowoczesnego DevOps i najsilniejszy sygnał rynku. Zamiast ręcznie klikać serwery w panelu, opisujesz całą infrastrukturę kodem — plik mówi „chcę trzy serwery, bazę i sieć”, a narzędzie to tworzy, powtarzalnie i bez pomyłek. Terraform dominuje (ponad połowa ofert!), Ansible konfiguruje już istniejące maszyny, a GitOps (z narzędziami jak ArgoCD) sprawia, że stan infrastruktury jest sterowany przez repozytorium kodu. Od tego zaczyna się ta rola.",
 				leaves: [
-					{ name: "GitHub Actions" },
-					{ name: "Jenkins" },
-					{ name: "GitLab CI", absent: true },
+					{ name: "Terraform", kind: "tool" },
+					{ name: "Ansible", kind: "tool" },
+					{ name: "IaC", kind: "concept" },
+					{ name: "Helm", kind: "tool" },
+					{ name: "GitOps", countAs: ["GitOps", "GitOPS"], countAsUnion: true, kind: "concept" },
+					{ name: "ArgoCD", kind: "tool" },
+					{ name: "Puppet", kind: "tool" },
 				],
 			},
 			{
-				name: "Infrastruktura jako kod",
-				type: "presentation-group",
-				leaves: [{ name: "Terraform" }, { name: "Ansible" }],
-			},
-			{
 				name: "Konteneryzacja i orkiestracja",
-				type: "presentation-group",
-				leaves: [{ name: "Docker" }, { name: "Kubernetes" }],
+				type: "context-group",
+				description:
+					"Sposób, w jaki dziś uruchamia się aplikacje. Docker pakuje aplikację w kontener — lekką, odizolowaną paczkę, która działa tak samo wszędzie. Kubernetes (w prawie połowie ofert!) zarządza setkami takich kontenerów na skalę: sam je uruchamia, restartuje, skaluje pod obciążeniem. OpenShift i AKS to gotowe odmiany Kubernetesa. To druga obowiązkowa kompetencja roli zaraz po IaC.",
+				leaves: [
+					{ name: "Kubernetes", kind: "tool" },
+					{ name: "Docker", kind: "tool" },
+					{ name: "OpenShift", kind: "tool" },
+					{ name: "AKS", kind: "tool" },
+				],
 			},
 			{
-				name: "Cloud",
-				type: "knowledge-area",
-				demandAs: ["AWS"],
-				leaves: [{ name: "AWS" }, { name: "Azure" }, { name: "GCP" }],
+				name: "CI/CD i automatyzacja wydań",
+				type: "context-group",
+				description:
+					"Taśma montażowa oprogramowania: CI/CD (ciągła integracja i dostarczanie) automatycznie buduje, testuje i wdraża kod przy każdej zmianie, bez ręcznej roboty. To Ty jako DevOps tę taśmę budujesz i utrzymujesz — narzędziami Azure DevOps, Jenkins, GitLab czy GitHub Actions. W 40% ofert wprost; w praktyce w każdej.",
+				leaves: [
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Azure DevOps", kind: "tool" },
+					{ name: "Jenkins", kind: "tool" },
+					{ name: "GitLab", kind: "tool" },
+					{
+						name: "GitHub",
+						countAs: ["GitHub", "GitHub Actions"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+				],
 			},
 			{
-				name: "Monitoring",
-				type: "presentation-group",
-				leaves: [{ name: "Prometheus" }, { name: "Grafana" }],
+				name: "Chmury",
+				type: "context-group",
+				description:
+					"Na czym stoi cała infrastruktura, którą zarządzasz. AWS i Azure dominują w PL (każda w co czwartej–piątej ofercie), GCP trzeci. Uczysz się przynajmniej jednej — to ona dyktuje konkretne usługi, sieci i sposób rozliczania. DevOps bez chmury dziś praktycznie nie istnieje.",
+				leaves: [
+					{ name: "AWS", countAs: ["AWS", "Amazon AWS"], countAsUnion: true, kind: "tool" },
+					{
+						name: "Azure",
+						countAs: ["Azure", "Microsoft Azure", "MS Azure", "Microsoft Azure Cloud"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "GCP",
+						countAs: ["GCP", "Google Cloud Platform", "Google Cloud"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+				],
 			},
 			{
-				name: "Konkret bazowy",
-				type: "presentation-group",
-				leaves: [{ name: "Linux" }, { name: "Python" }, { name: "Bash" }],
+				name: "Systemy operacyjne i skrypty",
+				type: "context-group",
+				description:
+					"Fundament pod wszystkim wyżej — żeby zarządzać serwerami, musisz rozumieć ich system. Linux to dom większości serwerów (co piąta oferta), a Bash to język poleceń, którym się nim steruje; PowerShell robi to samo w świecie Windows. Python to język automatyzacji DevOps (drugi po Terraform), którym piszesz własne narzędzia. VMware i OpenStack to wirtualizacja — wiele maszyn na jednym fizycznym serwerze.",
+				leaves: [
+					{ name: "Python", kind: "tool" },
+					{ name: "Linux", kind: "tool" },
+					{ name: "Bash", countAs: ["Bash", "Shell"], countAsUnion: true, kind: "tool" },
+					{ name: "PowerShell", countAs: ["Powershell"], kind: "tool" },
+					{ name: "Windows Server", kind: "tool" },
+					{ name: "VMware", kind: "tool" },
+					{ name: "Go", countAs: ["Go", "Golang"], countAsUnion: true, kind: "tool" },
+					{ name: "Red Hat", kind: "tool" },
+					{ name: "OpenStack", kind: "tool" },
+					{ name: "Proxmox", kind: "tool" },
+				],
+			},
+			{
+				name: "Monitoring i obserwowalność",
+				type: "context-group",
+				description:
+					"Gdy system już działa, ktoś musi pilnować, czy nie umiera o trzeciej w nocy. Prometheus zbiera metryki (ile pamięci, ile żądań), Grafana rysuje z nich pulpity i alarmy, Datadog i Zabbix to gotowe platformy do tego samego. To dyscyplina „obserwowalności” (observability) — widzisz, co dzieje się w środku systemu, zanim zauważy to użytkownik.",
+				leaves: [
+					{ name: "Grafana", kind: "tool" },
+					{ name: "Prometheus", kind: "tool" },
+					{ name: "Datadog", kind: "tool" },
+					{ name: "Zabbix", kind: "tool" },
+				],
+			},
+			{
+				name: "Sieci",
+				type: "context-group",
+				description:
+					"Serwery muszą się ze sobą komunikować — a Ty musisz rozumieć, jak. TCP/IP to podstawowy język sieci, DNS tłumaczy nazwy stron na adresy, a sieci w ogóle (routing, zapory) to fundament, bez którego nie zdiagnozujesz, czemu dwie usługi się nie widzą. Cisco to najczęstszy sprzęt sieciowy w korporacjach.",
+				leaves: [
+					{
+						name: "Sieci (Network)",
+						countAs: ["Network", "Networking"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "DNS", kind: "concept" },
+					{ name: "TCP/IP", kind: "concept" },
+					{ name: "Cisco", kind: "tool" },
+				],
+			},
+			{
+				name: "Niezawodność i bezpieczeństwo (SRE / DevSecOps)",
+				type: "context-group",
+				description:
+					"Dojrzała warstwa roli. SRE (Site Reliability Engineering — inżynieria niezawodności) to podejście, w którym niezawodność systemu traktuje się jak problem inżynierski z miarami i budżetem błędów. DevSecOps wpina bezpieczeństwo w taśmę CI/CD, a IAM (zarządzanie tożsamością i dostępem) pilnuje, kto i do czego ma dostęp w chmurze. Kierunek rozwoju seniora DevOps.",
+				leaves: [
+					{ name: "DevSecOps", kind: "concept" },
+					{ name: "SRE", kind: "concept" },
+					{ name: "IAM", kind: "concept" },
+					{ name: "Active Directory", kind: "tool" },
+				],
 			},
 		],
 	},
@@ -952,35 +1174,134 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 2 2026-06-27 — 6 grup context-group na 579 ofertach. Rynek
+		// wielojęzyczny i mocno chmurowy: żaden język nie dominuje (Python 38%, Java 27%, C#/.NET 19%,
+		// Node/TS 18%), chmura drugim sygnałem (AWS 30%, Azure 26%). Scalenia UNIĄ (countAsUnion):
+		// C#/.NET (3 warianty: C#+.Net+.NET C#), REST/API (3), chmury, Node.js←Node, Spring, MS SQL.
+		// `kind` z dokumentu Sophii. Docker NIE w danych (wszechobecny→niewymieniany) — nie dopisuję.
+		// Wyrzucone meta: AI, Backend, Machine Learning, Active Directory/Powershell/Linux (admin).
 		label: "Backend Developer",
 		areas: [
 			{
-				name: "Języki",
-				type: "presentation-group",
+				name: "Języki backendu",
+				type: "context-group",
+				description:
+					"Serce roli — język, w którym piszesz logikę serwera. W PL rynek jest podzielony: Python (najszybciej rosnący, też AI/dane), Java (wielkie systemy bankowe i korporacyjne), C#/.NET (świat Microsoftu), TypeScript (backend w Node.js). Wybierasz jeden główny — on zwykle decyduje, który framework i bazę poznasz. Nie ma tu jednego „słusznego” wyboru; każdy otwiera inną część rynku.",
 				leaves: [
-					{ name: "Python" },
-					{ name: "Java" },
-					{ name: "TypeScript" },
-					{ name: "Node.js" },
-					{ name: "Django" },
-					{ name: "FastAPI", countAs: ["fastapi"] },
+					{ name: "Python", kind: "tool" },
+					{ name: "Java", kind: "tool" },
+					{
+						name: "C# / .NET",
+						countAs: ["C#", ".Net", ".NET C#"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "TypeScript", kind: "tool" },
+					{ name: "JavaScript", kind: "tool" },
+					{ name: "Go", kind: "tool" },
+					{ name: "Scala", kind: "tool" },
+					{ name: "C++", kind: "tool" },
 				],
 			},
 			{
-				name: "Bazy i cache",
-				type: "presentation-group",
-				leaves: [{ name: "SQL" }, { name: "PostgreSQL" }, { name: "MongoDB" }, { name: "Redis" }],
+				name: "Chmura i wdrażanie (DevOps backendu)",
+				type: "context-group",
+				description:
+					"Drugi najsilniejszy sygnał rynku zaraz po języku. Współczesny backend dev nie „oddaje kodu adminowi” — sam go wdraża do chmury i utrzymuje. AWS i Azure to dwie dominujące platformy w PL (każda w co czwartej ofercie), Kubernetes uruchamia aplikacje na skalę, CI/CD (taśma automatycznego budowania i wdrażania) i Terraform (infrastruktura opisana kodem) domykają warsztat. To dziś nieodłączna część roli, nie dodatek.",
+				leaves: [
+					{ name: "AWS", countAs: ["AWS", "Amazon AWS"], countAsUnion: true, kind: "tool" },
+					{
+						name: "Azure",
+						countAs: ["Azure", "Microsoft Azure"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "GCP",
+						countAs: ["GCP", "Google Cloud Platform"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Kubernetes", kind: "tool" },
+					{ name: "Terraform", kind: "tool" },
+					{ name: "Jenkins", kind: "tool" },
+					{ name: "GitLab", kind: "tool" },
+					{ name: "Helm", kind: "tool" },
+				],
 			},
 			{
-				name: "Konteneryzacja",
-				type: "presentation-group",
+				name: "Bazy danych",
+				type: "context-group",
+				description:
+					"Backend istnieje po to, żeby zapisywać i wydawać dane — bez baz nie ma roli. Świat dzieli się na relacyjny (SQL, PostgreSQL, Oracle, MS SQL Server — dane w tabelach z relacjami) i NoSQL (MongoDB, Redis — dane bez sztywnej struktury, szybkie odczyty). Co trzecia oferta wymaga SQL-a, a PostgreSQL to dziś domyślny wybór nowych projektów. Uczysz się obu światów, bo realny system zwykle używa kilku baz naraz.",
 				leaves: [
-					{ name: "Docker" },
-					{ name: "Kubernetes" },
-					{ name: "AWS" },
-					{ name: "Kafka", countAs: ["Kafka", "Apache Kafka"] },
-					{ name: "Celery" },
-					{ name: "GraphQL" },
+					{ name: "SQL", kind: "tool" },
+					{
+						name: "PostgreSQL",
+						countAs: ["PostgreSQL", "PostreSQL"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "MongoDB", kind: "tool" },
+					{ name: "NoSQL", kind: "concept" },
+					{ name: "MySQL", kind: "tool" },
+					{ name: "Oracle", kind: "tool" },
+					{
+						name: "MS SQL Server",
+						countAs: ["MS SQL Server", "SQL Server", "MS SQL"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Redis", kind: "tool" },
+				],
+			},
+			{
+				name: "Frameworki i środowiska uruchomieniowe",
+				type: "context-group",
+				description:
+					"Nikt nie pisze backendu od zera — używasz frameworka, czyli gotowego rusztowania, które obsługuje typowe zadania (routing, bazę, bezpieczeństwo) za Ciebie. Każdy język ma swój: Spring/Spring Boot (Java), Django/Flask (Python), Nest.js na Node.js (TypeScript/JavaScript). Wybór frameworka idzie w parze z wyborem języka z grupy języków backendu.",
+				leaves: [
+					{ name: "Node.js", countAs: ["Node.js", "Node"], countAsUnion: true, kind: "tool" },
+					{ name: "Django", kind: "tool" },
+					{ name: "Nest.js", kind: "tool" },
+					{
+						name: "Spring / Spring Boot",
+						countAs: ["Spring", "Spring Boot"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Flask", kind: "tool" },
+				],
+			},
+			{
+				name: "API, architektura i komunikacja usług",
+				type: "context-group",
+				description:
+					"Backend rzadko jest jednym programem — to zbiór usług gadających ze sobą. Projektujesz API (interfejs, przez który inne programy Cię wołają) w stylu REST lub GraphQL, dzielisz system na mikrousługi (małe, niezależne kawałki), a do komunikacji asynchronicznej (gdy usługa nie czeka na odpowiedź) używasz kolejek Kafka czy RabbitMQ. DDD (projektowanie sterowane dziedziną) to sposób układania kodu wokół realnych pojęć biznesowych.",
+				leaves: [
+					{
+						name: "REST / API",
+						countAs: ["REST API", "REST", "API (Application Programming Interface)"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "Mikrousługi (Microservices)", countAs: ["Microservices"], kind: "concept" },
+					{ name: "GraphQL", kind: "tool" },
+					{ name: "Kafka", countAs: ["Kafka", "Apache Kafka"], countAsUnion: true, kind: "tool" },
+					{ name: "RabbitMQ", kind: "tool" },
+					{ name: "DDD", kind: "concept" },
+				],
+			},
+			{
+				name: "Frontend (styk full-stack)",
+				type: "context-group",
+				description:
+					"W PL granica między backendem a frontem często się zaciera — co czternasta oferta backendu wymaga też React, Angular lub Next.js. To sygnał, że rynek ceni „pełny stos” (full-stack): umiesz nie tylko serwer, ale i ekran, który użytkownik klika. Nie musisz być ekspertem frontu, ale podstawy poszerzają Twoją wartość.",
+				leaves: [
+					{ name: "React", kind: "tool" },
+					{ name: "Angular", kind: "tool" },
+					{ name: "Next.js", kind: "tool" },
 				],
 			},
 		],
@@ -1021,39 +1342,132 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 2 2026-06-27 — 7 grup context-group na 436 ofertach. Najczystsza
+		// ścieżka partii: JS/TS (po 58%) + React (55%) na fundamencie HTML/CSS (~30%). Scalenia UNIĄ
+		// (countAsUnion): JS←JS, CSS←CSS3, HTML←HTML5, REST/API (5 wariantów), C#/.NET (3), Vue.js←Vue,
+		// Go←Golang. `kind` z dokumentu Sophii. jQuery (2.3%) ŚWIADOMIE wykluczony (schyłkowa) — decyzja
+		// produktowa > próg. Wyrzucone meta: AI, frontend, Backend, Testing (zostaje Unit Testing).
 		label: "Frontend Developer",
 		areas: [
 			{
-				name: "Język i framework",
-				type: "presentation-group",
+				name: "Języki frontendu (rdzeń)",
+				type: "context-group",
+				description:
+					"Dwa języki, którymi mówi przeglądarka. JavaScript to oryginał — ożywia stronę, reaguje na kliknięcia. TypeScript to JavaScript z typami (sprawdzaniem, że nie wstawisz tekstu tam, gdzie ma być liczba) — dziś standard w poważnych projektach, w równie wielu ofertach co JS. Uczysz się obu; TypeScript jest nadbudową, nie alternatywą.",
 				leaves: [
-					{ name: "JavaScript" },
-					{ name: "TypeScript" },
-					{ name: "React" },
-					{ name: "Next.js" },
-					{ name: "Angular" },
-					{ name: "Node.js" },
-					{ name: "Redux" },
+					{ name: "JavaScript", countAs: ["JavaScript", "JS"], countAsUnion: true, kind: "tool" },
+					{ name: "TypeScript", kind: "tool" },
 				],
 			},
 			{
-				name: "Styling",
-				type: "presentation-group",
+				name: "HTML i CSS (struktura i wygląd)",
+				type: "context-group",
+				description:
+					"Fundament, od którego zaczyna każdy frontendowiec. HTML to szkielet strony (co jest nagłówkiem, co przyciskiem), CSS to jej wygląd (kolory, układ, responsywność na telefonie). Nowoczesny CSS pisze się szybciej narzędziami Sass/SCSS (rozszerzenie CSS) i Tailwind czy Bootstrap (gotowe zestawy styli). Bez solidnego HTML/CSS żaden framework nie pomoże.",
 				leaves: [
-					{ name: "CSS" },
-					{ name: "CSS3" },
-					{ name: "HTML" },
-					{ name: "HTML5" },
-					{ name: "Tailwind CSS" },
-					{ name: "SASS" },
+					{ name: "CSS", countAs: ["CSS", "CSS3"], countAsUnion: true, kind: "tool" },
+					{ name: "HTML", countAs: ["HTML", "HTML5"], countAsUnion: true, kind: "tool" },
+					{ name: "Sass / SCSS", countAs: ["SCSS"], kind: "tool" },
+					{ name: "Tailwind CSS", kind: "tool" },
+					{ name: "Bootstrap", kind: "tool" },
 				],
 			},
 			{
-				// DODANE w v5 (Max): projekt zaawansowany Frontend kotwiczy na testach E2E;
-				// Playwright (1,3%) i Cypress (2%) są realnie obecne dla Frontend.
-				name: "Testowanie",
-				type: "presentation-group",
-				leaves: [{ name: "Playwright" }, { name: "Cypress" }, { name: "Jest" }],
+				name: "Frameworki interfejsu i zarządzanie stanem",
+				type: "context-group",
+				description:
+					"Nikt nie buduje dziś interfejsu „gołym” JavaScriptem — używasz frameworka, który składa stronę z gotowych klocków (komponentów). React dominuje w PL (ponad połowa ofert), Angular to druga droga (całościowy, korporacyjny), Vue to lżejsza alternatywa. Next.js rozszerza React o wydajność i renderowanie po stronie serwera. Gdy aplikacja rośnie, pojawia się zarządzanie stanem (Redux, NgRx, RxJS) — sposób panowania nad danymi krążącymi po całym interfejsie.",
+				leaves: [
+					{ name: "React", kind: "tool" },
+					{ name: "Angular", kind: "tool" },
+					{ name: "Next.js", kind: "tool" },
+					{ name: "Redux", kind: "tool" },
+					{ name: "Vue.js", countAs: ["Vue.js", "Vue"], countAsUnion: true, kind: "tool" },
+					{ name: "RxJS", kind: "tool" },
+					{ name: "NgRx", kind: "tool" },
+				],
+			},
+			{
+				name: "Node.js i komunikacja z API",
+				type: "context-group",
+				description:
+					"Front nie żyje sam — pobiera dane z serwera. API (interfejs, przez który prosisz serwer o dane) w stylu REST lub GraphQL to sposób tej rozmowy. Node.js pozwala pisać też backend w tym samym języku co front (JavaScript), a Nest.js to popularny framework na nim — stąd krok do roli full-stack (pełny stos: front i backend naraz).",
+				leaves: [
+					{ name: "Node.js", countAs: ["Node.js", "Node"], countAsUnion: true, kind: "tool" },
+					{
+						name: "REST / API",
+						countAs: [
+							"REST API",
+							"REST",
+							"API",
+							"API (Application Programming Interface)",
+							"RESTful API",
+						],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "GraphQL", kind: "concept" },
+					{ name: "Nest.js", kind: "tool" },
+				],
+			},
+			{
+				name: "Narzędzia, budowanie i testy",
+				type: "context-group",
+				description:
+					"Codzienny warsztat inżynierski frontu. Git wersjonuje kod (co siódma oferta wymienia go wprost), CI/CD automatycznie buduje i wdraża stronę przy każdej zmianie, Webpack skleja dziesiątki plików w jedną szybką paczkę. Testy — Jest (komponentów), Cypress i Playwright (całych ścieżek użytkownika) — pilnują, żeby nowa zmiana nie zepsuła starego.",
+				leaves: [
+					{ name: "Git", kind: "tool" },
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Webpack", kind: "tool" },
+					{ name: "Jest", kind: "tool" },
+					{ name: "Testy jednostkowe (Unit Testing)", countAs: ["Unit Testing"], kind: "concept" },
+					{ name: "Cypress", kind: "tool" },
+					{ name: "Playwright", kind: "tool" },
+				],
+			},
+			{
+				name: "Inne języki i stacki (styk full-stack)",
+				type: "context-group",
+				description:
+					"Co dwudziesta oferta frontu wymaga też C#/.NET, PHP, Java, Python czy Go — to sygnał ról „pełny stos”, gdzie ta sama osoba pisze front i backend. ASP.NET (świat .NET) i Ruby on Rails to całościowe frameworki webowe. Nie musisz znać wszystkich, ale jeden dodatkowy język znacząco poszerza, gdzie się załapiesz.",
+				leaves: [
+					{ name: "Python", kind: "tool" },
+					{
+						name: "C# / .NET",
+						countAs: ["C#", ".Net", ".NET C#"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Java", kind: "tool" },
+					{ name: "PHP", kind: "tool" },
+					{
+						name: "Ruby on Rails",
+						countAs: ["Ruby on Rails", "Ruby"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "ASP.NET Core",
+						countAs: ["ASP.NET Core", "ASP.NET"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Go", countAs: ["Go", "Golang"], countAsUnion: true, kind: "tool" },
+				],
+			},
+			{
+				name: "Specjalizacje frontendu",
+				type: "context-group",
+				description:
+					"Boczne, ale wyraźne ścieżki. React Native pozwala z wiedzy reactowej budować aplikacje mobilne (jeden kod na iOS i Androida). WordPress i systemy zarządzania treścią (CMS) to ogromny rynek prostszych stron firmowych. SEO (optymalizacja pod wyszukiwarki) i współpraca z projektantami w Figmie to kompetencje na styku z marketingiem i designem.",
+				leaves: [
+					{ name: "React Native", kind: "tool" },
+					{ name: "WordPress", kind: "tool" },
+					{ name: "UX/UI", kind: "concept" },
+					{ name: "System zarządzania treścią (CMS)", countAs: ["CMS"], kind: "concept" },
+					{ name: "Figma", kind: "tool" },
+					{ name: "SEO", kind: "concept" },
+				],
 			},
 		],
 	},
