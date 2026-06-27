@@ -2503,34 +2503,84 @@
 			"studentSelectable": true,
 			"competencies": [
 				{
+					"name": "Myślenie analityczne (Analytical Thinking)",
+					"demandPercentage": 39,
+					"category": "Produkt i przywództwo (rdzeń)"
+				},
+				{
+					"name": "Product Management",
+					"demandPercentage": 35,
+					"category": "Produkt i przywództwo (rdzeń)"
+				},
+				{
+					"name": "Agile",
+					"demandPercentage": 23,
+					"category": "Metodyki zwinne i prowadzenie projektu"
+				},
+				{
+					"name": "Project Management",
+					"demandPercentage": 18,
+					"category": "Metodyki zwinne i prowadzenie projektu"
+				},
+				{
 					"name": "Jira",
 					"demandPercentage": 12,
-					"category": "Narzędzia produktowe"
+					"category": "Narzędzia pracy PO"
 				},
 				{
 					"name": "Scrum",
 					"demandPercentage": 12,
-					"category": "Product Management"
+					"category": "Metodyki zwinne i prowadzenie projektu"
 				},
 				{
 					"name": "SaaS",
 					"demandPercentage": 11,
-					"category": "Product Management"
+					"category": "Domena i systemy korporacyjne"
 				},
 				{
 					"name": "Confluence",
 					"demandPercentage": 6,
-					"category": "Narzędzia produktowe"
+					"category": "Narzędzia pracy PO"
 				},
 				{
-					"name": "Power BI",
-					"demandPercentage": 2,
-					"category": "Analiza danych produktu"
+					"name": "Business Analysis",
+					"demandPercentage": 5,
+					"category": "Analiza i wymagania"
 				},
 				{
-					"name": "SQL",
+					"name": "SAP",
+					"demandPercentage": 5,
+					"category": "Domena i systemy korporacyjne"
+				},
+				{
+					"name": "ERP",
+					"demandPercentage": 4,
+					"category": "Domena i systemy korporacyjne"
+				},
+				{
+					"name": "CRM",
+					"demandPercentage": 3,
+					"category": "Domena i systemy korporacyjne"
+				},
+				{
+					"name": "ITIL",
+					"demandPercentage": 3,
+					"category": "Domena i systemy korporacyjne"
+				},
+				{
+					"name": "Leadership",
+					"demandPercentage": 3,
+					"category": "Produkt i przywództwo (rdzeń)"
+				},
+				{
+					"name": "Kanban",
 					"demandPercentage": 2,
-					"category": "Analiza danych produktu"
+					"category": "Metodyki zwinne i prowadzenie projektu"
+				},
+				{
+					"name": "SDLC",
+					"demandPercentage": 2,
+					"category": "Analiza i wymagania"
 				}
 			]
 		},
@@ -2731,34 +2781,94 @@
 			"studentSelectable": true,
 			"competencies": [
 				{
+					"name": "Architektura systemów",
+					"demandPercentage": 46,
+					"category": "Architektura i wzorce projektowe (rdzeń roli)"
+				},
+				{
 					"name": "Java",
 					"demandPercentage": 44,
-					"category": "Języki"
+					"category": "Substrat techniczny (skąd przychodzi architekt)"
 				},
 				{
 					"name": "Python",
 					"demandPercentage": 36,
-					"category": "Języki"
+					"category": "Substrat techniczny (skąd przychodzi architekt)"
 				},
 				{
 					"name": "Kubernetes",
 					"demandPercentage": 31,
-					"category": "Komunikacja i integracja"
+					"category": "Chmura i skalowanie"
+				},
+				{
+					"name": "Azure",
+					"demandPercentage": 26,
+					"category": "Chmura i skalowanie"
 				},
 				{
 					"name": "Kafka",
 					"demandPercentage": 26,
-					"category": "Komunikacja i integracja"
+					"category": "Integracja i komunikacja systemów"
 				},
 				{
-					"name": "Azure",
-					"demandPercentage": 22,
-					"category": "Cloud"
+					"name": "ETL",
+					"demandPercentage": 12,
+					"category": "Substrat techniczny (skąd przychodzi architekt)"
+				},
+				{
+					"name": "REST / API",
+					"demandPercentage": 12,
+					"category": "Integracja i komunikacja systemów"
+				},
+				{
+					"name": "Oracle",
+					"demandPercentage": 11,
+					"category": "Integracja i komunikacja systemów"
 				},
 				{
 					"name": "GCP",
 					"demandPercentage": 10,
-					"category": "Cloud"
+					"category": "Chmura i skalowanie"
+				},
+				{
+					"name": "Docker",
+					"demandPercentage": 9,
+					"category": "Chmura i skalowanie"
+				},
+				{
+					"name": "Event Streaming",
+					"demandPercentage": 7,
+					"category": "Architektura i wzorce projektowe (rdzeń roli)"
+				},
+				{
+					"name": "WebLogic",
+					"demandPercentage": 7,
+					"category": "Integracja i komunikacja systemów"
+				},
+				{
+					"name": "Enterprise Architect",
+					"demandPercentage": 6,
+					"category": "Architektura i wzorce projektowe (rdzeń roli)"
+				},
+				{
+					"name": "TOGAF",
+					"demandPercentage": 4,
+					"category": "Architektura i wzorce projektowe (rdzeń roli)"
+				},
+				{
+					"name": "ArchiMate",
+					"demandPercentage": 3,
+					"category": "Architektura i wzorce projektowe (rdzeń roli)"
+				},
+				{
+					"name": "DDD (Domain-Driven Design)",
+					"demandPercentage": 3,
+					"category": "Architektura i wzorce projektowe (rdzeń roli)"
+				},
+				{
+					"name": "ESB",
+					"demandPercentage": 3,
+					"category": "Integracja i komunikacja systemów"
 				}
 			]
 		},
@@ -2770,32 +2880,112 @@
 				{
 					"name": "C++",
 					"demandPercentage": 77,
-					"category": "Języki"
+					"category": "Języki systemowe (rdzeń)"
 				},
 				{
 					"name": "Python",
 					"demandPercentage": 42,
-					"category": "Języki"
+					"category": "Skrypty, automatyzacja i testy"
 				},
 				{
 					"name": "C",
 					"demandPercentage": 34,
-					"category": "Języki"
+					"category": "Języki systemowe (rdzeń)"
 				},
 				{
 					"name": "Linux",
 					"demandPercentage": 32,
-					"category": "Systemy"
+					"category": "Linux niskopoziomowy i warsztat systemowy"
 				},
 				{
-					"name": "Java",
-					"demandPercentage": 22,
-					"category": "Języki"
+					"name": "AWS",
+					"demandPercentage": 11,
+					"category": "Chmura, kontenery i CI/CD (styk IoT/edge)"
 				},
 				{
-					"name": "Kotlin",
-					"demandPercentage": 13,
-					"category": "Języki"
+					"name": "CI/CD",
+					"demandPercentage": 11,
+					"category": "Chmura, kontenery i CI/CD (styk IoT/edge)"
+				},
+				{
+					"name": "Embedded Systems",
+					"demandPercentage": 9,
+					"category": "Systemy wbudowane i sprzęt"
+				},
+				{
+					"name": "Kubernetes",
+					"demandPercentage": 9,
+					"category": "Chmura, kontenery i CI/CD (styk IoT/edge)"
+				},
+				{
+					"name": "GCP",
+					"demandPercentage": 4,
+					"category": "Chmura, kontenery i CI/CD (styk IoT/edge)"
+				},
+				{
+					"name": "Rust",
+					"demandPercentage": 4,
+					"category": "Języki systemowe (rdzeń)"
+				},
+				{
+					"name": "Bash",
+					"demandPercentage": 3,
+					"category": "Linux niskopoziomowy i warsztat systemowy"
+				},
+				{
+					"name": "Docker",
+					"demandPercentage": 3,
+					"category": "Chmura, kontenery i CI/CD (styk IoT/edge)"
+				},
+				{
+					"name": "administracja systemami",
+					"demandPercentage": 2,
+					"category": "Linux niskopoziomowy i warsztat systemowy"
+				},
+				{
+					"name": "CMake",
+					"demandPercentage": 2,
+					"category": "Systemy wbudowane i sprzęt"
+				},
+				{
+					"name": "DevSecOps",
+					"demandPercentage": 2,
+					"category": "Chmura, kontenery i CI/CD (styk IoT/edge)"
+				},
+				{
+					"name": "FPGA",
+					"demandPercentage": 2,
+					"category": "Systemy wbudowane i sprzęt"
+				},
+				{
+					"name": "freeRTOS",
+					"demandPercentage": 2,
+					"category": "Systemy wbudowane i sprzęt"
+				},
+				{
+					"name": "Git",
+					"demandPercentage": 2,
+					"category": "Linux niskopoziomowy i warsztat systemowy"
+				},
+				{
+					"name": "Linux Kernel",
+					"demandPercentage": 2,
+					"category": "Linux niskopoziomowy i warsztat systemowy"
+				},
+				{
+					"name": "RTOS",
+					"demandPercentage": 2,
+					"category": "Systemy wbudowane i sprzęt"
+				},
+				{
+					"name": "sieci",
+					"demandPercentage": 2,
+					"category": "Linux niskopoziomowy i warsztat systemowy"
+				},
+				{
+					"name": "VHDL",
+					"demandPercentage": 2,
+					"category": "Systemy wbudowane i sprzęt"
 				}
 			]
 		},

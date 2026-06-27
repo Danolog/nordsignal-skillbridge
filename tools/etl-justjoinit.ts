@@ -126,6 +126,10 @@ export type ModelLeaf = {
 	kind: LeafKind; // tool | concept | cert | meta | soft — klasyfikacja konkretu
 	source: "dane" | "kuracja ekspercka";
 	note?: string; // np. „brak w zrzucie 2026-02"
+	// true = override IN poniżej bramki wolumenu — liść przechodzi do płaskiego katalogu mimo
+	// offers < countMin (kuracja Sophii, Solution Architect partia 5). Emitowane TYLKO gdy true
+	// (pominięte = JSON bajt-stabilny dla ścieżek bez override — deep-equal regenu).
+	keepBelowGate?: boolean;
 };
 export type ModelArea = {
 	name: string;
@@ -765,6 +769,9 @@ export function buildCareerModel(
 					offers,
 					kind,
 					source: "dane",
+					// Emit TYLKO gdy true — inaczej pole pominięte i JSON pozostaje bajt-stabilny
+					// dla wszystkich ścieżek bez override (deep-equal regenu, neutralność bramki).
+					...(leaf.keepBelowGate ? { keepBelowGate: true } : {}),
 				};
 			});
 			// Dyskryminator JAWNY (poprawka Leo, ETAP A) — % liczymy WYŁĄCZNIE po `area.type`,
@@ -843,7 +850,11 @@ export function flattenLeaves(model: CareerModel): CareerGoalEntry[] {
 			for (const leaf of area.leaves) {
 				if (leaf.demandPercentage === null) continue; // absent — tylko w hierarchii
 				if (leaf.kind === "meta") continue; // twarda blokada etykiet-kategorii
-				if ((leaf.offers ?? 0) < countMin) continue; // za mały wolumen (szum) — precz
+				// Bramka wolumenu: liść poniżej progu wypada — CHYBA że świadomy override IN
+				// (keepBelowGate, kuracja Sophii): liść definiujący rolę (TOGAF/ArchiMate/DDD/ESB
+				// u cienkiego Solution Architecta) przeżywa mimo n<countMin. META i rounded<1 nadal
+				// obowiązują (override nie obchodzi blokady etykiet ani bezpiecznika integer NOT NULL).
+				if (!leaf.keepBelowGate && (leaf.offers ?? 0) < countMin) continue; // za mały wolumen (szum) — precz
 				const rounded = Math.round(leaf.demandPercentage);
 				if (rounded < 1) continue; // bezpiecznik kolumny integer NOT NULL
 				const prev = byLeaf.get(leaf.name);

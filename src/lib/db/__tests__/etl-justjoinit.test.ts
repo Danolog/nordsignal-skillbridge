@@ -637,7 +637,7 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		}
 	});
 
-	it("KURACJA A5 (partia 1+2+3+4) zachowana: context-group z opisem + unionShare; kind Sophii (tool/concept/cert)", () => {
+	it("KURACJA A5 (partia 1+2+3+4+5) zachowana: context-group z opisem + unionShare; kind Sophii (tool/concept/cert)", () => {
 		const expected: Record<string, number> = {
 			// Partia 1
 			"QA Engineer": 8,
@@ -658,6 +658,10 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 			"Business Analyst": 5,
 			"Salesforce Developer": 5,
 			"Project Manager": 4,
+			// Partia 5 (ostatnia nie-patologiczna trójka)
+			"Embedded / C++ Developer": 5,
+			"Solution Architect": 4,
+			"Product Owner / Manager": 5,
 		};
 		for (const [goal, n] of Object.entries(expected)) {
 			const path = model.paths.find((p) => p.careerGoal === goal);
@@ -692,13 +696,14 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		}
 	});
 
-	it("liście absent: null + kuracja ekspercka; obecne: number + dane", () => {
+	it("liście: kontrakt kształtu (null → kuracja ekspercka; number → dane); po partii 5 katalog w pełni z danych", () => {
 		let absentSeen = 0;
 		let presentSeen = 0;
 		for (const path of model.paths) {
 			for (const area of path.areas) {
 				for (const leaf of area.leaves) {
 					if (leaf.demandPercentage === null) {
+						// Kontrakt nadal egzekwowany, gdyby przyszła partia dodała liść-absent.
 						expect(leaf.source).toBe("kuracja ekspercka");
 						absentSeen++;
 					} else {
@@ -708,7 +713,10 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 				}
 			}
 		}
-		expect(absentSeen).toBeGreaterThan(0); // Jupyter / Miro / GitLab CI / OWASP
+		// A5 partia 5: kuracja PO/Manager z danych (bez Miro) usunęła ostatni liść-absent
+		// w katalogu (Miro był jedynym na c5cd860). Po pełnej kuracji 1–5 wszystkie liście
+		// pochodzą z danych — invariant odzwierciedla rzeczywisty stan artefaktu.
+		expect(absentSeen).toBe(0);
 		expect(presentSeen).toBeGreaterThan(0);
 	});
 

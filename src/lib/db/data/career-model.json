@@ -5724,9 +5724,91 @@
 			"tShapePairs": [],
 			"areas": [
 				{
-					"name": "Narzędzia produktowe",
-					"type": "presentation-group",
+					"name": "Produkt i przywództwo (rdzeń)",
+					"type": "context-group",
 					"demandPercentage": null,
+					"description": "Serce roli — odpowiedzialność za to, CO powstaje i DLACZEGO. Product Management (35% ofert, drugi najsilniejszy sygnał) to zarządzanie produktem: ustalanie, które funkcje budujemy i w jakiej kolejności, na podstawie wartości dla użytkownika. Myślenie analityczne (Analytical Thinking — najsilniejszy sygnał roli, 39%) to fundament: PO podejmuje decyzje na danych, nie na przeczuciu. Przywództwo (Leadership) domyka rdzeń — PO prowadzi zespół bez formalnej władzy nad nim.",
+					"unionShare": 69.1,
+					"leaves": [
+						{
+							"name": "Product Management",
+							"type": "leaf",
+							"demandPercentage": 34.9,
+							"lift": 32.10340079856809,
+							"offers": 94,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Myślenie analityczne (Analytical Thinking)",
+							"type": "leaf",
+							"demandPercentage": 38.7,
+							"lift": 18.990172623210277,
+							"offers": 104,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Leadership",
+							"type": "leaf",
+							"demandPercentage": 3,
+							"lift": 3.6884758364312265,
+							"offers": 8,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Metodyki zwinne i prowadzenie projektu",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Sposób, w jaki PO prowadzi pracę zespołu. Agile (23% ofert) to zwinne podejście: budujesz w krótkich cyklach i często weryfikujesz z użytkownikiem, zamiast planować wszystko z góry. Scrum i Kanban to konkretne odmiany zwinności (Scrum — praca w stałych „sprintach”; Kanban — ciągły przepływ zadań). Project Management (18%) to rama prowadzenia całości do terminu i budżetu.",
+					"unionShare": 40.9,
+					"leaves": [
+						{
+							"name": "Agile",
+							"type": "leaf",
+							"demandPercentage": 22.7,
+							"lift": 3.8592971873465665,
+							"offers": 61,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Scrum",
+							"type": "leaf",
+							"demandPercentage": 11.9,
+							"lift": 4.371526917251824,
+							"offers": 32,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Kanban",
+							"type": "leaf",
+							"demandPercentage": 1.5,
+							"lift": 3.7830521399294628,
+							"offers": 4,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Project Management",
+							"type": "leaf",
+							"demandPercentage": 17.8,
+							"lift": 4.837345359254067,
+							"offers": 48,
+							"kind": "concept",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Narzędzia pracy PO",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Oprogramowanie, w którym PO faktycznie prowadzi produkt. Jira (12% ofert) trzyma listę zadań i postęp zespołu, Confluence to wiki, gdzie PO opisuje wymagania, decyzje i mapę rozwoju produktu (roadmapę).",
 					"unionShare": 12.6,
 					"leaves": [
 						{
@@ -5746,67 +5828,86 @@
 							"offers": 15,
 							"kind": "tool",
 							"source": "dane"
-						},
-						{
-							"name": "Miro",
-							"type": "leaf",
-							"demandPercentage": null,
-							"lift": null,
-							"offers": null,
-							"kind": "tool",
-							"source": "kuracja ekspercka",
-							"note": "brak w zrzucie 2026-02"
 						}
 					]
 				},
 				{
-					"name": "Analiza danych produktu",
-					"type": "presentation-group",
+					"name": "Analiza i wymagania",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 3.3,
+					"description": "PO tłumaczy potrzeby biznesu na konkretne wymagania, które zespół zbuduje. Analiza biznesowa to rdzeń tej pracy (zrozumienie, jaki problem właściwie rozwiązujemy), a SDLC (cykl życia oprogramowania — od pomysłu, przez budowę, po utrzymanie) to rama, w której PO się porusza.",
+					"unionShare": 7.4,
 					"leaves": [
 						{
-							"name": "SQL",
+							"name": "Business Analysis",
 							"type": "leaf",
-							"demandPercentage": 1.9,
-							"lift": 0.10778713724229186,
-							"offers": 5,
-							"kind": "tool",
+							"demandPercentage": 5.2,
+							"lift": 2.4243503150252197,
+							"offers": 14,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
-							"name": "Power BI",
+							"name": "SDLC",
 							"type": "leaf",
-							"demandPercentage": 1.5,
-							"lift": 0.7889787885414388,
-							"offers": 4,
-							"kind": "tool",
+							"demandPercentage": 2.2,
+							"lift": 3.457946096654275,
+							"offers": 6,
+							"kind": "concept",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Product Management",
-					"type": "knowledge-area",
-					"demandPercentage": 35,
-					"unionShare": 22.7,
+					"name": "Domena i systemy korporacyjne",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Kontekst, w którym pracuje PO — często produkt cyfrowy lub system korporacyjny. SaaS (11% ofert — oprogramowanie sprzedawane jako usługa abonamentowa, np. Netflix dla firm) to dziś dominujący model produktu, w którym PO buduje. CRM (system zarządzania relacjami z klientem), ERP i SAP (systemy do zarządzania całą firmą — finanse, magazyn, kadry) oraz ITIL (zbiór dobrych praktyk zarządzania usługami IT) to światy, w których PO produktu wewnętrznego się porusza.",
+					"unionShare": 21.9,
 					"leaves": [
-						{
-							"name": "Scrum",
-							"type": "leaf",
-							"demandPercentage": 11.9,
-							"lift": 4.371526917251824,
-							"offers": 32,
-							"kind": "tool",
-							"source": "dane"
-						},
 						{
 							"name": "SaaS",
 							"type": "leaf",
 							"demandPercentage": 11.2,
 							"lift": 20.491532424617926,
 							"offers": 30,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "CRM",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 3.1486988847583643,
+							"offers": 7,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "SAP",
+							"type": "leaf",
+							"demandPercentage": 4.8,
+							"lift": 2.0938945796334476,
+							"offers": 13,
 							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "ERP",
+							"type": "leaf",
+							"demandPercentage": 3.7,
+							"lift": 2.157003413117677,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "ITIL",
+							"type": "leaf",
+							"demandPercentage": 2.6,
+							"lift": 2.1516109045848824,
+							"offers": 7,
+							"kind": "cert",
 							"source": "dane"
 						}
 					]
@@ -6340,61 +6441,148 @@
 			"note": "Rola docelowa, nie punkt startu — wymaga podstaw programistycznych. Widoczna jako cel awansu.",
 			"areas": [
 				{
-					"name": "Projektowanie (Architecture)",
-					"type": "knowledge-area",
-					"demandPercentage": 46,
-					"unionShare": 2.5,
+					"name": "Architektura i wzorce projektowe (rdzeń roli)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Serce roli — projektowanie, jak system ma być zbudowany, zanim padnie pierwsza linia kodu. Architektura (45,7% ofert) to świadome decyzje o podziale systemu na części i ich współpracy. DDD (Domain-Driven Design — projektowanie wokół pojęć biznesowych, nie technicznych) i Event Streaming (architektura oparta na strumieniu zdarzeń — system reaguje na zdarzenia w czasie rzeczywistym) to konkretne style. TOGAF i ArchiMate to ramy i notacja architektury korporacyjnej (jak opisać architekturę całej organizacji), a Enterprise Architect to program, w którym się to rysuje. Te ostatnie pojawiają się w niewielu ofertach, ale to one odróżniają architekta od seniora-programisty.",
+					"unionShare": 48.1,
 					"leaves": [
 						{
-							"name": "C4",
+							"name": "Architektura systemów",
 							"type": "leaf",
-							"demandPercentage": 1.2,
-							"lift": 61.24691358024691,
-							"offers": 1,
-							"kind": "tool",
+							"demandPercentage": 45.7,
+							"lift": 45.78052126200274,
+							"offers": 37,
+							"kind": "concept",
 							"source": "dane"
 						},
 						{
-							"name": "UML",
+							"name": "DDD (Domain-Driven Design)",
 							"type": "leaf",
 							"demandPercentage": 2.5,
-							"lift": 0.7491977196360479,
+							"lift": 5.833039388594944,
 							"offers": 2,
+							"kind": "concept",
+							"source": "dane",
+							"keepBelowGate": true
+						},
+						{
+							"name": "Event Streaming",
+							"type": "leaf",
+							"demandPercentage": 7.4,
+							"lift": 122.49382716049382,
+							"offers": 6,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "TOGAF",
+							"type": "leaf",
+							"demandPercentage": 3.7,
+							"lift": 13.61042524005487,
+							"offers": 3,
+							"kind": "concept",
+							"source": "dane",
+							"keepBelowGate": true
+						},
+						{
+							"name": "ArchiMate",
+							"type": "leaf",
+							"demandPercentage": 2.5,
+							"lift": 13.61042524005487,
+							"offers": 2,
+							"kind": "concept",
+							"source": "dane",
+							"keepBelowGate": true
+						},
+						{
+							"name": "Enterprise Architect",
+							"type": "leaf",
+							"demandPercentage": 6.2,
+							"lift": 4.110531112768249,
+							"offers": 5,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Komunikacja i integracja",
-					"type": "presentation-group",
+					"name": "Integracja i komunikacja systemów",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 46.9,
+					"description": "Praca architekta to w dużej mierze spinanie wielu systemów, żeby gadały ze sobą poprawnie i skalowalnie. Kafka to standard komunikacji strumieniowej (jeden system wysyła zdarzenia, inne je odbierają), API w stylu REST (interfejs, przez który programy się wołają) to podstawa integracji, ESB (szyna integracyjna — centralny punkt spinający systemy korporacyjne) i WebLogic to świat dużych systemów korporacyjnych, Oracle to klasyczna baza w ich centrum.",
+					"unionShare": 34.6,
 					"leaves": [
 						{
 							"name": "Kafka",
 							"type": "leaf",
 							"demandPercentage": 25.9,
-							"lift": 6.646951861422146,
+							"lift": 6.664171943964689,
 							"offers": 21,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "RabbitMQ",
+							"name": "REST / API",
 							"type": "leaf",
-							"demandPercentage": 3.7,
-							"lift": 3.434406368985808,
-							"offers": 3,
+							"demandPercentage": 12.3,
+							"lift": 1.2237145570478902,
+							"offers": 10,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "ESB",
+							"type": "leaf",
+							"demandPercentage": 2.5,
+							"lift": 17.49911816578483,
+							"offers": 2,
+							"kind": "concept",
+							"source": "dane",
+							"keepBelowGate": true
+						},
+						{
+							"name": "WebLogic",
+							"type": "leaf",
+							"demandPercentage": 7.4,
+							"lift": 45.93518518518518,
+							"offers": 6,
 							"kind": "tool",
 							"source": "dane"
 						},
 						{
-							"name": "gRPC",
+							"name": "Oracle",
 							"type": "leaf",
-							"demandPercentage": 0,
-							"lift": 0,
-							"offers": 0,
+							"demandPercentage": 11.1,
+							"lift": 4.731521220791607,
+							"offers": 9,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Chmura i skalowanie",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Nowoczesny architekt projektuje systemy działające w chmurze i odporne na obciążenie. Azure (22% ofert) i GCP to platformy chmurowe, Kubernetes uruchamia aplikacje na skalę (sam dokłada i odejmuje moc pod obciążeniem), Docker pakuje je w kontenery. To warstwa, w której architekt decyduje, jak system rośnie wraz z liczbą użytkowników.",
+					"unionShare": 53.1,
+					"leaves": [
+						{
+							"name": "Azure",
+							"type": "leaf",
+							"demandPercentage": 25.9,
+							"lift": 2.690763985743065,
+							"offers": 21,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 9.9,
+							"lift": 2.107420682331077,
+							"offers": 8,
 							"kind": "tool",
 							"source": "dane"
 						},
@@ -6406,14 +6594,24 @@
 							"offers": 25,
 							"kind": "tool",
 							"source": "dane"
+						},
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 8.6,
+							"lift": 1.1372105969807118,
+							"offers": 7,
+							"kind": "tool",
+							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Języki",
-					"type": "presentation-group",
+					"name": "Substrat techniczny (skąd przychodzi architekt)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 60.5,
+					"description": "Architekt rozwiązań to zwykle senior, który wyrósł z konkretnego stosu technicznego — i oferty to odzwierciedlają. Java (44% ofert) i Python (36%) to dwa najczęstsze języki, z których architekci w PL przychodzą; ETL (Extract-Transform-Load — wzorzec przenoszenia danych ze źródła do hurtowni) pojawia się przy architekturze danych. To NIE są umiejętności, które czynią Cię architektem — to fundament, na którym architektura się buduje. Pokazujemy je uczciwie, ale nazwa grupy mówi wprost: to substrat, nie istota roli.",
+					"unionShare": 65.4,
 					"leaves": [
 						{
 							"name": "Java",
@@ -6432,40 +6630,14 @@
 							"offers": 29,
 							"kind": "tool",
 							"source": "dane"
-						}
-					]
-				},
-				{
-					"name": "Cloud",
-					"type": "knowledge-area",
-					"demandPercentage": 27,
-					"unionShare": 33.3,
-					"leaves": [
-						{
-							"name": "AWS",
-							"type": "leaf",
-							"demandPercentage": 1.2,
-							"lift": 0.13999294532627865,
-							"offers": 1,
-							"kind": "tool",
-							"source": "dane"
 						},
 						{
-							"name": "Azure",
+							"name": "ETL",
 							"type": "leaf",
-							"demandPercentage": 22.2,
-							"lift": 2.9635603345280765,
-							"offers": 18,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "GCP",
-							"type": "leaf",
-							"demandPercentage": 9.9,
-							"lift": 2.8404365718375377,
-							"offers": 8,
-							"kind": "tool",
+							"demandPercentage": 12.3,
+							"lift": 4.747822758158676,
+							"offers": 10,
+							"kind": "concept",
 							"source": "dane"
 						}
 					]
@@ -6500,10 +6672,11 @@
 			"note": "Było „Software Engineer”; przemianowane (dyrektywa 3) — realny profil C++ 74%.",
 			"areas": [
 				{
-					"name": "Języki",
-					"type": "presentation-group",
+					"name": "Języki systemowe (rdzeń)",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 98.9,
+					"description": "Serce roli — języki, w których pisze się oprogramowanie blisko sprzętu, gdzie liczy się każdy bajt pamięci i mikrosekunda. C++ rządzi bezwzględnie (prawie 8 na 10 ofert), a czysty C (co trzecia oferta) to język sterowników i najmniejszych układów. Rust to nowocześniejszy język systemowy, który wchodzi tam, gdzie zależy nam na bezpieczeństwie pamięci bez utraty wydajności. To fundament, od którego zaczyna każdy junior embedded.",
+					"unionShare": 81.4,
 					"leaves": [
 						{
 							"name": "C++",
@@ -6524,39 +6697,85 @@
 							"source": "dane"
 						},
 						{
-							"name": "Python",
+							"name": "Rust",
 							"type": "leaf",
-							"demandPercentage": 41.5,
-							"lift": 2.0460111670403114,
-							"offers": 78,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Java",
-							"type": "leaf",
-							"demandPercentage": 21.8,
-							"lift": 1.5623396574237656,
-							"offers": 41,
-							"kind": "tool",
-							"source": "dane"
-						},
-						{
-							"name": "Kotlin",
-							"type": "leaf",
-							"demandPercentage": 12.8,
-							"lift": 5.322009654925799,
-							"offers": 24,
+							"demandPercentage": 3.7,
+							"lift": 10.555319148936169,
+							"offers": 7,
 							"kind": "tool",
 							"source": "dane"
 						}
 					]
 				},
 				{
-					"name": "Systemy",
-					"type": "presentation-group",
+					"name": "Systemy wbudowane i sprzęt",
+					"type": "context-group",
 					"demandPercentage": null,
-					"unionShare": 31.9,
+					"description": "To, co odróżnia embedded od „zwykłego” programowania w C++ — kod działa na fizycznym urządzeniu, nie na serwerze. Systemy wbudowane (embedded) to oprogramowanie zaszyte w sprzęcie: pralce, sterowniku samochodu, czujniku. freeRTOS i RTOS to systemy operacyjne czasu rzeczywistego (gwarantują reakcję w ściśle określonym czasie — krytyczne, gdy poduszka powietrzna ma się otworzyć w 20 milisekund). FPGA i VHDL to świat układów programowalnych (projektujesz sam obwód logiczny, nie tylko program), CMake składa projekt w gotowy plik wykonywalny.",
+					"unionShare": 13.8,
+					"leaves": [
+						{
+							"name": "Embedded Systems",
+							"type": "leaf",
+							"demandPercentage": 9,
+							"lift": 26.388297872340427,
+							"offers": 17,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "freeRTOS",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 52.77659574468085,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "RTOS",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 21.110638297872338,
+							"offers": 4,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "FPGA",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 23.45626477541371,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "VHDL",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 26.388297872340424,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "CMake",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 26.388297872340424,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Linux niskopoziomowy i warsztat systemowy",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Embedded i C++ niemal zawsze żyją na Linuksie — to system, na którym kompilujesz, debugujesz i często który sam wgrywasz na urządzenie. Linux (co trzecia oferta) i jego jądro (Linux Kernel — najgłębsza warstwa, którą embedded dev czasem modyfikuje pod konkretny sprzęt) to rdzeń warsztatu. Bash automatyzuje powtarzalne komendy, administracja systemami i sieci pojawiają się tam, gdzie urządzenie musi działać w infrastrukturze. Git trzyma historię zmian w kodzie.",
+					"unionShare": 34,
 					"leaves": [
 						{
 							"name": "Linux",
@@ -6565,6 +6784,132 @@
 							"lift": 5.918870550805329,
 							"offers": 60,
 							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Linux Kernel",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 23.45626477541371,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Bash",
+							"type": "leaf",
+							"demandPercentage": 2.7,
+							"lift": 1.6390247125677284,
+							"offers": 5,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "administracja systemami",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 52.77659574468085,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "sieci",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 52.77659574468085,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Git",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 0.41886187098953054,
+							"offers": 4,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Skrypty, automatyzacja i testy",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Wbrew stereotypowi „embedded to tylko C”, Python jest drugim najsilniejszym sygnałem roli (41,5% ofert) — nie do produkcyjnego kodu na urządzeniu, lecz do narzędzi: skryptów budujących, automatyzacji testów (program, który sam sprawdza, czy układ reaguje poprawnie) i analizy danych z czujników. To uczciwy obraz rynku 2026: junior embedded w PL realnie potrzebuje Pythona obok C++.",
+					"unionShare": 41.5,
+					"leaves": [
+						{
+							"name": "Python",
+							"type": "leaf",
+							"demandPercentage": 41.5,
+							"lift": 2.0460111670403114,
+							"offers": 78,
+							"kind": "tool",
+							"source": "dane"
+						}
+					]
+				},
+				{
+					"name": "Chmura, kontenery i CI/CD (styk IoT/edge)",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Coraz więcej urządzeń łączy się z chmurą (IoT — internet rzeczy: sprzęt, który wysyła dane do serwera) i część ofert embedded oczekuje, że ogarniesz też tę stronę. CI/CD (taśma automatycznego budowania i wdrażania) buduje i testuje firmware, Docker pakuje narzędzia w kontener, Kubernetes uruchamia je na skalę, AWS i GCP to chmury, do których urządzenie raportuje. DevSecOps domyka warsztat bezpieczeństwem wbudowanym w proces.",
+					"unionShare": 27.1,
+					"leaves": [
+						{
+							"name": "CI/CD",
+							"type": "leaf",
+							"demandPercentage": 10.6,
+							"lift": 1.1301198232265708,
+							"offers": 20,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Docker",
+							"type": "leaf",
+							"demandPercentage": 2.7,
+							"lift": 0.3499774253626051,
+							"offers": 5,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "Kubernetes",
+							"type": "leaf",
+							"demandPercentage": 8.5,
+							"lift": 1.03737780333525,
+							"offers": 16,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "AWS",
+							"type": "leaf",
+							"demandPercentage": 11.2,
+							"lift": 1.125186305216546,
+							"offers": 21,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "GCP",
+							"type": "leaf",
+							"demandPercentage": 3.7,
+							"lift": 0.7944863875543354,
+							"offers": 7,
+							"kind": "tool",
+							"source": "dane"
+						},
+						{
+							"name": "DevSecOps",
+							"type": "leaf",
+							"demandPercentage": 2.1,
+							"lift": 10.052684903748734,
+							"offers": 4,
+							"kind": "concept",
 							"source": "dane"
 						}
 					]

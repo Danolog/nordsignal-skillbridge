@@ -55,6 +55,13 @@ export type LeafSpec = {
 	// true = narzędzie realnie nieobecne w zrzucie 2026-02 → demandPercentage:null,
 	// source:"kuracja ekspercka", label „brak w zrzucie 2026-02".
 	absent?: boolean;
+	// true = liść ŚWIADOMIE zachowany w PŁASKIM KATALOGU mimo offers < countMin (override IN
+	// poniżej bramki minimalnego wolumenu). Jedyne użycie: Solution Architect partia 5
+	// (TOGAF/ArchiMate/DDD/ESB, n=2–3) — kuracja Sophii: bez tych liści katalog architekta
+	// kłamie „senior Java + chmura". NIE rusza hierarchii (liść i tak był w modelu); zmienia
+	// WYŁĄCZNIE bramkę wolumenu w `flattenLeaves`. Domyślnie undefined = bramka działa normalnie
+	// (neutralne dla wszystkich pozostałych ścieżek — udowodnione deep-equalem regenu).
+	keepBelowGate?: boolean;
 };
 
 /** Obszar wiedzy / grupnik / GRUPA z kontekstem → liście. */
@@ -2188,22 +2195,79 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 5 2026-06-27 (scratchpad/sophia-a4-partia5.md) — 5 grup
+		// context-group na 269 ofertach, rola zarządcza (dominują koncepcje/metodyki, mało
+		// „tool"). Scalenia UNIĄ (countAsUnion): Business Analysis←Analiza Biznesowa (zrzut
+		// dwujęzyczny). `kind` Sophii: metodyki/kompetencje zarządcze = concept, ITIL = cert.
+		// Analytical Thinking WŁĄCZONY jako concept rdzeniowy (najsilniejszy sygnał, 39%) —
+		// świadome rozstrzygnięcie niespójności z partią 4 (Sygnał #5). Wykluczone: AI (buzzword
+		// 19%), „product owner" (nazwa roli), przeciek tech (Azure/Python/Backend/SQL/ML/Testing).
 		label: "Product Owner / Manager",
 		areas: [
 			{
-				name: "Narzędzia produktowe",
-				type: "presentation-group",
-				leaves: [{ name: "Jira" }, { name: "Confluence" }, { name: "Miro", absent: true }],
+				name: "Produkt i przywództwo (rdzeń)",
+				type: "context-group",
+				description:
+					"Serce roli — odpowiedzialność za to, CO powstaje i DLACZEGO. Product Management (35% ofert, drugi najsilniejszy sygnał) to zarządzanie produktem: ustalanie, które funkcje budujemy i w jakiej kolejności, na podstawie wartości dla użytkownika. Myślenie analityczne (Analytical Thinking — najsilniejszy sygnał roli, 39%) to fundament: PO podejmuje decyzje na danych, nie na przeczuciu. Przywództwo (Leadership) domyka rdzeń — PO prowadzi zespół bez formalnej władzy nad nim.",
+				leaves: [
+					{ name: "Product Management", kind: "concept" },
+					{
+						name: "Myślenie analityczne (Analytical Thinking)",
+						countAs: ["Analytical Thinking"],
+						kind: "concept",
+					},
+					{ name: "Leadership", kind: "concept" },
+				],
 			},
 			{
-				name: "Analiza danych produktu",
-				type: "presentation-group",
-				leaves: [{ name: "SQL" }, { name: "Power BI" }],
+				name: "Metodyki zwinne i prowadzenie projektu",
+				type: "context-group",
+				description:
+					"Sposób, w jaki PO prowadzi pracę zespołu. Agile (23% ofert) to zwinne podejście: budujesz w krótkich cyklach i często weryfikujesz z użytkownikiem, zamiast planować wszystko z góry. Scrum i Kanban to konkretne odmiany zwinności (Scrum — praca w stałych „sprintach”; Kanban — ciągły przepływ zadań). Project Management (18%) to rama prowadzenia całości do terminu i budżetu.",
+				leaves: [
+					{ name: "Agile", kind: "concept" },
+					{ name: "Scrum", kind: "concept" },
+					{ name: "Kanban", kind: "concept" },
+					{ name: "Project Management", kind: "concept" },
+				],
 			},
 			{
-				name: "Product Management",
-				type: "knowledge-area",
-				leaves: [{ name: "Scrum" }, { name: "SaaS" }],
+				name: "Narzędzia pracy PO",
+				type: "context-group",
+				description:
+					"Oprogramowanie, w którym PO faktycznie prowadzi produkt. Jira (12% ofert) trzyma listę zadań i postęp zespołu, Confluence to wiki, gdzie PO opisuje wymagania, decyzje i mapę rozwoju produktu (roadmapę).",
+				leaves: [
+					{ name: "Jira", kind: "tool" },
+					{ name: "Confluence", kind: "tool" },
+				],
+			},
+			{
+				name: "Analiza i wymagania",
+				type: "context-group",
+				description:
+					"PO tłumaczy potrzeby biznesu na konkretne wymagania, które zespół zbuduje. Analiza biznesowa to rdzeń tej pracy (zrozumienie, jaki problem właściwie rozwiązujemy), a SDLC (cykl życia oprogramowania — od pomysłu, przez budowę, po utrzymanie) to rama, w której PO się porusza.",
+				leaves: [
+					{
+						name: "Business Analysis",
+						countAs: ["Business Analysis", "Analiza Biznesowa"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "SDLC", kind: "concept" },
+				],
+			},
+			{
+				name: "Domena i systemy korporacyjne",
+				type: "context-group",
+				description:
+					"Kontekst, w którym pracuje PO — często produkt cyfrowy lub system korporacyjny. SaaS (11% ofert — oprogramowanie sprzedawane jako usługa abonamentowa, np. Netflix dla firm) to dziś dominujący model produktu, w którym PO buduje. CRM (system zarządzania relacjami z klientem), ERP i SAP (systemy do zarządzania całą firmą — finanse, magazyn, kadry) oraz ITIL (zbiór dobrych praktyk zarządzania usługami IT) to światy, w których PO produktu wewnętrznego się porusza.",
+				leaves: [
+					{ name: "SaaS", kind: "concept" },
+					{ name: "CRM", kind: "concept" },
+					{ name: "SAP", kind: "tool" },
+					{ name: "ERP", kind: "concept" },
+					{ name: "ITIL", kind: "cert" },
+				],
 			},
 		],
 	},
@@ -2335,56 +2399,168 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 5 2026-06-27 (scratchpad/sophia-a4-partia5.md) — 4 grupy
+		// context-group na 81 ofertach. ŚCIEŻKA CIENKA (najmniej ofert w katalogu), ale NIE
+		// patologiczna: Architektura #1 (45,7%), konkrety architekta obecne. Scalenia UNIĄ
+		// (countAsUnion): REST/API (4 warianty), Kafka, Azure (3 zapisy), GCP. OVERRIDE IN poniżej
+		// bramki wolumenu (keepBelowGate, n=2–3): TOGAF/ArchiMate/DDD/ESB — leksykon definiujący
+		// architekta; bez nich katalog = „senior Java + chmura". Wykluczone: Cloud (meta), AI
+		// (buzzword 36%), English/Python 3.x. Cienkość oddana w prozie (grupa 4 = „substrat,
+		// nie istota"), BEZ flagi „dane wstępne" (decyzja UI Darka, etap C — Sygnał #1).
 		label: "Solution Architect",
 		note: "Rola wymagająca podstaw programistycznych — informacja, nie blokada wyboru.",
 		areas: [
 			{
-				name: "Projektowanie (Architecture)",
-				type: "knowledge-area",
-				demandAs: ["Architecture"],
-				leaves: [{ name: "C4" }, { name: "UML" }],
-			},
-			{
-				name: "Komunikacja i integracja",
-				type: "presentation-group",
+				name: "Architektura i wzorce projektowe (rdzeń roli)",
+				type: "context-group",
+				description:
+					"Serce roli — projektowanie, jak system ma być zbudowany, zanim padnie pierwsza linia kodu. Architektura (45,7% ofert) to świadome decyzje o podziale systemu na części i ich współpracy. DDD (Domain-Driven Design — projektowanie wokół pojęć biznesowych, nie technicznych) i Event Streaming (architektura oparta na strumieniu zdarzeń — system reaguje na zdarzenia w czasie rzeczywistym) to konkretne style. TOGAF i ArchiMate to ramy i notacja architektury korporacyjnej (jak opisać architekturę całej organizacji), a Enterprise Architect to program, w którym się to rysuje. Te ostatnie pojawiają się w niewielu ofertach, ale to one odróżniają architekta od seniora-programisty.",
 				leaves: [
-					{ name: "Kafka", countAs: ["Kafka", "Apache Kafka"] },
-					{ name: "RabbitMQ" },
-					{ name: "gRPC" },
-					{ name: "Kubernetes" },
+					{ name: "Architektura systemów", countAs: ["Architecture"], kind: "concept" },
+					{
+						name: "DDD (Domain-Driven Design)",
+						countAs: ["DDD"],
+						kind: "concept",
+						keepBelowGate: true,
+					},
+					{ name: "Event Streaming", kind: "concept" },
+					{ name: "TOGAF", kind: "concept", keepBelowGate: true },
+					{ name: "ArchiMate", kind: "concept", keepBelowGate: true },
+					{ name: "Enterprise Architect", kind: "tool" },
 				],
 			},
 			{
-				name: "Języki",
-				type: "presentation-group",
-				leaves: [{ name: "Java" }, { name: "Python" }],
+				name: "Integracja i komunikacja systemów",
+				type: "context-group",
+				description:
+					"Praca architekta to w dużej mierze spinanie wielu systemów, żeby gadały ze sobą poprawnie i skalowalnie. Kafka to standard komunikacji strumieniowej (jeden system wysyła zdarzenia, inne je odbierają), API w stylu REST (interfejs, przez który programy się wołają) to podstawa integracji, ESB (szyna integracyjna — centralny punkt spinający systemy korporacyjne) i WebLogic to świat dużych systemów korporacyjnych, Oracle to klasyczna baza w ich centrum.",
+				leaves: [
+					{ name: "Kafka", countAs: ["Kafka", "Apache Kafka"], countAsUnion: true, kind: "tool" },
+					{
+						name: "REST / API",
+						countAs: ["RESTful API", "API", "REST API", "REST"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "ESB", kind: "concept", keepBelowGate: true },
+					{ name: "WebLogic", kind: "tool" },
+					{ name: "Oracle", kind: "tool" },
+				],
 			},
 			{
-				name: "Cloud",
-				type: "knowledge-area",
-				leaves: [{ name: "AWS" }, { name: "Azure" }, { name: "GCP" }],
+				name: "Chmura i skalowanie",
+				type: "context-group",
+				description:
+					"Nowoczesny architekt projektuje systemy działające w chmurze i odporne na obciążenie. Azure (22% ofert) i GCP to platformy chmurowe, Kubernetes uruchamia aplikacje na skalę (sam dokłada i odejmuje moc pod obciążeniem), Docker pakuje je w kontenery. To warstwa, w której architekt decyduje, jak system rośnie wraz z liczbą użytkowników.",
+				leaves: [
+					{
+						name: "Azure",
+						countAs: ["Azure", "Microsoft Azure", "MS Azure"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{
+						name: "GCP",
+						countAs: ["GCP", "Google Cloud Platform"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "Kubernetes", kind: "tool" },
+					{ name: "Docker", kind: "tool" },
+				],
+			},
+			{
+				name: "Substrat techniczny (skąd przychodzi architekt)",
+				type: "context-group",
+				description:
+					"Architekt rozwiązań to zwykle senior, który wyrósł z konkretnego stosu technicznego — i oferty to odzwierciedlają. Java (44% ofert) i Python (36%) to dwa najczęstsze języki, z których architekci w PL przychodzą; ETL (Extract-Transform-Load — wzorzec przenoszenia danych ze źródła do hurtowni) pojawia się przy architekturze danych. To NIE są umiejętności, które czynią Cię architektem — to fundament, na którym architektura się buduje. Pokazujemy je uczciwie, ale nazwa grupy mówi wprost: to substrat, nie istota roli.",
+				leaves: [
+					{ name: "Java", kind: "tool" },
+					{ name: "Python", kind: "tool" },
+					{ name: "ETL", kind: "concept" },
+				],
 			},
 		],
 	},
 	{
+		// KURACJA SOPHII A4 partia 5 2026-06-27 (scratchpad/sophia-a4-partia5.md) — 5 grup
+		// context-group na 188 ofertach, rdzeń wyrazisty (C++ 76,6%, C 33,5%, Linux 31,9%).
+		// Scalenia UNIĄ (countAsUnion): Embedded Systems←Embedded (nazwa domeny, dwa zapisy),
+		// AWS/GCP (chmury). `kind` Sophii: Embedded Systems/RTOS/CI/CD/DevSecOps = concept, języki/
+		// sprzęt = tool. Wykluczone: gamedev (Scratch/Roblox/Unity/LUA — szum anchora), przeciek
+		// mobile (Kotlin/Java — Android/backend, NIE rdzeń embedded; Sygnał #2), C#/JS/ML/soft.
 		label: "Embedded / C++ Developer",
 		note: "Było „Software Engineer”; przemianowane (dyrektywa 3) — realny profil C++ 74%.",
 		areas: [
 			{
-				name: "Języki",
-				type: "presentation-group",
+				name: "Języki systemowe (rdzeń)",
+				type: "context-group",
+				description:
+					"Serce roli — języki, w których pisze się oprogramowanie blisko sprzętu, gdzie liczy się każdy bajt pamięci i mikrosekunda. C++ rządzi bezwzględnie (prawie 8 na 10 ofert), a czysty C (co trzecia oferta) to język sterowników i najmniejszych układów. Rust to nowocześniejszy język systemowy, który wchodzi tam, gdzie zależy nam na bezpieczeństwie pamięci bez utraty wydajności. To fundament, od którego zaczyna każdy junior embedded.",
 				leaves: [
-					{ name: "C++" },
-					{ name: "C" },
-					{ name: "Python" },
-					{ name: "Java" },
-					{ name: "Kotlin" },
+					{ name: "C++", kind: "tool" },
+					{ name: "C", kind: "tool" },
+					{ name: "Rust", kind: "tool" },
 				],
 			},
 			{
-				name: "Systemy",
-				type: "presentation-group",
-				leaves: [{ name: "Linux" }],
+				name: "Systemy wbudowane i sprzęt",
+				type: "context-group",
+				description:
+					"To, co odróżnia embedded od „zwykłego” programowania w C++ — kod działa na fizycznym urządzeniu, nie na serwerze. Systemy wbudowane (embedded) to oprogramowanie zaszyte w sprzęcie: pralce, sterowniku samochodu, czujniku. freeRTOS i RTOS to systemy operacyjne czasu rzeczywistego (gwarantują reakcję w ściśle określonym czasie — krytyczne, gdy poduszka powietrzna ma się otworzyć w 20 milisekund). FPGA i VHDL to świat układów programowalnych (projektujesz sam obwód logiczny, nie tylko program), CMake składa projekt w gotowy plik wykonywalny.",
+				leaves: [
+					{
+						name: "Embedded Systems",
+						countAs: ["Embedded Systems", "Embedded"],
+						countAsUnion: true,
+						kind: "concept",
+					},
+					{ name: "freeRTOS", kind: "tool" },
+					{ name: "RTOS", kind: "concept" },
+					{ name: "FPGA", kind: "tool" },
+					{ name: "VHDL", kind: "tool" },
+					{ name: "CMake", kind: "tool" },
+				],
+			},
+			{
+				name: "Linux niskopoziomowy i warsztat systemowy",
+				type: "context-group",
+				description:
+					"Embedded i C++ niemal zawsze żyją na Linuksie — to system, na którym kompilujesz, debugujesz i często który sam wgrywasz na urządzenie. Linux (co trzecia oferta) i jego jądro (Linux Kernel — najgłębsza warstwa, którą embedded dev czasem modyfikuje pod konkretny sprzęt) to rdzeń warsztatu. Bash automatyzuje powtarzalne komendy, administracja systemami i sieci pojawiają się tam, gdzie urządzenie musi działać w infrastrukturze. Git trzyma historię zmian w kodzie.",
+				leaves: [
+					{ name: "Linux", kind: "tool" },
+					{ name: "Linux Kernel", kind: "tool" },
+					{ name: "Bash", kind: "tool" },
+					{ name: "administracja systemami", kind: "tool" },
+					{ name: "sieci", kind: "tool" },
+					{ name: "Git", kind: "tool" },
+				],
+			},
+			{
+				name: "Skrypty, automatyzacja i testy",
+				type: "context-group",
+				description:
+					"Wbrew stereotypowi „embedded to tylko C”, Python jest drugim najsilniejszym sygnałem roli (41,5% ofert) — nie do produkcyjnego kodu na urządzeniu, lecz do narzędzi: skryptów budujących, automatyzacji testów (program, który sam sprawdza, czy układ reaguje poprawnie) i analizy danych z czujników. To uczciwy obraz rynku 2026: junior embedded w PL realnie potrzebuje Pythona obok C++.",
+				leaves: [{ name: "Python", kind: "tool" }],
+			},
+			{
+				name: "Chmura, kontenery i CI/CD (styk IoT/edge)",
+				type: "context-group",
+				description:
+					"Coraz więcej urządzeń łączy się z chmurą (IoT — internet rzeczy: sprzęt, który wysyła dane do serwera) i część ofert embedded oczekuje, że ogarniesz też tę stronę. CI/CD (taśma automatycznego budowania i wdrażania) buduje i testuje firmware, Docker pakuje narzędzia w kontener, Kubernetes uruchamia je na skalę, AWS i GCP to chmury, do których urządzenie raportuje. DevSecOps domyka warsztat bezpieczeństwem wbudowanym w proces.",
+				leaves: [
+					{ name: "CI/CD", kind: "concept" },
+					{ name: "Docker", kind: "tool" },
+					{ name: "Kubernetes", kind: "tool" },
+					{ name: "AWS", countAs: ["AWS", "Amazon AWS"], countAsUnion: true, kind: "tool" },
+					{
+						name: "GCP",
+						countAs: ["GCP", "Google Cloud Platform"],
+						countAsUnion: true,
+						kind: "tool",
+					},
+					{ name: "DevSecOps", kind: "concept" },
+				],
 			},
 		],
 	},
