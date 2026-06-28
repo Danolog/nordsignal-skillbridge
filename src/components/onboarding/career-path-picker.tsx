@@ -28,7 +28,7 @@ export function CareerPathPicker({ value, onSelect }: CareerPathPickerProps) {
 	return (
 		<div className="space-y-5">
 			{/* Info nie-IT (D3) — uczciwie o zakresie, bez nakłaniania. */}
-			<p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+			<p className="rounded-md border border-ed-amber bg-ed-badge-bg px-3 py-2 text-sm text-ed-amber-text">
 				SkillBridge opiera się dziś na realnym rynku pracy IT (źródło: JustJoinIT, ~10 tys. ofert).
 				Jeśli Twój kierunek jest spoza IT — damy Ci znać, gdy dodamy Twój rynek. Na teraz możesz
 				przejrzeć ścieżki IT, ale nie nakłaniamy Cię do nich.
@@ -51,13 +51,13 @@ export function CareerPathPicker({ value, onSelect }: CareerPathPickerProps) {
 									className={[
 										"flex flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors",
 										selected
-											? "border-indigo-500 bg-indigo-50"
-											: "border-border bg-card hover:border-indigo-300 hover:bg-indigo-50/50",
+											? "border-ed-amber bg-ed-badge-bg"
+											: "border-border bg-card hover:border-ed-amber hover:bg-ed-badge-bg/50",
 									].join(" ")}
 								>
 									<span className="text-sm font-medium text-foreground">{path.careerGoal}</span>
 									{path.targetRole && (
-										<span className="mt-0.5 text-xs text-amber-600">
+										<span className="mt-0.5 text-xs text-ed-amber-text">
 											rola docelowa — nie punkt startu
 										</span>
 									)}

@@ -98,9 +98,9 @@ export function StepMarketCompetencies({
 	// Uczciwie: poproś o wybór realnej ścieżki zamiast pokazać 0 kompetencji bez kontekstu.
 	if (!isRealCareerGoal || catalog.length === 0) {
 		return (
-			<div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center space-y-3">
-				<AlertCircle className="mx-auto h-8 w-8 text-amber-500" />
-				<p className="text-sm text-amber-800">
+			<div className="rounded-lg border border-ed-amber bg-ed-badge-bg p-6 text-center space-y-3">
+				<AlertCircle className="mx-auto h-8 w-8 text-ed-amber-text" />
+				<p className="text-sm text-ed-amber-text">
 					Dla celu „{careerGoal}" nie mamy jeszcze katalogu kompetencji z rynku. Wróć do kroku „Cel
 					kariery" i wybierz jedną z realnych ścieżek z listy.
 				</p>
@@ -238,7 +238,7 @@ function GroupHeader({
 						type="button"
 						onClick={() => setExpanded((v) => !v)}
 						aria-expanded={expanded}
-						className="mt-0.5 text-xs font-medium text-indigo-600 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 rounded"
+						className="mt-0.5 text-xs font-medium text-ed-amber-text hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ed-amber focus-visible:ring-offset-1 rounded"
 					>
 						{expanded ? "Zwiń" : "Po co to?"}
 					</button>
@@ -308,7 +308,7 @@ function CompetencyRow({
 					<KindChip kind={kind} />
 				</span>
 				{inSyllabus && (
-					<span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+					<span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-ed-badge-bg px-2 py-0.5 text-xs font-medium text-ed-amber-text">
 						<BookCheck className="h-3.5 w-3.5" aria-hidden="true" />w programie studiów
 					</span>
 				)}
@@ -356,8 +356,8 @@ function LevelButton({
 			className={[
 				"rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
 				selected
-					? "border-indigo-500 bg-indigo-500 text-white"
-					: "border-border bg-background text-muted-foreground hover:border-indigo-300 hover:bg-indigo-50",
+					? "border-ed-amber bg-ed-amber text-ed-ink"
+					: "border-border bg-background text-muted-foreground hover:border-ed-amber hover:bg-ed-badge-bg",
 			].join(" ")}
 		>
 			{label}

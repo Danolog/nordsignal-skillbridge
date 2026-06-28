@@ -112,11 +112,11 @@ export function RatingScale({
 							// Tranzycja stanu (--transition-fast 150ms per spec §5.5.1)
 							"transition-all duration-150 ease-out",
 							// Fokus widoczny przez focus-within (fokus na ukrytym input)
-							"has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-indigo-500 has-[:focus-visible]:ring-offset-1",
+							"has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ed-amber has-[:focus-visible]:ring-offset-1",
 							// Stany
 							isSelected
-								? "border-indigo-500 bg-indigo-500 text-white shadow-sm"
-								: "border-border bg-background text-muted-foreground hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700",
+								? "border-ed-amber bg-ed-amber text-ed-ink shadow-sm"
+								: "border-border bg-background text-muted-foreground hover:border-ed-amber hover:bg-ed-badge-bg hover:text-ed-amber-text",
 							disabled ? "cursor-not-allowed opacity-50" : "",
 						]
 							.filter(Boolean)
