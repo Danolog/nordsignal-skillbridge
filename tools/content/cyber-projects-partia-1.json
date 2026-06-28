@@ -1,0 +1,302 @@
+[
+	{
+		"slug": "cyber-siem-pierwsze-alerty-splunk",
+		"title": "SIEM od zera: pierwsze alerty w Splunk na publicznych logach",
+		"description": "Zbudujesz pierwszy warsztat analityka SOC: zaindeksujesz publiczny zbiór logów w darmowym Splunk Free, napiszesz zapytania SPL wykrywające podejrzane zdarzenia i zdefiniujesz regułę alertu. Oddajesz repozytorium z zapytaniami i raport triage — nie żywą sesję laba. Dla osoby wchodzącej do cyberbezpieczeństwa przez monitoring zdarzeń (SIEM/SOC).",
+		"level": "L1",
+		"estimatedHours": 5,
+		"sourceType": "open_data",
+		"sourceUrl": "https://docs.splunk.com/Documentation/Splunk/latest/SearchTutorial/GetthetutorialdataintoSplunk",
+		"competencies": [
+			{ "name": "SIEM", "role": "required" },
+			{ "name": "SOC", "role": "required" },
+			{ "name": "Splunk", "role": "required" },
+			{ "name": "Incident Response", "role": "acquired" },
+			{ "name": "Linux", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Wczytanie danych do SIEM",
+				"weight": 20,
+				"description": "Zrzut ekranu lub eksport pokazujący poprawnie zaindeksowane zdarzenia z publicznego zbioru tutorialowego (właściwy sourcetype, liczba zdarzeń, zakres czasu)."
+			},
+			{
+				"criterion": "Zapytania SPL wykrywające zdarzenia bezpieczeństwa",
+				"weight": 30,
+				"description": "Repozytorium z co najmniej trzema zapytaniami w języku SPL (Search Processing Language — język zapytań Splunk) i komentarzem, jakie podejrzane zachowanie każde wykrywa (np. nieudane logowania, dostęp poza godzinami)."
+			},
+			{
+				"criterion": "Definicja warunku alertu (bez zależności od funkcji płatnej)",
+				"weight": 20,
+				"description": "Zdefiniowany warunek alertu: zapytanie SPL z jawnym progiem wyzwolenia plus opis reakcji analityka (co robić, gdy próg zostaje przekroczony). Dowód = eksport zapytania SPL + opis, NIE działający zaplanowany alert (scheduled alert to funkcja płatna, niedostępna w Splunk Free)."
+			},
+			{
+				"criterion": "Raport triage dla SOC",
+				"weight": 25,
+				"description": "Dokument (Markdown/PDF): co alert oznacza, jaki priorytet nadać, jaki jest następny krok analityka SOC. Pokazuje rozumienie procesu, nie tylko narzędzia."
+			},
+			{
+				"criterion": "Odtwarzalność i higiena",
+				"weight": 5,
+				"description": "README z krokami odtworzenia projektu na publicznych danych przez inną osobę; atrybucja źródła danych; jawna nota licencyjna (Splunk Free — użycie edukacyjne, bez redystrybucji; dane tutorialowe syntetyczne) oraz potwierdzenie pracy wyłącznie na własnym/treningowym systemie zgodnie z klauzulą etyczno-prawną."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## SIEM i SOC — pierwszy warsztat\n\n*Autoring: 2026-06-28 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nSIEM (Security Information and Event Management — system zbierania i korelowania zdarzeń bezpieczeństwa) to centralne miejsce, do którego spływają logi z całej firmy. Zadaniem analityka SOC (Security Operations Center — centrum monitorowania bezpieczeństwa) jest wypatrzyć w milionach wpisów ślad włamania. Splunk to najczęściej wymagane narzędzie tej klasy w polskich ofertach — dlatego zaczynamy od niego.\n\nW tym projekcie pracujesz na **publicznym, tutorialowym zbiorze logów** Splunka i na darmowej wersji **Splunk Free**. Nie atakujesz żadnego cudzego systemu — uczysz się *czytać* dane, które ktoś już zebrał. Oddajesz dowód swojej pracy (zapytania + raport), a człowiek-ekspert go ocenia.\n\n## Licencje i atrybucja\n\n- **Splunk Free** — użycie edukacyjne, bez redystrybucji; publiczne dane tutorialowe są syntetyczne (wygenerowane na potrzeby nauki, nie pochodzą z prawdziwego ruchu).\n- Atrybucja źródła danych w README projektu.",
+		"learning_resources": [
+			{
+				"title": "Splunk Search Tutorial — wczytanie danych tutorialowych",
+				"url": "https://docs.splunk.com/Documentation/Splunk/latest/SearchTutorial/GetthetutorialdataintoSplunk",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Splunk Free — pobranie darmowej wersji",
+				"url": "https://www.splunk.com/en_us/download/splunk-enterprise.html",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Wprowadzenie do języka zapytań SPL (Splunk Search Reference)",
+				"url": "https://docs.splunk.com/Documentation/Splunk/latest/SearchReference/WhatsInThisManual",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://docs.splunk.com/Documentation/Splunk/latest/SearchTutorial/GetthetutorialdataintoSplunk",
+				"label": "Splunk Search Tutorial — dane tutorialowe (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://www.splunk.com/en_us/download/splunk-enterprise.html",
+				"label": "Splunk Free — darmowa wersja (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "cyber-hardening-linux-bash",
+		"title": "Hardening Linuksa: skrypt w Bash i audyt przed/po",
+		"description": "Utwardzisz własną treningową maszynę z Linuksem: napiszesz skrypt w Bash automatyzujący podstawowe zabezpieczenia (SSH, hasła, zapora, usługi) i zmierzysz efekt audytem open-source Lynis przed i po zmianach. Oddajesz repozytorium ze skryptem i dwoma raportami audytu. Wyłącznie na własnym/treningowym systemie — nigdy cudzym.",
+		"level": "L1",
+		"estimatedHours": 5,
+		"sourceType": "oss",
+		"sourceUrl": "https://github.com/CISOfy/lynis",
+		"competencies": [
+			{ "name": "Linux", "role": "required" },
+			{ "name": "Bash", "role": "required" },
+			{ "name": "Windows", "role": "acquired" },
+			{ "name": "PowerShell", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Skrypt hardeningu w Bash",
+				"weight": 30,
+				"description": "Repozytorium z czytelnym skryptem Bash automatyzującym co najmniej pięć zabezpieczeń (np. konfiguracja SSH, polityka haseł, zapora, wyłączenie zbędnych usług, aktualizacje). Skrypt napisany samodzielnie — bez wklejania ani kopiowania kodu źródłowego Lynis."
+			},
+			{
+				"criterion": "Audyt przed i po (Lynis)",
+				"weight": 25,
+				"description": "Dwa raporty z narzędzia Lynis w repozytorium pokazujące indeks utwardzenia (hardening index) przed i po uruchomieniu skryptu — mierzalny dowód poprawy."
+			},
+			{
+				"criterion": "Uzasadnienie decyzji",
+				"weight": 25,
+				"description": "Dokument: dla każdego zabezpieczenia — czym jest, dlaczego je włączasz i na jaki typ ataku odpowiada. Pokazuje rozumienie, nie kopiowanie poradnika."
+			},
+			{
+				"criterion": "Bezpieczeństwo i odwracalność skryptu",
+				"weight": 10,
+				"description": "Skrypt tworzy kopie plików konfiguracyjnych przed zmianą, jest idempotentny (ponowne uruchomienie nie psuje stanu) i nie zawiera komend niszczących."
+			},
+			{
+				"criterion": "Odtwarzalność i etyka",
+				"weight": 10,
+				"description": "README z jawną adnotacją, że projekt wykonano na własnej/treningowej maszynie wirtualnej; kroki odtworzenia i atrybucja narzędzia."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## Hardening Linuksa — fundament admina cyber\n\n*Autoring: 2026-06-28 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nZanim obronisz system, musisz wiedzieć, jak działa od środka. Administracja Linuksem i automatyzacja w Bash (powłoka, czyli język poleceń systemu) to najczęstsza brama wejścia do cyberbezpieczeństwa — kariera w kształcie litery T: najpierw szeroka podstawa admina, potem głębia specjalisty.\n\nHardening (utwardzanie) to zamykanie zbędnych drzwi w systemie, zanim ktoś przez nie wejdzie. W tym projekcie pracujesz na **własnej, treningowej maszynie wirtualnej** (np. darmowy Ubuntu w VirtualBox lub kontener) i mierzysz efekt darmowym, otwartoźródłowym narzędziem **Lynis**. Etyka jest twarda: utwardzasz wyłącznie system, który należy do Ciebie lub jest jawnie treningowy — nigdy cudzy.\n\n**Skrypt piszesz sam, Lynisa tylko używasz:** skrypt w Bash tworzysz samodzielnie — nie wklejasz ani nie kopiujesz kodu źródłowego Lynis do własnego skryptu. Lynis to osobne narzędzie audytu (na licencji GPL-3.0), którego *używasz* do pomiaru efektu przed/po, a nie biblioteka do kopiowania kodu.\n\n## Licencje i atrybucja\n\n- **Lynis** — © CISOfy, licencja GPL-3.0 (powszechna licencja otwartego oprogramowania); używasz narzędzia do audytu, ale nie kopiujesz jego kodu do własnego skryptu.\n- Atrybucja narzędzia Lynis w README projektu.",
+		"learning_resources": [
+			{
+				"title": "Lynis — otwartoźródłowe narzędzie audytu bezpieczeństwa (repozytorium)",
+				"url": "https://github.com/CISOfy/lynis",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Lynis — dokumentacja uruchomienia audytu",
+				"url": "https://cisofy.com/documentation/lynis/get-started/",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Ubuntu Server — przewodnik utwardzania (oficjalna dokumentacja)",
+				"url": "https://ubuntu.com/security/certifications/docs/usg",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://github.com/CISOfy/lynis",
+				"label": "Lynis — narzędzie audytu (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://cisofy.com/documentation/lynis/get-started/",
+				"label": "Lynis — dokumentacja startowa (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "cyber-python-automatyzacja-logow",
+		"title": "Python do logów: automatyczne wykrywanie ataku brute-force",
+		"description": "Napiszesz w Pythonie parser publicznego zbioru logów uwierzytelniania i logikę wykrywającą atak brute-force (wiele nieudanych logowań z jednego adresu w krótkim oknie). Oddajesz repozytorium ze skryptem i czytelnym raportem znalezisk. W raporcie maskujesz adresy IP (np. ostatni oktet 192.168.0.x) i nie identyfikujesz osób; alternatywnie pracujesz na własnym syntetycznym zbiorze logów uwierzytelniania — ocena bez różnicy. Najczęściej wymieniana pojedyncza technologia w ofertach cyber — automatyzacja powtarzalnej roboty analityka.",
+		"level": "L1",
+		"estimatedHours": 4,
+		"sourceType": "open_data",
+		"sourceUrl": "https://github.com/logpai/loghub",
+		"competencies": [
+			{ "name": "Python", "role": "required" },
+			{ "name": "Linux", "role": "acquired" },
+			{ "name": "SQL", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Parser logów w Pythonie",
+				"weight": 30,
+				"description": "Repozytorium ze skryptem Python, który czyta publiczny zbiór logów i wyłuskuje pola (znacznik czasu, adres IP, wynik logowania) bez ręcznej obróbki danych."
+			},
+			{
+				"criterion": "Logika detekcji",
+				"weight": 30,
+				"description": "Kod wykrywa wzorzec brute-force — np. próg N nieudanych logowań z jednego IP w oknie czasowym — z jawnie zdefiniowanym i uzasadnionym progiem."
+			},
+			{
+				"criterion": "Raport znalezisk",
+				"weight": 20,
+				"description": "Czytelny wynik (tabela / CSV / JSON) z listą podejrzanych adresów, liczbą prób i podsumowaniem słownym — sprawdzalny z pliku, nie z żywej sesji."
+			},
+			{
+				"criterion": "Jakość kodu",
+				"weight": 10,
+				"description": "Podział na funkcje, obsługa błędów (brak pliku, zła linia logu), brak zaszytych na sztywno ścieżek; kod da się uruchomić ponownie."
+			},
+			{
+				"criterion": "Odtwarzalność i atrybucja",
+				"weight": 10,
+				"description": "README z instrukcją uruchomienia, wymaganiami i linkiem do publicznego zbioru danych. RODO i atrybucja: adresy IP w oddanym artefakcie są zamaskowane (np. ostatni oktet 192.168.0.x) i nie identyfikują osób; README zawiera klauzulę etyczno-prawną, cytowanie loghub (repozytorium/paper) oraz notę licencyjną źródła."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## Python — automatyzacja roboty analityka\n\n*Autoring: 2026-06-28 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nPython to język, którym specjalista bezpieczeństwa automatyzuje powtarzalną pracę: przerabia logi, łączy się z innymi narzędziami przez ich API (interfejs sterowania programem z kodu) i pisze własne skrypty wykrywające zagrożenia. To najczęściej wymieniana pojedyncza technologia w ofertach cyber (15% ofert).\n\nW tym projekcie pracujesz na **publicznym zbiorze logów** (np. loghub — otwarty zbiór logów do badań). Nie podsłuchujesz cudzego ruchu — analizujesz dane, które ktoś już opublikował do nauki. **Uwaga RODO:** taki zbiór **może zawierać dane osobowe** — adresy IP i loginy bywają daną osobową (wyrok TSUE w sprawie Breyer, C-582/14, uznał dynamiczny adres IP za daną osobową w określonych warunkach). Dlatego w raporcie **maskujesz** adresy IP (np. ostatni oktet 192.168.0.x) i **nie re-identyfikujesz** żadnej osoby. To ćwiczenie z zasady minimalizacji danych (RODO) — przetwarzasz tylko to, co konieczne do wykrycia wzorca; alternatywnie możesz użyć własnego syntetycznego zbioru logów. Brute-force (atak siłowy) to zgadywanie hasła przez wielokrotne próby logowania; Twój skrypt ma go wypatrzyć w logach po charakterystycznym wzorcu.\n\n## Licencje i atrybucja\n\n- **loghub** — cytuj zbiór w README: repozytorium https://github.com/logpai/loghub oraz paper „Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics\" (Zhu i in.).\n- **Maskowanie IP** — w każdym oddanym artefakcie adresy IP są zamaskowane (np. ostatni oktet 192.168.0.x), bez re-identyfikacji osób (RODO, zasada minimalizacji danych).",
+		"learning_resources": [
+			{
+				"title": "loghub — publiczne zbiory logów systemowych do analizy",
+				"url": "https://github.com/logpai/loghub",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Python — moduł re (wyrażenia regularne do parsowania logów)",
+				"url": "https://docs.python.org/3/library/re.html",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Python — moduł csv (zapis raportu znalezisk)",
+				"url": "https://docs.python.org/3/library/csv.html",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://github.com/logpai/loghub",
+				"label": "loghub — publiczne logi (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://www.secrepo.com/",
+				"label": "SecRepo — zbiory danych bezpieczeństwa (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "cyber-iam-active-directory-lab",
+		"title": "IAM w praktyce: Active Directory i model najmniejszych uprawnień",
+		"description": "Zaprojektujesz i zbudujesz katalog użytkowników Active Directory na własnej treningowej maszynie — domyślnie na otwartoźródłowym Samba AD w kontenerze (lekki dla słabszego sprzętu), a na mocniejszej maszynie opcjonalnie na darmowej wersji ewaluacyjnej Windows Server (180 dni): struktura jednostek organizacyjnych, grupy, polityki haseł i model najmniejszych uprawnień. Katalog wypełniasz fikcyjnymi użytkownikami (persony wymyślone lub generator typu faker) — nigdy danymi realnych osób. Oddajesz dokument projektowy IAM i dowód konfiguracji wyeksportowany przez PowerShell (Windows Server) lub samba-tool/ldbsearch (Samba AD).",
+		"level": "L1",
+		"estimatedHours": 6,
+		"sourceType": "open_data",
+		"sourceUrl": "https://learn.microsoft.com/en-us/training/paths/deploy-manage-identity-infrastructure/",
+		"competencies": [
+			{ "name": "IAM", "role": "required" },
+			{ "name": "Active Directory", "role": "required" },
+			{ "name": "PAM", "role": "acquired" },
+			{ "name": "Windows", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Struktura katalogu",
+				"weight": 25,
+				"description": "Eksport lub zrzut pokazujący strukturę jednostek organizacyjnych, grup i kont użytkowników odwzorowującą realną organizację (np. działy + role). Konta to fikcyjne tożsamości (wymyślone persony lub generator typu faker) — nigdy dane realnych osób."
+			},
+			{
+				"criterion": "Model najmniejszych uprawnień",
+				"weight": 30,
+				"description": "Dokument odwzorowujący role na grupy i uprawnienia wg zasady least privilege (najmniejszy potrzebny dostęp) z uzasadnieniem, kto czego potrzebuje i dlaczego."
+			},
+			{
+				"criterion": "Polityki dostępu",
+				"weight": 20,
+				"description": "Zrzut lub eksport ustawień polityki haseł i blokady konta (np. długość hasła, próg blokady) z krótkim uzasadnieniem doboru wartości."
+			},
+			{
+				"criterion": "Dowód przez PowerShell lub samba-tool/ldbsearch",
+				"weight": 15,
+				"description": "Wynik poleceń potwierdzający stan katalogu — PowerShell (Windows Server, np. Get-ADUser / Get-ADGroupMember) LUB samba-tool / ldbsearch (Samba AD) — sprawdzalny z pliku, nie z żywego laba. Obie zadeklarowane ścieżki spełniają to kryterium równoważnie."
+			},
+			{
+				"criterion": "Dokumentacja i etyka",
+				"weight": 10,
+				"description": "README z jawną adnotacją o własnej/treningowej maszynie (wersja ewaluacyjna), atrybucją materiałów i krokami odtworzenia."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## IAM i Active Directory — kto ma do czego dostęp\n\n*Autoring: 2026-06-28 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nWiększość włamań to nie spektakularny atak, tylko ktoś wszedł na cudze konto. IAM (Identity and Access Management — zarządzanie tożsamością i dostępem) to dyscyplina pilnowania, kto, do czego i jak długo ma dostęp. Active Directory to katalog użytkowników Microsoftu obecny w prawie każdej polskiej firmie — przyjazna brama wejścia dla juniora.\n\nW tym projekcie budujesz **własny treningowy katalog** — **domyślnie na otwartoźródłowym Samba AD uruchomionym w kontenerze** (ścieżka lekka, działa na słabszym sprzęcie), a na mocniejszej maszynie opcjonalnie na darmowej wersji ewaluacyjnej Windows Server (180 dni). Nie dotykasz żadnej cudzej infrastruktury, a katalog wypełniasz wyłącznie **fikcyjnymi tożsamościami** (persony wymyślone lub z generatora typu faker) — nigdy danymi realnych osób. Kluczowa idea to least privilege (najmniejsze uprawnienie): każdy dostaje dokładnie tyle dostępu, ile potrzebuje do pracy, i ani trochę więcej. Dowód konfiguracji eksportujesz poleceniami PowerShell (Windows Server) albo samba-tool/ldbsearch (Samba AD). Oddajesz projekt i dowód konfiguracji; człowiek-ekspert ocenia decyzje, nie żywą sesję.\n\n## Licencje i atrybucja\n\n- **Samba AD** — otwartoźródłowe, licencja GPL-3.0 (ścieżka domyślna).\n- **Windows Server** — darmowa wersja ewaluacyjna 180 dni, wyłącznie cel nauki (ścieżka opcjonalna).\n- **Microsoft Learn** — atrybucja materiału + link w README projektu.",
+		"learning_resources": [
+			{
+				"title": "Microsoft Learn — ścieżka wdrażania i zarządzania tożsamością (darmowa)",
+				"url": "https://learn.microsoft.com/en-us/training/paths/deploy-manage-identity-infrastructure/",
+				"type": "course",
+				"position": 0
+			},
+			{
+				"title": "Windows Server — darmowa wersja ewaluacyjna (180 dni)",
+				"url": "https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Samba AD — otwartoźródłowa alternatywa Active Directory",
+				"url": "https://wiki.samba.org/index.php/Setting_up_Samba_as_an_Active_Directory_Domain_Controller",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://learn.microsoft.com/en-us/training/paths/deploy-manage-identity-infrastructure/",
+				"label": "Microsoft Learn — tożsamość (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://wiki.samba.org/index.php/Setting_up_Samba_as_an_Active_Directory_Domain_Controller",
+				"label": "Samba AD — darmowa alternatywa (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	}
+]
