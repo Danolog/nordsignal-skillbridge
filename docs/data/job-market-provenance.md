@@ -1,8 +1,13 @@
 # Prowenicja danych rynku pracy — `job_market_data` + `career-model` (JustJoinIT)
 
-**Wersja:** v6.0 · 2026-06-27
+**Wersja:** v7.0 · 2026-06-28
 **Owner:** Ethan (CTO, ETAP A) · wcześniej Max (backend) · lens jakości / recenzja przed scaleniem: Leo (Tech Lead)
-**Status:** Partia 5, ETAP A — fundament danych: silnik na SUROWY rynek, regeneracja 23 ścieżek.
+**Status:** Partia 5, warunek przed ETAP H domknięty — przypięcie i hash kanonicznego CSV (anty-dryf), supersesja nieświeżej bazy dla Cyber/DS/QA.
+
+**Changelog v6.0 → v7.0 (2026-06-28, warunek przed ETAP H — Ethan, recenzja Leo):** **przypięcie i zahaszowanie kanonicznego CSV + jawne nazwanie źródła prawdy + udokumentowanie supersesji nieświeżej bazy.** To czysta dokumentacja — **zero zmian w kodzie, danych i artefaktach** (silnik na `08823b3` nietknięty, schema bazy nietknięta, zaciąg na prod NEON = nadal osobny ETAP H). Powód: przy partii 3 wykrył się **cichy dryf bazowy** (*baseline drift* — rozjazd wartości względem starej bazy artefaktu). Root cause ustalony przez Leo = **DANE**, nie kod: stara baza powstała na innym komputerze z nieco innego eksportu CSV; determinizm silnika pozostał intaktny. Bramka Leo przed ETAP H: przypiąć i zahaszować CSV w prowenicji, żeby przyszła przesiadka maszyny nie wywołała znów dryfu.
+- **DANE KANONICZNE NAZWANE JAWNIE (nowa sekcja 0).** Źródłem prawdy jest **bieżący CSV w korzeniu repo** (`JustJoinIT_Oferty.csv` + `JustJoinIT_Technologie.csv`, zrzut 2026-03-19) + silnik na `08823b3`. Każdy artefakt (`career-model.json`, `job-market-justjoinit.json`) musi być przeliczony z TEGO CSV; nieświeże bazy z poprzednich komputerów NIE są źródłem.
+- **HASH CSV PRZYPIĘTY (anty-dryf, sekcja 0).** md5 obu plików zweryfikowany własną komendą Ethana (`md5` na macOS) i zgodny z oczekiwaniem Leo: `Oferty` = `a72f1aad258ba1e9305edbbc94c8eeb2`, `Technologie` = `20307922daf82a125caf9db20d4d561c`. Każda przyszła przesiadka maszyny sprawdza te dwa hashe PRZED regenem — niezgodność = STOP (CSV inne, ryzyko dryfu).
+- **SUPERSESJA Cyber/DS/QA udokumentowana (sekcja 0).** Świeży regen (`9f`+) zaktualizował liczniki kilku WTÓRNYCH technologii na ścieżkach Cybersecurity / Data Scientist / QA (np. Azure 32→29) względem nieświeżej bazy `fbdcaff` — korekta na poprawne, ODTWARZALNE wartości. Magnituda produktowo nieistotna (1–3 p.p. na wtórnych techach), **żadna oferta nie przeskoczyła między ścieżkami** (przypisanie 8694=8694 odtwarza się w 100%). Ślad dla audytu 5-letniego.
 
 **Changelog v5.0 → v6.0 (2026-06-27, ETAP A — Ethan):** **silnik przełączony na SUROWY rynek dla WSZYSTKICH 23 ścieżek (Decyzja A Darka).** To regeneracja artefaktów w repo — **schema bazy NIETKNIĘTA**, zaciąg na prod NEON = osobny ETAP H.
 - **KROK CZYSZCZENIA USUNIĘTY.** Filtry wzorem notebooka `175735_lab1.ipynb` (Pełny etat / geo PL+zdalne / typ umowy / widełki) wycięte z silnika. **Jedyna higiena = dedup po `Slug`** (pierwsze wystąpienie wygrywa). Powód: student ma widzieć, czego REALNIE wymaga rynek (pełny obraz), a mianownik ma być zgodny z liczbami referencyjnymi (371 ofert kategorii Security, nie 329 oczyszczonych). Usunięte z kodu: `WANTED_CONTRACTS`, `MIASTO_MAPPING`, `POLSKIE_MIASTA` (lista miast), `normalizeCity`, `passesGeoFilter`; `cleanOffers` → `dedupOffers`; `rawOffersByCategory` zlany w JEDNĄ ścieżkę surową (`groupByCategory` na zdeduplikowanym zbiorze).
@@ -34,6 +39,48 @@ Pozostałe zmiany v4: **(1) koniec ramki junior/senior** — wszystkie 23 ście�
 
 ---
 
+## 0. Dane kanoniczne i przypięcie CSV (anty-dryf — warunek przed ETAP H, recenzja Leo)
+
+> **Po co ta sekcja.** Przy partii 3 stara baza artefaktu okazała się policzona na INNYM komputerze z nieco innego eksportu CSV — wartości się rozjechały (cichy *baseline drift*, dryf bazowy). Leo ustalił, że winne są **dane, nie kod** (silnik liczy deterministycznie, ten sam CSV → ten sam wynik bajt-w-bajt). Żeby przyszła przesiadka maszyny NIE wywołała znów dryfu, przypinamy źródło prawdy nazwą, hashem i liczbą wierszy. To jest bramka, którą Leo postawił **przed ETAP H** (zaciąg na prod NEON).
+
+### 0.1 Źródło prawdy — jawnie
+
+**Kanoniczne źródło danych = bieżący CSV w korzeniu repozytorium** (`/JustJoinIT_Oferty.csv` + `/JustJoinIT_Technologie.csv`, zrzut z 2026-03-19) przeliczony silnikiem na commicie **`08823b3`** (gałąź `feat/etl-lift`). Każdy artefakt w repo — `src/lib/db/data/job-market-justjoinit.json` (płaski) i `src/lib/db/data/career-model.json` (hierarchiczny) — **musi pochodzić z TEGO CSV i TEGO silnika**.
+
+**Nieświeże bazy z poprzednich komputerów NIE są źródłem prawdy.** Stara baza artefaktu (`fbdcaff`) powstała z innego eksportu CSV na innej maszynie — jej liczby są zastąpione (supersesja, sekcja 0.3). Przy każdym sporze „która liczba jest właściwa" wygrywa regen z kanonicznego CSV o hashu z sekcji 0.2, nie żadna wcześniejsza baza.
+
+> **Uwaga o statusie plików w gicie.** CSV leżą w korzeniu repo jako pliki **nieśledzone** (*untracked* — w drzewie roboczym, ale nie commitowane; surowych danych rynku świadomie nie wrzucamy do historii gita). To NIE osłabia ich roli kanonicznej — przypięcie hashem (0.2) daje audytowi pełną odtwarzalność bez trzymania danych w repo. Ścieżkę do nich parametryzuje zmienna środowiskowa `JJIT_CSV_DIR` (procedura w sekcji 0.4).
+
+### 0.2 Przypięcie + hash (zweryfikowane komendą Ethana `md5`, macOS)
+
+| Plik (korzeń repo) | md5 (zweryfikowany) | Wiersze danych | + nagłówek = linie | Separator / kodowanie |
+|---|---|---|---|---|
+| `JustJoinIT_Oferty.csv` | `a72f1aad258ba1e9305edbbc94c8eeb2` | **9 922** ofert | 9 923 linie | `;` · utf-8 z BOM (utf-8-sig) |
+| `JustJoinIT_Technologie.csv` | `20307922daf82a125caf9db20d4d561c` | **54 085** par technologia↔oferta | 54 086 linii | `;` · utf-8 z BOM (utf-8-sig) |
+
+**Weryfikacja:** oba md5 policzone Ethanem realnie (`md5 JustJoinIT_Oferty.csv JustJoinIT_Technologie.csv`) **2026-06-28 zgadzają się z oczekiwaniem Leo z partii 3** — CSV jest tym samym, na którym powstał świeży regen (`9f`+). Liczba wierszy potwierdzona `wc -l` (9 923 / 54 086 linii = dane + 1 wiersz nagłówka). **Zasada anty-dryf: jeśli na przyszłej maszynie którykolwiek md5 NIE zgodzi się z powyższym — STOP, nie regeneruj, nie zaciągaj na prod; to znaczy, że CSV jest inny i grozi powtórką dryfu.**
+
+### 0.3 Supersesja nieświeżej bazy — Cybersecurity / Data Scientist / QA
+
+Świeży regen z kanonicznego CSV (`9f`+) zaktualizował liczniki kilku **wtórnych** (drugorzędnych, niekluczowych dla profilu ścieżki) technologii względem nieświeżej bazy `fbdcaff`. Przykład: **Azure 32 → 29** na ścieżkach Cyber/DS/QA. Charakter zmiany:
+
+- **Korekta na poprawne, odtwarzalne wartości** — nie regresja. Stara baza miała liczby z innego eksportu CSV; świeże są policzalne 1:1 z hashu z sekcji 0.2.
+- **Magnituda produktowo nieistotna:** rząd **1–3 punktów procentowych** na technologiach wtórnych. Top-skille i kształt ścieżek bez zmian.
+- **Zero migracji ofert między ścieżkami:** całkowite przypisanie ofert do ścieżek odtwarza się w 100% — **8 694 = 8 694**, żadna oferta nie przeskoczyła do innej ścieżki. Zmieniły się wyłącznie liczniki wtórnych tagów technologii wewnątrz ścieżki, nie struktura.
+- **Ślad dla audytu 5-letniego (Built-to-Sell, CLAUDE.md sekcja 2):** odbiorca firmy/audytor widzi jawnie, że różnica „stara baza vs świeży regen" to dane (inny eksport), nie zmiana logiki, i że wartość kanoniczna to świeży regen.
+
+### 0.4 Procedura odtwarzalności (1:1 — kupujący, audytor, nowy komputer)
+
+Każdy może odtworzyć artefakt bajt-w-bajt z kanonicznego CSV w trzech krokach:
+
+1. **Sprawdź hash CSV PRZED regenem** (bramka anty-dryf): `md5 JustJoinIT_Oferty.csv JustJoinIT_Technologie.csv` → musi dać wartości z sekcji 0.2. Niezgodność = STOP (inny CSV).
+2. **Przelicz artefakt silnikiem na `08823b3`:** `JJIT_CSV_DIR=<korzeń repo> pnpm exec tsx tools/etl-justjoinit.ts` (`JJIT_CSV_DIR` = katalog z oboma CSV; `pnpm exec tsx` = uruchom skrypt TypeScript bez kompilacji).
+3. **Porównaj md5 wyniku z wersją w repo:** `md5 src/lib/db/data/job-market-justjoinit.json` (i analogicznie `career-model.json`) → musi się zgadzać z plikiem zacommitowanym. Zgodność = artefakt odtworzony 1:1; rozjazd przy zgodnych hashach CSV = sygnał regresji silnika (eskalacja do Ethana/Leo).
+
+Determinizm silnika (zero `new Date()`, zero losowości, sortowanie stabilne) opisuje sekcja 5 — to on gwarantuje, że ten sam CSV zawsze daje ten sam artefakt.
+
+---
+
 ## 1. Źródło
 
 | | |
@@ -44,9 +91,9 @@ Pozostałe zmiany v4: **(1) koniec ramki junior/senior** — wszystkie 23 ście�
 | **Złączenie** | po kolumnie `Slug` (9 922 unikalnych slugów w obu plikach — pokrycie 1:1) |
 | **Data zrzutu (snapshot)** | **2026-02** (`Data_publikacji` ofert = 2026-03-19; przyjęty znacznik zrzutu „2026-02") |
 | **Pochodzenie** | analiza Darka (laboratorium WSB, notebook `175735_lab1.ipynb` — był bazą czyszczenia w v1–v5; **od v6/ETAP A czyszczenie USUNIĘTE**, silnik liczy na surowym rynku) |
-| **Lokalizacja surowych plików** | dysk Darka, **POZA repozytorium** (`/mnt/c/Users/D/Documents/WSB MERITO/.../AI/`) |
+| **Lokalizacja kanoniczna (od v7.0)** | **korzeń repo** (pliki nieśledzone) — przypięte hashem, sekcja 0.2; pierwotny eksport: dysk Darka (`/mnt/c/Users/D/Documents/WSB MERITO/.../AI/`) |
 
-**Surowe CSV NIE są w repo.** Do repo trafia wyłącznie policzony artefakt (`src/lib/db/data/job-market-justjoinit.json`), konfiguracja kotwic (`src/lib/db/data/anchor-config.ts`) i ten dokument. Ścieżkę do CSV parametryzuje zmienna środowiskowa `JJIT_CSV_DIR`.
+**Surowe CSV nie są commitowane do gita** (świadomie — surowych danych nie wrzucamy do historii). Od v7.0 leżą jednak jako **kanoniczne pliki nieśledzone w korzeniu repo**, przypięte hashem (sekcja 0) — to one są źródłem prawdy regenu, nie żadna wcześniejsza baza z innej maszyny. Do gita trafia wyłącznie policzony artefakt (`src/lib/db/data/job-market-justjoinit.json`), konfiguracja kotwic (`src/lib/db/data/anchor-config.ts`) i ten dokument. Ścieżkę do CSV parametryzuje zmienna środowiskowa `JJIT_CSV_DIR` (procedura: sekcja 0.4).
 
 ---
 
