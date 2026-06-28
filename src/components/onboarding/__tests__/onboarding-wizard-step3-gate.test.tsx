@@ -165,9 +165,10 @@ describe("Krok 3 (Partia 4) — próg min-5 zniesiony, wybór z katalogu rynku",
 			await goToStep3(user);
 			await screen.findByText(/pokrycia kompetencji wymaganych przez rynek/i);
 
-			// Zaznacz „Średni" (poziom 3 → waga 1.0) dla SQL: 1/4 → 25% pokrycia.
+			// Zaznacz poziom 3 (waga 1.0) dla SQL: 1/4 → 25% pokrycia. Etykieta = czasownik
+			// per rodzaj (C3); katalog testowy bez `kind` → zestaw default („znam" = poziom 3).
 			const sqlGroup = screen.getByRole("group", { name: "Poziom: SQL" });
-			await user.click(within(sqlGroup).getByRole("button", { name: "Średni" }));
+			await user.click(within(sqlGroup).getByRole("button", { name: "znam" }));
 
 			expect(
 				screen.getByRole("region", {

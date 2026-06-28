@@ -96,6 +96,109 @@ export function isPossessionLevel(v: unknown): v is PossessionLevel {
 	return v === 2 || v === 3 || v === 4;
 }
 
+// ── Etykiety samooceny per RODZAJ kompetencji (C3, Partia 5) ─────────────────
+//
+// Decyzja produktowa (Decyzje wiążące #3, spec C1 §3): narzędzie się OBSŁUGUJE
+// (umiesz kliknąć/napisać), koncepcję się ROZUMIE i STOSUJE (wiesz kiedy i po co).
+// SIEM/IAM/NIST jako „obsługuję" brzmi fałszywie; Splunk jako „rozumiem" gubi, że
+// chodzi o ręce na narzędziu (anchor-config: concept = koncepcja/standard).
+//
+// Skala 1–4 (1 = nie znam/Brak · 2 · 3 · 4); per rodzaj inny czasownik. Realnie
+// rozróżniamy `tool` i `concept`; każdy inny rodzaj (cert/meta/soft/null/brak
+// dopasowania) → zestaw `default`. JEDNO źródło prawdy — reużywane przez onboarding
+// (LevelButton, 3 widoczne szczeble) i panel B4 (RatingScale, 4 szczeble).
+
+/** Klucz zestawu etykiet: realnie rozróżniamy tylko narzędzie i koncepcję. */
+export type KindLabelKey = "tool" | "concept" | "default";
+
+/** Czasowniki samooceny per szczebel (1–4) dla danego zestawu. */
+export type KindLabelSet = Record<1 | 2 | 3 | 4, string>;
+/** Opisy (tooltip) szczebli posiadania 2–4 — szczebel 1 ma wspólny opis (poniżej). */
+export type KindDescriptionSet = Record<2 | 3 | 4, string>;
+
+export const LABELS_BY_KIND: Record<KindLabelKey, KindLabelSet> = {
+	tool: { 1: "nie znam", 2: "uczę się", 3: "obsługuję", 4: "swobodnie" },
+	concept: { 1: "nie znam", 2: "poznaję", 3: "rozumiem", 4: "stosuję" },
+	default: { 1: "nie znam", 2: "uczę się", 3: "znam", 4: "dobrze znam" },
+} as const;
+
+export const DESCRIPTIONS_BY_KIND: Record<KindLabelKey, KindDescriptionSet> = {
+	tool: {
+		2: "Zaczynam, klikam z instrukcją.",
+		3: "Robię typowe zadania w narzędziu sam.",
+		4: "Radzę sobie też w trudnych przypadkach.",
+	},
+	concept: {
+		2: "Słyszałem, łapię zarys.",
+		3: "Rozumiem zasadę i kiedy jej użyć.",
+		4: "Stosuję świadomie w realnych sytuacjach.",
+	},
+	default: {
+		2: "Zaczynam, potrzebuję wsparcia.",
+		3: "Robię typowe zadania samodzielnie.",
+		4: "Radzę sobie też w trudniejszych sytuacjach.",
+	},
+} as const;
+
+/** Wspólny opis szczebla 1 ("nie znam") — taki sam dla każdego rodzaju. */
+export const DESCRIPTION_LEVEL_1 = "Nie miałem jeszcze styczności / nie potrafię.";
+
+/** Wybór zestawu: tool/concept dostają własny, reszta (cert/meta/soft/null) → default. */
+export function kindLabelKey(kind: LeafKind | null | undefined): KindLabelKey {
+	return kind === "tool" || kind === "concept" ? kind : "default";
+}
+
+/** Opcja samooceny w onboardingu (3 widoczne szczeble posiadania 2/3/4). */
+export interface PossessionLabel {
+	level: PossessionLevel;
+	/** Czasownik widoczny na przycisku (zależny od rodzaju). */
+	label: string;
+	/** Opis-tooltip szczebla (zależny od rodzaju). */
+	title: string;
+}
+
+/**
+ * C3: 3 szczeble posiadania (2/3/4) z czasownikiem i opisem dopasowanym do rodzaju.
+ * „Brak" (szczebel 1) jest osobnym, stałym przyciskiem — NIE z tej listy (semantyka
+ * „nie zaznaczono" ≠ szczebel skali „nie znam"). Onboarding LevelButton bierze etykietę
+ * stąd zamiast stałego POSSESSION_OPTIONS[].tier.
+ */
+export function possessionLabelsForKind(kind: LeafKind | null | undefined): PossessionLabel[] {
+	const key = kindLabelKey(kind);
+	const labels = LABELS_BY_KIND[key];
+	const desc = DESCRIPTIONS_BY_KIND[key];
+	return [2, 3, 4].map((lvl) => {
+		const l = lvl as 2 | 3 | 4;
+		return { level: l, label: labels[l], title: desc[l] };
+	});
+}
+
+/** Opcja samooceny w panelu B4 (4 szczeble 1–4, „nie znam" jest osobnym szczeblem). */
+export interface RatingOption {
+	value: 1 | 2 | 3 | 4;
+	label: string;
+	description: string;
+}
+
+/**
+ * C3: 4 szczeble skali (1–4) z czasownikiem i opisem per rodzaj — dla RatingScale (B4).
+ * `default` = dawne etykiety PRD („nie znam/uczę się/znam/dobrze znam"); `tool`/`concept`
+ * = wariant per typ. Szczebel 1 ma wspólny opis dla wszystkich rodzajów.
+ */
+export function ratingOptionsForKind(kind: LeafKind | null | undefined): RatingOption[] {
+	const key = kindLabelKey(kind);
+	const labels = LABELS_BY_KIND[key];
+	const desc = DESCRIPTIONS_BY_KIND[key];
+	return [1, 2, 3, 4].map((v) => {
+		const val = v as 1 | 2 | 3 | 4;
+		return {
+			value: val,
+			label: labels[val],
+			description: val === 1 ? DESCRIPTION_LEVEL_1 : desc[val],
+		};
+	});
+}
+
 // ── Pokrycie zatrudnialności (employability) — 9c B1–B4 ─────────────────────
 //
 // „% pokrycia kompetencji wymaganych przez rynek" — NIGDY obietnica/szansa pracy.

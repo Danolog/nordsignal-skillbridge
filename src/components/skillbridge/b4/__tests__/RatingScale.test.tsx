@@ -140,3 +140,50 @@ describe("RatingScale — skala słowna PRD", () => {
 		expect(values).toEqual([1, 2, 3, 4]);
 	});
 });
+
+describe("RatingScale — etykiety per rodzaj (C3, Partia 5)", () => {
+	it("kind=tool → czasowniki narzędzia (obsługuję/swobodnie), bez domyślnych", () => {
+		render(
+			<RatingScale
+				value={null}
+				name="splunk"
+				ariaLabel="Poziom kompetencji: Splunk"
+				kind="tool"
+				onChange={vi.fn()}
+			/>,
+		);
+		expect(screen.getByText("obsługuję")).toBeInTheDocument();
+		expect(screen.getByText("swobodnie")).toBeInTheDocument();
+		// Default „znam"/„dobrze znam" NIE renderowane przy kind=tool.
+		expect(screen.queryByText("dobrze znam")).not.toBeInTheDocument();
+	});
+
+	it("kind=concept → czasowniki koncepcji (poznaję/rozumiem/stosuję)", () => {
+		render(
+			<RatingScale
+				value={null}
+				name="siem"
+				ariaLabel="Poziom kompetencji: SIEM"
+				kind="concept"
+				onChange={vi.fn()}
+			/>,
+		);
+		expect(screen.getByText("poznaję")).toBeInTheDocument();
+		expect(screen.getByText("rozumiem")).toBeInTheDocument();
+		expect(screen.getByText("stosuję")).toBeInTheDocument();
+	});
+
+	it("bez prop `kind` → zestaw domyślny PRD (zgodność wstecz)", () => {
+		render(
+			<RatingScale
+				value={null}
+				name="sql"
+				ariaLabel="Poziom kompetencji: SQL"
+				onChange={vi.fn()}
+			/>,
+		);
+		expect(screen.getByText("znam")).toBeInTheDocument();
+		expect(screen.getByText("dobrze znam")).toBeInTheDocument();
+		expect(screen.queryByText("obsługuję")).not.toBeInTheDocument();
+	});
+});

@@ -14,11 +14,16 @@ import {
 	annotateWithSyllabus,
 	computeMarketCoverage,
 	coverageWeight,
+	DESCRIPTION_LEVEL_1,
 	demandToPriority,
 	estimatedHoursForGap,
 	isPossessionLevel,
+	kindLabelKey,
+	LABELS_BY_KIND,
 	type MarketCatalogItem,
 	POSSESSION_OPTIONS,
+	possessionLabelsForKind,
+	ratingOptionsForKind,
 } from "@/lib/onboarding/market-catalog";
 
 function item(name: string, demand: number, category = "Język i framework"): MarketCatalogItem {
@@ -143,5 +148,93 @@ describe("annotateWithSyllabus — adnotacja „w programie studiów” (D4)", (
 		const out = annotateWithSyllabus(catalog, ["SQL"]);
 		expect(out[0]).not.toBe(catalog[0]);
 		expect(catalog[0]).not.toHaveProperty("inSyllabus");
+	});
+});
+
+// ── C3: etykiety samooceny per rodzaj (narzędzie vs koncepcja) ───────────────
+
+describe("kindLabelKey — wybór zestawu etykiet wg rodzaju", () => {
+	it("tool/concept dostają własny zestaw; reszta (cert/meta/soft/null/undefined) → default", () => {
+		expect(kindLabelKey("tool")).toBe("tool");
+		expect(kindLabelKey("concept")).toBe("concept");
+		expect(kindLabelKey("cert")).toBe("default");
+		expect(kindLabelKey("meta")).toBe("default");
+		expect(kindLabelKey("soft")).toBe("default");
+		expect(kindLabelKey(null)).toBe("default");
+		expect(kindLabelKey(undefined)).toBe("default");
+	});
+});
+
+describe("LABELS_BY_KIND — czasowniki per rodzaj (Decyzje wiążące #3)", () => {
+	it("narzędzie się OBSŁUGUJE (1..4)", () => {
+		expect(LABELS_BY_KIND.tool).toEqual({
+			1: "nie znam",
+			2: "uczę się",
+			3: "obsługuję",
+			4: "swobodnie",
+		});
+	});
+	it("koncepcję się ROZUMIE/STOSUJE (1..4)", () => {
+		expect(LABELS_BY_KIND.concept).toEqual({
+			1: "nie znam",
+			2: "poznaję",
+			3: "rozumiem",
+			4: "stosuję",
+		});
+	});
+	it("default = dawne etykiety PRD (cert/meta/soft/null)", () => {
+		expect(LABELS_BY_KIND.default).toEqual({
+			1: "nie znam",
+			2: "uczę się",
+			3: "znam",
+			4: "dobrze znam",
+		});
+	});
+});
+
+describe("possessionLabelsForKind — 3 szczeble posiadania (onboarding, Brak osobno)", () => {
+	it("narzędzie: poziomy 2/3/4 z czasownikiem narzędzia", () => {
+		const out = possessionLabelsForKind("tool");
+		expect(out.map((o) => o.level)).toEqual([2, 3, 4]);
+		expect(out.map((o) => o.label)).toEqual(["uczę się", "obsługuję", "swobodnie"]);
+	});
+	it("koncepcja: czasownik koncepcji", () => {
+		expect(possessionLabelsForKind("concept").map((o) => o.label)).toEqual([
+			"poznaję",
+			"rozumiem",
+			"stosuję",
+		]);
+	});
+	it("null/cert → default (uczę się/znam/dobrze znam)", () => {
+		expect(possessionLabelsForKind(null).map((o) => o.label)).toEqual([
+			"uczę się",
+			"znam",
+			"dobrze znam",
+		]);
+		expect(possessionLabelsForKind("cert").map((o) => o.label)).toEqual([
+			"uczę się",
+			"znam",
+			"dobrze znam",
+		]);
+	});
+	it("każdy szczebel ma opis-tooltip (title) niepusty", () => {
+		expect(possessionLabelsForKind("tool").every((o) => o.title.length > 0)).toBe(true);
+	});
+});
+
+describe("ratingOptionsForKind — 4 szczeble skali (panel B4, nie znam osobnym szczeblem)", () => {
+	it("zwraca wartości 1..4 z opisem szczebla 1 wspólnym dla każdego rodzaju", () => {
+		const out = ratingOptionsForKind("tool");
+		expect(out.map((o) => o.value)).toEqual([1, 2, 3, 4]);
+		expect(out[0]).toEqual({ value: 1, label: "nie znam", description: DESCRIPTION_LEVEL_1 });
+		expect(out.map((o) => o.label)).toEqual(["nie znam", "uczę się", "obsługuję", "swobodnie"]);
+	});
+	it("brak rodzaju (null) == zestaw PRD (default)", () => {
+		expect(ratingOptionsForKind(null).map((o) => o.label)).toEqual([
+			"nie znam",
+			"uczę się",
+			"znam",
+			"dobrze znam",
+		]);
 	});
 });

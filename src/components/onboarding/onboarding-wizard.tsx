@@ -8,6 +8,7 @@ import { CareerHelperFlow } from "@/components/career-helper/career-helper-flow"
 import { Button } from "@/components/ui/button";
 import {
 	annotateWithSyllabus,
+	type GroupCatalog,
 	type MarketCatalogItem,
 	type PossessionLevel,
 	type SelectedCompetency,
@@ -90,6 +91,9 @@ export function OnboardingWizard({
 
 	// Katalog rynku dla wybranej ścieżki (element 2) — pobierany na wejściu w krok 3.
 	const [rawCatalog, setRawCatalog] = useState<MarketCatalogItem[]>([]);
+	// Widok grupowy (Partia 5, C2) — warstwa prezentacji nad płaskim katalogiem; pokrycie
+	// liczy się DALEJ z płaskiego `catalog`. Endpoint zwraca `groups[]` obok `items[]`.
+	const [rawGroups, setRawGroups] = useState<GroupCatalog[]>([]);
 	const [catalogGoal, setCatalogGoal] = useState<string | null>(null);
 	const [catalogLoading, setCatalogLoading] = useState(false);
 	const [catalogError, setCatalogError] = useState(false);
@@ -128,8 +132,11 @@ export function OnboardingWizard({
 			const data = (await res.json()) as {
 				isRealCareerGoal: boolean;
 				items: MarketCatalogItem[];
+				groups?: GroupCatalog[];
 			};
 			setRawCatalog(data.items);
+			// Brak `groups` (starsza odpowiedź / cel nierealny) → [] → krok pokaże płaską listę.
+			setRawGroups(data.groups ?? []);
 			setIsRealGoal(data.isRealCareerGoal);
 		} catch {
 			setCatalogError(true);
@@ -213,6 +220,7 @@ export function OnboardingWizard({
 				setSelections({});
 				setCatalogGoal(null);
 				setRawCatalog([]);
+				setRawGroups([]);
 			}
 			return { ...prev, careerGoal: careerLabel };
 		});
@@ -532,6 +540,7 @@ export function OnboardingWizard({
 						<StepMarketCompetencies
 							careerGoal={profile.careerGoal}
 							catalog={catalog}
+							groups={rawGroups}
 							selections={selections}
 							onChange={handleSelectionChange}
 							loading={catalogLoading}

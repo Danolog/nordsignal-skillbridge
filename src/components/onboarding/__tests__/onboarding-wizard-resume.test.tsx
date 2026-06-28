@@ -102,14 +102,15 @@ describe("OnboardingWizard — hydratacja initialStep/initialData", () => {
 
 		// Katalog dociąga się na wejściu w krok 3 — czekamy na pozycję „Python".
 		const pythonGroup = await screen.findByRole("group", { name: "Poziom: Python" });
-		// selections.Python=3 (Średni) → przycisk „Średni" wciśnięty (aria-pressed).
-		expect(within(pythonGroup).getByRole("button", { name: "Średni" })).toHaveAttribute(
+		// selections.Python=3 → przycisk poziomu 3 wciśnięty. Etykieta = czasownik per rodzaj
+		// (C3); katalog testowy bez `kind` → zestaw default (poziom 3 = „znam", poziom 2 = „uczę się").
+		expect(within(pythonGroup).getByRole("button", { name: "znam" })).toHaveAttribute(
 			"aria-pressed",
 			"true",
 		);
-		// selections.SQL=2 (Podstawowy) → „Podstawowy" wciśnięty.
+		// selections.SQL=2 → przycisk poziomu 2 („uczę się") wciśnięty.
 		const sqlGroup = screen.getByRole("group", { name: "Poziom: SQL" });
-		expect(within(sqlGroup).getByRole("button", { name: "Podstawowy" })).toHaveAttribute(
+		expect(within(sqlGroup).getByRole("button", { name: "uczę się" })).toHaveAttribute(
 			"aria-pressed",
 			"true",
 		);
