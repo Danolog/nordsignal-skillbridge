@@ -19,7 +19,7 @@ export function KindChip({ kind }: { kind?: LeafKind | null }) {
 	const label = KIND_LABELS[kind];
 	if (!label) return null;
 	return (
-		<span className="inline-flex items-center rounded-sm border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">
+		<span className="inline-flex items-center rounded-sm border border-ed-border bg-ed-surface px-1.5 py-0.5 text-[11px] font-medium text-ed-muted">
 			{label}
 		</span>
 	);
@@ -31,7 +31,7 @@ export function KindChip({ kind }: { kind?: LeafKind | null }) {
 export function SharePill({ unionShare }: { unionShare?: number | null }) {
 	if (unionShare == null) return null;
 	return (
-		<span className="inline-flex items-center whitespace-nowrap rounded-sm bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-500">
+		<span className="inline-flex items-center whitespace-nowrap rounded-sm border border-ed-border bg-ed-badge-bg px-2 py-0.5 text-xs font-medium text-ed-amber-text">
 			{unionShare}% ofert grupy
 		</span>
 	);

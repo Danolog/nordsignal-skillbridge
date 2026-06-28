@@ -18,9 +18,9 @@ const STATUS_LABELS: Record<SkillNodeData["status"], string> = {
 // Kolory semantyczne z palety map-* fundamentu (bez glow). WCAG 1.4.1: status
 // niesie też SŁOWO (STATUS_LABELS), nie tylko barwa.
 const STATUS_TEXT: Record<SkillNodeData["status"], string> = {
-	acquired: "text-emerald-700",
-	in_progress: "text-amber-700",
-	missing: "text-red-600",
+	acquired: "text-ed-amber-text",
+	in_progress: "text-ed-amber-text",
+	missing: "text-ed-danger",
 };
 
 const LEFTOVER = "Pozostałe";
@@ -39,7 +39,7 @@ interface GroupBucket {
 export function SkillMapList({ nodes }: { nodes: ListNode[] }) {
 	if (nodes.length === 0) {
 		return (
-			<div className="mx-auto max-w-[720px] px-6 py-10 text-center text-sm text-slate-500">
+			<div className="mx-auto max-w-[720px] px-6 py-10 text-center text-sm text-ed-muted">
 				Brak kompetencji do pokazania.
 			</div>
 		);
@@ -75,25 +75,23 @@ export function SkillMapList({ nodes }: { nodes: ListNode[] }) {
 					<details
 						key={name}
 						open={hasMissing}
-						className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+						className="overflow-hidden rounded-lg border border-ed-border bg-ed-card shadow-sm"
 					>
-						<summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50">
-							<span className="font-semibold text-slate-900">{name}</span>
+						<summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 hover:bg-ed-surface">
+							<span className="font-heading font-semibold text-ed-ink">{name}</span>
 							{!isLeftover && <SharePill unionShare={group.unionShare} />}
 						</summary>
 						{!isLeftover && group.description && (
-							<p className="px-4 pb-2 text-sm leading-relaxed text-slate-500">
-								{group.description}
-							</p>
+							<p className="px-4 pb-2 text-sm leading-relaxed text-ed-muted">{group.description}</p>
 						)}
 						<ul className="space-y-2 px-4 pb-3">
 							{group.items.map((it) => (
 								<li
 									key={it.label}
-									className="flex items-center justify-between gap-3 border-t border-slate-100 pt-2 first:border-t-0 first:pt-0"
+									className="flex items-center justify-between gap-3 border-t border-ed-border pt-2 first:border-t-0 first:pt-0"
 								>
 									<span className="flex items-center gap-2">
-										<span className="text-sm text-slate-800">{it.label}</span>
+										<span className="text-sm text-ed-ink">{it.label}</span>
 										<KindChip kind={it.kind} />
 									</span>
 									<span className="flex items-center gap-2 text-xs">
@@ -101,7 +99,7 @@ export function SkillMapList({ nodes }: { nodes: ListNode[] }) {
 											{STATUS_LABELS[it.status]}
 										</span>
 										{it.marketPercentage != null && (
-											<span className="font-mono text-slate-400">{it.marketPercentage}% ofert</span>
+											<span className="font-mono text-ed-muted">{it.marketPercentage}% ofert</span>
 										)}
 									</span>
 								</li>
