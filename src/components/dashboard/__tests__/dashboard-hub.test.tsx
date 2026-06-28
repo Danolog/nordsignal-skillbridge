@@ -87,4 +87,10 @@ describe("DashboardHub", () => {
 		render(<DashboardHub {...defaultProps} marketCoverage={0} />);
 		expect(screen.getByText("0%")).toBeInTheDocument();
 	});
+
+	it("wyciszenie Spokojny ekspert (C5) - bez dekoracyjnych poswiat na karcie motywacji", () => {
+		const { container } = render(<DashboardHub {...defaultProps} />);
+		expect(container.querySelector(".db-motivation-glow-right")).toBeNull();
+		expect(container.querySelector(".db-motivation-glow-left")).toBeNull();
+	});
 });

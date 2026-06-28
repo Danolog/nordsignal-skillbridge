@@ -196,11 +196,8 @@ export function DashboardHub(props: DashboardHubProps) {
 				))}
 			</div>
 
-			{/* Motivation card */}
+			{/* Motivation card — poświaty usunięte (Partia 5, C5: „Spokojny ekspert", zero glow) */}
 			<div className="db-motivation">
-				<div className="db-motivation-glow-right" />
-				<div className="db-motivation-glow-left" />
-
 				<div className="db-motivation-content">
 					<div className="db-motivation-icon">
 						<Rocket size={24} />

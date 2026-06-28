@@ -5,6 +5,7 @@ import { GapList } from "@/components/gap-analysis/gap-list";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { gaps, students } from "@/lib/db/schema";
+import { getCompetencyContext } from "@/lib/onboarding/competency-groups";
 
 export default async function GapAnalysisPage() {
 	const session = await auth.api.getSession({ headers: await headers() });
@@ -33,6 +34,26 @@ export default async function GapAnalysisPage() {
 		niceToHave: studentGaps.filter((g) => g.priority === "nice_to_have").length,
 	};
 
+	// Partia 5 (C5): dokładamy kontekst grupy do każdej luki przy renderze (serwerowo),
+	// złączeniem po careerGoal + nazwie z career-model.json — BEZ migracji bazy (tabela `gaps`
+	// nie niesie grupy/kind). Warstwa czysto prezentacyjna: nie zmienia liczby ani kolejności
+	// luk (niezmiennik pokrycia/luk zachowany — to wciąż te same `sortedGaps`).
+	const enrichedGaps = sortedGaps.map((gap) => {
+		const ctx = getCompetencyContext(student.careerGoal, gap.competencyName);
+		return {
+			id: gap.id,
+			competencyName: gap.competencyName,
+			priority: gap.priority,
+			marketPercentage: gap.marketPercentage,
+			estimatedHours: gap.estimatedHours,
+			whyImportant: gap.whyImportant,
+			groupName: ctx?.groupName ?? null,
+			groupDescription: ctx?.groupDescription ?? null,
+			groupUnionShare: ctx?.unionShare ?? null,
+			kind: ctx?.kind ?? null,
+		};
+	});
+
 	return (
 		<>
 			<div className="ga-page-header">
@@ -41,7 +62,7 @@ export default async function GapAnalysisPage() {
 					Luki kompetencyjne między Twoim sylabusem a wymaganiami rynku pracy
 				</p>
 			</div>
-			<GapList gaps={sortedGaps} stats={stats} />
+			<GapList gaps={enrichedGaps} stats={stats} />
 		</>
 	);
 }

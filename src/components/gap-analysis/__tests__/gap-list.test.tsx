@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { GapList } from "../gap-list";
 
@@ -111,5 +111,95 @@ describe("GapList", () => {
 		render(<GapList gaps={mockGaps} stats={defaultStats} />);
 		const whyButtons = screen.getAllByText("Dlaczego to ważne?");
 		expect(whyButtons).toHaveLength(3);
+	});
+
+	it("bez pól grupy renderuje płaską siatkę (fallback G2) — brak akordeonu grup", () => {
+		const { container } = render(<GapList gaps={mockGaps} stats={defaultStats} />);
+		expect(container.querySelector("details.ga-group")).toBeNull();
+		expect(screen.getByText("Python")).toBeInTheDocument();
+	});
+});
+
+// Partia 5, C5 — widok grupowy analizy luk: komentarz grupy „cel nauki cały czas widoczny".
+const groupedGaps = [
+	{
+		id: "g1",
+		competencyName: "SIEM",
+		priority: "critical" as const,
+		marketPercentage: 12,
+		estimatedHours: 8,
+		whyImportant: null,
+		groupName: "Wykrywanie i reagowanie",
+		groupDescription: "Po co: rozpoznajesz atak i reagujesz, zanim narobi szkód.",
+		groupUnionShare: 38,
+		kind: "concept" as const,
+	},
+	{
+		id: "g2",
+		competencyName: "Splunk",
+		priority: "important" as const,
+		marketPercentage: 7,
+		estimatedHours: 5,
+		whyImportant: null,
+		groupName: "Wykrywanie i reagowanie",
+		groupDescription: "Po co: rozpoznajesz atak i reagujesz, zanim narobi szkód.",
+		groupUnionShare: 38,
+		kind: "tool" as const,
+	},
+	{
+		// Bez grupy → kubełek „Pozostałe" (G5): neutralny, bez SharePill ani prozy.
+		id: "g3",
+		competencyName: "Soft skill X",
+		priority: "nice_to_have" as const,
+		marketPercentage: 3,
+		estimatedHours: 3,
+		whyImportant: null,
+	},
+];
+
+const groupedStats = { critical: 1, important: 1, niceToHave: 1 };
+
+describe("GapList — widok grupowy (C5)", () => {
+	it("grupuje luki w sekcje z nagłówkiem grupy + SharePill", () => {
+		render(<GapList gaps={groupedGaps} stats={groupedStats} />);
+		expect(screen.getByText("Wykrywanie i reagowanie")).toBeInTheDocument();
+		expect(screen.getByText("38% ofert grupy")).toBeInTheDocument();
+	});
+
+	it("komentarz grupy (po co) jest widoczny BEZ klikniecia (decyzja Darka #5)", () => {
+		render(<GapList gaps={groupedGaps} stats={groupedStats} />);
+		expect(
+			screen.getByText("Po co: rozpoznajesz atak i reagujesz, zanim narobi szkód."),
+		).toBeInTheDocument();
+	});
+
+	it("pokazuje KindChip (narzędzie/koncepcja) per luka", () => {
+		render(<GapList gaps={groupedGaps} stats={groupedStats} />);
+		expect(screen.getByText("koncepcja")).toBeInTheDocument();
+		expect(screen.getByText("narzędzie")).toBeInTheDocument();
+	});
+
+	it("grupa z luką krytyczną jest otwarta domyślnie (details[open])", () => {
+		const { container } = render(<GapList gaps={groupedGaps} stats={groupedStats} />);
+		const details = container.querySelectorAll("details.ga-group");
+		expect((details[0] as HTMLDetailsElement).open).toBe(true);
+	});
+
+	it("kubelek Pozostale jest neutralny - bez SharePill (G5)", () => {
+		const { container } = render(<GapList gaps={groupedGaps} stats={groupedStats} />);
+		const leftover = Array.from(
+			container.querySelectorAll<HTMLDetailsElement>("details.ga-group"),
+		).find((d) => within(d).queryByText("Pozostałe"));
+		expect(leftover).toBeDefined();
+		if (leftover) {
+			expect(within(leftover).queryByText(/ofert grupy/)).toBeNull();
+		}
+	});
+
+	it("zero regresji liczenia luk — wszystkie luki nadal wyrenderowane", () => {
+		render(<GapList gaps={groupedGaps} stats={groupedStats} />);
+		expect(screen.getByText("SIEM")).toBeInTheDocument();
+		expect(screen.getByText("Splunk")).toBeInTheDocument();
+		expect(screen.getByText("Soft skill X")).toBeInTheDocument();
 	});
 });

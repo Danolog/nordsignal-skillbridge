@@ -23,6 +23,8 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { KindChip } from "@/components/skill-map/group-context";
+import type { LeafKind } from "@/lib/db/data/anchor-config";
 
 type GapPriority = "critical" | "important" | "nice_to_have";
 
@@ -33,6 +35,9 @@ interface GapCardProps {
 	marketPercentage: number;
 	estimatedHours: number;
 	whyImportant: string | null;
+	// Etykieta typu kompetencji (narzędzie/koncepcja) — Partia 5, C5. Reużywa KindChip z C4.
+	// Tylko tool/concept dają chip; reszta (cert/meta/soft/null) → brak (KindChip zwraca null).
+	kind?: LeafKind | null;
 }
 
 const priorityConfig = {
@@ -79,6 +84,7 @@ export function GapCard({
 	marketPercentage,
 	estimatedHours,
 	whyImportant: initialWhyImportant,
+	kind,
 }: GapCardProps) {
 	const [expanded, setExpanded] = useState(false);
 	const [whyText, setWhyText] = useState<string | null>(initialWhyImportant);
@@ -145,7 +151,10 @@ export function GapCard({
 			{/* Body */}
 			<div className="ga-card-body">
 				<div className="ga-card-name-row">
-					<h3 className="ga-card-name">{competencyName}</h3>
+					<span className="ga-card-name-wrap">
+						<h3 className="ga-card-name">{competencyName}</h3>
+						<KindChip kind={kind} />
+					</span>
 					<span className={`ga-badge ${config.badgeClass}`}>
 						<span className="ga-badge-dot" />
 						{config.label}
