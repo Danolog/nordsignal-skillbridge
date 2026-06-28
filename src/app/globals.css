@@ -1407,7 +1407,7 @@
 	line-height: var(--leading-normal);
 	color: var(--ed-border);
 }
-/* Przycisk „Następny krok" — jedyny akcent na karcie: solid indigo, hover ciemniejszy */
+/* Przycisk „Następny krok" — bursztynowe CTA (--ed-amber) na ciemnym polu, hover ciemniejszy */
 .db-motivation-btn {
 	display: flex;
 	align-items: center;

@@ -100,7 +100,7 @@ function getMotivation(coverage: number, gapCount: number) {
 		return "Masz sporo do nadrobienia, ale każdy krok się liczy. Zacznij od krytycznych luk!";
 	if (coverage >= 40)
 		return "Dobra robota! Jesteś na dobrej drodze. Zamknij kolejne luki, żeby się wyróżnić.";
-	return "Twoja przygoda się zaczyna! Sprawdź Gap Analysis i wygeneruj pierwszy mikro-kurs.";
+	return "Twoja przygoda się zaczyna! Sprawdź analizę luk i wygeneruj pierwszy mikro-kurs.";
 }
 
 export function DashboardHub(props: DashboardHubProps) {
