@@ -56,6 +56,8 @@
  * render działa bez przeróbek.
  */
 
+import type { LeafKind } from "@/lib/db/data/anchor-config";
+
 export type SkillMapStatus = "acquired" | "in_progress" | "missing";
 
 export interface GraphCompetency {
@@ -78,7 +80,26 @@ export interface SkillGraphNode {
 		status: SkillMapStatus;
 		category: string;
 		marketPercentage?: number;
+		// Kontekst grupy (Partia 5, C4) — additive, dokładany PO buildGraph przez
+		// enrichNodesWithGroupContext (career-model.json). buildGraph sam tych pól
+		// nie zna — zostaje czysty/deterministyczny (niezmiennik #1 nietknięty).
+		groupName?: string;
+		groupDescription?: string;
+		groupUnionShare?: number;
+		kind?: LeafKind;
 	};
+}
+
+/**
+ * Kontekst grupy dla JEDNEJ kompetencji — kształt zgodny z `CompetencyContext`
+ * z `competency-groups.ts` (getCompetencyContext). Trzymany tu lokalnie, żeby
+ * build-graph nie importował modułu z JSON (czystość modułu).
+ */
+export interface NodeGroupContext {
+	groupName: string;
+	groupDescription: string | null;
+	unionShare: number | null;
+	kind: LeafKind | null;
 }
 
 export interface SkillGraphEdge {
@@ -185,4 +206,28 @@ function makeNode(
 		data.marketPercentage = marketPercentage;
 	}
 	return { id, type: "skillNode", position: { x: 0, y: 0 }, data };
+}
+
+/**
+ * Wzbogaca węzły grafu o kontekst grupy (Partia 5, C4) — ADDITIVE, bez migracji.
+ *
+ * Czysta funkcja: getter `getContext` jest WSTRZYKIWANY (w serwerze:
+ * `(name) => getCompetencyContext(careerGoal, name)`). Dzięki temu build-graph
+ * nie importuje modułu z career-model.json i zostaje deterministyczny/testowalny
+ * z atrapą. Węzeł bez dopasowania w hierarchii zostaje BEZ ZMIAN (zgodność wstecz).
+ * Pola null pomijamy (np. unionShare null → brak pola → render bez SharePill, G3).
+ */
+export function enrichNodesWithGroupContext(
+	nodes: readonly SkillGraphNode[],
+	getContext: (competencyName: string) => NodeGroupContext | null,
+): SkillGraphNode[] {
+	return nodes.map((node) => {
+		const ctx = getContext(node.data.label);
+		if (!ctx) return node;
+		const data = { ...node.data, groupName: ctx.groupName };
+		if (ctx.groupDescription != null) data.groupDescription = ctx.groupDescription;
+		if (ctx.unionShare != null) data.groupUnionShare = ctx.unionShare;
+		if (ctx.kind != null) data.kind = ctx.kind;
+		return { ...node, data };
+	});
 }
