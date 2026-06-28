@@ -2195,12 +2195,12 @@
 	font-family: var(--font-heading);
 	font-weight: 800;
 	font-size: 28px;
-	color: #0f172a;
+	color: var(--ed-ink);
 	margin-bottom: 6px;
 }
 .mc-page-desc {
 	font-size: 15px;
-	color: #475569;
+	color: var(--ed-muted);
 	line-height: 1.5;
 }
 
@@ -4381,7 +4381,7 @@
 }
 .proj-level-l1 {
 	background: var(--ed-border);
-	color: #059669;
+	color: var(--ed-amber-text);
 	border: 1px solid var(--ed-border);
 }
 .proj-level-l2 {
@@ -4401,7 +4401,7 @@
 }
 .proj-level-l5 {
 	background: rgba(168, 85, 247, 0.1);
-	color: #a855f7;
+	color: var(--ed-amber-text);
 	border: 1px solid rgba(168, 85, 247, 0.2);
 }
 .proj-source-badge {
@@ -4527,7 +4527,7 @@
 }
 .proj-comp-acquired {
 	background: var(--ed-border);
-	color: #059669;
+	color: var(--ed-amber-text);
 	border: 1px solid var(--ed-border);
 }
 .proj-comp-learning,
@@ -4746,10 +4746,10 @@
 	border: 1px solid var(--ed-border);
 }
 .proj-score-approved .proj-review-score-value {
-	color: #059669;
+	color: var(--ed-amber-text);
 }
 .proj-score-approved .proj-review-status-badge {
-	color: #059669;
+	color: var(--ed-amber-text);
 	border: 1px solid var(--ed-border);
 }
 .proj-score-rejected {
@@ -4856,7 +4856,7 @@
 }
 .proj-status-approved {
 	background: var(--ed-border);
-	color: #059669;
+	color: var(--ed-amber-text);
 	border: 1px solid var(--ed-border);
 }
 .proj-status-rejected {
