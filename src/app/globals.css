@@ -817,7 +817,7 @@
 	-webkit-backdrop-filter: blur(12px);
 	border: 1px solid var(--ed-border);
 	border-radius: 24px;
-	box-shadow: 0 4px 16px var(--ed-border);
+	box-shadow: 0 4px 16px rgba(27, 25, 23, 0.06);
 	padding: 40px;
 	position: relative;
 	overflow: hidden;
@@ -835,7 +835,7 @@
 /* Progress bar fill */
 .ob-progress-fill {
 	background: linear-gradient(135deg, var(--ed-amber) 0%, var(--ed-amber) 100%);
-	box-shadow: 0 0 10px var(--ed-border);
+	box-shadow: 0 0 10px rgba(27, 25, 23, 0.06);
 }
 
 /* Active step dot */
@@ -851,14 +851,14 @@
 	border-radius: 9999px;
 	font-family: var(--font-heading);
 	font-weight: 700;
-	box-shadow: 0 0 24px var(--ed-border);
+	box-shadow: 0 0 24px rgba(27, 25, 23, 0.06);
 	transition:
 		transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
 		box-shadow 0.3s ease;
 }
 .ob-btn-primary.ob-btn-primary:hover:not(:disabled) {
 	transform: translateY(-2px);
-	box-shadow: 0 0 36px var(--ed-border);
+	box-shadow: 0 0 36px rgba(27, 25, 23, 0.06);
 }
 
 /* Accent button (emerald CTA) — double class for specificity */
@@ -869,14 +869,14 @@
 	border-radius: 9999px;
 	font-family: var(--font-heading);
 	font-weight: 700;
-	box-shadow: 0 0 32px var(--ed-border);
+	box-shadow: 0 0 32px rgba(27, 25, 23, 0.06);
 	transition:
 		transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
 		box-shadow 0.3s ease;
 }
 .ob-btn-accent.ob-btn-accent:hover:not(:disabled) {
 	transform: translateY(-2px);
-	box-shadow: 0 0 40px var(--ed-border);
+	box-shadow: 0 0 40px rgba(27, 25, 23, 0.06);
 }
 
 /* Spinner */
@@ -1628,7 +1628,7 @@
 }
 .ga-stat-card:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 4px 16px var(--ed-border);
+	box-shadow: 0 4px 16px rgba(27, 25, 23, 0.06);
 }
 .ga-stat-card::before {
 	content: "";
@@ -1810,7 +1810,7 @@
 }
 .ga-card:hover {
 	transform: translateY(-4px);
-	box-shadow: 0 12px 40px var(--ed-border);
+	box-shadow: 0 12px 40px rgba(27, 25, 23, 0.06);
 	border-color: var(--ed-border);
 }
 .ga-card::after {
@@ -2035,14 +2035,14 @@
 	color: white;
 	text-decoration: none;
 	background: linear-gradient(135deg, var(--ed-ink) 0%, var(--ed-ink) 100%);
-	box-shadow: 0 0 16px var(--ed-border);
+	box-shadow: 0 0 16px rgba(27, 25, 23, 0.06);
 	transition:
 		transform 0.25s ease,
 		box-shadow 0.25s ease;
 }
 .ga-close-btn:hover {
 	transform: translateY(-1px);
-	box-shadow: 0 0 28px var(--ed-border);
+	box-shadow: 0 0 28px rgba(27, 25, 23, 0.06);
 }
 .ga-close-btn.ga-close-btn svg {
 	transition: transform 0.2s ease;
@@ -2122,7 +2122,7 @@
 	align-items: center;
 	justify-content: center;
 	margin-bottom: 20px;
-	box-shadow: 0 0 24px var(--ed-border);
+	box-shadow: 0 0 24px rgba(27, 25, 23, 0.06);
 	color: var(--ed-ink);
 }
 .ga-empty-title {
@@ -2151,14 +2151,14 @@
 	font-size: 14px;
 	border-radius: 9999px;
 	text-decoration: none;
-	box-shadow: 0 0 20px var(--ed-border);
+	box-shadow: 0 0 20px rgba(27, 25, 23, 0.06);
 	transition:
 		transform 0.25s ease,
 		box-shadow 0.25s ease;
 }
 .ga-empty-link:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 0 30px var(--ed-border);
+	box-shadow: 0 0 30px rgba(27, 25, 23, 0.06);
 }
 
 /* Responsive */
@@ -4226,7 +4226,7 @@
 	height: 8px;
 	border-radius: 50%;
 	background: linear-gradient(135deg, var(--ed-amber) 0%, var(--ed-amber) 100%);
-	box-shadow: 0 0 0 3px var(--ed-border);
+	box-shadow: 0 0 0 3px rgba(27, 25, 23, 0.06);
 }
 .proj-rec-loading {
 	display: flex;
@@ -4277,7 +4277,7 @@
 .proj-filter-select:focus {
 	outline: none;
 	border-color: var(--ed-amber);
-	box-shadow: 0 0 0 3px var(--ed-border);
+	box-shadow: 0 0 0 3px rgba(27, 25, 23, 0.06);
 }
 
 /* Grid + card */
@@ -4562,7 +4562,7 @@
 	font-size: 15px;
 	font-weight: 600;
 	cursor: pointer;
-	box-shadow: 0 4px 12px var(--ed-border);
+	box-shadow: 0 4px 12px rgba(27, 25, 23, 0.06);
 	transition:
 		transform 0.2s ease,
 		box-shadow 0.2s ease,
@@ -4571,7 +4571,7 @@
 .proj-brief-btn:hover:not(:disabled),
 .proj-submit-btn:hover:not(:disabled) {
 	transform: translateY(-1px);
-	box-shadow: 0 8px 24px var(--ed-border);
+	box-shadow: 0 8px 24px rgba(27, 25, 23, 0.06);
 }
 .proj-brief-btn:disabled,
 .proj-submit-btn:disabled {
@@ -4701,7 +4701,7 @@
 .proj-form-input:focus {
 	outline: none;
 	border-color: var(--ed-amber);
-	box-shadow: 0 0 0 3px var(--ed-border);
+	box-shadow: 0 0 0 3px rgba(27, 25, 23, 0.06);
 }
 
 /* Review (after submission) */
