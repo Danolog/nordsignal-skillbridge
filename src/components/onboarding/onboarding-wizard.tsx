@@ -324,7 +324,7 @@ export function OnboardingWizard({
 			const data = (await res.json()) as { aiGenerationFailed?: boolean };
 			if (data.aiGenerationFailed) {
 				toast.warning(
-					"Profil zapisany, ale generacja Skill Map nie powiodła się. Spróbuj ponownie ze strony Skill Map.",
+					"Profil zapisany, ale generacja mapy kompetencji nie powiodła się. Spróbuj ponownie ze strony mapy kompetencji.",
 				);
 			} else {
 				toast.success("Paszport Kompetencji utworzony!");
@@ -360,14 +360,14 @@ export function OnboardingWizard({
 	if (submitting) {
 		return (
 			<div className="flex min-h-[calc(100vh-72px)] flex-col items-center justify-center px-5 py-10 gap-6">
-				<div className="w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center">
-					<BookOpen className="h-8 w-8 text-indigo-500 animate-pulse" />
+				<div className="w-16 h-16 rounded-full bg-ed-badge-bg flex items-center justify-center">
+					<BookOpen className="h-8 w-8 text-ed-amber-text animate-pulse" />
 				</div>
 				<div className="text-center max-w-md">
 					<h2 className="font-heading text-2xl font-extrabold mb-2">Budujemy Twój Paszport…</h2>
 					<p className="text-sm text-muted-foreground">
-						Porównujemy Twoje kompetencje z wymaganiami rynku i budujemy Skill Map. To zajmie 15-30
-						sekund.
+						Porównujemy Twoje kompetencje z wymaganiami rynku i budujemy mapę kompetencji. To zajmie
+						15-30 sekund.
 					</p>
 				</div>
 			</div>
@@ -406,9 +406,9 @@ export function OnboardingWizard({
 									reached ? "cursor-pointer" : "cursor-not-allowed"
 								} ${
 									s.num < step
-										? "bg-emerald-500 text-white shadow-[0_0_16px_rgba(16,185,129,0.3)]"
+										? "bg-ed-amber text-ed-ink"
 										: isCurrent
-											? "ob-step-active text-white shadow-[0_0_24px_rgba(99,102,241,0.3)] scale-110"
+											? "ob-step-active text-ed-ink scale-110"
 											: "border-2 border-muted bg-background text-muted-foreground"
 								}`}
 							>
@@ -423,9 +423,9 @@ export function OnboardingWizard({
 							key={s.num}
 							className={`w-20 text-center text-xs font-medium transition-colors ${
 								s.num < step
-									? "text-emerald-500"
+									? "text-ed-amber-text"
 									: s.num === step
-										? "font-semibold text-[#6366F1]"
+										? "font-semibold text-ed-amber-text"
 										: "text-muted-foreground"
 							}`}
 						>
@@ -583,8 +583,8 @@ export function OnboardingWizard({
 				{/* Step 4 — Wnioski: domknięcie onboardingu. */}
 				{step === 4 && (
 					<div className="flex flex-col items-center gap-6 py-4 text-center">
-						<div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
-							<Check className="h-8 w-8 text-emerald-500" />
+						<div className="w-16 h-16 rounded-full bg-ed-amber/10 flex items-center justify-center">
+							<Check className="h-8 w-8 text-ed-amber-text" />
 						</div>
 						<div className="max-w-sm">
 							<h2 className="font-heading text-2xl font-extrabold mb-2">Profil gotowy!</h2>

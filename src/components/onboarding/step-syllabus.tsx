@@ -113,22 +113,22 @@ export function StepSyllabus({
 					}}
 					className={`ob-upload-area w-full rounded-xl border-2 border-dashed p-7 text-center transition-all ${
 						dragOver
-							? "border-[#6366F1] bg-[#6366F1]/5 scale-[1.01]"
-							: "border-[#6366F1]/20 bg-[#6366F1]/[0.02] hover:border-[#6366F1] hover:bg-[#6366F1]/5"
+							? "border-ed-amber bg-ed-amber/5 scale-[1.01]"
+							: "border-ed-amber/30 bg-ed-amber/[0.03] hover:border-ed-amber hover:bg-ed-amber/5"
 					}`}
 				>
-					<div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-[#6366F1]/10">
-						<FileUp className="h-6 w-6 text-[#6366F1]" />
+					<div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-ed-badge-bg">
+						<FileUp className="h-6 w-6 text-ed-amber-text" />
 					</div>
 					<p className="text-sm text-muted-foreground">
-						<span className="font-semibold text-[#6366F1]">Kliknij, aby wybrać plik</span> lub
+						<span className="font-semibold text-ed-amber-text">Kliknij, aby wybrać plik</span> lub
 						przeciągnij i upuść
 					</p>
 					<p className="mt-1 text-xs text-muted-foreground/70">PDF, maksymalnie 10 MB</p>
 				</button>
 			) : (
-				<div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-					<FileText className="h-5 w-5 text-emerald-600" />
+				<div className="flex items-center gap-3 rounded-lg border border-ed-amber bg-ed-badge-bg px-4 py-3">
+					<FileText className="h-5 w-5 text-ed-amber-text" />
 					<span className="flex-1 truncate text-sm font-medium">{file.name}</span>
 					<span className="font-mono text-xs text-muted-foreground">
 						{(file.size / (1024 * 1024)).toFixed(1)} MB
@@ -155,7 +155,7 @@ export function StepSyllabus({
 
 			{loading && (
 				<div className="flex flex-col items-center py-10 text-center animate-in fade-in duration-300">
-					<div className="ob-spinner mb-6 h-14 w-14 rounded-full border-[3px] border-[#6366F1]/15 border-t-[#6366F1]" />
+					<div className="ob-spinner mb-6 h-14 w-14 rounded-full border-[3px] border-ed-amber/20 border-t-ed-amber" />
 					<p className="font-heading text-lg font-bold">Analizujemy Twój sylabus</p>
 					<p className="mt-1 text-sm text-muted-foreground">
 						Wyciągamy kompetencje z Twojego programu studiów.
@@ -163,9 +163,9 @@ export function StepSyllabus({
 						To może potrwać do 30 sekund…
 					</p>
 					<div className="mt-5 flex gap-1.5">
-						<span className="ob-dot h-2 w-2 rounded-full bg-[#6366F1]" />
-						<span className="ob-dot h-2 w-2 rounded-full bg-[#6366F1] [animation-delay:0.2s]" />
-						<span className="ob-dot h-2 w-2 rounded-full bg-[#6366F1] [animation-delay:0.4s]" />
+						<span className="ob-dot h-2 w-2 rounded-full bg-ed-amber" />
+						<span className="ob-dot h-2 w-2 rounded-full bg-ed-amber [animation-delay:0.2s]" />
+						<span className="ob-dot h-2 w-2 rounded-full bg-ed-amber [animation-delay:0.4s]" />
 					</div>
 				</div>
 			)}
