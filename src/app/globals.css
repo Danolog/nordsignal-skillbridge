@@ -1250,22 +1250,10 @@
 	justify-content: center;
 }
 
-/* Ikony kafli — stonowany kolor na subtelnym tle, bez gradientu/ramki dekoracyjnej */
-.db-tile-icon-indigo {
-	background: var(--color-accent-subtle);
-	color: var(--color-accent-text);
-}
+/* Ikona kafla — bursztynowy akcent editorial na ciepłej plakietce (jeden akcent na widok) */
 .db-tile-icon-amber {
-	background: var(--color-warning-subtle);
-	color: var(--color-warning-fg);
-}
-.db-tile-icon-emerald {
-	background: var(--color-success-subtle);
-	color: var(--color-success-fg);
-}
-.db-tile-icon-cyan {
-	background: var(--color-info-subtle);
-	color: var(--color-info-fg);
+	background: var(--ed-badge-bg);
+	color: var(--ed-amber-text);
 }
 
 .db-tile-content {
@@ -1345,23 +1333,10 @@
 	justify-content: center;
 	flex-shrink: 0;
 }
-/* Ikony staty — stonowany kolor semantyczny na subtelnym tle (znaczenie, nie dekoracja) */
-.db-stat-icon-indigo {
-	background: var(--color-accent-subtle);
-	color: var(--color-accent-text);
-}
+/* Ikona staty — bursztynowy akcent editorial na ciepłej plakietce */
 .db-stat-icon-amber {
-	background: var(--color-warning-subtle);
-	color: var(--color-warning-fg);
-}
-.db-stat-icon-emerald {
-	background: var(--color-success-subtle);
-	color: var(--color-success-fg);
-}
-/* „Twój poziom" — neutralny akcent na subtelnym tle akcentu (gradient usunięty). */
-.db-stat-icon-gradient {
-	background: var(--color-accent-subtle);
-	color: var(--color-accent-text);
+	background: var(--ed-badge-bg);
+	color: var(--ed-amber-text);
 }
 .db-stat-value {
 	font-size: var(--text-lg);

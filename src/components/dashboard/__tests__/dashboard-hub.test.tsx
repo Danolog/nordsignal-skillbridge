@@ -54,8 +54,8 @@ describe("DashboardHub", () => {
 
 	it("renders all 4 navigation tiles", () => {
 		render(<DashboardHub {...defaultProps} />);
-		expect(screen.getByText("Skill Map")).toBeInTheDocument();
-		expect(screen.getByText("Gap Analysis")).toBeInTheDocument();
+		expect(screen.getByText("Mapa kompetencji")).toBeInTheDocument();
+		expect(screen.getByText("Analiza luk")).toBeInTheDocument();
 		expect(screen.getByText("Projekty")).toBeInTheDocument();
 		expect(screen.getByText("Paszport")).toBeInTheDocument();
 	});
