@@ -177,6 +177,15 @@ describe("groundCareerPaths — ugruntowanie etykiet w 23 ścieżkach (F2)", () 
 		]);
 		expect(out.map((p) => p.label)).toEqual(["Data Analyst", "Data Engineer"]);
 	});
+
+	it("odsiewa role docelowe (D1: Pomocnik proponuje tylko 21 wejściowych)", () => {
+		const out = groundCareerPaths([
+			{ label: "Solution Architect", why: "rola docelowa — nie punkt startu" },
+			{ label: "Engineering Manager", why: "rola docelowa — nie punkt startu" },
+			{ label: "Data Analyst", why: "wejściowa — zostaje" },
+		]);
+		expect(out.map((p) => p.label)).toEqual(["Data Analyst"]);
+	});
 });
 
 describe("generateSummary — ugruntowanie w katalogu (F2)", () => {

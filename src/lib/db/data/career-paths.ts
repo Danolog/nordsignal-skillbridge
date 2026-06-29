@@ -161,6 +161,17 @@ export function isRealCareerGoal(label: string): boolean {
 	return REAL_GOALS.has(label.trim());
 }
 
+/** Zbiór 21 ścieżek WEJŚCIOWYCH (bez 2 ról docelowych) — to, co Pomocnik proponuje (D1). */
+const ENTRY_GOALS = new Set(CAREER_PATHS.filter((p) => !p.targetRole).map((p) => p.careerGoal));
+
+/**
+ * Czy etykieta to jedna z 21 ścieżek WEJŚCIOWYCH (D1: Pomocnik nie proponuje ról
+ * docelowych Solution Architect/Engineering Manager — są tylko do przejrzenia w pickerze).
+ */
+export function isEntryCareerGoal(label: string): boolean {
+	return ENTRY_GOALS.has(label.trim());
+}
+
 /**
  * Klucz porównawczy etykiety celu — domyka drobne rozjazdy, których model bywa
  * autorem mimo instrukcji „kopiuj słowo w słowo": casing, diakrytyki, podwójne
@@ -171,7 +182,7 @@ export function normalizeGoalKey(s: string): string {
 		.normalize("NFD")
 		.replace(/\p{Diacritic}/gu, "")
 		.toLowerCase()
-		.replace(/[\s]+/g, " ")
+		.replace(/\s+/g, " ")
 		.trim()
 		.replace(/[.,;:!?]+$/u, "")
 		.trim();

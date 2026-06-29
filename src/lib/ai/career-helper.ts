@@ -2,7 +2,7 @@ import { generateObject, type LanguageModel, NoObjectGeneratedError, streamText 
 import { z } from "zod";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
-import { entryCareerPaths, matchCareerGoal } from "@/lib/db/data/career-paths";
+import { entryCareerPaths, isEntryCareerGoal, matchCareerGoal } from "@/lib/db/data/career-paths";
 import { extractValidationIssues, logError } from "@/lib/log";
 
 /**
@@ -207,11 +207,13 @@ const ALLOWED_PATH_LABELS: readonly string[] = entryCareerPaths().map((p) => p.c
 const ALLOWED_PATH_LABELS_BLOCK = ALLOWED_PATH_LABELS.map((l) => `- ${l}`).join("\n");
 
 /**
- * F2 — ugruntowanie etykiet w 23 ścieżkach (źródło prawdy career-paths.ts).
+ * F2 — ugruntowanie etykiet w katalogu (źródło prawdy career-paths.ts).
  * Mapuje każdy label z LLM na kanoniczny `careerGoal` (casing/diakrytyki/alias);
- * wpisy bez trafienia w katalog są USUWANE. Deduplikuje po kanonicznej etykiecie
- * (Opus bywa proponuje ten sam obszar dwa razy po normalizacji). Bez wywołania LLM.
- * Pusty wynik jest legalny — generateSummary mapuje go na łagodny fallback.
+ * wpisy bez trafienia są USUWANE. Egzekwuje D1 Sophii: zostają WYŁĄCZNIE ścieżki
+ * WEJŚCIOWE (21) — role docelowe (Solution Architect / Engineering Manager) są
+ * odsiewane, nawet jeśli model je zaproponuje (Pomocnik ich nie proponuje aktywnie;
+ * widoczne tylko do przejrzenia w pickerze). Deduplikuje po kanonicznej etykiecie.
+ * Bez wywołania LLM. Pusty wynik jest legalny — generateSummary mapuje go na fallback.
  */
 export function groundCareerPaths(
 	paths: { label: string; why: string }[],
@@ -220,7 +222,7 @@ export function groundCareerPaths(
 	const out: { label: string; why: string }[] = [];
 	for (const p of paths) {
 		const canonical = matchCareerGoal(p.label);
-		if (!canonical || seen.has(canonical)) continue;
+		if (!canonical || !isEntryCareerGoal(canonical) || seen.has(canonical)) continue;
 		seen.add(canonical);
 		out.push({ label: canonical, why: p.why });
 	}

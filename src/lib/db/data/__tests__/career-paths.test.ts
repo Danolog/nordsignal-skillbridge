@@ -13,6 +13,7 @@ import {
 	CAREER_PATHS,
 	entryCareerPaths,
 	groupCareerPathsByFamily,
+	isEntryCareerGoal,
 	isRealCareerGoal,
 	matchCareerGoal,
 	normalizeGoalKey,
@@ -93,6 +94,20 @@ describe("matchCareerGoal — ugruntowanie etykiety LLM w 23 ścieżkach (F2)", 
 		expect(matchCareerGoal("Pilot")).toBeNull();
 		expect(matchCareerGoal("Inżynier danych")).toBeNull(); // brak aliasu = brak dopasowania (świadomie bez fuzzy)
 		expect(matchCareerGoal("")).toBeNull();
+	});
+});
+
+describe("isEntryCareerGoal — bramka 21 ścieżek wejściowych (D1, Pomocnik)", () => {
+	it("ścieżka wejściowa → true", () => {
+		expect(isEntryCareerGoal("Data Analyst")).toBe(true);
+		expect(isEntryCareerGoal("DevOps Engineer")).toBe(true);
+	});
+	it("rola docelowa (w 23, ale nie wejściowa) → false", () => {
+		expect(isEntryCareerGoal("Solution Architect")).toBe(false);
+		expect(isEntryCareerGoal("Engineering Manager")).toBe(false);
+	});
+	it("cel spoza katalogu → false", () => {
+		expect(isEntryCareerGoal("Pilot")).toBe(false);
 	});
 });
 
