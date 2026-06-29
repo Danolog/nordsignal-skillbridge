@@ -29,6 +29,14 @@ import {
 /** Ile pierwszych luk pokazujemy wprost (reszta → „i jeszcze N w analizie luk"). */
 const TOP_GAPS = 5;
 
+/** Polska odmiana „pozycja": 1 → pozycja · 2–4 (poza 12–14) → pozycje · reszta → pozycji. */
+function pluralPozycja(n: number): string {
+	if (n === 1) return "pozycja";
+	const d = n % 10;
+	const dd = n % 100;
+	return d >= 2 && d <= 4 && !(dd >= 12 && dd <= 14) ? "pozycje" : "pozycji";
+}
+
 const PRIORITY_LABEL: Record<GapPriority, string> = {
 	critical: "Krytyczne",
 	important: "Ważne",
@@ -63,8 +71,11 @@ export function StepWnioski({
 	completing,
 }: StepWnioskiProps) {
 	const view = useMemo(() => {
-		const selectedLevels = Object.values(selections);
-		const selectedNames = Object.keys(selections);
+		// Lustrzane filtrowanie po katalogu (jak runSubmit w wizardzie) — odporne na
+		// ewentualny „osierocony" klucz selections spoza katalogu (nie zawyży pokrycia).
+		const inCatalog = catalog.filter((i) => selections[i.competencyName] !== undefined);
+		const selectedLevels = inCatalog.map((i) => selections[i.competencyName]);
+		const selectedNames = inCatalog.map((i) => i.competencyName);
 		const coverage = computeMarketCoverage(catalog.length, selectedLevels);
 		const gaps = deriveGaps(catalog, selectedNames);
 		const sumHours = gaps.reduce((s, g) => s + g.estimatedHours, 0);
@@ -191,9 +202,11 @@ export function StepWnioski({
 			<section className="space-y-3">
 				<div>
 					<h3 className="font-heading text-lg font-semibold text-foreground">Twój plan nauki</h3>
-					<p className="text-sm text-muted-foreground">
-						Czego jeszcze nie zaznaczyłeś — to dobiera się projektami, w swoim tempie.
-					</p>
+					{!noGaps && (
+						<p className="text-sm text-muted-foreground">
+							Czego jeszcze nie zaznaczyłeś — to dobiera się projektami, w swoim tempie.
+						</p>
+					)}
 				</div>
 
 				{noGaps ? (
@@ -232,7 +245,7 @@ export function StepWnioski({
 						</ul>
 						{restGaps > 0 && (
 							<p className="text-xs text-muted-foreground">
-								…i jeszcze {restGaps} {restGaps === 1 ? "pozycja" : "pozycji"} w analizie luk.
+								…i jeszcze {restGaps} {pluralPozycja(restGaps)} w analizie luk.
 							</p>
 						)}
 					</>
