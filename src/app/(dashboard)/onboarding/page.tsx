@@ -7,7 +7,7 @@ import {
 } from "@/components/onboarding/onboarding-wizard";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { isRealCareerGoal } from "@/lib/db/data/career-paths";
+import { matchCareerGoal } from "@/lib/db/data/career-paths";
 import { competencies, students } from "@/lib/db/schema";
 
 export default async function OnboardingPage({
@@ -22,15 +22,21 @@ export default async function OnboardingPage({
 	// wybrać nowy cel i dostać przeliczony pulpit. Brama (poniżej) otwiera się TYLKO
 	// dla ?mode=change. Bez tego parametru zachowanie bez zmian (ukończony → dashboard).
 	// `goal` (opcjonalny) = cel wybrany w standalone Pomocniku — wstępnie ustawiony,
-	// żeby nie wybierać dwa razy; walidowany względem katalogu 23 (URL niezaufany).
+	// żeby nie wybierać dwa razy. matchCareerGoal kanonizuje (casing/diakrytyki) i
+	// odrzuca cele spoza 23 (URL niezaufany) → null gdy nie pasuje.
 	const { mode, goal } = await searchParams;
 	const isChangeMode = mode === "change";
-	const presetGoal = isChangeMode && goal && isRealCareerGoal(goal) ? goal.trim() : undefined;
+	const presetGoal = isChangeMode && goal ? (matchCareerGoal(goal) ?? undefined) : undefined;
 
 	const student = await db.query.students.findFirst({
 		where: eq(students.userId, session.user.id),
 	});
 	if (student?.onboardingCompleted && !isChangeMode) redirect("/dashboard");
+
+	// Tryb zmiany kierunku obowiązuje TYLKO dla ukończonego studenta (obrona w głąb:
+	// student w trakcie z ręcznie dorobionym ?mode=change nie traci pozycji wznowienia).
+	const inChangeFlow = isChangeMode && Boolean(student?.onboardingCompleted);
+	const effectivePreset = inChangeFlow ? presetGoal : undefined;
 
 	// Hydratacja: brak rekordu studenta (zupełnie nowy user) → kreator od Kroku 0,
 	// pusty stan. Inaczej budujemy initialStep z high-water-marka + initialData z
@@ -44,10 +50,16 @@ export default async function OnboardingPage({
 	if (student) {
 		// Krok 0 (sesja czatu Pomocnika) NIE jest odtwarzany — do wznowienia od kroku 1
 		// wystarczy ustalony careerGoal (≠""). Bez celu zostajemy na Kroku 0. W trybie
-		// zmiany kierunku: jeśli cel już wybrany w Pomocniku (presetGoal) → od Kroku 1
+		// zmiany kierunku: jeśli cel już wybrany w Pomocniku (effectivePreset) → od Kroku 1
 		// (bez ponownego wyboru); inaczej od Kroku 0 (wybór nowego celu w kreatorze).
 		const hasCareerGoal = student.careerGoal.trim() !== "";
-		initialStep = isChangeMode ? (presetGoal ? 1 : 0) : hasCareerGoal ? student.onboardingStep : 0;
+		initialStep = inChangeFlow
+			? effectivePreset
+				? 1
+				: 0
+			: hasCareerGoal
+				? student.onboardingStep
+				: 0;
 
 		// Placeholder profilu z Kroku 0 ma university="" → puste pola w formularzu.
 		const profileReal = student.university.trim() !== "";
@@ -64,7 +76,7 @@ export default async function OnboardingPage({
 				columns: { name: true, selfAssessment: true },
 				orderBy: (c, { asc }) => [asc(c.createdAt)],
 			});
-			if (isChangeMode) carryoverSelfAssessments = {};
+			if (inChangeFlow) carryoverSelfAssessments = {};
 			const target = carryoverSelfAssessments ?? selections;
 			for (const r of rows) {
 				if (r.selfAssessment === 2 || r.selfAssessment === 3 || r.selfAssessment === 4) {
@@ -79,7 +91,7 @@ export default async function OnboardingPage({
 				fieldOfStudy: profileReal ? student.fieldOfStudy : "",
 				semester: profileReal ? String(student.semester) : "",
 				// Zmiana kierunku z wybranym celem → nowy cel; inaczej dotychczasowy.
-				careerGoal: presetGoal ?? student.careerGoal,
+				careerGoal: effectivePreset ?? student.careerGoal,
 			},
 			syllabusText: student.syllabusText ?? "",
 			selections,
