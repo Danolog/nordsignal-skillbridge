@@ -60,12 +60,21 @@ interface OnboardingWizardProps {
 	initialStep?: number;
 	/** Dane wczytane z bazy (profil/sylabus/wybór). Brak = pusty start. */
 	initialData?: OnboardingInitialData;
+	/**
+	 * G („zmień kierunek") — samoocena z POPRZEDNIEGO celu (nazwa → poziom). Przy
+	 * wejściu na krok 3 nowego celu zasiewamy wybór dla nazw obecnych w nowym
+	 * katalogu (część wspólna umiejętności), żeby student nie oceniał od zera tego,
+	 * czego się nie „od-uczył" (np. SQL, Git). Trzymane ODRĘBNIE od `selections`,
+	 * bo `handleCareerGoalChosen` czyści `selections` przy zmianie celu.
+	 */
+	carryoverSelfAssessments?: Record<string, PossessionLevel>;
 }
 
 export function OnboardingWizard({
 	user: _user,
 	initialStep = 0,
 	initialData,
+	carryoverSelfAssessments,
 }: OnboardingWizardProps) {
 	const router = useRouter();
 	const [step, setStep] = useState(initialStep);
@@ -118,36 +127,56 @@ export function OnboardingWizard({
 	);
 
 	// ── Pobranie katalogu rynku (krok 3) ────────────────────────────────────
-	const loadCatalog = useCallback(async (careerGoal: string) => {
-		if (!careerGoal) return;
-		setCatalogLoading(true);
-		setCatalogError(false);
-		// Oznacz cel jako „obsłużony" OPTYMISTYCZNIE — inaczej efekt poniżej wpadłby w
-		// pętlę przy trwałym błędzie sieci (catalogGoal≠careerGoal ∧ !loading → ciągły
-		// refetch). Ponowna próba idzie wyłącznie jawnie przez onRetry (stan błędu).
-		setCatalogGoal(careerGoal);
-		try {
-			const res = await fetch(
-				`/api/onboarding/market-catalog?careerGoal=${encodeURIComponent(careerGoal)}`,
-			);
-			if (!res.ok) throw new Error("catalog_failed");
-			const data = (await res.json()) as {
-				isRealCareerGoal: boolean;
-				items: MarketCatalogItem[];
-				groups?: GroupCatalog[];
-				profileNote?: string | null;
-			};
-			setRawCatalog(data.items);
-			// Brak `groups` (starsza odpowiedź / cel nierealny) → [] → krok pokaże płaską listę.
-			setRawGroups(data.groups ?? []);
-			setProfileNote(data.profileNote ?? null);
-			setIsRealGoal(data.isRealCareerGoal);
-		} catch {
-			setCatalogError(true);
-		} finally {
-			setCatalogLoading(false);
-		}
-	}, []);
+	const loadCatalog = useCallback(
+		async (careerGoal: string) => {
+			if (!careerGoal) return;
+			setCatalogLoading(true);
+			setCatalogError(false);
+			// Oznacz cel jako „obsłużony" OPTYMISTYCZNIE — inaczej efekt poniżej wpadłby w
+			// pętlę przy trwałym błędzie sieci (catalogGoal≠careerGoal ∧ !loading → ciągły
+			// refetch). Ponowna próba idzie wyłącznie jawnie przez onRetry (stan błędu).
+			setCatalogGoal(careerGoal);
+			try {
+				const res = await fetch(
+					`/api/onboarding/market-catalog?careerGoal=${encodeURIComponent(careerGoal)}`,
+				);
+				if (!res.ok) throw new Error("catalog_failed");
+				const data = (await res.json()) as {
+					isRealCareerGoal: boolean;
+					items: MarketCatalogItem[];
+					groups?: GroupCatalog[];
+					profileNote?: string | null;
+				};
+				setRawCatalog(data.items);
+				// Brak `groups` (starsza odpowiedź / cel nierealny) → [] → krok pokaże płaską listę.
+				setRawGroups(data.groups ?? []);
+				setProfileNote(data.profileNote ?? null);
+				setIsRealGoal(data.isRealCareerGoal);
+				// G — carryover: zasiej wybór z poprzedniego celu dla nazw obecnych w NOWYM
+				// katalogu. Dopasowanie znormalizowane (trim+lower, jak deriveGaps). Tylko gdy
+				// wybór pusty — nie nadpisujemy ręcznych zmian usera ani wznawianego onboardingu.
+				if (carryoverSelfAssessments && Object.keys(carryoverSelfAssessments).length > 0) {
+					const norm = (s: string) => s.trim().toLowerCase();
+					const byNorm = new Map(
+						Object.entries(carryoverSelfAssessments).map(([n, lvl]) => [norm(n), lvl]),
+					);
+					const seeded: Record<string, PossessionLevel> = {};
+					for (const item of data.items) {
+						const lvl = byNorm.get(norm(item.competencyName));
+						if (lvl) seeded[item.competencyName] = lvl;
+					}
+					if (Object.keys(seeded).length > 0) {
+						setSelections((prev) => (Object.keys(prev).length === 0 ? seeded : prev));
+					}
+				}
+			} catch {
+				setCatalogError(true);
+			} finally {
+				setCatalogLoading(false);
+			}
+		},
+		[carryoverSelfAssessments],
+	);
 
 	// Wejście na krok 3 (także przy wznawianiu) → pobierz katalog, jeśli nie ten cel.
 	useEffect(() => {
