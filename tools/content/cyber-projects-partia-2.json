@@ -1,0 +1,600 @@
+[
+	{
+		"slug": "cyber-siem-czas-strefy-event-time",
+		"title": "Czas w SIEM: strefy, event-time vs index-time i atak ukryty przez zegar",
+		"description": "Na publicznym zbiorze logów pokażesz najczęstszą pułapkę juniora w SOC: rozjechany czas. Odróżnisz czas, w którym zdarzenie się stało (event-time), od czasu, w którym dotarło do SIEM (index-time), sprowadzisz strefy do UTC i odnajdziesz zdarzenie, które przy złej strefie czasowej wygląda, jakby go nie było. Oddajesz repozytorium z zapytaniami i krótki raport — nie żywą sesję laba.",
+		"level": "L1",
+		"estimatedHours": 4,
+		"sourceType": "open_data",
+		"sourceUrl": "https://docs.splunk.com/Documentation/Splunk/latest/SearchTutorial/GetthetutorialdataintoSplunk",
+		"competencies": [
+			{ "name": "SIEM", "role": "required" },
+			{ "name": "SOC", "role": "required" },
+			{ "name": "Splunk", "role": "acquired" },
+			{ "name": "TCP/IP", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Rozróżnienie event-time od index-time",
+				"weight": 25,
+				"description": "Zapytania i opis pokazujące dwa różne znaczniki czasu tego samego zdarzenia: kiedy się stało (event-time) i kiedy trafiło do SIEM (index-time). Dowód = eksport zapytań + komentarz, czemu to nie to samo."
+			},
+			{
+				"criterion": "Normalizacja stref czasowych do UTC",
+				"weight": 25,
+				"description": "Pokazanie, jak ten sam zbiór wygląda w czasie lokalnym i w UTC, oraz sprowadzenie analizy do jednej, jawnej strefy. Krótka nota: która strefa i dlaczego."
+			},
+			{
+				"criterion": "Zdarzenie ukryte przez złą strefę",
+				"weight": 25,
+				"description": "Odnalezienie konkretnego zdarzenia bezpieczeństwa (np. logowanie poza godzinami pracy), które przy błędnym filtrze czasowym wypada poza okno i wygląda, jakby go nie było. Dowód: zapytanie błędne (nic nie znajduje) obok poprawnego (znajduje)."
+			},
+			{
+				"criterion": "Rola synchronizacji czasu (NTP) w korelacji",
+				"weight": 15,
+				"description": "Akapit wyjaśniający własnymi słowami, dlaczego bez zsynchronizowanych zegarów (NTP — protokół synchronizacji czasu) korelacja zdarzeń z różnych systemów się rozjeżdża. Pokazuje rozumienie, nie definicję z poradnika."
+			},
+			{
+				"criterion": "Odtwarzalność i etyka",
+				"weight": 10,
+				"description": "README z krokami odtworzenia na publicznych danych, atrybucją źródła i potwierdzeniem pracy wyłącznie na własnym/treningowym systemie zgodnie z klauzulą etyczno-prawną."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## Czas — pierwszy fundament, na którym junior się wykłada\n\n*Autoring: 2026-06-29 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nPołowa juniorskich „nic nie znalazłem\" w SOC (Security Operations Center — centrum monitorowania bezpieczeństwa) to nie brak ataku, tylko źle ustawiony czas. Log ma często dwa znaczniki: kiedy zdarzenie *się stało* (event-time) i kiedy *dotarło* do SIEM (Security Information and Event Management — system zbierania i korelowania zdarzeń) i zostało zaindeksowane (index-time). Te dwa czasy potrafią się różnić o sekundy albo godziny — a jeśli filtrujesz po niewłaściwym, atak jest w danych, ale Ty go nie widzisz.\n\nDrugi cichy zabójca to strefy czasowe: log zapisany w UTC i log w czasie lokalnym, zmieszane w jednym oknie wyszukiwania, dają obraz, w którym zdarzenia układają się w złej kolejności. Dlatego dojrzały analityk **najpierw** sprowadza wszystko do jednej, jawnej strefy (zwykle UTC), a dopiero potem szuka. Bez zsynchronizowanych zegarów na źródłach (NTP — Network Time Protocol, protokół synchronizacji czasu) korelacja między systemami staje się zgadywaniem. To brzmi nudno, ale to jest dokładnie ten szczegół, który odróżnia kogoś, kto „umie klikać w SIEM\", od kogoś, komu można powierzyć dochodzenie.\n\n## Licencje i atrybucja\n\n- **Splunk Free** — użycie edukacyjne, bez redystrybucji; dane tutorialowe są syntetyczne (wygenerowane na potrzeby nauki).\n- Jeśli korzystasz ze ścieżki zapasowej loghub (realne logi), w oddanym artefakcie maskujesz adresy IP (np. ostatni oktet 192.168.0.x), bez re-identyfikacji osób (RODO, minimalizacja danych; adres IP bywa daną osobową w określonych warunkach — TSUE Breyer C-582/14).\n- Atrybucja źródła danych w README projektu.",
+		"learning_resources": [
+			{
+				"title": "Splunk — wczytanie danych tutorialowych do laba",
+				"url": "https://docs.splunk.com/Documentation/Splunk/latest/SearchTutorial/GetthetutorialdataintoSplunk",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Splunk — jak SIEM traktuje czas zdarzenia (_time, index-time vs event-time)",
+				"url": "https://docs.splunk.com/Documentation/Splunk/latest/Data/HowSplunkextractstimestamps",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "NIST SP 800-92 — zarządzanie logami (rozdział o znacznikach czasu)",
+				"url": "https://csrc.nist.gov/pubs/sp/800/92/final",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://docs.splunk.com/Documentation/Splunk/latest/SearchTutorial/GetthetutorialdataintoSplunk",
+				"label": "Splunk Search Tutorial — dane tutorialowe (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://github.com/logpai/loghub",
+				"label": "loghub — publiczne logi jako alternatywny zbiór (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "cyber-siem-normalizacja-parsowanie-cim",
+		"title": "Normalizacja w SIEM: jedna reguła na trzy różne źródła logów",
+		"description": "Weźmiesz 2–3 różne publiczne źródła logów (np. uwierzytelnianie, serwer WWW, zapora), rozbierzesz je na pola (parsowanie) i sprowadzisz do wspólnego modelu pól (CIM/ECS), tak by jedna reguła detekcji działała na wszystkich niezależnie od formatu. Oddajesz repozytorium z parserami, mapowaniem pól i regułą działającą ponad źródłem.",
+		"level": "L2",
+		"estimatedHours": 10,
+		"sourceType": "open_data",
+		"sourceUrl": "https://github.com/logpai/loghub",
+		"competencies": [
+			{ "name": "SIEM", "role": "required" },
+			{ "name": "SOC", "role": "required" },
+			{ "name": "Splunk", "role": "acquired" },
+			{ "name": "Linux", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Parsowanie pól z 2–3 różnych źródeł",
+				"weight": 25,
+				"description": "Z surowych, różnie sformatowanych logów wyłuskane te same pola znaczeniowe (czas, adres źródłowy, użytkownik, akcja, wynik). Dowód: konfiguracja parsera lub skrypt + przykład przed/po dla każdego źródła."
+			},
+			{
+				"criterion": "Mapowanie na wspólny model pól (CIM / ECS)",
+				"weight": 30,
+				"description": "Pola z każdego źródła zmapowane na jeden wspólny słownik — Splunk CIM (Common Information Model) albo Elastic ECS (Elastic Common Schema). Tabela mapowania: pole źródłowe → pole wspólne, dla każdego źródła."
+			},
+			{
+				"criterion": "Reguła niezależna od źródła",
+				"weight": 25,
+				"description": "Jedno zapytanie/reguła detekcji napisane na polach wspólnego modelu, które poprawnie działa na każdym z trzech źródeł bez przepisywania pod konkretny format. Dowód: ten sam warunek, trzy wyniki."
+			},
+			{
+				"criterion": "Dokumentacja decyzji mapowania",
+				"weight": 10,
+				"description": "Krótki opis, dlaczego dane pole źródłowe odpowiada danemu polu wspólnemu i co zrobiono z polami, które nie pasują wprost (utrata informacji, pole własne)."
+			},
+			{
+				"criterion": "Odtwarzalność i atrybucja",
+				"weight": 10,
+				"description": "README z krokami odtworzenia, linkami do publicznych zbiorów, notą licencyjną i klauzulą etyczno-prawną; adresy IP w przykładach zamaskowane (np. ostatni oktet 192.168.0.x)."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## Normalizacja — nudny fundament, bez którego detekcja nie skaluje\n\n*Autoring: 2026-06-29 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nReguła napisana na pole `src_ip` nie zadziała na źródle, gdzie ten sam adres nazywa się `source_address` albo `clientIP`. To jest sedno, którego amator nie widzi: pisze reguły pod jedno konkretne źródło, a gdy dochodzi drugie, wszystko trzeba pisać od nowa. Zawodowiec robi inaczej — najpierw **normalizuje**: rozbiera każdy log na pola (parsowanie) i mapuje je na jeden wspólny słownik. W świecie Splunka to CIM (Common Information Model), w świecie Elastica to ECS (Elastic Common Schema). Dzięki temu jedna reguła detekcji opisana na polach wspólnego modelu działa niezależnie od tego, czy log przyszedł z zapory, z serwera WWW czy z systemu uwierzytelniania.\n\nTo decyduje o tym, czy detekcja w ogóle da się utrzymać w skali firmy. Bez wspólnego modelu masz setki reguł przyklejonych do konkretnych formatów; z modelem — garść reguł, które przeżywają zmianę źródła. Przy mapowaniu pilnujesz też, czego *nie da się* zmapować bez utraty informacji — i to dokumentujesz, bo cicha utrata pola to cicha luka w wykrywaniu.\n\n## Licencje i atrybucja\n\n- **loghub** — cytuj w README: repozytorium https://github.com/logpai/loghub oraz paper „Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics\" (Zhu i in.).\n- **Maskowanie IP** — adresy w przykładach zamaskowane, bez re-identyfikacji osób (RODO, zasada minimalizacji danych; adres IP bywa daną osobową w określonych warunkach — TSUE, Breyer C-582/14).",
+		"learning_resources": [
+			{
+				"title": "Splunk Common Information Model (CIM) — wspólny model pól",
+				"url": "https://docs.splunk.com/Documentation/CIM/latest/User/Overview",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Elastic Common Schema (ECS) — wspólny model pól Elastic",
+				"url": "https://www.elastic.co/guide/en/ecs/current/index.html",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "loghub — publiczne zbiory logów systemowych do parsowania",
+				"url": "https://github.com/logpai/loghub",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://github.com/logpai/loghub",
+				"label": "loghub — publiczne logi (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://www.secrepo.com/",
+				"label": "SecRepo — zbiory danych bezpieczeństwa (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "cyber-siem-regula-detekcji-prog-triage",
+		"title": "Reguła detekcji z uzasadnionym progiem i triage: rozpylanie haseł",
+		"description": "Napiszesz regułę wykrywającą rozpylanie haseł / brute-force (wiele prób logowania, potem jedno udane), ale sednem nie jest sama reguła — jest świadomy dobór progu i okna czasowego z bazowej linii oraz segregacja prawdziwych zagrożeń od fałszywych alarmów. Oddajesz repozytorium z regułą, uzasadnieniem progu i raportem triage.",
+		"level": "L2",
+		"estimatedHours": 12,
+		"sourceType": "open_data",
+		"sourceUrl": "https://github.com/splunk/botsv3",
+		"competencies": [
+			{ "name": "SIEM", "role": "required" },
+			{ "name": "SOC", "role": "required" },
+			{ "name": "Incident Response", "role": "acquired" },
+			{ "name": "Python", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Reguła detekcji z jawnym progiem i oknem",
+				"weight": 30,
+				"description": "Zapytanie/reguła z wprost zapisanym progiem (ile prób) i oknem czasowym (w jakim czasie). Dowód = eksport reguły + wynik na zbiorze."
+			},
+			{
+				"criterion": "Uzasadnienie progu z bazowej linii",
+				"weight": 20,
+				"description": "Pokazanie, że próg nie jest z sufitu: wyliczenie normalnego poziomu zdarzenia w zbiorze (baseline) i wyprowadzenie progu z tych danych. Akapit: dlaczego ten próg, a nie wyższy/niższy, i jaki to kompromis (fałszywe alarmy vs przeoczenie)."
+			},
+			{
+				"criterion": "Segregacja prawdziwych pozytywów od fałszywych",
+				"weight": 25,
+				"description": "Przejrzenie trafień reguły i rozdzielenie realnych zagrożeń (true positive) od fałszywych alarmów (false positive), z uzasadnieniem każdej decyzji. Pokazuje rzemiosło triage, nie samą liczbę alertów."
+			},
+			{
+				"criterion": "Raport triage (priorytet + następny krok)",
+				"weight": 15,
+				"description": "Dla wybranego trafienia: jaki priorytet (severity) i dlaczego, oraz konkretny następny krok analityka. Reguła bez opisu reakcji to martwa reguła."
+			},
+			{
+				"criterion": "Odtwarzalność, RODO i etyka",
+				"weight": 10,
+				"description": "README z krokami odtworzenia i atrybucją; adresy IP w oddanym artefakcie zamaskowane (np. 192.168.0.x), bez re-identyfikacji osób; klauzula etyczno-prawna."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## Próg to kompromis, nie liczba z poradnika\n\n*Autoring: 2026-06-29 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nNapisać warunek „pięć nieudanych logowań w minutę\" potrafi każdy. Praca zaczyna się przy pytaniu: *dlaczego pięć, a nie dwadzieścia?* Za niski próg zalewa SOC fałszywymi alarmami (alert fatigue — zmęczenie alertami, po którym analityk przestaje patrzeć), za wysoki przepuszcza atak. Zawodowiec wyprowadza próg z **bazowej linii** (baseline) — z tego, ile danego zdarzenia jest normalne w tym konkretnym zbiorze — a nie z liczby przepisanej z internetu. I nazywa kompromis wprost: fałszywy alarm kosztuje czas, fałszywy negatyw kosztuje włamanie; te dwa błędy nie są symetryczne.\n\nDruga połowa rzemiosła to **triage** — segregacja trafień na realne zagrożenia (true positive) i fałszywe alarmy (false positive). „Skaner robi swoje\" wygląda w logach jak „ktoś nas atakuje\"; rozróżnia je dopiero kontekst (czyj adres, czy zaplanowane, czy znane). Rozpylanie haseł (password spraying — jedno popularne hasło próbowane na wielu kontach) i brute-force (atak siłowy — wiele haseł na jedno konto) to klasyczne wzorce do ćwiczenia tej decyzji. Reguła, przy której analityk nie wie, co zrobić po alercie, jest gorsza niż jej brak.\n\n## Licencje i atrybucja\n\n- **Splunk Boss of the SOC (BOTS)** — publiczny zbiór danych SOC do ćwiczeń; cytuj repozytorium w README. Alternatywnie własny syntetyczny zbiór logów uwierzytelniania — ocena bez różnicy.\n- **Maskowanie IP** — adresy w oddanym artefakcie zamaskowane (RODO, minimalizacja danych; adres IP bywa daną osobową w określonych warunkach — TSUE, Breyer C-582/14).",
+		"learning_resources": [
+			{
+				"title": "Splunk Boss of the SOC (BOTS) — publiczny zbiór danych SOC",
+				"url": "https://github.com/splunk/botsv3",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "MITRE ATT&CK — technika T1110 (Brute Force) jako kontekst zagrożenia",
+				"url": "https://attack.mitre.org/techniques/T1110/",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "NIST SP 800-61r2 — obsługa incydentów (triage i priorytetyzacja)",
+				"url": "https://csrc.nist.gov/pubs/sp/800/61/r2/final",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://github.com/splunk/botsv3",
+				"label": "Splunk BOTS v3 — dane SOC (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://github.com/logpai/loghub",
+				"label": "loghub — alternatywny zbiór logów (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "cyber-siem-wzbogacanie-alertu-threat-intel",
+		"title": "Wzbogacanie alertu: jak kontekst zmienia priorytet incydentu",
+		"description": "Weźmiesz surowy alert i dołożysz do niego kontekst — wywiad o zagrożeniach (threat intelligence), geolokalizację adresu (GeoIP) i informację o koncie/hoście (czy to administrator, czy serwer produkcyjny) — a potem pokażesz, jak ten sam alert zmienia priorytet po wzbogaceniu. Oddajesz repozytorium z potokiem wzbogacania i raportem przed/po.",
+		"level": "L2",
+		"estimatedHours": 10,
+		"sourceType": "open_data",
+		"sourceUrl": "https://github.com/splunk/botsv3",
+		"competencies": [
+			{ "name": "SIEM", "role": "required" },
+			{ "name": "SOC", "role": "required" },
+			{ "name": "Incident Response", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Dołączenie kontekstu zewnętrznego (threat intel / GeoIP)",
+				"weight": 30,
+				"description": "Alert wzbogacony o co najmniej jeden zewnętrzny sygnał: czy adres jest na otwartej liście znanych zagrożeń (threat intelligence) i/lub skąd geograficznie pochodzi (GeoIP). Dowód: alert przed i po dołożeniu pola."
+			},
+			{
+				"criterion": "Kontekst konta i hosta",
+				"weight": 20,
+				"description": "Dołożenie kontekstu wewnętrznego: czy konto jest uprzywilejowane (administrator), czy host to system produkcyjny czy testowy. Pokazuje, że ten sam czyn na różnych kontach znaczy co innego."
+			},
+			{
+				"criterion": "Zmiana priorytetu po wzbogaceniu",
+				"weight": 25,
+				"description": "Jawne pokazanie, jak priorytet (severity) alertu rośnie lub spada po dołożeniu kontekstu, z uzasadnieniem. To jest sedno: wzbogacanie istnieje po to, by lepiej priorytetyzować."
+			},
+			{
+				"criterion": "Granice i ograniczenia źródeł wzbogacenia",
+				"weight": 15,
+				"description": "Krótki opis: na ile można ufać danemu źródłu (np. GeoIP bywa nieprecyzyjne, lista zagrożeń się starzeje) i jak nie nadać fałszywej pewności na podstawie słabego sygnału."
+			},
+			{
+				"criterion": "Odtwarzalność, RODO i etyka",
+				"weight": 10,
+				"description": "README z krokami odtworzenia i atrybucją źródeł; adresy IP w artefakcie zamaskowane, bez re-identyfikacji osób; klauzula etyczno-prawna."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## Goły alert kłamie — dopiero kontekst go ustawia\n\n*Autoring: 2026-06-29 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\n„Nieudane logowanie z adresu 203.0.113.10\" to alert, który nic nie mówi. To samo zdarzenie znaczy zupełnie co innego, gdy dołożysz kontekst: czy ten adres jest na otwartej liście znanych zagrożeń (threat intelligence — wywiad o zagrożeniach), z jakiego kraju pochodzi (GeoIP — geolokalizacja adresu), czy konto to zwykły użytkownik czy administrator, czy host to serwer produkcyjny czy maszyna testowa. **Wzbogacanie** (enrichment) to dokładanie tych warstw kontekstu, żeby z surowego zdarzenia zrobić alert, który da się sensownie spriorytetyzować.\n\nDojrzałość polega tu na dwóch rzeczach. Pierwsza: ten sam czyn na koncie administratora to wyższy priorytet niż na koncie stażysty — kontekst zmienia severity, i to jest cały sens wzbogacania. Druga, którą amator pomija: **źródła wzbogacenia też się mylą**. GeoIP bywa nieprecyzyjne, lista zagrożeń się starzeje, a fałszywa pewność oparta na słabym sygnale jest groźniejsza niż jej brak. Zawodowiec dokłada kontekst i jednocześnie zna jego granice.\n\n## Licencje i atrybucja\n\n- **Splunk BOTS** — publiczny zbiór danych SOC; cytuj w README.\n- Źródła wzbogacenia wyłącznie otwarte/publiczne (np. otwarte listy zagrożeń, otwarte bazy GeoIP); atrybucja każdego użytego źródła w README.\n- **Maskowanie IP** — adresy w artefakcie zamaskowane (RODO, minimalizacja danych; adres IP bywa daną osobową w określonych warunkach — TSUE, Breyer C-582/14).",
+		"learning_resources": [
+			{
+				"title": "MITRE ATT&CK — taktyki i techniki jako kontekst zagrożenia",
+				"url": "https://attack.mitre.org/",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "OWASP Logging Cheat Sheet — co i jak logować dla sensownych alertów",
+				"url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Splunk Boss of the SOC (BOTS) — zbiór danych do wzbogacania alertów",
+				"url": "https://github.com/splunk/botsv3",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://github.com/splunk/botsv3",
+				"label": "Splunk BOTS v3 — dane SOC (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://attack.mitre.org/",
+				"label": "MITRE ATT&CK — kontekst technik (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "cyber-siem-korelacja-wielu-zrodel",
+		"title": "Korelacja w SIEM: jeden alert z trzech źródeł zamiast trzech osobnych",
+		"description": "Zbudujesz regułę korelacyjną, która łączy zdarzenia z różnych źródeł — uwierzytelnianie + stacja końcowa (EDR) + zapora — w jeden alert o wyższej pewności niż każde źródło osobno. Odtworzysz w publicznych danych łańcuch ataku i pokażesz, jak korelacja tnie szum. Oddajesz repozytorium z regułą, scenariuszem i porównaniem przed/po.",
+		"level": "L3",
+		"estimatedHours": 22,
+		"sourceType": "open_data",
+		"sourceUrl": "https://github.com/splunk/botsv3",
+		"competencies": [
+			{ "name": "SIEM", "role": "required" },
+			{ "name": "SOC", "role": "required" },
+			{ "name": "EDR / XDR", "role": "acquired" },
+			{ "name": "Firewall / IDS-IPS", "role": "acquired" },
+			{ "name": "Incident Response", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Reguła łącząca co najmniej trzy źródła",
+				"weight": 30,
+				"description": "Jedna reguła korelacyjna spinająca zdarzenia z ≥3 różnych źródeł (np. log uwierzytelniania + log EDR + log zapory) w pojedynczy alert. Dowód: eksport reguły + trafienie na zbiorze."
+			},
+			{
+				"criterion": "Wyższa pewność niż pojedyncza reguła",
+				"weight": 20,
+				"description": "Uzasadnienie, dlaczego skorelowany alert jest pewniejszy niż każde zdarzenie osobno (pojedyncze nieudane logowanie to nic; logowanie + ruch EDR + wyjście przez zaporę to wzorzec)."
+			},
+			{
+				"criterion": "Scenariusz ataku odtworzony w danych",
+				"weight": 20,
+				"description": "Opisany łańcuch zdarzeń (np. przejęcie konta → ruch boczny → wyprowadzenie danych) wskazany konkretnie w publicznym zbiorze, krok po kroku."
+			},
+			{
+				"criterion": "Redukcja szumu przez korelację (przed/po)",
+				"weight": 15,
+				"description": "Liczbowe porównanie: ile alertów generowały reguły pojedyncze, ile generuje reguła skorelowana — pokazanie, że korelacja podnosi sygnał i tnie szum."
+			},
+			{
+				"criterion": "Dokumentacja, odtwarzalność i etyka",
+				"weight": 15,
+				"description": "README z krokami odtworzenia, atrybucją zbioru, maskowaniem IP i klauzulą etyczno-prawną; jasne, że scenariusz odtworzono na publicznych/treningowych danych."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## Wartość SIEM tkwi w łączeniu, nie w pojedynczym alercie\n\n*Autoring: 2026-06-29 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nPojedyncze nieudane logowanie to nic. Nieudane logowania z dziesięciu kont z jednego adresu, potem jedno udane, potem nietypowy proces na stacji końcowej i wyjście dużej paczki danych przez zaporę — to atak. Tej historii nie widać w żadnym z logów z osobna; widać ją dopiero, gdy SIEM **skoreluje** zdarzenia z różnych źródeł w czasie. To jest powód, dla którego SIEM (Security Information and Event Management) w ogóle istnieje: nie żeby pokazać więcej alertów, tylko żeby z wielu słabych sygnałów złożyć jeden mocny.\n\nKorelacja łączy światy, które patrzą z różnych stron: uwierzytelnianie mówi *kto*, EDR (Endpoint Detection and Response — wykrywanie na stacji końcowej) mówi *co się stało na maszynie*, zapora (firewall) mówi *co wyszło na zewnątrz*. Reguła, która spina je w jeden alert, ma wyższą pewność i niższy poziom szumu niż trzy osobne reguły krzyczące niezależnie. Dlatego mierzysz tu efekt liczbowo — ile alertów było przed, ile po — bo dobra korelacja to nie więcej alarmów, tylko mniej i trafniej.\n\n## Licencje i atrybucja\n\n- **Splunk BOTS** — publiczny, wieloźródłowy zbiór danych SOC; cytuj repozytorium w README.\n- **Maskowanie IP** — adresy w artefakcie zamaskowane, bez re-identyfikacji osób (RODO, minimalizacja danych; adres IP bywa daną osobową w określonych warunkach — TSUE, Breyer C-582/14).",
+		"learning_resources": [
+			{
+				"title": "Splunk Boss of the SOC (BOTS) — wieloźródłowy zbiór do korelacji",
+				"url": "https://github.com/splunk/botsv3",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "MITRE ATT&CK — łańcuch taktyk napastnika (od dostępu do wyprowadzenia danych)",
+				"url": "https://attack.mitre.org/tactics/enterprise/",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "NIST SP 800-61r2 — obsługa incydentów (rekonstrukcja łańcucha zdarzeń)",
+				"url": "https://csrc.nist.gov/pubs/sp/800/61/r2/final",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://github.com/splunk/botsv3",
+				"label": "Splunk BOTS v3 — dane wieloźródłowe (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://www.secrepo.com/",
+				"label": "SecRepo — zbiory danych bezpieczeństwa (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "cyber-siem-mitre-attack-sigma-pokrycie",
+		"title": "Inżynieria detekcji: reguły Sigma zmapowane na MITRE ATT&CK i mapa luk",
+		"description": "Zbudujesz zestaw reguł detekcji w neutralnym formacie Sigma, zmapujesz każdą na konkretną technikę MITRE ATT&CK i — co najważniejsze — narysujesz mapę pokrycia, na której świadomie nazwiesz luki (czego nie wykrywasz). Pokażesz też tłumaczenie reguły Sigma na język konkretnego SIEM. Oddajesz repozytorium z regułami, mapowaniem i mapą luk.",
+		"level": "L3",
+		"estimatedHours": 24,
+		"sourceType": "oss",
+		"sourceUrl": "https://github.com/SigmaHQ/sigma",
+		"competencies": [
+			{ "name": "SIEM", "role": "required" },
+			{ "name": "SOC", "role": "required" },
+			{ "name": "Incident Response", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Zestaw reguł w formacie Sigma",
+				"weight": 25,
+				"description": "Co najmniej trzy poprawne reguły w neutralnym formacie Sigma (otwarty format reguł detekcji, niezależny od konkretnego SIEM). Dowód: pliki reguł w repozytorium."
+			},
+			{
+				"criterion": "Mapowanie każdej reguły na technikę ATT&CK",
+				"weight": 25,
+				"description": "Każda reguła przypisana do konkretnej techniki MITRE ATT&CK (np. T1110) z krótkim wyjaśnieniem, przed jakim zachowaniem napastnika chroni. Reguła bez techniki to reguła bez odpowiedzi na pytanie „przed czym\"."
+			},
+			{
+				"criterion": "Mapa pokrycia i świadomie nazwana luka",
+				"weight": 25,
+				"description": "Mapa pokrycia detekcji na ATT&CK z jawnie wskazanymi martwymi polami (blind spots — czego nie wykrywasz i dlaczego). Pokazuje, że student patrzy na równomierność pokrycia, nie na licznik reguł."
+			},
+			{
+				"criterion": "Tłumaczenie Sigma na język konkretnego SIEM",
+				"weight": 15,
+				"description": "Pokazanie, jak reguła Sigma tłumaczy się na zapytanie konkretnego SIEM (SPL dla Splunka lub KQL dla Sentinela) — dowód, że logika nie jest uwięziona w jednym narzędziu."
+			},
+			{
+				"criterion": "Dokumentacja, odtwarzalność i etyka",
+				"weight": 10,
+				"description": "README z krokami odtworzenia, atrybucją Sigma i ATT&CK oraz klauzulą etyczno-prawną."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## Pokrycie to nie wyścig „im więcej reguł, tym lepiej\"\n\n*Autoring: 2026-06-29 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nMITRE ATT&CK to otwarta, darmowa baza taktyk i technik realnych napastników — wspólny język między detekcją a zagrożeniem. Inżynier detekcji nie pisze reguł „na czucie\"; mapuje każdą na konkretną technikę i pyta: *przed czym to chroni?* Reguła bez przypisanej techniki to reguła bez odpowiedzi na to pytanie. Ale prawdziwa dojrzałość jest gdzie indziej: w **mapie luk**. Sto reguł na jedną technikę i zero na inną to gorsze pokrycie niż równomierne — najgroźniejsze jest to, czego SIEM *nie widzi*, bo źródło nie jest podłączone albo log nie powstaje. Zawodowiec świadomie *nazywa* te martwe pola (blind spots); amator zakłada, że „skoro cisza, to bezpiecznie\".\n\nDrugi nawyk zawodowca to niezależność od narzędzia. Reguła napisana wprost w SPL (język Splunka) albo KQL (język Sentinela) jest uwięziona w jednym SIEM. **Sigma** to otwarty, neutralny format reguł detekcji — piszesz logikę raz, a potem tłumaczysz ją na język konkretnego narzędzia. Dzięki temu Twoja praca przeżyje zmianę SIEM w firmie, a Ty nie jesteś zakładnikiem jednego producenta.\n\n## Licencje i atrybucja\n\n- **Sigma** — otwarty format reguł (repozytorium SigmaHQ); atrybucja w README.\n- **MITRE ATT&CK** — otwarta baza wiedzy, © The MITRE Corporation; atrybucja w README.\n- Reguły piszesz samodzielnie — wzorce z repozytorium Sigma traktujesz jako naukę, nie kopiujesz cudzych reguł jako własnych.",
+		"learning_resources": [
+			{
+				"title": "Sigma — otwarty, neutralny format reguł detekcji (repozytorium)",
+				"url": "https://github.com/SigmaHQ/sigma",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "MITRE ATT&CK — baza taktyk i technik napastników",
+				"url": "https://attack.mitre.org/",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Microsoft Sentinel / KQL — pierwsze zapytania (tłumaczenie reguły na SIEM)",
+				"url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/get-started-queries",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://github.com/SigmaHQ/sigma",
+				"label": "Sigma — format reguł detekcji (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://attack.mitre.org/",
+				"label": "MITRE ATT&CK — baza technik (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "cyber-siem-strojenie-testowanie-detekcji",
+		"title": "Strojenie i testowanie detekcji: dowód, że reguła naprawdę wykrywa",
+		"description": "Nastroisz regułę detekcji tak, by ograniczyć fałszywe alarmy bez gubienia prawdziwych zagrożeń, udokumentujesz każdy wyjątek (allowlist) wraz z jego ryzykiem, a następnie udowodnisz, że reguła faktycznie wykrywa — odtwarzając technikę na własnym labie zestawem Atomic Red Team. Oddajesz repozytorium z regułą przed/po strojeniu, dokumentacją wyjątków i dowodem wykrycia.",
+		"level": "L3",
+		"estimatedHours": 26,
+		"sourceType": "oss",
+		"sourceUrl": "https://github.com/redcanaryco/atomic-red-team",
+		"competencies": [
+			{ "name": "SIEM", "role": "required" },
+			{ "name": "SOC", "role": "required" },
+			{ "name": "EDR / XDR", "role": "acquired" },
+			{ "name": "Windows", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Strojenie: redukcja fałszywych alarmów bez gubienia zagrożeń",
+				"weight": 25,
+				"description": "Reguła przed i po strojeniu z pokazaniem, że liczba fałszywych alarmów spadła, a prawdziwe trafienia zostały. Strojenie to zmiana logiki, nie wyciszenie alertu."
+			},
+			{
+				"criterion": "Dokumentacja każdego wyjątku (allowlist) i jego ryzyka",
+				"weight": 20,
+				"description": "Każdy dodany wyjątek (np. „ignoruj ten proces\") opisany z uzasadnieniem i nazwanym ryzykiem — napastnik celuje w to, co odsialiśmy. Lista wyjątków bez dokumentacji to dziura."
+			},
+			{
+				"criterion": "Dowód wykrycia: symulacja techniki",
+				"weight": 30,
+				"description": "Bezpieczne odtworzenie techniki na własnym labie zestawem Atomic Red Team (gotowe, bezpieczne odwzorowania technik ATT&CK) i potwierdzenie, że reguła się odpaliła. Reguła, której nikt nie przetestował, nie istnieje."
+			},
+			{
+				"criterion": "Pomiar przed i po strojeniu",
+				"weight": 15,
+				"description": "Liczby: ile fałszywych alarmów i ile trafień przed strojeniem, ile po. Strojenie udowodnione danymi, nie deklaracją."
+			},
+			{
+				"criterion": "Etyka labu i odtwarzalność",
+				"weight": 10,
+				"description": "README z jawną adnotacją, że symulację wykonano wyłącznie na własnej/treningowej maszynie wirtualnej, w izolowanym labie bez sieci wyjściowej (odciętym od internetu); kroki odtworzenia, atrybucja Atomic Red Team oraz klauzula etyczno-prawna z art. 269a KK."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n>\n> **Klauzula uzupełniająca — wykonanie kodu i symulacje ofensywne (art. 269a KK).** Techniki wykonania kodu i symulacje ofensywne poznajesz wyłącznie po to, by je wykrywać i im zapobiegać, w izolowanym labie **bez sieci wyjściowej** (lab odcięty od internetu), wyłącznie przez bezpieczne odwzorowania (np. Atomic Red Team) na własnej maszynie. Zakłócenie pracy cudzego systemu lub sieci jest przestępstwem (art. 269a Kodeksu karnego) — obok art. 267 KK.\n\n## Strojenie to nie wyciszanie. Reguła nieprzetestowana to teatr.\n\n*Autoring: 2026-06-29 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nDwie rzeczy odróżniają inżyniera detekcji od kogoś, kto „napisał regułę i ma nadzieję\". Pierwsza: **strojenie (tuning) to nie to samo co wyciszanie (muting)**. Nastrojenie reguły to zmiana logiki tak, by była trafniejsza — mniej fałszywych alarmów, te same realne trafienia. Wyciszenie to zamiecenie alertu pod dywan. Lista wyjątków (allowlist) bywa konieczna, ale każdy wyjątek to broń obosieczna: napastnik celuje dokładnie w to, co odsialiśmy, podszywając się pod „bezpieczny\" proces. Dlatego każdy wyjątek = wpis w dokumentacji + uzasadnienie + nazwane ryzyko.\n\nDruga: **reguła, której nikt nie przetestował, nie istnieje**. Cisza w SIEM nie znaczy „bezpiecznie\" — może znaczyć „reguła nigdy się nie odpaliła, bo ma błąd albo brak danych\". Dlatego udowadniasz wykrycie: bezpiecznie odtwarzasz technikę na **własnym labie** zestawem Atomic Red Team (otwarty zbiór bezpiecznych odwzorowań technik MITRE ATT&CK do testu detekcji) i potwierdzasz, że reguła się zapaliła. To jest dowód, nie deklaracja — i dokładnie ten dowód odróżnia portfolio juniora gotowego do pracy od ćwiczenia „na papierze\".\n\n## Licencje i atrybucja\n\n- **Atomic Red Team** — © Red Canary, otwarty zbiór do testu detekcji; używasz wyłącznie na własnym/treningowym labie. Atrybucja w README.\n- **MITRE ATT&CK** — otwarta baza technik; atrybucja w README.",
+		"learning_resources": [
+			{
+				"title": "Atomic Red Team — bezpieczne odwzorowania technik ATT&CK do testu detekcji",
+				"url": "https://github.com/redcanaryco/atomic-red-team",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "MITRE ATT&CK — technika do odtworzenia na labie (kontekst)",
+				"url": "https://attack.mitre.org/",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "NIST SP 800-92 — zarządzanie logami (jakość danych dla wiarygodnej detekcji)",
+				"url": "https://csrc.nist.gov/pubs/sp/800/92/final",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://github.com/redcanaryco/atomic-red-team",
+				"label": "Atomic Red Team — test detekcji (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://attack.mitre.org/",
+				"label": "MITRE ATT&CK — baza technik (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "cyber-siem-pulpit-metryki-soc",
+		"title": "Pulpit i metryki SOC: MTTD, MTTR i koszt fałszywych alarmów",
+		"description": "Zbudujesz pulpit (dashboard) SOC na publicznych danych i policzysz miary, którymi mierzy się pracę zespołu: średni czas wykrycia (MTTD), średni czas reakcji (MTTR) i liczbę fałszywych alarmów na regułę. Najważniejsze — wyciągniesz z metryk wnioski operacyjne: co stroić dalej. Oddajesz repozytorium z definicją pulpitu i raportem interpretacji.",
+		"level": "L3",
+		"estimatedHours": 18,
+		"sourceType": "open_data",
+		"sourceUrl": "https://github.com/splunk/botsv3",
+		"competencies": [
+			{ "name": "SIEM", "role": "required" },
+			{ "name": "SOC", "role": "required" },
+			{ "name": "SOAR", "role": "acquired" }
+		],
+		"rubricJson": [
+			{
+				"criterion": "Pulpit SOC z kluczowymi widokami",
+				"weight": 25,
+				"description": "Działający pulpit (dashboard) lub jego definicja w repozytorium: kolejka alertów, trend w czasie, rozkład po priorytetach/regułach. Dowód = eksport definicji + zrzut."
+			},
+			{
+				"criterion": "Metryki MTTD i MTTR",
+				"weight": 25,
+				"description": "Zdefiniowanie i wyliczenie średniego czasu wykrycia (MTTD — Mean Time To Detect) i średniego czasu reakcji (MTTR — Mean Time To Respond) na danych, z jawnym opisem, od czego do czego mierzysz czas."
+			},
+			{
+				"criterion": "Fałszywe alarmy na regułę",
+				"weight": 20,
+				"description": "Policzenie liczby fałszywych alarmów (false positive) przypadających na każdą regułę i wskazanie reguł, które najbardziej zaśmiecają kolejkę."
+			},
+			{
+				"criterion": "Wnioski operacyjne z metryk",
+				"weight": 20,
+				"description": "Co metryki *znaczą* dla pracy SOC: którą regułę stroić, gdzie skrócić czas reakcji, co zautomatyzować (SOAR). To sedno — pulpit bez wniosków to dekoracja."
+			},
+			{
+				"criterion": "Dokumentacja, odtwarzalność i etyka",
+				"weight": 10,
+				"description": "README z krokami odtworzenia, atrybucją zbioru, maskowaniem IP i klauzulą etyczno-prawną."
+			}
+		],
+		"theory_md": "> **Klauzula etyczno-prawna (obowiązuje cały projekt).** Pracujesz wyłącznie na własnym lub jawnie treningowym systemie/zbiorze danych. Nie skanujesz, nie atakujesz, nie testujesz ani nie uzyskujesz dostępu do żadnego systemu, sieci ani konta, które nie należą do Ciebie i na które nie masz pisemnej zgody właściciela. Techniki ofensywne (np. brute-force / atak siłowy) poznajesz wyłącznie po to, by je wykrywać i im zapobiegać — nigdy nie uruchamiasz ich przeciw cudzej infrastrukturze. Nieautoryzowany dostęp do systemu lub danych jest w Polsce przestępstwem (art. 267 Kodeksu karnego) i łamie tę klauzulę oraz regulamin SkillBridge.\n\n## Mierzysz, żeby decydować — nie żeby mieć ładny wykres\n\n*Autoring: 2026-06-29 · snapshot rynku: JustJoinIT 2026-02 (kategoria Security).*\n\nSOC (Security Operations Center — centrum monitorowania bezpieczeństwa), którego nikt nie mierzy, nie wie, czy działa. Trzy miary mówią najwięcej. MTTD (Mean Time To Detect — średni czas wykrycia) to ile mija od zdarzenia do zauważenia go przez zespół. MTTR (Mean Time To Respond — średni czas reakcji) to ile mija od wykrycia do działania. Liczba **fałszywych alarmów na regułę** mówi, które reguły zaśmiecają kolejkę i napędzają zmęczenie alertami (alert fatigue) — stan, w którym analityk przestaje patrzeć, bo i tak „wszystko to fałszywki\".\n\nKluczowe, czego amator nie robi: nie zatrzymuje się na liczbie. Pulpit (dashboard) z trzema ładnymi wykresami, z którego nie wynika żadna decyzja, to dekoracja. Zawodowiec patrzy na metryki i mówi konkretnie: *tę regułę stroję, bo daje 80% fałszywych alarmów; ten typ alertu automatyzuję przez SOAR (Security Orchestration, Automation and Response — orkiestracja i automatyzacja reakcji), bo reakcja jest powtarzalna; tu skracam MTTR, bo zgłoszenie czeka godzinami*. Metryka istnieje po to, żeby pokazać, gdzie włożyć następną godzinę pracy.\n\n## Licencje i atrybucja\n\n- **Splunk BOTS** — publiczny zbiór danych SOC do zbudowania pulpitu; cytuj w README.\n- **Maskowanie IP** — adresy w artefakcie zamaskowane, bez re-identyfikacji osób (RODO, minimalizacja danych; adres IP bywa daną osobową w określonych warunkach — TSUE, Breyer C-582/14).",
+		"learning_resources": [
+			{
+				"title": "Splunk Boss of the SOC (BOTS) — dane do pulpitu i metryk",
+				"url": "https://github.com/splunk/botsv3",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "NIST Cybersecurity Framework 2.0 — funkcje Detect i Respond (kontekst metryk)",
+				"url": "https://www.nist.gov/cyberframework",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Splunk — budowa pulpitów (dashboards)",
+				"url": "https://docs.splunk.com/Documentation/Splunk/latest/Viz/Aboutthismanual",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://github.com/splunk/botsv3",
+				"label": "Splunk BOTS v3 — dane SOC (źródło główne)",
+				"position": 0
+			},
+			{
+				"url": "https://www.nist.gov/cyberframework",
+				"label": "NIST CSF 2.0 — Detect/Respond (kopia zapasowa)",
+				"position": 1
+			}
+		]
+	}
+]
