@@ -3,7 +3,7 @@ import { Info } from "lucide-react";
 /**
  * DisclaimerBanner (kompozyt B0.5, spec §6.5) — stały disclaimer HITL.
  *
- * BRAK PROPSÓW — treść zhardkodowana 1:1 w komponencie (ADR-004 §4.3 warunek c).
+ * BRAK PROPSÓW — treść zhardkodowana 1:1 w komponencie (ADR-008 — rozdział wagi oceny / CLAUDE.md §7).
  * To JEDYNE miejsce prawdy tego tekstu. Nie jest generowany przez LLM ani
  * zwracany przez żaden endpoint — żeby treści nie dało się podmienić.
  * Test sprawdza obecność stringa „To NIE są rekomendacje”.

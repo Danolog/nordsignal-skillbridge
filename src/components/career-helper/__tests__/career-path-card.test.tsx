@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CareerPathCard } from "../career-path-card";
 
 /**
- * Egzekucja HITL (ADR-004 §4.3 a/c): karta BEZ procentu/rankingu/paska
+ * Egzekucja HITL (ADR-008): karta BEZ procentu/rankingu/paska
  * prawdopodobieństwa. Karta dostaje tylko label + why — nie ma czego
  * wyrenderować jako werdykt.
  */

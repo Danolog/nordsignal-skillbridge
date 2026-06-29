@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * CareerPathCard (kompozyt B0.4, spec §6.4) — jeden obszar zawodowy.
  *
  * ŚWIADOMIE BEZ paska prawdopodobieństwa, BEZ liczby procentowej, BEZ rankingu
- * (ADR-004 §4.3 warunek a/c, egzekucja HITL). Karta ma TYLKO label + why (opis
+ * (ADR-008 — rozdział wagi oceny, egzekucja HITL). Karta ma TYLKO label + why (opis
  * powiązania) + CTA. Backend nie serializuje probability — UI nie ma czego
  * wyrenderować, i celowo nie dodaje takiego elementu.
  *
