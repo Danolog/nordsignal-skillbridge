@@ -20,43 +20,18 @@ import { competencies, gaps, jobMarketData, passports } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
 import { enrichWithKind } from "@/lib/onboarding/competency-groups";
 import {
+	type DerivedGap,
 	demandToPriority,
-	estimatedHoursForGap,
-	type GapPriority,
+	deriveGaps,
 	type MarketCatalogItem,
 	priorityRank,
 } from "@/lib/onboarding/market-catalog";
 import { calculateCoverage } from "@/lib/passport-utils";
 
-/** Wiersz luki gotowy do zapisu (bez kluczy studenta/tenanta — dokłada je zapis). */
-export interface DerivedGap {
-	competencyName: string;
-	priority: GapPriority;
-	marketPercentage: number;
-	estimatedHours: number;
-}
-
-/**
- * Czysta funkcja: luki = pozycje katalogu rynku, których student NIE zaznaczył.
- * Porównanie po znormalizowanej nazwie (trim + lower) — odporne na drobne różnice
- * wielkości liter między katalogiem a zapisaną kompetencją.
- */
-export function deriveGaps(catalog: MarketCatalogItem[], selectedNames: string[]): DerivedGap[] {
-	const have = new Set(selectedNames.map((n) => n.trim().toLowerCase()));
-	// Priorytet WZGLĘDNY — potrzebuje najwyższego popytu W ŚCIEŻCE (cały katalog, nie tylko luki).
-	const maxDemand = catalog.reduce((m, i) => Math.max(m, i.demandPercentage), 0);
-	return catalog
-		.filter((item) => !have.has(item.competencyName.trim().toLowerCase()))
-		.map((item) => {
-			const priority = demandToPriority(item.demandPercentage, maxDemand);
-			return {
-				competencyName: item.competencyName,
-				priority,
-				marketPercentage: item.demandPercentage,
-				estimatedHours: estimatedHoursForGap(priority),
-			};
-		});
-}
+// deriveGaps + DerivedGap przeniesione do czystego modułu market-catalog (reużycie
+// klient+serwer, jedno źródło prawdy). Re-eksport zachowuje istniejące importy
+// (m.in. market-gaps.test.ts) i czytelność „luki liczy market-gaps".
+export { deriveGaps, type DerivedGap };
 
 /**
  * Katalog rynku dla ścieżki. Kolejność (Sophia/Darek 2026-06-27): priorytet MALEJĄCO,
