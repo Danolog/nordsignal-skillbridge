@@ -31,7 +31,10 @@ const OnboardingSchema = z.object({
 	university: z.string().min(1).max(200),
 	fieldOfStudy: z.string().min(1).max(200),
 	semester: z.number().int().min(1).max(15),
-	careerGoal: z.string().min(1).max(200),
+	// Higiena (F2): trim. BEZ bramki katalogowej — endpoint współdzielony z
+	// edytorem profilu, który celowo dopuszcza własny, wpisywany cel. Wyciek z
+	// Pomocnika zamknięty u źródła (/summary grounding + select-path 400).
+	careerGoal: z.string().trim().min(1).max(200),
 	syllabusText: z.string().max(50_000).optional().default(""),
 	// UNIA dwóch kontraktów (kompatybilność wsteczna):
 	//  • NOWY (onboarding Partii 4): obiekty z poziomem — ścieżka DETERMINISTYCZNA

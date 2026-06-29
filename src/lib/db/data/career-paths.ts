@@ -161,6 +161,52 @@ export function isRealCareerGoal(label: string): boolean {
 	return REAL_GOALS.has(label.trim());
 }
 
+/**
+ * Klucz porównawczy etykiety celu — domyka drobne rozjazdy, których model bywa
+ * autorem mimo instrukcji „kopiuj słowo w słowo": casing, diakrytyki, podwójne
+ * spacje, ogon interpunkcji. NIE jest fuzzy — to ścisła normalizacja, nie podobieństwo.
+ */
+export function normalizeGoalKey(s: string): string {
+	return s
+		.normalize("NFD")
+		.replace(/\p{Diacritic}/gu, "")
+		.toLowerCase()
+		.replace(/[\s]+/g, " ")
+		.trim()
+		.replace(/[.,;:!?]+$/u, "")
+		.trim();
+}
+
+/**
+ * Ręczne aliasy dla etykiet, których Opus uparcie nie kopiuje verbatim
+ * (np. polskie tłumaczenia mimo instrukcji). Klucz = `normalizeGoalKey(alias)`,
+ * wartość = kanoniczny `careerGoal` z `CAREER_PATHS`. Pusty na start — jawny
+ * zawór, gdyby ruch produkcyjny pokazał konkretne, powtarzalne przekłamania.
+ * Świadomie BEZ fuzzy/Levenshteina (ryzyko błędnego dopasowania > zysk).
+ */
+const ALIAS_OVERRIDES: Record<string, string> = {};
+
+/** Mapa znormalizowany_klucz → kanoniczny careerGoal (z 23 + aliasy). */
+const NORM_TO_CANONICAL: Map<string, string> = (() => {
+	const m = new Map<string, string>();
+	for (const p of CAREER_PATHS) m.set(normalizeGoalKey(p.careerGoal), p.careerGoal);
+	for (const [alias, canonical] of Object.entries(ALIAS_OVERRIDES)) {
+		if (REAL_GOALS.has(canonical)) m.set(normalizeGoalKey(alias), canonical);
+	}
+	return m;
+})();
+
+/**
+ * Mapuje dowolną etykietę (np. label z LLM) na kanoniczny `careerGoal` z 23.
+ * Kolejność: exact (po trim) → po znormalizowanym kluczu (casing/diakrytyki) →
+ * alias. Brak trafienia → `null` (wpis do odsiania). Bez dopasowania przybliżonego.
+ */
+export function matchCareerGoal(label: string): string | null {
+	const trimmed = label.trim();
+	if (REAL_GOALS.has(trimmed)) return trimmed;
+	return NORM_TO_CANONICAL.get(normalizeGoalKey(trimmed)) ?? null;
+}
+
 /** Ścieżki wejściowe (21) — to, co Pomocnik może proponować aktywnie (D1). */
 export function entryCareerPaths(): CareerPath[] {
 	return CAREER_PATHS.filter((p) => !p.targetRole);

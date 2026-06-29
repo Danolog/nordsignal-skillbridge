@@ -5,6 +5,7 @@ import {
 	CareerSummarySchema,
 	detectCrisis,
 	generateSummary,
+	groundCareerPaths,
 	MAX_RESTARTS,
 	MAX_TURNS,
 	normalizeSummary,
@@ -76,11 +77,13 @@ function flakyModel(failTimes: number, payload: unknown) {
 	return { model, getCalls: () => calls };
 }
 
+// Etykiety MUSZĄ być kanoniczne (z 23 ścieżek) — od F2 generateSummary odsiewa
+// labele spoza katalogu. „Analityka danych" itp. zostałyby usunięte → 0 ścieżek.
 const SAFE_SUMMARY = {
 	summaryText: "Z tego, co powiedziałeś, ciekawi Cię praca z danymi i porządkowanie chaosu.",
 	careerPaths: [
-		{ label: "Analityka danych", why: "Lubisz porządkować informacje i szukać wzorców." },
-		{ label: "Inżynieria danych", why: "Wspominałeś o budowaniu rzeczy, które działają." },
+		{ label: "Data Analyst", why: "Lubisz porządkować informacje i szukać wzorców." },
+		{ label: "Data Engineer", why: "Wspominałeś o budowaniu rzeczy, które działają." },
 	],
 };
 
@@ -148,8 +151,10 @@ describe("generateSummary — egzekucja HITL na /summary", () => {
 
 	it("guardrail deterministyczny blokuje werdykt zanim sędzia LLM go przepuści", async () => {
 		const verdictSummary = {
-			summaryText: "Twoje powołanie to medycyna — zostań lekarzem.",
-			careerPaths: [{ label: "Medycyna", why: "Rekomendujemy tę ścieżkę." }],
+			summaryText: "Twoje powołanie to dane — zostań Analitykiem.",
+			// Kanoniczna etykieta, żeby grounding NIE odsiał ścieżki — test ma sprawdzać
+			// guardrail werdyktu (summaryText), nie pusty wynik po odsianiu.
+			careerPaths: [{ label: "Data Analyst", why: "Rekomendujemy tę ścieżkę." }],
 		};
 		const result = await generateSummary({
 			answers: {},
@@ -159,6 +164,76 @@ describe("generateSummary — egzekucja HITL na /summary", () => {
 			judgeModel: objectModel({ verdict: "YES", reason: "ok" }),
 		});
 		expect(result.judged).toBe(false);
+	});
+});
+
+describe("groundCareerPaths — ugruntowanie etykiet w 23 ścieżkach (F2)", () => {
+	it("mapuje near-miss na kanoniczną, odsiewa spoza katalogu, deduplikuje", () => {
+		const out = groundCareerPaths([
+			{ label: "data analyst ", why: "near-miss casing/spacja" },
+			{ label: "Analityka danych", why: "spoza katalogu → odsiać" },
+			{ label: "Data Analyst", why: "duplikat po normalizacji → jeden wpis" },
+			{ label: "Data Engineer", why: "kanoniczna" },
+		]);
+		expect(out.map((p) => p.label)).toEqual(["Data Analyst", "Data Engineer"]);
+	});
+});
+
+describe("generateSummary — ugruntowanie w katalogu (F2)", () => {
+	it("etykiety LLM spoza 23 → odsiane → fallback warstwa4_failed (nie pokazujemy zmyślonych)", async () => {
+		const bogus = {
+			summaryText: "Z tego, co powiedziałeś, ciekawi Cię lotnictwo.",
+			careerPaths: [
+				{ label: "Pilot wycieczkowy", why: "lubisz podróże" },
+				{ label: "Astronauta", why: "lubisz wysokości" },
+			],
+		};
+		const result = await generateSummary({
+			answers: {},
+			history: [{ role: "user", content: "lubię latać" }],
+			summaryModel: objectModel(bogus),
+			judgeModel: objectModel({ verdict: "YES", reason: "ok" }),
+		});
+		// Wszystkie odsiane → 0 ścieżek 2× → łagodny fallback, nie zmyślony cel.
+		expect(result.judged).toBe(false);
+		expect(result.careerPaths).toHaveLength(0);
+	});
+
+	it("near-miss z LLM (data analyst ze spacją) → zmapowany do kanonicznej, judged=true", async () => {
+		const nearMiss = {
+			summaryText: "Z tego, co powiedziałeś, ciekawi Cię praca z danymi.",
+			careerPaths: [{ label: "data analyst ", why: "lubisz porządkować dane" }],
+		};
+		const result = await generateSummary({
+			answers: {},
+			history: [{ role: "user", content: "lubię dane" }],
+			summaryModel: objectModel(nearMiss),
+			judgeModel: objectModel({ verdict: "YES", reason: "ok" }),
+		});
+		expect(result.judged).toBe(true);
+		if (result.judged) {
+			expect(result.careerPaths).toHaveLength(1);
+			expect(result.careerPaths[0].label).toBe("Data Analyst"); // kanoniczna
+		}
+	});
+
+	it("prompt generacji niesie listę dozwolonych etykiet katalogu", async () => {
+		let capturedPrompt = "";
+		const model = new MockLanguageModelV3({
+			doGenerate: async (options) => {
+				const msg = options.prompt.at(-1);
+				capturedPrompt = JSON.stringify(msg);
+				return generateResult(SAFE_SUMMARY);
+			},
+		});
+		await generateSummary({
+			answers: {},
+			history: [{ role: "user", content: "lubię dane" }],
+			summaryModel: model,
+			judgeModel: objectModel({ verdict: "YES", reason: "ok" }),
+		});
+		expect(capturedPrompt).toContain("Data Analyst");
+		expect(capturedPrompt).toContain("DOKŁADNĄ kopią");
 	});
 });
 
@@ -227,11 +302,12 @@ describe("generateSummary — utwardzenie na AI_NoObjectGeneratedError (bug prod
 		// Output Opusa „prawie poprawny": why dłuższe niż limit + 4 ścieżki zamiast 3.
 		const overlong = {
 			summaryText: "Z tego, co powiedziałeś, ciekawi Cię praca z danymi.",
+			// Etykiety kanoniczne (F2 grounding) — pierwsze 3 przeżywają po przycięciu do 3.
 			careerPaths: [
-				{ label: "Analityka danych", why: "x".repeat(900) }, // > 800 znaków
-				{ label: "Inżynieria danych", why: "ok" },
-				{ label: "Data science", why: "ok" },
-				{ label: "Czwarta nadmiarowa", why: "ok" }, // > 3 ścieżki
+				{ label: "Data Analyst", why: "x".repeat(900) }, // > 800 znaków
+				{ label: "Data Engineer", why: "ok" },
+				{ label: "Data Scientist", why: "ok" },
+				{ label: "Frontend Developer", why: "ok" }, // > 3 ścieżki
 			],
 		};
 		const result = await generateSummary({

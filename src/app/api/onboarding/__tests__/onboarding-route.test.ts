@@ -170,6 +170,27 @@ describe("POST /api/onboarding — kontrakt Partii 4 (próg min-5 zniesiony)", (
 		expect(mockWithTenant).not.toHaveBeenCalled();
 	});
 
+	it("F2 — własny cel spoza 23 (edytor profilu) NADAL przechodzi (brak bramki katalogowej tu)", async () => {
+		// Endpoint współdzielony z profil-editor.tsx, który celowo dopuszcza custom goal.
+		// F2 świadomie NIE bramkuje tu na katalog 23 — wyciek z Pomocnika zamknięty u źródła.
+		const res = await POST(
+			makeReq({ ...VALID_PROFILE, careerGoal: "Mój własny cel", competencies: [comp("SQL", 3)] }),
+		);
+		expect(res.status).toBe(200);
+		const json = (await res.json()) as { success: boolean };
+		expect(json.success).toBe(true);
+	});
+
+	it("F2 — careerGoal z białymi znakami jest trymowany (higiena)", async () => {
+		const res = await POST(
+			makeReq({ ...VALID_PROFILE, careerGoal: "  Data Analyst  ", competencies: [comp("SQL", 3)] }),
+		);
+		expect(res.status).toBe(200);
+		// persistMarketGaps dostaje przycięty cel (3. arg = careerGoal).
+		const args = mockPersistMarketGaps.mock.calls[0] as unknown[];
+		expect(args[2]).toBe("Data Analyst");
+	});
+
 	it("brak wymaganego pola profilu (university) → 400 Invalid input", async () => {
 		const { university: _drop, ...noUni } = VALID_PROFILE;
 		const res = await POST(makeReq({ ...noUni, competencies: [comp("SQL", 3)] }));
