@@ -64,6 +64,34 @@ describe("NodeDetailPanel", () => {
 		expect(screen.getByText("Backend")).toBeDefined();
 	});
 
+	it("pokazuje komentarz grupy (nazwa + unionShare + opis + kind) gdy węzeł niesie grupę", () => {
+		render(
+			<NodeDetailPanel
+				node={{
+					data: {
+						label: "SIEM",
+						status: "missing",
+						marketPercentage: 12,
+						category: "Cyber",
+						groupName: "Wykrywanie i reagowanie",
+						groupDescription: "Po co: rozpoznajesz atak i reagujesz, zanim narobi szkód.",
+						groupUnionShare: 38,
+						kind: "concept",
+					},
+				}}
+				onClose={mockClose}
+			/>,
+		);
+		expect(screen.getByText("Wykrywanie i reagowanie")).toBeDefined();
+		expect(screen.getByText("38% ofert grupy")).toBeDefined();
+		expect(
+			screen.getByText("Po co: rozpoznajesz atak i reagujesz, zanim narobi szkód."),
+		).toBeDefined();
+		expect(screen.getByText("koncepcja")).toBeDefined();
+		// Grupa zastępuje dawne „Kategoria" — category („Cyber") nie jest renderowane.
+		expect(screen.queryByText("Cyber")).toBeNull();
+	});
+
 	it("shows 'Zamknij tę lukę' button for missing status", () => {
 		renderPanel("missing");
 		expect(screen.getByText("Zamknij tę lukę")).toBeDefined();

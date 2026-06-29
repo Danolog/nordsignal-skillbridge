@@ -4,19 +4,26 @@
  * RatingScale — segmentowy wybór 1 z 4 poziomów (B4 samoocena kompetencji).
  *
  * Pod spodem role="radiogroup" / role="radio" — pełna semantyka ARIA.
- * Etykiety: skala słowna PRD 1:1 ("nie znam/uczę się/znam/dobrze znam").
+ * Etykiety: skala słowna PRD 1:1 ("nie znam/uczę się/znam/dobrze znam") — zestaw
+ * `default`. Od Partii 5 (C3) etykiety zależą od RODZAJU kompetencji (prop `kind`):
+ * narzędzie się OBSŁUGUJE, koncepcję się ROZUMIE/STOSUJE (market-catalog.ts §C3).
+ * `tool`/`concept` to wariant per typ; `default` (brak prop) = dawne etykiety PRD.
  * WAŻNE: Nie wolno używać golden'owych etykiet "Podstawy/Średnio/Dobrze/Biegle"
- *        (spec §5.2, §8.1 — PRD wygrywa nad golden).
+ *        (spec §5.2, §8.1 — PRD wygrywa nad golden). Czasowniki C3 są zgodne z PRD.
  *
  * A11y: nawigacja strzałkami (←/→), wybór Spacją/Enterem.
  * Tokeny tranzycji: --transition-fast 150ms (spec §5.5.1).
  *
- * Spec: docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §5.2
+ * Spec: docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §5.2 + partia5 §3
  */
 
 import { useRef } from "react";
+import type { LeafKind } from "@/lib/db/data/anchor-config";
+import { ratingOptionsForKind } from "@/lib/onboarding/market-catalog";
 
-// Skala słowna PRD §4.3 KA1 / DP linia 182 — zatwierdzona, nie zmieniać
+// Skala słowna PRD §4.3 KA1 / DP linia 182 — zatwierdzona, nie zmieniać.
+// To zestaw `default` (== ratingOptionsForKind(null)); zachowany jako stała dla
+// zgodności wstecz i testów. Wariant per rodzaj idzie przez prop `kind`.
 export const RATING_OPTIONS = [
 	{
 		value: 1 as const,
@@ -47,6 +54,8 @@ interface RatingScaleProps {
 	name: string; // nazwa grupy radio (a11y)
 	ariaLabel: string; // "Poziom kompetencji: {name}"
 	disabled?: boolean;
+	/** Rodzaj kompetencji (C3) — dobiera czasowniki skali. Brak → zestaw `default` (PRD). */
+	kind?: LeafKind | null;
 	onChange: (value: RatingValue) => void;
 }
 
@@ -55,9 +64,14 @@ export function RatingScale({
 	name: _name, // używany przez rodzica do budowania ariaLabel ("Poziom kompetencji: {name}")
 	ariaLabel,
 	disabled = false,
+	kind,
 	onChange,
 }: RatingScaleProps) {
 	const groupRef = useRef<HTMLDivElement>(null);
+	// Etykiety per rodzaj (C3): tool/concept → własny czasownik; brak → PRD (RATING_OPTIONS).
+	const options: readonly { value: RatingValue; label: string; description: string }[] = kind
+		? ratingOptionsForKind(kind)
+		: RATING_OPTIONS;
 
 	// Nawigacja strzałkami (←/→) wewnątrz radiogroup — wzorzec ARIA APG
 	function handleKeyDown(e: React.KeyboardEvent, current: RatingValue) {
@@ -79,7 +93,7 @@ export function RatingScale({
 
 	return (
 		<div ref={groupRef} role="radiogroup" aria-label={ariaLabel} className="flex gap-1 sm:gap-2">
-			{RATING_OPTIONS.map((opt) => {
+			{options.map((opt) => {
 				const isSelected = value === opt.value;
 				const inputId = `rating-${_name}-${opt.value}`;
 				return (
@@ -98,11 +112,11 @@ export function RatingScale({
 							// Tranzycja stanu (--transition-fast 150ms per spec §5.5.1)
 							"transition-all duration-150 ease-out",
 							// Fokus widoczny przez focus-within (fokus na ukrytym input)
-							"has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-indigo-500 has-[:focus-visible]:ring-offset-1",
+							"has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ed-amber has-[:focus-visible]:ring-offset-1",
 							// Stany
 							isSelected
-								? "border-indigo-500 bg-indigo-500 text-white shadow-sm"
-								: "border-border bg-background text-muted-foreground hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700",
+								? "border-ed-amber bg-ed-amber text-ed-ink shadow-sm"
+								: "border-border bg-background text-muted-foreground hover:border-ed-amber hover:bg-ed-badge-bg hover:text-ed-amber-text",
 							disabled ? "cursor-not-allowed opacity-50" : "",
 						]
 							.filter(Boolean)

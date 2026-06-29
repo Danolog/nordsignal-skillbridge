@@ -14,7 +14,7 @@
  *   2. Kotwice = top-30 znormalizowanych tytułów wg liczby ofert (konfigurowalne
  *      w src/lib/db/data/anchor-config.ts — placeholder = surowe top-30).
  *   3. Profil kotwicy = jej top-12 kompetencji (wg częstości wśród ofert tytułu).
- *   4. Przypisanie: każda oczyszczona oferta → kotwica o największym pokryciu
+ *   4. Przypisanie: każda (zdeduplikowana, surowa) oferta → kotwica o największym pokryciu
  *      profilu (|kompetencje_oferty ∩ profil12|). Tie-break: większa kotwica
  *      wygrywa; dalej alfabetycznie. Pokrycie 0 → oferta NIEPRZYPISANA (pomijana).
  *   5. Agregacja per ścieżka z PRZYPISANYCH ofert (nie tylko z dokładnego tytułu!).
@@ -22,9 +22,9 @@
  * CO ROBI (krok po kroku):
  *   1. Czyta JustJoinIT_Oferty.csv + JustJoinIT_Technologie.csv (separator ";",
  *      BOM utf-8-sig, CRLF). Złączenie po `Slug`.
- *   2. Czyści oferty wzorem notebooka Darka (175735_lab1.ipynb): Pełny etat;
- *      filtr geo PL/zdalne; umowa B2B/PERMANENT/ANY; dedup po Slug.
- *      (v5: widełki NIE są już czytane — decyzja Darka „salary precz".)
+ *   2. Dedup ofert po `Slug` (jedyna higiena — Decyzja A, ETAP A). BEZ czyszczenia
+ *      geo/etat/umowy/widełek: wszystkie 23 ścieżki liczą na SUROWYM rynku (krok
+ *      czyszczenia wzorem notebooka 175735_lab1.ipynb USUNIĘTY). Pierwszy Slug wygrywa.
  *   3. Grupuje nearest-profile + hierarchia obszar→liść (v4) + warstwa produktu v5
  *      (rodziny e-CF, ramy SFIA/ESCO, warstwa juniora, bank projektów).
  *   4. Agreguje per ścieżka: demand% obszarów i liści (bez progu dla liści), BEZ widełek.
@@ -50,135 +50,26 @@ import {
 	ANCHOR_DISPLAY_NAMES,
 	ANCHOR_MERGES,
 	ANCHOR_TITLES_PLACEHOLDER,
+	canonicalizeTech,
+	classifyLeafKind,
+	countMinFor,
+	type LeafKind,
 	MANUAL_ANCHORS,
 	PROFILE_SIZE,
 	TIE_BREAK_DEPRIORITIZED,
+	variantsOf,
 } from "../src/lib/db/data/anchor-config";
 import { FAMILIES, PATH_META, PATHS, PROJECT_BANK } from "../src/lib/db/data/career-model";
 
-// ── Stałe pipeline'u (wzorem notebooka Darka) ───────────────────────────────
+// ── Stałe pipeline'u ─────────────────────────────────────────────────────────
 
 const DEFAULT_CSV_DIR = "/mnt/c/Users/D/Documents/WSB MERITO/25_26/Semestr 4/AI/";
 const SNAPSHOT = "2026-02"; // zrzut JustJoinIT — wpisane na stałe (determinizm)
 const SOURCE = "JustJoinIT";
 
-const WANTED_CONTRACTS = new Set(["B2B", "PERMANENT", "ANY"]);
-
-// Normalizacja nazw miast (notebook, cell 26) — warianty pisowni → forma kanoniczna.
-const MIASTO_MAPPING: Record<string, string> = {
-	Warsaw: "Warszawa",
-	"Warszawa (Mazowieckie)": "Warszawa",
-	warsaw: "Warszawa",
-	WARSAW: "Warszawa",
-	"Warsaw Warsaw": "Warszawa",
-	Cracow: "Kraków",
-	Krakow: "Kraków",
-	Kracow: "Kraków",
-	"Kraków (Małopolskie)": "Kraków",
-	Gdansk: "Gdańsk",
-	"Gdańsk (Pomorskie)": "Gdańsk",
-	Gydnia: "Gdynia",
-	"Wroclaw (Dolnośląskie)": "Wrocław",
-	Poznan: "Poznań",
-};
-
-// Lista polskich miast (notebook, cell 27). Oferta z miastem spoza listy ORAZ
-// trybem innym niż "Zdalnie" jest odrzucana (filtr geo).
-const POLSKIE_MIASTA = new Set<string>([
-	"Warszawa",
-	"Kraków",
-	"Wrocław",
-	"Gdańsk",
-	"Katowice",
-	"Poznań",
-	"Łódź",
-	"Białystok",
-	"Gdynia",
-	"Gliwice",
-	"Szczecin",
-	"Lublin",
-	"Opole",
-	"Rzeszów",
-	"Bydgoszcz",
-	"Toruń",
-	"Olsztyn",
-	"Kielce",
-	"Zielona Góra",
-	"Radom",
-	"Częstochowa",
-	"Sopot",
-	"Legnica",
-	"Poland (Remote)",
-	"Balice",
-	"Suwałki",
-	"Jelenia Góra",
-	"Polska (Zdalnie)",
-	"Mikołów",
-	"Bielsko-Biała",
-	"Kozy",
-	"Polkowice",
-	"Głuchowo",
-	"Kobielice",
-	"Ostrołęka",
-	"Nowy Tomyśl",
-	"Piła",
-	"Komorniki",
-	"Niegardów",
-	"Stare Miasto k/Konina (PL)",
-	"Piaseczno",
-	"Bolechowo-Osiedle",
-	"Rybnik",
-	"Macierzysz",
-	"Pabianice",
-	"Łazy",
-	"Starogard Gdański",
-	"Pieńków",
-	"Płock",
-	"Złotniki",
-	"Zambrów",
-	"Września",
-	"Zabrze",
-	"Koszalin",
-	"Lesznowola",
-	"Pruszcz Gdański",
-	"Nowa Sól",
-	"Kostrzyn",
-	"Mielec",
-	"Tarnowskie Góry",
-	"Stęszew",
-	"Nysa",
-	"Zabierzów",
-	"Świerklaniec",
-	"Zielonka",
-	"Jankowice",
-	"Jawor",
-	"Zduńska Wola",
-	"Zawiercie",
-	"Ryki",
-	"Palmiry",
-	"Brześć Kujawski",
-	"Sieroniowice",
-	"Ożarów Mazowiecki",
-	"Mysłowice",
-	"Tychy",
-	"Konstancin-Jeziorna",
-	"Topole",
-	"Wieliczka",
-	"Chorzów",
-	"Ostaszew",
-	"Cieplewo",
-	"Wałbrzych",
-	"Mszczonów",
-	"Swadzim",
-	"Bytom",
-	"Janki",
-	"Ostaszewo",
-	"Prandocin-Iły",
-]);
-
 // ── Typy ─────────────────────────────────────────────────────────────────────
 
-/** Oferta po czyszczeniu (jeden unikalny Slug). v5: bez widełek (decyzja Darka). */
+/** Oferta po dedup (surowa, jeden unikalny Slug — ETAP A: bez czyszczenia). v5: bez widełek. */
 export type CleanOffer = {
 	slug: string;
 	stanowisko: string;
@@ -209,7 +100,7 @@ export type Artifact = {
 		snapshot: string;
 		model: string;
 		rawOffers: number;
-		cleanedOffers: number;
+		uniqueOffers: number; // po dedup po Slug (ETAP A: brak czyszczenia — jedyna higiena)
 		assignedOffers: number;
 		coveragePercent: number;
 		autoAnchors: number;
@@ -230,14 +121,25 @@ export type ModelLeaf = {
 	name: string;
 	type: "leaf";
 	demandPercentage: number | null; // null = brak w zrzucie 2026-02
+	lift: number | null; // krotność: udział w ścieżce / udział globalny (null = brak danych)
+	offers: number | null; // bezwzględna liczba ofert ścieżki z liściem (mianownik bramki)
+	kind: LeafKind; // tool | concept | cert | meta | soft — klasyfikacja konkretu
 	source: "dane" | "kuracja ekspercka";
 	note?: string; // np. „brak w zrzucie 2026-02"
+	// true = override IN poniżej bramki wolumenu — liść przechodzi do płaskiego katalogu mimo
+	// offers < countMin (kuracja Sophii, Solution Architect partia 5). Emitowane TYLKO gdy true
+	// (pominięte = JSON bajt-stabilny dla ścieżek bez override — deep-equal regenu).
+	keepBelowGate?: boolean;
 };
 export type ModelArea = {
 	name: string;
-	type: "knowledge-area" | "presentation-group";
-	// knowledge-area: % popytu ścieżki (z danych). presentation-group: null (etykieta).
+	type: "knowledge-area" | "presentation-group" | "context-group";
+	// Dyskryminator JAWNY: knowledge-area → % popytu ścieżki (z danych); presentation-group
+	// (grupnik-etykieta) i context-group (grupa z kontekstem, metryką jest unionShare) → null.
 	demandPercentage: number | null;
+	// GRUPA z kontekstem (Darek 2026-06-27): proza dla studenta + udział unii grupy.
+	description?: string; // kontekst grupy (gdy area jest grupą); brak → legacy obszar/grupnik
+	unionShare: number | null; // % ofert ścieżki z ≥1 technologią grupy (union); null gdy 0 ofert
 	leaves: ModelLeaf[];
 };
 export type ModelProject = {
@@ -429,38 +331,26 @@ function resolveMerge(norm: string): string {
 	return ANCHOR_MERGES[norm] ?? norm;
 }
 
-// ── Czyszczenie ofert (wzorem notebooka) ─────────────────────────────────────
-
-/** Normalizuje miasto wg słownika; nieznane zwraca bez zmian. */
-export function normalizeCity(miasto: string): string {
-	return MIASTO_MAPPING[miasto] ?? miasto;
-}
-
-/** Filtr geo: miasto PL (po normalizacji) LUB praca zdalna. */
-export function passesGeoFilter(miasto: string, tryb: string): boolean {
-	return POLSKIE_MIASTA.has(normalizeCity(miasto)) || tryb === "Zdalnie";
-}
+// ── Dedup ofert (jedyna higiena — Decyzja A, ETAP A: surowy rynek) ──────────
 
 /**
- * Czyści surowe wiersze ofert + złącza technologie po Slug → unikalne oferty.
- * Czystość zgodna z notebookiem; dedup po Slug (pierwsze wystąpienie wygrywa).
+ * Składa unikalne oferty z surowych wierszy: dedup po `Slug` (pierwsze wystąpienie
+ * wygrywa) + złączenie technologii po Slug. JEDYNA higiena danych (Decyzja A, ETAP A) —
+ * krok czyszczenia (filtry geo PL/zdalne, etat, typ umowy, widełki) wzorem notebooka
+ * 175735_lab1.ipynb USUNIĘTY. Wszystkie 23 ścieżki liczą na tym SUROWYM, zdeduplikowanym
+ * zbiorze: pełny obraz rynku, mianownik zgodny z liczbami referencyjnymi top-20 (np. 371
+ * ofert kategorii Security, nie 329 oczyszczonych). Pomijamy tylko wiersze bez `Slug`
+ * (brak klucza dedup — integralność, nie czyszczenie).
  */
-export function cleanOffers(
+export function dedupOffers(
 	rawRows: Record<string, string>[],
 	techBySlug: Map<string, Set<string>>,
 ): { offers: Map<string, CleanOffer>; rawCount: number } {
 	const offers = new Map<string, CleanOffer>();
 	for (const row of rawRows) {
-		if (row.Wymiar !== "Pełny etat") continue;
-		if (!WANTED_CONTRACTS.has(row.Typ_umowy)) continue;
-		if (!passesGeoFilter(row.Miasto ?? "", row.Tryb_pracy ?? "")) continue;
-		// v5: widełki NIE są już czytane ani filtrowane (decyzja Darka — salary precz).
-		// Filtr realności widełek 4000–100000 PLN był potrzebny tylko do liczenia
-		// median; bez salary na wyjściu nie ma już znaczenia (nie wpływał na % popytu).
-
 		const slug = row.Slug ?? "";
-		if (slug === "") continue;
-		if (offers.has(slug)) continue; // dedup po Slug (stabilne)
+		if (slug === "") continue; // brak klucza dedup — pomijamy (integralność, nie czyszczenie)
+		if (offers.has(slug)) continue; // dedup po Slug (stabilne, pierwsze wygrywa)
 		const stanowisko = row.Stanowisko ?? "";
 		offers.set(slug, {
 			slug,
@@ -666,42 +556,52 @@ export type PathStat = {
 	display: string;
 	offerCount: number; // mianownik % (oferty przypisane do ścieżki)
 	techCount: Map<string, number>; // technologia → liczba ofert ścieżki z nią
+	offers: CleanOffer[]; // oferty ścieżki (do liczenia unii grup — Darek 2026-06-27)
 };
 
+/** Grupuje oferty po surowej `Kategoria` JustJoinIT (źródło kotwic ręcznych). */
+function groupByCategory(offers: Iterable<CleanOffer>): Map<string, CleanOffer[]> {
+	const byCategory = new Map<string, CleanOffer[]>();
+	for (const offer of offers) {
+		const list = byCategory.get(offer.kategoria);
+		if (list) list.push(offer);
+		else byCategory.set(offer.kategoria, [offer]);
+	}
+	return byCategory;
+}
+
 /**
- * Liczy per ścieżkę: liczbę ofert + licznik ofert z każdą technologią.
+ * Liczy per ścieżkę: liczbę ofert + licznik ofert z każdą technologią + listę ofert.
  *
  * Dobór zbioru ofert (mianownik %):
  *  - kotwica AUTOMATYCZNA → oferty PRZYPISANE nearest-profile (assignment.byAnchor),
- *  - kotwica RĘCZNA (UX/Security) → oferty z jej KATEGORII JustJoinIT (definicja
- *    segmentu), nie podzbiór nearest-profile. Powód: ręczna kotwica reprezentuje
- *    cały segment (np. 329 ofert Security), a jej kompetencje powinny odzwierciedlać
- *    ten segment — inaczej rzadkie, ale charakterystyczne narzędzia (Splunk, Burp)
- *    znikają w podzbiorze profilowym.
+ *  - kotwica RĘCZNA (UX/Security) → oferty z jej KATEGORII JustJoinIT (cały segment).
+ *
+ * Od ETAP A (Decyzja A): `allOffers` to SUROWY, zdeduplikowany zbiór (krok czyszczenia
+ * usunięty), więc `groupByCategory(allOffers)` daje pełny segment kategorii z raw (np.
+ * 371 ofert Security) — wszystkie 23 ścieżki na tym samym surowym mianowniku. Nie ma już
+ * osobnego źródła „raw segment" obok „oczyszczonego": jest jeden zbiór (auto = przypisane,
+ * ręczne = cały segment kategorii — oba z raw).
  */
 export function pathStats(
 	assignment: Assignment,
 	allOffers: Map<string, CleanOffer>,
 ): Map<string, PathStat> {
 	const manualCategory = new Map(MANUAL_ANCHORS.map((m) => [m.key, m.category]));
-	const offersByCategory = new Map<string, CleanOffer[]>();
-	for (const offer of allOffers.values()) {
-		const list = offersByCategory.get(offer.kategoria);
-		if (list) list.push(offer);
-		else offersByCategory.set(offer.kategoria, [offer]);
-	}
+	const manualSource = groupByCategory(allOffers.values());
 
 	const stats = new Map<string, PathStat>();
 	for (const anchor of assignment.anchors) {
 		const category = manualCategory.get(anchor.norm);
 		const list = category
-			? (offersByCategory.get(category) ?? [])
+			? (manualSource.get(category) ?? [])
 			: (assignment.byAnchor.get(anchor.norm) ?? []);
 		if (list.length === 0) continue;
 		stats.set(anchor.display, {
 			display: anchor.display,
 			offerCount: list.length,
 			techCount: techCounts(list),
+			offers: list,
 		});
 	}
 	return stats;
@@ -724,40 +624,180 @@ function demandPct(stat: PathStat, names: string[], decimals = 0): number | null
 }
 
 /**
+ * Krotność (lift) liścia: udział w ścieżce ÷ udział globalny (cały surowy zbiór).
+ * Mierzy, ile razy częściej kompetencja występuje w tej roli niż średnio na rynku.
+ * > 1 = definiuje rolę; < 1 = na rynku częstsza niż w roli (generyk). null = brak odniesienia.
+ * Sumuje warianty (countAs) spójnie w liczniku i mianowniku.
+ */
+export function liftOf(
+	stat: PathStat,
+	names: string[],
+	globalFreq: Map<string, number>,
+	globalTotal: number,
+): number | null {
+	if (stat.offerCount === 0 || globalTotal === 0) return null;
+	let pathCount = 0;
+	let globalCount = 0;
+	for (const n of names) {
+		pathCount += stat.techCount.get(n) ?? 0;
+		globalCount += globalFreq.get(n) ?? 0;
+	}
+	if (globalCount === 0) return null;
+	return pathCount / stat.offerCount / (globalCount / globalTotal);
+}
+
+/** Bezwzględna liczba ofert ścieżki z liściem (sumuje warianty countAs). */
+function leafOfferCount(stat: PathStat, names: string[]): number {
+	let c = 0;
+	for (const n of names) c += stat.techCount.get(n) ?? 0;
+	return c;
+}
+
+/**
+ * Globalna częstość: ile surowych ofert (cały zbiór) zawiera każdą technologię,
+ * plus łączna liczba ofert. To mianownik krotności (odniesienie „średnia rynku").
+ */
+export function globalTechFrequency(offers: Map<string, CleanOffer>): {
+	freq: Map<string, number>;
+	total: number;
+} {
+	return { freq: techCounts([...offers.values()]), total: offers.size };
+}
+
+/**
+ * Liczba ofert z listy zawierających CO NAJMNIEJ JEDEN napis ze zbioru (DEDUP — oferta
+ * z dwoma wariantami liczona RAZ). Rdzeń unii: używany i przez `unionShare` grupy, i przez
+ * liść w trybie `countAsUnion` (scalenie synonimów = unia ofert, nie suma liczników).
+ */
+export function unionOffersCount(offers: Iterable<CleanOffer>, names: string[]): number {
+	const set = new Set(names);
+	let count = 0;
+	for (const offer of offers) {
+		for (const t of offer.techs) {
+			if (set.has(t)) {
+				count++;
+				break;
+			}
+		}
+	}
+	return count;
+}
+
+/**
+ * Udział UNII grupy (Darek 2026-06-27): % ofert ścieżki wymagających CO NAJMNIEJ JEDNEJ
+ * technologii z zadanego zbioru. To % grupy w widoku grupowym (np. Cloud = AWS∪Azure∪GCP).
+ * Liczone z ofert (nie sumą liczników — nakładające się oferty NIE są podwójnie liczone).
+ * 1 miejsce po przecinku. null gdy 0 ofert.
+ */
+export function unionShareOf(stat: PathStat, techNames: string[]): number | null {
+	if (stat.offerCount === 0) return null;
+	return Math.round((1000 * unionOffersCount(stat.offers, techNames)) / stat.offerCount) / 10;
+}
+
+/**
+ * Krotność (lift) liścia w trybie `countAsUnion`: udział UNII w ścieżce ÷ udział UNII
+ * globalnie (oba dedup po ofertach). Spójne z `offers`/`demandPercentage` liczonymi unią —
+ * gdy liść scala synonimy, mianownik i licznik krotności też są unią, nie sumą. Informacyjnie.
+ */
+function unionLift(
+	stat: PathStat,
+	names: string[],
+	allOffers: Map<string, CleanOffer>,
+	globalTotal: number,
+): number | null {
+	if (stat.offerCount === 0 || globalTotal === 0) return null;
+	const globalUnion = unionOffersCount(allOffers.values(), names);
+	if (globalUnion === 0) return null;
+	const pathUnion = unionOffersCount(stat.offers, names);
+	return pathUnion / stat.offerCount / (globalUnion / globalTotal);
+}
+
+/**
  * Buduje hierarchiczny model kariery (v4.0) z deklaratywnej struktury PATHS +
- * statystyk z danych. Obszar wiedzy: % popytu ścieżki (z danych). Grupnik
- * prezentacyjny: % = null. Liść: % w obrębie ścieżki, BEZ progu (dyrektywa 1/2);
+ * statystyk z danych. Obszar wiedzy (bez opisu): % popytu ścieżki (z danych). Grupnik
+ * prezentacyjny ORAZ grupa z kontekstem (`description`): % = null (miara grupy to unionShare).
+ * Liść: % w obrębie ścieżki, BEZ progu (dyrektywa 1/2);
  * liść `absent` → % null + source „kuracja ekspercka". Projekt kotwiczy na liściu.
  */
-export function buildCareerModel(stats: Map<string, PathStat>): CareerModel {
+export function buildCareerModel(
+	stats: Map<string, PathStat>,
+	globalFreq: Map<string, number>,
+	globalTotal: number,
+	allOffers: Map<string, CleanOffer>,
+): CareerModel {
 	const paths: ModelPath[] = [];
 	for (const spec of PATHS) {
 		const stat = stats.get(spec.label);
 		if (!stat) continue; // ścieżka bez ofert (nie powinno się zdarzyć)
 		const areas: ModelArea[] = spec.areas.map((area) => {
 			const leaves: ModelLeaf[] = area.leaves.map((leaf) => {
+				// kind: kuracja (LeafSpec.kind, np. SIEM→concept) ma pierwszeństwo; brak → auto.
+				const kind = leaf.kind ?? classifyLeafKind(leaf.name);
 				if (leaf.absent) {
 					return {
 						name: leaf.name,
 						type: "leaf",
 						demandPercentage: null,
+						lift: null,
+						offers: null,
+						kind,
 						source: "kuracja ekspercka",
 						note: "brak w zrzucie 2026-02",
 					};
 				}
 				const names = leaf.countAs && leaf.countAs.length > 0 ? leaf.countAs : [leaf.name];
+				// countAsUnion (Sophia/Leo, partia 2): scalenie SYNONIMÓW liczone jako UNIA ofert
+				// (dedup — oferta z dwoma wariantami RAZ), nie suma liczników. Domyślnie (brak flagi)
+				// liść SUMUJE warianty — zgodność wsteczna: cyber/partia 1 zatwierdzone na sumie.
+				const useUnion = leaf.countAsUnion === true && names.length > 1;
+				const offers = useUnion
+					? unionOffersCount(stat.offers, names)
+					: leafOfferCount(stat, names);
+				const demandPercentage = useUnion
+					? stat.offerCount === 0
+						? null
+						: Math.round((1000 * offers) / stat.offerCount) / 10
+					: demandPct(stat, names, 1); // 1 miejsce po przecinku dla liści
+				const lift = useUnion
+					? unionLift(stat, names, allOffers, globalTotal)
+					: liftOf(stat, names, globalFreq, globalTotal); // INFORMACYJNIE (nie rankuje)
 				return {
 					name: leaf.name,
 					type: "leaf",
-					demandPercentage: demandPct(stat, names, 1), // 1 miejsce po przecinku dla liści
+					demandPercentage,
+					lift,
+					offers,
+					kind,
 					source: "dane",
+					// Emit TYLKO gdy true — inaczej pole pominięte i JSON pozostaje bajt-stabilny
+					// dla wszystkich ścieżek bez override (deep-equal regenu, neutralność bramki).
+					...(leaf.keepBelowGate ? { keepBelowGate: true } : {}),
 				};
 			});
+			// Dyskryminator JAWNY (poprawka Leo, ETAP A) — % liczymy WYŁĄCZNIE po `area.type`,
+			// NIE po obecności `description`. Tylko "knowledge-area" (obszar z realnym popytem
+			// ścieżki na pojedynczą nazwę/demandAs) dostaje %. "context-group" (grupa z kontekstem,
+			// metryką jest unionShare) i "presentation-group" (grupnik-etykieta) → null. Powód:
+			// obszar z realnym popytem MOŻE mieć opis — przy wnioskowaniu z `!description` po cichu
+			// gubiłby % (krucha pułapka przy 23 ścieżkach). Teraz typ to jedyne źródło prawdy.
 			const areaDemand =
 				area.type === "knowledge-area"
 					? demandPct(stat, area.demandAs && area.demandAs.length > 0 ? area.demandAs : [area.name])
 					: null;
-			return { name: area.name, type: area.type, demandPercentage: areaDemand, leaves };
+			// Unia grupy = % ofert ścieżki z ≥1 technologią dowolnego liścia obecnego w zrzucie
+			// (countAs/name). To % grupy w widoku grupowym (Darek 2026-06-27).
+			const unionNames = area.leaves
+				.filter((l) => !l.absent)
+				.flatMap((l) => (l.countAs && l.countAs.length > 0 ? l.countAs : [l.name]));
+			const unionShare = unionNames.length > 0 ? unionShareOf(stat, unionNames) : null;
+			return {
+				name: area.name,
+				type: area.type,
+				demandPercentage: areaDemand,
+				...(area.description ? { description: area.description } : {}),
+				unionShare,
+				leaves,
+			};
 		});
 		const meta = PATH_META[spec.label];
 		if (!meta) throw new Error(`career-model: brak PATH_META dla "${spec.label}"`);
@@ -797,16 +837,26 @@ export function buildCareerModel(stats: Map<string, PathStat>): CareerModel {
 export function flattenLeaves(model: CareerModel): CareerGoalEntry[] {
 	const entries: CareerGoalEntry[] = [];
 	for (const path of model.paths) {
-		// liść → {pct, areaName} (bierzemy max % po obszarach, stabilnie). Kolumna
-		// demand_percentage w bazie jest integer, więc zaokrąglamy do liczby całkowitej.
-		// Liście, które po zaokrągleniu dają 0% (np. Burp Suite 0,3%), pomijamy w
-		// PŁASKIEJ tabeli — pełny, 1-dziesiętny % żyje w career-model.json (hierarchia).
+		// liść → {pct, areaName} (bierzemy max % po obszarach, stabilnie). Ranking = SUROWY
+		// UDZIAŁ (Darek 2026-06-27), malejąco — student widzi, czego realnie wymaga rynek
+		// (Python zostaje, 14,8% ofert cyber). Bramka katalogu (NIE hierarchii):
+		//  (1) META-tag → precz (etykieta-kategoria: „Cybersecurity"/„Cloud");
+		//  (2) wolumen < countMin (n≥4) → precz (ucina pentest-szum Kali/Nmap n=1-2);
+		//  (3) % po zaokrągleniu < 1 → precz (kolumna integer NOT NULL).
+		// BEZ bramki krotności — porzucona; krotność żyje jako pole informacyjne w hierarchii.
+		const countMin = countMinFor(path.pathDemandOffers);
 		const byLeaf = new Map<string, { pct: number; category: string }>();
 		for (const area of path.areas) {
 			for (const leaf of area.leaves) {
 				if (leaf.demandPercentage === null) continue; // absent — tylko w hierarchii
+				if (leaf.kind === "meta") continue; // twarda blokada etykiet-kategorii
+				// Bramka wolumenu: liść poniżej progu wypada — CHYBA że świadomy override IN
+				// (keepBelowGate, kuracja Sophii): liść definiujący rolę (TOGAF/ArchiMate/DDD/ESB
+				// u cienkiego Solution Architecta) przeżywa mimo n<countMin. META i rounded<1 nadal
+				// obowiązują (override nie obchodzi blokady etykiet ani bezpiecznika integer NOT NULL).
+				if (!leaf.keepBelowGate && (leaf.offers ?? 0) < countMin) continue; // za mały wolumen (szum) — precz
 				const rounded = Math.round(leaf.demandPercentage);
-				if (rounded < 1) continue; // 0% po zaokrągleniu — tylko w hierarchii
+				if (rounded < 1) continue; // bezpiecznik kolumny integer NOT NULL
 				const prev = byLeaf.get(leaf.name);
 				if (!prev || rounded > prev.pct) {
 					byLeaf.set(leaf.name, { pct: rounded, category: area.name });
@@ -833,6 +883,98 @@ export function flattenLeaves(model: CareerModel): CareerGoalEntry[] {
 	return entries;
 }
 
+// ── Generator kandydatów do kuracji (artefakt-ściąga dla Sophii) ─────────────
+// Dla KAŻDEJ ścieżki skanuje PEŁNĄ populację ofert (wszystkie technologie, nie tylko
+// skuratorowane liście) i rankuje je po bramce liftowej + klasyfikacji kind, scalając
+// warianty nazw (TECH_VARIANTS). To ściąga do RĘCZNEJ kuracji liści w career-model.ts
+// (HITL, Built-to-Sell — silnik podpowiada, człowiek decyduje). NIE wchodzi do produktu;
+// zapisywany do scratchpada przez tools/lift-candidates.ts.
+
+export type CandidateTech = {
+	name: string; // forma kanoniczna (po scaleniu wariantów)
+	kind: LeafKind; // tool | cert | meta | soft
+	offers: number; // liczba ofert ścieżki z tą kompetencją (po scaleniu wariantów)
+	pathPct: number; // udział w ścieżce (%)
+	globalPct: number; // udział globalny (%)
+	lift: number | null; // krotność (udział w ścieżce / udział globalny)
+	passesGate: boolean; // kind≠meta ∧ offers≥countMin (surowy udział; lift tylko informacyjnie)
+	variants?: string[]; // napisy scalone w tę kompetencję (gdy >1) — countAs do kuracji
+};
+export type PathCandidates = {
+	careerGoal: string;
+	offerCount: number; // mianownik (oferty ścieżki)
+	countMin: number; // próg liczby ofert dla tej ścieżki
+	passing: number; // ile kandydatów przeszło bramkę
+	candidates: CandidateTech[]; // top-N: najpierw przechodzące bramkę, dalej po popycie
+};
+
+const round1 = (x: number): number => Math.round(x * 10) / 10;
+
+/**
+ * Buduje listy kandydatów per ścieżka (po bramce liftowej, z kind i scaleniem wariantów).
+ * Mianownik ścieżki = `stat.offerCount` (dla kotwic ręcznych = oferty kategorii, dla auto
+ * = przypisane nearest-profile) — to samo źródło co % w produkcie, więc krotność jest
+ * liczona na właściwej populacji ścieżki (nie surowej kategorii).
+ */
+export function buildCandidates(
+	stats: Map<string, PathStat>,
+	globalFreq: Map<string, number>,
+	globalTotal: number,
+	topN = 40,
+): PathCandidates[] {
+	const out: PathCandidates[] = [];
+	for (const [label, stat] of stats) {
+		const countMin = countMinFor(stat.offerCount);
+		// Scal warianty: kanoniczna nazwa → zbiór napisów obecnych w ofertach ścieżki.
+		const canonVariants = new Map<string, Set<string>>();
+		for (const tech of stat.techCount.keys()) {
+			const canon = canonicalizeTech(tech);
+			const set = canonVariants.get(canon) ?? new Set<string>();
+			set.add(tech);
+			canonVariants.set(canon, set);
+		}
+		const cands: CandidateTech[] = [];
+		for (const [canon, present] of canonVariants) {
+			const names = variantsOf(canon);
+			const offers = leafOfferCount(stat, names);
+			const lift = liftOf(stat, names, globalFreq, globalTotal);
+			const kind = classifyLeafKind(canon);
+			let gCount = 0;
+			for (const n of names) gCount += globalFreq.get(n) ?? 0;
+			const passesGate = kind !== "meta" && offers >= countMin; // surowy udział: meta + min-wolumen (BEZ krotności)
+			const merged = [...present].sort((a, b) => a.localeCompare(b, "en"));
+			cands.push({
+				name: canon,
+				kind,
+				offers,
+				pathPct: stat.offerCount ? round1((100 * offers) / stat.offerCount) : 0,
+				globalPct: globalTotal ? round1((100 * gCount) / globalTotal) : 0,
+				lift: lift === null ? null : round1(lift),
+				passesGate,
+				...(merged.length > 1 ? { variants: merged } : {}),
+			});
+		}
+		// Najpierw przechodzące bramkę, dalej po popycie (oferty) malejąco, dalej krotność, nazwa.
+		cands.sort((a, b) => {
+			if (a.passesGate !== b.passesGate) return a.passesGate ? -1 : 1;
+			if (b.offers !== a.offers) return b.offers - a.offers;
+			const lb = b.lift ?? 0;
+			const la = a.lift ?? 0;
+			if (lb !== la) return lb - la;
+			return a.name.localeCompare(b.name, "en");
+		});
+		out.push({
+			careerGoal: label,
+			offerCount: stat.offerCount,
+			countMin,
+			passing: cands.filter((c) => c.passesGate).length,
+			candidates: cands.slice(0, topN),
+		});
+	}
+	out.sort((a, b) => a.careerGoal.localeCompare(b.careerGoal, "en"));
+	return out;
+}
+
 // ── Pełny przebieg (pure — testowalny bez I/O) ───────────────────────────────
 
 /** Buduje mapę Slug → zbiór technologii z wierszy Technologie.csv. */
@@ -855,23 +997,26 @@ export function buildTechIndex(techRows: Record<string, string>[]): Map<string, 
 /**
  * Składa cały pipeline z już-wczytanych wierszy CSV → płaski artefakt jobMarketData
  * (liście-konkrety z realnym %) + hierarchiczny career-model (obszary+liście+projekty).
+ * Od ETAP A (Decyzja A): jedna ścieżka SUROWA — `dedupOffers` daje zdeduplikowany zbiór
+ * (bez czyszczenia), na którym liczą wszystkie 23 ścieżki (auto = przypisane nearest-profile,
+ * ręczne = segment kategorii — oba z tego samego raw).
  */
 export function buildArtifact(
 	offerRows: Record<string, string>[],
 	techRows: Record<string, string>[],
 ): { artifact: Artifact; model: CareerModel } {
 	const techBySlug = buildTechIndex(techRows);
-	const { offers, rawCount } = cleanOffers(offerRows, techBySlug);
+	const { offers, rawCount } = dedupOffers(offerRows, techBySlug);
 
 	const anchors = buildAnchors(offers);
 	const assignment = assignAll(offers, anchors);
 	const stats = pathStats(assignment, offers);
-	const model = buildCareerModel(stats);
+	const { freq: globalFreq, total: globalTotal } = globalTechFrequency(offers);
+	const model = buildCareerModel(stats, globalFreq, globalTotal, offers);
 	const entries = flattenLeaves(model);
 
-	const cleaned = offers.size;
-	const coveragePercent =
-		cleaned === 0 ? 0 : Math.round((1000 * assignment.assigned) / cleaned) / 10;
+	const unique = offers.size;
+	const coveragePercent = unique === 0 ? 0 : Math.round((1000 * assignment.assigned) / unique) / 10;
 	const manualAnchors = anchors.filter((a) => a.manual).length;
 
 	const artifact: Artifact = {
@@ -879,9 +1024,9 @@ export function buildArtifact(
 			source: SOURCE,
 			snapshot: SNAPSHOT,
 			model:
-				"nearest-profile (liście-konkrety, bez progu — v4) + v5 (rodziny e-CF, ramy, junior; bez widełek)",
+				"surowy udział (liście-konkrety, bez progu — v4) + v5 (rodziny e-CF, ramy, junior; bez widełek). ETAP A: bez czyszczenia, dedup po Slug.",
 			rawOffers: rawCount,
-			cleanedOffers: cleaned,
+			uniqueOffers: unique,
 			assignedOffers: assignment.assigned,
 			coveragePercent,
 			autoAnchors: anchors.length - manualAnchors,
@@ -889,7 +1034,7 @@ export function buildArtifact(
 			anchors: anchors.length,
 			profileSize: PROFILE_SIZE,
 			paths: entries.length,
-			note: "Płaskie liście-konkrety z realnym % (bez progu 5%/10). category = rodzina e-CF (v5). BEZ widełek (salary_range zostaje NULL w bazie — decyzja Darka). Hierarchia + ramy + projekty: career-model.json. Patrz docs/data/job-market-provenance.md.",
+			note: "Płaskie liście-konkrety z realnym % (bez progu 5%/10). category = rodzina e-CF (v5). BEZ widełek (salary_range zostaje NULL w bazie — decyzja Darka). ETAP A: silnik liczy na SUROWYM rynku (jedyna higiena = dedup po Slug), wszystkie 23 ścieżki ujednolicone. Hierarchia + ramy + projekty: career-model.json. Patrz docs/data/job-market-provenance.md.",
 		},
 		data: entries,
 	};
@@ -935,7 +1080,7 @@ function main(): void {
 	const m = artifact._meta;
 	console.log("\n--- PODSUMOWANIE ---");
 	console.log(
-		`  oferty surowe: ${m.rawOffers} → po czyszczeniu: ${m.cleanedOffers} → przypisane: ${m.assignedOffers}`,
+		`  oferty surowe: ${m.rawOffers} → unikalne (dedup): ${m.uniqueOffers} → przypisane: ${m.assignedOffers}`,
 	);
 	console.log(
 		`  POKRYCIE: ${m.coveragePercent}% | kotwic: ${m.anchors} (auto ${m.autoAnchors} + ręczne ${m.manualAnchors}) | ścieżek: ${m.paths} (wszystkie widoczne)`,

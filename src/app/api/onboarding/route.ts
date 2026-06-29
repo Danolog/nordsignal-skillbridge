@@ -9,9 +9,23 @@ import { competencies, passports, projectSubmissions, students } from "@/lib/db/
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { resolveTenantId } from "@/lib/db/tenant-mapping";
 import { logError } from "@/lib/log";
+import { persistMarketGaps } from "@/lib/onboarding/market-gaps";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
+import { levelToStatus } from "@/lib/self-assessment";
 
 export const maxDuration = 60;
+
+// Partia 4: NOWY kontrakt kompetencji = wybór z katalogu rynku z POZIOMEM posiadania.
+// Poziom 2/3/4 = samoocena (Brak nie jest wysyłane — niezaznaczone = luka). Próg
+// „min 5" ZNIESIONY (0 dozwolone — D5); pusta tablica = student startuje z 0% pokrycia.
+const SelectedCompetencySchema = z.object({
+	name: z.string().min(1).max(200),
+	level: z.union([z.literal(2), z.literal(3), z.literal(4)]),
+	marketPercentage: z.number().int().min(0).max(100),
+	inSyllabus: z.boolean().optional().default(false),
+});
+
+type SelectedComp = z.infer<typeof SelectedCompetencySchema>;
 
 const OnboardingSchema = z.object({
 	university: z.string().min(1).max(200),
@@ -19,10 +33,17 @@ const OnboardingSchema = z.object({
 	semester: z.number().int().min(1).max(15),
 	careerGoal: z.string().min(1).max(200),
 	syllabusText: z.string().max(50_000).optional().default(""),
-	competencies: z
-		.array(z.string().min(1).max(200))
-		.min(5, { message: "Wymagane minimum 5 kompetencji" })
-		.max(100),
+	// UNIA dwóch kontraktów (kompatybilność wsteczna):
+	//  • NOWY (onboarding Partii 4): obiekty z poziomem — ścieżka DETERMINISTYCZNA
+	//    (status z samooceny levelToStatus, luki z katalogu rynku).
+	//  • LEGACY (profil-editor — edycja po onboardingu): tablica nazw — stare zachowanie
+	//    (status 'acquired', luki przez model generateGaps). Nietknięte, by nie zepsuć
+	//    edytora profilu poza zakresem Partii 4.
+	// Pusta tablica [] dopasowuje się do pierwszego wariantu → ścieżka nowa, 0 zaznaczeń (D5).
+	competencies: z.union([
+		z.array(SelectedCompetencySchema).max(100),
+		z.array(z.string().min(1).max(200)).max(100),
+	]),
 });
 
 export async function POST(req: Request) {
@@ -42,22 +63,19 @@ export async function POST(req: Request) {
 	}
 	const parsed = OnboardingSchema.safeParse(raw);
 	if (!parsed.success) {
-		// Obrona w głąb: próg min. 5 kompetencji wymuszany też po stronie serwera
-		// (nie tylko isStep3Valid we froncie). Komunikat progu wyciągamy na wierzch,
-		// żeby klient dostał czytelny powód zamiast surowego flatten().
-		const competencyIssue = parsed.error.issues.find(
-			(i) => i.path[0] === "competencies" && i.code === "too_small",
-		);
 		return NextResponse.json(
-			{
-				error: competencyIssue?.message ?? "Invalid input",
-				issues: parsed.error.flatten(),
-			},
+			{ error: "Invalid input", issues: parsed.error.flatten() },
 			{ status: 400 },
 		);
 	}
 	const { university, fieldOfStudy, semester, careerGoal, syllabusText } = parsed.data;
-	const competencyNames = parsed.data.competencies;
+	const rawComps = parsed.data.competencies;
+	// Detekcja kontraktu: pusta tablica lub obiekty → NOWY (Partia 4); stringi → LEGACY.
+	const isNewContract = rawComps.length === 0 || typeof rawComps[0] === "object";
+	const selected: SelectedComp[] = isNewContract ? (rawComps as SelectedComp[]) : [];
+	const legacyNames: string[] = isNewContract ? [] : (rawComps as string[]);
+	// Nazwy zaznaczonych — wejście liczenia luk (katalog rynku \ wybór / model legacy).
+	const competencyNames = isNewContract ? selected.map((c) => c.name) : legacyNames;
 
 	const userId = session.user.id;
 
@@ -135,14 +153,34 @@ export async function POST(req: Request) {
 
 			// Insert competencies (po INSERT studentu w tej samej tx — RLS
 			// student_sees_own widzi własny wiersz w ramach tx read-committed).
-			await tx.insert(competencies).values(
-				competencyNames.map((name) => ({
-					studentId: sid,
-					tenantId,
-					name,
-					status: "acquired" as const,
-				})),
-			);
+			if (isNewContract) {
+				// NOWY (Partia 4): każda niesie POZIOM samooceny (2/3/4) ze scalonego kroku —
+				// status z ratyfikowanej mapy levelToStatus, verifiedByMethod='self' (Beta),
+				// realny % popytu z katalogu. Pusta tablica (0 zaznaczeń, D5) → brak insertu.
+				if (selected.length > 0) {
+					await tx.insert(competencies).values(
+						selected.map((c) => ({
+							studentId: sid,
+							tenantId,
+							name: c.name,
+							status: levelToStatus(c.level),
+							selfAssessment: c.level,
+							verifiedByMethod: "self" as const,
+							marketPercentage: c.marketPercentage,
+						})),
+					);
+				}
+			} else {
+				// LEGACY (profil-editor): nazwy bez poziomu, status 'acquired' (jak przed Partią 4).
+				await tx.insert(competencies).values(
+					legacyNames.map((name) => ({
+						studentId: sid,
+						tenantId,
+						name,
+						status: "acquired" as const,
+					})),
+				);
+			}
 
 			// Create passport if not exists; jeśli istnieje — odśwież tenantId
 			// (re-onboarding ze zmienioną uczelnią mógł zmienić tenant — bez tego
@@ -178,12 +216,19 @@ export async function POST(req: Request) {
 	// POZA withTenantContext: te calls + ich własne DB writes idą przez owner db
 	// (do czasu osobnych refactorów w #19c..#19f).
 	//
-	// KOLEJNOŚĆ, nie Promise.all (poprawka #1): generateGaps najpierw zapisuje luki
-	// i statusy kompetencji, a generateSkillMap dopiero z nich WYPROWADZA graf
-	// deterministycznie. Równoległość ścigałaby się: graf czytałby kompetencje
-	// sprzed aktualizacji statusów i bez luk ⇒ rozjazd liczb na trzech widokach.
+	// KOLEJNOŚĆ, nie Promise.all (poprawka #1): persistMarketGaps najpierw zapisuje
+	// luki + pokrycie, a generateSkillMap dopiero z nich WYPROWADZA graf deterministycznie.
+	// Partia 4: luki liczone DETERMINISTYCZNIE (katalog rynku \ wybór studenta) — bez
+	// modelu, bez nadpisywania statusu samooceny (HITL). Status kompetencji pochodzi
+	// wyłącznie od studenta (levelToStatus przy insercie wyżej).
 	try {
-		await generateGaps(studentId, tenantId, competencyNames, careerGoal);
+		if (isNewContract) {
+			// Luki DETERMINISTYCZNE: katalog rynku \ wybór (popyt z danych, bez modelu).
+			await persistMarketGaps(studentId, tenantId, careerGoal, competencyNames);
+		} else {
+			// LEGACY (profil-editor): luki przez model (zachowanie sprzed Partii 4).
+			await generateGaps(studentId, tenantId, competencyNames, careerGoal);
+		}
 		await generateSkillMap(studentId, tenantId);
 	} catch (err) {
 		logError("onboarding", err, { studentId });

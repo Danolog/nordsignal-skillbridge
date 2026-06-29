@@ -7,6 +7,14 @@
 // high-water-mark = 5 (wznow od kroku 5), ale onboarding wciaz NIE jest
 // ukonczony (completed=false) — to robi dopiero .../complete.
 //
+// ⚠ PARTIA 4 — STATUS OSIEROCONY: kreator po przebudowie ma 5 krokow (0..4) i
+// scalil osobna Samoocene w krok 3 (Kompetencje). Nowy OnboardingWizard JUZ NIE
+// woła POST /api/onboarding/advance (jedynym wywolaniem byl step-self-assessment,
+// niezrenderowany). Route + ten test ZOSTAJA jako kontrakt wstecznej zgodnosci
+// (endpoint dziala, nie usuwamy go w ramach flipu testow). Usuniecie route+testu =
+// osobna decyzja sprzatajaca Maxa/Ethana (poza zakresem QA). Patrz raport Quinna,
+// ryzyko szczatkowe „martwy kod onboardingu".
+//
 // Test REALNY na bazie :5433 (mock tylko auth). Setup: student z 5 kompetencjami,
 // wszystkie ocenione (selfAssessment != null) → prog min(5,N) spelniony → 200.
 

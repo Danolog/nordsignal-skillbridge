@@ -17,26 +17,28 @@ export function SkillMapEmptyState() {
 				const data = await res.json().catch(() => ({}));
 				throw new Error(data.error || "Generacja nie powiodła się");
 			}
-			toast.success("Skill Map wygenerowana!");
+			toast.success("Mapa kompetencji wygenerowana!");
 			router.refresh();
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Nie udało się wygenerować Skill Map.");
+			toast.error(
+				err instanceof Error ? err.message : "Nie udało się wygenerować mapy kompetencji.",
+			);
 			setRegenerating(false);
 		}
 	};
 
 	return (
 		<div className="flex flex-col items-center justify-center h-[calc(100vh-theme(spacing.0))] gap-6 p-8">
-			<div className="w-16 h-16 rounded-full bg-indigo-500/8 flex items-center justify-center">
+			<div className="w-16 h-16 rounded-full bg-ed-badge-bg flex items-center justify-center">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
 					strokeWidth={2}
-					className={`w-8 h-8 text-indigo-500 ${regenerating ? "animate-pulse" : ""}`}
+					className={`w-8 h-8 text-ed-amber-text ${regenerating ? "animate-pulse" : ""}`}
 				>
-					<title>Skill Map</title>
+					<title>Mapa kompetencji</title>
 					<path
 						strokeLinecap="round"
 						strokeLinejoin="round"
@@ -45,10 +47,12 @@ export function SkillMapEmptyState() {
 				</svg>
 			</div>
 			<div className="text-center max-w-md">
-				<h2 className="font-[Nunito] font-extrabold text-xl text-slate-900 mb-1">
-					{regenerating ? "Generujemy Twoją Skill Map…" : "Skill Map nie jest jeszcze gotowa"}
+				<h2 className="font-heading font-extrabold text-xl text-ed-ink mb-1">
+					{regenerating
+						? "Generujemy Twoją mapę kompetencji…"
+						: "Mapa kompetencji nie jest jeszcze gotowa"}
 				</h2>
-				<p className="text-sm text-slate-500">
+				<p className="text-sm text-ed-muted">
 					{regenerating
 						? "AI analizuje Twoje kompetencje i dane rynkowe. To zajmie 15-30 sekund."
 						: "Generacja może chwilę zająć — kliknij poniżej, by uruchomić ją ponownie."}
@@ -57,9 +61,9 @@ export function SkillMapEmptyState() {
 			<Button
 				onClick={handleRegenerate}
 				disabled={regenerating}
-				className="bg-indigo-500 hover:bg-indigo-600 text-white"
+				className="bg-ed-ink hover:opacity-90 text-ed-cream"
 			>
-				{regenerating ? "Generuję…" : "Wygeneruj Skill Map"}
+				{regenerating ? "Generuję…" : "Wygeneruj mapę kompetencji"}
 			</Button>
 		</div>
 	);

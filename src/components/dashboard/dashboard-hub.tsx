@@ -4,10 +4,10 @@ import {
 	ArrowRight,
 	Award,
 	CheckCircle,
-	Flame,
 	FolderKanban,
 	Map as MapIcon,
 	Rocket,
+	Sprout,
 	Target,
 	TrendingUp,
 	TriangleAlert,
@@ -32,15 +32,15 @@ interface DashboardHubProps {
 const tiles = [
 	{
 		href: "/skill-map",
-		title: "Skill Map",
+		title: "Mapa kompetencji",
 		icon: MapIcon,
-		colorClass: "db-tile-icon-indigo",
+		colorClass: "db-tile-icon-amber",
 		desc: "Wizualna mapa Twoich kompetencji",
 		getStat: (p: DashboardHubProps) => `${p.competencyCount} masz • ${p.gapCount} brakuje`,
 	},
 	{
 		href: "/gap-analysis",
-		title: "Gap Analysis",
+		title: "Analiza luk",
 		icon: TriangleAlert,
 		colorClass: "db-tile-icon-amber",
 		desc: "Luki między Tobą a rynkiem pracy",
@@ -50,7 +50,7 @@ const tiles = [
 		href: "/projects",
 		title: "Projekty",
 		icon: FolderKanban,
-		colorClass: "db-tile-icon-emerald",
+		colorClass: "db-tile-icon-amber",
 		desc: "Realne projekty dopasowane do Twoich luk",
 		getStat: (p: DashboardHubProps) => `${p.courseCount} ukończone`,
 	},
@@ -58,7 +58,7 @@ const tiles = [
 		href: "/passport",
 		title: "Paszport",
 		icon: Award,
-		colorClass: "db-tile-icon-cyan",
+		colorClass: "db-tile-icon-amber",
 		desc: "Twój cyfrowy paszport kompetencji",
 		getStat: () => "Udostępnij",
 	},
@@ -70,7 +70,7 @@ const statItems = [
 		icon: CheckCircle,
 		getValue: (p: DashboardHubProps) => String(p.competencyCount),
 		label: "Posiadane",
-		iconClass: "db-stat-icon-indigo",
+		iconClass: "db-stat-icon-amber",
 	},
 	{
 		key: "gaps",
@@ -84,14 +84,14 @@ const statItems = [
 		icon: Zap,
 		getValue: (p: DashboardHubProps) => String(p.courseCount),
 		label: "Kursów",
-		iconClass: "db-stat-icon-emerald",
+		iconClass: "db-stat-icon-amber",
 	},
 ];
 
 function getCoverageLevel(coverage: number) {
 	if (coverage >= 70) return { label: "Zaawansowany", icon: Rocket };
 	if (coverage >= 40) return { label: "W drodze", icon: TrendingUp };
-	return { label: "Początkujący", icon: Flame };
+	return { label: "Początkujący", icon: Sprout };
 }
 
 function getMotivation(coverage: number, gapCount: number) {
@@ -100,7 +100,7 @@ function getMotivation(coverage: number, gapCount: number) {
 		return "Masz sporo do nadrobienia, ale każdy krok się liczy. Zacznij od krytycznych luk!";
 	if (coverage >= 40)
 		return "Dobra robota! Jesteś na dobrej drodze. Zamknij kolejne luki, żeby się wyróżnić.";
-	return "Twoja przygoda się zaczyna! Sprawdź Gap Analysis i wygeneruj pierwszy mikro-kurs.";
+	return "Twoja przygoda się zaczyna! Sprawdź analizę luk i wygeneruj pierwszy mikro-kurs.";
 }
 
 export function DashboardHub(props: DashboardHubProps) {
@@ -165,7 +165,7 @@ export function DashboardHub(props: DashboardHubProps) {
 					);
 				})}
 				<div className="db-stat-card">
-					<div className="db-stat-icon db-stat-icon-gradient">
+					<div className="db-stat-icon db-stat-icon-amber">
 						<LevelIcon size={20} />
 					</div>
 					<div>
@@ -196,11 +196,8 @@ export function DashboardHub(props: DashboardHubProps) {
 				))}
 			</div>
 
-			{/* Motivation card */}
+			{/* Motivation card — poświaty usunięte (Partia 5, C5: „Spokojny ekspert", zero glow) */}
 			<div className="db-motivation">
-				<div className="db-motivation-glow-right" />
-				<div className="db-motivation-glow-left" />
-
 				<div className="db-motivation-content">
 					<div className="db-motivation-icon">
 						<Rocket size={24} />

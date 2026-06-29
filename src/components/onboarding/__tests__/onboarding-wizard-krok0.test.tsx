@@ -65,6 +65,21 @@ describe("OnboardingWizard — Krok 0 (Pomocnik) → cel kariery dociera do subm
 						json: () => Promise.resolve({ competencies: ["A", "B", "C", "D", "E"] }),
 					} as Response);
 				}
+				// Katalog rynku (Krok 3) — realny, niepusty cel: bez tego submit jest słusznie
+				// WYŁĄCZONY (MUST-FIX Leo: pusty katalog/nierealny cel → zakaz domknięcia).
+				if (url.startsWith("/api/onboarding/market-catalog")) {
+					return Promise.resolve({
+						ok: true,
+						json: () =>
+							Promise.resolve({
+								isRealCareerGoal: true,
+								items: [
+									{ competencyName: "SQL", demandPercentage: 90, category: "Dane" },
+									{ competencyName: "Python", demandPercentage: 70, category: "Język" },
+								],
+							}),
+					} as Response);
+				}
 				if (url === "/api/onboarding" && opts?.method === "POST") {
 					onboardingBody = JSON.parse(opts.body as string);
 					return Promise.resolve({

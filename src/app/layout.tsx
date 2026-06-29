@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, Geist, Geist_Mono, Nunito, Playfair_Display } from "next/font/google";
+import { DM_Sans, Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -12,13 +12,6 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
 	variable: "--font-geist-mono",
 	subsets: ["latin"],
-});
-
-const nunito = Nunito({
-	variable: "--font-nunito",
-	subsets: ["latin", "latin-ext"],
-	weight: ["400", "600", "700", "800", "900"],
-	display: "swap",
 });
 
 // Landing #6 „Papierowy editorial": Playfair Display (nagłówki) + DM Sans (treść).
@@ -51,7 +44,7 @@ export default function RootLayout({
 	return (
 		<html lang="pl" suppressHydrationWarning>
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} ${playfairDisplay.variable} ${dmSans.variable} antialiased`}
+				className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} ${dmSans.variable} antialiased`}
 			>
 				<AuthProvider>{children}</AuthProvider>
 				<Toaster />

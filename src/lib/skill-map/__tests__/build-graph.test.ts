@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { calculateCoverage } from "../../passport-utils";
 import {
 	buildGraph,
+	enrichNodesWithGroupContext,
 	type GraphCompetency,
 	type GraphGap,
+	type NodeGroupContext,
 	type SkillMapStatus,
 } from "../build-graph";
 
@@ -170,5 +172,61 @@ describe("spójność liczb między widokami (dashboard == mapa == analiza luk)"
 		// Paszport (api/passport, passport/[id], /passport) — ten sam wzór, te same dane.
 		const passportCoverage = calculateCoverage(comps, gapCount);
 		expect(dashboardCoverage).toBe(passportCoverage);
+	});
+});
+
+describe("enrichNodesWithGroupContext — wzbogacenie węzłów o kontekst grupy (C4)", () => {
+	// Atrapa gettera kontekstu (w prod: getCompetencyContext(careerGoal, name)).
+	const stub: Record<string, NodeGroupContext> = {
+		Python: {
+			groupName: "Analiza danych",
+			groupDescription: "Po co: wyciągasz wnioski z danych.",
+			unionShare: 42,
+			kind: "tool",
+		},
+		Docker: {
+			groupName: "Wdrożenia",
+			groupDescription: null,
+			unionShare: null,
+			kind: "concept",
+		},
+	};
+	const getContext = (name: string): NodeGroupContext | null => stub[name] ?? null;
+
+	it("dokłada pola grupy do węzła z dopasowaniem (additive)", () => {
+		const { nodes } = buildGraph(comps, gaps);
+		const enriched = enrichNodesWithGroupContext(nodes, getContext);
+		const python = enriched.find((n) => n.data.label === "Python");
+		expect(python?.data.groupName).toBe("Analiza danych");
+		expect(python?.data.groupDescription).toBe("Po co: wyciągasz wnioski z danych.");
+		expect(python?.data.groupUnionShare).toBe(42);
+		expect(python?.data.kind).toBe("tool");
+	});
+
+	it("pomija pola null (G3: brak unionShare/opisu → brak pola, nie 'null%')", () => {
+		const { nodes } = buildGraph(comps, gaps);
+		const enriched = enrichNodesWithGroupContext(nodes, getContext);
+		const docker = enriched.find((n) => n.data.label === "Docker");
+		expect(docker?.data.groupName).toBe("Wdrożenia");
+		expect(docker?.data.groupUnionShare).toBeUndefined();
+		expect(docker?.data.groupDescription).toBeUndefined();
+		expect(docker?.data.kind).toBe("concept");
+	});
+
+	it("węzeł bez dopasowania zostaje BEZ ZMIAN (zgodność wstecz)", () => {
+		const { nodes } = buildGraph(comps, gaps);
+		const enriched = enrichNodesWithGroupContext(nodes, getContext);
+		const sql = enriched.find((n) => n.data.label === "SQL");
+		expect(sql?.data.groupName).toBeUndefined();
+		// Status i marketPercentage nietknięte.
+		expect(sql?.data.status).toBe("in_progress");
+		expect(sql?.data.marketPercentage).toBe(60);
+	});
+
+	it("nie zmienia liczby ani statusów węzłów (niezmiennik #1 nietknięty)", () => {
+		const { nodes } = buildGraph(comps, gaps);
+		const enriched = enrichNodesWithGroupContext(nodes, getContext);
+		expect(enriched).toHaveLength(nodes.length);
+		expect(statusCount(enriched, "missing")).toBe(statusCount(nodes, "missing"));
 	});
 });

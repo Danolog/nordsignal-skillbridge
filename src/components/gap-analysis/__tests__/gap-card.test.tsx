@@ -79,6 +79,25 @@ describe("GapCard", () => {
 		expect(screen.getByText("Dlaczego to ważne?")).toBeInTheDocument();
 	});
 
+	it("renderuje KindChip dla kind=concept (Partia 5, C5)", () => {
+		render(<GapCard {...defaultProps} kind="concept" />);
+		expect(screen.getByText("koncepcja")).toBeInTheDocument();
+	});
+
+	it("renderuje KindChip dla kind=tool", () => {
+		render(<GapCard {...defaultProps} kind="tool" />);
+		expect(screen.getByText("narzędzie")).toBeInTheDocument();
+	});
+
+	it("bez chipa dla kind spoza tool/concept (cert) ani gdy kind nieobecny", () => {
+		const { rerender } = render(<GapCard {...defaultProps} kind="cert" />);
+		expect(screen.queryByText("narzędzie")).toBeNull();
+		expect(screen.queryByText("koncepcja")).toBeNull();
+		rerender(<GapCard {...defaultProps} />);
+		expect(screen.queryByText("narzędzie")).toBeNull();
+		expect(screen.queryByText("koncepcja")).toBeNull();
+	});
+
 	it("displays pre-cached whyImportant text on expand", () => {
 		render(<GapCard {...defaultProps} whyImportant="Python jest ważny." />);
 		const whyBtn = screen.getByText("Dlaczego to ważne?");

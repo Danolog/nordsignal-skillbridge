@@ -21,11 +21,113 @@ export const ANCHOR_COUNT = 30;
 /** Rozmiar profilu kompetencji kotwicy (top-K technologii wśród jej ofert). */
 export const PROFILE_SIZE = 12;
 
-// Progi odcięcia szumu (Ethan, ratyfikowane przez Sophię §4/§5): kompetencja
-// zostaje tylko gdy (≥5% ofert ścieżki) ORAZ (≥10 ofert); max 25/ścieżkę.
-export const THRESHOLD_PCT = 5;
-export const THRESHOLD_ABS = 10;
-export const TOP_N = 25;
+// ── Miara rankingu + próg minimum ofert (decyzja Darka 2026-06-27: SUROWY UDZIAŁ) ──
+// Metoda rankingu = surowy udział technologii w kategorii (% ofert), malejąco. Student
+// ma widzieć, czego REALNIE wymaga rynek (Python zostaje — 14,8% ofert cyber), nie co
+// statystycznie wyróżnia rolę. PORZUCONA krotność (lift) jako miara rankingu i bramki
+// (była w Torze 1) — zostaje TYLKO jako pole INFORMACYJNE w career-model.json, nie rankuje
+// i nie bramkuje. Bramka katalogu = próg minimum ofert (ucina szum typu Kali/Nmap n=1-2)
+// + twarda blokada meta-tagów. Hierarchia career-model.json zachowuje wszystkie liście.
+export const COUNT_MIN_ABS = 4; // bezwzględna podłoga liczby ofert (Darek: n≥4-5; ucina Kali/Nmap n=1-2)
+export const COUNT_MIN_PCT = 1.0; // względna podłoga: % ofert ścieżki (skaluje do dużych ścieżek)
+
+/** Próg liczby ofert dla ścieżki o danym wolumenie: max(bezwzględny, względny %). */
+export function countMinFor(pathOffers: number): number {
+	return Math.max(COUNT_MIN_ABS, Math.ceil((COUNT_MIN_PCT / 100) * pathOffers));
+}
+
+// ── Klasyfikacja konkretu: tool | concept | cert | meta | soft ───────────────
+// (a) META-TAGI to etykiety-kategorie, NIE kompetencje do nauki — twarda blokada (inaczej
+// ranking wstawia „Cybersecurity"/„Cloud" jako kompetencję #1); (b) CONCEPT to koncepcja/
+// standard, który się ROZUMIE i STOSUJE (SIEM, IAM, NIST, OWASP) — inna etykieta samooceny
+// niż narzędzie, które się OBSŁUGUJE; (c) CERT to cel certyfikacyjny (osobny kubełek,
+// odłożone); (d) SOFT to umiejętność miękka/proces. kind bywa kuratorowany per liść
+// (LeafSpec.kind, Sophia §7); brak → auto-klasyfikacja po nazwie. Listy jawne (HITL).
+export type LeafKind = "tool" | "concept" | "cert" | "meta" | "soft";
+
+/** Etykiety-kategorie udające technologię — NIE są kompetencją do nauki (twarda blokada). */
+export const META_TAGS = new Set<string>([
+	"cybersecurity",
+	"it security",
+	"security",
+	"information security",
+	"cloud",
+	"devops",
+	"test automation",
+]);
+
+/** Certyfikaty/ramy certyfikacyjne — cel certyfikacyjny, osobny kubełek (nie „technologia"). */
+export const CERTS = new Set<string>([
+	"cissp",
+	"cism",
+	"cisa",
+	"iso 27001",
+	"grc",
+	"istqb",
+	"prince2",
+	"pmp",
+	"pmi",
+	"ipma",
+	"cbap",
+]);
+
+/** Prefiksy wariantów certyfikatów w danych (np. „ISTQB Foundation", „ISO 27001 - ..."). */
+const CERT_PREFIXES = ["istqb", "iso 27001", "iso27001", "prince2"];
+
+/** Umiejętności miękkie/procesowe — osobny kubełek (nie narzędzie do projektu). */
+export const SOFT_SKILLS = new Set<string>([
+	"risk management",
+	"risk assessment",
+	"documentation",
+	"analytical thinking",
+	"communication",
+	"problem solving",
+	"teamwork",
+	"training",
+	"business requirements",
+]);
+
+/**
+ * Klasyfikuje konkret po nazwie (bez rozróżniania wielkości liter). Kolejność:
+ * meta → cert → soft → tool. Używane w silniku (flatten: twarda blokada meta) i w
+ * generatorze kandydatów dla Sophii (oznaczenie kind przy każdej kompetencji).
+ */
+export function classifyLeafKind(name: string): LeafKind {
+	const n = name.trim().toLowerCase();
+	if (META_TAGS.has(n)) return "meta";
+	if (CERTS.has(n) || CERT_PREFIXES.some((p) => n.startsWith(p))) return "cert";
+	if (SOFT_SKILLS.has(n)) return "soft";
+	return "tool";
+}
+
+// ── Warianty nazw → forma kanoniczna (Ethan, Tor 1) ──────────────────────────
+// W danych ta sama kompetencja bywa kilkoma napisami → ręczny liść łapie tylko jeden
+// (zaniżony %). Przykłady z analizy: „Burp Suite" istnieje jako 3 napisy (łapaliśmy 1),
+// „Active Directory" + „Active Directory (AD)", a liść „OAuth2" łapał ZERO (w danych
+// małe „oauth"). Mapa kanoniczna → warianty. Generator kandydatów scala je, żeby Sophia
+// dostała poprawny wolumen i wiedziała, jakie `countAs` wpisać przy kuracji liścia.
+export const TECH_VARIANTS: Record<string, string[]> = {
+	"Burp Suite": ["Burp Suite", "BurpSuite", "Burp Suite Pro"],
+	"Active Directory": ["Active Directory", "Active Directory (AD)"],
+	OAuth2: ["OAuth2", "OAuth", "oauth"],
+};
+
+/** Odwrotny indeks: dowolny wariant (lowercase) → forma kanoniczna. */
+const VARIANT_TO_CANON = new Map<string, string>(
+	Object.entries(TECH_VARIANTS).flatMap(([canon, variants]) =>
+		variants.map((v) => [v.toLowerCase(), canon] as const),
+	),
+);
+
+/** Forma kanoniczna technologii (scala warianty); brak w mapie → nazwa bez zmian. */
+export function canonicalizeTech(name: string): string {
+	return VARIANT_TO_CANON.get(name.trim().toLowerCase()) ?? name;
+}
+
+/** Wszystkie napisy-warianty dla danej (kanonicznej) nazwy — do sumowania w danych. */
+export function variantsOf(canonical: string): string[] {
+	return TECH_VARIANTS[canonical] ?? [canonical];
+}
 
 /**
  * PLACEHOLDER kotwic automatycznych — pusty = narzędzie liczy top-30

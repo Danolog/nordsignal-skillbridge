@@ -1,0 +1,50 @@
+[
+	{
+		"slug": "cyber-siem-pierwsze-alerty-splunk",
+		"title": "SZKIELET (E3 Sophia): SIEM od zera — pierwsze alerty w Splunk",
+		"description": "PLACEHOLDER — fixtura-szkielet E2, nie treść produkcyjna. Sophia wypełni opisem w E3: co student zbuduje i z jakich publicznych danych (np. publiczny dataset logów + Splunk Free).",
+		"level": "L1",
+		"estimatedHours": 5,
+		"sourceType": "open_data",
+		"sourceUrl": "https://www.splunk.com/en_us/download/splunk-enterprise.html",
+		"rubricJson": [
+			{
+				"criterion": "Wczytanie logów do SIEM",
+				"weight": 40,
+				"description": "PLACEHOLDER — Sophia: kryterium dot. importu publicznych logów do Splunk."
+			},
+			{
+				"criterion": "Pierwsza reguła alertu",
+				"weight": 35,
+				"description": "PLACEHOLDER — Sophia: wykrycie podejrzanego zdarzenia regułą."
+			},
+			{
+				"criterion": "Wnioski i triage",
+				"weight": 25,
+				"description": "PLACEHOLDER — Sophia: krótki opis, co alert oznacza dla SOC."
+			}
+		],
+		"competencies": [
+			{ "name": "SIEM", "role": "required" },
+			{ "name": "SOC", "role": "required" },
+			{ "name": "Splunk", "role": "required" },
+			{ "name": "Linux", "role": "acquired" }
+		],
+		"theory_md": null,
+		"learning_resources": [
+			{
+				"title": "PLACEHOLDER — Splunk Free: dokumentacja startowa",
+				"url": "https://docs.splunk.com/Documentation",
+				"type": "docs",
+				"position": 0
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://www.splunk.com/en_us/download/splunk-enterprise.html",
+				"label": "Splunk Free (źródło główne)",
+				"position": 0
+			}
+		]
+	}
+]

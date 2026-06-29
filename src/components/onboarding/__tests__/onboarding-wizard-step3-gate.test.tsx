@@ -1,24 +1,22 @@
 // @vitest-environment jsdom
 /**
- * Brama #3 (front) — granica progu 4→5 kompetencji w kroku 3 wizarda onboardingu.
+ * Krok 3 wizarda po PRZEBUDOWIE Partii 4 — scalony wybór kompetencji RYNKU + poziom.
  *
- * Testujemy REALNY render OnboardingWizard (RTL, nie atrapa logiki):
- * - przycisk "Zatwierdź i przejdź dalej" disabled przy 4 wypełnionych, enabled przy 5
- *   (to jest sedno #3: isStep3Valid = filledCount >= MIN_COMPETENCIES w wizardzie);
- * - licznik "X/5" i komunikat progu / sukcesu (StepCompetencies, renderowany przez wizard);
- * - whitespace/pusta nazwa NIE liczy się do progu (4 realne + 1 pusta = wciąż disabled,
- *   bo filter używa c.name.trim()).
+ * FLIP bramy #3: dawniej przycisk „Zatwierdź" był zablokowany poniżej 5 kompetencji.
+ * Teraz próg ZNIESIONY (D5): student domyka krok z 0 zaznaczeń (0% pokrycia = uczciwy
+ * start juniora, cały rynek jako luki). Przycisk blokuje TYLKO ładowanie/zapis katalogu.
  *
- * Dotarcie do kroku 3: przez realną ścieżkę wizarda
- *   krok 1 (profil, Radix Select przez userEvent) → krok 2 (sylabus) →
- *   handleAnalyze (mock POST /api/syllabus/parse zwraca N kompetencji) → krok 3.
- * Nie wstrzykujemy stanu — wizard sam ustawia competencies z odpowiedzi analizy,
- * więc liczność kompetencji w kroku 3 = liczność z mocka (sterujemy granicą 4 vs 5).
- *
- * Spec: docs/design/skillbridge-panel-studenta-b3-b4-b5-spec.md §1 (próg min. 5).
+ * Testujemy REALNY render OnboardingWizard (RTL), dochodząc do kroku 3 realną ścieżką
+ * (picker celu → profil → pominięcie sylabusa) i karmiąc krok 3 katalogiem z mocka
+ * GET /api/onboarding/market-catalog. Sprawdzamy:
+ *   - przycisk „Zatwierdź" ENABLED przy 0 zaznaczeń (sedno flipu);
+ *   - nagłówek pokrycia (9c B1) 0% przy starcie + pusty stan zachęcający (nie „0/5");
+ *   - zaznaczenie poziomu podnosi pokrycie i licznik „Zaznaczono X z N";
+ *   - cel spoza 23 realnych ścieżek (isRealCareerGoal=false) → prośba o wybór realnej;
+ *   - trwające ładowanie katalogu blokuje przycisk (catalogLoading).
  */
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingWizard } from "../onboarding-wizard";
@@ -26,9 +24,7 @@ import { OnboardingWizard } from "../onboarding-wizard";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() } }));
 
-// Krok 0 (Pomocnik) ma własny przepływ sieciowy (ankieta→czat→podsumowanie); nie jest
-// przedmiotem tego testu (brama #3 = próg kompetencji w kroku 3). Stub CareerHelperFlow
-// natychmiast oddaje cel przez callback — tak jak po wyborze ścieżki przez studenta.
+// Pomocnik (Krok 0) ma własny przepływ sieciowy — stub oddaje cel przez callback.
 vi.mock("@/components/career-helper/career-helper-flow", () => ({
 	CareerHelperFlow: ({ onCareerGoalChosen }: { onCareerGoalChosen?: (l: string) => void }) => (
 		<button type="button" onClick={() => onCareerGoalChosen?.("Data Analyst")}>
@@ -37,7 +33,6 @@ vi.mock("@/components/career-helper/career-helper-flow", () => ({
 	),
 }));
 
-// Radix Select w jsdom wymaga tych stubów (pointer capture + scrollIntoView).
 beforeAll(() => {
 	if (!Element.prototype.hasPointerCapture) Element.prototype.hasPointerCapture = () => false;
 	Element.prototype.scrollIntoView = vi.fn();
@@ -45,21 +40,43 @@ beforeAll(() => {
 	if (!Element.prototype.releasePointerCapture) Element.prototype.releasePointerCapture = vi.fn();
 });
 
-/** Mock fetch: POST /api/syllabus/parse zwraca `count` kompetencji (sterowanie granicą). */
-function mockSyllabusParse(competencyNames: string[]) {
-	const fetchMock = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
-		// Autosave kroków 1–2 (fala B): „Dalej" (profil) i „Analizuj" (sylabus) wołają PATCH /progress.
-		if (url === "/api/onboarding/progress" && opts?.method === "PATCH") {
+const CATALOG_ITEMS = [
+	{ competencyName: "SQL", demandPercentage: 90, category: "Dane" },
+	{ competencyName: "Python", demandPercentage: 70, category: "Język" },
+	{ competencyName: "Pandas", demandPercentage: 40, category: "Biblioteka" },
+	{ competencyName: "Statystyka", demandPercentage: 30, category: "Teoria" },
+];
+
+type CatalogResponse = {
+	isRealCareerGoal: boolean;
+	items: { competencyName: string; demandPercentage: number; category: string }[];
+};
+
+/**
+ * Mock fetch: PATCH /progress (autosave) + GET market-catalog. `catalog` = odpowiedź
+ * katalogu; `pending` (opcjonalnie) zwraca nigdy-nierozwiązujący się GET (stan ładowania).
+ */
+function mockFetch(
+	catalog: CatalogResponse,
+	opts?: { pending?: boolean; syllabusNames?: string[] },
+) {
+	const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+		if (url === "/api/onboarding/progress" && init?.method === "PATCH") {
 			return Promise.resolve({
 				ok: true,
 				json: () => Promise.resolve({ success: true }),
 			} as Response);
 		}
-		if (url === "/api/syllabus/parse" && opts?.method === "POST") {
+		// Analiza sylabusa → ADNOTACJA (nazwy „w programie"), nie generator listy (D4).
+		if (url === "/api/syllabus/parse" && init?.method === "POST") {
 			return Promise.resolve({
 				ok: true,
-				json: () => Promise.resolve({ competencies: competencyNames }),
+				json: () => Promise.resolve({ competencies: opts?.syllabusNames ?? [] }),
 			} as Response);
+		}
+		if (url.startsWith("/api/onboarding/market-catalog")) {
+			if (opts?.pending) return new Promise<Response>(() => {}); // nigdy nie rozwiązany
+			return Promise.resolve({ ok: true, json: () => Promise.resolve(catalog) } as Response);
 		}
 		return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) } as Response);
 	});
@@ -67,13 +84,9 @@ function mockSyllabusParse(competencyNames: string[]) {
 	return fetchMock;
 }
 
-/** Przeprowadza wizard z kroku 0 (Pomocnik stub) do kroku 3 (analiza sylabusa daje kompetencje). */
-async function goToStep3(user: ReturnType<typeof userEvent.setup>) {
-	// Krok 0 — Pomocnik (stub): klik oddaje cel kariery, wizard przechodzi do Profilu.
+/** Picker (stub) → profil → ANALIZA sylabusa (≥100 znaków) → krok 3 (adnotacja). */
+async function goToStep3ViaAnalyze(user: ReturnType<typeof userEvent.setup>) {
 	await user.click(screen.getByRole("button", { name: /Wybierz cel \(stub\)/i }));
-
-	// Krok 1 — profil (Radix Select przez userEvent + input kierunku). Bez celu kariery:
-	// tylko 2 comboboxy (uczelnia [0], semestr [1]).
 	await user.click(screen.getAllByRole("combobox")[0]);
 	await user.click(await screen.findByRole("option", { name: "WSB Merito Gdańsk" }));
 	await user.type(screen.getByPlaceholderText(/np\. Informatyka/), "Informatyka");
@@ -81,17 +94,27 @@ async function goToStep3(user: ReturnType<typeof userEvent.setup>) {
 	await user.click(await screen.findByRole("option", { name: "4" }));
 	await user.click(screen.getByRole("button", { name: /Dalej/i }));
 
-	// Krok 2 — sylabus (≥100 znaków, żeby handleAnalyze nie odrzucił), klik "Analizuj".
-	const syllabus = "x".repeat(150);
+	// Krok 2 — wklej sylabus (≥100 znaków) i kliknij „Analizuj sylabus".
 	const textarea = screen.getByRole("textbox");
 	await user.click(textarea);
-	await user.paste(syllabus);
-	// Przycisk analizy — etykieta z StepSyllabus.
-	const analyzeBtn = screen.getByRole("button", { name: /Analizuj|Przeanalizuj/i });
-	await user.click(analyzeBtn);
+	await user.paste("x".repeat(150));
+	await user.click(await screen.findByRole("button", { name: /Analizuj sylabus/i }));
+}
 
-	// Krok 3 — nagłówek "Twoje kompetencje".
-	await screen.findByText("Twoje kompetencje");
+/** Picker celu (stub) → profil → pominięcie sylabusa → krok 3 (Kompetencje). */
+async function goToStep3(user: ReturnType<typeof userEvent.setup>) {
+	await user.click(screen.getByRole("button", { name: /Wybierz cel \(stub\)/i }));
+
+	// Krok 1 — profil (bez celu: 2 comboboxy — uczelnia [0], semestr [1]).
+	await user.click(screen.getAllByRole("combobox")[0]);
+	await user.click(await screen.findByRole("option", { name: "WSB Merito Gdańsk" }));
+	await user.type(screen.getByPlaceholderText(/np\. Informatyka/), "Informatyka");
+	await user.click(screen.getAllByRole("combobox")[1]);
+	await user.click(await screen.findByRole("option", { name: "4" }));
+	await user.click(screen.getByRole("button", { name: /Dalej/i }));
+
+	// Krok 2 — sylabus opcjonalny: pomijamy (katalog rynku i tak dostajemy).
+	await user.click(await screen.findByRole("button", { name: /Pomiń sylabus/i }));
 }
 
 function submitButton() {
@@ -102,93 +125,135 @@ beforeEach(() => {
 	vi.clearAllMocks();
 });
 
-// Pełna ścieżka wizarda przez userEvent (Radix Select + analiza sylabusa) jest
-// kosztowna; przy równoległym przebiegu całego suite domyślne 5 s bywa za mało.
-// Hojny limit per test eliminuje flake bez maskowania realnego renderu.
 const TEST_TIMEOUT = 20_000;
 
-describe("Brama #3 front — krok 3 wizarda, granica progu 4→5", () => {
+describe("Krok 3 (Partia 4) — próg min-5 zniesiony, wybór z katalogu rynku", () => {
 	it(
-		"4 kompetencje: przycisk Zatwierdź disabled, licznik 4/5, komunikat progu widoczny",
+		"0 zaznaczeń: przycisk Zatwierdź ENABLED, pokrycie 0%, pusty stan zachęcający (nie „0/5”)",
 		async () => {
-			mockSyllabusParse(["A", "B", "C", "D"]); // 4 realne
+			mockFetch({ isRealCareerGoal: true, items: CATALOG_ITEMS });
 			const user = userEvent.setup();
 			render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
 			await goToStep3(user);
 
-			// Przycisk zablokowany poniżej progu (isStep3Valid = false).
-			expect(submitButton()).toBeDisabled();
-			// Licznik 4/5 — czytamy z tekstu dla czytnika ekranu (jednoznaczny, w odróżnieniu
-			// od gołego "4", które koliduje z numerem kroku 4 w pasku postępu).
-			expect(screen.getByText(/wybrano 4 z wymaganych 5 kompetencji/)).toBeInTheDocument();
-			// Komunikat progu.
-			expect(screen.getByText(/Pracodawcy oczekują min\. 5 kompetencji/)).toBeInTheDocument();
-		},
-		TEST_TIMEOUT,
-	);
+			// Katalog wczytany — nagłówek pokrycia widoczny.
+			await screen.findByText(/pokrycia kompetencji wymaganych przez rynek dla roli Data Analyst/i);
 
-	it(
-		"5 kompetencji: przycisk Zatwierdź enabled, licznik 5/5, komunikat sukcesu",
-		async () => {
-			mockSyllabusParse(["A", "B", "C", "D", "E"]); // 5 realnych
-			const user = userEvent.setup();
-			render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
-			await goToStep3(user);
-
+			// SEDNO FLIPU: 0 zaznaczeń, a przycisk i tak aktywny (dawniej disabled < 5).
 			expect(submitButton()).toBeEnabled();
-			// Licznik 5/5 — tekst dla czytnika ekranu (minimum spełnione).
-			expect(screen.getByText(/wybrano 5 kompetencji, minimum 5 spełnione/)).toBeInTheDocument();
-			// Komunikat sukcesu (powyżej progu) zamiast progu.
+			// Pokrycie 0% (nagłówek 9c B1) — region z aria-label.
 			expect(
-				screen.getByText(/Masz komplet 5.*podnosi Twoje szanse u pracodawcy/),
+				screen.getByRole("region", {
+					name: /Pokrycie kompetencji wymaganych przez rynek: 0 procent/i,
+				}),
 			).toBeInTheDocument();
-			expect(screen.queryByText(/Pracodawcy oczekują min\. 5 kompetencji/)).not.toBeInTheDocument();
+			// Pusty stan = zachęta, nie „0/5".
+			expect(screen.getByText(/Zaznacz to, co już potrafisz/i)).toBeInTheDocument();
+			expect(screen.getByText(/Zaznaczono 0 z 4 kompetencji rynku/i)).toBeInTheDocument();
+			// Brak jakiegokolwiek komunikatu progu „min. 5".
+			expect(screen.queryByText(/min\.?\s*5 kompetencji/i)).not.toBeInTheDocument();
 		},
 		TEST_TIMEOUT,
 	);
 
 	it(
-		"whitespace/pusta nazwa NIE liczy się do progu: 4 realne + 1 pusta = wciąż disabled, licznik 4/5",
+		"zaznaczenie poziomu podnosi pokrycie i licznik; przycisk pozostaje aktywny",
 		async () => {
-			mockSyllabusParse(["A", "B", "C", "D", "   "]); // 4 realne + 1 whitespace
+			mockFetch({ isRealCareerGoal: true, items: CATALOG_ITEMS });
 			const user = userEvent.setup();
 			render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
 			await goToStep3(user);
+			await screen.findByText(/pokrycia kompetencji wymaganych przez rynek/i);
 
-			// 5 pól wejściowych w UI, ale tylko 4 liczą się do progu (trim()).
-			const inputs = screen.getAllByPlaceholderText("Nazwa kompetencji...");
-			expect(inputs).toHaveLength(5);
+			// Zaznacz poziom 3 (waga 1.0) dla SQL: 1/4 → 25% pokrycia. Etykieta = czasownik
+			// per rodzaj (C3); katalog testowy bez `kind` → zestaw default („znam" = poziom 3).
+			const sqlGroup = screen.getByRole("group", { name: "Poziom: SQL" });
+			await user.click(within(sqlGroup).getByRole("button", { name: "znam" }));
 
-			// Przycisk wciąż disabled (filledCount = 4 < 5).
-			expect(submitButton()).toBeDisabled();
-			expect(screen.getByText(/wybrano 4 z wymaganych 5 kompetencji/)).toBeInTheDocument();
-			expect(screen.getByText(/Pracodawcy oczekują min\. 5 kompetencji/)).toBeInTheDocument();
-		},
-		TEST_TIMEOUT,
-	);
-
-	it(
-		"przejście 4→5 na żywo: dopisanie 5. kompetencji odblokowuje przycisk",
-		async () => {
-			mockSyllabusParse(["A", "B", "C", "D"]); // start: 4
-			const user = userEvent.setup();
-			render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
-			await goToStep3(user);
-
-			expect(submitButton()).toBeDisabled();
-
-			// Dodaj 5. kompetencję i wpisz nazwę — przekroczenie progu.
-			await user.click(screen.getByRole("button", { name: /Dodaj kompetencję/i }));
-			const inputs = screen.getAllByPlaceholderText("Nazwa kompetencji...");
-			expect(inputs).toHaveLength(5);
-			await user.type(inputs[4], "E");
-
-			// Teraz 5 realnych → enabled, licznik 5/5, komunikat sukcesu.
+			expect(
+				screen.getByRole("region", {
+					name: /Pokrycie kompetencji wymaganych przez rynek: 25 procent/i,
+				}),
+			).toBeInTheDocument();
+			expect(screen.getByText(/Zaznaczono 1 z 4 kompetencji rynku/i)).toBeInTheDocument();
 			expect(submitButton()).toBeEnabled();
-			expect(screen.getByText(/wybrano 5 kompetencji, minimum 5 spełnione/)).toBeInTheDocument();
+		},
+		TEST_TIMEOUT,
+	);
+
+	it(
+		"cel spoza 23 realnych ścieżek (isRealCareerGoal=false) → prośba o wybór realnej, brak listy",
+		async () => {
+			mockFetch({ isRealCareerGoal: false, items: [] });
+			const user = userEvent.setup();
+			render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
+			await goToStep3(user);
+
+			// Komunikat „nie mamy katalogu — wróć i wybierz realną ścieżkę".
 			expect(
-				screen.getByText(/Masz komplet 5.*podnosi Twoje szanse u pracodawcy/),
+				await screen.findByText(/nie mamy jeszcze katalogu kompetencji z rynku/i),
 			).toBeInTheDocument();
+			// Brak nagłówka pokrycia (lista się nie renderuje).
+			expect(screen.queryByText(/Zaznaczono \d+ z \d+ kompetencji rynku/i)).not.toBeInTheDocument();
+		},
+		TEST_TIMEOUT,
+	);
+
+	it(
+		"MUST-FIX: cel spoza 23 ścieżek / pusty katalog → przycisk Zatwierdź DISABLED (zakaz submit-on-empty)",
+		async () => {
+			// Wejście Pomocnikiem z celem spoza 23 ścieżek → katalog pusty, isRealCareerGoal=false.
+			mockFetch({ isRealCareerGoal: false, items: [] });
+			const user = userEvent.setup();
+			render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
+			await goToStep3(user);
+
+			// Krok pokazuje bursztynowy komunikat (katalog pusty / cel nierealny) zamiast listy.
+			await screen.findByText(/nie mamy jeszcze katalogu kompetencji z rynku/i);
+
+			// SEDNO: nie wolno domknąć onboardingu pustym paszportem + nierealnym careerGoal.
+			// Warunek wyłączenia = pusty katalog / nierealny cel, NIE liczba zaznaczeń (≠ flip min-5→0).
+			expect(submitButton()).toBeDisabled();
+		},
+		TEST_TIMEOUT,
+	);
+
+	it(
+		"trwające ładowanie katalogu blokuje przycisk Zatwierdź (catalogLoading)",
+		async () => {
+			mockFetch({ isRealCareerGoal: true, items: CATALOG_ITEMS }, { pending: true });
+			const user = userEvent.setup();
+			render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
+			await goToStep3(user);
+
+			// GET katalogu wisi → catalogLoading=true → przycisk zablokowany, szkielet aria-busy.
+			expect(submitButton()).toBeDisabled();
+			expect(document.querySelector('[aria-busy="true"]')).toBeTruthy();
+		},
+		TEST_TIMEOUT,
+	);
+
+	it(
+		"analiza sylabusa → przejście do kroku 3 + adnotacja „w programie studiów” (D4, bez NPE annotacji)",
+		async () => {
+			// Sylabus zwraca SQL → tylko SQL z katalogu dostaje plakietkę „w programie studiów".
+			mockFetch({ isRealCareerGoal: true, items: CATALOG_ITEMS }, { syllabusNames: ["SQL"] });
+			const user = userEvent.setup();
+			render(<OnboardingWizard user={{ id: "u1", name: "T", email: "t@t.pl" }} />);
+			await goToStep3ViaAnalyze(user);
+
+			// Doszliśmy do kroku 3 (analiza → advanceTo(3)); katalog wczytany.
+			await screen.findByText(/pokrycia kompetencji wymaganych przez rynek/i);
+
+			// Plakietka „w programie studiów" TYLKO w wierszu SQL (z sylabusa) — annotateWithSyllabus
+			// zadziałało i NIE wywaliło się na pustym/undefined wejściu (regresja R1). Szukamy w
+			// obrębie <li>, bo sama fraza pada też w opisie nagłówka (poza wierszami).
+			const sqlRow = screen.getByRole("group", { name: "Poziom: SQL" }).closest("li");
+			const pythonRow = screen.getByRole("group", { name: "Poziom: Python" }).closest("li");
+			expect(within(sqlRow as HTMLElement).getByText(/w programie studiów/i)).toBeInTheDocument();
+			expect(
+				within(pythonRow as HTMLElement).queryByText(/w programie studiów/i),
+			).not.toBeInTheDocument();
 		},
 		TEST_TIMEOUT,
 	);

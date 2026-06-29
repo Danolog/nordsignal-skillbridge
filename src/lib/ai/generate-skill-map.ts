@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { competencies, gaps, skillMaps } from "@/lib/db/schema";
+import { competencies, gaps, skillMaps, students } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
-import { buildGraph } from "@/lib/skill-map/build-graph";
+import { getCompetencyContext } from "@/lib/onboarding/competency-groups";
+import { buildGraph, enrichNodesWithGroupContext } from "@/lib/skill-map/build-graph";
 
 /**
  * Generuje mapę kompetencji (skill map) studenta — DETERMINISTYCZNIE, bez LLM.
@@ -26,16 +27,19 @@ import { buildGraph } from "@/lib/skill-map/build-graph";
  */
 export async function generateSkillMap(studentId: string, tenantId: string): Promise<void> {
 	try {
-		const [studentCompetencies, studentGaps] = await Promise.all([
+		const [studentCompetencies, studentGaps, student] = await Promise.all([
 			db.query.competencies.findMany({
 				where: eq(competencies.studentId, studentId),
 			}),
 			db.query.gaps.findMany({
 				where: eq(gaps.studentId, studentId),
 			}),
+			db.query.students.findFirst({
+				where: eq(students.id, studentId),
+			}),
 		]);
 
-		const { nodes, edges } = buildGraph(
+		const { nodes: rawNodes, edges } = buildGraph(
 			studentCompetencies.map((c) => ({
 				name: c.name,
 				status: c.status,
@@ -46,6 +50,14 @@ export async function generateSkillMap(studentId: string, tenantId: string): Pro
 				marketPercentage: g.marketPercentage,
 			})),
 		);
+
+		// C4: dokładamy kontekst grupy (nazwa, opis „po co", unionShare, kind) do węzłów
+		// PO zbudowaniu czystego grafu — złączenie przy renderze z career-model.json po
+		// careerGoal + nazwie (BEZ migracji bazy). buildGraph zostaje czysty.
+		const careerGoal = student?.careerGoal;
+		const nodes = careerGoal
+			? enrichNodesWithGroupContext(rawNodes, (name) => getCompetencyContext(careerGoal, name))
+			: rawNodes;
 
 		const existing = await db.query.skillMaps.findFirst({
 			where: eq(skillMaps.studentId, studentId),

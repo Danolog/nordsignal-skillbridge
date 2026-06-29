@@ -54,8 +54,8 @@ describe("DashboardHub", () => {
 
 	it("renders all 4 navigation tiles", () => {
 		render(<DashboardHub {...defaultProps} />);
-		expect(screen.getByText("Skill Map")).toBeInTheDocument();
-		expect(screen.getByText("Gap Analysis")).toBeInTheDocument();
+		expect(screen.getByText("Mapa kompetencji")).toBeInTheDocument();
+		expect(screen.getByText("Analiza luk")).toBeInTheDocument();
 		expect(screen.getByText("Projekty")).toBeInTheDocument();
 		expect(screen.getByText("Paszport")).toBeInTheDocument();
 	});
@@ -86,5 +86,11 @@ describe("DashboardHub", () => {
 	it("renders 0% coverage when no passport", () => {
 		render(<DashboardHub {...defaultProps} marketCoverage={0} />);
 		expect(screen.getByText("0%")).toBeInTheDocument();
+	});
+
+	it("wyciszenie Spokojny ekspert (C5) - bez dekoracyjnych poswiat na karcie motywacji", () => {
+		const { container } = render(<DashboardHub {...defaultProps} />);
+		expect(container.querySelector(".db-motivation-glow-right")).toBeNull();
+		expect(container.querySelector(".db-motivation-glow-left")).toBeNull();
 	});
 });

@@ -14,14 +14,16 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useCallback, useMemo, useState } from "react";
 import { NodeDetailPanel } from "./node-detail-panel";
+import { SkillMapList } from "./skill-map-list";
 import { SkillNode, type SkillNodeData, type SkillNodeType } from "./skill-node";
 
 const nodeTypes = { skillNode: SkillNode };
 
+// Editorial „Spokojny ekspert": Masz=bursztyn, W trakcie=żółty ostrzegawczy, Brakuje=czerwień luki.
 const STATUS_MINIMAP_COLORS: Record<string, string> = {
-	acquired: "#10B981",
-	in_progress: "#F59E0B",
-	missing: "#EF4444",
+	acquired: "#D0891E",
+	in_progress: "#F4D04F",
+	missing: "#D0422B",
 };
 
 interface SkillMapViewProps {
@@ -33,6 +35,8 @@ export function SkillMapView({ initialNodes, initialEdges }: SkillMapViewProps) 
 	const [nodes, , onNodesChange] = useNodesState(initialNodes);
 	const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 	const [selectedNode, setSelectedNode] = useState<SkillNodeType | null>(null);
+	// Widok: kanwa grafu („map") vs lista grupująca („list", C4 — „cel cały czas widoczny").
+	const [view, setView] = useState<"map" | "list">("map");
 
 	const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
 		setSelectedNode(node as SkillNodeType);
@@ -44,7 +48,7 @@ export function SkillMapView({ initialNodes, initialEdges }: SkillMapViewProps) 
 
 	const nodeColor = useCallback((node: Node) => {
 		const data = node.data as SkillNodeData;
-		return STATUS_MINIMAP_COLORS[data.status] || "#94A3B8";
+		return STATUS_MINIMAP_COLORS[data.status] || "#D6CEC2";
 	}, []);
 
 	const stats = useMemo(() => {
@@ -63,9 +67,9 @@ export function SkillMapView({ initialNodes, initialEdges }: SkillMapViewProps) 
 	return (
 		<div className="flex flex-col h-[calc(100vh-theme(spacing.0))] max-md:h-[calc(100vh-56px)]">
 			{/* Header bar */}
-			<div className="flex items-center justify-between px-6 py-4 bg-white border-b border-indigo-500/8 shrink-0">
+			<div className="flex items-center justify-between px-6 py-4 bg-ed-card border-b border-ed-border shrink-0">
 				<div className="flex items-center gap-3">
-					<div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/15 flex items-center justify-center text-indigo-500">
+					<div className="w-10 h-10 rounded-xl bg-ed-badge-bg border border-ed-border flex items-center justify-center text-ed-amber-text">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
@@ -74,7 +78,7 @@ export function SkillMapView({ initialNodes, initialEdges }: SkillMapViewProps) 
 							strokeWidth={2}
 							className="w-5 h-5"
 						>
-							<title>Skill Map</title>
+							<title>Mapa kompetencji</title>
 							<path
 								strokeLinecap="round"
 								strokeLinejoin="round"
@@ -83,81 +87,104 @@ export function SkillMapView({ initialNodes, initialEdges }: SkillMapViewProps) 
 						</svg>
 					</div>
 					<div>
-						<h1 className="font-[Nunito] font-extrabold text-xl text-slate-900">Skill Map</h1>
-						<p className="text-[13px] text-slate-500">Mapa kompetencji</p>
+						<h1 className="font-heading font-semibold text-xl text-ed-ink">Mapa kompetencji</h1>
+						<p className="text-[13px] text-ed-muted">Twoje kompetencje na tle rynku</p>
+					</div>
+					{/* Przełącznik widoku Mapa / Lista (C4) */}
+					<div className="ml-2 inline-flex rounded-lg border border-ed-border p-0.5 text-[13px] font-medium">
+						<button
+							type="button"
+							onClick={() => setView("map")}
+							className={`rounded-md px-3 py-1 transition-colors ${view === "map" ? "bg-ed-surface text-ed-ink" : "text-ed-muted hover:text-ed-ink"}`}
+						>
+							Mapa
+						</button>
+						<button
+							type="button"
+							onClick={() => setView("list")}
+							className={`rounded-md px-3 py-1 transition-colors ${view === "list" ? "bg-ed-surface text-ed-ink" : "text-ed-muted hover:text-ed-ink"}`}
+						>
+							Lista
+						</button>
 					</div>
 				</div>
 				<div className="flex items-center gap-4 max-md:hidden">
-					<div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 font-mono text-[13px] font-semibold">
-						<span className="w-2 h-2 rounded-full bg-emerald-500" />
+					<div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-ed-amber/10 border border-ed-amber/20 text-ed-amber-text font-mono text-[13px] font-semibold">
+						<span className="w-2 h-2 rounded-full bg-ed-amber" />
 						{stats.acquired} Masz
 					</div>
-					<div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-500 font-mono text-[13px] font-semibold">
-						<span className="w-2 h-2 rounded-full bg-amber-400" />
+					<div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-ed-warn/15 border border-ed-warn/40 text-ed-amber-text font-mono text-[13px] font-semibold">
+						<span className="w-2 h-2 rounded-full bg-ed-warn" />
 						{stats.inProgress} W trakcie
 					</div>
-					<div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 font-mono text-[13px] font-semibold">
-						<span className="w-2 h-2 rounded-full bg-red-500" />
+					<div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-ed-danger/10 border border-ed-danger/20 text-ed-danger font-mono text-[13px] font-semibold">
+						<span className="w-2 h-2 rounded-full bg-ed-danger" />
 						{stats.missing} Brakuje
 					</div>
 				</div>
 			</div>
 
-			{/* Canvas */}
-			<div className="relative flex-1">
-				<ReactFlow
-					nodes={nodes}
-					edges={edges}
-					nodeTypes={nodeTypes}
-					onNodesChange={onNodesChange}
-					onEdgesChange={onEdgesChange}
-					onNodeClick={onNodeClick}
-					onPaneClick={onPaneClick}
-					fitView
-					defaultEdgeOptions={{
-						style: { stroke: "rgba(99, 102, 241, 0.2)", strokeWidth: 2 },
-						animated: true,
-					}}
-					proOptions={{ hideAttribution: true }}
-				>
-					<Controls
-						showInteractive={false}
-						className="!bg-white/90 !backdrop-blur-xl !border !border-indigo-500/10 !rounded-xl !shadow-md"
-					/>
-					<MiniMap
-						nodeColor={nodeColor}
-						maskColor="rgba(99, 102, 241, 0.05)"
-						className="!bg-white/85 !backdrop-blur-xl !border !border-indigo-500/10 !rounded-xl !shadow-sm"
-					/>
-					<Background
-						variant={BackgroundVariant.Dots}
-						gap={24}
-						size={1}
-						color="rgba(99, 102, 241, 0.08)"
-					/>
-				</ReactFlow>
-
-				{/* Legend */}
-				<div className="absolute bottom-5 left-5 bg-white/90 backdrop-blur-xl border border-indigo-500/10 rounded-2xl px-4 py-3 flex gap-4 shadow-md z-10">
-					<span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-						<span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
-						Masz
-					</span>
-					<span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-						<span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.4)]" />
-						W trakcie
-					</span>
-					<span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-						<span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.4)]" />
-						Brakuje
-					</span>
+			{/* Widok listowy — akordeon grup (C4, „cel cały czas widoczny" bez kliknięcia) */}
+			{view === "list" ? (
+				<div className="flex-1 overflow-y-auto bg-ed-surface">
+					<SkillMapList nodes={nodes as unknown as { data: SkillNodeData }[]} />
 				</div>
+			) : (
+				<div className="relative flex-1">
+					<ReactFlow
+						nodes={nodes}
+						edges={edges}
+						nodeTypes={nodeTypes}
+						onNodesChange={onNodesChange}
+						onEdgesChange={onEdgesChange}
+						onNodeClick={onNodeClick}
+						onPaneClick={onPaneClick}
+						fitView
+						defaultEdgeOptions={{
+							// „Spokojny ekspert": krawędzie statyczne, cienkie, neutralne — bez ruchu.
+							style: { stroke: "rgba(110, 104, 96, 0.25)", strokeWidth: 1.5 },
+							animated: false,
+						}}
+						proOptions={{ hideAttribution: true }}
+					>
+						<Controls
+							showInteractive={false}
+							className="!bg-ed-card !border !border-ed-border !rounded-lg !shadow-sm"
+						/>
+						<MiniMap
+							nodeColor={nodeColor}
+							maskColor="rgba(110, 104, 96, 0.06)"
+							className="!bg-ed-card !border !border-ed-border !rounded-lg !shadow-sm"
+						/>
+						<Background
+							variant={BackgroundVariant.Dots}
+							gap={24}
+							size={1}
+							color="rgba(110, 104, 96, 0.10)"
+						/>
+					</ReactFlow>
 
-				{/* Detail Panel */}
-				{selectedNode && (
-					<NodeDetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
-				)}
-			</div>
+					{/* Legend — bez poświaty (glow), płaskie kropki statusu */}
+					<div className="absolute bottom-5 left-5 bg-ed-card border border-ed-border rounded-lg px-4 py-3 flex gap-4 shadow-sm z-10">
+						<span className="flex items-center gap-1.5 text-xs font-medium text-ed-muted">
+							<span className="w-2.5 h-2.5 rounded-full bg-ed-amber" />
+							Masz
+						</span>
+						<span className="flex items-center gap-1.5 text-xs font-medium text-ed-muted">
+							<span className="w-2.5 h-2.5 rounded-full bg-ed-warn" />W trakcie
+						</span>
+						<span className="flex items-center gap-1.5 text-xs font-medium text-ed-muted">
+							<span className="w-2.5 h-2.5 rounded-full bg-ed-danger" />
+							Brakuje
+						</span>
+					</div>
+
+					{/* Detail Panel */}
+					{selectedNode && (
+						<NodeDetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
+					)}
+				</div>
+			)}
 		</div>
 	);
 }

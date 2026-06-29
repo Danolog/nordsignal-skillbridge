@@ -14,6 +14,7 @@ vi.mock("@/lib/db", () => ({
 			competencies: { findMany: vi.fn() },
 			gaps: { findMany: vi.fn() },
 			skillMaps: { findFirst: vi.fn() },
+			students: { findFirst: vi.fn() },
 		},
 		insert: vi.fn(() => ({ values: vi.fn() })),
 		update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
@@ -26,6 +27,7 @@ import { generateSkillMap } from "../generate-skill-map";
 const mockCompetencies = vi.mocked(db.query.competencies.findMany);
 const mockGaps = vi.mocked(db.query.gaps.findMany);
 const mockSkillMapFindFirst = vi.mocked(db.query.skillMaps.findFirst);
+const mockStudentFindFirst = vi.mocked(db.query.students.findFirst);
 const mockInsert = vi.mocked(db.insert);
 const mockUpdate = vi.mocked(db.update);
 
@@ -40,6 +42,9 @@ describe("generateSkillMap (deterministyczny)", () => {
 			{ competencyName: "Docker", marketPercentage: 70 },
 			{ competencyName: "Kubernetes", marketPercentage: 50 },
 		] as never);
+		// careerGoal spoza hierarchii → getCompetencyContext zwróci null, węzły bez zmian.
+		// Tu testujemy tylko persystencję; wzbogacenie testowane jednostkowo w build-graph.test.ts.
+		mockStudentFindFirst.mockResolvedValue({ id: "student-1", careerGoal: "Cel testowy" } as never);
 	});
 
 	it("does NOT call any AI model — deterministyczna ścieżka (domena 14)", async () => {

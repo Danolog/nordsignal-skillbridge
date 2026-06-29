@@ -149,3 +149,148 @@ dBack("POST /api/onboarding NIE zapala ukończenia przedwcześnie (realna baza)"
 		expect(row.onboardingStep).toBe(5);
 	});
 });
+
+// ============================================================================
+// PARTIA 4 — NOWY kontrakt onboardingu (obiekty z poziomem) na REALNEJ bazie.
+//
+// Sedno (weryfikacja realnej ścieżki): student wybiera kompetencje z KATALOGU RYNKU
+// z poziomem posiadania (2/3/4). Po POST:
+//   • kompetencje zapisane ze statusem z levelToStatus + samooceną + verified_by_method='self';
+//   • luki liczone DETERMINISTYCZNIE = katalog rynku \ wybór (popyt z job_market_data),
+//     BEZ modelu — „realne podpowiedzi z rynku" (persistMarketGaps, NIEzamockowany tu);
+//   • pokrycie paszportu == front computeMarketCoverage (parytet liczby).
+//
+// Hermetyczny: własny user + własny seed job_market_data (cel „QA-Integ-Path-Partia4"),
+// sprzątany w afterAll. generateSkillMap zamockowany (graf poza zakresem tej asercji).
+// ============================================================================
+const NEW_USER_ID = "u-onboarding-new-contract-integ";
+const CG = "QA-Integ-Path-Partia4"; // unikalny cel — własny katalog rynku, brak kolizji z seedem
+
+dBack("POST /api/onboarding — nowy kontrakt Partii 4 (obiekty z poziomem, realna baza)", () => {
+	let pool: Pool | undefined;
+
+	async function cleanup() {
+		if (!pool) return;
+		const rows = await pool.query("SELECT id FROM students WHERE user_id = $1", [NEW_USER_ID]);
+		for (const r of rows.rows) {
+			await pool.query("DELETE FROM competencies WHERE student_id = $1", [r.id]);
+			await pool.query("DELETE FROM gaps WHERE student_id = $1", [r.id]);
+			await pool.query("DELETE FROM skill_maps WHERE student_id = $1", [r.id]);
+			await pool.query("DELETE FROM passports WHERE student_id = $1", [r.id]);
+			await pool.query("DELETE FROM project_submissions WHERE student_id = $1", [r.id]);
+		}
+		await pool.query("DELETE FROM students WHERE user_id = $1", [NEW_USER_ID]);
+		await pool.query('DELETE FROM "user" WHERE id = $1', [NEW_USER_ID]);
+		await pool.query("DELETE FROM job_market_data WHERE career_goal = $1", [CG]);
+	}
+
+	beforeAll(async () => {
+		if (!isLocalTestDb) return;
+		pool = new Pool({ connectionString: DATABASE_URL });
+		await cleanup();
+		await pool.query(
+			`INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
+			 VALUES ($1, 'Test NewContract', 'new-contract-integ@test.local', true, now(), now())`,
+			[NEW_USER_ID],
+		);
+		// Katalog rynku celu CG — 4 kompetencje malejąco wg popytu.
+		const market: [string, number, string][] = [
+			["SQL", 90, "Dane"],
+			["Python", 70, "Język"],
+			["Pandas", 40, "Biblioteka"],
+			["Docker", 20, "DevOps"],
+		];
+		for (const [name, demand, cat] of market) {
+			await pool.query(
+				"INSERT INTO job_market_data (career_goal, competency_name, demand_percentage, category) VALUES ($1, $2, $3, $4)",
+				[CG, name, demand, cat],
+			);
+		}
+	});
+
+	afterAll(async () => {
+		await cleanup();
+		await pool?.end();
+	});
+
+	beforeEach(() => {
+		getSessionMock.mockResolvedValue({ user: { id: NEW_USER_ID } });
+	});
+
+	it("obiekty z poziomem → kompetencje (status+samoocena) + luki DETERMINISTYCZNE z rynku + pokrycie paszportu", async () => {
+		const { POST } = await import("../route");
+		const db = pool;
+		if (!db) throw new Error("Brak puli połączeń (baza testowa) — test nie powinien tu dotrzeć.");
+		const body = {
+			university: MAPPED_UNIVERSITY,
+			fieldOfStudy: "Informatyka",
+			semester: 4,
+			careerGoal: CG,
+			syllabusText: "",
+			competencies: [
+				{ name: "SQL", level: 3, marketPercentage: 90, inSyllabus: false }, // → acquired
+				{ name: "Python", level: 2, marketPercentage: 70, inSyllabus: true }, // → in_progress
+			],
+		};
+		const res = await POST(
+			new Request("http://localhost/api/onboarding", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+			}),
+		);
+		expect(res.status).toBe(200);
+
+		// Student: krok 3 NIE domyka onboardingu (completed=false), step=3.
+		const { rows: sRows } = await db.query(
+			"SELECT id, onboarding_completed, onboarding_step FROM students WHERE user_id = $1",
+			[NEW_USER_ID],
+		);
+		const sid = sRows[0].id;
+		expect(sRows[0].onboarding_completed).toBe(false);
+		expect(sRows[0].onboarding_step).toBe(3);
+
+		// Kompetencje: status z levelToStatus, samoocena = poziom, verified_by_method='self' (Beta).
+		const { rows: cRows } = await db.query(
+			"SELECT name, status, self_assessment, verified_by_method, market_percentage FROM competencies WHERE student_id = $1",
+			[sid],
+		);
+		const byName = Object.fromEntries(cRows.map((r) => [r.name, r]));
+		expect(byName.SQL).toMatchObject({
+			status: "acquired",
+			self_assessment: 3,
+			verified_by_method: "self",
+			market_percentage: 90,
+		});
+		expect(byName.Python).toMatchObject({
+			status: "in_progress",
+			self_assessment: 2,
+			verified_by_method: "self",
+			market_percentage: 70,
+		});
+
+		// Luki DETERMINISTYCZNE = katalog rynku \ wybór: Pandas (40→important/5h), Docker (20→nice/3h).
+		const { rows: gRows } = await db.query(
+			"SELECT competency_name, priority, estimated_hours, market_percentage FROM gaps WHERE student_id = $1 ORDER BY market_percentage DESC",
+			[sid],
+		);
+		expect(gRows.map((r) => r.competency_name)).toEqual(["Pandas", "Docker"]);
+		expect(gRows[0]).toMatchObject({
+			priority: "important",
+			estimated_hours: 5,
+			market_percentage: 40,
+		});
+		expect(gRows[1]).toMatchObject({
+			priority: "nice_to_have",
+			estimated_hours: 3,
+			market_percentage: 20,
+		});
+
+		// Pokrycie paszportu = round((1.0 + 0.5) / 4 * 100) = 38 — PARYTET z front computeMarketCoverage.
+		const { rows: pRows } = await db.query(
+			"SELECT market_coverage_percent FROM passports WHERE student_id = $1",
+			[sid],
+		);
+		expect(pRows[0].market_coverage_percent).toBe(38);
+	});
+});
