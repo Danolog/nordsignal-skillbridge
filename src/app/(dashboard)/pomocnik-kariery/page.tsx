@@ -28,11 +28,16 @@ export default async function PomocnikKarieryPage({
 
 	const student = await db.query.students.findFirst({
 		where: eq(students.userId, session.user.id),
-		columns: { id: true },
+		columns: { id: true, onboardingCompleted: true },
 	});
 	if (!student) redirect("/onboarding");
 
 	const { sessionId } = await searchParams;
 
-	return <CareerHelperFlow initialSessionId={sessionId} />;
+	return (
+		<CareerHelperFlow
+			initialSessionId={sessionId}
+			onboardingCompleted={student.onboardingCompleted}
+		/>
+	);
 }

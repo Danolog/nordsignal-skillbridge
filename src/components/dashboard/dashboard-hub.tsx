@@ -6,6 +6,7 @@ import {
 	CheckCircle,
 	FolderKanban,
 	Map as MapIcon,
+	RefreshCw,
 	Rocket,
 	Sprout,
 	Target,
@@ -133,6 +134,13 @@ export function DashboardHub(props: DashboardHubProps) {
 							<span className="db-dot" />
 							<span>Cel: {student.careerGoal}</span>
 						</div>
+						<Link
+							href="/onboarding?mode=change"
+							className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-ed-amber-text hover:underline"
+						>
+							<RefreshCw size={13} />
+							Zmień kierunek
+						</Link>
 					</div>
 					<div className="db-welcome-avatar">{initials}</div>
 				</div>

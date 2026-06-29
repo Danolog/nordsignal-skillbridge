@@ -16,9 +16,13 @@ type Phase = "survey" | "chat" | "summary";
  * (zachowane answers po stronie backendu — nowa sesja z answers).
  *
  * DWA TRYBY (strumień E / #5 — wpięcie jako Krok 0 onboardingu):
- *   - standalone (trasa /pomocnik-kariery, student już-onboardowany): po wyborze
+ *   - standalone (trasa /pomocnik-kariery, student w trakcie onboardingu): po wyborze
  *     ścieżki SummaryScreen woła `select-path` (NADPISUJE students.career_goal w bazie),
  *     następnie router.push("/onboarding"). Dzisiejsze zachowanie — niezmienione.
+ *   - standalone PO ukończeniu onboardingu (G „zmień kierunek"): NIE woła select-path
+ *     (nadpis bez przeliczenia = niespójny pulpit — luka domknięta w G). Cel płynie
+ *     przez URL do wizarda w trybie ?mode=change&goal=…, gdzie POST /api/onboarding
+ *     przelicza wszystko spójnie. Tryb wybiera `onboardingCompleted`.
  *   - embedded (Krok 0 wizarda, nowy student bez rekordu): NIE woła select-path
  *     (brak rekordu studenta — nie ma czego nadpisać; spec §1.3/§3.1). SummaryScreen
  *     dostaje `careerLabel` przez `onSelectPath` i zwraca go callbackiem
@@ -36,6 +40,7 @@ export function CareerHelperFlow({
 	initialSessionId,
 	crisisSupportMessage,
 	onCareerGoalChosen,
+	onboardingCompleted = false,
 }: {
 	initialSessionId?: string;
 	crisisSupportMessage?: string;
@@ -44,9 +49,16 @@ export function CareerHelperFlow({
 	 * router.push. Gdy niezdefiniowany → tryb standalone (router.push + select-path).
 	 */
 	onCareerGoalChosen?: (careerLabel: string) => void;
+	/**
+	 * G — czy student ukończył już onboarding. Standalone + ukończony = „zmień kierunek":
+	 * cel idzie do wizarda przez URL (bez select-path), żeby pulpit przeliczył się spójnie.
+	 */
+	onboardingCompleted?: boolean;
 }) {
 	const router = useRouter();
 	const embedded = typeof onCareerGoalChosen === "function";
+	// Standalone po ukończeniu = ścieżka zmiany kierunku: nie zapisujemy celu wcześnie.
+	const changeDirection = !embedded && onboardingCompleted;
 	const [phase, setPhase] = useState<Phase>(initialSessionId ? "chat" : "survey");
 	const [sessionId, setSessionId] = useState<string | null>(initialSessionId ?? null);
 	const [summary, setSummary] = useState<SummaryResponse | null>(null);
@@ -67,16 +79,22 @@ export function CareerHelperFlow({
 			<SummaryScreen
 				sessionId={sessionId}
 				summary={summary}
-				// Tryb persystencji: standalone woła select-path (nadpis w bazie);
-				// embedded NIE woła (brak rekordu studenta — spec §1.3/§3.1).
-				persistOnSelect={!embedded}
+				// Tryb persystencji: standalone-w-trakcie woła select-path (nadpis w bazie);
+				// embedded ORAZ standalone-zmiana-kierunku NIE wołają (brak rekordu / nadpis
+				// bez przeliczenia = niespójny pulpit — G przepuszcza zmianę przez wizard).
+				persistOnSelect={!embedded && !changeDirection}
 				onSelectPathDone={(careerLabel) => {
 					if (embedded) {
 						// Krok 0 wizarda: cel płynie w pamięci do POST /api/onboarding.
 						onCareerGoalChosen?.(careerLabel);
 						return;
 					}
-					// Standalone: B0 jako wyspa — po zapisie select-path wracamy do onboardingu.
+					if (changeDirection) {
+						// G: cel idzie do wizarda (tryb zmiany), który przeliczy pulpit spójnie.
+						router.push(`/onboarding?mode=change&goal=${encodeURIComponent(careerLabel)}`);
+						return;
+					}
+					// Standalone w trakcie onboardingu: po zapisie select-path wracamy do kreatora.
 					router.push("/onboarding");
 				}}
 				onBackToChat={async () => {

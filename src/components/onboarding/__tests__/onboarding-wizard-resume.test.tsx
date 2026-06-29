@@ -123,6 +123,38 @@ describe("OnboardingWizard — hydratacja initialStep/initialData", () => {
 	});
 });
 
+describe("OnboardingWizard — carryover samooceny przy zmianie kierunku (G)", () => {
+	it("zasiewa wybór dla nazw obecnych w nowym katalogu, pomija nazwy spoza katalogu", async () => {
+		stubFetch();
+		// Wejście od razu na krok 3 z PUSTYM wyborem + carryover ze starego celu.
+		// SQL jest w katalogu (zasiany), Kotlin nie ma (pominięty), Docker nie w carryover (Brak).
+		const emptyData: OnboardingInitialData = { ...RESUMED_DATA, selections: {} };
+		render(
+			<OnboardingWizard
+				user={USER}
+				initialStep={3}
+				initialData={emptyData}
+				carryoverSelfAssessments={{ SQL: 2, Kotlin: 3 }}
+			/>,
+		);
+
+		const sqlGroup = await screen.findByRole("group", { name: "Poziom: SQL" });
+		// SQL=2 z carryover → „uczę się" wciśnięte (nie „Brak").
+		expect(within(sqlGroup).getByRole("button", { name: "uczę się" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+		// Docker spoza carryover → „Brak" wciśnięte.
+		const dockerGroup = screen.getByRole("group", { name: "Poziom: Docker" });
+		expect(within(dockerGroup).getByRole("button", { name: "Brak" })).toHaveAttribute(
+			"aria-pressed",
+			"true",
+		);
+		// Kotlin spoza katalogu nowego celu → w ogóle się nie pojawia.
+		expect(screen.queryByRole("group", { name: "Poziom: Kotlin" })).not.toBeInTheDocument();
+	});
+});
+
 describe("OnboardingWizard — klikalny pasek kroków (numeracja 5 kroków)", () => {
 	it("skok do osiągniętego kroku (≤ maxReached) działa — powrót na Profil", async () => {
 		stubFetch();

@@ -106,19 +106,24 @@ export async function persistMarketGaps(
 		const derived = deriveGaps(catalog, selectedNames);
 
 		// Idempotencja: wymaż istniejące luki studenta przed wstawieniem świeżych.
-		await db.delete(gaps).where(eq(gaps.studentId, studentId));
-		if (derived.length > 0) {
-			await db.insert(gaps).values(
-				derived.map((g) => ({
-					studentId,
-					tenantId,
-					competencyName: g.competencyName,
-					priority: g.priority,
-					marketPercentage: g.marketPercentage,
-					estimatedHours: g.estimatedHours,
-				})),
-			);
-		}
+		// Transakcyjnie (G) — przy zmianie kierunku DELETE kasuje realne stare luki;
+		// przerwanie między DELETE a INSERT zostawiłoby pulpit z 0 luk. Atomowo: albo
+		// nowy komplet, albo stary stan bez zmian.
+		await db.transaction(async (tx) => {
+			await tx.delete(gaps).where(eq(gaps.studentId, studentId));
+			if (derived.length > 0) {
+				await tx.insert(gaps).values(
+					derived.map((g) => ({
+						studentId,
+						tenantId,
+						competencyName: g.competencyName,
+						priority: g.priority,
+						marketPercentage: g.marketPercentage,
+						estimatedHours: g.estimatedHours,
+					})),
+				);
+			}
+		});
 
 		// Pokrycie z tego samego źródła co reszta (calculateCoverage): statusy zapisanych
 		// kompetencji (acquired/in_progress) + liczba luk jako mianownik.
