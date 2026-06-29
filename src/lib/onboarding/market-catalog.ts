@@ -270,6 +270,38 @@ export function estimatedHoursForGap(priority: GapPriority): number {
 	return 3;
 }
 
+/** Wiersz luki (bez kluczy studenta/tenanta — dokłada je zapis w market-gaps). */
+export interface DerivedGap {
+	competencyName: string;
+	priority: GapPriority;
+	marketPercentage: number;
+	estimatedHours: number;
+}
+
+/**
+ * Czysta funkcja: luki = pozycje katalogu rynku, których student NIE zaznaczył.
+ * Porównanie po znormalizowanej nazwie (trim + lower) — odporne na drobne różnice
+ * wielkości liter. Mieszka tu (czysty moduł, bez importu `db`), żeby liczyć luki
+ * ZARÓWNO po stronie serwera (zapis, market-gaps) JAK i klienta (ekran Wniosków,
+ * krok 4) — jedno źródło prawdy, zero rozjazdu liczb (Built-to-Sell).
+ */
+export function deriveGaps(catalog: MarketCatalogItem[], selectedNames: string[]): DerivedGap[] {
+	const have = new Set(selectedNames.map((n) => n.trim().toLowerCase()));
+	// Priorytet WZGLĘDNY — potrzebuje najwyższego popytu W ŚCIEŻCE (cały katalog, nie tylko luki).
+	const maxDemand = catalog.reduce((m, i) => Math.max(m, i.demandPercentage), 0);
+	return catalog
+		.filter((item) => !have.has(item.competencyName.trim().toLowerCase()))
+		.map((item) => {
+			const priority = demandToPriority(item.demandPercentage, maxDemand);
+			return {
+				competencyName: item.competencyName,
+				priority,
+				marketPercentage: item.demandPercentage,
+				estimatedHours: estimatedHoursForGap(priority),
+			};
+		});
+}
+
 // ── Adnotacja sylabusem (D4, element 6) ─────────────────────────────────────
 //
 // Sylabus przestaje GENEROWAĆ listę kompetencji — staje się ADNOTACJĄ: nakłada na

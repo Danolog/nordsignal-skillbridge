@@ -17,6 +17,7 @@ import { CareerPathPicker } from "./career-path-picker";
 import { StepMarketCompetencies } from "./step-market-competencies";
 import { type ProfileData, StepProfile } from "./step-profile";
 import { StepSyllabus } from "./step-syllabus";
+import { StepWnioski } from "./step-wnioski";
 
 /**
  * Wizard onboardingu — REDESIGN na realny rynek pracy (Partia 4).
@@ -371,7 +372,10 @@ export function OnboardingWizard({
 	};
 
 	// Krok 4 (Wnioski): domknięcie onboardingu — JEDYNE zapalenie onboardingCompleted.
-	const handleComplete = async () => {
+	// `target` parametryzuje cel nawigacji: główne CTA → /dashboard (z odpowiedzi),
+	// miękkie linki Wniosków (analiza luk / projekt) → swój cel, ale ZAWSZE po domknięciu
+	// (inaczej `onboardingCompleted` zostałby false i brama wrzuciłaby usera znów w kreator).
+	const handleComplete = async (target?: string) => {
 		setCompleting(true);
 		try {
 			const res = await fetch("/api/onboarding/complete", { method: "POST" });
@@ -383,7 +387,7 @@ export function OnboardingWizard({
 			}
 			if (!res.ok) throw new Error("complete_failed");
 			const data = (await res.json()) as { redirect?: string };
-			router.push(data.redirect ?? "/dashboard");
+			router.push(target ?? data.redirect ?? "/dashboard");
 		} catch {
 			toast.error("Nie udało się domknąć onboardingu. Spróbuj ponownie.");
 			setCompleting(false);
@@ -614,33 +618,18 @@ export function OnboardingWizard({
 					</>
 				)}
 
-				{/* Step 4 — Wnioski: domknięcie onboardingu. */}
+				{/* Step 4 — Wnioski (ETAP D): bogaty ekran domykający z danych policzalnych. */}
 				{step === 4 && (
-					<div className="flex flex-col items-center gap-6 py-4 text-center">
-						<div className="w-16 h-16 rounded-full bg-ed-amber/10 flex items-center justify-center">
-							<Check className="h-8 w-8 text-ed-amber-text" />
-						</div>
-						<div className="max-w-sm">
-							<h2 className="font-heading text-2xl font-extrabold mb-2">Profil gotowy!</h2>
-							<p className="text-sm text-muted-foreground">
-								Twój Paszport Kompetencji jest gotowy. Mapa pokaże, czego rynek wymaga, a czego
-								jeszcze nie masz — to Twój plan nauki.
-							</p>
-						</div>
-						<Button onClick={handleComplete} disabled={completing} className="ob-btn-primary gap-2">
-							{completing ? (
-								<>
-									<BookOpen className="h-4 w-4 animate-spin" />
-									Kończę…
-								</>
-							) : (
-								<>
-									Przejdź do dashboardu
-									<ChevronRight className="h-4 w-4" />
-								</>
-							)}
-						</Button>
-					</div>
+					<StepWnioski
+						careerGoal={profile.careerGoal}
+						catalog={catalog}
+						groups={rawGroups}
+						selections={selections}
+						profileNote={profileNote}
+						syllabusUsed={syllabusCompetencies.length > 0}
+						onComplete={handleComplete}
+						completing={completing}
+					/>
 				)}
 			</div>
 		</div>
