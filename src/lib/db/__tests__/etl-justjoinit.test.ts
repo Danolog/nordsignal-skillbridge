@@ -849,6 +849,29 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		expect(arch?.targetRole).toBe(true);
 	});
 
+	it("ETAP H: Python junior = Średnia + dokładnie 5 ścieżek z profileNote (decyzja Sophii)", () => {
+		const py = model.paths.find((p) => p.careerGoal === "Python Developer") as
+			| { juniorFriendliness: string; profileNote?: string }
+			| undefined;
+		// Python traci flagę „junior=Wysoka" (profil szeroki, nie czysto-juniorski).
+		expect(py?.juniorFriendliness).toBe("Średnia");
+		expect(py?.profileNote).toContain("Profil szeroki");
+
+		const noted = (model.paths as Array<{ careerGoal: string; profileNote?: string }>)
+			.filter((p) => p.profileNote)
+			.map((p) => p.careerGoal)
+			.sort();
+		expect(noted).toEqual(
+			[
+				"Engineering Manager",
+				"PHP Developer",
+				"Python Developer",
+				"Solution Architect",
+				"UX/UI Designer",
+			].sort(),
+		);
+	});
+
 	it("deprioritized kotwice nadal widoczne jako ścieżki (dyrektywa 3)", () => {
 		const goals = model.paths.map((p) => p.careerGoal);
 		expect(goals).toContain("Solution Architect");

@@ -169,6 +169,7 @@ export type ModelPath = {
 	targetRole: boolean; // v5: rola docelowa (widoczna, nie punkt startu)
 	tShapePairs: string[]; // v5: ścieżki łączone T-shape
 	note?: string;
+	profileNote?: string; // ETAP H: adnotacja-zastrzeżenie profilu (etykieta UI)
 	areas: ModelArea[];
 	projects: ModelProject[];
 };
@@ -810,6 +811,9 @@ export function buildCareerModel(
 			targetRole: meta.targetRole,
 			tShapePairs: meta.tShapePairs,
 			note: meta.note ?? spec.note,
+			// Adnotacja-zastrzeżenie profilu (ETAP H) — tylko gdy podana (pominięte =
+			// JSON bajt-stabilny dla ścieżek bez noty). Czysta etykieta UI, nie liczba.
+			...(meta.profileNote ? { profileNote: meta.profileNote } : {}),
 			areas,
 			projects: PROJECT_BANK[spec.label] ?? [],
 		});

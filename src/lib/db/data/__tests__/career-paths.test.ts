@@ -30,6 +30,23 @@ describe("CAREER_PATHS — 23 realne ścieżki (zrzut JustJoinIT)", () => {
 		const targets = CAREER_PATHS.filter((p) => p.targetRole).map((p) => p.careerGoal);
 		expect(targets).toEqual(["Solution Architect", "Engineering Manager"]);
 	});
+
+	it("ETAP H: dokładnie 5 ścieżek z adnotacją profilu (lekka kopia klienta pickera)", () => {
+		const noted = CAREER_PATHS.filter((p) => p.profileNote).map((p) => p.careerGoal);
+		expect(noted.sort()).toEqual(
+			[
+				"Engineering Manager",
+				"PHP Developer",
+				"Python Developer",
+				"Solution Architect",
+				"UX/UI Designer",
+			].sort(),
+		);
+		// Treść niepusta i sensowna (uczciwy sygnał dla studenta, nie placeholder).
+		expect(CAREER_PATHS.find((p) => p.careerGoal === "UX/UI Designer")?.profileNote).toContain(
+			"Dane wstępne",
+		);
+	});
 });
 
 describe("isRealCareerGoal — bramka celu realnego", () => {
