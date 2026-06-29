@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveStudent } from "@/lib/career-helper/session";
+import { isRealCareerGoal } from "@/lib/db/data/career-paths";
 import { careerHelperSessions, studentCareerPaths, students } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { logError } from "@/lib/log";
@@ -48,7 +49,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 			{ status: 400 },
 		);
 	}
-	const { careerLabel } = parsed.data;
+	const careerLabel = parsed.data.careerLabel.trim();
+	// F2 — cel zapisywany do students.career_goal MUSI należeć do 23 ścieżek (klucz
+	// katalogu rynku). Po ugruntowaniu /summary karta zawsze niesie kanoniczną etykietę,
+	// więc label spoza zbioru tutaj = błąd/manipulacja, nie normalny przepływ → 400.
+	if (!isRealCareerGoal(careerLabel)) {
+		return NextResponse.json(
+			{ error: "Wybierz realną ścieżkę z katalogu.", code: "career_goal_not_in_catalog" },
+			{ status: 400 },
+		);
+	}
 	const { userId, studentId, tenantId } = studentAuth;
 
 	try {

@@ -2,6 +2,7 @@ import { generateObject, type LanguageModel, NoObjectGeneratedError, streamText 
 import { z } from "zod";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { entryCareerPaths, isEntryCareerGoal, matchCareerGoal } from "@/lib/db/data/career-paths";
 import { extractValidationIssues, logError } from "@/lib/log";
 
 /**
@@ -197,6 +198,37 @@ const PATH_LABEL_MAX = 120;
 const PATH_WHY_MAX = 800;
 const MAX_PATHS = 3;
 
+// F2 — ugruntowanie w katalogu. Pomocnik proponuje WYŁĄCZNIE 21 ścieżek wejściowych
+// (D1 Sophii: role docelowe nie są punktem startu juniora). Lista wstrzykiwana do
+// TEKSTU promptu (nie do schematu — pułapka NoObjectGeneratedError, komentarz wyżej).
+// Egzekucja twarda i tak jest w kodzie (groundCareerPaths), prompt tylko podnosi
+// trafialność verbatim.
+const ALLOWED_PATH_LABELS: readonly string[] = entryCareerPaths().map((p) => p.careerGoal);
+const ALLOWED_PATH_LABELS_BLOCK = ALLOWED_PATH_LABELS.map((l) => `- ${l}`).join("\n");
+
+/**
+ * F2 — ugruntowanie etykiet w katalogu (źródło prawdy career-paths.ts).
+ * Mapuje każdy label z LLM na kanoniczny `careerGoal` (casing/diakrytyki/alias);
+ * wpisy bez trafienia są USUWANE. Egzekwuje D1 Sophii: zostają WYŁĄCZNIE ścieżki
+ * WEJŚCIOWE (21) — role docelowe (Solution Architect / Engineering Manager) są
+ * odsiewane, nawet jeśli model je zaproponuje (Pomocnik ich nie proponuje aktywnie;
+ * widoczne tylko do przejrzenia w pickerze). Deduplikuje po kanonicznej etykiecie.
+ * Bez wywołania LLM. Pusty wynik jest legalny — generateSummary mapuje go na fallback.
+ */
+export function groundCareerPaths(
+	paths: { label: string; why: string }[],
+): { label: string; why: string }[] {
+	const seen = new Set<string>();
+	const out: { label: string; why: string }[] = [];
+	for (const p of paths) {
+		const canonical = matchCareerGoal(p.label);
+		if (!canonical || !isEntryCareerGoal(canonical) || seen.has(canonical)) continue;
+		seen.add(canonical);
+		out.push({ label: canonical, why: p.why });
+	}
+	return out;
+}
+
 // Schemat SUROWY (co przyjmujemy od Opusa) — bez min/required/max. Pola opcjonalne
 // z domyślną pustą wartością, żeby brak „why" albo pusty string NIE wywracał walidacji.
 // Normalizację (przycięcie, odsianie pustych, limit 3) robi normalizeSummary PO walidacji.
@@ -271,6 +303,7 @@ const SUMMARY_SYSTEM_PROMPT = `Jesteś „Pomocnikiem Wyboru Kariery". Tworzysz 
 Twarde zasady (human-in-the-loop, R2):
 - summaryText: 2–3 zdania własnymi słowami studenta („z tego, co powiedziałeś…"). NIE werdykt.
 - careerPaths: 1–3 OBSZARY zawodowe, które rezonują z preferencjami. Pole "why" to OPIS POWIĄZANIA z ankietą i rozmową — nie rekomendacja, nie ranking.
+- KAŻDA etykieta obszaru (label) MUSI pochodzić z zamkniętej listy katalogowej podanej w danych wejściowych — skopiuj ją słowo w słowo, nie tłumacz, nie wymyślaj nowych.
 - ZAKAZANE: „twoje powołanie", „zostań…", „powinieneś", „rekomenduję", „idealny zawód", „najlepsza ścieżka dla ciebie", liczby procentowe, ranking.
 - Decyzję podejmuje student po rozmowie z opiekunem.
 
@@ -406,29 +439,41 @@ export async function generateSummary(args: GenerateSummaryArgs): Promise<Summar
 		// Wewnątrz każdej, generateObjectWithRetry dokłada własne ponowienia na
 		// kapryśny NoObjectGeneratedError (osobny wymiar: schemat ≠ odmowa sędziego).
 		for (let attempt = 0; attempt < 2; attempt++) {
-			const { object } = await generateObjectWithRetry("career-helper.summary.generate", () =>
-				generateObject({
-					model: summaryModel,
-					schema: CareerSummarySchema,
-					// Cap długości wyjścia: dół-of-thumb summaryText(2000) + 3×(label 120
-					// + why 800) + narzut JSON ≈ 3.5 tys. znaków. Bez tego limitu AI SDK
-					// brał default, przy którym Opus bywał UCINANY w połowie JSON →
-					// niedomknięty obiekt → NoObjectGeneratedError. 4096 tokenów = z zapasem.
-					maxOutputTokens: 4096,
-					system: SUMMARY_SYSTEM_PROMPT,
-					prompt: `<user_input untrusted="true">
+			const { object: rawObject } = await generateObjectWithRetry(
+				"career-helper.summary.generate",
+				() =>
+					generateObject({
+						model: summaryModel,
+						schema: CareerSummarySchema,
+						// Cap długości wyjścia: dół-of-thumb summaryText(2000) + 3×(label 120
+						// + why 800) + narzut JSON ≈ 3.5 tys. znaków. Bez tego limitu AI SDK
+						// brał default, przy którym Opus bywał UCINANY w połowie JSON →
+						// niedomknięty obiekt → NoObjectGeneratedError. 4096 tokenów = z zapasem.
+						maxOutputTokens: 4096,
+						system: SUMMARY_SYSTEM_PROMPT,
+						prompt: `<user_input untrusted="true">
 Ankieta (JSON): ${safeAnswers}
 
 Rozmowa:
 ${transcript}
 </user_input>
 
+Dozwolone etykiety obszarów (label MUSI być DOKŁADNĄ kopią jednej z poniższych — słowo w słowo, bez tłumaczenia i bez modyfikacji):
+${ALLOWED_PATH_LABELS_BLOCK}
+
 Zwróć podsumowanie jako obiekt:
 - summaryText: 2–3 zdania (maks. ${SUMMARY_TEXT_MAX} znaków), własnymi słowami studenta, bez werdyktu.
-- careerPaths: DOKŁADNIE 1–3 obszary. Każdy: label (krótka nazwa obszaru, maks. ${PATH_LABEL_MAX} znaków) + why (opis powiązania z ankietą/rozmową, maks. ${PATH_WHY_MAX} znaków).
+- careerPaths: DOKŁADNIE 1–3 obszary. Każdy: label (DOKŁADNA etykieta z listy powyżej, maks. ${PATH_LABEL_MAX} znaków) + why (opis powiązania z ankietą/rozmową, maks. ${PATH_WHY_MAX} znaków).
 Trzymaj się limitów długości i liczby obszarów (najwyżej ${MAX_PATHS}). Bez procentów, rankingu i pól spoza schematu.`,
-				}),
+					}),
 			);
+			// F2 — ugruntuj etykiety w katalogu 23 PRZED kontraktem „≥1 ścieżka" i sędzią.
+			// Wpisy spoza 23 odsiane; pozostałe noszą kanoniczną etykietę. 0 po odsianiu →
+			// wpada w istniejącą gałąź pustego wyniku niżej (continue → fallback).
+			const object: CareerSummary = {
+				summaryText: rawObject.summaryText,
+				careerPaths: groundCareerPaths(rawObject.careerPaths),
+			};
 			last = object;
 			// Kontrakt „≥1 użyteczna ścieżka" egzekwujemy TU (po walidacji), nie w
 			// schemacie Zod. Schemat celowo przyjmuje pusty wynik (żeby nie rzucał

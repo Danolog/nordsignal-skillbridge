@@ -13,7 +13,10 @@ import {
 	CAREER_PATHS,
 	entryCareerPaths,
 	groupCareerPathsByFamily,
+	isEntryCareerGoal,
 	isRealCareerGoal,
+	matchCareerGoal,
+	normalizeGoalKey,
 } from "@/lib/db/data/career-paths";
 
 describe("CAREER_PATHS — 23 realne ścieżki (zrzut JustJoinIT)", () => {
@@ -64,6 +67,53 @@ describe("isRealCareerGoal — bramka celu realnego", () => {
 		expect(isRealCareerGoal("Zostać kosmonautą")).toBe(false);
 		expect(isRealCareerGoal("data analyst")).toBe(false); // wielkość liter ma znaczenie (klucz dosłowny)
 		expect(isRealCareerGoal("")).toBe(false);
+	});
+});
+
+describe("matchCareerGoal — ugruntowanie etykiety LLM w 23 ścieżkach (F2)", () => {
+	it("trafienie dosłowne → ta sama kanoniczna etykieta", () => {
+		expect(matchCareerGoal("Data Analyst")).toBe("Data Analyst");
+		expect(matchCareerGoal(".NET Developer")).toBe(".NET Developer");
+	});
+
+	it("trim wokół etykiety → kanoniczna", () => {
+		expect(matchCareerGoal("  Data Engineer  ")).toBe("Data Engineer");
+	});
+
+	it("wielkość liter nie psuje dopasowania (mapuje do kanonicznej)", () => {
+		expect(matchCareerGoal("data analyst")).toBe("Data Analyst");
+		expect(matchCareerGoal("FRONTEND DEVELOPER")).toBe("Frontend Developer");
+	});
+
+	it("ogon interpunkcji i podwójne spacje → kanoniczna", () => {
+		expect(matchCareerGoal("Data Analyst.")).toBe("Data Analyst");
+		expect(matchCareerGoal("Full-Stack  Developer")).toBe("Full-Stack Developer");
+	});
+
+	it("cel spoza katalogu → null (do odsiania)", () => {
+		expect(matchCareerGoal("Pilot")).toBeNull();
+		expect(matchCareerGoal("Inżynier danych")).toBeNull(); // brak aliasu = brak dopasowania (świadomie bez fuzzy)
+		expect(matchCareerGoal("")).toBeNull();
+	});
+});
+
+describe("isEntryCareerGoal — bramka 21 ścieżek wejściowych (D1, Pomocnik)", () => {
+	it("ścieżka wejściowa → true", () => {
+		expect(isEntryCareerGoal("Data Analyst")).toBe(true);
+		expect(isEntryCareerGoal("DevOps Engineer")).toBe(true);
+	});
+	it("rola docelowa (w 23, ale nie wejściowa) → false", () => {
+		expect(isEntryCareerGoal("Solution Architect")).toBe(false);
+		expect(isEntryCareerGoal("Engineering Manager")).toBe(false);
+	});
+	it("cel spoza katalogu → false", () => {
+		expect(isEntryCareerGoal("Pilot")).toBe(false);
+	});
+});
+
+describe("normalizeGoalKey — ścisła normalizacja (nie fuzzy)", () => {
+	it("zdejmuje diakrytyki, casing i kolapsuje spacje", () => {
+		expect(normalizeGoalKey("  Inżynier  DANYCH. ")).toBe("inzynier danych");
 	});
 });
 
