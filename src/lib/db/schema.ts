@@ -293,10 +293,22 @@ export const projects = pgTable(
 		theoryMd: text("theory_md"),
 		rubricJson: jsonb("rubric_json").notNull().default([]),
 		status: text("status").notNull().default("active"),
+		// Redesign weryfikacji (migracja 0019). Typ pracy decyduje o twardych
+		// sprawdzeniach kroku 2 (kod → analiza statyczna; dokument → struktura
+		// README; reguła/SQL → walidacja składni). CHECK (lista miękka), NIE enum
+		// Postgres — przyszły nowy typ to odwracalny ALTER CHECK, nie nieodwracalne
+		// ALTER TYPE. DEFAULT 'mixed' = backfill bezpieczny dla istniejących projektów.
+		deliverableType: text("deliverable_type").notNull().default("mixed"),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
-	(table) => [index("idx_projects_slug").on(table.slug)],
+	(table) => [
+		index("idx_projects_slug").on(table.slug),
+		check(
+			"projects_deliverable_type_values",
+			sql`${table.deliverableType} IN ('code','document','detection_rule','sql','mixed')`,
+		),
+	],
 );
 
 // ============================================================================
@@ -413,6 +425,12 @@ export const projectSubmissions = pgTable(
 		aiReviewJson: jsonb("ai_review_json"),
 		score: integer("score"),
 		status: submissionStatusEnum("status").notNull().default("in_progress"),
+		// Redesign weryfikacji (migracja 0019). Flaga „czeka na człowieka" —
+		// ORTOGONALNA do statusu (nie rozszerzamy submissionStatusEnum: ALTER TYPE
+		// ADD VALUE jest NIEODWRACALNE; boolean jest cofalny przez DROP COLUMN —
+		// decyzja potwierdzona z Leo). Zapala priorytet kolejki oceny premium
+		// (Faza 3 UI). DEFAULT false = backfill bezpieczny.
+		needsHumanReview: boolean("needs_human_review").notNull().default(false),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
@@ -479,6 +497,52 @@ export const projectReflections = pgTable(
 		index("idx_project_reflections_tenant_id").on(table.tenantId),
 		// UNIQUE: jedna refleksja na zgłoszenie (ponowny zapis = UPDATE istniejącej)
 		uniqueIndex("uq_project_reflections_submission").on(table.submissionId),
+	],
+);
+
+// ============================================================================
+// Redesign weryfikacji — decyzja człowieka o zgłoszeniu (Etap 2). Migracja 0019.
+//
+// Decyzja schematu (Ethan/Leo, §6.3): NOWA tabela submission_reviews (wzorzec
+// project_reflections — zapis robi INNA rola niż student: wykładowca / operator
+// jakości). app_faculty dostaje SELECT + INSERT (moderacja w swoim tenancie),
+// polityka RLS tenant-owa jak faculty_sees_tenant z 0008. RLS NIE jest
+// generowana przez drizzle-kit — dopisana ręcznie w drizzle/0019_*.sql.
+//
+// reviewerType: text + CHECK (lista miękka 'faculty'/'quality_operator'/
+// 'auto_no_human' — obsługuje tryb bez człowieka §6.6 bez przyszłej migracji;
+// NIE enum Postgres — odwracalność). UNIQUE(submission_id): jedna decyzja na
+// zgłoszenie (ponowna = UPDATE). Faza 1: tabela GOTOWA, UI oceniającego dopiero
+// w Fazie 3 — tu tylko struktura + flaga needs_human_review na zgłoszeniu.
+// ============================================================================
+
+export const submissionReviews = pgTable(
+	"submission_reviews",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		submissionId: uuid("submission_id")
+			.notNull()
+			.references(() => projectSubmissions.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		// 'approved' | 'rejected' — decyzja człowieka (CHECK, nie enum).
+		decision: text("decision").notNull(),
+		// 'faculty' | 'quality_operator' | 'auto_no_human' (tryb bez człowieka §6.6).
+		reviewerType: text("reviewer_type").notNull(),
+		reviewerId: text("reviewer_id"),
+		note: text("note"),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_submission_reviews_submission_id").on(table.submissionId),
+		index("idx_submission_reviews_tenant_id").on(table.tenantId),
+		uniqueIndex("uq_submission_reviews_submission").on(table.submissionId),
+		check("submission_reviews_decision_values", sql`${table.decision} IN ('approved','rejected')`),
+		check(
+			"submission_reviews_reviewer_type_values",
+			sql`${table.reviewerType} IN ('faculty','quality_operator','auto_no_human')`,
+		),
 	],
 );
 

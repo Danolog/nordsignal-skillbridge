@@ -134,6 +134,13 @@
       "when": 1782471235007,
       "tag": "0018_glamorous_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1782757485042,
+      "tag": "0019_parched_black_bird",
+      "breakpoints": true
     }
   ]
 }

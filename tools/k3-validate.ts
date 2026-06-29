@@ -43,6 +43,10 @@ const TENANT_TABLES = [
 	"project_submissions",
 	// B5 — prywatne refleksje studenta (migracja 0015, K-PII+, deny-faculty)
 	"project_reflections",
+	// Redesign weryfikacji — decyzja człowieka o zgłoszeniu (migracja 0019).
+	// Tenant-owa, FORCE RLS + owner_passthrough; grant tylko app_faculty
+	// (SELECT+INSERT), polityki faculty_sees_tenant/faculty_moderates_tenant.
+	"submission_reviews",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.
@@ -96,9 +100,9 @@ async function main() {
 			[[...TENANT_TABLES, "audit_log", "faculty_sessions"]],
 		);
 		check(
-			"3. RLS włączony (7 tenant + audit_log + faculty_sessions)",
-			rls.rowCount === 9,
-			`włączony na ${rls.rowCount}/9`,
+			"3. RLS włączony (8 tenant + audit_log + faculty_sessions)",
+			rls.rowCount === 10,
+			`włączony na ${rls.rowCount}/10`,
 		);
 
 		// 13. KOMPLETNOŚĆ WYJĄTKÓW RLS (DoD domeny 8, rls-matrix §4; rekomendacja
@@ -273,9 +277,9 @@ async function main() {
 				[TENANT_TABLES],
 			);
 			check(
-				"10a. FORCE RLS na 7 tabelach studenta",
-				forceTables.rowCount === 7,
-				`FORCE na ${forceTables.rowCount}/7`,
+				"10a. FORCE RLS na 8 tabelach tenant-owych",
+				forceTables.rowCount === 8,
+				`FORCE na ${forceTables.rowCount}/8`,
 			);
 
 			// Polityka idzie `TO <current_user>` (prod = neondb_owner, CI = test) —
@@ -295,9 +299,9 @@ async function main() {
 				(r) => Number(r.role_count) >= 1,
 			).length;
 			check(
-				"10b. owner_passthrough policy na 7 tabelach (>=1 rola każda)",
-				passthroughPolicies.rowCount === 7 && okPolicyCount === 7,
-				`policy na ${passthroughPolicies.rowCount}/7 (>=1 rola: ${okPolicyCount}/7)`,
+				"10b. owner_passthrough policy na 8 tabelach (>=1 rola każda)",
+				passthroughPolicies.rowCount === 8 && okPolicyCount === 8,
+				`policy na ${passthroughPolicies.rowCount}/8 (>=1 rola: ${okPolicyCount}/8)`,
 			);
 
 			// Cross-role deny-default: SET LOCAL ROLE app_student BEZ

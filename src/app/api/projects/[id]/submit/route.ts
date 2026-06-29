@@ -1,7 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { reviewSubmission } from "@/lib/ai/review-submission";
+import { runReviewPipeline } from "@/lib/ai/pipeline";
+import type { DeliverableType } from "@/lib/ai/pipeline/types";
 import { parseNotebookUrl, parseRepoUrl } from "@/lib/ai/sanitize";
 import { auditContextFromRequest, recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth/server";
@@ -84,16 +85,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 	});
 	if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
-	// AI POZA tx — nie trzymamy połączenia przez LLM + cheat detection.
-	let review: Awaited<ReturnType<typeof reviewSubmission>>;
+	// AI POZA tx — nie trzymamy połączenia przez potok oceny (sieć GitHub + LLM).
+	// Potok (Faza 1): pobranie treści → twarde sprawdzenia → ocena semantyczna z
+	// cytatami + feedback studenta → cheat-risk z faktów → routing. Suma i status
+	// liczone DETERMINISTYCZNIE w kodzie (krok 5), nie przez model.
+	let pipeline: Awaited<ReturnType<typeof runReviewPipeline>>;
 	try {
-		review = await reviewSubmission(
-			repoUrlStr,
-			notebookUrlStr,
-			project.rubricJson,
-			project.title,
-			project.description,
-		);
+		pipeline = await runReviewPipeline({
+			repoUrl: repoUrlStr,
+			notebookUrl: notebookUrlStr,
+			rubricJson: project.rubricJson,
+			deliverableType: project.deliverableType as DeliverableType,
+		});
 	} catch {
 		return NextResponse.json(
 			{ error: "Nie udało się ocenić zgłoszenia. Spróbuj ponownie." },
@@ -101,21 +104,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 		);
 	}
 
-	// Fail-closed: verified wymaga wysokiego score, niskiego cheat risk i ≥3 kryteriów.
-	let status: "verified" | "submitted" | "rejected" = "submitted";
-	if (review.score >= 70 && review.cheatRiskScore < 0.5 && review.criteriaScores.length >= 3) {
-		status = "verified";
-	} else if (review.score < 30) {
-		status = "rejected";
-	}
+	const { status, needsHumanReview, aiReviewJson } = pipeline;
+	const review = aiReviewJson.review;
 
 	const submissionData = {
 		repoUrl: repoUrlStr,
 		notebookUrl: notebookUrlStr,
 		additionalUrls: safeAdditionalUrls,
 		submittedAt: new Date(),
-		score: review.score,
+		score: pipeline.score,
 		status,
+		needsHumanReview,
 	};
 
 	// Cache check + upsert przez RLS — student_sees_own ON project_submissions.
@@ -134,7 +133,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 					.update(projectSubmissions)
 					.set({
 						...submissionData,
-						aiReviewJson: { ...((existing.aiReviewJson as object) ?? {}), review },
+						// aiReviewJson z potoku: review (wstecznie zgodny) + rodzeństwo
+						// (studentFeedback/recommendation/cheatSignals/hardChecks/contentMeta).
+						// Merge zachowuje pola spoza potoku (np. dawne klucze), nadpisuje nowe.
+						aiReviewJson: { ...((existing.aiReviewJson as object) ?? {}), ...aiReviewJson },
 						updatedAt: new Date(),
 					})
 					.where(eq(projectSubmissions.id, existing.id))
@@ -148,7 +150,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 					tenantId: studentMeta.tenantId,
 					projectId,
 					...submissionData,
-					aiReviewJson: { review },
+					aiReviewJson,
 				})
 				.returning();
 			return inserted;
@@ -168,6 +170,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 			metadata: {
 				score: review.score,
 				cheatRiskScore: review.cheatRiskScore,
+				needsHumanReview,
 				projectId,
 			},
 		});

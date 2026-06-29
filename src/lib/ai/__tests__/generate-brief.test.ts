@@ -55,6 +55,8 @@ const project = {
 	theoryMd: null,
 	rubricJson: [{ criterion: "Kryterium 1", weight: 50, description: "Opis" }],
 	status: "active",
+	// Redesign weryfikacji — typ pracy (migracja 0019); DEFAULT 'mixed'.
+	deliverableType: "mixed",
 	createdAt: new Date(),
 	updatedAt: new Date(),
 	competencies: [
