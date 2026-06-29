@@ -61,6 +61,13 @@ export function CareerPathPicker({ value, onSelect }: CareerPathPickerProps) {
 											rola docelowa — nie punkt startu
 										</span>
 									)}
+									{/* ETAP H: adnotacja-zastrzeżenie profilu (np. „profil szeroki", „dane
+									    wstępne") — uczciwie o tym, jak czytać profil, zanim student wybierze. */}
+									{path.profileNote && (
+										<span className="mt-1 rounded border border-ed-amber bg-ed-badge-bg px-1.5 py-0.5 text-xs text-ed-amber-text">
+											{path.profileNote}
+										</span>
+									)}
 								</button>
 							);
 						})}

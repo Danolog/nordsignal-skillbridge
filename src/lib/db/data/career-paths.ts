@@ -36,6 +36,13 @@ export interface CareerPath {
 	 * proponuje aktywnie (D1), ale jest widoczna do przejrzenia.
 	 */
 	targetRole: boolean;
+	/**
+	 * ETAP H: krótka adnotacja-zastrzeżenie profilu (np. „profil szeroki", „dane wstępne").
+	 * LEKKA KOPIA klienta dla pickera (źródło prawdy = career-model.json `profileNote`;
+	 * picker jest „use client" i nie może importować dużego JSON-a). Trzymane spójnie
+	 * z PATH_META.profileNote — jak `targetRole`, który też żyje w obu plikach.
+	 */
+	profileNote?: string;
 }
 
 /**
@@ -52,7 +59,13 @@ export const CAREER_PATHS: readonly CareerPath[] = [
 	{ careerGoal: "Java Developer", family: "II — Inżynieria Oprogramowania", targetRole: false },
 	{ careerGoal: ".NET Developer", family: "II — Inżynieria Oprogramowania", targetRole: false },
 	{ careerGoal: "Backend Developer", family: "II — Inżynieria Oprogramowania", targetRole: false },
-	{ careerGoal: "Python Developer", family: "II — Inżynieria Oprogramowania", targetRole: false },
+	{
+		careerGoal: "Python Developer",
+		family: "II — Inżynieria Oprogramowania",
+		targetRole: false,
+		profileNote:
+			"Profil szeroki — łapie też oferty platformowe i DevOps (Linux, Docker, Kubernetes). Python zostaje rdzeniem ścieżki.",
+	},
 	{ careerGoal: "Frontend Developer", family: "II — Inżynieria Oprogramowania", targetRole: false },
 	{
 		careerGoal: "Full-Stack Developer",
@@ -60,7 +73,13 @@ export const CAREER_PATHS: readonly CareerPath[] = [
 		targetRole: false,
 	},
 	{ careerGoal: "Android Developer", family: "II — Inżynieria Oprogramowania", targetRole: false },
-	{ careerGoal: "PHP Developer", family: "II — Inżynieria Oprogramowania", targetRole: false },
+	{
+		careerGoal: "PHP Developer",
+		family: "II — Inżynieria Oprogramowania",
+		targetRole: false,
+		profileNote:
+			"Rdzeń ścieżki to PHP, Symfony i Laravel — mimo że ogólny SQL ma w ofertach wyższy udział.",
+	},
 	{
 		careerGoal: "Embedded / C++ Developer",
 		family: "II — Inżynieria Oprogramowania",
@@ -83,11 +102,15 @@ export const CAREER_PATHS: readonly CareerPath[] = [
 		careerGoal: "Solution Architect",
 		family: "IV — Jakość, Testy i Architektura",
 		targetRole: true,
+		profileNote:
+			"Dane wstępne — mała próbka (81 ofert). Część konkretów architekta jest poniżej progu statystycznego.",
 	},
 	{
 		careerGoal: "Engineering Manager",
 		family: "IV — Jakość, Testy i Architektura",
 		targetRole: true,
+		profileNote:
+			"Profil oddaje techniczne tło z ogłoszeń. Sygnały przywódcze są w surowych danych słabo widoczne.",
 	},
 	// V — Zarządzanie, Produkt i Systemy Biznesowe
 	{
@@ -109,6 +132,7 @@ export const CAREER_PATHS: readonly CareerPath[] = [
 		careerGoal: "UX/UI Designer",
 		family: "V — Zarządzanie, Produkt i Systemy Biznesowe",
 		targetRole: false,
+		profileNote: "Dane wstępne — profil wciąż w opracowaniu (pełna kuracja w przygotowaniu).",
 	},
 	{
 		careerGoal: "Salesforce Developer",

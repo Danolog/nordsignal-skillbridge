@@ -29,8 +29,10 @@ vi.mock("@/lib/onboarding/market-gaps", () => ({
 }));
 
 const mockBuildCatalogGroups = vi.fn();
+const mockGetPathProfileNote = vi.fn();
 vi.mock("@/lib/onboarding/competency-groups", () => ({
 	buildCatalogGroups: (...a: unknown[]) => mockBuildCatalogGroups(...a),
+	getPathProfileNote: (...a: unknown[]) => mockGetPathProfileNote(...a),
 }));
 
 const mockLogError = vi.fn();
@@ -69,6 +71,7 @@ beforeEach(() => {
 	mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
 	mockLoadMarketCatalog.mockResolvedValue(CATALOG);
 	mockBuildCatalogGroups.mockReturnValue(GROUPS);
+	mockGetPathProfileNote.mockReturnValue("Profil szeroki — przykładowa nota.");
 });
 
 describe("GET /api/onboarding/market-catalog", () => {
@@ -96,6 +99,7 @@ describe("GET /api/onboarding/market-catalog", () => {
 		const json = (await res.json()) as {
 			careerGoal: string;
 			isRealCareerGoal: boolean;
+			profileNote: string | null;
 			items: {
 				competencyName: string;
 				demandPercentage: number;
@@ -106,6 +110,9 @@ describe("GET /api/onboarding/market-catalog", () => {
 		};
 		expect(json.isRealCareerGoal).toBe(true);
 		expect(json.careerGoal).toBe("Data Analyst");
+		// ETAP H: adnotacja-zastrzeżenie profilu w kontrakcie (passthrough z getPathProfileNote).
+		expect(mockGetPathProfileNote).toHaveBeenCalledWith("Data Analyst");
+		expect(json.profileNote).toBe("Profil szeroki — przykładowa nota.");
 		expect(mockLoadMarketCatalog).toHaveBeenCalledWith("Data Analyst");
 		// Passthrough kolejności (sort robi loadMarketCatalog) + kind (tu null — mock bez kind).
 		expect(json.items).toEqual(CATALOG.map((i) => ({ ...i, kind: null })));
@@ -119,14 +126,18 @@ describe("GET /api/onboarding/market-catalog", () => {
 		expect(res.status).toBe(200);
 		const json = (await res.json()) as {
 			isRealCareerGoal: boolean;
+			profileNote: string | null;
 			items: unknown[];
 			groups: unknown[];
 		};
 		expect(json.isRealCareerGoal).toBe(false);
 		expect(json.items).toEqual([]);
 		expect(json.groups).toEqual([]);
+		// Cel nierealny → nota nie pytana (jak DB) i null w odpowiedzi.
+		expect(json.profileNote).toBeNull();
 		expect(mockLoadMarketCatalog).not.toHaveBeenCalled();
 		expect(mockBuildCatalogGroups).not.toHaveBeenCalled();
+		expect(mockGetPathProfileNote).not.toHaveBeenCalled();
 	});
 
 	it("awaria DB (loadMarketCatalog rzuca) → 500", async () => {

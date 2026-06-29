@@ -135,6 +135,12 @@ export type PathMeta = {
 	targetRole: boolean; // rola docelowa (widoczna, nie punkt startu)
 	tShapePairs: string[]; // ścieżki łączone T-shape (Sophia §4d)
 	note?: string; // nadpisuje note z PathSpec, jeśli podane
+	// Adnotacja-zastrzeżenie do profilu ścieżki (ETAP H, decyzja Sophii): krótka,
+	// uczciwa nota dla studenta o tym, JAK czytać profil tej ścieżki (np. „profil
+	// szeroki", „dane wstępne — mała próbka"). To WYŁĄCZNIE etykieta UI — NIE zmienia
+	// żadnej liczby popytu/pokrycia ani kolejności kompetencji. ETL przepisuje ją do
+	// career-model.json; picker (career-paths.ts) trzyma własną lekką kopię dla klienta.
+	profileNote?: string;
 };
 
 /** Pomocnik: składa nazwę rodziny „<id> — <name>" z FAMILIES. */
@@ -265,9 +271,11 @@ export const PATH_META: Record<string, PathMeta> = {
 			iscoLabel: "Software / applications developers",
 			escoOccupation: "software developer",
 		},
-		juniorFriendliness: "Wysoka",
+		juniorFriendliness: "Średnia",
 		targetRole: false,
 		tShapePairs: ["DevOps Engineer"],
+		profileNote:
+			"Profil szeroki — łapie też oferty platformowe i DevOps (Linux, Docker, Kubernetes). Python zostaje rdzeniem ścieżki.",
 	},
 	"Backend Developer": {
 		frameworks: {
@@ -294,6 +302,8 @@ export const PATH_META: Record<string, PathMeta> = {
 		juniorFriendliness: "Średnia",
 		targetRole: false,
 		tShapePairs: [],
+		profileNote:
+			"Rdzeń ścieżki to PHP, Symfony i Laravel — mimo że ogólny SQL ma w ofertach wyższy udział.",
 	},
 	"Embedded / C++ Developer": {
 		frameworks: {
@@ -399,6 +409,8 @@ export const PATH_META: Record<string, PathMeta> = {
 		targetRole: true,
 		tShapePairs: [],
 		note: "Rola docelowa, nie punkt startu — wymaga podstaw programistycznych. Widoczna jako cel awansu.",
+		profileNote:
+			"Dane wstępne — mała próbka (81 ofert). Część konkretów architekta jest poniżej progu statystycznego.",
 	},
 	"Engineering Manager": {
 		frameworks: {
@@ -413,6 +425,8 @@ export const PATH_META: Record<string, PathMeta> = {
 		targetRole: true,
 		tShapePairs: [],
 		note: "Rola docelowa (po latach) — knowledge-heavy. Widoczna jako ścieżka awansu, nie punkt startu.",
+		profileNote:
+			"Profil oddaje techniczne tło z ogłoszeń. Sygnały przywódcze są w surowych danych słabo widoczne.",
 	},
 	"Project Manager": {
 		frameworks: {
@@ -465,6 +479,7 @@ export const PATH_META: Record<string, PathMeta> = {
 		juniorFriendliness: "Średnia",
 		targetRole: false,
 		tShapePairs: ["Frontend Developer"],
+		profileNote: "Dane wstępne — profil wciąż w opracowaniu (pełna kuracja w przygotowaniu).",
 	},
 };
 

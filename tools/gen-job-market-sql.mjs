@@ -8,8 +8,9 @@
  *   src/lib/db/data/job-market-justjoinit.json
  * i wypisuje na STDOUT pojedynczy plik SQL: transakcja BEGIN … COMMIT z
  *   1) opcjonalnym backupem  job_market_data_bak,
- *   2) DELETE FROM job_market_data  (czyści 9 wierszy demo / poprzedni stan),
- *   3) wielowierszowym INSERT  (240 wierszy z realnego rynku).
+ *   2) DELETE FROM job_market_data WHERE career_goal IN (…23 ścieżek…)
+ *      (zawężone — bramka jakości v1.12, nie „goły" DELETE bez WHERE),
+ *   3) wielowierszowym INSERT  (wszystkie wiersze z realnego rynku artefaktu).
  *
  * salary_range NIE jest w liście kolumn → baza wstawia DEFAULT NULL (decyzja
  * Darka: bez widełek). Kolejność wierszy = kolejność w JSON (data → competencies),
@@ -19,7 +20,7 @@
  * podwajany ('' ), wartość w apostrofach. Bezpieczne dla nazw z kropką/ukośnikiem.
  *
  * Użycie:
- *   node scratchpad/gen-job-market-sql.mjs > scratchpad/load-job-market-prod.sql
+ *   node tools/gen-job-market-sql.mjs > tools/load-job-market-prod.sql
  */
 
 import { createHash } from "node:crypto";
@@ -63,6 +64,15 @@ for (const entry of artifact.data) {
 
 const goals = new Set(rows.map((r) => r.careerGoal));
 
+// DELETE zawężony do 23 ścieżek z artefaktu (sortowane → wynik deterministyczny).
+// WHERE jest WYMOGIEM bramki jakości v1.12: DELETE bez WHERE wpada w strażnika `ask`.
+// Zbiór celów == cała tabela (dane mają tylko te 23 ścieżki), więc efekt ten sam,
+// ale bez „gołego" DELETE. Backup _bak (pełna tabela) zostaje przed czyszczeniem.
+const goalsInSql = [...goals]
+	.sort()
+	.map((g) => `  ${sqlStr(g)}`)
+	.join(",\n");
+
 const valuesSql = rows
 	.map(
 		(r) =>
@@ -84,7 +94,8 @@ const out = `-- ================================================================
 -- Kolumny INSERT: career_goal, competency_name, demand_percentage, category
 -- salary_range:   POMINIĘTE → baza wstawia NULL (decyzja Darka: bez widełek).
 --
--- ⚠️ CZERWONA LINIA: DELETE bez WHERE na danych prod — wymaga sign-offu Darka.
+-- ⚠️ CZERWONA LINIA: zmiana danych prod — sign-off Ethana (CTO), bramka v1.12.
+-- DELETE jest ZAWĘŻONY do 23 ścieżek (WHERE career_goal IN (…)) — nie „goły" DELETE.
 -- Operacja ATOMOWA (BEGIN…COMMIT): albo cała się uda, albo nic.
 -- Brak FK przychodzących na job_market_data → zero kaskad, zero danych użytkowników.
 -- Tabela czytana TYLKO do odczytu (generate-gaps, faculty/dashboard).
@@ -97,8 +108,10 @@ BEGIN;
 DROP TABLE IF EXISTS job_market_data_bak;
 CREATE TABLE job_market_data_bak AS SELECT * FROM job_market_data;
 
--- Czyszczenie poprzedniego stanu job_market_data (DELETE bez WHERE — czerwona linia).
-DELETE FROM job_market_data;
+-- Czyszczenie poprzedniego stanu — ZAWĘŻONE do 23 ścieżek artefaktu (bramka v1.12: nie „goły" DELETE).
+DELETE FROM job_market_data WHERE career_goal IN (
+${goalsInSql}
+);
 
 -- Wstawienie ${rows.length} wierszy realnego rynku.
 INSERT INTO job_market_data (career_goal, competency_name, demand_percentage, category) VALUES

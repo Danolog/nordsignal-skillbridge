@@ -3498,9 +3498,10 @@
 				"iscoLabel": "Software / applications developers",
 				"escoOccupation": "software developer"
 			},
-			"juniorFriendliness": "Wysoka",
+			"juniorFriendliness": "Średnia",
 			"targetRole": false,
 			"tShapePairs": ["DevOps Engineer"],
+			"profileNote": "Profil szeroki — łapie też oferty platformowe i DevOps (Linux, Docker, Kubernetes). Python zostaje rdzeniem ścieżki.",
 			"areas": [
 				{
 					"name": "Język i frameworki",
@@ -5939,6 +5940,7 @@
 			"juniorFriendliness": "Średnia",
 			"targetRole": false,
 			"tShapePairs": ["Frontend Developer"],
+			"profileNote": "Dane wstępne — profil wciąż w opracowaniu (pełna kuracja w przygotowaniu).",
 			"areas": [
 				{
 					"name": "Narzędzia projektowe",
@@ -6305,6 +6307,7 @@
 			"juniorFriendliness": "Średnia",
 			"targetRole": false,
 			"tShapePairs": [],
+			"profileNote": "Rdzeń ścieżki to PHP, Symfony i Laravel — mimo że ogólny SQL ma w ofertach wyższy udział.",
 			"areas": [
 				{
 					"name": "Język i framework",
@@ -6439,6 +6442,7 @@
 			"targetRole": true,
 			"tShapePairs": [],
 			"note": "Rola docelowa, nie punkt startu — wymaga podstaw programistycznych. Widoczna jako cel awansu.",
+			"profileNote": "Dane wstępne — mała próbka (81 ofert). Część konkretów architekta jest poniżej progu statystycznego.",
 			"areas": [
 				{
 					"name": "Architektura i wzorce projektowe (rdzeń roli)",
@@ -6942,6 +6946,7 @@
 			"targetRole": true,
 			"tShapePairs": [],
 			"note": "Rola docelowa (po latach) — knowledge-heavy. Widoczna jako ścieżka awansu, nie punkt startu.",
+			"profileNote": "Profil oddaje techniczne tło z ogłoszeń. Sygnały przywódcze są w surowych danych słabo widoczne.",
 			"areas": [
 				{
 					"name": "Techniczne tło",

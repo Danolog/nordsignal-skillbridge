@@ -10,6 +10,7 @@
  *
  * Kontrakt (front↔back, jedna gałąź — lekcja split-frontend-backend):
  *   { careerGoal, isRealCareerGoal,
+ *     profileNote: string | null,   // ETAP H: adnotacja-zastrzeżenie profilu (etykieta UI)
  *     items:  [{ competencyName, demandPercentage, category, kind }],   // płaska lista (pokrycie)
  *     groups: [{ name, unionShare, description, items: [{ competencyName, demandPercentage, kind }] }] }
  * Pusty `items`/`groups` przy realnym celu = brak danych rynku dla ścieżki (sygnał do UI).
@@ -19,7 +20,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { isRealCareerGoal } from "@/lib/db/data/career-paths";
 import { logError } from "@/lib/log";
-import { buildCatalogGroups } from "@/lib/onboarding/competency-groups";
+import { buildCatalogGroups, getPathProfileNote } from "@/lib/onboarding/competency-groups";
 import { loadMarketCatalog } from "@/lib/onboarding/market-gaps";
 
 export async function GET(req: Request) {
@@ -43,9 +44,12 @@ export async function GET(req: Request) {
 		// B2: widok grupowy z kontekstem (unionShare + opis + kind) OBOK płaskiego items[].
 		// Płaska lista ZOSTAJE źródłem pokrycia (computeMarketCoverage) — groups[] to dodatek.
 		const groups = real ? buildCatalogGroups(careerGoal, items) : [];
+		// ETAP H: adnotacja-zastrzeżenie profilu (etykieta UI; null gdy brak) — nagłówek kroku.
+		const profileNote = real ? getPathProfileNote(careerGoal) : null;
 		return NextResponse.json({
 			careerGoal,
 			isRealCareerGoal: real,
+			profileNote,
 			items: items.map((i) => ({
 				competencyName: i.competencyName,
 				demandPercentage: i.demandPercentage,
