@@ -50,6 +50,11 @@ interface StepMarketCompetenciesProps {
 	onRetry: () => void;
 	/** false → cel spoza 23 realnych ścieżek (katalog pusty) → poproś o wybór realnej. */
 	isRealCareerGoal: boolean;
+	/**
+	 * ETAP H: adnotacja-zastrzeżenie profilu ścieżki (np. „dane wstępne", „profil szeroki").
+	 * null/brak → bez noty. Czysta etykieta — nie wpływa na pokrycie ani listę kompetencji.
+	 */
+	profileNote?: string | null;
 }
 
 export function StepMarketCompetencies({
@@ -62,6 +67,7 @@ export function StepMarketCompetencies({
 	error,
 	onRetry,
 	isRealCareerGoal,
+	profileNote = null,
 }: StepMarketCompetenciesProps) {
 	// Pokrycie (9c B1) — liczone na żywo z wyboru. Mianownik = cały katalog rynku (płaski).
 	const selectedLevels = Object.values(selections);
@@ -136,6 +142,12 @@ export function StepMarketCompetencies({
 					Uczysz się tego, czego realnie chcą pracodawcy. Oznaczone „w programie studiów" dostajesz
 					z toku — resztę dobierasz projektami.
 				</p>
+				{/* ETAP H: adnotacja-zastrzeżenie profilu — uczciwie, jak czytać ten profil. */}
+				{profileNote && (
+					<p className="mt-3 rounded-md border border-ed-amber bg-ed-badge-bg px-3 py-2 text-xs text-ed-amber-text">
+						{profileNote}
+					</p>
+				)}
 			</section>
 
 			{/* Pusty stan = zachęta, nie błąd (D5). „Czysta karta", nie „0/5". */}

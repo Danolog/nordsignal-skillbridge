@@ -94,6 +94,8 @@ export function OnboardingWizard({
 	// Widok grupowy (Partia 5, C2) — warstwa prezentacji nad płaskim katalogiem; pokrycie
 	// liczy się DALEJ z płaskiego `catalog`. Endpoint zwraca `groups[]` obok `items[]`.
 	const [rawGroups, setRawGroups] = useState<GroupCatalog[]>([]);
+	// ETAP H: adnotacja-zastrzeżenie profilu ścieżki (etykieta nagłówka kroku 3; null = brak).
+	const [profileNote, setProfileNote] = useState<string | null>(null);
 	const [catalogGoal, setCatalogGoal] = useState<string | null>(null);
 	const [catalogLoading, setCatalogLoading] = useState(false);
 	const [catalogError, setCatalogError] = useState(false);
@@ -133,10 +135,12 @@ export function OnboardingWizard({
 				isRealCareerGoal: boolean;
 				items: MarketCatalogItem[];
 				groups?: GroupCatalog[];
+				profileNote?: string | null;
 			};
 			setRawCatalog(data.items);
 			// Brak `groups` (starsza odpowiedź / cel nierealny) → [] → krok pokaże płaską listę.
 			setRawGroups(data.groups ?? []);
+			setProfileNote(data.profileNote ?? null);
 			setIsRealGoal(data.isRealCareerGoal);
 		} catch {
 			setCatalogError(true);
@@ -547,6 +551,7 @@ export function OnboardingWizard({
 							error={catalogError}
 							onRetry={() => loadCatalog(profile.careerGoal)}
 							isRealCareerGoal={isRealGoal}
+							profileNote={profileNote}
 						/>
 						<div className="mt-8 flex items-center justify-between">
 							<Button variant="ghost" onClick={() => goToStep(2)} className="gap-2">

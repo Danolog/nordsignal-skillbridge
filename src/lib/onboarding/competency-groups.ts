@@ -37,6 +37,8 @@ interface ModelArea {
 }
 interface ModelPath {
 	careerGoal: string;
+	/** ETAP H: adnotacja-zastrzeżenie profilu ścieżki (etykieta UI; nieobecna gdy brak). */
+	profileNote?: string;
 	areas: ModelArea[];
 }
 const MODEL = careerModelData as unknown as { paths: ModelPath[] };
@@ -158,6 +160,16 @@ export function buildCatalogGroups(careerGoal: string, items: MarketCatalogItem[
 		result.push({ name: LEFTOVER, unionShare: null, description: null, items: left });
 	}
 	return result;
+}
+
+/**
+ * ETAP H: adnotacja-zastrzeżenie profilu ścieżki (career-model.json → `profileNote`).
+ * Krótka, uczciwa nota „jak czytać ten profil" (np. „dane wstępne", „profil szeroki").
+ * null gdy ścieżka nie ma noty albo jest nieznana. SERWEROWE (czyta duży JSON) — nie
+ * importować z komponentu klienckiego; endpoint zwraca już gotowy string.
+ */
+export function getPathProfileNote(careerGoal: string): string | null {
+	return MODEL.paths.find((p) => p.careerGoal === careerGoal)?.profileNote ?? null;
 }
 
 /** Kontekst pojedynczej kompetencji do PANELU studenta (B3). */

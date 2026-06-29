@@ -13,6 +13,7 @@ import {
 	buildCatalogGroups,
 	enrichWithKind,
 	getCompetencyContext,
+	getPathProfileNote,
 } from "@/lib/onboarding/competency-groups";
 import type { MarketCatalogItem } from "@/lib/onboarding/market-catalog";
 
@@ -132,5 +133,59 @@ describe("getCompetencyContext — kontekst panelu studenta (B3)", () => {
 		// determinizm „pierwszy obszar" pilnuje kod (leafToGroup zapisuje pierwsze trafienie).
 		// Tu sprawdzamy poprawne rozwiązanie obszaru dla liścia ścieżki nieskuratorowanej.
 		expect(getCompetencyContext("Python Developer", "Docker")?.groupName).toBe("Infrastruktura");
+	});
+});
+
+describe("getPathProfileNote — adnotacja-zastrzeżenie profilu (ETAP H)", () => {
+	it("ścieżka z notą → zwraca treść z career-model.json", () => {
+		expect(getPathProfileNote("Python Developer")).toContain("Profil szeroki");
+		expect(getPathProfileNote("UX/UI Designer")).toContain("Dane wstępne");
+		expect(getPathProfileNote("Solution Architect")).toContain("81 ofert");
+	});
+
+	it("ścieżka bez noty → null", () => {
+		expect(getPathProfileNote("Java Developer")).toBeNull();
+	});
+
+	it("ścieżka nieznana → null", () => {
+		expect(getPathProfileNote("Nieistniejąca")).toBeNull();
+	});
+
+	it("dokładnie 5 ścieżek ma adnotację (decyzja Sophii)", () => {
+		const all = [
+			"AI Engineer",
+			"Data Scientist",
+			"Data Engineer",
+			"Data Analyst",
+			"Java Developer",
+			".NET Developer",
+			"Backend Developer",
+			"Python Developer",
+			"Frontend Developer",
+			"Full-Stack Developer",
+			"Android Developer",
+			"PHP Developer",
+			"Embedded / C++ Developer",
+			"DevOps Engineer",
+			"Cybersecurity Specialist",
+			"QA Engineer",
+			"Solution Architect",
+			"Engineering Manager",
+			"Business Analyst",
+			"Project Manager",
+			"Product Owner / Manager",
+			"UX/UI Designer",
+			"Salesforce Developer",
+		];
+		const withNote = all.filter((g) => getPathProfileNote(g) !== null);
+		expect(withNote.sort()).toEqual(
+			[
+				"Engineering Manager",
+				"PHP Developer",
+				"Python Developer",
+				"Solution Architect",
+				"UX/UI Designer",
+			].sort(),
+		);
 	});
 });
