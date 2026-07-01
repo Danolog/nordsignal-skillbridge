@@ -4243,6 +4243,27 @@
 	text-align: center;
 	padding: 24px;
 	font-size: 14px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+}
+
+.proj-empty-btn {
+	font-style: normal;
+	font-weight: 600;
+	font-size: 14px;
+	color: var(--ed-ink);
+	background: var(--ed-badge-bg);
+	border: 1px solid var(--ed-border);
+	border-radius: 999px;
+	padding: 8px 18px;
+	cursor: pointer;
+	transition: background 0.15s ease;
+}
+
+.proj-empty-btn:hover {
+	background: var(--ed-surface);
 }
 
 /* Filters */

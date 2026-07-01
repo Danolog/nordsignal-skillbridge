@@ -220,23 +220,38 @@ export function ChatScreen({
 
 	async function handleShowSummary() {
 		setSummaryPending(true);
-		try {
-			const res = await fetch(`/api/career-helper/session/${sessionId}/summary`, {
-				method: "POST",
-			});
-			if (!res.ok) throw new Error("summary_failed");
-			const data = (await res.json()) as SummaryResponse;
-			onShowSummary(data);
-		} catch {
-			// Błąd /summary → ekran 3 stan summary_error (rodzic obsłuży przez onShowSummary
-			// null-marker; tu pokazujemy ponowną próbę przez przywrócenie CTA).
-			setSummaryPending(false);
-			onShowSummary({
-				judged: false,
-				judgedFor: "warstwa4_failed",
-				summaryText: null,
-				careerPaths: [],
-			});
+		// Podsumowanie jest celowo ciężkie (łańcuch generator + sędzia na Opus, typowo
+		// 20–40 s) i na ZIMNYM starcie funkcji potrafi przekroczyć budżet czasu → 504.
+		// Pierwsze żądanie pada, a ręczne „Ponów" trafia w już rozgrzaną funkcję i działa.
+		// Robimy to programowo: do 3 prób z rosnącym odczekaniem, zanim pokażemy błąd.
+		const MAX_ATTEMPTS = 3;
+		const BACKOFF_MS = [1500, 3000];
+		for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+			try {
+				const res = await fetch(`/api/career-helper/session/${sessionId}/summary`, {
+					method: "POST",
+				});
+				if (!res.ok) throw new Error("summary_failed");
+				const data = (await res.json()) as SummaryResponse;
+				// Sukces — także judged=false z niepustymi ścieżkami (legalny fallback do
+				// wykładowcy) jest poprawnym wynikiem; nie ponawiamy.
+				onShowSummary(data);
+				return;
+			} catch {
+				if (attempt < MAX_ATTEMPTS) {
+					await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1] ?? 3000));
+					continue;
+				}
+				// Wyczerpane próby → ekran 3 stan summary_error (rodzic obsłuży przez
+				// onShowSummary null-marker; przywracamy CTA do ręcznej próby).
+				setSummaryPending(false);
+				onShowSummary({
+					judged: false,
+					judgedFor: "warstwa4_failed",
+					summaryText: null,
+					careerPaths: [],
+				});
+			}
 		}
 	}
 

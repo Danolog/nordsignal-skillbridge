@@ -22,6 +22,7 @@ interface Project {
 	sourceType: string;
 	sourceUrl: string | null;
 	competencies: ProjectCompetency[];
+	careerGoals: string[];
 }
 
 interface Recommendation {
@@ -30,11 +31,18 @@ interface Recommendation {
 	reasoning: string;
 }
 
+interface CareerOption {
+	careerGoal: string;
+	family: string;
+}
+
 interface ProjectCatalogProps {
 	projects: Project[];
 	gapId?: string;
 	initialLevel?: string;
 	initialSourceType?: string;
+	initialCareer?: string;
+	careerOptions?: CareerOption[];
 }
 
 export function ProjectCatalog({
@@ -42,12 +50,15 @@ export function ProjectCatalog({
 	gapId,
 	initialLevel,
 	initialSourceType,
+	initialCareer,
+	careerOptions = [],
 }: ProjectCatalogProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
 	const [level, setLevel] = useState(initialLevel ?? "");
 	const [sourceType, setSourceType] = useState(initialSourceType ?? "");
+	const [career, setCareer] = useState(initialCareer ?? "");
 	const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 	const [loadingRecs, setLoadingRecs] = useState(false);
 
@@ -62,25 +73,39 @@ export function ProjectCatalog({
 	}, [gapId]);
 
 	const updateFilters = useCallback(
-		(newLevel: string, newSourceType: string) => {
+		(newLevel: string, newSourceType: string, newCareer: string) => {
 			const params = new URLSearchParams(searchParams.toString());
 			if (newLevel) params.set("level", newLevel);
 			else params.delete("level");
 			if (newSourceType) params.set("sourceType", newSourceType);
 			else params.delete("sourceType");
+			if (newCareer) params.set("career", newCareer);
+			else params.delete("career");
 			if (gapId) params.set("gapId", gapId);
 			router.push(`/projects?${params.toString()}`);
 		},
 		[router, searchParams, gapId],
 	);
 
+	// Rodziny do <optgroup> — zachowana kolejność z CAREER_PATHS.
+	const careerFamilies = useMemo(() => {
+		const map = new Map<string, string[]>();
+		for (const opt of careerOptions) {
+			const list = map.get(opt.family) ?? [];
+			list.push(opt.careerGoal);
+			map.set(opt.family, list);
+		}
+		return [...map.entries()];
+	}, [careerOptions]);
+
 	const filtered = useMemo(() => {
 		return projects.filter((p) => {
 			if (level && p.level !== level) return false;
 			if (sourceType && p.sourceType !== sourceType) return false;
+			if (career && !p.careerGoals.includes(career)) return false;
 			return true;
 		});
-	}, [projects, level, sourceType]);
+	}, [projects, level, sourceType, career]);
 
 	const recommendedProjects = useMemo(() => {
 		const recIds = new Set(recommendations.map((r) => r.projectId));
@@ -119,11 +144,33 @@ export function ProjectCatalog({
 			)}
 
 			<div className="proj-filters">
+				{careerFamilies.length > 0 && (
+					<select
+						value={career}
+						onChange={(e) => {
+							setCareer(e.target.value);
+							updateFilters(level, sourceType, e.target.value);
+						}}
+						className="proj-filter-select"
+						aria-label="Filtruj po kierunku kariery"
+					>
+						<option value="">Wszystkie kierunki</option>
+						{careerFamilies.map(([family, goals]) => (
+							<optgroup key={family} label={family}>
+								{goals.map((goal) => (
+									<option key={goal} value={goal}>
+										{goal}
+									</option>
+								))}
+							</optgroup>
+						))}
+					</select>
+				)}
 				<select
 					value={level}
 					onChange={(e) => {
 						setLevel(e.target.value);
-						updateFilters(e.target.value, sourceType);
+						updateFilters(e.target.value, sourceType, career);
 					}}
 					className="proj-filter-select"
 				>
@@ -136,7 +183,7 @@ export function ProjectCatalog({
 					value={sourceType}
 					onChange={(e) => {
 						setSourceType(e.target.value);
-						updateFilters(level, e.target.value);
+						updateFilters(level, e.target.value, career);
 					}}
 					className="proj-filter-select"
 				>
@@ -161,7 +208,24 @@ export function ProjectCatalog({
 				))}
 			</div>
 
-			{filtered.length === 0 && <p className="proj-empty">Brak projektów pasujących do filtrów.</p>}
+			{filtered.length === 0 &&
+				(career ? (
+					<div className="proj-empty">
+						<p>Brak projektów dla kierunku „{career}".</p>
+						<button
+							type="button"
+							className="proj-empty-btn"
+							onClick={() => {
+								setCareer("");
+								updateFilters(level, sourceType, "");
+							}}
+						>
+							Pokaż wszystkie kierunki
+						</button>
+					</div>
+				) : (
+					<p className="proj-empty">Brak projektów pasujących do filtrów.</p>
+				))}
 		</div>
 	);
 }
