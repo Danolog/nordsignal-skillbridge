@@ -5182,3 +5182,38 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+/* ── Paszport Kompetencji — układ oficjalnego dokumentu (#2) ──
+   Druk A4: chowamy pasek akcji, czyścimy tło, chronimy blok podpisów przed cięciem.
+   Dokument renderuje się na style inline (wysoka specyficzność) — nadpisanie w druku
+   wymaga !important, inaczej reguły klasowe nie mają szans wygrać z inline-style. */
+@media print {
+	@page {
+		size: A4;
+		margin: 0;
+	}
+	[data-no-print] {
+		/* biome-ignore lint/complexity/noImportantStyles: druk musi nadpisać inline-style dokumentu */
+		display: none !important;
+	}
+	body {
+		/* biome-ignore lint/complexity/noImportantStyles: druk musi nadpisać inline-style dokumentu */
+		background: var(--ed-cream) !important;
+	}
+	.pp2-page-wrap {
+		/* biome-ignore lint/complexity/noImportantStyles: druk musi nadpisać inline-style dokumentu */
+		padding: 0 !important;
+		/* biome-ignore lint/complexity/noImportantStyles: druk musi nadpisać inline-style dokumentu */
+		background: var(--ed-cream) !important;
+	}
+	.pp2-doc-shell {
+		/* biome-ignore lint/complexity/noImportantStyles: druk musi nadpisać inline-style dokumentu */
+		box-shadow: none !important;
+		/* biome-ignore lint/complexity/noImportantStyles: druk musi nadpisać inline-style dokumentu */
+		border-width: 1px !important;
+	}
+	.pp2-signatures {
+		page-break-inside: avoid;
+		break-inside: avoid;
+	}
+}

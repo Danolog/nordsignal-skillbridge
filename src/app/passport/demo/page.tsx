@@ -86,7 +86,14 @@ export default function DemoPassportPage() {
 				To paszport przykładowy — pokazujemy na nim, jak wygląda profil kandydata, nie dane
 				prawdziwej osoby.
 			</p>
-			<PassportPublic data={DEMO_DATA} />
+			<PassportPublic
+				data={DEMO_DATA}
+				mentor={{
+					name: "dr inż. Piotr Nowak",
+					role: "Opiekun kierunku",
+					org: "Przykładowa Uczelnia",
+				}}
+			/>
 		</>
 	);
 }

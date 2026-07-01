@@ -13,7 +13,7 @@ export interface ProjectReceipt {
 	feedback?: string | null;
 }
 
-function shortenRepoUrl(url: string): string {
+export function shortenRepoUrl(url: string): string {
 	const match = url.match(/github\.com\/([^/]+\/[^/?#]+)/i);
 	if (!match) return url;
 	return `github.com/${match[1].replace(/\.git$/, "")}`;

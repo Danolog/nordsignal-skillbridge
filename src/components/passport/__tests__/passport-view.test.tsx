@@ -14,6 +14,14 @@ vi.mock("../pdf-export", () => ({
 	),
 }));
 
+vi.mock("next/link", () => ({
+	default: ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+		<a href={href} {...props}>
+			{children}
+		</a>
+	),
+}));
+
 const mockData = {
 	id: "passport-uuid-123",
 	student: {
@@ -35,14 +43,15 @@ const mockData = {
 };
 
 describe("PassportView", () => {
-	it("renders page title", () => {
+	it("renders document title", () => {
 		render(<PassportView data={mockData} />);
 		expect(screen.getByText("Paszport Kompetencji")).toBeInTheDocument();
 	});
 
-	it("renders student name", () => {
+	it("renders student name (holder + signature block)", () => {
 		render(<PassportView data={mockData} />);
-		expect(screen.getByText("Jan Kowalski")).toBeInTheDocument();
+		// Nazwisko pojawia się w danych posiadacza i w bloku podpisu.
+		expect(screen.getAllByText("Jan Kowalski").length).toBe(2);
 	});
 
 	it("renders student university", () => {
@@ -55,19 +64,26 @@ describe("PassportView", () => {
 		expect(screen.getByText("Informatyka")).toBeInTheDocument();
 	});
 
-	it("renders student semester", () => {
+	it("renders holder meta line with semester", () => {
 		render(<PassportView data={mockData} />);
-		expect(screen.getByText("Semestr 3")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				(_content, element) =>
+					element?.textContent === "WSB Merito Warszawa · Informatyka · semestr 3",
+			),
+		).toBeInTheDocument();
 	});
 
-	it("renders career goal", () => {
+	it("renders career goal in the holder pill", () => {
 		render(<PassportView data={mockData} />);
-		expect(screen.getByText(/Cel: Frontend Developer/)).toBeInTheDocument();
+		expect(screen.getByText("Cel zawodowy:")).toBeInTheDocument();
+		// Cel pojawia się i w pigułce, i w zdaniu o pokryciu → getAllByText.
+		expect(screen.getAllByText("Frontend Developer").length).toBeGreaterThan(0);
 	});
 
-	it("renders avatar with initials", () => {
+	it("renders document number derived from id", () => {
 		render(<PassportView data={mockData} />);
-		expect(screen.getByText("JK")).toBeInTheDocument();
+		expect(screen.getByText("SB-2026-PASSPORT")).toBeInTheDocument();
 	});
 
 	it("renders market coverage percentage", () => {
@@ -77,28 +93,23 @@ describe("PassportView", () => {
 
 	it("renders coverage progress bar with correct width", () => {
 		const { container } = render(<PassportView data={mockData} />);
-		const fill = container.querySelector(".pp-progress-fill");
+		const fill = container.querySelector(".pp2-coverage-fill");
 		expect(fill).toHaveStyle({ width: "73%" });
 	});
 
-	it("renders stat card with acquired count", () => {
+	it("renders mastered stat label and market share", () => {
 		render(<PassportView data={mockData} />);
-		const statCards = screen.getAllByText("Opanowane");
-		expect(statCards.length).toBeGreaterThan(0);
-	});
-
-	it("renders acquired competency count as 2", () => {
-		render(<PassportView data={mockData} />);
-		expect(screen.getByText("2 kompetencji")).toBeInTheDocument();
+		expect(screen.getAllByText("Opanowane").length).toBeGreaterThan(0);
+		// mastered 2 / total 4 (2 acquired + 1 in_progress + 1 gap) = 50%.
+		expect(screen.getByText("50% wymagań rynku")).toBeInTheDocument();
 	});
 
 	it("renders in progress stat label", () => {
 		render(<PassportView data={mockData} />);
-		const labels = screen.getAllByText("W trakcie nauki");
-		expect(labels.length).toBeGreaterThan(0);
+		expect(screen.getAllByText("W trakcie nauki").length).toBeGreaterThan(0);
 	});
 
-	it("renders missing count", () => {
+	it("renders missing stat label", () => {
 		render(<PassportView data={mockData} />);
 		expect(screen.getByText("Brakuje")).toBeInTheDocument();
 	});
@@ -110,18 +121,20 @@ describe("PassportView", () => {
 		expect(screen.getByText("TypeScript")).toBeInTheDocument();
 	});
 
-	it("renders section headers for acquired and in-progress groups", () => {
+	it("renders the Kompetencje heading with sub-groups", () => {
 		render(<PassportView data={mockData} />);
-		expect(screen.getByText("Opanowane kompetencje")).toBeInTheDocument();
-		expect(screen.getAllByText(/W trakcie nauki/).length).toBeGreaterThan(0);
+		expect(screen.getByText("Kompetencje")).toBeInTheDocument();
+		// „Opanowane" jako etykieta statystyki + podtytuł grupy kompetencji.
+		expect(screen.getAllByText("Opanowane").length).toBeGreaterThan(1);
 	});
 
-	it("does not render a list section for missing competencies (only stat card count)", () => {
+	it("does not list missing competencies (only stat card count)", () => {
 		render(<PassportView data={mockData} />);
-		expect(screen.queryByText("Brakujace kompetencje")).not.toBeInTheDocument();
+		// Python jest 'missing' → nie pojawia się na liście kompetencji.
+		expect(screen.queryByText("Python")).not.toBeInTheDocument();
 	});
 
-	it("renders gap count from data.gapCount in the stat card", () => {
+	it("renders gap count from data.gapCount as missing number", () => {
 		const data = { ...mockData, gapCount: 14 };
 		render(<PassportView data={data} />);
 		expect(screen.getByText("14")).toBeInTheDocument();
@@ -130,7 +143,6 @@ describe("PassportView", () => {
 	it("renders share button (paszport domyślnie niepubliczny → 'Udostępnij publicznie')", () => {
 		render(<PassportView data={mockData} />);
 		expect(screen.getByText("Udostępnij publicznie")).toBeInTheDocument();
-		// B1: dopóki niepubliczny, nie ma 'Kopiuj link' ani 'Wyłącz udostępnianie'
 		expect(screen.queryByText("Wyłącz udostępnianie")).not.toBeInTheDocument();
 	});
 
@@ -141,11 +153,9 @@ describe("PassportView", () => {
 		render(<PassportView data={mockData} />);
 		fireEvent.click(screen.getByText("Udostępnij publicznie"));
 
-		// Ekran zgody wymienia wprost, co staje się publiczne i że link działa bez logowania.
 		expect(screen.getByText("Twój paszport stanie się publiczny")).toBeInTheDocument();
 		expect(screen.getByText(/bez logowania i bez Twojej wiedzy/)).toBeInTheDocument();
 		expect(screen.getByText(/Uczelnia, kierunek i semestr/)).toBeInTheDocument();
-		// Bez akceptacji nie ma żadnego zapisu na serwerze.
 		expect(mockFetch).not.toHaveBeenCalled();
 		vi.unstubAllGlobals();
 	});
@@ -207,18 +217,15 @@ describe("PassportView", () => {
 		Object.assign(navigator, { clipboard: { writeText: mockWriteText } });
 		const mockFetch = vi
 			.fn()
-			// 1) DELETE -> ok, backend zerował token
 			.mockResolvedValueOnce({
 				ok: true,
 				json: async () => ({ publicEnabled: false, tokenRotated: true }),
 			})
-			// 2) POST -> nowy token "tok-NEW"
 			.mockResolvedValueOnce({ ok: true, json: async () => ({ shareToken: "tok-NEW" }) });
 		vi.stubGlobal("fetch", mockFetch);
 
 		render(<PassportView data={{ ...mockData, publicEnabled: true, shareToken: "tok-OLD" }} />);
 
-		// Wyłącz udostępnianie → toast „unieważniony na stałe"
 		fireEvent.click(screen.getByText("Wyłącz udostępnianie"));
 		await waitFor(() => {
 			expect(toast.success).toHaveBeenCalledWith(
@@ -226,13 +233,10 @@ describe("PassportView", () => {
 			);
 		});
 
-		// Po wyłączeniu lokalny shareToken jest wyczyszczony — kliknięcie
-		// „Udostępnij publicznie" wywołuje opt-in (a nie copy starego linku).
 		fireEvent.click(screen.getByText("Udostępnij publicznie"));
 		fireEvent.click(screen.getByText("Rozumiem, udostępnij publicznie"));
 
 		await waitFor(() => {
-			// Drugie wywołanie fetch = POST z aktualną wersją zgody
 			expect(mockFetch).toHaveBeenNthCalledWith(
 				2,
 				"/api/passport/share",
@@ -243,7 +247,6 @@ describe("PassportView", () => {
 			);
 		});
 		await waitFor(() => {
-			// Kopiowany link ma NOWY token, nie stary
 			expect(mockWriteText).toHaveBeenCalledWith(expect.stringContaining("/passport/tok-NEW"));
 			expect(mockWriteText).not.toHaveBeenCalledWith(expect.stringContaining("/passport/tok-OLD"));
 		});
@@ -266,14 +269,14 @@ describe("PassportView", () => {
 		vi.unstubAllGlobals();
 	});
 
-	it("renders formatted date in footer", () => {
+	it("renders issue date label", () => {
 		render(<PassportView data={mockData} />);
-		expect(screen.getByText(/Wygenerowano:/)).toBeInTheDocument();
+		expect(screen.getByText(/Data wystawienia:/)).toBeInTheDocument();
 	});
 
-	it("renders SkillBridge in footer", () => {
+	it("renders SkillBridge branding", () => {
 		render(<PassportView data={mockData} />);
-		expect(screen.getByText("SkillBridge")).toBeInTheDocument();
+		expect(screen.getAllByText(/SkillBridge/).length).toBeGreaterThan(0);
 	});
 
 	it("renders Eksportuj PDF button", () => {
@@ -281,35 +284,54 @@ describe("PassportView", () => {
 		expect(screen.getByText("Eksportuj PDF")).toBeInTheDocument();
 	});
 
-	it("does not render acquired section when no acquired competencies", () => {
+	it("does not render the 'Opanowane' competency sub-group when no acquired competencies", () => {
 		const data = {
 			...mockData,
 			competencies: [{ name: "Python", status: "missing" as const, marketPercentage: 40 }],
 		};
 		render(<PassportView data={data} />);
-		expect(screen.queryByText("Opanowane kompetencje")).not.toBeInTheDocument();
+		// Tylko etykieta statystyki „Opanowane" — bez podtytułu grupy kompetencji.
+		expect(screen.getAllByText("Opanowane").length).toBe(1);
 	});
 
 	it("handles empty competencies array", () => {
 		const data = { ...mockData, competencies: [], gapCount: 0, marketCoveragePercent: 0 };
 		const { container } = render(<PassportView data={data} />);
-		const coverageValue = container.querySelector(".pp-coverage-value");
+		const coverageValue = container.querySelector(".pp2-coverage-value");
 		expect(coverageValue).toHaveTextContent("0%");
 	});
 
-	it("renders coverage sublabel with career goal", () => {
+	it("renders coverage sentence with career goal", () => {
 		render(<PassportView data={mockData} />);
-		expect(screen.getByText(/kluczowych kompetencji dla Frontend Developer/)).toBeInTheDocument();
+		expect(screen.getByText(/Pokrycie wymagań rynkowych dla roli/)).toBeInTheDocument();
 	});
 
 	it("renders progress markers", () => {
 		const { container } = render(<PassportView data={mockData} />);
-		const markers = container.querySelector(".pp-progress-markers");
+		const markers = container.querySelector(".pp2-progress-markers");
 		expect(markers).toBeInTheDocument();
 		expect(markers?.textContent).toContain("0%");
 		expect(markers?.textContent).toContain("25%");
 		expect(markers?.textContent).toContain("50%");
 		expect(markers?.textContent).toContain("75%");
 		expect(markers?.textContent).toContain("100%");
+	});
+
+	it("renders mentor signature block when mentor is provided", () => {
+		render(
+			<PassportView
+				data={mockData}
+				mentor={{ name: "dr Anna Mentor", role: "Opiekun", org: "WSB" }}
+			/>,
+		);
+		expect(screen.getByText("dr Anna Mentor")).toBeInTheDocument();
+		expect(screen.getByText("Opiekun, WSB")).toBeInTheDocument();
+	});
+
+	it("renders empty mentor signature line when no mentor", () => {
+		render(<PassportView data={mockData} />);
+		expect(
+			screen.getByText("(opcjonalnie — do uzupełnienia, jeśli masz opiekuna)"),
+		).toBeInTheDocument();
 	});
 });
