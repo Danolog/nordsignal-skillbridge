@@ -45,6 +45,19 @@ interface ProjectCatalogProps {
 	careerOptions?: CareerOption[];
 }
 
+// Pełna skala poziomów — L4/L5 jeszcze bez projektów, ale pokazujemy je (wygaszone),
+// żeby student widział, że ścieżka ma dalszą głębię.
+const LEVELS = ["L1", "L2", "L3", "L4", "L5"] as const;
+
+// Polska odmiana rzeczownika „projekt" (1 projekt / 2–4 projekty / 5+ projektów).
+function pluralizeProjekty(n: number): string {
+	const mod10 = n % 10;
+	const mod100 = n % 100;
+	if (n === 1) return "projekt";
+	if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return "projekty";
+	return "projektów";
+}
+
 export function ProjectCatalog({
 	projects,
 	gapId,
@@ -106,6 +119,21 @@ export function ProjectCatalog({
 			return true;
 		});
 	}, [projects, level, sourceType, career]);
+
+	// Metadane kierunku — liczone TYLKO po kierunku (niezależnie od pod-filtrów
+	// poziomu/źródła), żeby rozbicie L1–L5 i suma czasu opisywały cały kierunek.
+	const careerSummary = useMemo(() => {
+		if (!career) return null;
+		const inCareer = projects.filter((p) => p.careerGoals.includes(career));
+		if (inCareer.length === 0) return null;
+		const byLevel: Record<string, number> = { L1: 0, L2: 0, L3: 0, L4: 0, L5: 0 };
+		let totalHours = 0;
+		for (const p of inCareer) {
+			if (p.level in byLevel) byLevel[p.level] += 1;
+			totalHours += p.estimatedHours;
+		}
+		return { total: inCareer.length, byLevel, totalHours };
+	}, [projects, career]);
 
 	const recommendedProjects = useMemo(() => {
 		const recIds = new Set(recommendations.map((r) => r.projectId));
@@ -192,6 +220,33 @@ export function ProjectCatalog({
 					<option value="oss">Open Source</option>
 				</select>
 			</div>
+
+			{careerSummary && (
+				<section className="proj-summary" aria-label={`Podsumowanie kierunku ${career}`}>
+					<div className="proj-summary-head">
+						<h2 className="proj-summary-career">{career}</h2>
+						<div className="proj-summary-totals">
+							<span className="proj-summary-count">
+								{careerSummary.total} {pluralizeProjekty(careerSummary.total)}
+							</span>
+							<span className="proj-summary-sep">·</span>
+							<span className="proj-summary-hours">≈ {careerSummary.totalHours} h łącznie</span>
+						</div>
+					</div>
+					<div className="proj-summary-levels">
+						{LEVELS.map((lvl) => (
+							<span
+								key={lvl}
+								className={`proj-summary-level${careerSummary.byLevel[lvl] === 0 ? " is-empty" : ""}`}
+								title={`Poziom ${lvl}: ${careerSummary.byLevel[lvl]} ${pluralizeProjekty(careerSummary.byLevel[lvl])}`}
+							>
+								<span className="proj-summary-level-code">{lvl}</span>
+								<span className="proj-summary-level-num">{careerSummary.byLevel[lvl]}</span>
+							</span>
+						))}
+					</div>
+				</section>
+			)}
 
 			<div className="proj-grid">
 				{filtered.map((p) => (
