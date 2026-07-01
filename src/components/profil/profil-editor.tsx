@@ -2,13 +2,9 @@
 
 import { Save, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-	type CompetencyItem,
-	createCompetencyItem,
-	StepCompetencies,
-} from "@/components/onboarding/step-competencies";
+import { StepMarketCompetencies } from "@/components/onboarding/step-market-competencies";
 import { type ProfileData, StepProfile } from "@/components/onboarding/step-profile";
 import { StepSyllabus } from "@/components/onboarding/step-syllabus";
 import { Button } from "@/components/ui/button";
@@ -22,12 +18,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import type {
+	GroupCatalog,
+	MarketCatalogItem,
+	PossessionLevel,
+	SelectedCompetency,
+} from "@/lib/onboarding/market-catalog";
 
-// Lista celów kariery — lokalna dla edytora /profil. StepProfile NIE zbiera już celu
-// (przeniesiony do Kroku 0 onboardingu, strumień E / #5), ale edycja profilu przez
-// już-onboardowanego studenta musi pozwolić zmienić cel bez przechodzenia Pomocnika.
-// Edytor trzyma cel w SWOIM stanie (poza ProfileData), żeby nie reaktywować selektu
-// w onboardingu. (Po Becie: zmiana celu też przez Pomocnik — dług produktowy Sophii.)
+// Cele kariery — lokalne dla edytora /profil (jak dawniej).
 const CAREER_GOALS = [
 	"Data Analyst",
 	"Data Scientist",
@@ -40,34 +38,45 @@ const CAREER_GOALS = [
 	"Cybersecurity Analyst",
 ];
 
+interface InitialCompetency {
+	name: string;
+	selfAssessment: number | null;
+}
+
 export interface ProfilEditorInitial {
 	university: string;
 	fieldOfStudy: string;
 	semester: number;
 	careerGoal: string;
 	syllabusText: string;
-	competencies: string[];
+	competencies: InitialCompetency[];
 }
 
 interface ProfilEditorProps {
 	initial: ProfilEditorInitial;
 }
 
-function buildInitialProfile(initial: ProfilEditorInitial): ProfileData {
-	return {
-		university: initial.university,
-		fieldOfStudy: initial.fieldOfStudy,
-		semester: String(initial.semester),
-		// careerGoal trzymany w stanie wizarda/edytora; jego UI jest osobne (poniżej),
-		// nie w StepProfile. Zsynchronizowany z lokalnym stanem celu w handleSave.
-		careerGoal: initial.careerGoal,
-	};
+const norm = (s: string) => s.trim().toLowerCase();
+
+/** Prefill wyboru poziomów z zapisanych kompetencji (selfAssessment 2/3/4; inne → 3). */
+function initialSelections(comps: InitialCompetency[]): Record<string, PossessionLevel> {
+	const sel: Record<string, PossessionLevel> = {};
+	for (const c of comps) {
+		const sa = c.selfAssessment;
+		sel[c.name] = sa === 2 || sa === 3 || sa === 4 ? sa : 3;
+	}
+	return sel;
 }
 
 export function ProfilEditor({ initial }: ProfilEditorProps) {
 	const router = useRouter();
-	const [profile, setProfile] = useState<ProfileData>(() => buildInitialProfile(initial));
-	// Cel kariery — lokalny stan edytora (poza StepProfile). select/custom jak dawniej.
+	const [profile, setProfile] = useState<ProfileData>(() => ({
+		university: initial.university,
+		fieldOfStudy: initial.fieldOfStudy,
+		semester: String(initial.semester),
+		careerGoal: initial.careerGoal,
+	}));
+
 	const isPredefinedInitialGoal = CAREER_GOALS.includes(initial.careerGoal);
 	const [careerGoalSelect, setCareerGoalSelect] = useState<string>(
 		isPredefinedInitialGoal ? initial.careerGoal : "custom",
@@ -76,16 +85,78 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 		isPredefinedInitialGoal ? "" : initial.careerGoal,
 	);
 	const [syllabusText, setSyllabusText] = useState(initial.syllabusText);
-	const [competencies, setCompetencies] = useState<CompetencyItem[]>(() =>
-		initial.competencies.map((name) => createCompetencyItem(name)),
+	const [syllabusNames, setSyllabusNames] = useState<Set<string>>(new Set());
+
+	// Panel kompetencji rynku (jak krok 3 onboardingu).
+	const [rawCatalog, setRawCatalog] = useState<MarketCatalogItem[]>([]);
+	const [rawGroups, setRawGroups] = useState<GroupCatalog[]>([]);
+	const [selections, setSelections] = useState<Record<string, PossessionLevel>>(() =>
+		initialSelections(initial.competencies),
 	);
+	const [catalogLoading, setCatalogLoading] = useState(false);
+	const [catalogError, setCatalogError] = useState(false);
+	const [isRealGoal, setIsRealGoal] = useState(true);
+	const [profileNote, setProfileNote] = useState<string | null>(null);
+	const [catalogGoal, setCatalogGoal] = useState("");
+
 	const [analyzing, setAnalyzing] = useState(false);
 	const [saving, setSaving] = useState(false);
 
 	const resolvedCareerGoal =
 		careerGoalSelect === "custom" ? customCareerGoal.trim() : careerGoalSelect;
 
-	const filledCompetencies = competencies.filter((c) => c.name.trim() !== "");
+	// Katalog z naniesionym „w programie studiów" wg nazw z sylabusa.
+	const catalog = useMemo(
+		() =>
+			rawCatalog.map((i) => ({
+				...i,
+				inSyllabus: i.inSyllabus || syllabusNames.has(norm(i.competencyName)),
+			})),
+		[rawCatalog, syllabusNames],
+	);
+
+	const loadCatalog = useCallback(async (careerGoal: string) => {
+		if (!careerGoal) return;
+		setCatalogLoading(true);
+		setCatalogError(false);
+		setCatalogGoal(careerGoal);
+		try {
+			const res = await fetch(
+				`/api/onboarding/market-catalog?careerGoal=${encodeURIComponent(careerGoal)}`,
+			);
+			if (!res.ok) throw new Error("catalog_failed");
+			const data = (await res.json()) as {
+				isRealCareerGoal: boolean;
+				items: MarketCatalogItem[];
+				groups?: GroupCatalog[];
+				profileNote?: string | null;
+			};
+			setRawCatalog(data.items);
+			setRawGroups(data.groups ?? []);
+			setProfileNote(data.profileNote ?? null);
+			setIsRealGoal(data.isRealCareerGoal);
+		} catch {
+			setCatalogError(true);
+		} finally {
+			setCatalogLoading(false);
+		}
+	}, []);
+
+	// Pobierz katalog dla aktualnego celu.
+	useEffect(() => {
+		if (resolvedCareerGoal && catalogGoal !== resolvedCareerGoal && !catalogLoading) {
+			void loadCatalog(resolvedCareerGoal);
+		}
+	}, [resolvedCareerGoal, catalogGoal, catalogLoading, loadCatalog]);
+
+	const handleSelectionChange = useCallback((name: string, level: PossessionLevel | null) => {
+		setSelections((prev) => {
+			const next = { ...prev };
+			if (level === null) delete next[name];
+			else next[name] = level;
+			return next;
+		});
+	}, []);
 
 	const isProfileValid =
 		profile.university &&
@@ -94,7 +165,8 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 		careerGoalSelect &&
 		(careerGoalSelect !== "custom" || customCareerGoal.trim());
 
-	const canSave = Boolean(isProfileValid) && filledCompetencies.length >= 5 && !saving;
+	const canSave =
+		Boolean(isProfileValid) && isRealGoal && catalog.length > 0 && !saving && !catalogLoading;
 
 	const handleAnalyze = async () => {
 		if (syllabusText.trim().length < 100) {
@@ -116,9 +188,9 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 				const data = await res.json();
 				throw new Error(data.error || "Błąd analizy");
 			}
-			const data = await res.json();
-			setCompetencies((data.competencies as string[]).map((name) => createCompetencyItem(name)));
-			toast.success("Lista kompetencji zaktualizowana przez AI.");
+			const data = (await res.json()) as { competencies: string[] };
+			setSyllabusNames(new Set(data.competencies.map(norm)));
+			toast.success("Sylabus przeanalizowany — kompetencje z programu oznaczone na liście.");
 		} catch (err) {
 			toast.error(err instanceof Error ? err.message : "Nie udało się przeanalizować sylabusa.");
 		} finally {
@@ -131,10 +203,19 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 			toast.error("Wypełnij wszystkie wymagane pola w sekcji Profil.");
 			return;
 		}
-		if (filledCompetencies.length < 5) {
-			toast.error("Dodaj co najmniej 5 kompetencji.");
+		if (!isRealGoal || catalog.length === 0) {
+			toast.error("Wybierz realną ścieżkę kariery, aby wczytać kompetencje rynku.");
 			return;
 		}
+		const selected: SelectedCompetency[] = catalog
+			.filter((item) => selections[item.competencyName] !== undefined)
+			.map((item) => ({
+				name: item.competencyName,
+				level: selections[item.competencyName],
+				marketPercentage: item.demandPercentage,
+				inSyllabus: Boolean(item.inSyllabus),
+			}));
+
 		setSaving(true);
 		try {
 			const res = await fetch("/api/onboarding", {
@@ -146,14 +227,14 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 					semester: Number(profile.semester),
 					careerGoal: resolvedCareerGoal,
 					syllabusText,
-					competencies: filledCompetencies.map((c) => c.name.trim()),
+					competencies: selected,
 				}),
 			});
 			if (!res.ok) {
 				const data = await res.json();
 				throw new Error(data.error || "Błąd zapisu");
 			}
-			toast.success("Zapisano zmiany. Skill Map i Gap Analysis są regenerowane w tle.");
+			toast.success("Zapisano zmiany. Mapa kompetencji i analiza luk są przeliczane w tle.");
 			router.push("/dashboard");
 			router.refresh();
 		} catch (err) {
@@ -167,9 +248,8 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 			<header className="space-y-1.5">
 				<h1 className="font-heading text-2xl font-extrabold md:text-3xl">Twój profil</h1>
 				<p className="text-sm text-muted-foreground">
-					Zaktualizuj swoje dane, sylabus lub listę kompetencji. Po zapisie Skill Map oraz Gap
-					Analysis zostaną przeliczone od nowa. Twój Paszport, ukończone projekty i Verified
-					Receipts pozostaną bez zmian.
+					Zaktualizuj dane, sylabus lub kompetencje. Po zapisie mapa kompetencji i analiza luk
+					zostaną przeliczone. Paszport i ukończone projekty pozostają bez zmian.
 				</p>
 			</header>
 
@@ -187,7 +267,7 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 				<CardHeader>
 					<CardTitle>Cel kariery</CardTitle>
 					<CardDescription>
-						Obszar zawodowy, pod który dopasowujemy analizę luk. Możesz go tu zmienić.
+						Obszar zawodowy, pod który dopasowujemy kompetencje rynku i analizę luk.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -237,8 +317,8 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 				<CardHeader>
 					<CardTitle>Sylabus</CardTitle>
 					<CardDescription>
-						Edytuj treść sylabusa i kliknij „Analizuj sylabus”, aby AI ponownie wyciągnęło listę
-						kompetencji.
+						Edytuj treść sylabusa i kliknij „Analizuj sylabus”, aby oznaczyć na liście kompetencje z
+						Twojego programu studiów.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -255,11 +335,23 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 				<CardHeader>
 					<CardTitle>Kompetencje</CardTitle>
 					<CardDescription>
-						Dodaj, usuń lub popraw nazwy kompetencji. Minimum 5 wpisów.
+						Pełny przegląd kompetencji wymaganych przez rynek dla Twojego celu. Zaznacz poziom
+						posiadania lub dodaj kolejne — bez limitu.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<StepCompetencies competencies={competencies} onChange={setCompetencies} />
+					<StepMarketCompetencies
+						careerGoal={resolvedCareerGoal}
+						catalog={catalog}
+						groups={rawGroups}
+						selections={selections}
+						onChange={handleSelectionChange}
+						loading={catalogLoading}
+						error={catalogError}
+						onRetry={() => loadCatalog(resolvedCareerGoal)}
+						isRealCareerGoal={isRealGoal}
+						profileNote={profileNote}
+					/>
 				</CardContent>
 			</Card>
 

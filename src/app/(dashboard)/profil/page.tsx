@@ -28,7 +28,10 @@ export default async function ProfilPage() {
 				semester: student.semester,
 				careerGoal: student.careerGoal,
 				syllabusText: student.syllabusText ?? "",
-				competencies: studentCompetencies.map((c) => c.name),
+				competencies: studentCompetencies.map((c) => ({
+					name: c.name,
+					selfAssessment: c.selfAssessment,
+				})),
 			}}
 		/>
 	);
