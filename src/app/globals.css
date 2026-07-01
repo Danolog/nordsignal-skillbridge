@@ -283,7 +283,7 @@
 
 .auth-page {
 	min-height: 100vh;
-	background: #0b0e14;
+	background: var(--ed-cream);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -293,37 +293,11 @@
 	overflow: hidden;
 }
 
-/* Dot grid */
-.auth-dot-grid {
-	position: absolute;
-	inset: 0;
-	background-image: radial-gradient(circle, rgba(99, 102, 241, 0.14) 1px, transparent 1px);
-	background-size: 30px 30px;
-	pointer-events: none;
-}
-
-/* Blobs */
+/* Editorial: bez ciemnej siatki kropek i blobów — zostawiamy puste hooki, gdyby
+   layout je jeszcze renderował (ukryte, zero glow). */
+.auth-dot-grid,
 .auth-blob {
-	position: absolute;
-	border-radius: 50%;
-	filter: blur(72px);
-	pointer-events: none;
-	animation: blob-float 9s ease-in-out infinite;
-}
-.auth-blob-1 {
-	width: 340px;
-	height: 340px;
-	background: rgba(99, 102, 241, 0.2);
-	top: -80px;
-	right: -60px;
-}
-.auth-blob-2 {
-	width: 280px;
-	height: 280px;
-	background: rgba(34, 211, 238, 0.15);
-	bottom: -60px;
-	left: -40px;
-	animation-delay: -4s;
+	display: none;
 }
 
 /* Logo */
@@ -332,24 +306,21 @@
 	align-items: center;
 	gap: 10px;
 	text-decoration: none;
-	margin-bottom: 32px;
+	margin-bottom: 28px;
 	z-index: 1;
 }
 
-/* (dług #6) .auth-logo-icon / .auth-logo-text — usunięte: martwe po wspólnym <Logo variant="auth"/>. */
-
-/* Card */
+/* Card — papierowa, jasna, z cienką bursztynową kreską u góry */
 .auth-card {
 	width: 100%;
 	max-width: 420px;
-	background: rgba(255, 255, 255, 0.04);
-	backdrop-filter: blur(24px);
-	-webkit-backdrop-filter: blur(24px);
-	border: 1px solid rgba(255, 255, 255, 0.08);
-	border-radius: 24px;
-	padding: 40px 32px;
+	background: var(--ed-card);
+	border: 1px solid var(--ed-border);
+	border-radius: 20px;
+	padding: 38px 32px;
 	position: relative;
 	z-index: 1;
+	box-shadow: 0 6px 22px rgba(27, 25, 23, 0.07);
 	animation: fade-up-in 0.5s ease forwards;
 }
 .auth-card::before {
@@ -359,25 +330,25 @@
 	left: 0;
 	right: 0;
 	height: 3px;
-	background: linear-gradient(135deg, #6366f1 0%, #22d3ee 100%);
-	border-radius: 24px 24px 0 0;
+	background: var(--ed-amber);
+	border-radius: 20px 20px 0 0;
 }
 
 /* Typography */
 .auth-title {
 	font-family: var(--font-heading);
-	font-weight: 800;
-	font-size: 24px;
-	color: rgba(248, 250, 252, 0.95);
+	font-weight: 700;
+	font-size: 25px;
+	color: var(--ed-ink);
 	text-align: center;
 	margin-bottom: 4px;
 }
 
 .auth-subtitle {
 	font-size: 14px;
-	color: rgba(148, 163, 184, 0.8);
+	color: var(--ed-muted);
 	text-align: center;
-	margin-bottom: 28px;
+	margin-bottom: 26px;
 }
 
 /* Google button */
@@ -388,19 +359,19 @@
 	justify-content: center;
 	gap: 10px;
 	padding: 12px;
-	background: rgba(255, 255, 255, 0.04);
-	border: 1px solid rgba(255, 255, 255, 0.1);
+	background: var(--ed-card);
+	border: 1px solid var(--ed-border);
 	border-radius: 12px;
-	color: rgba(248, 250, 252, 0.85);
+	color: var(--ed-ink);
 	font-family: inherit;
 	font-size: 14px;
-	font-weight: 500;
+	font-weight: 600;
 	cursor: pointer;
 	transition: all 0.2s ease;
 }
 .auth-btn-google:hover:not(:disabled) {
-	background: rgba(255, 255, 255, 0.08);
-	border-color: rgba(255, 255, 255, 0.18);
+	background: var(--ed-badge-bg);
+	border-color: var(--ed-amber);
 }
 .auth-btn-google:disabled {
 	opacity: 0.6;
@@ -419,11 +390,11 @@
 	content: "";
 	flex: 1;
 	height: 1px;
-	background: rgba(255, 255, 255, 0.08);
+	background: var(--ed-border);
 }
 .auth-divider span {
 	font-size: 12px;
-	color: rgba(148, 163, 184, 0.6);
+	color: var(--ed-muted);
 	text-transform: lowercase;
 }
 
@@ -442,51 +413,76 @@
 
 .auth-label {
 	font-size: 13px;
-	font-weight: 500;
-	color: rgba(148, 163, 184, 0.8);
+	font-weight: 600;
+	color: var(--ed-ink);
 }
 
 .auth-input {
 	width: 100%;
-	padding: 10px 14px;
-	background: #161b22;
-	border: 1px solid #30363d;
+	padding: 12px 14px;
+	background: var(--ed-cream);
+	border: 1px solid var(--ed-border);
 	border-radius: 10px;
-	color: rgba(248, 250, 252, 0.92);
+	color: var(--ed-ink);
 	font-family: inherit;
 	font-size: 14px;
 	outline: none;
 	transition: all 0.2s ease;
 }
 .auth-input::placeholder {
-	color: rgba(148, 163, 184, 0.4);
+	color: var(--ed-muted);
+	opacity: 0.7;
 }
 .auth-input:focus {
-	border-color: rgba(99, 102, 241, 0.5);
-	box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+	border-color: var(--ed-amber);
+	box-shadow: 0 0 0 3px rgba(208, 137, 30, 0.15);
 }
 
-/* Primary button */
+/* Pole hasła z przyciskiem pokaż/ukryj */
+.auth-input-wrap {
+	position: relative;
+}
+.auth-input-wrap .auth-input {
+	padding-right: 44px;
+}
+.auth-eye-btn {
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	background: transparent;
+	border: none;
+	color: var(--ed-muted);
+	cursor: pointer;
+	padding: 6px;
+	display: grid;
+	place-items: center;
+	border-radius: 8px;
+}
+.auth-eye-btn:hover {
+	color: var(--ed-ink);
+}
+
+/* Primary button — ciemna kotwica editorial (jeden mocny akcent) */
 .auth-btn-primary {
 	width: 100%;
 	padding: 12px;
-	background: linear-gradient(135deg, #6366f1 0%, #22d3ee 100%);
+	background: var(--ed-ink);
 	border: none;
 	border-radius: 9999px;
-	color: white;
+	color: var(--ed-cream);
 	font-family: var(--font-heading);
 	font-weight: 700;
 	font-size: 15px;
 	cursor: pointer;
-	box-shadow: 0 0 24px rgba(99, 102, 241, 0.3);
 	transition:
-		transform 0.25s ease,
-		box-shadow 0.25s ease;
+		transform 0.2s ease,
+		background 0.2s ease;
 	margin-top: 4px;
 }
 .auth-btn-primary:hover:not(:disabled) {
-	transform: translateY(-2px);
-	box-shadow: 0 0 36px rgba(99, 102, 241, 0.4);
+	transform: translateY(-1px);
+	background: #2c2825;
 }
 .auth-btn-primary:disabled {
 	opacity: 0.6;
@@ -497,26 +493,26 @@
 /* Error message */
 .auth-error {
 	font-size: 13px;
-	color: #f87171;
+	color: var(--ed-danger);
 	text-align: center;
 }
 
 /* Footer text */
 .auth-footer-text {
 	font-size: 13px;
-	color: rgba(148, 163, 184, 0.6);
+	color: var(--ed-muted);
 	text-align: center;
 	margin-top: 20px;
 }
 
 .auth-link {
-	color: rgba(99, 102, 241, 0.9);
+	color: var(--ed-amber-text);
 	text-decoration: none;
-	font-weight: 500;
+	font-weight: 600;
 	transition: color 0.2s;
 }
 .auth-link:hover {
-	color: #818cf8;
+	text-decoration: underline;
 }
 
 /* Responsive */

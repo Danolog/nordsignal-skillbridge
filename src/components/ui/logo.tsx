@@ -40,18 +40,19 @@ export function Logo({ size = "md", variant = "landing", className }: LogoProps)
 	// sidebar ma nieco większe zaokrąglenie (12px) zgodnie z dawnym .db-sidebar-logo-icon.
 	const radius = variant === "sidebar" ? 12 : s.radius;
 	const isLanding = variant === "landing";
+	// Landing i auth = język editorial (jasny, bez gradientu/glow). Sidebar zostaje na gradiencie marki.
+	const isEditorial = isLanding || variant === "auth";
 
-	// Landing: pole atramentu + biała czapka, wordmark atramentem (editorial). Reszta: gradient marki.
-	const iconBg = isLanding ? "var(--color-ed-ink)" : LOGO_GRADIENT;
-	const iconShadow = isLanding
-		? undefined
-		: // Parytet glow: landing nigdy nie świeci (editorial), auth miał poświatę w dawnym
-			// .auth-logo-icon, sidebar nigdy jej nie miał.
-			variant !== "sidebar"
-			? "0 0 18px rgba(99,102,241,0.45)"
-			: undefined;
-	const wordmarkStyle = isLanding
-		? { fontSize: s.text, color: "var(--color-ed-ink)" }
+	// Landing: box atramentu. Auth: box bursztynu (jak brand .mark w wireframe). Sidebar: gradient marki.
+	const iconBg = isLanding
+		? "var(--ed-ink)"
+		: variant === "auth"
+			? "var(--ed-amber)"
+			: LOGO_GRADIENT;
+	// Editorial nigdy nie świeci; sidebar też nie miał glow.
+	const iconShadow = undefined;
+	const wordmarkStyle = isEditorial
+		? { fontSize: s.text, color: "var(--ed-ink)" }
 		: {
 				fontSize: s.text,
 				background: LOGO_GRADIENT,

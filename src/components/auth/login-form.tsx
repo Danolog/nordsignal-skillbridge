@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
@@ -8,6 +9,7 @@ export function LoginForm() {
 	const router = useRouter();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [showPassword, setShowPassword] = useState(false);
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
 
@@ -56,15 +58,25 @@ export function LoginForm() {
 				<label htmlFor="password" className="auth-label">
 					Hasło
 				</label>
-				<input
-					id="password"
-					type="password"
-					className="auth-input"
-					placeholder="Twoje hasło"
-					value={password}
-					onChange={(e) => setPassword(e.target.value)}
-					required
-				/>
+				<div className="auth-input-wrap">
+					<input
+						id="password"
+						type={showPassword ? "text" : "password"}
+						className="auth-input"
+						placeholder="Twoje hasło"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						required
+					/>
+					<button
+						type="button"
+						className="auth-eye-btn"
+						onClick={() => setShowPassword((v) => !v)}
+						aria-label={showPassword ? "Ukryj hasło" : "Pokaż hasło"}
+					>
+						{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+					</button>
+				</div>
 			</div>
 
 			{error && <p className="auth-error">{error}</p>}
