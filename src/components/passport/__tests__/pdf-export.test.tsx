@@ -89,11 +89,14 @@ describe("PdfExportButton", () => {
 		expect(mockSave).not.toHaveBeenCalled();
 	});
 
-	it("has correct CSS classes", () => {
+	it("uses editorial button styling", () => {
 		const ref = createMockRef();
 		render(<PdfExportButton passportRef={ref} />);
 		const button = screen.getByRole("button");
-		expect(button.className).toContain("pp-btn");
-		expect(button.className).toContain("pp-btn-primary");
+		// Przycisk przeszedł na styl editorial (inline styles z tokenami --ed-*),
+		// zamiast klas pp-btn/pp-btn-primary (commit 53e239e).
+		const style = button.getAttribute("style") ?? "";
+		expect(style).toContain("--ed-ink");
+		expect(style).toContain("--ed-cream");
 	});
 });

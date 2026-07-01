@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analiza luk — Spokojny ekspert (makieta hi-fi, Mila v0.3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ed-cream:#FAF6F1; --ed-ink:#1B1917; --ed-amber:#D0891E; --ed-amber-text:#8F5A0F;
+  --ed-surface:#F5EFE6; --ed-border:#D6CEC2; --ed-muted:#6E6860; --ed-warn:#F4D04F;
+  --ed-danger:#D0422B; --ed-badge-bg:#FDF3DD; --ed-card:#FEFCF9;
+  --gap-section:46px; --pad-card:26px; --radius:16px;
+  --shadow-soft:0 1px 2px rgba(27,25,23,.05); --shadow-lift:0 6px 22px rgba(27,25,23,.07);
+  --font-display:'Playfair Display',Georgia,serif; --font-body:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--ed-cream);color:var(--ed-ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2.5px solid var(--ed-amber);outline-offset:2px;border-radius:4px}
+.layout{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.sidebar{background:var(--ed-surface);border-right:1px solid var(--ed-border);padding:22px 16px;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 22px}
+.brand .mark{width:30px;height:30px;border-radius:9px;background:var(--ed-amber);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:18px}
+.brand .name{font-family:var(--font-display);font-weight:700;font-size:19px}
+.nav-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ed-amber-text);font-weight:600;padding:6px 10px;margin-top:6px}
+.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:var(--ed-muted);text-decoration:none;font-weight:500;font-size:15px;position:relative;margin-bottom:2px}
+.nav a .ic{width:18px;text-align:center;opacity:.85}
+.nav a:hover{background:rgba(27,25,23,.045);color:var(--ed-ink)}
+.nav a.active{background:var(--ed-badge-bg);color:var(--ed-ink);font-weight:700}
+.nav a.active::before{content:"";position:absolute;left:-16px;top:7px;bottom:7px;width:4px;border-radius:0 4px 4px 0;background:var(--ed-amber)}
+.nav a.active .ic{color:var(--ed-amber-text)}
+.side-foot{margin-top:auto;display:flex;align-items:center;gap:11px;padding:12px 10px;border-top:1px solid var(--ed-border)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--ed-amber);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px}
+.side-foot .who{font-size:14px;font-weight:600}.side-foot .role{font-size:12px;color:var(--ed-muted)}
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{position:sticky;top:0;z-index:5;background:var(--ed-cream);border-bottom:1px solid var(--ed-border);padding:14px 40px;display:flex;align-items:center;justify-content:space-between}
+.topbar .crumb{font-size:13px;color:var(--ed-muted)}
+.goal-pill{display:inline-flex;align-items:center;gap:8px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);color:var(--ed-amber-text);font-weight:600;font-size:13px;padding:7px 14px;border-radius:999px}
+.content{padding:34px 40px 80px;max-width:1080px;width:100%}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ed-amber-text);font-weight:600;margin-bottom:8px}
+h1.page{font-family:var(--font-display);font-weight:700;font-size:clamp(30px,4.2vw,40px);line-height:1.08;letter-spacing:-.01em}
+.lede{color:var(--ed-muted);font-size:16px;margin-top:8px;max-width:62ch}
+.section{margin-top:var(--gap-section)}
+.card{background:var(--ed-card);border:1px solid var(--ed-border);border-radius:var(--radius);padding:var(--pad-card);box-shadow:var(--shadow-soft)}
+.badge-soft{display:inline-flex;align-items:center;gap:6px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);color:var(--ed-amber-text);font-weight:600;font-size:12px;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.kind{display:inline-flex;align-items:center;gap:4px;background:var(--ed-surface);border:1px solid var(--ed-border);color:var(--ed-muted);font-weight:600;font-size:11px;padding:2px 8px;border-radius:6px}
+.anchor-dark{display:inline-flex;align-items:center;gap:8px;background:var(--ed-ink);color:var(--ed-cream);font-weight:600;font-size:14px;padding:11px 18px;border:none;border-radius:999px;cursor:pointer;text-decoration:none}
+.anchor-dark:hover{background:#2c2825}
+.link-amber{color:var(--ed-amber-text);font-weight:600;text-decoration:none;font-size:14px}
+.link-amber:hover{text-decoration:underline}
+
+/* podsumowanie priorytetów */
+.summary{display:flex;gap:26px;flex-wrap:wrap;background:var(--ed-surface);border:1px solid var(--ed-border);border-radius:12px;padding:14px 22px;font-size:14px;font-weight:600}
+.summary span{display:inline-flex;align-items:center;gap:9px}
+.sdot{width:11px;height:11px;border-radius:50%}
+.sdot.crit{background:var(--ed-danger)}.sdot.warn{background:var(--ed-warn)}.sdot.ok{background:var(--ed-muted)}
+
+/* komentarz grupy nad blokiem luk */
+.grp-comment{background:var(--ed-surface);border:1px solid var(--ed-border);border-left:5px solid var(--ed-amber);border-radius:12px;padding:14px 18px;margin-bottom:14px}
+.grp-comment .gtop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.grp-comment h3{font-family:var(--font-display);font-weight:700;font-size:18px}
+.grp-comment p{font-size:13.5px;color:var(--ed-muted);max-width:78ch}
+
+.prio{font-size:11px;font-weight:700;letter-spacing:.04em;padding:4px 11px;border-radius:999px}
+.prio.crit{background:#fbe2dd;color:var(--ed-danger)}
+.prio.warn{background:var(--ed-badge-bg);color:var(--ed-amber-text)}
+
+/* luka #1 — checklista inline (USP hero) */
+.gap1 .ghead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.gap1 h2{font-family:var(--font-display);font-weight:700;font-size:24px}
+.gap1 .ksub{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.demand-line{display:flex;align-items:center;gap:14px;margin:12px 0 16px;font-size:14px;color:var(--ed-muted)}
+.dbar{width:240px;height:9px;border-radius:999px;background:var(--ed-surface);border:1px solid var(--ed-border);overflow:hidden}
+.dbar > i{display:block;height:100%;background:var(--ed-danger);border-radius:999px}
+.why{font-size:13.5px;color:var(--ed-muted);margin-bottom:14px}
+.why b{color:var(--ed-ink)}
+.plan-label{font-weight:700;font-size:14px;margin-bottom:10px}
+.checklist{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.checklist li{display:flex;align-items:flex-start;gap:11px;font-size:14.5px}
+.checklist .box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--ed-border);flex:0 0 auto;margin-top:1px;display:grid;place-items:center;font-size:12px;color:#fff}
+.checklist li.done .box{background:var(--ed-amber);border-color:var(--ed-amber)}
+.checklist li.done span{color:var(--ed-muted)}
+.gap1 .actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.bar{flex:1;min-width:140px;height:9px;border-radius:999px;background:var(--ed-surface);border:1px solid var(--ed-border);overflow:hidden}
+.bar > i{display:block;height:100%;background:var(--ed-amber);border-radius:999px}
+.meta{font-size:13px;color:var(--ed-muted);white-space:nowrap}
+
+/* luki zwinięte */
+.gaps-collapsed{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.gapc{background:var(--ed-card);border:1px solid var(--ed-border);border-left:5px solid var(--ed-warn);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow-soft)}
+.gapc.crit{border-left-color:var(--ed-danger)}
+.gapc .gctop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.gapc .gcname{font-weight:700;font-size:16px}
+.gapc .gcdemand{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ed-muted)}
+.gapc .gbar{flex:1;height:8px;border-radius:999px;background:var(--ed-surface);border:1px solid var(--ed-border);overflow:hidden}
+.gapc .gbar > i{display:block;height:100%;background:var(--ed-warn);border-radius:999px}
+.gapc.crit .gbar > i{background:var(--ed-danger)}
+.gapc .gcfoot{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+
+@media(max-width:760px){.gaps-collapsed{grid-template-columns:1fr}}
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{flex-direction:row;align-items:center;overflow-x:auto;border-right:none;border-bottom:1px solid var(--ed-border)}
+  .nav{display:flex;gap:6px}.nav-eyebrow,.side-foot,.brand .name{display:none}.nav a.active::before{display:none}
+  .content,.topbar{padding-left:20px;padding-right:20px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><div class="mark">S</div><div class="name">SkillBridge</div></div>
+    <div class="nav-eyebrow">Twoja droga</div>
+    <nav class="nav">
+      <a href="pulpit.html"><span class="ic">◧</span> Pulpit</a>
+      <a href="mapa-kompetencji.html"><span class="ic">◇</span> Mapa kompetencji</a>
+      <a href="analiza-luk.html" class="active" aria-current="page"><span class="ic">▣</span> Analiza luk</a>
+      <a href="projekty.html"><span class="ic">▤</span> Projekty</a>
+    </nav>
+    <div class="side-foot"><div class="avatar">KW</div><div><div class="who">Kuba W.</div><div class="role">Student</div></div></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">Analiza luk</div>
+      <div class="goal-pill">🎯 Cel kariery: Specjalista ds. cyberbezpieczeństwa</div>
+    </header>
+
+    <main class="content">
+      <div class="eyebrow">Analiza luk</div>
+      <h1 class="page">Czego wymaga rynek, a czego jeszcze nie masz.</h1>
+      <p class="lede">Luki pogrupowane w obszary rynku. Nad każdym obszarem widzisz, po co się go uczysz — żebyś wiedział nie tylko „brakuje Ci SIEM", ale dlaczego to cały obszar 18,3% rynku.</p>
+
+      <div class="section" style="margin-top:28px">
+        <div class="summary" role="img" aria-label="Podsumowanie: 5 luk krytycznych, 7 ważnych, 3 warto">
+          <span><span class="sdot crit"></span> Krytyczne 5</span>
+          <span><span class="sdot warn"></span> Ważne 7</span>
+          <span><span class="sdot ok"></span> Warto 3</span>
+        </div>
+      </div>
+
+      <!-- OBSZAR SIEM: komentarz grupy + luka #1 z checklistą -->
+      <div class="section">
+        <div class="grp-comment">
+          <div class="gtop"><h3>SIEM i monitorowanie zdarzeń</h3><span class="badge-soft" aria-label="udział grupy 18,3 procent ofert ścieżki">18,3% ofert ścieżki</span></div>
+          <p>Codzienność Blue Teamu i pracy w SOC (centrum monitorowania bezpieczeństwa). System SIEM ściąga miliony logów w jedno miejsce; Twoim zadaniem jest wypatrzyć w nich ślad włamania. To najsilniejszy obszar rynku cyber — i dlatego Twoja największa luka.</p>
+        </div>
+
+        <div class="card gap1">
+          <div class="ghead">
+            <div>
+              <div class="ksub"><span class="kind">💡 koncepcja — „rozumiem / stosuję"</span></div>
+              <h2>SIEM</h2>
+            </div>
+            <span class="prio crit">KRYTYCZNA</span>
+          </div>
+          <div class="demand-line">
+            <div class="dbar" role="img" aria-label="popyt 10,8 procent"><i style="width:54%"></i></div>
+            <span>10,8% ofert ścieżki &middot; Twój poziom: <b style="color:var(--ed-ink)">nie znam</b></span>
+          </div>
+          <p class="why">▸ Dlaczego to luka: SIEM wystąpił w <b>10,8% ofert</b> ścieżki „Specjalista ds. cyberbezpieczeństwa" (JustJoinIT, zrzut 2026‑02), a cały obszar SIEM — w 18,3%. Rynek wymaga, Ty jeszcze tego nie masz.</p>
+          <div class="plan-label">Plan zamknięcia luki:</div>
+          <ul class="checklist">
+            <li class="done"><span class="box">✓</span><span>Zainstaluj Splunk Free i wczytaj publiczne logi tutorialowe</span></li>
+            <li><span class="box"></span><span>Napisz 3 zapytania SPL wykrywające podejrzane zdarzenia</span></li>
+            <li><span class="box"></span><span>Zdefiniuj warunek alertu z jawnym progiem</span></li>
+            <li><span class="box"></span><span>Napisz raport triage dla SOC i dodaj do CV</span></li>
+          </ul>
+          <div class="actions">
+            <div class="bar"><i style="width:25%"></i></div>
+            <span class="meta">1 z 4 kroków · 25%</span>
+            <a href="projekty.html" class="anchor-dark">Otwórz projekt →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBSZAR IAM: komentarz + luki zwinięte -->
+      <div class="section">
+        <div class="grp-comment">
+          <div class="gtop"><h3>Tożsamość i zarządzanie dostępem (IAM)</h3><span class="badge-soft" aria-label="udział grupy 12,7 procent ofert ścieżki">12,7% ofert ścieżki</span></div>
+          <p>Większość włamań to nie spektakularny atak — ktoś po prostu wszedł na cudze konto. IAM to dyscyplina pilnowania, kto, do czego i jak długo ma dostęp. Active Directory już masz; brakuje rdzenia IAM i kont uprzywilejowanych (PAM).</p>
+        </div>
+        <div class="gaps-collapsed">
+          <div class="gapc crit">
+            <div class="gctop"><span class="gcname">IAM</span><span class="prio crit">KRYTYCZNA</span></div>
+            <div class="gcdemand"><div class="gbar" role="img" aria-label="popyt 7,5 procent"><i style="width:38%"></i></div><span>7,5%</span></div>
+            <div class="gcfoot"><span class="kind">💡 koncepcja</span><a href="projekty.html" class="link-amber">Znajdź projekt →</a></div>
+          </div>
+          <div class="gapc">
+            <div class="gctop"><span class="gcname">PAM</span><span class="prio warn">WAŻNA</span></div>
+            <div class="gcdemand"><div class="gbar" role="img" aria-label="popyt 3 procent"><i style="width:15%"></i></div><span>3,0%</span></div>
+            <div class="gcfoot"><span class="kind">💡 koncepcja</span><a href="projekty.html" class="link-amber">Znajdź projekt →</a></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBSZAR GRC: komentarz + luki zwinięte -->
+      <div class="section">
+        <div class="grp-comment">
+          <div class="gtop"><h3>Audyt, ryzyko i zgodność (GRC)</h3><span class="badge-soft" aria-label="udział grupy 13,7 procent ofert ścieżki">13,7% ofert ścieżki</span></div>
+          <p>Bezpieczeństwo widziane od strony zarządzania i prawa, nie konsoli. Banki i korporacje muszą tłumaczyć się przed audytorami z norm (ISO 27001, NIST). Tędy wchodzi się do cyber bez głębokiego kodu — bliżej procesów i analizy ryzyka.</p>
+        </div>
+        <div class="gaps-collapsed">
+          <div class="gapc">
+            <div class="gctop"><span class="gcname">ISO 27001</span><span class="prio warn">WAŻNA</span></div>
+            <div class="gcdemand"><div class="gbar" role="img" aria-label="popyt 3,2 procent"><i style="width:16%"></i></div><span>3,2%</span></div>
+            <div class="gcfoot"><span class="kind">💡 koncepcja</span><a href="projekty.html" class="link-amber">Znajdź projekt →</a></div>
+          </div>
+          <div class="gapc">
+            <div class="gctop"><span class="gcname">Risk Management</span><span class="prio warn">WAŻNA</span></div>
+            <div class="gcdemand"><div class="gbar" role="img" aria-label="popyt 4,9 procent"><i style="width:25%"></i></div><span>4,9%</span></div>
+            <div class="gcfoot"><span class="kind">💡 koncepcja</span><a href="projekty.html" class="link-amber">Znajdź projekt →</a></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

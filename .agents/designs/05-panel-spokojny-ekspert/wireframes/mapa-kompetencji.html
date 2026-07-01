@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa kompetencji — Spokojny ekspert (makieta hi-fi, Mila v0.3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ed-cream:#FAF6F1; --ed-ink:#1B1917; --ed-amber:#D0891E; --ed-amber-text:#8F5A0F;
+  --ed-surface:#F5EFE6; --ed-border:#D6CEC2; --ed-muted:#6E6860; --ed-warn:#F4D04F;
+  --ed-danger:#D0422B; --ed-badge-bg:#FDF3DD; --ed-card:#FEFCF9;
+  --gap-section:46px; --pad-card:26px; --radius:16px;
+  --shadow-soft:0 1px 2px rgba(27,25,23,.05); --shadow-lift:0 6px 22px rgba(27,25,23,.07);
+  --font-display:'Playfair Display',Georgia,serif; --font-body:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--ed-cream);color:var(--ed-ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2.5px solid var(--ed-amber);outline-offset:2px;border-radius:4px}
+.layout{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.sidebar{background:var(--ed-surface);border-right:1px solid var(--ed-border);padding:22px 16px;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 22px}
+.brand .mark{width:30px;height:30px;border-radius:9px;background:var(--ed-amber);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:18px}
+.brand .name{font-family:var(--font-display);font-weight:700;font-size:19px}
+.nav-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ed-amber-text);font-weight:600;padding:6px 10px;margin-top:6px}
+.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:var(--ed-muted);text-decoration:none;font-weight:500;font-size:15px;position:relative;margin-bottom:2px}
+.nav a .ic{width:18px;text-align:center;opacity:.85}
+.nav a:hover{background:rgba(27,25,23,.045);color:var(--ed-ink)}
+.nav a.active{background:var(--ed-badge-bg);color:var(--ed-ink);font-weight:700}
+.nav a.active::before{content:"";position:absolute;left:-16px;top:7px;bottom:7px;width:4px;border-radius:0 4px 4px 0;background:var(--ed-amber)}
+.nav a.active .ic{color:var(--ed-amber-text)}
+.side-foot{margin-top:auto;display:flex;align-items:center;gap:11px;padding:12px 10px;border-top:1px solid var(--ed-border)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--ed-amber);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px}
+.side-foot .who{font-size:14px;font-weight:600}.side-foot .role{font-size:12px;color:var(--ed-muted)}
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{position:sticky;top:0;z-index:5;background:var(--ed-cream);border-bottom:1px solid var(--ed-border);padding:14px 40px;display:flex;align-items:center;justify-content:space-between}
+.topbar .crumb{font-size:13px;color:var(--ed-muted)}
+.goal-pill{display:inline-flex;align-items:center;gap:8px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);color:var(--ed-amber-text);font-weight:600;font-size:13px;padding:7px 14px;border-radius:999px}
+.content{padding:34px 40px 80px;max-width:1140px;width:100%}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ed-amber-text);font-weight:600;margin-bottom:8px}
+h1.page{font-family:var(--font-display);font-weight:700;font-size:clamp(30px,4.2vw,40px);line-height:1.08;letter-spacing:-.01em}
+.lede{color:var(--ed-muted);font-size:16px;margin-top:8px;max-width:60ch}
+.section{margin-top:var(--gap-section)}
+.card{background:var(--ed-card);border:1px solid var(--ed-border);border-radius:var(--radius);padding:var(--pad-card);box-shadow:var(--shadow-soft)}
+.badge-soft{display:inline-flex;align-items:center;gap:6px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);color:var(--ed-amber-text);font-weight:600;font-size:12px;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.kind{display:inline-flex;align-items:center;gap:4px;background:var(--ed-surface);border:1px solid var(--ed-border);color:var(--ed-muted);font-weight:600;font-size:11px;padding:2px 8px;border-radius:6px}
+.tag-human{display:inline-flex;align-items:center;gap:4px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);color:var(--ed-amber-text);font-weight:600;font-size:11px;padding:3px 8px;border-radius:999px}
+.anchor-dark{display:inline-flex;align-items:center;gap:8px;background:var(--ed-ink);color:var(--ed-cream);font-weight:600;font-size:14px;padding:11px 18px;border:none;border-radius:999px;cursor:pointer;text-decoration:none}
+.anchor-dark:hover{background:#2c2825}
+
+/* LEGENDA */
+.legend{display:flex;gap:22px;flex-wrap:wrap;font-size:13px;color:var(--ed-muted);background:var(--ed-surface);border:1px solid var(--ed-border);border-radius:12px;padding:12px 18px;margin-bottom:20px}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.lg-node{width:18px;height:18px;border-radius:8px;flex:0 0 auto}
+.lg-node.have{background:var(--ed-amber);border:1px solid var(--ed-amber)}
+.lg-node.wip{background:var(--ed-warn);border:1px solid #d8b62e}
+.lg-node.gap{background:var(--ed-cream);border:2px dashed var(--ed-danger)}
+
+/* układ płótno + panel */
+.map-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+.canvas{background:var(--ed-cream);border:1px solid var(--ed-border);border-radius:var(--radius);padding:20px}
+.grp{padding:14px 0;border-bottom:1px dashed var(--ed-border)}
+.grp:last-child{border-bottom:none}
+.grp-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.grp-head h3{font-family:var(--font-display);font-weight:700;font-size:18px}
+.grp-desc{font-size:13px;color:var(--ed-muted);margin-bottom:14px;max-width:70ch}
+.nodes{display:flex;flex-wrap:wrap;gap:12px}
+.node{border:none;cursor:pointer;font-family:var(--font-body);font-weight:600;font-size:14px;padding:11px 16px;border-radius:12px;display:inline-flex;flex-direction:column;gap:3px;text-align:left;min-width:118px}
+.node small{font-weight:600;font-size:11px;opacity:.85}
+.node.have{background:var(--ed-amber);color:var(--ed-ink)}
+.node.have small{color:var(--ed-ink);opacity:.78}
+.node.wip{background:var(--ed-warn);color:var(--ed-ink)}
+.node.gap{background:var(--ed-cream);color:var(--ed-danger);border:2px dashed var(--ed-danger)}
+.node.sel{box-shadow:0 0 0 3px var(--ed-ink)}
+
+/* panel szczegółu */
+.detail{position:sticky;top:84px}
+.detail .dname{font-family:var(--font-display);font-weight:700;font-size:24px;margin-bottom:4px}
+.detail .drow{display:flex;justify-content:space-between;font-size:14px;padding:9px 0;border-bottom:1px solid var(--ed-border)}
+.detail .drow .k{color:var(--ed-muted)}
+.detail .drow .v{font-weight:600}
+.detail .v.crit{color:var(--ed-danger)}
+.grp-comment{background:var(--ed-surface);border:1px solid var(--ed-border);border-radius:12px;padding:13px 15px;margin:14px 0;font-size:13px;color:var(--ed-muted)}
+.grp-comment b{color:var(--ed-ink);display:block;margin-bottom:4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+
+/* ścieżka dostępna */
+.gap-row{display:flex;align-items:center;gap:16px;background:var(--ed-card);border:1px solid var(--ed-border);border-left:5px solid var(--ed-danger);border-radius:12px;padding:14px 18px;margin-bottom:12px;box-shadow:var(--shadow-soft)}
+.gap-row.warn{border-left-color:var(--ed-warn)}
+.gap-row .gname{font-weight:700;font-size:15px;min-width:130px}
+.gap-row .gbar{flex:1;height:9px;border-radius:999px;background:var(--ed-surface);border:1px solid var(--ed-border);overflow:hidden}
+.gap-row .gbar > i{display:block;height:100%;background:var(--ed-danger);border-radius:999px}
+.gap-row.warn .gbar > i{background:var(--ed-warn)}
+.gap-row .gp{font-size:13px;color:var(--ed-muted);white-space:nowrap}
+.prio{font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:999px}
+.prio.crit{background:#fbe2dd;color:var(--ed-danger)}
+.prio.warn{background:var(--ed-badge-bg);color:var(--ed-amber-text)}
+.callout{background:var(--ed-surface);border:1px solid var(--ed-border);border-radius:12px;padding:16px 20px;font-size:14px;color:var(--ed-muted);margin-top:22px}
+
+@media(max-width:980px){.map-grid{grid-template-columns:1fr}.detail{position:static}}
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{flex-direction:row;align-items:center;overflow-x:auto;border-right:none;border-bottom:1px solid var(--ed-border)}
+  .nav{display:flex;gap:6px}.nav-eyebrow,.side-foot,.brand .name{display:none}.nav a.active::before{display:none}
+  .content,.topbar{padding-left:20px;padding-right:20px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><div class="mark">S</div><div class="name">SkillBridge</div></div>
+    <div class="nav-eyebrow">Twoja droga</div>
+    <nav class="nav">
+      <a href="pulpit.html"><span class="ic">◧</span> Pulpit</a>
+      <a href="mapa-kompetencji.html" class="active" aria-current="page"><span class="ic">◇</span> Mapa kompetencji</a>
+      <a href="analiza-luk.html"><span class="ic">▣</span> Analiza luk</a>
+      <a href="projekty.html"><span class="ic">▤</span> Projekty</a>
+    </nav>
+    <div class="side-foot"><div class="avatar">KW</div><div><div class="who">Kuba W.</div><div class="role">Student</div></div></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">Mapa kompetencji</div>
+      <div class="goal-pill">🎯 Cel kariery: Specjalista ds. cyberbezpieczeństwa</div>
+    </header>
+
+    <main class="content">
+      <div class="eyebrow">Mapa kompetencji</div>
+      <h1 class="page">Twój rynek na jednej mapie.</h1>
+      <p class="lede">Kompetencje pogrupowane w obszary rynku — każdy z opisem „po co się tego uczysz". Czerwony, przerywany węzeł to luka: rynek tego wymaga, a Ty jeszcze tego nie masz.</p>
+
+      <div class="section" style="margin-top:30px">
+        <div class="legend" role="img" aria-label="Legenda: bursztyn opanowane, żółty w trakcie, przerywana czerwona ramka luka rynkowa">
+          <span><span class="lg-node have"></span> opanowane</span>
+          <span><span class="lg-node wip"></span> w trakcie</span>
+          <span><span class="lg-node gap"></span> luka rynkowa (kolor + przerywana ramka — nie sam kolor)</span>
+        </div>
+
+        <div class="map-grid">
+          <!-- PŁÓTNO: węzły pogrupowane po obszarze rynku -->
+          <div class="canvas">
+            <!-- grupa 1 -->
+            <div class="grp">
+              <div class="grp-head"><h3>SIEM i monitorowanie zdarzeń</h3><span class="badge-soft" aria-label="udział grupy 18,3 procent ofert ścieżki">18,3% ofert ścieżki</span></div>
+              <p class="grp-desc">Codzienność Blue Teamu — zespołu broniącego firmy od środka. System SIEM ściąga miliony logów w jedno miejsce; Twoim zadaniem jest wypatrzyć w nich ślad włamania.</p>
+              <div class="nodes">
+                <button class="node gap sel" aria-pressed="true" aria-label="SIEM, luka rynkowa, popyt 10,8 procent">SIEM <small>luka · 10,8%</small></button>
+                <button class="node gap" aria-pressed="false" aria-label="Splunk, luka rynkowa, popyt 4,3 procent">Splunk <small>luka · 4,3%</small></button>
+                <button class="node gap" aria-pressed="false" aria-label="SOC, luka rynkowa, popyt 5,1 procent">SOC <small>luka · 5,1%</small></button>
+              </div>
+            </div>
+            <!-- grupa 2 -->
+            <div class="grp">
+              <div class="grp-head"><h3>Administracja systemami i skrypty</h3><span class="badge-soft" aria-label="udział grupy 16,2 procent ofert ścieżki">16,2% ofert ścieżki</span></div>
+              <p class="grp-desc">Zanim obronisz system, musisz wiedzieć, jak działa od środka. Najczęstsza brama wejścia do cyber — przez administrację przechodzi się do bezpieczeństwa.</p>
+              <div class="nodes">
+                <button class="node have" aria-pressed="false" aria-label="Linux, masz, poziom obsługuję biegle, popyt 9,4 procent">Linux <small>masz · 9,4%</small></button>
+                <button class="node wip" aria-pressed="false" aria-label="Windows, w trakcie, popyt 4 procent">Windows <small>w trakcie · 4,0%</small></button>
+                <button class="node have" aria-pressed="false" aria-label="Bash, masz, popyt 3 procent">Bash <small>masz · 3,0%</small></button>
+              </div>
+            </div>
+            <!-- grupa 3 -->
+            <div class="grp">
+              <div class="grp-head"><h3>Tożsamość i zarządzanie dostępem (IAM)</h3><span class="badge-soft" aria-label="udział grupy 12,7 procent ofert ścieżki">12,7% ofert ścieżki</span></div>
+              <p class="grp-desc">Większość włamań to nie spektakularny atak — ktoś po prostu wszedł na cudze konto. IAM to dyscyplina pilnowania, kto, do czego i jak długo ma dostęp.</p>
+              <div class="nodes">
+                <button class="node gap" aria-pressed="false" aria-label="IAM, luka rynkowa, popyt 7,5 procent">IAM <small>luka · 7,5%</small></button>
+                <button class="node have" aria-pressed="false" aria-label="Active Directory, masz, popyt 4,3 procent">Active Directory <small>masz · 4,3%</small></button>
+                <button class="node gap" aria-pressed="false" aria-label="PAM, luka rynkowa, popyt 3 procent">PAM <small>luka · 3,0%</small></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- PANEL SZCZEGÓŁU z komentarzem grupy -->
+          <aside class="card detail" aria-label="Szczegół wybranego węzła">
+            <div class="eyebrow">Wybrany węzeł</div>
+            <div class="dname">SIEM</div>
+            <span class="kind">💡 koncepcja — „rozumiem / stosuję"</span>
+            <div class="grp-comment">
+              <b>Komentarz grupy: SIEM i monitorowanie</b>
+              System SIEM zbiera i koreluje zdarzenia z całej firmy. Splunk to najczęściej wymagane narzędzie tej klasy — pierwszy realny warsztat analityka bezpieczeństwa. To najsilniejszy obszar rynku cyber (18,3% ofert).
+            </div>
+            <div class="drow"><span class="k">Popyt rynkowy</span><span class="v">10,8% ofert</span></div>
+            <div class="drow"><span class="k">Twój poziom</span><span class="v">nie znam</span></div>
+            <div class="drow"><span class="k">Priorytet</span><span class="v crit">KRYTYCZNA</span></div>
+            <div class="drow"><span class="k">Ocena</span><span class="v">— (jeszcze brak)</span></div>
+            <a href="projekty.html" class="anchor-dark" style="margin-top:18px;width:100%;justify-content:center">Przejdź do kroków →</a>
+          </aside>
+        </div>
+      </div>
+
+      <!-- ŚCIEŻKA DOSTĘPNA: te same dane bez wykresu -->
+      <div class="section">
+        <div class="eyebrow">Luki krytyczne — ścieżka dostępna</div>
+        <p class="lede" style="margin-bottom:18px">Te same dane co mapa, bez wykresu — dla czytnika ekranu i klawiatury. Mapa to wzbogacenie, nie jedyne wejście.</p>
+        <div class="gap-row">
+          <span class="gname">SIEM</span>
+          <span class="kind">💡 koncepcja</span>
+          <div class="gbar" role="img" aria-label="popyt 10,8 procent"><i style="width:54%"></i></div>
+          <span class="gp">10,8% ofert</span>
+          <span class="prio crit">KRYTYCZNA</span>
+        </div>
+        <div class="gap-row">
+          <span class="gname">IAM</span>
+          <span class="kind">💡 koncepcja</span>
+          <div class="gbar" role="img" aria-label="popyt 7,5 procent"><i style="width:38%"></i></div>
+          <span class="gp">7,5% ofert</span>
+          <span class="prio crit">KRYTYCZNA</span>
+        </div>
+        <div class="gap-row warn">
+          <span class="gname">Splunk</span>
+          <span class="kind">🔧 narzędzie</span>
+          <div class="gbar" role="img" aria-label="popyt 4,3 procent"><i style="width:22%"></i></div>
+          <span class="gp">4,3% ofert</span>
+          <span class="prio warn">WAŻNA</span>
+        </div>
+      </div>
+
+      <div class="callout">Dlaczego spokojnie, a nie „przed / po": pokazujemy tylko cel — naprawioną mapę Twojego rynku — żebyś widział, czego wymaga rynek, nie audyt designu. Każdy czerwony węzeł to projekt do zrobienia.</div>
+    </main>
+  </div>
+</div>
+</body>
+</html>
