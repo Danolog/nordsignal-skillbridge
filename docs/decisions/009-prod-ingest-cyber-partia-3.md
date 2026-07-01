@@ -207,3 +207,22 @@ Zanotuj (audit log / commit-notatka, autor Darek):
 - [ ] Audit log §10 uzupełniony.
 - [ ] Backup branch zostawiony min. kilka dni (potem `neonctl branches delete …`).
 ```
+
+---
+
+## 12. Rekord wykonania (audit log §10) — WYKONANE
+
+> **Status: WYKONANE na prod.** Data: **2026-07-01 (UTC)**, po scaleniu PR #93 do `main` (merge commit `557db1b`, `mergedAt=2026-07-01T19:11:54Z`).
+> Zatwierdził: **Ethan (CTO)** — sign-off „GOTOWE DO PROD". Wykonał (operator, świadoma decyzja `CONFIRM_PROD_DB=1`): **Darek** (`mubueu@gmail.com`).
+
+- **Cel:** Neon projekt `long-pond-11214233` („SkillBridge"), branch `main`, baza `neondb`, rola `neondb_owner`, host direct `ep-crimson-leaf-alz0lqiz.c-3.eu-central-1.aws.neon.tech`.
+- **Backup (bramka #1, §5a):** branch `prod-backup-pre-cyber-p3-2026-07-01` = `br-red-cake-alof100q` (punkt przywracania dla rollbacku §9).
+- **Baseline (§6, przed):** `cyber=12` · `total_projects=39` (partie 1+2).
+- **Wynik narzędzia (§7):** `Wstawiono: 29, zaktualizowano: 0, błędów: 0` · 113 kompetencji · 111 materiałów · 69 linków · exit 0. Guard rozpoznał zdalny host i przyjął `CONFIRM_PROD_DB=1`.
+- **Weryfikacja (§8, po):**
+  - 8a cyber-projektów: **41** (12 baseline + 29 partii 3) ✓
+  - 8b poziomy (wszystkie cyber): L1:10 · L2:15 · L3:16 (partia 3 wniosła L1:5/L2:12/L3:12) ✓
+  - 8c rubryki ≠ 100: **0** · 8d bez required: **0** · 8e obce nazwy kompetencji: **0** ✓
+  - 8f `total_projects`: **68** (39 + 29; nic nie skasowane globalnie) ✓
+- **Rollback:** niepotrzebny (29 czystych INSERT-ów, 0 nadpisań; wszystkie kontrole zielone).
+- **Do zrobienia po:** smoke `/projects` (filtr cyber → L1–L3); usunięcie backup brancha po kilku dniach (`neonctl branches delete br-red-cake-alof100q --project-id long-pond-11214233 --org-id org-snowy-credit-81923605`).
