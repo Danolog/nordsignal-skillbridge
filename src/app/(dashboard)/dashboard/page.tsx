@@ -1,4 +1,4 @@
-import { count, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { DashboardHub } from "@/components/dashboard/dashboard-hub";
@@ -16,34 +16,66 @@ export default async function DashboardPage() {
 	});
 	if (!student) redirect("/onboarding");
 
-	// Poprawka #1: liczymy pokrycie ŚWIEŻO przez calculateCoverage (ten sam wzór co
-	// /passport, api/passport, passport/[id]), zamiast czytać zamrożone
-	// passports.marketCoveragePercent. Dlatego pobieramy kompetencje ze statusami
-	// (nie sam count) — coverage potrzebuje statusów. gapCount służy i jako licznik
-	// luk, i jako składnik mianownika pokrycia (spójnie z resztą widoków).
-	const [studentCompetencies, gapCount, courseCount] = await Promise.all([
-		db.query.competencies.findMany({
-			where: eq(competencies.studentId, student.id),
-			columns: { status: true },
-		}),
-		db.select({ count: count() }).from(gaps).where(eq(gaps.studentId, student.id)),
-		db
-			.select({ count: count() })
-			.from(projectSubmissions)
-			.where(eq(projectSubmissions.studentId, student.id)),
-	]);
+	// Pokrycie liczone ŚWIEŻO (ten sam wzór co /passport). Kompetencje pobieramy z
+	// polami potrzebnymi na kanban (nazwa, status, popyt, samoocena) — nie sam count.
+	const [studentCompetencies, gapRows, criticalGapCount, inProgressCount, topGaps] =
+		await Promise.all([
+			db.query.competencies.findMany({
+				where: eq(competencies.studentId, student.id),
+				columns: {
+					id: true,
+					name: true,
+					status: true,
+					marketPercentage: true,
+					selfAssessment: true,
+				},
+			}),
+			db.select({ count: count() }).from(gaps).where(eq(gaps.studentId, student.id)),
+			db
+				.select({ count: count() })
+				.from(gaps)
+				.where(and(eq(gaps.studentId, student.id), eq(gaps.priority, "critical"))),
+			db
+				.select({ count: count() })
+				.from(projectSubmissions)
+				.where(
+					and(
+						eq(projectSubmissions.studentId, student.id),
+						eq(projectSubmissions.status, "in_progress"),
+					),
+				),
+			db.query.gaps.findMany({
+				where: eq(gaps.studentId, student.id),
+				orderBy: [desc(gaps.marketPercentage)],
+				limit: 6,
+				columns: {
+					competencyName: true,
+					priority: true,
+					marketPercentage: true,
+					whyImportant: true,
+				},
+			}),
+		]);
 
-	const gapTotal = gapCount[0]?.count ?? 0;
-	const marketCoverage = calculateCoverage(studentCompetencies, gapTotal);
+	const gapTotal = gapRows[0]?.count ?? 0;
+	const marketCoverage = calculateCoverage(
+		studentCompetencies.map((c) => ({ status: c.status })),
+		gapTotal,
+	);
+	// „Następny krok" = najważniejsza luka: krytyczne najpierw, w obrębie priorytetu
+	// najwyższy popyt rynku (topGaps już posortowane po popycie).
+	const topGap = topGaps.find((g) => g.priority === "critical") ?? topGaps[0] ?? null;
 
 	return (
 		<DashboardHub
 			user={session.user}
 			student={student}
-			competencyCount={studentCompetencies.length}
+			competencies={studentCompetencies}
 			gapCount={gapTotal}
-			courseCount={courseCount[0]?.count ?? 0}
+			criticalGapCount={criticalGapCount[0]?.count ?? 0}
+			inProgressCount={inProgressCount[0]?.count ?? 0}
 			marketCoverage={marketCoverage}
+			topGap={topGap}
 		/>
 	);
 }

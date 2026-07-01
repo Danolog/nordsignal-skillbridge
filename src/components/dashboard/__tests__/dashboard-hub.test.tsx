@@ -19,6 +19,12 @@ vi.mock("next/link", () => ({
 	),
 }));
 
+const competencies = [
+	{ id: "1", name: "SIEM", status: "missing", marketPercentage: 11, selfAssessment: null },
+	{ id: "2", name: "Python", status: "in_progress", marketPercentage: 15, selfAssessment: 1 },
+	{ id: "3", name: "Linux", status: "acquired", marketPercentage: 9, selfAssessment: 3 },
+];
+
 const defaultProps = {
 	user: { name: "Anna Kowalska" },
 	student: {
@@ -27,70 +33,60 @@ const defaultProps = {
 		semester: 4,
 		careerGoal: "Full-stack Developer",
 	},
-	competencyCount: 15,
+	competencies,
 	gapCount: 5,
-	courseCount: 2,
+	criticalGapCount: 2,
+	inProgressCount: 1,
 	marketCoverage: 42,
+	topGap: {
+		competencyName: "SIEM",
+		priority: "critical",
+		marketPercentage: 11,
+		whyImportant: "Rynek wymaga monitorowania zdarzeń.",
+	},
 };
 
 describe("DashboardHub", () => {
-	it("renders welcome greeting with first name", () => {
+	it("renderuje powitanie z imieniem", () => {
 		render(<DashboardHub {...defaultProps} />);
-		expect(screen.getByText("Cześć, Anna!")).toBeInTheDocument();
+		expect(screen.getByText("Cześć, Anna.")).toBeInTheDocument();
 	});
 
-	it("renders student info in subtitle", () => {
+	it("renderuje pokrycie rynku", () => {
 		render(<DashboardHub {...defaultProps} />);
-		expect(screen.getByText("WSB Merito Wrocław")).toBeInTheDocument();
-		expect(screen.getByText("Informatyka, sem. 4")).toBeInTheDocument();
-		expect(screen.getByText("Cel: Full-stack Developer")).toBeInTheDocument();
+		expect(screen.getByText("Pokrycie kompetencji rynkowych")).toBeInTheDocument();
+		expect(screen.getAllByText("42%").length).toBeGreaterThan(0);
 	});
 
-	it("renders market coverage progress", () => {
+	it("renderuje trzy kolumny kanbana", () => {
 		render(<DashboardHub {...defaultProps} />);
-		expect(screen.getByText("Twój Paszport Kompetencji")).toBeInTheDocument();
-		expect(screen.getByText("42%")).toBeInTheDocument();
+		expect(screen.getByText(/Do zrobienia/)).toBeInTheDocument();
+		expect(screen.getByText(/W trakcie/)).toBeInTheDocument();
+		expect(screen.getByText(/Opanowane/)).toBeInTheDocument();
 	});
 
-	it("renders all 4 navigation tiles", () => {
+	it("umieszcza kompetencje w kolumnach wg statusu", () => {
 		render(<DashboardHub {...defaultProps} />);
-		expect(screen.getByText("Mapa kompetencji")).toBeInTheDocument();
-		expect(screen.getByText("Analiza luk")).toBeInTheDocument();
-		expect(screen.getByText("Projekty")).toBeInTheDocument();
-		expect(screen.getByText("Paszport")).toBeInTheDocument();
+		expect(screen.getByText("SIEM", { selector: ".db-kcard-name" })).toBeInTheDocument();
+		expect(screen.getByText("Python")).toBeInTheDocument();
+		expect(screen.getByText("Linux")).toBeInTheDocument();
 	});
 
-	it("renders tile stats with correct counts", () => {
+	it("pokazuje następny krok z największej luki", () => {
 		render(<DashboardHub {...defaultProps} />);
-		expect(screen.getByText("15 masz • 5 brakuje")).toBeInTheDocument();
-		expect(screen.getByText("5 luk do zamknięcia")).toBeInTheDocument();
-		expect(screen.getByText("2 ukończone")).toBeInTheDocument();
-		expect(screen.getByText("Udostępnij")).toBeInTheDocument();
+		expect(screen.getByText("SIEM — Twoja największa luka")).toBeInTheDocument();
 	});
 
-	it("renders tile links with correct hrefs", () => {
+	it("renderuje szybkie wejścia z poprawnymi hrefami", () => {
 		render(<DashboardHub {...defaultProps} />);
-		const links = screen.getAllByRole("link");
-		const hrefs = links.map((l) => l.getAttribute("href"));
-		expect(hrefs).toContain("/skill-map");
+		const hrefs = screen.getAllByRole("link").map((l) => l.getAttribute("href"));
 		expect(hrefs).toContain("/gap-analysis");
 		expect(hrefs).toContain("/projects");
 		expect(hrefs).toContain("/passport");
 	});
 
-	it("renders user initials in avatar", () => {
-		render(<DashboardHub {...defaultProps} />);
-		expect(screen.getByText("AK")).toBeInTheDocument();
-	});
-
-	it("renders 0% coverage when no passport", () => {
-		render(<DashboardHub {...defaultProps} marketCoverage={0} />);
-		expect(screen.getByText("0%")).toBeInTheDocument();
-	});
-
-	it("wyciszenie Spokojny ekspert (C5) - bez dekoracyjnych poswiat na karcie motywacji", () => {
-		const { container } = render(<DashboardHub {...defaultProps} />);
-		expect(container.querySelector(".db-motivation-glow-right")).toBeNull();
-		expect(container.querySelector(".db-motivation-glow-left")).toBeNull();
+	it("obsługuje pustą mapę kompetencji bez błędu", () => {
+		render(<DashboardHub {...defaultProps} competencies={[]} topGap={null} />);
+		expect(screen.getByText(/mapa kompetencji jest jeszcze pusta/i)).toBeInTheDocument();
 	});
 });
