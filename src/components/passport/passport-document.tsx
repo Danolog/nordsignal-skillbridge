@@ -454,12 +454,12 @@ export function PassportDocument({
 								marginBottom: "26px",
 							}}
 						>
-							<div style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
+							<div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
 								<svg
 									width="66"
 									height="66"
 									viewBox="0 0 100 100"
-									style={{ flexShrink: 0, marginTop: "-3px" }}
+									style={{ flexShrink: 0 }}
 									aria-hidden="true"
 								>
 									<circle
@@ -653,24 +653,13 @@ export function PassportDocument({
 									</text>
 								</svg>
 								<div>
-									<div
-										style={{
-											fontSize: "11px",
-											letterSpacing: "0.08em",
-											textTransform: "uppercase",
-											color: "var(--muted)",
-											fontWeight: 600,
-										}}
-									>
-										nordsignal · SkillBridge
-									</div>
 									<h1
 										style={{
 											...serif,
 											fontWeight: 700,
 											fontSize: "31px",
 											color: "var(--ink)",
-											margin: "5px 0 0",
+											margin: 0,
 											lineHeight: 1.15,
 										}}
 									>
