@@ -1586,201 +1586,160 @@
    GAP ANALYSIS PAGE STYLES
 ============================================================ */
 
-/* Page header */
+/* Page header — „Spokojny ekspert" */
 .ga-page-header {
 	margin-bottom: 28px;
 }
+.ga-eyebrow {
+	font-size: 11px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--ed-amber-text);
+	font-weight: 600;
+	margin-bottom: 8px;
+}
 .ga-page-title {
 	font-family: var(--font-heading);
-	font-weight: 800;
-	font-size: 28px;
+	font-weight: 700;
+	font-size: clamp(28px, 4vw, 40px);
+	line-height: 1.1;
+	letter-spacing: -0.01em;
 	color: var(--ed-ink);
-	margin-bottom: 6px;
+	margin-bottom: 8px;
 }
 .ga-page-desc {
-	font-size: 15px;
+	font-size: 16px;
 	color: var(--ed-muted);
 	line-height: 1.5;
+	max-width: 62ch;
 }
 
-/* Summary stat cards */
-.ga-stats {
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 16px;
-	margin-bottom: 28px;
-}
-.ga-stat-card {
-	background: white;
-	border-radius: 20px;
-	padding: 20px 24px;
-	border: 1px solid var(--ed-border);
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-	position: relative;
-	overflow: hidden;
-	transition:
-		transform 0.28s ease,
-		box-shadow 0.28s ease;
-}
-.ga-stat-card:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 4px 16px rgba(27, 25, 23, 0.06);
-}
-.ga-stat-card::before {
-	content: "";
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: 3px;
-}
-.ga-stat-critical::before {
-	background: #ef4444;
-}
-.ga-stat-important::before {
-	background: #f59e0b;
-}
-.ga-stat-nice::before {
-	background: var(--ed-muted);
-}
-.ga-stat-label {
-	font-size: 13px;
-	font-weight: 500;
-	color: var(--ed-muted);
-	margin-bottom: 6px;
-}
-.ga-stat-value {
-	font-family: "JetBrains Mono", var(--font-geist-mono), monospace;
-	font-weight: 700;
-	font-size: 32px;
-	line-height: 1;
-}
-.ga-stat-value-critical {
-	color: #ef4444;
-}
-.ga-stat-value-important {
-	color: #f59e0b;
-}
-.ga-stat-value-nice {
-	color: var(--ed-muted);
-}
-.ga-stat-badge-row {
+/* Podsumowanie priorytetów — jeden poziomy pasek z kropkami koloru */
+.ga-summary {
 	display: flex;
+	flex-wrap: wrap;
+	gap: 26px;
 	align-items: center;
-	gap: 8px;
-	margin-top: 8px;
+	background: var(--ed-surface);
+	border: 1px solid var(--ed-border);
+	border-radius: 12px;
+	padding: 14px 22px;
+	margin-bottom: 40px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--ed-ink);
 }
-
-/* Badges */
-.ga-badge {
+.ga-summary-item {
 	display: inline-flex;
 	align-items: center;
-	gap: 5px;
-	padding: 4px 12px;
-	border-radius: 9999px;
-	font-size: 11px;
-	font-weight: 700;
-	letter-spacing: 0.03em;
+	gap: 9px;
+}
+.ga-sdot {
+	width: 11px;
+	height: 11px;
+	border-radius: 50%;
 	flex-shrink: 0;
 }
-.ga-badge-critical {
-	background: rgba(239, 68, 68, 0.1);
-	color: #ef4444;
-	border: 1px solid rgba(239, 68, 68, 0.2);
+.ga-sdot-crit {
+	background: var(--ed-danger);
 }
-.ga-badge-important {
-	background: rgba(245, 158, 11, 0.1);
-	color: #d97706;
-	border: 1px solid rgba(245, 158, 11, 0.2);
+.ga-sdot-warn {
+	background: var(--ed-amber);
 }
-.ga-badge-nice {
-	background: var(--ed-border);
-	color: var(--ed-muted);
-	border: 1px solid var(--ed-border);
-}
-.ga-badge-dot {
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	display: inline-block;
-}
-.ga-badge-critical .ga-badge-dot {
-	background: #ef4444;
-	animation: ga-pulse-dot 2s ease-in-out infinite;
-}
-.ga-badge-important .ga-badge-dot {
-	background: #d97706;
-}
-.ga-badge-nice .ga-badge-dot {
+.ga-sdot-ok {
 	background: var(--ed-muted);
 }
-@keyframes ga-pulse-dot {
-	0%,
-	100% {
-		opacity: 1;
-		transform: scale(1);
-	}
-	50% {
-		opacity: 0.4;
-		transform: scale(0.7);
-	}
-}
 
-/* Cards grid */
-.ga-grid {
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	gap: 20px;
-}
-
-/* Akordeon grup kompetencji w analizie luk (Partia 5, C5) — „Spokojny ekspert":
-   płaskie tła, subtelny border + shadow-sm, zero glow/gradientu. Nagłówek grupy
-   (nazwa + SharePill + proza „po co") jest stałym kontekstem „cel nauki cały czas
-   widoczny" — decyzja Darka #5. */
+/* Grupy obszarów rynku — komentarz grupy stale widoczny nad listą luk */
 .ga-groups {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: 40px;
 }
 .ga-group {
-	overflow: hidden;
-	border-radius: 12px;
-	border: 1px solid var(--ed-border);
-	background: white;
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-.ga-group-summary {
 	display: flex;
-	cursor: pointer;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-	padding: 16px 20px;
-	list-style: none;
+	flex-direction: column;
+	gap: 14px;
 }
-.ga-group-summary::-webkit-details-marker {
-	display: none;
-}
-.ga-group-summary:hover {
+.ga-grp-comment {
 	background: var(--ed-surface);
+	border: 1px solid var(--ed-border);
+	border-left: 5px solid var(--ed-amber);
+	border-radius: 12px;
+	padding: 16px 20px;
 }
-.ga-group-name {
+.ga-grp-comment-top {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-bottom: 6px;
+}
+.ga-grp-comment-name {
 	font-family: var(--font-heading);
-	font-weight: 600;
-	font-size: 16px;
+	font-weight: 700;
+	font-size: 19px;
 	color: var(--ed-ink);
 }
-.ga-group-desc {
-	margin: 0;
-	padding: 0 20px 14px;
+.ga-grp-share {
+	display: inline-flex;
+	align-items: center;
+	white-space: nowrap;
+	background: var(--ed-badge-bg);
+	border: 1px solid var(--ed-border);
+	color: var(--ed-amber-text);
+	font-weight: 600;
+	font-size: 12px;
+	padding: 4px 10px;
+	border-radius: 999px;
+}
+.ga-grp-comment-desc {
 	font-size: 14px;
 	line-height: 1.6;
 	color: var(--ed-muted);
+	max-width: 80ch;
 }
-.ga-group .ga-grid {
-	padding: 0 20px 20px;
+.ga-grp-leftover-name {
+	font-family: var(--font-heading);
+	font-weight: 700;
+	font-size: 19px;
+	color: var(--ed-ink);
 }
-/* Nazwa kompetencji + KindChip obok siebie w nagłówku karty luki (C5). */
+
+/* Siatka kart luk */
+.ga-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 16px;
+}
+
+/* Karta luki — kompaktowa, kolorowy lewy border wg priorytetu */
+.ga-card {
+	display: flex;
+	flex-direction: column;
+	background: var(--ed-card);
+	border: 1px solid var(--ed-border);
+	border-left: 5px solid var(--ed-warn);
+	border-radius: 12px;
+	padding: 16px 18px;
+	box-shadow: 0 1px 2px rgba(27, 25, 23, 0.05);
+}
+.ga-card-critical {
+	border-left-color: var(--ed-danger);
+}
+.ga-card-important {
+	border-left-color: var(--ed-amber);
+}
+.ga-card-nice_to_have {
+	border-left-color: var(--ed-muted);
+}
+.ga-card-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 12px;
+}
 .ga-card-name-wrap {
 	display: flex;
 	align-items: center;
@@ -1788,228 +1747,113 @@
 	flex-wrap: wrap;
 	min-width: 0;
 }
-
-/* Card */
-.ga-card {
-	background: white;
-	border-radius: 24px;
-	border: 1px solid var(--ed-border);
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-	overflow: hidden;
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	transition:
-		transform 0.28s ease,
-		box-shadow 0.28s ease,
-		border-color 0.28s ease;
-}
-.ga-card:hover {
-	transform: translateY(-4px);
-	box-shadow: 0 12px 40px rgba(27, 25, 23, 0.06);
-	border-color: var(--ed-border);
-}
-.ga-card::after {
-	content: "";
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: 3px;
-	background: linear-gradient(135deg, var(--ed-amber) 0%, var(--ed-amber) 100%);
-	transform: scaleX(0);
-	transform-origin: left;
-	transition: transform 0.3s ease;
-}
-.ga-card:hover::after {
-	transform: scaleX(1);
-}
-
-/* Card header */
-.ga-card-header {
-	padding: 28px 28px 0;
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 16px;
-}
-
-/* Icon wrap */
-.ga-card-icon-wrap {
-	width: 56px;
-	height: 56px;
-	border-radius: 16px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	flex-shrink: 0;
-}
-.ga-card-icon-wrap.ga-badge-critical {
-	background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.15) 100%);
-	border: 1px solid rgba(239, 68, 68, 0.12);
-	color: #ef4444;
-}
-.ga-card-icon-wrap.ga-badge-important {
-	background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.15) 100%);
-	border: 1px solid rgba(245, 158, 11, 0.12);
-	color: #d97706;
-}
-.ga-card-icon-wrap.ga-badge-nice {
-	background: linear-gradient(135deg, var(--ed-border) 0%, var(--ed-border) 100%);
-	border: 1px solid var(--ed-border);
-	color: var(--ed-muted);
-}
-
-/* Percent ring */
-.ga-card-ring-wrap {
-	width: 56px;
-	height: 56px;
-	position: relative;
-	flex-shrink: 0;
-}
-.ga-card-ring-svg {
-	width: 56px;
-	height: 56px;
-	transform: rotate(-90deg);
-}
-.ga-ring-bg {
-	fill: none;
-	stroke: var(--ed-surface);
-	stroke-width: 4;
-}
-.ga-ring-fill {
-	fill: none;
-	stroke-width: 4;
-	stroke-linecap: round;
-	transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.ga-ring-critical {
-	stroke: #ef4444;
-}
-.ga-ring-important {
-	stroke: #d97706;
-}
-.ga-ring-nice {
-	stroke: var(--ed-muted);
-}
-.ga-card-ring-value {
-	position: absolute;
-	inset: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-family: "JetBrains Mono", var(--font-geist-mono), monospace;
-	font-weight: 700;
-	font-size: 13px;
-}
-.ga-card-ring-value.ga-ring-critical {
-	color: #ef4444;
-}
-.ga-card-ring-value.ga-ring-important {
-	color: #d97706;
-}
-.ga-card-ring-value.ga-ring-nice {
-	color: var(--ed-muted);
-}
-
-/* Card body */
-.ga-card-body {
-	padding: 16px 28px 0;
-	flex: 1;
-}
-.ga-card-name-row {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	margin-bottom: 6px;
-}
 .ga-card-name {
 	font-family: var(--font-heading);
-	font-weight: 800;
-	font-size: 20px;
+	font-weight: 700;
+	font-size: 17px;
 	color: var(--ed-ink);
 }
-.ga-card-meta {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	font-size: 13px;
-	color: var(--ed-muted);
-	margin-bottom: 12px;
-}
-.ga-card-meta-item {
-	display: flex;
-	align-items: center;
-	gap: 5px;
-}
-.ga-card-meta-item.ga-card-meta-item svg {
-	color: var(--ed-muted);
+
+/* Tekstowy pill priorytetu */
+.ga-prio {
 	flex-shrink: 0;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	padding: 4px 11px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+.ga-prio-critical {
+	background: var(--ed-surface);
+	color: var(--ed-danger);
+}
+.ga-prio-important {
+	background: var(--ed-badge-bg);
+	color: var(--ed-amber-text);
+}
+.ga-prio-nice_to_have {
+	background: var(--ed-surface);
+	color: var(--ed-muted);
 }
 
-/* Market demand bar */
-.ga-demand-bar-wrap {
-	margin-bottom: 4px;
-}
-.ga-demand-label {
-	font-size: 11px;
-	font-weight: 600;
-	color: var(--ed-muted);
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	margin-bottom: 6px;
+/* Linia popytu — mały pasek % */
+.ga-demand-line {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 12px;
 }
 .ga-demand-bar {
-	height: 6px;
+	flex: 1;
+	min-width: 0;
+	height: 8px;
 	background: var(--ed-surface);
-	border-radius: 9999px;
+	border: 1px solid var(--ed-border);
+	border-radius: 999px;
 	overflow: hidden;
 }
 .ga-demand-fill {
 	height: 100%;
-	border-radius: 9999px;
-	transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+	border-radius: 999px;
+	transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .ga-demand-fill-critical {
-	background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
-	box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+	background: var(--ed-danger);
 }
 .ga-demand-fill-important {
-	background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
-	box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+	background: var(--ed-amber);
 }
 .ga-demand-fill-nice_to_have {
-	background: linear-gradient(135deg, var(--ed-muted) 0%, var(--ed-border) 100%);
+	background: var(--ed-muted);
+}
+.ga-demand-text {
+	font-size: 13px;
+	color: var(--ed-muted);
+	white-space: nowrap;
+	flex-shrink: 0;
 }
 
-/* Card footer */
-.ga-card-footer {
-	padding: 16px 28px 24px;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
+/* „Dlaczego to luka" — akapit statyczny (whyImportant niepuste) */
+.ga-why-body {
+	margin-bottom: 14px;
+}
+.ga-why-label {
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--ed-ink);
+	margin-bottom: 6px;
+}
+.ga-why-text {
+	font-size: 13.5px;
+	line-height: 1.6;
+	color: var(--ed-muted);
+}
+.ga-why-text + .ga-why-text {
+	margin-top: 8px;
 }
 
-/* Why button */
+/* Przycisk AI „Dlaczego to ważne?" (fallback gdy whyImportant puste) */
 .ga-why-btn {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	padding: 8px 14px;
-	border-radius: 12px;
+	align-self: flex-start;
+	padding: 7px 13px;
+	margin-bottom: 12px;
+	border-radius: 999px;
 	font-size: 12px;
 	font-weight: 600;
-	color: var(--ed-amber);
-	background: var(--ed-border);
+	color: var(--ed-amber-text);
+	background: var(--ed-badge-bg);
 	border: 1px solid var(--ed-border);
 	cursor: pointer;
 	font-family: inherit;
-	transition: all 0.2s ease;
+	transition: background 0.2s ease;
 }
 .ga-why-btn:hover {
-	background: var(--ed-border);
-	border-color: var(--ed-border);
+	background: var(--ed-surface);
 }
 .ga-why-chevron {
 	transition: transform 0.3s ease;
@@ -2017,74 +1861,36 @@
 .ga-why-btn.expanded .ga-why-chevron {
 	transform: rotate(180deg);
 }
-
-/* Close gap CTA */
-.ga-close-btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 9px 18px;
-	border-radius: 9999px;
-	font-family: var(--font-heading);
-	font-size: 13px;
-	font-weight: 700;
-	color: white;
-	text-decoration: none;
-	background: linear-gradient(135deg, var(--ed-ink) 0%, var(--ed-ink) 100%);
-	box-shadow: 0 0 16px rgba(27, 25, 23, 0.06);
-	transition:
-		transform 0.25s ease,
-		box-shadow 0.25s ease;
-}
-.ga-close-btn:hover {
-	transform: translateY(-1px);
-	box-shadow: 0 0 28px rgba(27, 25, 23, 0.06);
-}
-.ga-close-btn.ga-close-btn svg {
-	transition: transform 0.2s ease;
-}
-.ga-close-btn.ga-close-btn:hover svg {
-	transform: translateX(2px);
-}
-
-/* Expandable why section */
 .ga-why-section {
 	max-height: 0;
 	overflow: hidden;
 	transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-/* max-height is set dynamically via JS for accurate expand/collapse */
+/* max-height ustawiany dynamicznie w JS dla płynnego rozwijania */
 .ga-why-content {
-	padding: 0 28px 24px;
-}
-.ga-why-divider {
-	height: 1px;
-	background: var(--ed-border);
-	margin-bottom: 16px;
+	padding-bottom: 12px;
 }
 .ga-why-inner {
-	padding: 20px;
+	padding: 14px 16px;
 	background: var(--ed-surface);
-	border-radius: 16px;
 	border: 1px solid var(--ed-border);
+	border-radius: 10px;
 }
 .ga-why-inner p {
-	font-size: 14px;
-	line-height: 1.7;
+	font-size: 13.5px;
+	line-height: 1.6;
 	color: var(--ed-ink);
-	margin-bottom: 12px;
 }
-.ga-why-inner p:last-child {
-	margin-bottom: 0;
+.ga-why-inner p + p {
+	margin-top: 10px;
 }
 .ga-why-loading {
 	display: flex;
 	align-items: center;
-	justify-content: center;
 	gap: 8px;
-	padding: 24px;
-	color: var(--ed-amber);
-	font-size: 14px;
+	padding: 14px 16px;
+	color: var(--ed-amber-text);
+	font-size: 13px;
 	font-weight: 500;
 }
 .ga-why-spinner {
@@ -2096,6 +1902,32 @@
 	}
 }
 
+/* Stopka karty — link do projektów */
+.ga-card-foot {
+	margin-top: auto;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+}
+.ga-find-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--ed-amber-text);
+	font-weight: 600;
+	font-size: 14px;
+	text-decoration: none;
+}
+.ga-find-link:hover {
+	text-decoration: underline;
+}
+.ga-find-link.ga-find-link svg {
+	transition: transform 0.2s ease;
+}
+.ga-find-link.ga-find-link:hover svg {
+	transform: translateX(2px);
+}
+
 /* Empty state */
 .ga-empty {
 	display: flex;
@@ -2104,7 +1936,7 @@
 	justify-content: center;
 	padding: 80px 24px;
 	text-align: center;
-	background: white;
+	background: var(--ed-card);
 	border-radius: 24px;
 	border: 1px solid var(--ed-border);
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -2113,17 +1945,16 @@
 	width: 80px;
 	height: 80px;
 	border-radius: 50%;
-	background: linear-gradient(135deg, var(--ed-border) 0%, var(--ed-border) 100%);
+	background: var(--ed-surface);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	margin-bottom: 20px;
-	box-shadow: 0 0 24px rgba(27, 25, 23, 0.06);
 	color: var(--ed-ink);
 }
 .ga-empty-title {
 	font-family: var(--font-heading);
-	font-weight: 800;
+	font-weight: 700;
 	font-size: 22px;
 	color: var(--ed-ink);
 	margin-bottom: 8px;
@@ -2140,21 +1971,17 @@
 	align-items: center;
 	gap: 6px;
 	padding: 10px 24px;
-	background: linear-gradient(135deg, var(--ed-amber) 0%, var(--ed-amber) 100%);
-	color: white;
+	background: var(--ed-amber);
+	color: var(--ed-cream);
 	font-family: var(--font-heading);
 	font-weight: 700;
 	font-size: 14px;
 	border-radius: 9999px;
 	text-decoration: none;
-	box-shadow: 0 0 20px rgba(27, 25, 23, 0.06);
-	transition:
-		transform 0.25s ease,
-		box-shadow 0.25s ease;
+	transition: transform 0.25s ease;
 }
 .ga-empty-link:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 0 30px rgba(27, 25, 23, 0.06);
 }
 
 /* Responsive */
@@ -2164,21 +1991,13 @@
 	}
 }
 @media (max-width: 768px) {
-	.ga-stats {
-		grid-template-columns: 1fr;
-	}
-	.ga-card-footer {
-		flex-direction: column;
-		align-items: stretch;
-	}
-	.ga-close-btn {
-		justify-content: center;
+	.ga-summary {
+		gap: 16px;
 	}
 	.ga-page-title {
-		font-size: 24px;
+		font-size: 26px;
 	}
 }
-
 /* ============================================================
    MICRO-COURSES PAGE STYLES
 ============================================================ */

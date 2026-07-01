@@ -66,11 +66,12 @@ describe("GapList", () => {
 		expect(link).toHaveAttribute("href", "/dashboard");
 	});
 
-	it("renders summary stat cards with correct counts", () => {
+	it("renders summary bar with correct counts", () => {
 		render(<GapList gaps={mockGaps} stats={defaultStats} />);
-		expect(screen.getByText("Krytyczne")).toBeInTheDocument();
-		expect(screen.getByText("Ważne")).toBeInTheDocument();
-		expect(screen.getAllByText("Warto znać").length).toBeGreaterThanOrEqual(1);
+		// Jeden poziomy pasek podsumowania z kropkami koloru (Spokojny ekspert).
+		expect(screen.getByText(/Krytyczne 1/)).toBeInTheDocument();
+		expect(screen.getByText(/Ważne 1/)).toBeInTheDocument();
+		expect(screen.getByText(/Warto 1/)).toBeInTheDocument();
 	});
 
 	it("renders all gap cards", () => {
@@ -80,24 +81,18 @@ describe("GapList", () => {
 		expect(screen.getByText("Docker")).toBeInTheDocument();
 	});
 
-	it("renders priority badges", () => {
+	it("renders priority pills per gap card", () => {
 		render(<GapList gaps={mockGaps} stats={defaultStats} />);
-		expect(screen.getAllByText("Krytyczna")).toHaveLength(2); // stat card + gap card
-		expect(screen.getAllByText("Ważna")).toHaveLength(2);
+		// Podsumowanie nie duplikuje już etykiet „Krytyczna/Ważna" — pill jest tylko na karcie.
+		expect(screen.getAllByText("Krytyczna")).toHaveLength(1);
+		expect(screen.getAllByText("Ważna")).toHaveLength(1);
 	});
 
 	it("renders market percentages", () => {
 		render(<GapList gaps={mockGaps} stats={defaultStats} />);
-		expect(screen.getByText("78%")).toBeInTheDocument();
-		expect(screen.getByText("85%")).toBeInTheDocument();
-		expect(screen.getByText("22%")).toBeInTheDocument();
-	});
-
-	it("renders estimated hours", () => {
-		render(<GapList gaps={mockGaps} stats={defaultStats} />);
-		expect(screen.getByText("10h nauki")).toBeInTheDocument();
-		expect(screen.getByText("8h nauki")).toBeInTheDocument();
-		expect(screen.getByText("5h nauki")).toBeInTheDocument();
+		expect(screen.getByText("78% ofert pracy")).toBeInTheDocument();
+		expect(screen.getByText("85% ofert pracy")).toBeInTheDocument();
+		expect(screen.getByText("22% ofert pracy")).toBeInTheDocument();
 	});
 
 	it("renders 'Znajdź projekty' links with correct hrefs", () => {
@@ -160,10 +155,10 @@ const groupedGaps = [
 const groupedStats = { critical: 1, important: 1, niceToHave: 1 };
 
 describe("GapList — widok grupowy (C5)", () => {
-	it("grupuje luki w sekcje z nagłówkiem grupy + SharePill", () => {
+	it("grupuje luki w sekcje z nagłówkiem grupy + pigułka % ofert ścieżki", () => {
 		render(<GapList gaps={groupedGaps} stats={groupedStats} />);
 		expect(screen.getByText("Wykrywanie i reagowanie")).toBeInTheDocument();
-		expect(screen.getByText("38% ofert grupy")).toBeInTheDocument();
+		expect(screen.getByText("38% ofert ścieżki")).toBeInTheDocument();
 	});
 
 	it("komentarz grupy (po co) jest widoczny BEZ klikniecia (decyzja Darka #5)", () => {
@@ -179,20 +174,21 @@ describe("GapList — widok grupowy (C5)", () => {
 		expect(screen.getByText("narzędzie")).toBeInTheDocument();
 	});
 
-	it("grupa z luką krytyczną jest otwarta domyślnie (details[open])", () => {
+	it("komentarz grupy jest sekcją stałą, bez akordeonu (brak details)", () => {
 		const { container } = render(<GapList gaps={groupedGaps} stats={groupedStats} />);
-		const details = container.querySelectorAll("details.ga-group");
-		expect((details[0] as HTMLDetailsElement).open).toBe(true);
+		// Układ „Spokojny ekspert": komentarz grupy zawsze widoczny, nie chowany w <details>.
+		expect(container.querySelector("details")).toBeNull();
+		expect(container.querySelectorAll("section.ga-group").length).toBeGreaterThanOrEqual(1);
 	});
 
-	it("kubelek Pozostale jest neutralny - bez SharePill (G5)", () => {
+	it("kubelek Pozostale jest neutralny - bez pigułki ścieżki (G5)", () => {
 		const { container } = render(<GapList gaps={groupedGaps} stats={groupedStats} />);
-		const leftover = Array.from(
-			container.querySelectorAll<HTMLDetailsElement>("details.ga-group"),
-		).find((d) => within(d).queryByText("Pozostałe"));
+		const leftover = Array.from(container.querySelectorAll<HTMLElement>("section.ga-group")).find(
+			(d) => within(d).queryByText("Pozostałe"),
+		);
 		expect(leftover).toBeDefined();
 		if (leftover) {
-			expect(within(leftover).queryByText(/ofert grupy/)).toBeNull();
+			expect(within(leftover).queryByText(/ofert ścieżki/)).toBeNull();
 		}
 	});
 

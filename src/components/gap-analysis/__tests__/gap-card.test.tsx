@@ -53,16 +53,6 @@ describe("GapCard", () => {
 		expect(screen.getByText("Warto znać")).toBeInTheDocument();
 	});
 
-	it("renders market percentage in ring", () => {
-		render(<GapCard {...defaultProps} />);
-		expect(screen.getByText("78%")).toBeInTheDocument();
-	});
-
-	it("renders estimated hours", () => {
-		render(<GapCard {...defaultProps} />);
-		expect(screen.getByText("10h nauki")).toBeInTheDocument();
-	});
-
 	it("renders market demand text", () => {
 		render(<GapCard {...defaultProps} />);
 		expect(screen.getByText("78% ofert pracy")).toBeInTheDocument();
@@ -98,11 +88,13 @@ describe("GapCard", () => {
 		expect(screen.queryByText("koncepcja")).toBeNull();
 	});
 
-	it("displays pre-cached whyImportant text on expand", () => {
+	it("pokazuje whyImportant wprost gdy pole niepuste (bez przycisku AI)", () => {
 		render(<GapCard {...defaultProps} whyImportant="Python jest ważny." />);
-		const whyBtn = screen.getByText("Dlaczego to ważne?");
-		fireEvent.click(whyBtn);
+		// Akapit „Dlaczego to luka" widoczny od razu, bez klikania.
+		expect(screen.getByText("Dlaczego to luka")).toBeInTheDocument();
 		expect(screen.getByText("Python jest ważny.")).toBeInTheDocument();
+		// Przycisk AI pojawia się tylko dla pustego whyImportant.
+		expect(screen.queryByText("Dlaczego to ważne?")).toBeNull();
 	});
 
 	it("fetches whyImportant on first expand when not cached", async () => {

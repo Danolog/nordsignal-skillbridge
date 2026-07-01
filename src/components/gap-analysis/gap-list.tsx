@@ -2,7 +2,6 @@
 
 import { ArrowRight, CheckCircle } from "lucide-react";
 import Link from "next/link";
-import { SharePill } from "@/components/skill-map/group-context";
 import type { LeafKind } from "@/lib/db/data/anchor-config";
 import { GapCard } from "./gap-card";
 
@@ -57,43 +56,26 @@ export function GapList({ gaps, stats }: GapListProps) {
 	}
 
 	// Grupy to warstwa OPISOWA. Brak grup (starsza ścieżka / cel spoza career-model.json) ≠ błąd —
-	// fallback do dzisiejszej płaskiej siatki (spec G2). Liczenie luk/pokrycia bez zmian (page.tsx).
+	// fallback do płaskiej siatki (spec G2). Liczenie luk/pokrycia bez zmian (page.tsx).
 	const hasGroups = gaps.some((g) => g.groupName);
 
 	return (
 		<>
-			{/* Summary stats — bez zmian (nadrzędny kontekst całej analizy luk) */}
-			<div className="ga-stats">
-				<div className="ga-stat-card ga-stat-critical">
-					<div className="ga-stat-label">Krytyczne</div>
-					<div className="ga-stat-value ga-stat-value-critical">{stats.critical}</div>
-					<div className="ga-stat-badge-row">
-						<span className="ga-badge ga-badge-critical">
-							<span className="ga-badge-dot" />
-							Krytyczna
-						</span>
-					</div>
-				</div>
-				<div className="ga-stat-card ga-stat-important">
-					<div className="ga-stat-label">Ważne</div>
-					<div className="ga-stat-value ga-stat-value-important">{stats.important}</div>
-					<div className="ga-stat-badge-row">
-						<span className="ga-badge ga-badge-important">
-							<span className="ga-badge-dot" />
-							Ważna
-						</span>
-					</div>
-				</div>
-				<div className="ga-stat-card ga-stat-nice">
-					<div className="ga-stat-label">Warto znać</div>
-					<div className="ga-stat-value ga-stat-value-nice">{stats.niceToHave}</div>
-					<div className="ga-stat-badge-row">
-						<span className="ga-badge ga-badge-nice">
-							<span className="ga-badge-dot" />
-							Warto znać
-						</span>
-					</div>
-				</div>
+			{/* Podsumowanie: jeden poziomy pasek z kropkami koloru zamiast trzech kart statystyk */}
+			<div
+				className="ga-summary"
+				role="img"
+				aria-label={`Podsumowanie priorytetów: ${stats.critical} krytycznych, ${stats.important} ważnych, ${stats.niceToHave} warto znać`}
+			>
+				<span className="ga-summary-item">
+					<span className="ga-sdot ga-sdot-crit" /> Krytyczne {stats.critical}
+				</span>
+				<span className="ga-summary-item">
+					<span className="ga-sdot ga-sdot-warn" /> Ważne {stats.important}
+				</span>
+				<span className="ga-summary-item">
+					<span className="ga-sdot ga-sdot-ok" /> Warto {stats.niceToHave}
+				</span>
 			</div>
 
 			{hasGroups ? <GroupedGaps gaps={gaps} /> : <FlatGaps gaps={gaps} />}
@@ -101,7 +83,7 @@ export function GapList({ gaps, stats }: GapListProps) {
 	);
 }
 
-/** Płaska siatka kart (fallback G2 — gdy żadna luka nie ma grupy). Zachowanie sprzed C5. */
+/** Płaska siatka kart (fallback G2 — gdy żadna luka nie ma grupy). */
 function FlatGaps({ gaps }: { gaps: Gap[] }) {
 	return (
 		<div className="ga-grid">
@@ -122,10 +104,9 @@ function FlatGaps({ gaps }: { gaps: Gap[] }) {
 }
 
 /**
- * Luki pogrupowane w akordeon z nagłówkiem grupy (nazwa + unionShare + proza „po co").
- * Realizuje decyzję Darka #5 „cel nauki cały czas widoczny" BEZ kliknięcia — opis grupy
- * jest stale na ekranie. Wzorzec akordeonu i mikro-komponenty (SharePill) reużyte z C4.
- * Grupa z luką krytyczną otwarta domyślnie; reszta zwinięta — oddech, nie ściana (spec 5.2).
+ * Luki pogrupowane w obszary rynku. Nad każdą grupą STALE widoczny blok komentarza
+ * (nazwa serif + bursztynowa pigułka „% ofert ścieżki" + proza „po co się uczysz") —
+ * realizuje decyzję Darka #5 „cel nauki cały czas widoczny" BEZ kliknięcia (bez akordeonu).
  */
 function GroupedGaps({ gaps }: { gaps: Gap[] }) {
 	// Kolejność grup = pierwsze wystąpienie. Luki przychodzą posortowane (krytyczne wg popytu),
@@ -154,16 +135,21 @@ function GroupedGaps({ gaps }: { gaps: Gap[] }) {
 				const group = buckets.get(name);
 				if (!group) return null;
 				const isLeftover = name === LEFTOVER;
-				const hasCritical = group.gaps.some((g) => g.priority === "critical");
 				return (
-					<details key={name} className="ga-group" open={hasCritical}>
-						<summary className="ga-group-summary">
-							<span className="ga-group-name">{name}</span>
-							{/* „Pozostałe" (G5): neutralny kubełek bez SharePill ani prozy — nie udajemy kontekstu. */}
-							{!isLeftover && <SharePill unionShare={group.unionShare} />}
-						</summary>
-						{!isLeftover && group.description && (
-							<p className="ga-group-desc">{group.description}</p>
+					<section key={name} className="ga-group">
+						{isLeftover ? (
+							// „Pozostałe" (G5): neutralny kubełek bez pigułki ani prozy — nie udajemy kontekstu.
+							<h2 className="ga-grp-leftover-name">{name}</h2>
+						) : (
+							<div className="ga-grp-comment">
+								<div className="ga-grp-comment-top">
+									<h2 className="ga-grp-comment-name">{name}</h2>
+									{group.unionShare != null && (
+										<span className="ga-grp-share">{group.unionShare}% ofert ścieżki</span>
+									)}
+								</div>
+								{group.description && <p className="ga-grp-comment-desc">{group.description}</p>}
+							</div>
 						)}
 						<div className="ga-grid">
 							{group.gaps.map((gap) => (
@@ -179,7 +165,7 @@ function GroupedGaps({ gaps }: { gaps: Gap[] }) {
 								/>
 							))}
 						</div>
-					</details>
+					</section>
 				);
 			})}
 		</div>

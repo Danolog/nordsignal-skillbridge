@@ -57,9 +57,11 @@ export default async function GapAnalysisPage() {
 	return (
 		<>
 			<div className="ga-page-header">
-				<h1 className="ga-page-title">Analiza luk</h1>
+				<div className="ga-eyebrow">Analiza luk</div>
+				<h1 className="ga-page-title">Czego wymaga rynek, a czego jeszcze nie masz.</h1>
 				<p className="ga-page-desc">
-					Luki kompetencyjne między Twoim sylabusem a wymaganiami rynku pracy
+					Luki pogrupowane w obszary rynku. Nad każdym obszarem widzisz, po co się go uczysz — nie
+					tylko czego Ci brakuje, ale dlaczego to cały wycinek rynku.
 				</p>
 			</div>
 			<GapList gaps={enrichedGaps} stats={stats} />
