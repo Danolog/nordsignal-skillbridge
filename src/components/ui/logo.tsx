@@ -3,11 +3,8 @@ import { cn } from "@/lib/utils";
 
 // Kanoniczna ikona marki: GraduationCap (czapka studenta) — decyzja Darka, sesja #6 2026-06-05.
 // Jednorodna dla wszystkich wariantów (landing/sidebar/auth); zastępuje wcześniejszy BrainCircuit.
-// Kolor ikony różni się per wariant: landing = atrament (paleta editorial), sidebar/auth = gradient
-// marki (bez zmian). Tokenizacja gradientu na sidebar/auth pozostaje zakresem Fazy 2 (Maya).
-
-/** Gradient marki — JEDNO źródło prawdy (był rozsiany hexem po 4 plikach). */
-const LOGO_GRADIENT = "linear-gradient(135deg, #6366F1 0%, #22D3EE 100%)";
+// Kolor ikony wg wariantu, cały język editorial: landing = box atramentu, sidebar/auth = box
+// bursztynu (jak brand .mark w wireframe). Wordmark zawsze atramentem, bez gradientu/glow.
 
 type LogoSize = "sm" | "md" | "lg";
 type LogoVariant = "landing" | "sidebar" | "auth";
@@ -40,26 +37,11 @@ export function Logo({ size = "md", variant = "landing", className }: LogoProps)
 	// sidebar ma nieco większe zaokrąglenie (12px) zgodnie z dawnym .db-sidebar-logo-icon.
 	const radius = variant === "sidebar" ? 12 : s.radius;
 	const isLanding = variant === "landing";
-	// Landing i auth = język editorial (jasny, bez gradientu/glow). Sidebar zostaje na gradiencie marki.
-	const isEditorial = isLanding || variant === "auth";
-
-	// Landing: box atramentu. Auth: box bursztynu (jak brand .mark w wireframe). Sidebar: gradient marki.
-	const iconBg = isLanding
-		? "var(--ed-ink)"
-		: variant === "auth"
-			? "var(--ed-amber)"
-			: LOGO_GRADIENT;
-	// Editorial nigdy nie świeci; sidebar też nie miał glow.
+	// Cała aplikacja w języku editorial: landing = box atramentu, sidebar/auth = box bursztynu
+	// (jak brand .mark w wireframe), wordmark zawsze atramentem. Zero gradientu/glow.
+	const iconBg = isLanding ? "var(--ed-ink)" : "var(--ed-amber)";
 	const iconShadow = undefined;
-	const wordmarkStyle = isEditorial
-		? { fontSize: s.text, color: "var(--ed-ink)" }
-		: {
-				fontSize: s.text,
-				background: LOGO_GRADIENT,
-				WebkitBackgroundClip: "text" as const,
-				backgroundClip: "text" as const,
-				WebkitTextFillColor: "transparent",
-			};
+	const wordmarkStyle = { fontSize: s.text, color: "var(--ed-ink)" };
 
 	return (
 		<span className={cn("inline-flex items-center gap-2.5", className)} data-logo-variant={variant}>

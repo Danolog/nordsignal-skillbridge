@@ -2746,38 +2746,35 @@
 .pp-btn {
 	display: inline-flex;
 	align-items: center;
-	gap: 8px;
-	padding: 10px 20px;
-	border-radius: 9999px;
-	font-size: 14px;
-	font-weight: 700;
-	font-family: var(--font-heading);
+	gap: 7px;
+	padding: 9px 16px;
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	font-family: var(--font-dm-sans), sans-serif;
 	cursor: pointer;
-	transition: all 0.25s ease;
+	transition: all 0.2s ease;
 	border: none;
+	white-space: nowrap;
 }
 .pp-btn-primary {
-	background: linear-gradient(135deg, #6366f1 0%, #22d3ee 100%);
-	color: white;
-	box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
+	background: var(--ed-ink);
+	color: var(--ed-cream);
 }
 .pp-btn-primary:hover {
-	box-shadow: 0 0 24px rgba(99, 102, 241, 0.35);
-	transform: translateY(-1px);
+	background: #2c2825;
 }
 .pp-btn-primary:disabled {
 	opacity: 0.7;
 	cursor: not-allowed;
-	transform: none;
 }
 .pp-btn-secondary {
-	background: #f1f5f9;
-	color: #475569;
-	border: 1px solid #e2e8f0;
+	background: transparent;
+	color: var(--ed-amber-text);
+	border: 1px solid var(--ed-amber);
 }
 .pp-btn-secondary:hover {
-	background: #e2e8f0;
-	transform: translateY(-1px);
+	background: var(--ed-badge-bg);
 }
 
 /* Spinner for PDF */

@@ -36,11 +36,26 @@ export function PdfExportButton({
 	return (
 		<button
 			type="button"
-			className="pp-btn pp-btn-primary"
 			onClick={handleExport}
 			disabled={generating}
+			style={{
+				display: "inline-flex",
+				alignItems: "center",
+				gap: "7px",
+				padding: "9px 16px",
+				borderRadius: "7px",
+				border: "none",
+				background: "var(--ed-ink)",
+				color: "var(--ed-cream)",
+				fontFamily: "inherit",
+				fontSize: "13px",
+				fontWeight: 600,
+				cursor: generating ? "default" : "pointer",
+				opacity: generating ? 0.7 : 1,
+				whiteSpace: "nowrap",
+			}}
 		>
-			{generating ? <Loader2 size={16} className="pp-spin" /> : <Download size={16} />}
+			{generating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
 			{generating ? "Generowanie..." : "Eksportuj PDF"}
 		</button>
 	);
