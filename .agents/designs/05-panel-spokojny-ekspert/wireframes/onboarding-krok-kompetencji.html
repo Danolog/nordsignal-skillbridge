@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onboarding — krok kompetencji (makieta hi-fi, Mila v0.3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ed-cream:#FAF6F1; --ed-ink:#1B1917; --ed-amber:#D0891E; --ed-amber-text:#8F5A0F;
+  --ed-surface:#F5EFE6; --ed-border:#D6CEC2; --ed-muted:#6E6860; --ed-warn:#F4D04F;
+  --ed-danger:#D0422B; --ed-badge-bg:#FDF3DD; --ed-card:#FEFCF9;
+  --gap-section:46px; --pad-card:26px; --radius:16px;
+  --shadow-soft:0 1px 2px rgba(27,25,23,.05); --shadow-lift:0 6px 22px rgba(27,25,23,.07);
+  --font-display:'Playfair Display',Georgia,serif; --font-body:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--ed-cream);color:var(--ed-ink);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+:focus-visible{outline:2.5px solid var(--ed-amber);outline-offset:2px;border-radius:4px}
+
+/* pasek górny prosty (onboarding nie ma jeszcze paska bocznego) */
+.ob-top{background:var(--ed-cream);border-bottom:1px solid var(--ed-border);padding:16px 32px;display:flex;align-items:center;gap:10px}
+.ob-top .mark{width:30px;height:30px;border-radius:9px;background:var(--ed-amber);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:18px}
+.ob-top .name{font-family:var(--font-display);font-weight:700;font-size:19px}
+
+.wrap{max-width:680px;margin:36px auto 80px;padding:0 20px}
+
+/* pasek kroków */
+.steps{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px}
+.steps .s{display:flex;align-items:center;gap:10px}
+.steps .dot{width:14px;height:14px;border-radius:50%;background:var(--ed-border)}
+.steps .dot.done,.steps .dot.active{background:var(--ed-amber)}
+.steps .dot.active{box-shadow:0 0 0 4px var(--ed-badge-bg)}
+.steps .seg{width:34px;height:2px;background:var(--ed-border)}
+.steps .seg.done{background:var(--ed-amber)}
+.steps .lbl{font-size:12px;color:var(--ed-muted);font-weight:600}
+.steps .lbl.active{color:var(--ed-ink)}
+
+.card{background:var(--ed-card);border:1px solid var(--ed-border);border-radius:var(--radius);padding:30px;box-shadow:var(--shadow-soft)}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ed-amber-text);font-weight:600;margin-bottom:8px}
+h1.q{font-family:var(--font-display);font-weight:700;font-size:26px;line-height:1.12;margin-bottom:6px}
+.intro{font-size:14.5px;color:var(--ed-muted);margin-bottom:8px}
+.intro b{color:var(--ed-ink)}
+
+/* baner pustego stanu = czysta karta */
+.clean{background:var(--ed-surface);border:1px solid var(--ed-border);border-radius:12px;padding:13px 16px;font-size:13.5px;color:var(--ed-muted);margin:18px 0 8px}
+.clean b{color:var(--ed-ink)}
+
+/* nagłówek grupy */
+.group{margin-top:26px}
+.grp-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.grp-head h2{font-family:var(--font-display);font-weight:700;font-size:19px}
+.badge-soft{display:inline-flex;align-items:center;gap:6px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);color:var(--ed-amber-text);font-weight:600;font-size:12px;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.grp-desc{font-size:13px;color:var(--ed-muted);max-width:72ch;margin-bottom:14px}
+
+/* liść z samooceną per kind */
+.leaf{border:1px solid var(--ed-border);border-radius:12px;padding:15px 16px;margin-bottom:11px;background:var(--ed-cream)}
+.leaf .ltop{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.leaf .lname{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.kind{display:inline-flex;align-items:center;gap:4px;background:var(--ed-surface);border:1px solid var(--ed-border);color:var(--ed-muted);font-weight:600;font-size:11px;padding:2px 8px;border-radius:6px}
+.inprog{display:inline-flex;align-items:center;gap:4px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);color:var(--ed-amber-text);font-weight:600;font-size:11px;padding:2px 8px;border-radius:999px}
+.demand{font-size:12px;color:var(--ed-amber-text);font-weight:600}
+
+/* grupa wyboru poziomu (radio) — słownik per kind */
+fieldset.levels{border:none;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+fieldset.levels legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.lopt{position:relative}
+.lopt input{position:absolute;opacity:0;inset:0;cursor:pointer}
+.lopt label{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 6px;border:1px solid var(--ed-border);border-radius:10px;background:var(--ed-card);cursor:pointer;text-align:center;height:100%}
+.lopt .dots{display:inline-flex;gap:3px}
+.lopt .dots i{width:7px;height:7px;border-radius:50%;background:var(--ed-border)}
+.lopt .word{font-size:12px;font-weight:600;color:var(--ed-muted);line-height:1.2}
+.lopt input:checked + label{border-color:var(--ed-amber);background:var(--ed-badge-bg)}
+.lopt input:checked + label .word{color:var(--ed-ink)}
+.lopt input:checked + label .dots i.f{background:var(--ed-amber)}
+.lopt input:focus-visible + label{outline:2.5px solid var(--ed-amber);outline-offset:2px}
+
+/* nawigacja kreatora */
+.wiznav{display:flex;align-items:center;justify-content:space-between;margin-top:28px}
+.ghost{background:transparent;border:1px solid var(--ed-border);color:var(--ed-muted);font-weight:600;font-size:14px;padding:11px 18px;border-radius:999px;cursor:pointer}
+.anchor-dark{display:inline-flex;align-items:center;gap:8px;background:var(--ed-ink);color:var(--ed-cream);font-weight:600;font-size:14px;padding:11px 22px;border:none;border-radius:999px;cursor:pointer}
+.anchor-dark:hover{background:#2c2825}
+.legend-kind{display:flex;gap:18px;font-size:12px;color:var(--ed-muted);margin-top:6px;flex-wrap:wrap}
+
+@media(max-width:560px){fieldset.levels{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header class="ob-top"><div class="mark">S</div><div class="name">SkillBridge</div></header>
+
+<div class="wrap">
+  <!-- pasek kroków -->
+  <div class="steps" aria-label="Krok 2 z 4">
+    <span class="dot done" aria-hidden="true"></span><span class="lbl">Cel kariery</span>
+    <span class="seg done"></span>
+    <span class="dot active" aria-hidden="true"></span><span class="lbl active">Kompetencje</span>
+    <span class="seg"></span>
+    <span class="dot" aria-hidden="true"></span><span class="lbl">Sylabus</span>
+    <span class="seg"></span>
+    <span class="dot" aria-hidden="true"></span><span class="lbl">Gotowe</span>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Krok 2 — kompetencje i poziom</div>
+    <h1 class="q">Co już potrafisz dla celu: Specjalista ds. cyberbezpieczeństwa?</h1>
+    <p class="intro">Uczysz się tego, czego realnie chcą pracodawcy — kompetencje pochodzą z <b>ofert pracy</b> (JustJoinIT), nie z sylabusa. Pogrupowaliśmy je w obszary rynku, żebyś wiedział, po co się każdego uczysz.</p>
+
+    <div class="clean">Pusta karta to nie błąd. Zaznacz to, co już potrafisz — choćby jedną rzecz. <b>Reszta to Twój plan nauki.</b> Możesz przejść dalej nawet bez żadnego zaznaczenia.</div>
+
+    <p class="legend-kind">
+      <span>🔧 <b>narzędzie</b> — pytamy „czy to obsługujesz"</span>
+      <span>💡 <b>koncepcja</b> — pytamy „czy to rozumiesz / stosujesz"</span>
+    </p>
+
+    <!-- GRUPA 1: SIEM -->
+    <div class="group">
+      <div class="grp-head"><h2>SIEM i monitorowanie zdarzeń</h2><span class="badge-soft" aria-label="udział grupy 18,3 procent ofert ścieżki">18,3% ofert ścieżki</span></div>
+      <p class="grp-desc">Codzienność Blue Teamu i pracy w SOC. System SIEM ściąga miliony logów w jedno miejsce; Twoim zadaniem jest wypatrzyć w nich ślad włamania. Splunk to najczęściej wymagane narzędzie tej klasy.</p>
+
+      <!-- liść: SIEM (koncepcja) -->
+      <div class="leaf">
+        <div class="ltop">
+          <span class="lname">SIEM <span class="kind">💡 koncepcja</span></span>
+          <span class="demand">10,8% ofert</span>
+        </div>
+        <fieldset class="levels" aria-label="SIEM — Twój poziom (koncepcja)">
+          <legend>SIEM — Twój poziom</legend>
+          <span class="lopt"><input type="radio" name="lvl-siem" id="siem0" checked><label for="siem0"><span class="dots"><i></i><i></i><i></i></span><span class="word">nie znam</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-siem" id="siem1"><label for="siem1"><span class="dots"><i class="f"></i><i></i><i></i></span><span class="word">poznaję</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-siem" id="siem2"><label for="siem2"><span class="dots"><i class="f"></i><i class="f"></i><i></i></span><span class="word">rozumiem</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-siem" id="siem3"><label for="siem3"><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span><span class="word">stosuję samodzielnie</span></label></span>
+        </fieldset>
+      </div>
+
+      <!-- liść: Splunk (narzędzie) -->
+      <div class="leaf">
+        <div class="ltop">
+          <span class="lname">Splunk <span class="kind">🔧 narzędzie</span></span>
+          <span class="demand">4,3% ofert</span>
+        </div>
+        <fieldset class="levels" aria-label="Splunk — Twój poziom (narzędzie)">
+          <legend>Splunk — Twój poziom</legend>
+          <span class="lopt"><input type="radio" name="lvl-splunk" id="spl0" checked><label for="spl0"><span class="dots"><i></i><i></i><i></i></span><span class="word">nie znam</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-splunk" id="spl1"><label for="spl1"><span class="dots"><i class="f"></i><i></i><i></i></span><span class="word">uczę się</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-splunk" id="spl2"><label for="spl2"><span class="dots"><i class="f"></i><i class="f"></i><i></i></span><span class="word">obsługuję</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-splunk" id="spl3"><label for="spl3"><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span><span class="word">obsługuję biegle</span></label></span>
+        </fieldset>
+      </div>
+    </div>
+
+    <!-- GRUPA 2: Administracja systemami -->
+    <div class="group">
+      <div class="grp-head"><h2>Administracja systemami i skrypty</h2><span class="badge-soft" aria-label="udział grupy 16,2 procent ofert ścieżki">16,2% ofert ścieżki</span></div>
+      <p class="grp-desc">Zanim obronisz system, musisz wiedzieć, jak działa od środka. Najczęstsza brama wejścia do cyber — przez administrację przechodzi się do bezpieczeństwa.</p>
+
+      <!-- liść: Linux (narzędzie) — z flagą w programie + zaznaczony poziom -->
+      <div class="leaf">
+        <div class="ltop">
+          <span class="lname">Linux <span class="kind">🔧 narzędzie</span> <span class="inprog">✓ w programie studiów</span></span>
+          <span class="demand">9,4% ofert</span>
+        </div>
+        <fieldset class="levels" aria-label="Linux — Twój poziom (narzędzie)">
+          <legend>Linux — Twój poziom</legend>
+          <span class="lopt"><input type="radio" name="lvl-linux" id="lx0"><label for="lx0"><span class="dots"><i></i><i></i><i></i></span><span class="word">nie znam</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-linux" id="lx1"><label for="lx1"><span class="dots"><i class="f"></i><i></i><i></i></span><span class="word">uczę się</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-linux" id="lx2" checked><label for="lx2"><span class="dots"><i class="f"></i><i class="f"></i><i></i></span><span class="word">obsługuję</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-linux" id="lx3"><label for="lx3"><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span><span class="word">obsługuję biegle</span></label></span>
+        </fieldset>
+      </div>
+
+      <!-- liść: Bash (narzędzie) -->
+      <div class="leaf">
+        <div class="ltop">
+          <span class="lname">Bash <span class="kind">🔧 narzędzie</span></span>
+          <span class="demand">3,0% ofert</span>
+        </div>
+        <fieldset class="levels" aria-label="Bash — Twój poziom (narzędzie)">
+          <legend>Bash — Twój poziom</legend>
+          <span class="lopt"><input type="radio" name="lvl-bash" id="bs0" checked><label for="bs0"><span class="dots"><i></i><i></i><i></i></span><span class="word">nie znam</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-bash" id="bs1"><label for="bs1"><span class="dots"><i class="f"></i><i></i><i></i></span><span class="word">uczę się</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-bash" id="bs2"><label for="bs2"><span class="dots"><i class="f"></i><i class="f"></i><i></i></span><span class="word">obsługuję</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-bash" id="bs3"><label for="bs3"><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span><span class="word">obsługuję biegle</span></label></span>
+        </fieldset>
+      </div>
+    </div>
+
+    <!-- GRUPA 3: GRC (koncepcyjna) -->
+    <div class="group">
+      <div class="grp-head"><h2>Audyt, ryzyko i zgodność (GRC)</h2><span class="badge-soft" aria-label="udział grupy 13,7 procent ofert ścieżki">13,7% ofert ścieżki</span></div>
+      <p class="grp-desc">Bezpieczeństwo widziane od strony zarządzania i prawa, nie konsoli. Tędy wchodzi się do cyber bez głębokiego kodu — bliżej procesów, dokumentów i analizy ryzyka.</p>
+      <div class="leaf">
+        <div class="ltop">
+          <span class="lname">ISO 27001 <span class="kind">💡 koncepcja</span></span>
+          <span class="demand">3,2% ofert</span>
+        </div>
+        <fieldset class="levels" aria-label="ISO 27001 — Twój poziom (koncepcja)">
+          <legend>ISO 27001 — Twój poziom</legend>
+          <span class="lopt"><input type="radio" name="lvl-iso" id="iso0" checked><label for="iso0"><span class="dots"><i></i><i></i><i></i></span><span class="word">nie znam</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-iso" id="iso1"><label for="iso1"><span class="dots"><i class="f"></i><i></i><i></i></span><span class="word">poznaję</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-iso" id="iso2"><label for="iso2"><span class="dots"><i class="f"></i><i class="f"></i><i></i></span><span class="word">rozumiem</span></label></span>
+          <span class="lopt"><input type="radio" name="lvl-iso" id="iso3"><label for="iso3"><span class="dots"><i class="f"></i><i class="f"></i><i class="f"></i></span><span class="word">stosuję samodzielnie</span></label></span>
+        </fieldset>
+      </div>
+    </div>
+
+    <div class="wiznav">
+      <button class="ghost">← Wstecz</button>
+      <button class="anchor-dark">Dalej →</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulpit — Spokojny ekspert (makieta hi-fi, Mila v0.3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+/* ===== TOKENY editorial --ed-* (1:1 z globals.css, LOCK v0.2) ===== */
+:root{
+  --ed-cream:#FAF6F1; --ed-ink:#1B1917; --ed-amber:#D0891E; --ed-amber-text:#8F5A0F;
+  --ed-surface:#F5EFE6; --ed-border:#D6CEC2; --ed-muted:#6E6860; --ed-warn:#F4D04F;
+  --ed-danger:#D0422B; --ed-badge-bg:#FDF3DD; --ed-card:#FEFCF9;
+  --gap-section:46px; --pad-card:26px; --radius:16px;
+  --shadow-soft:0 1px 2px rgba(27,25,23,.05); --shadow-lift:0 6px 22px rgba(27,25,23,.07);
+  --font-display:'Playfair Display',Georgia,serif; --font-body:'DM Sans',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--ed-surface);color:var(--ed-ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2.5px solid var(--ed-amber);outline-offset:2px;border-radius:4px}
+
+/* ===== POWŁOKA: pasek boczny JASNY + pasek górny ===== */
+.layout{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.sidebar{background:var(--ed-surface);border-right:1px solid var(--ed-border);padding:22px 16px;display:flex;flex-direction:column}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 22px}
+.brand .mark{width:30px;height:30px;border-radius:9px;background:var(--ed-amber);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:18px}
+.brand .name{font-family:var(--font-display);font-weight:700;font-size:19px}
+.nav-eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ed-amber-text);font-weight:600;padding:6px 10px;margin-top:6px}
+.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:var(--ed-muted);text-decoration:none;font-weight:500;font-size:15px;position:relative;margin-bottom:2px}
+.nav a .ic{width:18px;text-align:center;opacity:.85}
+.nav a:hover{background:rgba(27,25,23,.045);color:var(--ed-ink)}
+.nav a.active{background:var(--ed-badge-bg);color:var(--ed-ink);font-weight:700}
+.nav a.active::before{content:"";position:absolute;left:-16px;top:7px;bottom:7px;width:4px;border-radius:0 4px 4px 0;background:var(--ed-amber)}
+.nav a.active .ic{color:var(--ed-amber-text)}
+.side-foot{margin-top:auto;display:flex;align-items:center;gap:11px;padding:12px 10px;border-top:1px solid var(--ed-border)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--ed-amber);color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px}
+.side-foot .who{font-size:14px;font-weight:600}
+.side-foot .role{font-size:12px;color:var(--ed-muted)}
+
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{position:sticky;top:0;z-index:5;background:var(--ed-surface);border-bottom:1px solid var(--ed-border);padding:14px 40px;display:flex;align-items:center;justify-content:space-between}
+.topbar .crumb{font-size:13px;color:var(--ed-muted)}
+.goal-pill{display:inline-flex;align-items:center;gap:8px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);color:var(--ed-amber-text);font-weight:600;font-size:13px;padding:7px 14px;border-radius:999px}
+.content{padding:34px 40px 80px;max-width:1080px;width:100%}
+
+/* ===== TYPOGRAFIA / wspólne ===== */
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ed-amber-text);font-weight:600;margin-bottom:8px}
+h1.page{font-family:var(--font-display);font-weight:700;font-size:clamp(30px,4.2vw,40px);line-height:1.08;letter-spacing:-.01em}
+.lede{color:var(--ed-muted);font-size:16px;margin-top:8px;max-width:60ch}
+.section{margin-top:var(--gap-section)}
+.section-title{font-family:var(--font-display);font-weight:700;font-size:21px;margin-bottom:4px}
+.section-note{font-size:13px;color:var(--ed-muted);margin-bottom:16px}
+
+.card{background:var(--ed-card);border:1px solid var(--ed-border);border-radius:var(--radius);padding:var(--pad-card);box-shadow:var(--shadow-soft)}
+
+/* plakietki */
+.badge-soft{display:inline-flex;align-items:center;gap:6px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);color:var(--ed-amber-text);font-weight:600;font-size:12px;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.tag-human{display:inline-flex;align-items:center;gap:4px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);color:var(--ed-amber-text);font-weight:600;font-size:11px;padding:3px 8px;border-radius:999px}
+.tag-auto{display:inline-flex;align-items:center;gap:4px;background:transparent;border:1px solid var(--ed-border);color:var(--ed-muted);font-weight:600;font-size:11px;padding:3px 8px;border-radius:999px}
+.kind{display:inline-flex;align-items:center;gap:4px;background:var(--ed-surface);border:1px solid var(--ed-border);color:var(--ed-muted);font-weight:600;font-size:11px;padding:2px 8px;border-radius:6px}
+
+/* ciemna kotwica (1 na widok) */
+.anchor-dark{display:inline-flex;align-items:center;gap:8px;background:var(--ed-ink);color:var(--ed-cream);font-weight:600;font-size:14px;padding:11px 18px;border:none;border-radius:999px;cursor:pointer;text-decoration:none}
+.anchor-dark:hover{background:#2c2825}
+
+/* ===== PASSA (kalendarz, NIE płomień) ===== */
+.streak{min-width:320px}
+.streak .head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.streak .head .lbl{font-size:13px;color:var(--ed-muted);font-weight:600}
+.streak .head .big{font-family:var(--font-display);font-weight:700;font-size:22px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;text-align:center}
+.week .d{font-size:11px;color:var(--ed-muted);font-weight:600;margin-bottom:6px}
+.week .sq{height:34px;border-radius:8px;background:var(--ed-surface);border:1px solid var(--ed-border)}
+.week .sq.on{background:var(--ed-amber);border-color:var(--ed-amber)}
+.week .sq.today{border:2px solid var(--ed-ink);background:var(--ed-cream)}
+
+/* pokrycie: oś Start->teraz->Cel */
+.cov .row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.cov .pct{font-family:var(--font-display);font-weight:700;font-size:28px}
+.cov-track{position:relative;height:12px;border-radius:999px;background:var(--ed-surface);border:1px solid var(--ed-border)}
+.cov-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--ed-amber)}
+.cov-now{position:absolute;top:50%;width:18px;height:18px;border-radius:50%;background:var(--ed-ink);border:3px solid var(--ed-cream);transform:translate(-50%,-50%)}
+.cov-legend{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ed-muted);margin-top:12px}
+.cov-legend b{color:var(--ed-ink)}
+
+/* 3 kafle liczb */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.stat .n{font-family:var(--font-display);font-weight:700;font-size:34px;line-height:1}
+.stat .n.danger{color:var(--ed-danger)}
+.stat .t{font-size:13px;color:var(--ed-muted);margin-top:6px}
+
+/* Następny krok — USP hero */
+.nextstep .topline{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.nextstep h3{font-family:var(--font-display);font-weight:700;font-size:22px}
+.nextstep .proj{color:var(--ed-muted);margin:6px 0 18px;font-size:15px}
+.checklist{list-style:none;display:flex;flex-direction:column;gap:11px}
+.checklist li{display:flex;align-items:flex-start;gap:11px;font-size:15px}
+.checklist .box{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--ed-border);flex:0 0 auto;margin-top:1px;display:grid;place-items:center;font-size:12px;color:#fff}
+.checklist li.done .box{background:var(--ed-amber);border-color:var(--ed-amber)}
+.checklist li.done span{color:var(--ed-muted)}
+.progress-row{display:flex;align-items:center;gap:14px;margin-top:20px}
+.bar{flex:1;height:10px;border-radius:999px;background:var(--ed-surface);border:1px solid var(--ed-border);overflow:hidden}
+.bar > i{display:block;height:100%;background:var(--ed-amber);border-radius:999px}
+.progress-row .meta{font-size:13px;color:var(--ed-muted);white-space:nowrap}
+.foot-note{font-size:13px;color:var(--ed-muted);margin-top:16px;border-top:1px solid var(--ed-border);padding-top:14px;max-width:64ch}
+
+/* plakietka oceniał człowiek */
+.human-banner{display:inline-flex;align-items:center;gap:9px;background:var(--ed-badge-bg);border:1px solid var(--ed-border);border-radius:12px;padding:10px 16px;font-size:13.5px;color:var(--ed-ink);margin-bottom:18px}
+.human-banner .dot{color:var(--ed-amber-text);font-weight:700}
+
+/* KANBAN */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
+.kcol{background:var(--ed-surface);border:1px solid var(--ed-border);border-radius:14px;padding:14px}
+.kcol .ktitle{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+.kcol .ksub{font-size:12px;color:var(--ed-muted);margin-bottom:14px}
+.cdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+.cdot.todo{background:transparent;border:1.5px dashed var(--ed-danger)}
+.cdot.wip{background:var(--ed-warn)}
+.cdot.done{background:var(--ed-amber)}
+.kcard{background:var(--ed-card);border:1px solid var(--ed-border);border-radius:11px;padding:13px;margin-bottom:11px;box-shadow:var(--shadow-soft);cursor:pointer;transition:box-shadow .15s,transform .15s}
+.kcard:hover{box-shadow:var(--shadow-lift);transform:translateY(-2px)}
+.kcard .ktop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.kcard .kname{font-weight:700;font-size:15px}
+.kcard .kmeta{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+.dots{display:inline-flex;gap:4px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--ed-border)}
+.dots i.on{background:var(--ed-amber-text)}
+.lvl-word{font-size:12.5px;color:var(--ed-muted);font-weight:600}
+.kcard .demand{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ed-amber-text);font-weight:600}
+.minibar{flex:1;height:6px;border-radius:999px;background:var(--ed-surface);border:1px solid var(--ed-border);overflow:hidden}
+.minibar > i{display:block;height:100%;border-radius:999px}
+.minibar.have > i{background:var(--ed-amber)}
+.minibar.gap  > i{background:var(--ed-danger)}
+.empty-col{font-size:13px;color:var(--ed-muted);font-style:italic;padding:10px 4px}
+
+.legend-inline{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--ed-muted);margin-top:14px}
+.legend-inline span{display:inline-flex;align-items:center;gap:7px}
+
+/* KOREKTA DARKA: "Następny krok" = CIEMNE pole (atrament), bursztynowe CTA */
+.card.nextstep{background:var(--ed-ink);border-color:#2c2825;color:var(--ed-cream);box-shadow:var(--shadow-lift)}
+.card.nextstep h3{color:var(--ed-cream)}
+.card.nextstep .proj{color:#cfc7bd}
+.card.nextstep .checklist li{color:var(--ed-cream)}
+.card.nextstep .checklist .box{border-color:#4a443d}
+.card.nextstep .checklist li.done span{color:#a89f94}
+.card.nextstep .badge-soft{background:rgba(253,243,221,.12);border-color:#4a443d;color:var(--ed-amber)}
+.card.nextstep .bar{background:#2c2825;border-color:#4a443d}
+.card.nextstep .progress-row .meta{color:#cfc7bd}
+.card.nextstep .foot-note{color:#a89f94;border-top-color:#3a352f}
+.card.nextstep .anchor-dark{background:var(--ed-amber);color:var(--ed-ink)}
+.card.nextstep .anchor-dark:hover{background:#e0992a}
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{flex-direction:row;align-items:center;overflow-x:auto;border-right:none;border-bottom:1px solid var(--ed-border)}
+  .nav{display:flex;gap:6px}.nav-eyebrow,.side-foot,.brand .name{display:none}
+  .nav a.active::before{display:none}
+  .stats,.kanban{grid-template-columns:1fr}
+  .content,.topbar{padding-left:20px;padding-right:20px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- PASEK BOCZNY (jasny, styl Notion) -->
+  <aside class="sidebar">
+    <div class="brand"><div class="mark">S</div><div class="name">SkillBridge</div></div>
+    <div class="nav-eyebrow">Twoja droga</div>
+    <nav class="nav">
+      <a href="pulpit.html" class="active" aria-current="page"><span class="ic">◧</span> Pulpit</a>
+      <a href="mapa-kompetencji.html"><span class="ic">◇</span> Mapa kompetencji</a>
+      <a href="analiza-luk.html"><span class="ic">▣</span> Analiza luk</a>
+      <a href="projekty.html"><span class="ic">▤</span> Projekty</a>
+    </nav>
+    <div class="side-foot">
+      <div class="avatar">KW</div>
+      <div><div class="who">Kuba W.</div><div class="role">Student</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb">Pulpit</div>
+      <div class="goal-pill">🎯 Cel kariery: Specjalista ds. cyberbezpieczeństwa</div>
+    </header>
+
+    <main class="content">
+      <!-- Nagłówek + passa -->
+      <div style="display:flex;gap:28px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
+        <div>
+          <div class="eyebrow">Pulpit</div>
+          <h1 class="page">Cześć, Kuba.</h1>
+          <p class="lede">Cel: <b>Specjalista ds. cyberbezpieczeństwa</b> — pokrywasz już ponad jedną trzecią rynku. Spokojnie, krok po kroku.</p>
+        </div>
+        <div class="card streak" role="img" aria-label="Passa nauki: 3 dni z rzędu, dziś czwartek, jeszcze niezaliczony">
+          <div class="head"><span class="lbl">▢ Passa dni</span><span class="big">3 <span style="font-size:14px;color:var(--ed-muted);font-weight:400">pod rząd</span></span></div>
+          <div class="week">
+            <div><div class="d">Pn</div><div class="sq on"></div></div>
+            <div><div class="d">Wt</div><div class="sq on"></div></div>
+            <div><div class="d">Śr</div><div class="sq on"></div></div>
+            <div><div class="d">Cz</div><div class="sq today"></div></div>
+            <div><div class="d">Pt</div><div class="sq"></div></div>
+            <div><div class="d">So</div><div class="sq"></div></div>
+            <div><div class="d">Nd</div><div class="sq"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POKRYCIE -->
+      <div class="section">
+        <div class="card cov" role="img" aria-label="Pokrycie kompetencji rynkowych 41 procent; start 22, cel 80">
+          <div class="row"><div class="section-title" style="font-size:18px">Pokrycie kompetencji rynkowych</div><div class="pct">41%</div></div>
+          <div class="cov-track">
+            <div class="cov-fill" style="width:41%"></div>
+            <div class="cov-now" style="left:41%"></div>
+          </div>
+          <div class="cov-legend">
+            <span><b>22%</b> Start (z toku studiów)</span>
+            <span><b>41%</b> Teraz</span>
+            <span><b>80%</b> Cel gotowości <span style="opacity:.7">(pokrycia rynku — nie gwarancja pracy)</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 kafle -->
+      <div class="section stats">
+        <div class="card stat"><div class="n">14</div><div class="t">kompetencji na Twojej mapie</div></div>
+        <div class="card stat"><div class="n danger">5</div><div class="t">luk krytycznych</div></div>
+        <div class="card stat"><div class="n">1</div><div class="t">projekt w toku</div></div>
+      </div>
+
+      <!-- NASTĘPNY KROK (USP hero) -->
+      <div class="section">
+        <div class="eyebrow">Następny krok</div>
+        <div class="section-note">Sygnał z rynku → konkretne zadania. To jedno zrób teraz.</div>
+        <div class="card nextstep">
+          <div class="topline">
+            <div>
+              <h3>SIEM — Twoja największa luka</h3>
+              <div class="proj">Projekt: <b>SIEM od zera — pierwsze alerty w Splunk na publicznych logach</b></div>
+            </div>
+            <div class="badge-soft" aria-label="obszar SIEM i monitorowanie zdarzeń, udział 18,3 procent ofert ścieżki">Obszar SIEM · 18,3% ofert ścieżki</div>
+          </div>
+          <ul class="checklist">
+            <li class="done"><span class="box">✓</span><span>Zainstaluj Splunk Free i wczytaj publiczne logi tutorialowe</span></li>
+            <li><span class="box"></span><span>Napisz 3 zapytania SPL (język wyszukiwania Splunka) wykrywające podejrzane zdarzenia</span></li>
+            <li><span class="box"></span><span>Zdefiniuj warunek alertu z jawnym progiem (bez funkcji płatnej)</span></li>
+            <li><span class="box"></span><span>Napisz raport triage dla SOC i dodaj projekt do CV</span></li>
+          </ul>
+          <div class="progress-row">
+            <div class="bar"><i style="width:25%"></i></div>
+            <div class="meta">1 z 4 kroków · 25%</div>
+            <a href="projekty.html" class="anchor-dark">Otwórz projekt →</a>
+          </div>
+          <p class="foot-note">Każdy odhaczony krok = wpis w Twoim paszporcie kompetencji. Ostatni krok zamyka pętlę — projekt ląduje w CV, nie w szufladzie.</p>
+        </div>
+      </div>
+
+      <!-- KANBAN kompetencji -->
+      <div class="section">
+        <div class="eyebrow">Twoje kompetencje</div>
+        <div class="section-note">7 z 14 widocznych — sortowane wg statusu. Każda karta pokazuje typ: <b>narzędzie</b> (obsługujesz) lub <b>koncepcja</b> (rozumiesz).</div>
+        <div class="human-banner"><span class="dot">✓</span> <b style="margin-right:4px">Oceniał człowiek.</b> Poziom z „✓ człowiek" potwierdził wykładowca. „auto" = wstępna ocena maszyny, czeka na potwierdzenie — AI tylko podpowiada, ostatnie słowo ma człowiek.</div>
+
+        <div class="kanban">
+          <!-- DO ZROBIENIA -->
+          <section class="kcol" aria-label="Do zrobienia">
+            <div class="ktitle"><span class="cdot todo"></span> Do zrobienia (2)</div>
+            <div class="ksub">luki krytyczne rynku</div>
+            <div class="kcard" tabindex="0" aria-label="SIEM, koncepcja, do zrobienia, poziom nie znam, popyt 10,8 procent, luka">
+              <div class="ktop"><span class="kname">SIEM</span><span class="tag-auto">auto</span></div>
+              <div class="kmeta"><span class="kind">💡 koncepcja</span><span class="dots"><i></i><i></i><i></i></span><span class="lvl-word">nie znam</span></div>
+              <div class="demand"><span>10,8%</span><div class="minibar gap"><i style="width:54%"></i></div><span style="color:var(--ed-danger)">luka</span></div>
+            </div>
+            <div class="kcard" tabindex="0" aria-label="IAM, koncepcja, do zrobienia, poziom nie znam, popyt 7,5 procent, luka">
+              <div class="ktop"><span class="kname">IAM</span><span class="tag-auto">auto</span></div>
+              <div class="kmeta"><span class="kind">💡 koncepcja</span><span class="dots"><i></i><i></i><i></i></span><span class="lvl-word">nie znam</span></div>
+              <div class="demand"><span>7,5%</span><div class="minibar gap"><i style="width:38%"></i></div><span style="color:var(--ed-danger)">luka</span></div>
+            </div>
+          </section>
+          <!-- W TRAKCIE -->
+          <section class="kcol" aria-label="W trakcie">
+            <div class="ktitle"><span class="cdot wip"></span> W trakcie (2)</div>
+            <div class="ksub">już się uczysz</div>
+            <div class="kcard" tabindex="0" aria-label="Python, narzędzie, w trakcie, poziom uczę się, popyt 14,8 procent">
+              <div class="ktop"><span class="kname">Python</span><span class="tag-auto">auto</span></div>
+              <div class="kmeta"><span class="kind">🔧 narzędzie</span><span class="dots"><i class="on"></i><i></i><i></i></span><span class="lvl-word">uczę się</span></div>
+              <div class="demand"><span>14,8%</span><div class="minibar have"><i style="width:50%"></i></div></div>
+            </div>
+            <div class="kcard" tabindex="0" aria-label="Windows, narzędzie, w trakcie, poziom obsługuję, popyt 4 procent, oceniał człowiek">
+              <div class="ktop"><span class="kname">Windows</span><span class="tag-human">✓ człowiek</span></div>
+              <div class="kmeta"><span class="kind">🔧 narzędzie</span><span class="dots"><i class="on"></i><i class="on"></i><i></i></span><span class="lvl-word">obsługuję</span></div>
+              <div class="demand"><span>4,0%</span><div class="minibar have"><i style="width:64%"></i></div></div>
+            </div>
+          </section>
+          <!-- OPANOWANE -->
+          <section class="kcol" aria-label="Opanowane">
+            <div class="ktitle"><span class="cdot done"></span> Opanowane (3)</div>
+            <div class="ksub">gotowe do CV</div>
+            <div class="kcard" tabindex="0" aria-label="Linux, narzędzie, opanowane, poziom obsługuję biegle, popyt 9,4 procent, oceniał człowiek">
+              <div class="ktop"><span class="kname">Linux</span><span class="tag-human">✓ człowiek</span></div>
+              <div class="kmeta"><span class="kind">🔧 narzędzie</span><span class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="lvl-word">obsługuję biegle</span></div>
+              <div class="demand"><span>9,4%</span><div class="minibar have"><i style="width:88%"></i></div></div>
+            </div>
+            <div class="kcard" tabindex="0" aria-label="Bash, narzędzie, opanowane, poziom obsługuję, popyt 3 procent">
+              <div class="ktop"><span class="kname">Bash</span><span class="tag-auto">auto</span></div>
+              <div class="kmeta"><span class="kind">🔧 narzędzie</span><span class="dots"><i class="on"></i><i class="on"></i><i></i></span><span class="lvl-word">obsługuję</span></div>
+              <div class="demand"><span>3,0%</span><div class="minibar have"><i style="width:72%"></i></div></div>
+            </div>
+            <div class="kcard" tabindex="0" aria-label="Sieci, koncepcja, opanowane, poziom rozumiem, popyt 4,3 procent, oceniał człowiek">
+              <div class="ktop"><span class="kname">Sieci (TCP/IP)</span><span class="tag-human">✓ człowiek</span></div>
+              <div class="kmeta"><span class="kind">💡 koncepcja</span><span class="dots"><i class="on"></i><i class="on"></i><i></i></span><span class="lvl-word">rozumiem</span></div>
+              <div class="demand"><span>4,3%</span><div class="minibar have"><i style="width:68%"></i></div></div>
+            </div>
+          </section>
+        </div>
+        <div class="legend-inline">
+          <span><span class="cdot done"></span> opanowane (bursztyn)</span>
+          <span><span class="cdot wip"></span> w trakcie (żółty)</span>
+          <span><span class="cdot todo"></span> do zrobienia / luka (przerywana czerwień)</span>
+          <span>🔧 narzędzie „obsługuję" · 💡 koncepcja „rozumiem"</span>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>
