@@ -4113,6 +4113,76 @@
 	box-shadow: 0 0 0 3px rgba(27, 25, 23, 0.06);
 }
 
+/* Direction summary — metadane wybranego kierunku */
+.proj-summary {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	background: white;
+	border: 1px solid var(--ed-border);
+	border-radius: 20px;
+	padding: 20px 24px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.proj-summary-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 6px 16px;
+}
+.proj-summary-career {
+	font-family: var(--font-heading);
+	font-weight: 700;
+	font-size: 19px;
+	color: var(--ed-ink);
+}
+.proj-summary-totals {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	font-size: 14px;
+	color: var(--ed-muted);
+}
+.proj-summary-count {
+	font-weight: 600;
+	color: var(--ed-ink);
+}
+.proj-summary-sep {
+	color: var(--ed-border);
+}
+.proj-summary-hours {
+	white-space: nowrap;
+}
+.proj-summary-levels {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.proj-summary-level {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 5px 12px;
+	border-radius: 999px;
+	background: var(--ed-badge-bg);
+	border: 1px solid var(--ed-border);
+	font-size: 13px;
+	color: var(--ed-ink);
+}
+.proj-summary-level-code {
+	font-weight: 700;
+	letter-spacing: 0.02em;
+}
+.proj-summary-level-num {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+	color: var(--ed-muted);
+}
+.proj-summary-level.is-empty {
+	opacity: 0.4;
+}
+
 /* Grid + card */
 .proj-grid {
 	display: grid;
