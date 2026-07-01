@@ -20,10 +20,11 @@ vi.mock("next/link", () => ({
 }));
 
 const competencies = [
-	{ id: "1", name: "SIEM", status: "missing", marketPercentage: 11, selfAssessment: null },
-	{ id: "2", name: "Python", status: "in_progress", marketPercentage: 15, selfAssessment: 1 },
-	{ id: "3", name: "Linux", status: "acquired", marketPercentage: 9, selfAssessment: 3 },
+	{ id: "2", name: "Python", status: "in_progress", marketPercentage: 15, selfAssessment: 2 },
+	{ id: "3", name: "Linux", status: "acquired", marketPercentage: 9, selfAssessment: 4 },
 ];
+
+const gaps = [{ competencyName: "SIEM", priority: "critical", marketPercentage: 11 }];
 
 const defaultProps = {
 	user: { name: "Anna Kowalska" },
@@ -34,6 +35,7 @@ const defaultProps = {
 		careerGoal: "Full-stack Developer",
 	},
 	competencies,
+	gaps,
 	gapCount: 5,
 	criticalGapCount: 2,
 	inProgressCount: 1,
@@ -86,7 +88,7 @@ describe("DashboardHub", () => {
 	});
 
 	it("obsługuje pustą mapę kompetencji bez błędu", () => {
-		render(<DashboardHub {...defaultProps} competencies={[]} topGap={null} />);
+		render(<DashboardHub {...defaultProps} competencies={[]} gaps={[]} topGap={null} />);
 		expect(screen.getByText(/mapa kompetencji jest jeszcze pusta/i)).toBeInTheDocument();
 	});
 });

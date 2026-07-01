@@ -22,9 +22,12 @@ export function competencyMatches(a: string, b: string): boolean {
 }
 
 /**
- * Czy projekt należy do kierunku. Porównujemy kompetencje projektu (domyślnie tylko
- * `required`, żeby nie przesadzić z szerokimi liśćmi typu „SQL") do zbioru kompetencji
- * rynku danego kierunku.
+ * Czy projekt należy do kierunku. Porównujemy kompetencje WYMAGANE projektu do zbioru
+ * kompetencji rynku danego kierunku. Wymagamy, by WSZYSTKIE wymagane kompetencje projektu
+ * pasowały do kierunku (`every`) — inaczej generyczne liście („Python", „SQL", „Git")
+ * podpinałyby projekt Data/ML do niemal każdego kierunku (dopasowanie po jednej kompetencji
+ * jest za szerokie). Cyber-projekt [SIEM, SOC, Splunk] trafia więc tylko do cyber; data-projekt
+ * [Python, Pandas] wypada z cyber (cyber nie ma Pandas).
  */
 export function projectMatchesCareer(
 	projectCompetencies: Array<{ competencyName: string; role: string }>,
@@ -32,7 +35,8 @@ export function projectMatchesCareer(
 ): boolean {
 	const required = projectCompetencies.filter((c) => c.role === "required");
 	const pool = required.length > 0 ? required : projectCompetencies;
-	return pool.some((pc) =>
+	if (pool.length === 0) return false;
+	return pool.every((pc) =>
 		careerCompetencyNames.some((cn) => competencyMatches(pc.competencyName, cn)),
 	);
 }

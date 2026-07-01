@@ -47,7 +47,6 @@ export default async function DashboardPage() {
 			db.query.gaps.findMany({
 				where: eq(gaps.studentId, student.id),
 				orderBy: [desc(gaps.marketPercentage)],
-				limit: 6,
 				columns: {
 					competencyName: true,
 					priority: true,
@@ -71,6 +70,11 @@ export default async function DashboardPage() {
 			user={session.user}
 			student={student}
 			competencies={studentCompetencies}
+			gaps={topGaps.map((g) => ({
+				competencyName: g.competencyName,
+				priority: g.priority,
+				marketPercentage: g.marketPercentage,
+			}))}
 			gapCount={gapTotal}
 			criticalGapCount={criticalGapCount[0]?.count ?? 0}
 			inProgressCount={inProgressCount[0]?.count ?? 0}

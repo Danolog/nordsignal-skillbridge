@@ -2,6 +2,7 @@
 
 import { Award, ChevronDown, ExternalLink, Github } from "lucide-react";
 import { useState } from "react";
+import { shortenRepoUrl } from "@/lib/passport-format";
 
 export interface ProjectReceipt {
 	projectTitle: string;
@@ -11,12 +12,6 @@ export interface ProjectReceipt {
 	repoUrl?: string | null;
 	notebookUrl?: string | null;
 	feedback?: string | null;
-}
-
-export function shortenRepoUrl(url: string): string {
-	const match = url.match(/github\.com\/([^/]+\/[^/?#]+)/i);
-	if (!match) return url;
-	return `github.com/${match[1].replace(/\.git$/, "")}`;
 }
 
 export function ProjectReceipts({ receipts }: { receipts: ProjectReceipt[] }) {

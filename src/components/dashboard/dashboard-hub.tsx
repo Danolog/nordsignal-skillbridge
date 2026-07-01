@@ -11,6 +11,12 @@ interface Competency {
 	selfAssessment: number | null;
 }
 
+interface Gap {
+	competencyName: string;
+	priority: string;
+	marketPercentage: number;
+}
+
 interface TopGap {
 	competencyName: string;
 	priority: string;
@@ -27,6 +33,7 @@ interface DashboardHubProps {
 		careerGoal: string;
 	};
 	competencies: Competency[];
+	gaps: Gap[];
 	gapCount: number;
 	criticalGapCount: number;
 	inProgressCount: number;
@@ -36,45 +43,59 @@ interface DashboardHubProps {
 
 const GOAL_COVERAGE = 80;
 
-function levelWord(status: string, sa: number | null): string {
-	if (status === "missing") return "nie znam";
-	if (status === "in_progress") return "uczę się";
-	if (sa != null && sa >= 3) return "obsługuję biegle";
-	return "opanowane";
+/** Wspólny model karty kanbana (kompetencja albo luka). */
+interface KanbanItem {
+	key: string;
+	name: string;
+	demand: number;
+	isGap: boolean;
+	dots: number;
+	level: string;
 }
 
-function filledDots(status: string, sa: number | null): number {
-	if (status === "missing") return 0;
-	if (sa == null) return status === "acquired" ? 3 : 1;
-	return Math.min(3, Math.max(1, sa));
+// Słowo poziomu i liczba kropek z samooceny (2→„uczę się"/1, 3→„obsługuję"/2, 4→„biegle"/3);
+// legacy bez samooceny → po statusie.
+function competencyLevelWord(sa: number | null, status: string): string {
+	if (sa === 4) return "obsługuję biegle";
+	if (sa === 3) return "obsługuję";
+	if (sa === 2) return "uczę się";
+	return status === "acquired" ? "opanowane" : "uczę się";
+}
+function competencyDots(sa: number | null, status: string): number {
+	if (sa != null) return Math.min(3, Math.max(1, sa - 1));
+	return status === "acquired" ? 3 : 1;
+}
+// Zatwierdzone mapowanie kolumn (market-catalog.ts): samoocena 4 → Opanowane, 2/3 → W trakcie;
+// legacy bez samooceny → po statusie. Luki (missing) idą osobno, z tabeli gaps.
+function isMastered(c: Competency): boolean {
+	if (c.selfAssessment === 4) return true;
+	if (c.selfAssessment === 2 || c.selfAssessment === 3) return false;
+	return c.status === "acquired";
 }
 
-/** Karta kompetencji na kanbanie. */
-function KanbanCard({ c }: { c: Competency }) {
-	const dots = filledDots(c.status, c.selfAssessment);
-	const isGap = c.status === "missing";
-	const demand = c.marketPercentage ?? 0;
-	const barWidth = Math.min(100, Math.max(6, demand * 5));
+/** Karta na kanbanie — kompetencja albo luka. */
+function KanbanCard({ item }: { item: KanbanItem }) {
+	const barWidth = Math.min(100, Math.max(6, item.demand * 5));
 	return (
 		<div className="db-kcard">
 			<div className="db-kcard-top">
-				<span className="db-kcard-name">{c.name}</span>
-				<span className="db-tag-auto">auto</span>
+				<span className="db-kcard-name">{item.name}</span>
+				{!item.isGap && <span className="db-tag-auto">auto</span>}
 			</div>
 			<div className="db-kcard-meta">
 				<span className="db-dots">
 					{[0, 1, 2].map((i) => (
-						<i key={i} className={i < dots ? "on" : ""} />
+						<i key={i} className={i < item.dots ? "on" : ""} />
 					))}
 				</span>
-				<span className="db-lvl-word">{levelWord(c.status, c.selfAssessment)}</span>
+				<span className="db-lvl-word">{item.level}</span>
 			</div>
 			<div className="db-demand">
-				<span>{demand.toLocaleString("pl-PL", { maximumFractionDigits: 1 })}%</span>
-				<div className={`db-minibar ${isGap ? "gap" : "have"}`}>
+				<span>{item.demand.toLocaleString("pl-PL", { maximumFractionDigits: 1 })}%</span>
+				<div className={`db-minibar ${item.isGap ? "gap" : "have"}`}>
 					<i style={{ width: `${barWidth}%` }} />
 				</div>
-				{isGap && <span className="db-demand-gap">luka</span>}
+				{item.isGap && <span className="db-demand-gap">luka</span>}
 			</div>
 		</div>
 	);
@@ -91,7 +112,7 @@ function KanbanColumn({
 	title: string;
 	sub: string;
 	dotClass: string;
-	items: Competency[];
+	items: KanbanItem[];
 	emptyText: string;
 }) {
 	return (
@@ -103,20 +124,46 @@ function KanbanColumn({
 			{items.length === 0 ? (
 				<div className="db-empty-col">{emptyText}</div>
 			) : (
-				items.map((c) => <KanbanCard key={c.id} c={c} />)
+				items.map((item) => <KanbanCard key={item.key} item={item} />)
 			)}
 		</section>
 	);
 }
 
 export function DashboardHub(props: DashboardHubProps) {
-	const { user, student, competencies, criticalGapCount, inProgressCount, marketCoverage, topGap } =
-		props;
+	const {
+		user,
+		student,
+		competencies,
+		gaps,
+		criticalGapCount,
+		inProgressCount,
+		marketCoverage,
+		topGap,
+	} = props;
 
 	const firstName = user.name.split(" ")[0];
-	const todo = competencies.filter((c) => c.status === "missing");
-	const wip = competencies.filter((c) => c.status === "in_progress");
-	const done = competencies.filter((c) => c.status === "acquired");
+
+	const compToItem = (c: Competency): KanbanItem => ({
+		key: c.id,
+		name: c.name,
+		demand: c.marketPercentage ?? 0,
+		isGap: false,
+		dots: competencyDots(c.selfAssessment, c.status),
+		level: competencyLevelWord(c.selfAssessment, c.status),
+	});
+	// „Do zrobienia" = luki rynku (tabela gaps); W trakcie / Opanowane = kompetencje.
+	const todo: KanbanItem[] = gaps.map((g) => ({
+		key: `gap-${g.competencyName}`,
+		name: g.competencyName,
+		demand: g.marketPercentage,
+		isGap: true,
+		dots: 0,
+		level: "nie znam",
+	}));
+	const done: KanbanItem[] = competencies.filter(isMastered).map(compToItem);
+	const wip: KanbanItem[] = competencies.filter((c) => !isMastered(c)).map(compToItem);
+	const kanbanEmpty = competencies.length === 0 && gaps.length === 0;
 
 	return (
 		<div className="db-hub">
@@ -221,7 +268,7 @@ export function DashboardHub(props: DashboardHubProps) {
 						wykładowca.
 					</span>
 				</div>
-				{competencies.length === 0 ? (
+				{kanbanEmpty ? (
 					<div className="db-card db-empty-hub">
 						Twoja mapa kompetencji jest jeszcze pusta. Uzupełnij profil, a pojawią się tu Twoje
 						kompetencje i luki.

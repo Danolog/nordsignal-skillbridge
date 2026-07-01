@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode, RefObject } from "react";
+import { shortenRepoUrl } from "@/lib/passport-format";
 import type { PassportData } from "./passport-view";
-import { shortenRepoUrl } from "./project-receipts";
 
 // Wspólny komponent dokumentu Paszportu Kompetencji (#2).
 // Jedno źródło markupu dla trzech miejsc: widok właściciela (passport-view),
