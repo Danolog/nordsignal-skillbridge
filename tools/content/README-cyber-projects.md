@@ -7,6 +7,12 @@ narzędzie i kontrakt.
 
 Status: v0.1 (2026-06-28, Leo). Wzorzec wypełniony (1 szkielet): `tools/content/cyber-projects.sample.json`.
 
+> **⚠ Aktualizacja 2026-07-01:** kontrakt JSON i zachowanie narzędzia bez zmian, ale treść
+> każdej nowej partii projektów (dowolnej ścieżki) podlega **nadrzędnemu runbookowi z
+> bramkami jakości QG-1…QG-7**: `docs/runbooks/projekty-sciezki-runbook.md`
+> (m.in. nowe progi `theory_md`/`learning_resources` per poziom — QG-5, standard
+> portfolio-grade — QG-4, sign-off eksperta domenowego dla L3 — QG-6).
+
 ---
 
 ## Po co to jest
@@ -93,10 +99,38 @@ i działa **per projekt transakcyjnie** (jeden projekt albo wchodzi w całości,
 
 ---
 
+## Narzędzie jest OGÓLNE względem ścieżki (parametr `--path`)
+
+Od fazy E–F (DS partia 1) `content-cyber-projects.ts` waliduje nazwy kompetencji
+wobec liści **dowolnej** ścieżki kariery z `career-model.ts` — nie tylko cyber:
+
+- **Domyślnie** (bez flagi) walidacja wobec ścieżki „Cybersecurity Specialist" —
+  **kompatybilność wsteczna**: wszystkie dotychczasowe wywołania i testy działają bez zmian.
+- **`--path "Data Scientist"`** (lub `--path=...`) przełącza walidację na liście podanej
+  ścieżki. Zbiór liści czytany jest z `PATHS` w `career-model.ts` (jedno źródło prawdy);
+  nieznana etykieta ścieżki → STOP z listą dozwolonych etykiet.
+
+Nazwa pliku narzędzia pozostała `content-cyber-projects.ts` (świadoma decyzja: rename
+złamałby import w teście integracyjnym, referencje w ADR-009 i CI — parametr jest
+bezpieczniejszy i w pełni zgodny wstecz). Eksportowane funkcje ogólne: `getPathLeafNames(label)`;
+`getCyberLeafNames()` to teraz cienki alias na ścieżkę domyślną.
+
+```powershell
+# Cyber (domyślnie, bez zmian):
+pnpm exec tsx tools/content-cyber-projects.ts tools/content/cyber-projects-partia-3.json
+# Data Scientist (partia 1):
+pnpm exec tsx tools/content-cyber-projects.ts tools/content/ds-projects-partia-1.json --path "Data Scientist"
+```
+
+> **DS partia 1 — kontrakt i pokrycie:** `tools/content/ds-projects-partia-1.json` = 10 projektów
+> (4×L1, 4×L2, 2×L3), nazwy liści dosłownie z grupy „Fundamenty" (uwaga: `Statystyka (Statistics)`
+> z dopiskiem w nawiasie), pokrycie 23/24 liści jako `required` (Snowflake świadomie poza — trial-safe).
+> Runbook ingestu prod: `docs/decisions/010-prod-ingest-ds-partia-1.md`.
+
 ## ⚠ Dozwolone nazwy kompetencji (liście ścieżki cyber)
 
 Narzędzie czyta ten zbiór bezpośrednio z `src/lib/db/data/career-model.ts`
-(ścieżka „Cybersecurity Specialist") — jedno źródło prawdy. Stan 2026-06-28:
+(ścieżka „Cybersecurity Specialist" — domyślna; `--path` zmienia ścieżkę) — jedno źródło prawdy. Stan 2026-06-28:
 
 ```
 SIEM · SOC · Splunk · SOAR · EDR / XDR · Microsoft Defender · CrowdStrike · Incident Response

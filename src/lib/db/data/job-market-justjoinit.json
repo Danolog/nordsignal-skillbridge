@@ -412,12 +412,12 @@
 				{
 					"name": "LLM",
 					"demandPercentage": 12,
-					"category": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe"
+					"category": "Sztuczna inteligencja: LLM, GenAI i NLP"
 				},
 				{
 					"name": "GenAI",
 					"demandPercentage": 9,
-					"category": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe"
+					"category": "Sztuczna inteligencja: LLM, GenAI i NLP"
 				},
 				{
 					"name": "Git",
@@ -457,7 +457,7 @@
 				{
 					"name": "MLOps",
 					"demandPercentage": 3,
-					"category": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe"
+					"category": "Sztuczna inteligencja: LLM, GenAI i NLP"
 				},
 				{
 					"name": "PySpark",
@@ -472,7 +472,7 @@
 				{
 					"name": "NLP",
 					"demandPercentage": 2,
-					"category": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe"
+					"category": "Sztuczna inteligencja: LLM, GenAI i NLP"
 				},
 				{
 					"name": "NumPy",
@@ -487,7 +487,7 @@
 				{
 					"name": "Statystyka (Statistics)",
 					"demandPercentage": 2,
-					"category": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe"
+					"category": "Fundamenty: statystyka, uczenie maszynowe i EDA"
 				}
 			]
 		},

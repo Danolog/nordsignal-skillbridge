@@ -53,6 +53,9 @@ skills-lock.json
 # vercel
 .vercel
 
+# neonctl — lokalny kontekst CLI (orgId/projekt), nie commitujemy
+.neon
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

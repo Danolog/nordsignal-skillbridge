@@ -1,0 +1,1028 @@
+[
+	{
+		"slug": "ds-eda-polska-w-liczbach-bdl",
+		"title": "Polska w liczbach: eksploracja danych regionalnych z API GUS BDL",
+		"description": "Zbudujesz notebook, który pobiera dane regionalne z API Banku Danych Lokalnych GUS (licencja CC BY 4.0) i przeprowadza rzetelną eksploracyjną analizę danych. Wyczyścisz braki, sprawdzisz typy i wartości odstające, zwizualizujesz trend wybranego wskaźnika w województwach i sformułujesz 2-3 hipotezy wprost z danych. Efektem jest reprodukowalne repozytorium z README i notebookiem opisującym każdą decyzję.",
+		"level": "L1",
+		"estimatedHours": 5,
+		"sourceType": "open_data",
+		"sourceUrl": "https://api.stat.gov.pl/Home/BdlApi",
+		"competencies": [
+			{
+				"name": "Python",
+				"role": "required"
+			},
+			{
+				"name": "Pandas",
+				"role": "required"
+			},
+			{
+				"name": "NumPy",
+				"role": "required"
+			},
+			{
+				"name": "EDA",
+				"role": "required"
+			},
+			{
+				"name": "SQL",
+				"role": "acquired"
+			},
+			{
+				"name": "Git",
+				"role": "acquired"
+			}
+		],
+		"rubricJson": [
+			{
+				"criterion": "Jakość czyszczenia danych i uzasadnienie decyzji",
+				"weight": 30,
+				"description": "Notebook pokazuje kontrolę typów, świadomą obsługę braków (nie ślepe dropna) oraz identyfikację wartości odstających. Każda decyzja o usunięciu/imputacji jest krótko uzasadniona w komentarzu lub markdownie."
+			},
+			{
+				"criterion": "EDA z wnioskami i hipotezami",
+				"weight": 30,
+				"description": "Analiza wykracza poza describe(): są pytania badawcze, rozkłady, relacje między zmiennymi oraz 2-3 hipotezy sformułowane wprost z danych, z zaznaczeniem, że wymagają dalszej weryfikacji."
+			},
+			{
+				"criterion": "Wizualizacja trendu regionalnego",
+				"weight": 20,
+				"description": "Co najmniej jeden czytelny wykres trendu w ujęciu regionalnym: opisane osie, jednostki, tytuł, legenda. Wykres wspiera wniosek, a nie jest ozdobą."
+			},
+			{
+				"criterion": "Reprodukowalność repozytorium",
+				"weight": 20,
+				"description": "Repo zawiera README z opisem uruchomienia, requirements.txt, ustawiony seed tam gdzie istnieje losowość oraz sensowną historię commitów w Git. Notebook uruchamia się od góry do dołu bez błędów."
+			}
+		],
+		"theory_md": "## Czym naprawdę jest EDA\n\nEksploracyjna analiza danych (EDA) to nie zestaw poleceń `df.describe()` i `df.info()`, tylko sposób myślenia. To ustrukturyzowany dialog z danymi: zadajesz pytania, sprawdzasz założenia i budujesz intuicję, zanim sformułujesz jakąkolwiek tezę. Termin spopularyzował John Tukey w latach 70., odróżniając eksplorację (co dane mogą nam podpowiedzieć?) od konfirmacji (czy hipoteza się potwierdza?). Ta granica jest kluczowa: EDA służy do generowania hipotez, a nie do ich potwierdzania na tym samym zbiorze. Jeśli wygenerujesz i potwierdzisz hipotezę na identycznych danych, prawie zawsze oszukasz samego siebie.\n\n## Po co i kiedy stosujesz EDA\n\nEDA robisz zawsze na początku pracy z nowym zbiorem, zanim policzysz cokolwiek zaawansowanego. Ma trzy praktyczne cele. Po pierwsze, poznajesz kształt danych: ile jest wierszy i kolumn, jakie są typy, jaki jest zakres wartości i jak wyglądają rozkłady. Po drugie, wykrywasz problemy: braki, duplikaty, niespójne jednostki, wartości spoza sensownego zakresu. Po trzecie, szukasz sygnałów: trendów, sezonowości, różnic między grupami, relacji między zmiennymi. Dopiero gdy rozumiesz dane, wolno ci przejść do modelowania czy raportowania. Pominięcie EDA to najczęstszy powód, dla którego zaawansowane analizy dają wyniki poprawne rachunkowo, lecz bezsensowne merytorycznie.\n\nDane regionalne z GUS BDL są tu doskonałym poligonem. Wskaźniki dotyczą różnych województw i lat, mają jednostki, a braki bywają strukturalne (np. wskaźnik wprowadzony dopiero w pewnym roku). To zmusza cię do myślenia, a nie do mechanicznego usuwania wierszy.\n\n## Warunki, w których EDA działa dobrze\n\nEDA jest skuteczna, gdy podchodzisz do niej iteracyjnie i sceptycznie. Każdy wykres traktuj jako pytanie, nie jako odpowiedź. Zobaczyłeś skok wartości w jednym roku? Zapytaj, czy to zmiana realna, czy zmiana metodologii pomiaru. Widzisz outlier? Sprawdź, czy to błąd, czy prawdziwa obserwacja niosąca informację. Dobra EDA łączy statystyki opisowe z wizualizacją, bo sama średnia potrafi ukryć dwa zupełnie różne rozkłady o tej samej wartości oczekiwanej. Kwartet Anscombe'a to klasyczny przykład: cztery zbiory o niemal identycznych statystykach i całkowicie różnych wykresach.\n\nEDA działa też najlepiej, gdy zapisujesz swoje decyzje. Notebook nie jest brudnopisem, tylko narracją: co sprawdziłeś, co zauważyłeś, co postanowiłeś i dlaczego. Ta dyscyplina odróżnia analityka od osoby klikającej losowe komórki.\n\n## Typowe pułapki praktyka\n\n> Korelacja to nie przyczynowość.\n\nTo najczęstszy i najgroźniejszy błąd. Jeśli w danych regionalnych dwa wskaźniki rosną razem, nie znaczy to, że jeden powoduje drugi. Często istnieje trzecia, ukryta zmienna (np. poziom urbanizacji), która napędza oba. Na etapie EDA masz prawo zauważyć współwystępowanie, ale nie masz prawa ogłaszać przyczyny.\n\nDruga pułapka to ignorowanie braków. Usunięcie wszystkich wierszy z brakami (`dropna()`) wygląda niewinnie, ale potrafi po cichu wyciąć całe województwa albo całe wczesne lata i zniekształcić wnioski. Zawsze najpierw sprawdź, ile braków masz i czy są losowe, czy systematyczne. Brak może być informacją.\n\nTrzecia pułapka to mylenie ziarna danych. Zanim policzysz cokolwiek, ustal, co reprezentuje jeden wiersz: jedno województwo w jednym roku czy sumę zbiorczą? Agregowanie danych o różnym ziarnie daje liczby bez sensu.\n\nCzwarta pułapka to przekonanie, że ładny wykres to dowód. Wizualizacja pomaga zobaczyć wzorzec, lecz nie zastępuje weryfikacji. Skala osi, agregacja czy wybór przedziału czasu potrafią wykreować trend, którego nie ma. Zawsze pytaj, czy wzorzec przetrwa zmianę tych decyzji.\n\n## Jak sformułować dobrą hipotezę\n\nDobra hipoteza z EDA jest konkretna, sprawdzalna i pokorna. Zamiast \"gospodarka się rozwija\" napisz \"między rokiem A a B wskaźnik X rósł szybciej w województwach o wyższej wartości Y\". Taka hipoteza wskazuje zmienne, kierunek i zakres, więc ktoś inny może ją później zweryfikować na nowych danych. Pamiętaj: celem EDA nie jest udowodnienie tezy, lecz zbudowanie na tyle solidnego zrozumienia, by wiedzieć, jakie pytania warto zadać dalej.\n\n## Kolejność, która chroni przed błędem\n\nWarto trzymać się powtarzalnej kolejności kroków, bo dyscyplina procesu zmniejsza ryzyko wyciągnięcia pochopnych wniosków. Najpierw poznajesz surowy kształt: liczba wierszy i kolumn, typy, jednostki, zakresy. Potem robisz przegląd jakości: braki, duplikaty, wartości niemożliwe, spójność kategorii. Dopiero wtedy przechodzisz do analizy jednej zmiennej naraz (rozkłady, wartości typowe i skrajne), a następnie do relacji między zmiennymi. Ta gradacja od prostego do złożonego sprawia, że nie zaczynasz interpretować zależności, zanim upewnisz się, że dane w ogóle są wiarygodne.\n\nOsobną wartością jest odróżnianie danych brakujących losowo od brakujących systematycznie. Jeśli brak wartości zależy od samej wartości (np. najuboższe gminy nie raportują wskaźnika), to każda analiza pominięcia zniekształci obraz w konkretnym, przewidywalnym kierunku. W danych regionalnych GUS taka systematyczność jest częsta, dlatego przed decyzją o imputacji zawsze pytaj, dlaczego wartości nie ma. Świadome nazwanie tego mechanizmu w notebooku jest cenniejsze niż najbardziej wyrafinowana metoda uzupełniania braków.",
+		"learning_resources": [
+			{
+				"title": "pandas — Getting Started",
+				"url": "https://pandas.pydata.org/docs/getting_started/index.html",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "NumPy — Learn",
+				"url": "https://numpy.org/learn/",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Python Data Science Handbook",
+				"url": "https://jakevdp.github.io/PythonDataScienceHandbook/",
+				"type": "course",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://api.stat.gov.pl/Home/BdlApi",
+				"label": "GUS Bank Danych Lokalnych — dokumentacja API (CC BY 4.0)",
+				"position": 0
+			},
+			{
+				"url": "https://bdl.stat.gov.pl",
+				"label": "Portal Banku Danych Lokalnych GUS",
+				"position": 1
+			},
+			{
+				"url": "https://creativecommons.org/licenses/by/4.0/",
+				"label": "Licencja danych: CC BY 4.0 (wymaga uznania autorstwa GUS)",
+				"position": 2
+			}
+		]
+	},
+	{
+		"slug": "ds-sql-analiza-przejazdow",
+		"title": "SQL w praktyce: analiza przejazdów taksówek NYC z funkcjami okna",
+		"description": "Przeanalizujesz próbkę zbioru NYC TLC Trip Records przy użyciu czystego SQL, uruchamianego lokalnie w DuckDB lub SQLite. Napiszesz zapytania z JOIN-ami, agregacjami i funkcjami okna, a następnie zoptymalizujesz najcięższe z nich. Efektem jest repozytorium z plikami .sql, skryptem ładującym próbkę oraz krótkim raportem wyników z wnioskami biznesowymi.",
+		"level": "L1",
+		"estimatedHours": 4,
+		"sourceType": "open_data",
+		"sourceUrl": "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page",
+		"competencies": [
+			{
+				"name": "SQL",
+				"role": "required"
+			},
+			{
+				"name": "Git",
+				"role": "required"
+			},
+			{
+				"name": "Python",
+				"role": "acquired"
+			}
+		],
+		"rubricJson": [
+			{
+				"criterion": "Poprawność i czytelność zapytań",
+				"weight": 30,
+				"description": "Zapytania zwracają poprawne wyniki, są sformatowane czytelnie (wcięcia, aliasy, komentarze) i używają JOIN-ów oraz agregacji zgodnie z ziarnem danych. Brak niejawnych iloczynów kartezjańskich."
+			},
+			{
+				"criterion": "Użycie funkcji okna",
+				"weight": 30,
+				"description": "Co najmniej dwa zapytania stosują window functions (np. ROW_NUMBER, RANK, SUM OVER, LAG/LEAD) tam, gdzie GROUP BY byłoby niewystarczające, z krótkim uzasadnieniem wyboru."
+			},
+			{
+				"criterion": "Wnioski z danych",
+				"weight": 20,
+				"description": "Raport przekłada wyniki zapytań na 2-3 konkretne obserwacje o przejazdach (np. wzorce czasowe, różnice między strefami), a nie tylko wkleja tabele."
+			},
+			{
+				"criterion": "Reprodukowalność",
+				"weight": 20,
+				"description": "Repo zawiera skrypt ładujący próbkę danych, pliki .sql uruchamialne od zera, README z instrukcją oraz sensowną historię commitów w Git."
+			}
+		],
+		"theory_md": "## Dlaczego SQL to codzienny język Data Scientist\n\nWiększość danych w firmach nie leży w plikach CSV, tylko w bazach i hurtowniach. Zanim cokolwiek wyliczysz w Pythonie, musisz te dane wydobyć, połączyć i wstępnie zagregować — a robisz to w SQL. To dlatego SQL jest umiejętnością, której używa się codziennie, częściej niż niejednego frameworka ML. SQL jest deklaratywny: opisujesz, jaki wynik chcesz uzyskać, a silnik decyduje, jak go policzyć. To potężne, bo pozwala myśleć o danych zbiorami, nie pętlami. Ale bywa też zdradliwe, bo łatwo napisać zapytanie, które działa i zwraca liczby — tylko niewłaściwe.\n\n## Ziarno wiersza: fundament, o którym się zapomina\n\n> Zanim policzysz cokolwiek, ustal, co reprezentuje jeden wiersz.\n\nZiarno (grain) to poziom szczegółowości danych: czy jeden wiersz to jeden przejazd, jedna strefa, czy jedna godzina? To najważniejsze pytanie w analitycznym SQL, bo determinuje poprawność każdej agregacji. Jeśli policzysz `SUM(kwota)` po JOIN-ie, który zwielokrotnił wiersze, dostaniesz zawyżony wynik, który wygląda wiarygodnie. Klasyczny błąd praktyka to agregacja bez zrozumienia ziarna: łączysz tabelę przejazdów z tabelą stref, każdy przejazd nagle pojawia się kilka razy, a suma przychodów rośnie z powietrza. Zapytanie się wykonuje, nikt nie widzi błędu, a decyzje zapadają na fałszywych liczbach.\n\nDlatego dobrym nawykiem jest sprawdzanie liczności przed i po JOIN-ie oraz świadomość, który JOIN (INNER, LEFT) zmienia zbiór wierszy. JOIN nie służy tylko do \"doklejania kolumn\" — zmienia ziarno wyniku i trzeba to kontrolować.\n\n## Kiedy okno bije GROUP BY\n\nGROUP BY zwija wiele wierszy w jeden: tracisz szczegół, zostaje agregat. To świetne, gdy chcesz jedną liczbę na grupę. Ale mnóstwo pytań analitycznych brzmi inaczej: \"jaki jest udział tego przejazdu w przychodzie strefy?\", \"który przejazd był pierwszy w danym dniu?\", \"jak wygląda średnia krocząca z ostatnich N przejazdów?\". Tu GROUP BY zawodzi, bo chcesz zachować każdy wiersz, a jednocześnie widzieć wartość policzoną w kontekście grupy.\n\nFunkcje okna (window functions) rozwiązują to elegancko. Konstrukcja `OVER (PARTITION BY ... ORDER BY ...)` liczy agregat lub ranking względem \"okna\" wierszy, nie zwijając wyniku. Dzięki temu w jednym zapytaniu masz i szczegół, i kontekst. `ROW_NUMBER` numeruje wiersze w grupie, `RANK` porządkuje, `SUM(...) OVER` daje sumy narastające, `LAG`/`LEAD` sięgają do sąsiednich wierszy. Reguła kciuka: jeśli chcesz jedną liczbę na grupę, użyj GROUP BY; jeśli chcesz zachować wiersze i dodać do nich coś policzonego per grupa, użyj okna.\n\n## Optymalizacja: kiedy i po co\n\nOptymalizacja zapytania nie polega na przedwczesnym kombinowaniu, tylko na reagowaniu, gdy zapytanie jest realnie wolne. Najpierw sprawdź, co silnik faktycznie robi — DuckDB i SQLite mają `EXPLAIN`, który pokazuje plan wykonania. Najczęstsze przyczyny wolności to skanowanie całej tabeli tam, gdzie wystarczyłby filtr wcześniej, oraz JOIN-y na dużym ziarnie. Prosta zasada: filtruj jak najwcześniej i redukuj liczbę wierszy przed kosztownymi operacjami. Na próbce danych różnice bywają niewielkie, ale nawyk czytania planu wykonania procentuje przy pracy z pełnymi zbiorami.\n\n## Czytelność to też poprawność\n\nSQL, którego nie da się przeczytać, to SQL, którego nie da się zweryfikować. Formatuj zapytania: jedno pole na linię przy dłuższych SELECT-ach, jasne aliasy, komentarz wyjaśniający nietrywialny warunek. Używaj CTE (`WITH`), by rozbić skomplikowaną logikę na nazwane kroki, zamiast zagnieżdżać podzapytania w podzapytaniach. Czytelne zapytanie łatwiej sprawdzić pod kątem ziarna i JOIN-ów, a więc łatwiej wychwycić błąd, zanim trafi do raportu. W analityce poprawność liczby jest ważniejsza niż jej istnienie — lepiej mieć wynik wolniejszy, ale sprawdzalny, niż szybki i niezrozumiały.\n\n## NULL i pułapki filtrowania\n\nSQL ma własną logikę trójwartościową: oprócz prawdy i fałszu istnieje wartość NULL, oznaczająca \"nieznane\". To źródło zaskakujących błędów. Warunek `WHERE kwota != 100` po cichu odrzuci wiersze, w których kwota jest NULL-em, bo porównanie z nieznanym nie daje prawdy. Podobnie `NOT IN` z listą zawierającą NULL potrafi zwrócić pusty wynik wbrew intencji. W danych o przejazdach, gdzie część pól bywa niewypełniona, takie subtelności realnie zmieniają liczby. Dlatego świadomie używaj `IS NULL`, `IS NOT NULL` oraz funkcji typu `COALESCE`, i zawsze zastanów się, co ma się stać z brakami, zanim je odfiltrujesz.\n\n## Weryfikuj wynik, nie ufaj mu\n\nZapytanie, które się wykonało, nie jest zapytaniem poprawnym. Dobry nawyk to sanity check: sprawdź liczbę wierszy wyniku, porównaj sumę kontrolną z prostym niezależnym zapytaniem, obejrzyj kilka konkretnych rekordów ręcznie. Jeśli agregat przychodu wygląda podejrzanie wysoko, najpierw podejrzewaj zwielokrotnienie wierszy przez JOIN, a nie prawdziwy wzrost. Ta pętla \"policz, sprawdź, zakwestionuj\" odróżnia analityka od osoby, która wkleja pierwszy wynik do raportu. W praktyce zawodowej to właśnie te ciche błędy — poprawne składniowo, błędne merytorycznie — kosztują najwięcej.",
+		"learning_resources": [
+			{
+				"title": "DuckDB — dokumentacja",
+				"url": "https://duckdb.org/docs/",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Kaggle Learn — kursy SQL",
+				"url": "https://www.kaggle.com/learn",
+				"type": "course",
+				"position": 1
+			},
+			{
+				"title": "Pro Git — kontrola wersji",
+				"url": "https://git-scm.com/book/en/v2",
+				"type": "docs",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page",
+				"label": "NYC TLC Trip Record Data — oficjalne źródło",
+				"position": 0
+			},
+			{
+				"url": "https://duckdb.org/docs/",
+				"label": "DuckDB — silnik SQL do analizy lokalnej",
+				"position": 1
+			},
+			{
+				"url": "https://www.nyc.gov/home/terms-of-use.page",
+				"label": "Warunki użycia danych NYC TLC: NYC Open Data Terms of Use (nie CC; bez gwarancji poprawności)",
+				"position": 2
+			}
+		]
+	},
+	{
+		"slug": "ds-pierwszy-model-predykcyjny",
+		"title": "Pierwszy model predykcyjny: od baseline do rzetelnej ewaluacji",
+		"description": "Zbudujesz pierwszy model uczenia maszynowego w scikit-learn na realnych danych z UCI Online Retail (lub GUS BDL), unikając zbiorów-klisz. Przejdziesz pełną ścieżkę: model trywialny jako baseline, model właściwy, poprawna walidacja, metryki dobrane do problemu i krótka analiza błędów. Efektem jest reprodukowalny notebook oraz raport zawierający obowiązkową sekcję Ograniczenia.",
+		"level": "L1",
+		"estimatedHours": 6,
+		"sourceType": "open_data",
+		"sourceUrl": "https://archive.ics.uci.edu/dataset/352/online+retail",
+		"competencies": [
+			{
+				"name": "Uczenie maszynowe",
+				"role": "required"
+			},
+			{
+				"name": "Statystyka (Statistics)",
+				"role": "required"
+			},
+			{
+				"name": "Python",
+				"role": "acquired"
+			},
+			{
+				"name": "Pandas",
+				"role": "acquired"
+			}
+		],
+		"rubricJson": [
+			{
+				"criterion": "Baseline przed modelem",
+				"weight": 20,
+				"description": "Notebook zawiera model trywialny (np. przewidywanie klasy większościowej lub średniej) policzony PRZED modelem właściwym, z metryką, do której odnosisz późniejszy wynik."
+			},
+			{
+				"criterion": "Poprawna walidacja i opis ryzyka leakage",
+				"weight": 25,
+				"description": "Zastosowany jest rozdzielny podział train/test lub k-fold. Raport wprost opisuje, jak uniknięto wycieku danych (leakage): dopasowanie preprocessingu tylko na treningu, brak informacji z przyszłości, brak oceny na danych treningowych."
+			},
+			{
+				"criterion": "Dobór metryk do problemu",
+				"weight": 20,
+				"description": "Metryki są dobrane świadomie do zadania i rozkładu klas (np. F1/precision/recall/ROC-AUC zamiast samej accuracy przy niezbalansowaniu; MAE/RMSE dla regresji), z uzasadnieniem wyboru."
+			},
+			{
+				"criterion": "Analiza błędów",
+				"weight": 15,
+				"description": "Notebook zawiera krótką analizę, gdzie i dlaczego model się myli (np. macierz pomyłek, przykłady błędnych predykcji, grupy o gorszym wyniku)."
+			},
+			{
+				"criterion": "Reprodukowalność i sekcja Ograniczenia",
+				"weight": 20,
+				"description": "Ustawiony seed, requirements.txt, README, sensowna historia Git oraz raport z jawną sekcją Ograniczenia opisującą słabości danych, metody i wniosków."
+			}
+		],
+		"theory_md": "## Czym jest trenowanie i ewaluacja modelu\n\nTrenowanie modelu to dopasowanie funkcji, która na podstawie cech wejściowych przewiduje wynik, poprzez minimalizację błędu na danych treningowych. Ewaluacja to sprawdzenie, jak ta funkcja radzi sobie z danymi, których nie widziała. Cała trudność uczenia maszynowego mieści się w przepaści między tymi dwoma zdaniami. Model, który świetnie odtwarza dane treningowe, może być bezużyteczny w praktyce, bo nauczył się szczegółów, a nie prawidłowości. Dlatego rzetelny proces nie kończy się na wysokim wyniku podczas treningu — zaczyna się dopiero wtedy pytanie, czy ten wynik się uogólnia.\n\n## Bias, wariancja i overfitting\n\nDwa źródła błędu modelu to obciążenie (bias) i wariancja. Model o wysokim biasie jest zbyt prosty: nie łapie struktury danych i myli się systematycznie (underfitting). Model o wysokiej wariancji jest zbyt złożony: dopasowuje się do szumu w danych treningowych i rozsypuje na nowych (overfitting). Objaw overfittingu jest charakterystyczny: znakomity wynik na treningu, słaby na teście. Celem nie jest maksymalna złożoność, tylko właściwy kompromis — model dość bogaty, by uchwycić sygnał, i dość skromny, by nie zapamiętać szumu. To dlatego prostszy model z uczciwą walidacją bywa lepszy niż skomplikowany model oceniony na treningu.\n\n## Po co baseline\n\n> Bez baseline nie wiesz, czy twój model jest dobry, czy tylko wygląda dobrze.\n\nBaseline to model trywialny: przewidywanie klasy większościowej w klasyfikacji albo średniej w regresji. Liczysz go PRZED modelem właściwym, bo daje punkt odniesienia. Accuracy 92% brzmi imponująco, dopóki nie zauważysz, że 92% obserwacji należy do jednej klasy — wtedy głupi model \"zawsze ta klasa\" osiąga to samo, a twój algorytm nie wniósł nic. Baseline chroni przed samozachwytem i zmusza do pytania: o ile realnie bijemy trywialne rozwiązanie? Jeśli model ledwo przekracza baseline, prawdopodobnie problem leży w danych albo w cechach, nie w wyborze algorytmu.\n\n## Walidacja i ryzyko wycieku danych\n\nWalidacja polega na ocenie modelu na danych odseparowanych od treningu: podział train/test albo walidacja krzyżowa (k-fold), gdzie każda część zbioru bywa raz testem. Sensem jest symulacja spotkania z nowymi danymi. Najgroźniejszym wrogiem tej symulacji jest wyciek danych (data leakage) — sytuacja, w której informacja z części testowej przecieka do treningu. Klasyczne przykłady: normalizacja lub imputacja policzona na całym zbiorze przed podziałem, użycie cechy, która w praktyce byłaby znana dopiero po fakcie, albo trenowanie i ocena na tych samych wierszach. Leakage daje piękne wyniki w notebooku i katastrofę we wdrożeniu. Reguła jest prosta: każdy krok przetwarzania ucz wyłącznie na danych treningowych, a potem stosuj do testowych.\n\n## Metryka jako oszacowanie, nie prawda absolutna\n\nTu wchodzi statystyka. Wynik na zbiorze testowym to oszacowanie prawdziwej jakości modelu, obarczone niepewnością wynikającą z tego, że test jest skończoną próbką. Accuracy 0,88 nie znaczy, że model \"ma 88% racji na zawsze\" — to punktowe oszacowanie, które przy innym podziale danych wyszłoby nieco inaczej. Dlatego walidacja krzyżowa jest cenna: pokazuje rozrzut wyniku, a nie jedną liczbę. Traktuj metryki jak pomiar z błędem, nie jak wyrok.\n\nRównie ważny jest dobór metryki do problemu. Przy niezbalansowanych klasach accuracy jest myląca, bo nagradza ignorowanie klasy rzadkiej — a to często ta klasa jest istotna. Wtedy sięgasz po precision, recall, F1 albo ROC-AUC, które patrzą na model z perspektywy błędów obu typów. W regresji rozróżniasz MAE i RMSE, bo różnie karzą duże pomyłki. Metryka to soczewka: zły wybór pokaże sukces tam, gdzie go nie ma.\n\n## Analiza błędów i pokora w raporcie\n\nModel, który się myli, jest normą — pytanie brzmi gdzie i dlaczego. Macierz pomyłek, przykłady błędnych predykcji i sprawdzenie, czy pewne grupy wypadają gorzej, mówią więcej niż jedna liczba zbiorcza. Dlatego rzetelny raport kończy się sekcją Ograniczenia: jakie założenia przyjęto, gdzie dane są słabe, czego wynik NIE dowodzi. To nie przyznanie się do porażki, tylko znak dojrzałości analitycznej.",
+		"learning_resources": [
+			{
+				"title": "scikit-learn — User Guide",
+				"url": "https://scikit-learn.org/stable/user_guide.html",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Google Machine Learning Crash Course",
+				"url": "https://developers.google.com/machine-learning/crash-course",
+				"type": "course",
+				"position": 1
+			},
+			{
+				"title": "StatQuest with Josh Starmer",
+				"url": "https://www.youtube.com/@statquest",
+				"type": "video",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://archive.ics.uci.edu/dataset/352/online+retail",
+				"label": "UCI Online Retail Dataset",
+				"position": 0
+			},
+			{
+				"url": "https://www.statlearning.com/",
+				"label": "An Introduction to Statistical Learning (ISLP) — darmowy podręcznik",
+				"position": 1
+			},
+			{
+				"url": "https://doi.org/10.24432/C5BW33",
+				"label": "Licencja: CC BY 4.0 — cytowanie: Chen, D. (2015), Online Retail, UCI ML Repository",
+				"position": 2
+			}
+		]
+	},
+	{
+		"slug": "ds-llm-strukturalna-ekstrakcja",
+		"title": "Strukturalna ekstrakcja danych z tekstu za pomocą LLM",
+		"description": "Zbuduj mini-pipeline, który z surowych tekstów (np. ogłoszeń o pracę lub opisów produktów) wyciąga ustrukturyzowany JSON za pomocą modelu językowego i technik prompt engineering. Kluczem projektu nie jest samo wywołanie modelu, lecz zmierzenie jakości wyjścia na zbiorze ~30 przykładów: trafność wypełnionych pól i wykrywanie halucynacji. Artefaktem jest repozytorium z promptami, skryptem uruchomieniowym i tabelą ewaluacji. Pracuj na realnie darmowym tierze API bez karty kredytowej — Google Gemini API (free tier) lub Groq — w zupełności wystarczającym na ~30 przykładów; klucz API trzymaj w zmiennej środowiskowej, nie w repo. Jeśli używasz realnych ogłoszeń, usuń lub pseudonimizuj dane osobowe (nazwiska, e-maile, telefony) i nie commituj surowych rekordów kontaktowych.",
+		"level": "L1",
+		"estimatedHours": 5,
+		"sourceType": "oss",
+		"sourceUrl": "https://ai.google.dev/gemini-api/docs",
+		"competencies": [
+			{
+				"name": "LLM",
+				"role": "required"
+			},
+			{
+				"name": "GenAI",
+				"role": "required"
+			},
+			{
+				"name": "Python",
+				"role": "acquired"
+			}
+		],
+		"rubricJson": [
+			{
+				"criterion": "Jakość promptu",
+				"weight": 25,
+				"description": "Prompt jasno definiuje docelowy schemat JSON (nazwy i typy pól), zawiera instrukcje na wypadek braku danych (null zamiast zmyślania) i co najmniej jeden przykład (few-shot). Prompty są wersjonowane w repozytorium."
+			},
+			{
+				"criterion": "Poprawność struktury wyjścia",
+				"weight": 25,
+				"description": "Skrypt parsuje odpowiedź modelu do walidowalnego JSON (np. przez schemat), obsługuje przypadki niepoprawnego formatu i raportuje odsetek odpowiedzi zgodnych ze schematem."
+			},
+			{
+				"criterion": "Mini-ewaluacja z metryką",
+				"weight": 30,
+				"description": "Zbiór ~30 przykładów z ręcznie oznaczonym ground truth; policzona metryka trafności pól (np. accuracy per pole) oraz osobny wskaźnik halucynacji (pola wypełnione mimo braku danych w tekście). Wyniki w tabeli w repozytorium."
+			},
+			{
+				"criterion": "Reprodukowalność",
+				"weight": 20,
+				"description": "README z instrukcją uruchomienia, plik requirements, ustawiony seed/temperatura, klucz API pobierany ze zmiennej środowiskowej (nie w repo), historia w Git."
+			}
+		],
+		"theory_md": "# Strukturalna ekstrakcja danych z tekstu za pomocą LLM\n\n## Czym są LLM i GenAI\n\nDuże modele językowe (LLM) to sieci neuronowe wytrenowane na ogromnych korpusach tekstu do przewidywania kolejnego tokenu. Ta prosta reguła daje zaskakująco silne zdolności: modele potrafią streszczać, klasyfikować i przepisywać tekst bez trenowania osobnego modelu dla każdego zadania. GenAI (generatywna AI) to szersza rodzina systemów, które tworzą nowe treści — tekst, obraz, kod. W pracy Data Scientista LLM jest przede wszystkim **narzędziem do zamiany nieustrukturyzowanego tekstu w dane, na których da się liczyć**.\n\n## Dlaczego strukturalne wyjście\n\nTekst swobodny jest wygodny dla człowieka, ale bezużyteczny dla pipeline'u analitycznego. Jeśli chcesz policzyć, ile ogłoszeń wymaga Pythona albo jaki jest rozkład widełek płacowych, potrzebujesz kolumn, a nie akapitów. Dlatego prosimy model o zwrot JSON o ustalonym schemacie: `{\"stanowisko\": ..., \"technologie\": [...], \"widelki_min\": ...}`. Strukturalne wyjście pozwala walidować odpowiedź programowo, ładować ją do tabeli i agregować. Intuicja: LLM pełni tu rolę **parsera semantycznego** — rozumie znaczenie zdania i mapuje je na pola, których nie da się wyłuskać prostym wyrażeniem regularnym.\n\nDobrze zaprojektowany prompt do ekstrakcji ma trzy elementy: precyzyjny opis schematu (nazwy pól i typy), regułę na braki (\"jeśli informacji nie ma w tekście, wpisz null — nie zgaduj\") oraz przykład wejścia i oczekiwanego wyjścia (few-shot). Temperatura powinna być niska (bliska 0), bo zależy nam na powtarzalności, a nie kreatywności.\n\n## Po co ewaluować — problem halucynacji\n\nNajważniejsza lekcja tego projektu: **model brzmi pewnie także wtedy, gdy się myli**. Halucynacja to sytuacja, w której LLM wypełnia pole wartością, której w tekście nie było — bo statystycznie \"pasuje\". Model widzi ogłoszenie bez podanej płacy i mimo to wpisuje prawdopodobne widełki, bo takie zwykle występują. Bez pomiaru nie masz szans tego wychwycić.\n\nDlatego budujemy mini-ewaluację. Bierzemy ~30 przykładów, ręcznie oznaczamy poprawne wartości pól (ground truth) i porównujemy z wyjściem modelu. Liczymy dwie rzeczy osobno:\n\n1. **Trafność pól** — dla ilu pól model podał poprawną wartość (np. accuracy per pole).\n2. **Wskaźnik halucynacji** — jak często model wypełnił pole, które powinno być puste.\n\nTe dwie metryki mierzą różne ryzyka. Wysoka trafność przy wysokiej halucynacji oznacza model, który dobrze czyta, ale nie umie się przyznać do niewiedzy — a to bywa groźniejsze niż zwykły błąd, bo fałszywe dane wyglądają wiarygodnie.\n\nTrzydzieści przykładów to za mało na wnioski statystyczne, ale wystarczająco, by złapać systematyczne błędy: pole, które model myli regularnie, albo format, którego nie trzyma. To jest istota podejścia \"zmierz, zanim zaufasz\".\n\n## Typowy błąd\n\nNajczęstszy błąd początkujących to **ufanie modelowi bez pomiaru** — uruchomienie ekstrakcji, obejrzenie dwóch ładnych wyników i uznanie, że działa. Pipeline trafia do produkcji, a po tygodniu okazuje się, że 20% rekordów ma zmyślone widełki płacowe. Drugi błąd to brak walidacji formatu: zakładamy, że model zawsze zwróci poprawny JSON, a on czasem doda komentarz albo urwie nawias, przez co skrypt się wywraca. Trzeci to zbyt wysoka temperatura, przez którą te same dane wejściowe dają różne wyjścia i tracisz reprodukowalność.\n\n## Klauzula kosztowa\n\nPracuj wyłącznie na **darmowym tierze API** modelu językowego. Zbiór 30 przykładów mieści się w limitach z ogromnym zapasem — jedna iteracja ewaluacji to kilkadziesiąt krótkich wywołań. Nie zwiększaj zbioru do setek rekordów \"dla pewności\": to nie poprawi jakości nauki, a może wyczerpać kwotę. Klucz API trzymaj w zmiennej środowiskowej, nigdy w repozytorium.\n\n## Podsumowanie\n\nEkstrakcja strukturalna to jedno z najbardziej praktycznych zastosowań LLM w pracy DS. Wartość projektu leży nie w promptcie, lecz w dyscyplinie pomiaru: definiujesz schemat, wymuszasz go, a potem sprawdzasz na ground truth, ile model naprawdę trafia i jak często zmyśla. To odruch, który odróżnia inżyniera danych od entuzjasty klikającego w chatbota. Traktuj prompt jak kod, a ewaluację jak test jednostkowy — gdy zmienisz prompt, uruchom ewaluację ponownie i porównaj metryki, żeby mieć pewność, że poprawka faktycznie pomogła, a nie tylko przesunęła błąd w inne miejsce. Ta pętla pomiaru jest przenośna na każde zastosowanie GenAI, jakie spotkasz w dalszej pracy.\n\n> **Uwaga (dane osobowe i koszt).** Realne ogłoszenia i opisy bywają pełne danych osobowych — przed commitem usuń lub zamaskuj nazwiska, e-maile i telefony. Do pracy wystarczy darmowy tier bez karty (Gemini/Groq); nie podłączaj płatnych kredytów do zadania na 30 przykładów.",
+		"learning_resources": [
+			{
+				"title": "Google Gemini API — dokumentacja i darmowy tier (bez karty)",
+				"url": "https://ai.google.dev/gemini-api/docs",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Hugging Face LLM Course — Chapter 1",
+				"url": "https://huggingface.co/learn/llm-course/chapter1/1",
+				"type": "course",
+				"position": 1
+			},
+			{
+				"title": "Google Machine Learning Crash Course",
+				"url": "https://developers.google.com/machine-learning/crash-course",
+				"type": "course",
+				"position": 2
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://ai.google.dev/gemini-api/docs/rate-limits",
+				"label": "Google Gemini API — limity darmowego tieru (bez karty)",
+				"position": 0
+			},
+			{
+				"url": "https://huggingface.co/learn/llm-course/chapter1/1",
+				"label": "Hugging Face LLM Course (prompt engineering, referencja)",
+				"position": 1
+			}
+		]
+	},
+	{
+		"slug": "ds-databricks-pyspark-taxi",
+		"title": "Analiza dużych danych NYC Taxi w PySpark na Databricks",
+		"description": "Pracuj na platformie chmurowej Databricks Free Edition: pobierz duży zbiór przejazdów NYC TLC w formacie Parquet, wykonaj transformacje w PySpark i EDA na skali, która nie mieści się w pandas, a na końcu zbuduj prosty model. Zdefiniujesz metrykę sukcesu analizy jeszcze przed kodowaniem. Projekt uczy myślenia rozproszonego: leniwej ewaluacji, partycjonowania i unikania operacji ściągających cały zbiór do sterownika. Wszystko projektuj pod darmowe limity Free Edition, pracując na próbce danych.",
+		"level": "L2",
+		"estimatedHours": 12,
+		"sourceType": "open_data",
+		"sourceUrl": "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page",
+		"competencies": [
+			{
+				"name": "Databricks",
+				"role": "required"
+			},
+			{
+				"name": "PySpark",
+				"role": "required"
+			},
+			{
+				"name": "Spark",
+				"role": "required"
+			},
+			{
+				"name": "Python",
+				"role": "acquired"
+			},
+			{
+				"name": "SQL",
+				"role": "acquired"
+			},
+			{
+				"name": "EDA",
+				"role": "acquired"
+			}
+		],
+		"rubricJson": [
+			{
+				"criterion": "Framing problemu i metryka sukcesu",
+				"weight": 15,
+				"description": "Raport zaczyna się od jasno zdefiniowanej metryki sukcesu analizy (np. wyznaczenie średniego napiwku wg pory dnia z określoną dokładnością) i uzasadnienia, dlaczego skala danych wymaga Sparka, a nie pandas."
+			},
+			{
+				"criterion": "Ingest i partycjonowanie",
+				"weight": 20,
+				"description": "Poprawny ingest plików Parquet NYC TLC do DataFrame Spark, świadomy dobór partycji, praca na reprezentatywnej próbce z uzasadnieniem doboru rozmiaru pod limity Free Edition."
+			},
+			{
+				"criterion": "Transformacje PySpark",
+				"weight": 25,
+				"description": "Czyste, wektorowe transformacje w PySpark (filtry, agregacje, join, funkcje okna) bez zbędnych akcji materializujących; kod czytelny i skomentowany."
+			},
+			{
+				"criterion": "EDA na skali i wnioski",
+				"weight": 25,
+				"description": "Analiza eksploracyjna prowadzona rozproszenie (agregaty liczone w Sparku, do pandas ściągane tylko zagregowane wyniki), z wnioskami odpowiadającymi na postawioną metrykę sukcesu. Wykryte anomalie i outliery opisane."
+			},
+			{
+				"criterion": "Reprodukowalność",
+				"weight": 15,
+				"description": "Eksport notebooka Databricks + repozytorium z README, przypięte wersje bibliotek, ustawiony seed dla próbkowania i modelu, jawnie opisane kroki odtworzenia w Free Edition."
+			}
+		],
+		"theory_md": "# Analiza dużych danych NYC Taxi w PySpark na Databricks\n\n## Po co Spark i Databricks\n\nApache Spark to silnik do rozproszonego przetwarzania danych: zamiast liczyć wszystko w pamięci jednej maszyny, dzieli pracę na partycje i rozkłada ją na wiele rdzeni lub węzłów. Databricks to komercyjna platforma zbudowana wokół Sparka, dająca notebooki, klaster i warstwę danych w jednym miejscu. W tym projekcie używamy **Databricks Free Edition** (ważne: dawna Community Edition została wycofana 1 stycznia 2026 — nie korzystaj z niej ani z jej linków; obowiązuje wyłącznie Free Edition).\n\nZbiór NYC TLC Trip Records to setki milionów przejazdów taksówek zapisane w Parquet — kolumnowym formacie, który pozwala czytać tylko potrzebne kolumny i jest domyślnym wyborem w świecie big data. To realistyczny materiał do nauki: pojedynczy miesiąc bywa większy niż pamięć darmowego środowiska, więc musisz myśleć rozproszenie od pierwszej linijki.\n\n## Kiedy Spark bije pandas\n\nIntuicja jest prosta: **pandas trzyma cały DataFrame w RAM jednego procesu**. Dopóki dane mieszczą się w pamięci (orientacyjnie do kilku GB), pandas jest szybszy i wygodniejszy — brak narzutu na koordynację. Spark wygrywa dopiero, gdy dane **przekraczają RAM** albo gdy chcesz skalować obliczenia na wiele maszyn. Wtedy leniwa ewaluacja i partycjonowanie pozwalają przetworzyć zbiór, którego pandas nawet nie wczyta.\n\nWarunek stosowalności: nie sięgaj po Sparka dla 100 MB danych \"bo brzmi profesjonalnie\". Dla małych zbiorów przegrasz na narzucie i skomplikujesz kod. Reguła kciuka: pandas, dopóki mieści się w pamięci z zapasem; Spark, gdy dane są większe niż RAM lub gdy realnie potrzebujesz równoległości.\n\n## Leniwa ewaluacja\n\nSpark rozróżnia **transformacje** (filtr, select, groupBy) od **akcji** (count, collect, show, write). Transformacje są leniwe: nie wykonują się od razu, tylko budują plan (DAG). Dopiero akcja uruchamia obliczenia. Dzięki temu Spark może zoptymalizować cały łańcuch — np. przesunąć filtr przed join albo połączyć operacje. Praktyczny wniosek: dodawanie kolejnych transformacji jest tanie, kosztuje dopiero akcja. Dlatego akcje wywołuj świadomie i rzadko.\n\n## Product sense — metryka sukcesu\n\nZanim napiszesz pierwszą transformację, **zdefiniuj metrykę sukcesu i guardrail**. Przykład: \"Chcę wyznaczyć średni napiwek jako procent opłaty w zależności od pory dnia, z rozbiciem na strefy, tak by wynik był stabilny przy powtórzeniu na innej próbce\". Guardrail: analiza musi zmieścić się w darmowych limitach compute. Taki framing chroni cię przed bezcelowym mieleniem danych i sprawia, że raport odpowiada na pytanie, a nie tylko pokazuje wykresy.\n\n## Klauzula kosztowa\n\nDatabricks Free Edition ma twarde limity: jeden SQL warehouse rozmiaru 2X-Small, do 5 jobów, brak wsparcia R/Scala oraz tygodniową kwotę compute. **Projektuj na próbce.** Zamiast czytać cały rok danych, weź jeden–dwa miesiące lub reprezentatywny sample i pracuj na nim — logika kodu jest identyczna, a zużycie zasobów wielokrotnie mniejsze. Nigdy nie uruchamiaj pełnego skanu \"dla pewności\": to najszybszy sposób na wyczerpanie darmowej kwoty. Zakaz przekraczania darmowych limitów jest twardym warunkiem projektu.\n\n## Metodyka i pułapki\n\n**Baseline.** Zanim zbudujesz model predykcyjny, ustal prosty baseline — np. przewidywanie średniej lub mediany. Model ma sens tylko wtedy, gdy go bije. Bez baseline nie wiesz, czy Twój wynik jest dobry, czy przypadkowy.\n\n**Walidacja i leakage.** Dziel dane na train/test świadomie. Przy danych czasowych (przejazdy mają daty) nie mieszaj przyszłości z przeszłością losowym splitem — to klasyczny wyciek informacji. Waliduj na okresie późniejszym niż trening.\n\n**Typowy błąd: collect() na dużym zbiorze.** `collect()` ściąga wszystkie wiersze do sterownika (jednej maszyny). Na milionach rekordów wysadza pamięć i wywala klaster. Zasada: do sterownika sprowadzaj wyłącznie **zagregowane** wyniki (setki, nie miliony wierszy). Surowe dane zostają rozproszone. To samo dotyczy `toPandas()` na niezagregowanym DataFrame.\n\n**Shuffle.** Operacje typu groupBy, join i sortowanie wymagają przetasowania danych między partycjami (shuffle) — to najdroższy element w Sparku, bo oznacza ruch przez sieć i zapis na dysk. Minimalizuj shuffle: filtruj wcześnie (mniej danych do przetasowania), unikaj niepotrzebnych join, a przy łączeniu małej tabeli z dużą rozważ broadcast join. Nadmiar shuffle to najczęstsza przyczyna wolnych zadań.\n\n**Analiza błędów i ograniczenia.** W raporcie opisz, gdzie model się myli i dlaczego (np. ekstremalne napiwki, brakujące strefy) oraz sekcję \"Ograniczenia\": pracujesz na próbce, wyniki mogą nie generalizować na cały rok, limity Free Edition uniemożliwiły pełny przebieg.\n\n## Format Parquet i schemat\n\nWarto rozumieć, dlaczego NYC TLC publikuje dane w Parquet, a nie w CSV. Parquet jest **kolumnowy**: przechowuje wartości kolumnami, a nie wierszami. Dzięki temu, gdy potrzebujesz tylko trzech kolumn z pięćdziesięciu, silnik czyta wyłącznie te trzy — reszta nawet nie schodzi z dysku (predykat i projekcja są \"pushowane\" do warstwy odczytu). Parquet niesie też schemat i statystyki (min/max per blok), co pozwala pomijać całe fragmenty pliku niepasujące do filtra. W praktyce oznacza to, że dobrze napisane zapytanie na Parquet potrafi być rzędy wielkości szybsze niż na CSV. Ucz się patrzeć na plan wykonania (`explain`) i sprawdzać, czy filtry rzeczywiście trafiają do warstwy skanu.\n\n## Cache i ponowne użycie\n\nGdy ten sam pośredni DataFrame wykorzystujesz w wielu akcjach (np. liczysz z niego kilka agregatów), rozważ `cache()`/`persist()` — inaczej Spark policzy cały łańcuch transformacji od nowa przy każdej akcji, bo transformacje są leniwe i nie pamiętają wyniku. Ale cache też kosztuje pamięć, więc stosuj go świadomie, tylko dla realnie wielokrotnie używanych, przefiltrowanych zbiorów — nie dla surowego wejścia. Nadużycie cache na dużych, nieprzefiltrowanych danych to kolejny sposób na przepełnienie pamięci w darmowym środowisku.\n\n## Podsumowanie\n\nProjekt uczy najważniejszej zmiany mentalnej w big data: dane są rozproszone, więc obliczenia sprowadzasz do danych, a nie odwrotnie. Leniwa ewaluacja, świadome partycjonowanie, unikanie collect() i minimalizacja shuffle to fundamenty, które przenoszą się na każdą platformę Spark — nie tylko Databricks. Gdy opanujesz te odruchy na próbce w Free Edition, ten sam kod skaluje się na pełny zbiór w środowisku produkcyjnym bez zmiany logiki — to właśnie obietnica Sparka.\n\n> **Twardy limit próbki (Free Edition).** Kwota compute Free Edition jest nieprzejrzysta i po przekroczeniu blokuje workspace — pracuj na maksymalnie jednym miesiącu danych NYC TLC (kilka mln wierszy) i nigdy nie uruchamiaj pełnego skanu całego zbioru.",
+		"learning_resources": [
+			{
+				"title": "PySpark — Getting Started",
+				"url": "https://spark.apache.org/docs/latest/api/python/getting_started/index.html",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Spark — Quick Start",
+				"url": "https://spark.apache.org/docs/latest/quick-start.html",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Databricks Free Edition",
+				"url": "https://www.databricks.com/learn/free-edition",
+				"type": "course",
+				"position": 2
+			},
+			{
+				"title": "Databricks Academy (darmowe szkolenia)",
+				"url": "https://customer-academy.databricks.com/learn",
+				"type": "course",
+				"position": 3
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page",
+				"label": "NYC TLC Trip Record Data (Parquet)",
+				"position": 0
+			},
+			{
+				"url": "https://www.databricks.com/learn/free-edition",
+				"label": "Databricks Free Edition",
+				"position": 1
+			},
+			{
+				"url": "https://spark.apache.org/docs/latest/api/python/getting_started/index.html",
+				"label": "PySpark Getting Started",
+				"position": 2
+			},
+			{
+				"url": "https://www.nyc.gov/home/terms-of-use.page",
+				"label": "Warunki użycia danych NYC TLC: NYC Open Data Terms of Use (nie CC)",
+				"position": 3
+			}
+		]
+	},
+	{
+		"slug": "ds-chmura-wdrozenie-modelu",
+		"title": "Wdrożenie modelu ML w chmurze jako endpoint",
+		"description": "Weź wytrenowany model predykcyjny z wcześniejszego projektu i wdróż go jako działający, publiczny endpoint. Domyślną, w pełni darmową i bezkartową drogą jest Streamlit Community Cloud lub Hugging Face Spaces — to tam powstaje trwały endpoint, do którego rekruter kliknie i zobaczy predykcję. Następnie opisujesz mapę wdrożenia na trzy chmury (Azure, GCP, AWS): na jaką usługę zarządzaną każdej z nich trafiłby ten sam model, jaki jest koszt i kompromisy — to dowód rozumienia chmury bez zakładania kont. UWAGA: darmowe tiery Azure/GCP/AWS wymagają karty kredytowej (nawet bez naliczenia opłaty), a Microsoft Learn Sandbox jest efemeryczny i nie utrzyma trwałego endpointu — bez karty cały projekt zrobisz na Streamlit/HF plus mapa wdrożenia. Zaczynasz od metryki sukcesu (latencja, dostępność) i guardraila; bezwzględny zakaz przekraczania darmowych kwot.",
+		"level": "L2",
+		"estimatedHours": 12,
+		"sourceType": "oss",
+		"sourceUrl": "https://docs.streamlit.io/deploy/streamlit-community-cloud",
+		"competencies": [
+			{
+				"name": "Azure",
+				"role": "required"
+			},
+			{
+				"name": "GCP",
+				"role": "required"
+			},
+			{
+				"name": "AWS",
+				"role": "required"
+			},
+			{
+				"name": "Python",
+				"role": "acquired"
+			},
+			{
+				"name": "Git",
+				"role": "acquired"
+			},
+			{
+				"name": "CI/CD",
+				"role": "acquired"
+			},
+			{
+				"name": "Uczenie maszynowe",
+				"role": "acquired"
+			}
+		],
+		"rubricJson": [
+			{
+				"criterion": "Framing wdrożenia i metryka sukcesu",
+				"weight": 15,
+				"description": "Zdefiniowana metryka sukcesu wdrożenia (latencja, dostępność) i guardrail — przed uruchomieniem, nie po."
+			},
+			{
+				"criterion": "Działające wdrożenie card-free (Streamlit/HF Spaces)",
+				"weight": 25,
+				"description": "Publiczny, klikalny endpoint z modelem na Streamlit Community Cloud lub Hugging Face Spaces (bez karty kredytowej); link w README."
+			},
+			{
+				"criterion": "Mapa wdrożenia na Azure, GCP i AWS",
+				"weight": 20,
+				"description": "Pisemne porównanie: na jaką usługę zarządzaną każdej z trzech chmur trafiłby model, jaki koszt i kompromisy — dowód rozumienia, nie kliknięcia jednej platformy."
+			},
+			{
+				"criterion": "Konteneryzacja i higiena konfiguracji",
+				"weight": 20,
+				"description": "Dockerfile/konfiguracja, pinowane zależności, sekrety w zmiennych środowiskowych (nie w repo), .gitignore."
+			},
+			{
+				"criterion": "README dla rekrutera, reprodukowalność i Ograniczenia",
+				"weight": 20,
+				"description": "README z problemem, linkiem do demo, metryką i instrukcją odtworzenia; sekcja Ograniczenia (koszt, skalowanie, brak monitoringu)."
+			}
+		],
+		"theory_md": "# Wdrożenie modelu ML w chmurze jako endpoint\n\n## Dlaczego model bez wdrożenia jest bezużyteczny\n\nModel żyjący wyłącznie w notebooku nie tworzy wartości. Predykcja, do której nikt nie ma dostępu, nie wpływa na żadną decyzję. Dopiero **wdrożenie** — udostępnienie modelu jako usługi, którą można wywołać — zamienia eksperyment w produkt. To także moment, w którym Data Scientist styka się z inżynierią: musi zadbać o zależności, konfigurację, sekrety i koszty. Dla rekrutera działający URL z predykcją jest silniejszym dowodem kompetencji niż najlepszy nawet notebook, bo pokazuje, że potrafisz doprowadzić rzecz do końca.\n\nTen projekt to pierwszy krok inżynierski ścieżki: bierzesz model wytrenowany wcześniej i wystawiasz go na świat. Wybierasz **jedną** chmurę spośród trzech (Microsoft Learn Sandbox / Azure, Google Cloud free tier, AWS free tier). Brief prowadzi przez wybraną platformę, ale koncepty — endpoint, kontener, zmienne środowiskowe, pipeline CI/CD — są **transferowalne**: nauczywszy się jednej chmury, rozumiesz pozostałe, bo różnią się nazwami usług, nie ideą.\n\n## Co to jest endpoint i kontener\n\n**Endpoint** to adres (URL), pod którym usługa przyjmuje żądanie i zwraca odpowiedź. W kontekście ML: klient wysyła cechy obserwacji, serwer ładuje model, liczy predykcję i odsyła wynik. Najprostszą formą jest lekka aplikacja — np. serwis Streamlit z formularzem albo prosty serwer HTTP z endpointem `/predict`.\n\n**Kontener** (Docker) to spakowane środowisko: kod, biblioteki i konfiguracja w jednym, przenośnym obrazie. Jego sens to powtarzalność — obraz uruchomiony lokalnie i w chmurze zachowuje się tak samo, bo niesie ze sobą dokładnie te same wersje zależności. Konteneryzacja rozwiązuje odwieczny problem \"u mnie działa\": jeśli działa w kontenerze, zadziała wszędzie, gdzie ten kontener uruchomisz.\n\nDla najprostszych wdrożeń możesz skorzystać z darmowych hostingów aplikacji (Streamlit Community Cloud, Hugging Face Spaces), które przyjmują repozytorium i same budują środowisko. To pełnoprawny endpoint, choć bez ręcznego zarządzania infrastrukturą chmurową.\n\n## Product sense — metryka sukcesu wdrożenia\n\nZacznij od pytania: **co znaczy, że wdrożenie się udało?** Metryki modelu (accuracy, RMSE) tu nie wystarczą — teraz liczą się właściwości usługi. Zdefiniuj metrykę wdrożenia, np. medianę latencji odpowiedzi (ile ms trwa predykcja) i dostępność (czy endpoint odpowiada). Dodaj **guardrail**: twardy limit kosztu (idealnie zero) i zakaz przekroczenia darmowej kwoty. Takie ramy odróżniają inżyniera od hobbysty — myślisz o usłudze, nie tylko o modelu.\n\n## Klauzula kosztowa\n\nUżywaj wyłącznie **darmowego tieru lub sandboxa** wybranej chmury. Microsoft Learn oferuje czasowe sandboxy w ramach ścieżek szkoleniowych, GCP i AWS mają free tier z limitami. **Bezwzględny zakaz przekraczania darmowych kwot.** Przed wdrożeniem sprawdź, które usługi są darmowe i w jakim zakresie; ustaw budżet/alert, jeśli platforma to umożliwia. Nie zostawiaj działającego zasobu na noc \"bo się przyda\" — wyłączaj to, czego nie używasz. Sekrety (klucze, tokeny) trzymaj w zmiennych środowiskowych platformy, nigdy w repozytorium.\n\n## Metodyka i pułapki\n\n**Baseline i walidacja wdrożenia.** Analogicznie do modelu, ustal punkt odniesienia dla usługi: czy endpoint zwraca poprawną predykcję dla znanego wejścia? Przygotuj przykładowe zapytanie z oczekiwaną odpowiedzią i traktuj je jak test dymny (smoke test) po każdym deployu. Podłącz go do pipeline CI/CD, żeby wdrożenie, które psuje predykcję, nie przeszło.\n\n**Typowy błąd: brak pinowania zależności.** Jeśli w requirements masz `scikit-learn` bez wersji, chmura zainstaluje najnowszą — i model zapisany starszą wersją może się nie wczytać albo dać inne wyniki. Zawsze przypinaj wersje (`scikit-learn==1.5.2`). To jedna z najczęstszych przyczyn \"działało wczoraj, nie działa dziś\".\n\n**Typowy błąd: sekrety w repozytorium.** Wrzucenie klucza API czy tokenu do Gita to realny incydent bezpieczeństwa — historia Gita pamięta wszystko, nawet po usunięciu pliku. Sekrety zawsze przez zmienne środowiskowe i menedżer sekretów platformy. Dodaj `.gitignore` i sprawdź diff przed commitem.\n\n**Typowy błąd: przekroczenie darmowej kwoty.** Zapomniana instancja, zbyt duża maszyna albo autoskalowanie potrafią wygenerować koszt. Wybieraj najmniejsze zasoby, wyłączaj po pracy, monitoruj zużycie. Guardrail kosztowy z briefu to nie formalność.\n\n**Analiza błędów i Ograniczenia.** Opisz, gdzie wdrożenie ma słabości: zimny start kontenera wydłuża pierwszą odpowiedź, darmowy tier nie ma autoskalowania i padnie pod obciążeniem, sandbox może wygasnąć po czasie. Sekcja \"Ograniczenia\" w README pokazuje dojrzałość inżynierską — świadomie nazywasz granice swojego rozwiązania, zamiast udawać, że ich nie ma.\n\n## Serializacja modelu i kontrakt wejścia\n\nWdrażając model, wystawiasz też **kontrakt danych wejściowych**. Endpoint musi wiedzieć, jakie cechy i w jakiej kolejności przyjmuje, jak radzić sobie z brakami i wartościami spoza zakresu treningu. Częsty, podstępny błąd to niespójność preprocesingu: model trenowano na cechach przeskalowanych i zakodowanych w określony sposób, a endpoint dostaje surowe dane i podaje je wprost. Predykcje wychodzą wtedy formalnie poprawne (usługa nie zwraca błędu), ale merytorycznie bezwartościowe. Dlatego cały pipeline transformacji zapisz i wczytaj razem z modelem (np. jako jeden artefakt), a nie odtwarzaj go ręcznie w kodzie serwera. Do serializacji używaj sprawdzonego mechanizmu i pamiętaj o zgodności wersji biblioteki, którą model zapisano.\n\n## Walidacja wejścia i obserwowalność\n\nUsługa produkcyjna powinna walidować wejście, zanim poda je do modelu — odrzucać żądania z brakującymi polami lub niepoprawnymi typami z czytelnym komunikatem, zamiast zwracać przypadkową predykcję. Dodaj minimalne logowanie (czas odpowiedzi, ewentualny błąd), by móc zmierzyć zadeklarowaną metrykę latencji. To pierwszy krok w stronę obserwowalności: bez logów nie wiesz, czy Twój guardrail dostępności jest spełniony, ani skąd biorą się wolne odpowiedzi. Nie loguj przy tym danych wrażliwych ani sekretów.\n\n## Podsumowanie\n\nWdrożenie zamienia model w usługę, a Data Scientista w inżyniera, który dowozi. Nauczywszy się jednej chmury, konteneryzacji, pinowania zależności i higieny sekretów, zdobywasz warsztat przenośny na Azure, GCP i AWS. Najważniejsze nawyki — metryka sukcesu wdrożenia, guardrail kosztowy, spójny preprocesing, smoke test w CI/CD i uczciwa sekcja Ograniczenia — zostaną z Tobą niezależnie od platformy i staną się fundamentem dalszej ścieżki w stronę MLOps.\n\n> **Bez karty kredytowej?** Darmowe tiery Azure/GCP/AWS wymagają karty do weryfikacji tożsamości (nawet gdy nie naliczą opłaty), a Microsoft Learn Sandbox wygasa po ćwiczeniu i nie utrzyma trwałego, klikalnego endpointu do portfolio. Dlatego działający endpoint budujesz na Streamlit Community Cloud lub Hugging Face Spaces (card-free, trwały), a znajomość trzech chmur wykazujesz mapą wdrożenia — bez zakładania kont.",
+		"learning_resources": [
+			{
+				"title": "Streamlit Community Cloud — Deploy (darmowe, bez karty)",
+				"url": "https://docs.streamlit.io/deploy/streamlit-community-cloud",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Hugging Face Spaces — hosting aplikacji ML (darmowe)",
+				"url": "https://huggingface.co/docs/hub/spaces",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "Microsoft Learn — Azure (uwaga: konto free wymaga karty)",
+				"url": "https://learn.microsoft.com/en-us/training/azure/",
+				"type": "course",
+				"position": 2
+			},
+			{
+				"title": "Google Cloud Skills",
+				"url": "https://www.skills.google/",
+				"type": "course",
+				"position": 3
+			},
+			{
+				"title": "AWS Skill Builder",
+				"url": "https://skillbuilder.aws/",
+				"type": "course",
+				"position": 4
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://docs.streamlit.io/deploy/streamlit-community-cloud",
+				"label": "Streamlit Community Cloud (domyślne, darmowe, bez karty)",
+				"position": 0
+			},
+			{
+				"url": "https://huggingface.co/docs/hub/spaces",
+				"label": "Hugging Face Spaces (darmowa alternatywa deploymentu)",
+				"position": 1
+			},
+			{
+				"url": "https://learn.microsoft.com/en-us/azure/architecture/guide/azure-sandbox/azure-sandbox",
+				"label": "Microsoft Learn Sandbox — uwaga: efemeryczny, nie utrzyma trwałego endpointu",
+				"position": 2
+			}
+		]
+	},
+	{
+		"slug": "ds-eksperyment-ab-memo",
+		"title": "Eksperyment A/B: od hipotezy do decision memo",
+		"description": "Przeprowadzisz pełny cykl eksperymentu A/B na publicznym zbiorze danych: od sformułowania hipotezy i metryki sukcesu, przez analizę mocy testu i minimalnego wykrywalnego efektu, po test statystyczny i interpretację istotności. Efektem końcowym jest jednostronicowe decision memo z rekomendacją biznesową napisaną dla nietechnicznego odbiorcy. Nauczysz się odróżniać istotność statystyczną od istotności praktycznej i unikać peekingu.",
+		"level": "L2",
+		"estimatedHours": 10,
+		"sourceType": "open_data",
+		"sourceUrl": "https://www.kaggle.com/datasets/yufengsui/mobile-games-ab-testing",
+		"competencies": [
+			{
+				"name": "A/B testing",
+				"role": "required"
+			},
+			{
+				"name": "Statystyka (Statistics)",
+				"role": "required"
+			},
+			{
+				"name": "Python",
+				"role": "acquired"
+			},
+			{
+				"name": "Pandas",
+				"role": "acquired"
+			}
+		],
+		"rubricJson": [
+			{
+				"criterion": "Framing: hipoteza, metryka sukcesu i guardrail",
+				"weight": 25,
+				"description": "Notebook zaczyna od jasno postawionej hipotezy zerowej i alternatywnej, jednej głównej metryki sukcesu (np. retencja) oraz co najmniej jednej metryki guardrail. Zdefiniowana jest jednostka randomizacji i kierunek oczekiwanego efektu."
+			},
+			{
+				"criterion": "Analiza mocy testu i MDE",
+				"weight": 20,
+				"description": "Obliczona moc testu (power) oraz minimalny wykrywalny efekt (MDE) przy zadanym alfa i wielkości próby. Uzasadnione, czy próba jest wystarczająca do wykrycia efektu o rozmiarze istotnym biznesowo."
+			},
+			{
+				"criterion": "Poprawny test statystyczny i interpretacja istotności",
+				"weight": 25,
+				"description": "Zastosowany właściwy test (t-test lub test proporcji z-test) z weryfikacją założeń, przedziałem ufności i rozmiarem efektu. Jeśli testowanych jest wiele metryk, zastosowana korekta wielokrotnych porównań. Interpretacja nie myli p-value z ważnością praktyczną."
+			},
+			{
+				"criterion": "Decision memo dla nietechnicznego odbiorcy",
+				"weight": 20,
+				"description": "Jednostronicowe memo (Markdown/PDF) z jednoznaczną rekomendacją (wdrożyć / nie wdrażać / zebrać więcej danych), kontekstem biznesowym, ryzykami i guardrailami. Język zrozumiały bez wiedzy statystycznej, bez żargonu i surowych p-value bez interpretacji."
+			},
+			{
+				"criterion": "Reprodukowalność i ograniczenia",
+				"weight": 10,
+				"description": "Repo z README, przypiętymi zależnościami i ustawionym ziarnem losowości; notebook uruchamia się od góry do dołu. Sekcja Ograniczenia opisuje zagrożenia walidacyjne (np. novelty effect, brak randomizacji na poziomie użytkownika, sezonowość)."
+			}
+		],
+		"theory_md": "# Eksperyment A/B: wnioskowanie, które prowadzi do decyzji\n\nEksperyment A/B to najprostsza forma eksperymentu kontrolowanego: dzielimy użytkowników losowo na grupę kontrolną (A) i eksperymentalną (B), pokazujemy im dwie wersje produktu i porównujemy wybraną metrykę. Losowa alokacja jest sercem metody — to ona sprawia, że obie grupy są statystycznie wymienne, więc różnicę w metryce można przypisać zmianie, a nie ukrytym czynnikom. Bez randomizacji porównujemy jabłka z gruszkami i wracamy do świata korelacji, w którym nie da się mówić o przyczynie.\n\n## Po co w ogóle test statystyczny\n\nGdy zmierzymy retencję 44,0% w grupie A i 45,5% w grupie B, kusi, by ogłosić zwycięstwo B. Problem w tym, że każda próba to tylko wycinek rzeczywistości obarczony szumem losowym. Gdybyśmy powtórzyli eksperyment jutro, liczby byłyby inne. Test statystyczny odpowiada na jedno konkretne pytanie: jak prawdopodobne jest, że zaobserwowana różnica (lub większa) powstałaby przez sam przypadek, gdyby prawdziwego efektu nie było. To prawdopodobieństwo to p-value. Małe p-value oznacza, że dane słabo pasują do hipotezy zerowej „brak różnicy\", więc ją odrzucamy.\n\nDla metryk będących proporcjami (kliknął / nie kliknął, wrócił / nie wrócił) używamy testu proporcji (z-test lub test chi-kwadrat). Dla metryk ciągłych i mniej więcej symetrycznych (średni czas w aplikacji, wartość koszyka) używamy testu t dla dwóch prób. Wybór testu wynika z natury metryki, a nie z wygody.\n\n## Metryka sukcesu, guardrail i jednostka randomizacji\n\nDobry eksperyment zaczyna się przed danymi — od decyzji, co uznamy za sukces. Definiujemy **jedną główną metrykę** (np. retencja siódmego dnia), bo optymalizacja wielu naraz prowadzi do wybiórczego raportowania. Do tego dokładamy **metryki guardrail**, które nie mogą się pogorszyć: jeśli nowa funkcja podnosi konwersję, ale rujnuje czas ładowania albo liczbę rezygnacji, to nie jest wygrana. Guardrail chroni przed lokalnym zwskaźnikiem kupionym kosztem zdrowia produktu.\n\nKrytyczna, a często pomijana decyzja to **jednostka randomizacji**. Losujemy użytkowników, nie pojedyncze zdarzenia — inaczej jeden aktywny użytkownik wygeneruje setki skorelowanych obserwacji i sztucznie zawyży „istotność\". Jednostka analizy musi być zgodna z jednostką randomizacji.\n\n## Moc testu i minimalny wykrywalny efekt\n\nZanim zbierzemy dane, warto policzyć **moc testu** — prawdopodobieństwo, że wykryjemy efekt, jeśli on naprawdę istnieje. Standardem jest 80%. Z mocy, poziomu istotności alfa i wielkości próby wyliczamy **MDE** (minimum detectable effect): najmniejszą różnicę, jaką eksperyment jest w stanie rzetelnie wykryć. Jeśli MDE wynosi 5 punktów procentowych, a biznes zmieniłby decyzję już przy 1 punkcie, to eksperyment jest z góry skazany na nierozstrzygalność — próba jest za mała. Analiza mocy zamienia „zbierzmy dane i zobaczymy\" w świadomy projekt, który wie, czego szuka.\n\n## Od liczby do decyzji: decision memo\n\nWynik eksperymentu jest wart tyle, ile decyzja, którą uruchamia. Dlatego finałem jest jednostronicowe **decision memo**: co testowaliśmy, jaka była hipoteza, jaki jest wynik w kategoriach biznesowych (o ile wzrośnie retencja, co to znaczy dla przychodu), jakie są ryzyka i jaka jest rekomendacja — wdrożyć, odrzucić albo zebrać więcej danych. Memo pisze się dla osoby, która nie zna słowa „heteroskedastyczność\". Surowe p-value bez tłumaczenia nie jest wnioskiem; wnioskiem jest zdanie, na podstawie którego ktoś podejmie działanie.\n\n## Kiedy eksperymentu A/B nie da się przeprowadzić\n\nRandomizowany test to złoty standard, ale nie zawsze jest wykonalny — i dojrzały analityk wie, kiedy sięgnąć po coś innego. Przy małym ruchu zebranie próby o wystarczającej mocy trwałoby miesiącami, a MDE robi się tak duży, że test i tak nie rozstrzygnie subtelnej zmiany. Bywa, że randomizacja jest nieetyczna albo niemożliwa (nie podzielimy losowo rynku na dwie ceny tego samego produktu), a efekty sieciowe sprawiają, że grupy przeciekają na siebie: zmiana widziana przez część użytkowników zmienia zachowanie pozostałych. W takich sytuacjach sięga się po metody quasi-eksperymentalne — różnicę w różnicach, regresję nieciągłości albo analizę szeregu czasowego z grupą syntetyczną. Świadomość granic metody jest częścią warsztatu: uczciwy analityk wie, kiedy liczbie z testu można ufać, a kiedy jest tylko pozorem rygoru.\n\n## Metodyka i pułapki\n\n**Istotność statystyczna to nie istotność biznesowa.** Przy dużej próbie nawet mikroskopijna, nieopłacalna różnica wyjdzie „istotna\" (p < 0,05). Zawsze raportuj rozmiar efektu i przedział ufności obok p-value i pytaj: czy ta różnica zmienia decyzję? Odwrotnie — brak istotności nie dowodzi braku efektu, może oznaczać za małą próbę (stąd wcześniejsza analiza mocy).\n\n**Peeking i wielokrotne testy.** Zaglądanie do wyników w trakcie i zatrzymywanie testu, gdy tylko p spadnie poniżej 0,05, drastycznie zawyża odsetek fałszywych odkryć — każde spojrzenie to kolejny rzut kością. Ustal wielkość próby i czas trwania z góry. Gdy testujesz wiele metryk lub wariantów naraz, zastosuj korektę wielokrotnych porównań (Bonferroni, Benjamini-Hochberg), bo przy 20 niezależnych testach jeden „istotny\" wynik to średnia przypadku.\n\n**Zła jednostka randomizacji i wyciek między grupami.** Losowanie zdarzeń zamiast użytkowników, albo efekty sieciowe (grupa B wpływa na A) łamią założenie niezależności i unieważniają test.\n\n**Nierównowaga i sanity check.** Przed analizą sprawdź, czy podział na grupy jest zgodny z oczekiwanym (sample ratio mismatch) i czy grupy są podobne na zmiennych sprzed eksperymentu. Rozjazd sygnalizuje błąd w przydziale, a wtedy żaden wynik nie jest wiarygodny.\n\n**Typowy błąd początkującego:** uruchomienie testu bez analizy mocy, obserwowanie go co godzinę i ogłoszenie zwycięzcy przy pierwszym p < 0,05. To niemal gwarantuje fałszywie pozytywny wynik i decyzję opartą na szumie. Dyscyplina projektowa — z góry ustalona metryka, próba, czas i próg — jest ważniejsza niż sam test.\n\n> **Analiza mocy na gotowym zbiorze.** W tym projekcie dane są już zebrane, więc liczysz osiągalny MDE dla danej próby (ocena ex post), a nie wielkość próby ex ante. To poprawne w ćwiczeniu, ale w prawdziwej pracy analizę mocy robi się PRZED eksperymentem — nie myl retrospektywnej oceny mocy z planowaniem próby.",
+		"learning_resources": [
+			{
+				"title": "OpenIntro Statistics — wnioskowanie i testowanie hipotez",
+				"url": "https://www.openintro.org/book/os/",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Seeing Theory (Brown) — interaktywna intuicja wnioskowania",
+				"url": "https://seeing-theory.brown.edu/",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "StatQuest — p-values, moc testu i testy hipotez",
+				"url": "https://www.youtube.com/@statquest",
+				"type": "video",
+				"position": 2
+			},
+			{
+				"title": "Kaggle Learn — Intro to Statistics / Data Analysis",
+				"url": "https://www.kaggle.com/learn",
+				"type": "course",
+				"position": 3
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://www.kaggle.com/datasets/yufengsui/mobile-games-ab-testing",
+				"label": "Cookie Cats — mobilny eksperyment A/B (Kaggle)",
+				"position": 0
+			},
+			{
+				"url": "https://creativecommons.org/publicdomain/zero/1.0/",
+				"label": "Licencja: zweryfikuj badge na karcie zbioru Kaggle przed użyciem (zwykle CC0 1.0); pobranie wymaga darmowego konta Kaggle",
+				"position": 1
+			},
+			{
+				"url": "https://www.openintro.org/book/os/",
+				"label": "OpenIntro Statistics — podręcznik referencyjny",
+				"position": 2
+			}
+		]
+	},
+	{
+		"slug": "ds-nlp-klasyfikacja-polskich-tekstow",
+		"title": "NLP: klasyfikacja polskich tekstów — baseline vs embeddingi",
+		"description": "Zbudujesz klasyfikator tekstu po polsku na publicznym korpusie: najpierw prosty baseline TF-IDF z modelem klasycznym, potem porównanie z reprezentacjami embeddingowymi z Hugging Face. Przeprowadzisz rzetelną walidację, dobierzesz metrykę do niezbalansowania klas (F1) i wykonasz analizę błędów na macierzy pomyłek. Nauczysz się rozpoznawać wyciek danych i pułapki polskiej fleksji.",
+		"level": "L2",
+		"estimatedHours": 12,
+		"sourceType": "open_data",
+		"sourceUrl": "https://huggingface.co/datasets/clarin-pl/polemo2-official",
+		"competencies": [
+			{
+				"name": "NLP",
+				"role": "required"
+			},
+			{
+				"name": "Uczenie maszynowe",
+				"role": "required"
+			},
+			{
+				"name": "Python",
+				"role": "acquired"
+			},
+			{
+				"name": "Pandas",
+				"role": "acquired"
+			},
+			{
+				"name": "LLM",
+				"role": "acquired"
+			},
+			{
+				"name": "GenAI",
+				"role": "acquired"
+			}
+		],
+		"rubricJson": [
+			{
+				"criterion": "Baseline TF-IDF + klasyczny model",
+				"weight": 20,
+				"description": "Zbudowany czytelny baseline: wektoryzacja TF-IDF plus prosty klasyfikator (regresja logistyczna lub liniowy SVM). Baseline jest punktem odniesienia, jego wynik jest raportowany, a preprocessing tekstu jest opisany."
+			},
+			{
+				"criterion": "Model embeddingowy i uczciwe porównanie",
+				"weight": 25,
+				"description": "Reprezentacja embeddingowa z Hugging Face (np. polski model transformerowy lub zdaniowy) porównana z baseline na tym samym podziale i tej samej metryce. Wniosek, czy złożoność embeddingów jest uzasadniona zyskiem jakości."
+			},
+			{
+				"criterion": "Walidacja, metryka i brak wycieku danych",
+				"weight": 25,
+				"description": "Poprawny podział train/val/test (lub walidacja krzyżowa), a wektoryzator dopasowany wyłącznie na treningu. Metryka dobrana do problemu — F1 (macro) przy niezbalansowaniu, nie sama accuracy. Uzasadniony wybór metryki."
+			},
+			{
+				"criterion": "Analiza błędów (macierz pomyłek)",
+				"weight": 20,
+				"description": "Macierz pomyłek plus jakościowa analiza: które klasy się mylą, przykłady błędnych predykcji i hipotezy dlaczego (podobne słownictwo, fleksja, negacja, długość tekstu). Analiza prowadzi do konkretnych wniosków usprawniających."
+			},
+			{
+				"criterion": "Reprodukowalność i ograniczenia",
+				"weight": 10,
+				"description": "Repo z README, przypiętymi zależnościami i ustawionym ziarnem; notebook uruchamia się od góry do dołu. Sekcja Ograniczenia opisuje ryzyka (licencja i dane osobowe w korpusie, obciążenie dziedzinowe, generalizacja poza korpus)."
+			}
+		],
+		"theory_md": "# NLP: jak nauczyć maszynę odróżniać polskie teksty\n\nPrzetwarzanie języka naturalnego (NLP) to dziedzina, w której model uczy się operować na tekście — języku, który powstał dla ludzi, nie dla komputerów. Klasyfikacja tekstu to jedno z najbardziej użytecznych zadań: przypisujemy dokumentowi etykietę (wydźwięk opinii, temat, intencja zgłoszenia). Trudność polega na tym, że model nie widzi znaczenia — widzi ciąg znaków. Cała sztuka polega na zamianie tekstu na liczby (reprezentację), które zachowają na tyle dużo sygnału, by dało się na nich uczyć.\n\n## Reprezentacja tekstu: TF-IDF kontra embeddingi\n\nNajprostsza użyteczna reprezentacja to **worek słów** ważony przez TF-IDF. Każdy dokument staje się wektorem: dla każdego słowa liczymy, jak często występuje w tym dokumencie (TF) i jak rzadkie jest w całym korpusie (IDF). Słowa częste wszędzie (spójniki, przyimki) dostają niską wagę, słowa charakterystyczne — wysoką. TF-IDF nie rozumie znaczenia i gubi kolejność, ale jest szybki, przejrzysty i zaskakująco mocny na wielu zadaniach. Dlatego to naturalny baseline.\n\n**Embeddingi** to reprezentacja gęsta: każde słowo lub całe zdanie zamieniamy na wektor w przestrzeni, w której bliskość geometryczna oddaje bliskość znaczeniową. Modele transformerowe (BERT i pochodne, w tym warianty trenowane na polszczyźnie) generują embeddingi kontekstowe — to samo słowo dostaje inny wektor w zależności od otoczenia, więc „zamek\" w tekście o rycerzach różni się od „zamka\" w kurtce. Embeddingi łapią synonimy i kontekst, których TF-IDF nie widzi, ale są droższe obliczeniowo i trudniejsze w interpretacji.\n\n## Po co baseline\n\nBaseline nie jest formalnością — to punkt odniesienia, bez którego żadna liczba nie ma sensu. F1 równe 0,82 jest sukcesem, jeśli baseline dawał 0,70, i porażką, jeśli dawał 0,85. Prosty model TF-IDF plus regresja logistyczna kosztuje minuty i często dowozi 90% jakości skomplikowanego modelu. Jeśli ciężki model embeddingowy ledwo bije baseline, jego złożoność, koszt i czas wnioskowania są trudne do obrony. Baseline dyscyplinuje: zmusza, by udowodnić, że dodatkowa komplikacja naprawdę coś wnosi.\n\n## Metryka dobrana do problemu\n\nW klasyfikacji tekstu klasy są rzadko zbalansowane. Jeśli 80% opinii jest pozytywnych, model, który zawsze mówi „pozytywna\", ma 80% accuracy i zero wartości. Dlatego przy niezbalansowaniu patrzymy na **precyzję, czułość i F1**, a dla wielu klas na **F1 macro**, który uśrednia F1 po klasach z równą wagą — słaba klasa mniejszościowa nie zniknie w średniej. Wybór metryki to decyzja produktowa: co jest kosztowniejsze, fałszywy alarm czy przeoczenie? To pytanie ustawia, czy ważniejsza jest precyzja, czy czułość.\n\n## Specyfika polszczyzny\n\nPolski jest silnie fleksyjny — jedno słowo ma kilkanaście form (dom, domu, domowi, domem). Dla worka słów każda forma to osobny token, co rozprasza sygnał. Pomagają lematyzacja (sprowadzenie do formy podstawowej) albo n-gramy znakowe, które łapią wspólny rdzeń. Modele transformerowe uczone na polskim korpusie radzą sobie z fleksją same, o ile użyjemy modelu przygotowanego pod polszczyznę, a nie anglojęzycznego.\n\n## Kiedy warto sięgnąć po cięższy model\n\nWybór między TF-IDF a embeddingami to decyzja o kompromisie, nie kwestia mody. Prosta reprezentacja wygrywa, gdy teksty są długie, słownictwo domenowe jest charakterystyczne, a etykiety silnie korelują z obecnością konkretnych słów — wtedy koszt i nieprzejrzystość transformera się nie zwracają. Embeddingi kontekstowe opłacają się, gdy liczy się znaczenie ponad dosłownym słowem: krótkie teksty, ironia, parafrazy, synonimy albo mało danych treningowych, bo model wnosi wiedzę z ogromnego korpusu, na którym był wstępnie uczony. W praktyce zaczynamy od baseline, mierzymy, o ile embeddingi realnie poprawiają metrykę na walidacji, i dopiero różnica warta swojego kosztu uzasadnia wdrożenie cięższego modelu na produkcję.\n\n## Metodyka i pułapki\n\n**Wyciek danych (leakage).** Najczęstszy grzech w NLP: dopasowanie wektoryzatora TF-IDF na całym zbiorze przed podziałem. Wtedy słownik i wagi IDF „widzą\" zbiór testowy, wynik jest zawyżony i nie powtórzy się na produkcji. Zasada: wszystko, co uczy się z danych — słownik, IDF, skalowanie — dopasowujemy wyłącznie na treningu, a na walidacji i teście tylko transformujemy. Wyciek grozi też przy deduplikacji: identyczne lub prawie identyczne teksty w treningu i teście zawyżają wynik.\n\n**Accuracy przy niezbalansowaniu.** Raportowanie samej dokładności na skośnych klasach to iluzja jakości. Zawsze pokazuj F1 macro i rozkład per klasa; sprawdź, czy model w ogóle uczy się klas mniejszościowych, czy tylko zgaduje większość.\n\n**Ignorowanie fleksji i negacji.** Bez lematyzacji formy tego samego słowa się rozjeżdżają. Osobno groźna jest negacja: „nie polecam\" i „polecam\" różnią się jednym słowem, a worek słów bez n-gramów może je zbliżyć. Analiza błędów zwykle to obnaża.\n\n**Analiza błędów zamiast jednej liczby.** Macierz pomyłek pokazuje strukturę porażek: które klasy się mylą i dlaczego. Zwykle to sąsiednie kategorie o wspólnym słownictwie (opinia neutralna myli się z pozytywną). Przejrzenie kilkunastu błędnych przykładów daje więcej niż trzecia cyfra po przecinku w F1 i podpowiada, czy problem leży w danych, reprezentacji, czy etykietach.\n\n**Licencja i dane osobowe.** Polskie korpusy bywają obwarowane licencją i mogą zawierać dane osobowe — sprawdź warunki użycia przed publikacją i nie umieszczaj surowych, wrażliwych tekstów w repo.\n\n**Typowy błąd początkującego:** pominięcie baseline i skok od razu do dużego transformera, ocena po samej accuracy, dopasowanie wektoryzatora na całości. Efekt to imponująca liczba, która rozpada się poza notebookiem. Dyscyplina — baseline, czysty podział, właściwa metryka, analiza błędów — daje wynik, któremu można ufać.\n\n> **Licencja i dane osobowe (ważne).** PolEmo 2.0 jest na licencji CC BY-NC-SA 4.0: użycie edukacyjne/portfolio jest OK, ale NC wyklucza komercyjne, a SA wymaga, by pochodne korpusu udostępniać na tej samej licencji (nie wrzucaj przetworzonego korpusu do repo na innej licencji). Recenzje mogą zawierać dane osobowe osób trzecich (nazwiska, nazwy placówek) — przetwarzaj je wyłącznie na potrzeby projektu i nie publikuj surowych rekordów. Inferencję embeddingów przyspieszysz na darmowym Google Colab (GPU).",
+		"learning_resources": [
+			{
+				"title": "Hugging Face LLM Course — wprowadzenie do NLP i transformerów",
+				"url": "https://huggingface.co/learn/llm-course/chapter1/1",
+				"type": "course",
+				"position": 0
+			},
+			{
+				"title": "Hugging Face Transformers — dokumentacja (klasyfikacja tekstu)",
+				"url": "https://huggingface.co/docs/transformers/index",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "scikit-learn User Guide — TF-IDF, metryki, walidacja",
+				"url": "https://scikit-learn.org/stable/user_guide.html",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "StatQuest — intuicja modeli klasyfikacyjnych i metryk",
+				"url": "https://www.youtube.com/@statquest",
+				"type": "video",
+				"position": 3
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://huggingface.co/datasets/clarin-pl/polemo2-official",
+				"label": "PolEmo 2.0 — polski korpus opinii (HF); licencja CC BY-NC-SA 4.0 (niekomercyjne, na tych samych warunkach)",
+				"position": 0
+			},
+			{
+				"url": "https://huggingface.co/datasets",
+				"label": "Hugging Face Datasets — katalog korpusów (sprawdź licencję)",
+				"position": 1
+			},
+			{
+				"url": "https://scikit-learn.org/stable/user_guide.html",
+				"label": "scikit-learn User Guide — referencja implementacyjna",
+				"position": 2
+			},
+			{
+				"url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+				"label": "Licencja korpusu PolEmo 2.0: CC BY-NC-SA 4.0",
+				"position": 3
+			}
+		]
+	},
+	{
+		"slug": "ds-mlops-pipeline-treningowy",
+		"title": "MLOps: reprodukowalny pipeline treningowy end-to-end",
+		"description": "Zbudujesz kompletny pipeline MLOps, który prowadzi model od notatnika do powtarzalnego systemu: śledzenie eksperymentów w MLflow, konteneryzacja w Dockerze, uruchomienie na lokalnym Kubernetesie (kind/k3d), minimalna infrastruktura jako kod w Terraform oraz zielone CI w GitHub Actions. Celem nie jest najlepszy model, lecz dowód, że każdy krok jest zautomatyzowany, wersjonowany i odtwarzalny na czystej maszynie. Artefaktem jest publiczne repozytorium z pełnym pipeline'em, README portfolio i diagramem architektury.",
+		"level": "L3",
+		"estimatedHours": 28,
+		"sourceType": "oss",
+		"sourceUrl": "https://mlflow.org/docs/latest/ml/getting-started/",
+		"competencies": [
+			{
+				"name": "MLOps",
+				"role": "required"
+			},
+			{
+				"name": "CI/CD",
+				"role": "required"
+			},
+			{
+				"name": "Kubernetes",
+				"role": "required"
+			},
+			{
+				"name": "Terraform",
+				"role": "required"
+			},
+			{
+				"name": "Python",
+				"role": "acquired"
+			},
+			{
+				"name": "Git",
+				"role": "acquired"
+			},
+			{
+				"name": "Uczenie maszynowe",
+				"role": "acquired"
+			}
+		],
+		"rubricJson": [
+			{
+				"criterion": "Śledzenie eksperymentów (MLflow)",
+				"weight": 20,
+				"description": "MLflow Tracking loguje parametry, metryki i artefakty co najmniej dwóch przebiegów; zarejestrowany jest model wraz z sygnaturą wejścia/wyjścia i wersją; w repo widać, jak porównać przebiegi i wskazać baseline."
+			},
+			{
+				"criterion": "Konteneryzacja i deployment na Kubernetes",
+				"weight": 25,
+				"description": "Dockerfile buduje obraz treningowy/serwujący z przypiętymi wersjami zależności; manifesty k8s (Deployment/Job/Service) uruchamiają się na lokalnym klastrze kind/k3d; README pokazuje polecenia od zera do działającego poda oraz sposób weryfikacji (logi, endpoint predykcji)."
+			},
+			{
+				"criterion": "Infrastruktura jako kod (Terraform)",
+				"weight": 20,
+				"description": "Terraform deklaratywnie tworzy zasoby lokalnego środowiska (np. namespace, ConfigMap/Secret, deployment przez provider kubernetes); stan jest wersjonowany świadomie, a `terraform plan/apply/destroy` jest udokumentowane; brak ręcznych, nieudokumentowanych kroków."
+			},
+			{
+				"criterion": "CI zielony (GitHub Actions)",
+				"weight": 20,
+				"description": "Workflow w publicznym repo (darmowe minuty) uruchamia lint, testy i build obrazu przy każdym push/PR; pipeline jest zielony, a odznaka statusu widnieje w README; nieudany krok blokuje merge."
+			},
+			{
+				"criterion": "Reprodukowalność i README portfolio",
+				"weight": 15,
+				"description": "README wg szablonu (Cel, Dane, Metoda, Wynik, Wnioski/Ograniczenia, sekcja dla nie-technicznego czytelnika) zawiera diagram architektury, przypięte wersje, instrukcję odtworzenia na czystej maszynie oraz sekcję Ograniczenia; obcy użytkownik jest w stanie powtórzyć wynik."
+			}
+		],
+		"theory_md": "# MLOps: od notatnika do powtarzalnego systemu\n\nMLOps to zestaw praktyk, które sprawiają, że model uczenia maszynowego przestaje być jednorazowym artefaktem z notatnika, a staje się elementem systemu, który da się odtworzyć, przetestować i wdrożyć bez udziału jego autora. Kluczowe pytanie tego projektu nie brzmi „jak dokładny jest model?”, lecz „czy ktoś inny, na czystej maszynie, odtworzy dokładnie ten sam wynik i wdroży go tym samym poleceniem?”. To przesunięcie akcentu z jakości predykcji na jakość procesu jest istotą inżynierii ML.\n\nW klasycznym cyklu życia modelu wyróżniamy trzy warstwy, które w tym projekcie łączymy w jeden łańcuch: kod (logika treningu i serwowania), dane (wersjonowany zbiór wejściowy) oraz środowisko (zależności, obraz kontenera, infrastruktura). Dojrzałość MLOps mierzy się tym, ile z tych warstw jest zautomatyzowanych i wersjonowanych. Na najniższym poziomie wszystko robi się ręcznie w notatniku; na docelowym — jedno polecenie `terraform apply` plus zielony pipeline CI odtwarzają całość. Dążymy do tego środka: pełnej reprodukowalności lokalnie, bez kosztów chmury.\n\n## Dlaczego śledzenie eksperymentów i IaC\n\nŚledzenie eksperymentów (MLflow Tracking) odpowiada na pytanie, które pojawia się w każdym projekcie ML po dwóch tygodniach: „którym zestawem hiperparametrów uzyskaliśmy tę metrykę i gdzie jest ten model?”. Bez rejestru eksperymentów odpowiedź brzmi „nie wiem”, bo wyniki żyją w komórkach notatnika, które zostały nadpisane. MLflow rozwiązuje to, logując dla każdego przebiegu parametry, metryki i artefakty oraz rejestrując model wraz z sygnaturą wejścia/wyjścia. Dzięki temu baseline — najprostszy sensowny model odniesienia — jest zapisany i porównywalny, a nie tylko zapamiętany. Baseline pełni tu podwójną rolę: jest punktem odniesienia dla jakości i sanity-checkiem dla całego pipeline'u — jeśli prosty model nie przechodzi przez łańcuch, bardziej złożony też nie przejdzie.\n\nInfrastruktura jako kod (Terraform) odpowiada na inne pytanie: „jak dokładnie wygląda środowisko, w którym to działa?”. Odpowiedź „kliknąłem kilka rzeczy w konsoli” jest z definicji nie do odtworzenia. Deklaratywny opis zasobów — namespace, konfiguracja, deployment — sprawia, że środowisko jest wersjonowane tak samo jak kod, a `terraform destroy` gwarantuje czysty start. To eliminuje najbardziej kosztowną klasę błędów: dryf konfiguracji między maszyną autora a maszyną recenzenta.\n\n## Architektura rozwiązania\n\nPipeline składa się z pięciu ogniw połączonych w łańcuch, w którym każde następne zależy tylko od udokumentowanych wyjść poprzedniego.\n\n1. **Trening i śledzenie.** Skrypt treningowy w Pythonie (scikit-learn) trenuje model na publicznym, nietrywialnym zbiorze i loguje wszystko do MLflow Tracking: parametry, metryki walidacyjne oraz zarejestrowany model z sygnaturą. Podział train/validation jest jawny i deterministyczny (ustalony seed), aby wynik był powtarzalny.\n2. **Konteneryzacja.** Dockerfile buduje obraz z przypiętymi wersjami zależności (pełny `requirements.txt`/`lockfile`). Obraz jest samowystarczalny: zawiera kod i punkt wejścia do treningu lub serwowania. Zasada „przypnij wszystko” eliminuje klasyczne „u mnie działa”.\n3. **Uruchomienie na Kubernetes.** Lokalny klaster kind lub k3d (Kubernetes w Dockerze, całkowicie darmowy) uruchamia obraz jako Job (trening) lub Deployment + Service (serwowanie predykcji). To dowód, że artefakt działa poza laptopem autora, w standardowym orkiestratorze.\n4. **Infrastruktura jako kod.** Terraform z providerem `kubernetes` deklaratywnie tworzy namespace, ConfigMap/Secret i deployment. Zamiast ręcznego `kubectl apply` mamy jeden, wersjonowany opis stanu docelowego.\n5. **CI.** GitHub Actions przy każdym push/PR uruchamia lint (Biome/ruff), testy jednostkowe i build obrazu. Publiczne repo oznacza darmowe minuty. Zielony pipeline z odznaką w README jest widocznym dowodem, że łańcuch trzyma się przy każdej zmianie.\n\nSpoiwem całości jest README portfolio wg szablonu (Cel, Dane, Metoda, Wynik, Wnioski/Ograniczenia) uzupełnione o diagram architektury i instrukcję odtworzenia od zera. Sekcja dla nie-technicznego czytelnika tłumaczy, po co ten pipeline istnieje, bez żargonu.\n\n## Metodyka i pułapki\n\nNajczęstszy błąd na tym poziomie to **ręczne kroki, których nikt nie udokumentował**. Pipeline „działa”, dopóki robi go autor, bo pamięta o pięciu drobiazgach, których nie ma w README. Test jest bezlitosny: sklonuj repo na czystą maszynę (lub do świeżego kontenera) i wykonaj wyłącznie to, co jest zapisane. Jeśli nie zadziała, pipeline nie jest reprodukowalny — niezależnie od tego, jak dobrze działa u autora.\n\nDruga pułapka to **brak wersjonowania modelu i danych**. Zalogowanie metryki bez zarejestrowania modelu i bez zapisania, na jakiej wersji danych powstał, sprawia, że wynik jest nieodtwarzalny. MLflow Model Registry i jawne wskazanie źródła/wersji danych zamykają tę lukę. Warto zapisać sygnaturę modelu — chroni ona przed cichym rozjazdem schematu wejścia na etapie serwowania.\n\nTrzecia pułapka to **niedeterminizm**: brak ustalonego seeda, niezapięte wersje bibliotek, zależność od kolejności plików. Każdy z tych elementów potrafi zmienić metrykę między przebiegami i zniszczyć porównywalność. Zasada brzmi: wszystko, co wpływa na wynik, musi być zadeklarowane — seed, wersje, konfiguracja.\n\nCzwarta pułapka to **CI, które niczego nie sprawdza** — workflow, który zawsze przechodzi na zielono, bo nie ma realnych testów ani kroku build. Zielony pipeline ma wartość tylko wtedy, gdy potrafi się zepsuć: dodaj test, który wyłapuje regresję (np. metryka poniżej progu lub błąd budowy obrazu), i upewnij się, że nieudany krok faktycznie blokuje merge.\n\nWreszcie sekcja **Ograniczenia** w README jest częścią pracy, a nie dodatkiem. Uczciwie opisz, czego pipeline nie robi (np. brak monitoringu driftu w produkcji, brak testów A/B, lokalny zakres bez skalowania). Świadomość granic własnego rozwiązania jest oznaką dojrzałości inżynierskiej i podlega ocenie w rubryce.\n\n### Klauzula kosztowa\n\nCałość jest projektowana pod środowisko lokalne i darmowe: kind/k3d na Dockerze, MLflow lokalnie, publiczne repo GitHub (darmowe minuty CI). Jeśli zdecydujesz się przenieść fragment do chmury (np. rejestr obrazów lub zarządzany klaster), traktuj to jako opcję i jawnie odnotuj potencjalne koszty w README — projekt nie wymaga żadnych płatnych zasobów do pełnego zaliczenia.\n\n> **Realizm i zakres (QG-6).** Terraform nad lokalnym klastrem kind (namespace, ConfigMap, Secret) to ćwiczenie składni i deklaratywnego mindsetu — prawdziwa wartość IaC ujawnia się dopiero w chmurze (VPC, IAM, zarządzany Kubernetes). Do wersjonowania danych użyj konkretnego narzędzia (np. DVC lub hash + snapshot), nie samego opisu. Wybierz zbiór z jawną licencją (np. UCI Online Retail, CC BY 4.0), by nie trenować na danych o nieznanym statusie. Pięć narzędzi naraz to dużo: przy pierwszym kontakcie z Kubernetesem i Terraform licz realnie ~30–35 h.",
+		"learning_resources": [
+			{
+				"title": "MLflow — Getting Started (oficjalna dokumentacja)",
+				"url": "https://mlflow.org/docs/latest/ml/getting-started/",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Made With ML — MLOps Course (open-access)",
+				"url": "https://madewithml.com/courses/mlops/",
+				"type": "course",
+				"position": 1
+			},
+			{
+				"title": "kind — Kubernetes in Docker (dokumentacja)",
+				"url": "https://kind.sigs.k8s.io/",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "Terraform — Tutorials (HashiCorp)",
+				"url": "https://developer.hashicorp.com/terraform/tutorials",
+				"type": "course",
+				"position": 3
+			},
+			{
+				"title": "GitHub Actions — dokumentacja",
+				"url": "https://docs.github.com/en/actions",
+				"type": "docs",
+				"position": 4
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://mlflow.org/docs/latest/ml/getting-started/",
+				"label": "MLflow Getting Started",
+				"position": 0
+			},
+			{
+				"url": "https://kubernetes.io/docs/tutorials/",
+				"label": "Kubernetes — oficjalne tutoriale",
+				"position": 1
+			},
+			{
+				"url": "https://developer.hashicorp.com/terraform/tutorials",
+				"label": "Terraform Tutorials",
+				"position": 2
+			}
+		]
+	},
+	{
+		"slug": "ds-capstone-strumien-i-raport",
+		"title": "CAPSTONE: strumień danych, detekcja anomalii i raport biznesowy",
+		"description": "Capstone spinający całą ścieżkę Data Scientist: zbudujesz strumień zdarzeń w Kafce (Docker/KRaft), zagregujesz go w PySpark Structured Streaming, wykryjesz anomalie z jawnym baseline'em (metoda statystyczna kontra prosty model) i przełożysz wynik na decyzję biznesową. Artefaktem portfolio-grade jest repozytorium z docker-compose, wdrożony dashboard w Streamlit oraz raport i decision memo wg szablonu Cel-Dane-Metoda-Wynik-Wnioski/Ograniczenia. Nacisk pada na poprawną obsługę czasu i okien oraz na walidację progu anomalii, a nie na efektowność modelu.",
+		"level": "L3",
+		"estimatedHours": 28,
+		"sourceType": "oss",
+		"sourceUrl": "https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html",
+		"competencies": [
+			{
+				"name": "Kafka",
+				"role": "required"
+			},
+			{
+				"name": "Spark",
+				"role": "required"
+			},
+			{
+				"name": "PySpark",
+				"role": "required"
+			},
+			{
+				"name": "Databricks",
+				"role": "acquired"
+			},
+			{
+				"name": "MLOps",
+				"role": "acquired"
+			},
+			{
+				"name": "Statystyka (Statistics)",
+				"role": "acquired"
+			},
+			{
+				"name": "EDA",
+				"role": "acquired"
+			}
+		],
+		"rubricJson": [
+			{
+				"criterion": "Pipeline strumieniowy Kafka to Spark",
+				"weight": 25,
+				"description": "Producent publikuje zdarzenia do topiku Kafka (KRaft, bez ZooKeepera) w Dockerze; PySpark Structured Streaming czyta topik, wykonuje agregacje w oknach czasowych z jawną obsługą event-time i watermark; strumień działa end-to-end i jest udokumentowany poleceniami uruchomienia."
+			},
+			{
+				"criterion": "Detekcja anomalii z baseline",
+				"weight": 25,
+				"description": "Zaimplementowano co najmniej dwie metody detekcji (statystyczna, np. z-score/EWMA na oknie, oraz prosty model) porównane względem jawnego baseline; próg anomalii jest uzasadniony i zwalidowany, a nie dobrany arbitralnie; wykazano świadomość różnicy między szumem a sygnałem."
+			},
+			{
+				"criterion": "Wdrożony dashboard (Streamlit)",
+				"weight": 20,
+				"description": "Dashboard w Streamlit prezentuje agregacje i wykryte anomalie w czasie; jest publicznie wdrożony (Streamlit Community Cloud lub odtwarzalny lokalnie z docker-compose) z działającym URL lub jednopoleceniową instrukcją uruchomienia."
+			},
+			{
+				"criterion": "Raport biznesowy i decision memo",
+				"weight": 20,
+				"description": "Raport wg szablonu (Cel, Dane, Metoda, Wynik, Wnioski/Ograniczenia) jest zrozumiały dla nie-technicznego czytelnika i zawiera decision memo z konkretną rekomendacją; sekcja Ograniczenia uczciwie opisuje założenia, ryzyka fałszywych alarmów i granice metody."
+			},
+			{
+				"criterion": "Reprodukowalność",
+				"weight": 10,
+				"description": "docker-compose podnosi Kafkę, producenta i przetwarzanie jednym poleceniem; README opisuje odtworzenie na czystej maszynie, przypięte wersje i sposób weryfikacji; obcy użytkownik uruchamia całość bez pomocy autora. docker-compose one-command; przypięte wersje Sparka i konektora spark-sql-kafka; README z instrukcją odtworzenia."
+			}
+		],
+		"theory_md": "# Przetwarzanie strumieniowe i detekcja anomalii w praktyce\n\nPrzetwarzanie strumieniowe (stream processing) to model, w którym dane są przetwarzane w miarę napływania — zdarzenie po zdarzeniu lub w krótkich mikropartiach — zamiast czekać na zebranie całego zbioru i przetworzenie go jednorazowo (batch). W capstone łączymy oba filary ścieżki: inżynierię danych (Kafka, Spark, PySpark) i analitykę (statystyka, EDA, detekcja anomalii), a następnie przekładamy wynik techniczny na decyzję biznesową. To ostatnie przejście — od metryki do rekomendacji — jest tym, co odróżnia analityka od data scientista.\n\n## Kiedy strumień bije batch\n\nStrumień nie jest zawsze lepszy od batcha — jest lepszy wtedy, gdy koszt opóźnienia jest wysoki. Jeśli decyzja musi zapaść w sekundach (wykrycie awarii, oszustwa transakcyjnego, nagłego skoku ruchu), batch liczony co godzinę jest bezużyteczny, bo odpowiedź przychodzi po fakcie. Gdy natomiast raport dzienny w zupełności wystarcza, strumień to zbędna złożoność: trudniejszy w utrzymaniu, kosztowniejszy i bardziej podatny na błędy związane z czasem. Świadome uzasadnienie wyboru architektury jest częścią pracy — w raporcie należy wprost napisać, dlaczego dane zjawisko wymaga podejścia strumieniowego.\n\nStrumień wprowadza fundamentalną trudność, której batch nie ma: **czas**. W batchu wszystkie dane są już na miejscu, więc porządek jest znany. W strumieniu zdarzenia przychodzą z opóźnieniem, poza kolejnością, a system musi zdecydować, jak długo czekać na spóźnialskich. Rozróżnienie event-time (kiedy zdarzenie faktycznie zaszło) od processing-time (kiedy do nas dotarło) jest tu kluczowe — agregacje liczone po processing-time dają wyniki, które zmieniają się przy każdym ponownym uruchomieniu.\n\n## Detekcja anomalii: statystyka kontra ML i po co baseline\n\nDetekcję anomalii można oprzeć na statystyce (np. z-score względem średniej kroczącej, EWMA, reguła trzech sigm na oknie) albo na modelu ML (np. Isolation Forest). Na tym poziomie zaczynamy od metody statystycznej, ponieważ jest interpretowalna, tania i zaskakująco trudna do pobicia. Prosty model wprowadzamy jako alternatywę, aby wykazać, czy dodatkowa złożoność faktycznie coś daje.\n\nSpoiwem obu podejść jest **baseline** — jawny, najprostszy sensowny punkt odniesienia (np. stały próg lub reguła sigma). Bez baseline'u nie da się powiedzieć, czy metoda jest dobra; można jedynie powiedzieć, że „coś wykrywa”. Baseline zamienia pytanie „czy to działa?” na sprawdzalne „czy to działa lepiej niż trywialna reguła?”. W raporcie każde ulepszenie musi być mierzone względem niego.\n\n## Architektura rozwiązania\n\nRozwiązanie tworzy łańcuch od źródła zdarzeń do decyzji biznesowej.\n\n1. **Źródło i broker.** Producent w Pythonie publikuje zdarzenia (np. przejazdy na bazie publicznych danych NYC TLC, przetworzone na strumień z ustalonym rytmem) do topiku Kafka uruchomionego w Dockerze w trybie KRaft — bez ZooKeepera, co upraszcza konfigurację. Kafka pełni rolę trwałego, uporządkowanego bufora, który oddziela tempo produkcji od tempa konsumpcji.\n2. **Przetwarzanie strumieniowe.** PySpark Structured Streaming czyta topik i wykonuje agregacje w oknach czasowych (tumbling/sliding) po event-time, z jawnym watermarkiem określającym, jak długo czekamy na spóźnione dane. To warstwa, w której surowy strumień zamienia się w metryki (np. liczba zdarzeń, średnia, wariancja na okno).\n3. **Detekcja anomalii.** Na strumieniu agregatów uruchamiamy metodę statystyczną i prosty model, porównując oba względem baseline'u. Próg anomalii jest walidowany — na fragmencie danych z oznaczonymi lub syntetycznie wstrzykniętymi anomaliami sprawdzamy kompromis między czułością a liczbą fałszywych alarmów.\n4. **Prezentacja.** Dashboard w Streamlit pokazuje agregacje i wykryte anomalie w czasie. Jest wdrożony publicznie (Streamlit Community Cloud) lub odtwarzalny lokalnie z docker-compose — to drugie wdrożenie na ścieżce, uczące pakowania wyniku w narzędzie dla odbiorcy.\n5. **Decyzja.** Raport wg szablonu (Cel, Dane, Metoda, Wynik, Wnioski/Ograniczenia) i decision memo tłumaczą, co wykryto i co z tym zrobić, językiem nie-technicznego czytelnika.\n\nCałość podnosi jedno polecenie `docker-compose up`, co czyni pipeline reprodukowalnym na czystej maszynie.\n\n## Metodyka i pułapki\n\nPierwsza i najgroźniejsza pułapka to **ignorowanie danych spóźnionych i okien czasowych**. Jeśli agregujesz po processing-time albo bez watermarku, wyniki będą niedeterministyczne i niepowtarzalne — te same dane dadzą inne liczby przy kolejnym uruchomieniu. Zawsze definiuj okno po event-time i jawny watermark, a w raporcie opisz, jak długo czekasz na spóźnialskich i co się dzieje z danymi, które przyjdą po tym czasie.\n\nDruga pułapka to **próg anomalii dobrany bez walidacji**. Wybranie progu „na oko” (np. z-score powyżej 3, bo tak się robi) bez sprawdzenia, ile generuje fałszywych alarmów i ile prawdziwych anomalii pomija, jest analizą pozorną. Zwaliduj próg na fragmencie danych z oznaczonymi anomaliami (realnymi lub wstrzykniętymi), pokaż kompromis czułość/precyzja i uzasadnij wybór. Bez tego kroku detekcja jest niesprawdzalna.\n\nTrzecia pułapka to **mylenie szumu z sygnałem**. Dane strumieniowe naturalnie fluktuują; każdy skok to jeszcze nie anomalia. Właśnie dlatego potrzebny jest baseline i okno kontekstowe — anomalia to odchylenie istotne względem lokalnej normy, a nie pojedynczy wysoki odczyt. Analiza błędów (przejrzenie fałszywych alarmów i przeoczeń) jest obowiązkowym elementem raportu i pomaga odróżnić jedno od drugiego.\n\nCzwarta pułapka dotyczy **raportu**: przełożenie wyniku technicznego na decyzję. Nawet doskonała detekcja jest bezwartościowa, jeśli odbiorca biznesowy nie rozumie, co ma zrobić. Decision memo musi zawierać konkretną rekomendację i jej uzasadnienie, a nie tylko wykresy. Sekcja **Ograniczenia** ma uczciwie wyliczyć założenia (np. stacjonarność, reprezentatywność danych), ryzyko fałszywych alarmów i granice metody — to oznaka dojrzałości, nie słabości.\n\n### Klauzula kosztowa\n\nProjekt działa w całości lokalnie i za darmo: Kafka w Dockerze (KRaft), PySpark lokalnie, dashboard na darmowym Streamlit Community Cloud lub odtwarzalny z docker-compose. Databricks (kompetencja nabywana) można potraktować poglądowo jako zarządzaną alternatywę dla Sparka — jeśli z niego skorzystasz, użyj darmowego Free Edition (Community Edition zostało wycofane 1.01.2026) i odnotuj to w README; nie jest wymagany żaden płatny zasób do pełnego zaliczenia capstone'u.\n\n> **Pinowanie wersji Kafka↔Spark (pułapka).** Integracja PySpark Structured Streaming z Kafką wymaga pakietu spark-sql-kafka w wersji DOKŁADNIE zgodnej z wersją Sparka (Spark 4.x) — niezgodność psuje się cicho. Przypnij wersje Sparka i konektora w docker-compose oraz w README, inaczej strumień nie ruszy na innej maszynie.",
+		"learning_resources": [
+			{
+				"title": "Spark Structured Streaming Programming Guide (oficjalna dokumentacja)",
+				"url": "https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html",
+				"type": "docs",
+				"position": 0
+			},
+			{
+				"title": "Apache Kafka — Quickstart (KRaft, bez ZooKeepera)",
+				"url": "https://kafka.apache.org/quickstart/",
+				"type": "docs",
+				"position": 1
+			},
+			{
+				"title": "PySpark — Getting Started (dokumentacja)",
+				"url": "https://spark.apache.org/docs/latest/api/python/getting_started/index.html",
+				"type": "docs",
+				"position": 2
+			},
+			{
+				"title": "Streamlit — Deploy on Community Cloud (dokumentacja)",
+				"url": "https://docs.streamlit.io/deploy/streamlit-community-cloud",
+				"type": "docs",
+				"position": 3
+			},
+			{
+				"title": "scikit-learn — User Guide (open-access, detekcja anomalii/Isolation Forest)",
+				"url": "https://scikit-learn.org/stable/user_guide.html",
+				"type": "course",
+				"position": 4
+			}
+		],
+		"source_links": [
+			{
+				"url": "https://kafka.apache.org/quickstart/",
+				"label": "Kafka Quickstart (KRaft)",
+				"position": 0
+			},
+			{
+				"url": "https://docs.docker.com/guides/kafka/",
+				"label": "Kafka w Dockerze — przewodnik",
+				"position": 1
+			},
+			{
+				"url": "https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html",
+				"label": "Spark Structured Streaming Guide",
+				"position": 2
+			},
+			{
+				"url": "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page",
+				"label": "NYC TLC Trip Record Data (dane publiczne)",
+				"position": 3
+			},
+			{
+				"url": "https://www.nyc.gov/home/terms-of-use.page",
+				"label": "Warunki użycia danych NYC TLC: NYC Open Data Terms of Use (nie CC)",
+				"position": 4
+			}
+		]
+	}
+]

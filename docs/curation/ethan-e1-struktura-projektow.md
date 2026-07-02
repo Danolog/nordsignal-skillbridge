@@ -5,6 +5,8 @@
 **Wejście dla:** E2 (Leo — narzędzie ingestu) i E3 (Sophia — autoring treści)
 **Status:** dokument projektowy. Zero kodu produkcyjnego, zero migracji, zero commitów.
 
+> **⚠ Aktualizacja 2026-07-01:** proces opisany tutaj (fazy, kontrakt, 7 reguł autora) pozostaje w mocy, ale został podporządkowany **kanonicznemu runbookowi z bramkami jakości merytorycznej QG-1…QG-7**: `docs/runbooks/projekty-sciezki-runbook.md`. Każda nowa partia projektów (dowolnej ścieżki) MUSI przejść bramki QG przed autoringiem i przed ingestem prod. Geneza bramek: `docs/curation/weryfikacja-ds-plan-projektow.md`.
+
 ---
 
 ## 0. TL;DR (jedna minuta)

@@ -718,16 +718,22 @@ export const PATHS: PathSpec[] = [
 		],
 	},
 	{
-		// KURACJA SOPHII A4 partia 1 2026-06-27 — ⚠ KATALOG CIENKI I NIETYPOWY. Polski tag
-		// „Data Scientist" w JJIT ≠ podręcznikowy profil: klasyczny stos (scikit-learn/R/Jupyter/
-		// Tableau/PowerBI) prawie nie istnieje w danych — to Python+SQL na chmurze, dryfujący ku
-		// LLM/GenAI, z nakładką Data/AI Engineer. 4 grupy = minimum oparte WYŁĄCZNIE na danych
-		// (nie dopisuję kompetencji spoza zrzutu). Ogon poniżej top-40 (NumPy/Statistics/Snowflake/
-		// Apache Spark) zweryfikowany buildCandidates(...,200). `kind` z dokumentu Sophii. Scalenia:
+		// KURACJA SOPHII A4 partia 1 2026-06-27, ROZSZERZONA 2026-07-01 (Oliver, decyzja Darka) —
+		// ⚠ KATALOG CIENKI I NIETYPOWY. Polski tag „Data Scientist" w JJIT ≠ podręcznikowy profil:
+		// klasyczny stos (scikit-learn/R/Jupyter/Tableau/PowerBI) prawie nie istnieje w TAGACH — to
+		// Python+SQL na chmurze, dryfujący ku LLM/GenAI, z nakładką Data/AI Engineer. Scalenia:
 		// Azure←Microsoft Azure/MS Azure/Microsoft Platform/Microsoft Azure Cloud, GCP←Google Cloud
 		// Platform, AWS←Amazon AWS/Amazon Web Services (AWS), GenAI←Generative AI/Gen AI, Spark←
-		// Apache Spark, Kafka←Apache Kafka. Wyrzucone meta/szum: Machine Learning(24%!)/Data Science/
-		// AI/Data, miękkie zarządcze, Active Directory/Linux/Bash/SAP/ITIL (administracja obca roli).
+		// Apache Spark, Kafka←Apache Kafka. `kind` z dokumentu Sophii.
+		// ── ROZSZERZENIE 2026-07-01: grupa „Fundamenty" (kuracja ekspercka poza zrzutem tagów) ──
+		// Weryfikacja planu projektów DS (docs/curation/weryfikacja-ds-plan-projektow.md) wykazała,
+		// że tagi pokazują WYRÓŻNIKI oferty (Azure/LLM), a fundamenty roli (trenowanie/ewaluacja
+		// modeli, statystyka, EDA, eksperymentacja A/B) siedzą w OPISACH ofert — wymagane w 7/7
+		// przebadanych ofert junior/mid PL, choć w tagach cienkie (scikit-learn 0, Statistics 1.6%).
+		// Dlatego dopisujemy je jako liście `absent:true` (source „kuracja ekspercka") — jawnie
+		// poza surowym zrzutem, kotwica dla projektów pokrywających rdzeń zawodu. Meta-tag „Machine
+		// Learning"(24%!) NADAL wyrzucony jako naga nazwa dyscypliny — zastąpiony konkretną
+		// kompetencją „Uczenie maszynowe" (trenowanie i ewaluacja modeli). 5 grup (było 4).
 		label: "Data Scientist",
 		areas: [
 			{
@@ -741,6 +747,18 @@ export const PATHS: PathSpec[] = [
 					{ name: "Git", kind: "tool" },
 					{ name: "Pandas", kind: "tool" },
 					{ name: "NumPy", kind: "tool" },
+				],
+			},
+			{
+				name: "Fundamenty: statystyka, uczenie maszynowe i EDA",
+				type: "context-group",
+				description:
+					"Metodyczny rdzeń zawodu, którego rynkowe TAGI nie pokazują, choć OPISY ofert go wymagają: statystyka i wnioskowanie, trenowanie oraz ewaluacja modeli uczenia maszynowego, eksploracyjna analiza danych (EDA) i projektowanie eksperymentów A/B. W zrzucie tagów 2026-02 te kompetencje są cienkie lub nieobecne (scikit-learn 0 ofert, statystyka 1.6%), ale każda przeanalizowana oferta junior/mid wymaga ich w treści ogłoszenia — dlatego dopisujemy je jako kurację ekspercką (poza surowym zrzutem tagów). To fundament, na którym stoją chmura, LLM i big data z pozostałych grup: bez niego student obsługuje narzędzia, nie rozumiejąc, czy model działa.",
+				leaves: [
+					{ name: "Statystyka (Statistics)", countAs: ["Statistics"], kind: "concept" },
+					{ name: "Uczenie maszynowe", kind: "concept", absent: true },
+					{ name: "EDA", kind: "concept", absent: true },
+					{ name: "A/B testing", kind: "concept", absent: true },
 				],
 			},
 			{
@@ -777,10 +795,10 @@ export const PATHS: PathSpec[] = [
 				],
 			},
 			{
-				name: "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe",
+				name: "Sztuczna inteligencja: LLM, GenAI i NLP",
 				type: "context-group",
 				description:
-					"Rdzeń dziedziny widziany przez to, co rynek faktycznie nazywa. W tym zrzucie „uczenie maszynowe” pojawia się głównie jako ogólny tag, nie jako konkretne biblioteki (scikit-learn/PyTorch ledwo się przebijają) — dlatego grupa opiera się na nazwanych pod-technikach. Najmocniejszy realny sygnał to LLM (duże modele językowe) i GenAI (sztuczna inteligencja generatywna): polski „data scientist” coraz częściej znaczy „ktoś, kto umie wpiąć model językowy”. NLP (przetwarzanie języka naturalnego) i statystyka to fundament metodyczny, choć w tagach cienki.",
+					"Najszybciej rosnąca warstwa roli: polski „data scientist” coraz częściej znaczy „ktoś, kto umie wpiąć model językowy”. Najmocniejszy realny sygnał to LLM (duże modele językowe) i GenAI (sztuczna inteligencja generatywna); NLP (przetwarzanie języka naturalnego) to klasyczna dziedzina, na której te modele wyrosły, a MLOps (operacjonalizacja modeli) pilnuje, żeby model działał niezawodnie po wdrożeniu. Metodyczny fundament (statystyka, uczenie maszynowe) mieszka w osobnej grupie „Fundamenty” — tu jest zastosowanie tego fundamentu do nowoczesnych modeli.",
 				leaves: [
 					{ name: "LLM", kind: "concept" },
 					{
@@ -791,7 +809,6 @@ export const PATHS: PathSpec[] = [
 					},
 					{ name: "MLOps", kind: "concept" },
 					{ name: "NLP", kind: "concept" },
-					{ name: "Statystyka (Statistics)", countAs: ["Statistics"], kind: "concept" },
 				],
 			},
 			{
