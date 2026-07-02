@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { generateProjectBrief } from "@/lib/ai/generate-brief";
@@ -62,27 +62,28 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 		// AI POZA tx — nie trzymamy połączenia przez LLM.
 		const brief = await generateProjectBrief(projectId, studentMeta.id);
 
-		// Persistence przez RLS + jawne WHERE (warstwa 1 ADR-003).
-		await withTenantContext(
-			{ userId, tenantId: studentMeta.tenantId, role: "student" },
-			async (tx) => {
-				if (existing) {
-					await tx
-						.update(projectSubmissions)
-						.set({
-							aiReviewJson: { ...(existing.aiReviewJson as object), brief },
-							updatedAt: new Date(),
-						})
-						.where(eq(projectSubmissions.id, existing.id));
-				} else {
-					await tx.insert(projectSubmissions).values({
-						studentId: studentMeta.id,
-						tenantId: studentMeta.tenantId,
-						projectId,
-						aiReviewJson: { brief },
-					});
-				}
-			},
+		// Upsert atomowy przez UNIQUE(student_id, project_id) (0.2b, drizzle/0021) —
+		// zamyka wyścig między cache-check `existing` powyżej a zapisem (dwa równoległe
+		// briefy, albo brief wyścigujący się z submit/route.ts, mogły oba trafić na
+		// "nie istnieje" i wstawić osobny wiersz / nadpisać się nawzajem find-then-write).
+		// coalesce(...,'{}') — audyt Fable 5: aiReviewJson jest nullable (np. seed-e2e
+		// wstawia zgłoszenia bez niego), NULL || cokolwiek w Postgresie daje NULL.
+		await withTenantContext({ userId, tenantId: studentMeta.tenantId, role: "student" }, (tx) =>
+			tx
+				.insert(projectSubmissions)
+				.values({
+					studentId: studentMeta.id,
+					tenantId: studentMeta.tenantId,
+					projectId,
+					aiReviewJson: { brief },
+				})
+				.onConflictDoUpdate({
+					target: [projectSubmissions.studentId, projectSubmissions.projectId],
+					set: {
+						aiReviewJson: sql`coalesce(${projectSubmissions.aiReviewJson}, '{}'::jsonb) || ${JSON.stringify({ brief })}::jsonb`,
+						updatedAt: new Date(),
+					},
+				}),
 		);
 
 		return NextResponse.json({ brief });

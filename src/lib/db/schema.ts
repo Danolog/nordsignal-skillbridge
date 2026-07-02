@@ -439,6 +439,10 @@ export const projectSubmissions = pgTable(
 		index("idx_project_submissions_student").on(table.studentId),
 		index("idx_project_submissions_project").on(table.projectId),
 		index("idx_project_submissions_tenant_id").on(table.tenantId),
+		// 0.2b: jedno zgłoszenie na studenta per projekt. Wymaga 0.2a (remediacja
+		// istniejących duplikatów) zastosowanego PRZED tą migracją na każdej bazie —
+		// inaczej CREATE UNIQUE INDEX padnie na istniejących duplikatach.
+		uniqueIndex("uq_project_submissions_student_project").on(table.studentId, table.projectId),
 	],
 );
 

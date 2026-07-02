@@ -333,12 +333,29 @@ async function setupTestData() {
 		})
 		.returning({ id: projectSubmissions.id });
 
+	// T3 (409 na statusie 'submitted') potrzebuje DRUGIEGO zgłoszenia studenta A —
+	// UNIQUE(student_id, project_id) z 0.2b (drizzle/0021) nie pozwala na dwa
+	// zgłoszenia tej samej pary, więc to drugie idzie na osobny (świeżo utworzony
+	// tu, sprzątany w cleanupTestData) projekt.
+	const [secondProject] = await db
+		.insert(schema.projects)
+		.values({
+			slug: `b5-test-second-project-${Date.now()}`,
+			title: "B5 Test — drugi projekt (status submitted)",
+			description:
+				"Projekt pomocniczy testu B5 — para (student, projekt) musi być unikalna (0.2b).",
+			level: "L1",
+			estimatedHours: 4,
+			sourceType: "open_data",
+		})
+		.returning({ id: schema.projects.id });
+
 	const [subSubmitted] = await db
 		.insert(projectSubmissions)
 		.values({
 			studentId: studentAId,
 			tenantId,
-			projectId: projectRes.id,
+			projectId: secondProject.id,
 			status: "submitted",
 		})
 		.returning({ id: projectSubmissions.id });
@@ -359,6 +376,7 @@ async function setupTestData() {
 		projectId: projectRes.id,
 		projectTitle: projectRes.title,
 		projectSlug: projectRes.slug,
+		submittedProjectId: secondProject.id,
 		userAId,
 		userBId,
 		studentAId,
@@ -373,6 +391,8 @@ async function cleanupTestData(data: Awaited<ReturnType<typeof setupTestData>>) 
 	// Kaskadowe DELETE przez FK: user → student → submissions → reflections
 	await db.delete(user).where(eq(user.id, data.userAId));
 	await db.delete(user).where(eq(user.id, data.userBId));
+	// Projekt utworzony tu dla T3 (nie z katalogu) — sprzątamy jawnie.
+	await db.delete(schema.projects).where(eq(schema.projects.id, data.submittedProjectId));
 }
 
 // ---------------------------------------------------------------------------
@@ -440,7 +460,7 @@ async function main() {
 	{
 		const r = await callPost(td.userAId, {
 			submissionId: td.subSubmittedId,
-			projectId: td.projectId,
+			projectId: td.submittedProjectId,
 			answerSurprised: "Test",
 		});
 		if (r.status === 409) {
