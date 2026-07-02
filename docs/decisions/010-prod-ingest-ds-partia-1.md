@@ -250,6 +250,14 @@ Zanotuj (audit log / commit-notatka, autor Darek): data/godzina UTC, branch back
 - [ ] Audit log §10 uzupełniony.
 - [ ] Backup branch zostawiony min. kilka dni (potem `neonctl branches delete …`).
 
-## 12. Rekord wykonania (audit log §10) — DO UZUPEŁNIENIA PO PROD
+## 12. Rekord wykonania (audit log §10)
 
-> Status: **NIE WYKONANE** (przygotowane; czeka na decyzję Darka). Po wykonaniu uzupełnić analogicznie do ADR-009 §12 (cel, backup branch-id, baseline, wynik narzędzia, weryfikacja 8a–8f, rollback/uwagi).
+> Status: **WYKONANE — 2026-07-02** (prowadzenie na żywo: Oliver; wykonał: Darek; sign-off: Ethan/CTO).
+
+- **Backup (bramka #1):** zero-copy branch `prod-backup-pre-ds-p1-2026-07-02` = **`br-curly-hall-alqqy3kl`** (utworzony 2026-07-02 09:22:32Z, endpoint `ep-empty-bonus-al624e93`) + logiczny dump `~/prod-pre-ds-p1-2026-07-02.dump` (154 KB, `pg_dump` 18.4, obejmuje `project_submissions`).
+- **Baseline §6:** total_projects **68**, ds-* **0**, stare DS-klisze **7**, zgłoszenia na starych DS **0** (D1: kaskada bez utraty Verified Receipts).
+- **§7a ingest** (`--path "Data Scientist"`, `CONFIRM_PROD_DB=1`): „Wstawiono: 10, zaktualizowano: 0, błędów: 0. Kompetencji: 53, materiałów: 39, linków: 33." — exit 0. `.env.test` odsunięty na czas ingestu i przywrócony.
+- **§7b wycofanie:** usunięto **7** starych DS-klisz (transakcja samo-zabezpieczona: DELETE tylko przy dokładnie 7 wierszach; kaskada 0 zgłoszeń).
+- **Weryfikacja §8:** 8a=10 · 8b=4/4/2 · 8c=0 · 8d=0 · 8e=23 nazwy, wszystkie ∈ liście DS (fundamenty EDA/Uczenie maszynowe/A-B testing/Statystyka obecne; Snowflake świadomie poza) · 8f stare_ds=0, total=**71** (=68+10−7). Wszystkie kryteria akceptacji spełnione.
+- **Rollback:** nie był potrzebny.
+- **Do zamknięcia po stronie operatora:** smoke `/projects` (filtr DS), retencja backup-brancha `br-curly-hall-alqqy3kl` min. kilka dni (potem `neonctl branches delete`), weryfikacja licencji D2 (P7/P8) przed publikacją/promocją.
