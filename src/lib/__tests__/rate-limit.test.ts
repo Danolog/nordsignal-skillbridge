@@ -39,6 +39,73 @@ describe("rate-limit graceful degradation", () => {
 	});
 });
 
+describe("rate-limit fail-closed w produkcji", () => {
+	beforeEach(() => {
+		vi.resetModules();
+	});
+
+	afterEach(() => {
+		vi.unstubAllEnvs();
+	});
+
+	it("assertRateLimitConfigured nie rzuca poza produkcją nawet bez configu Upstash", async () => {
+		vi.stubEnv("NODE_ENV", "test");
+		vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+		vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+
+		const { assertRateLimitConfigured } = await import("../rate-limit");
+		expect(() => assertRateLimitConfigured()).not.toThrow();
+	});
+
+	it("assertRateLimitConfigured rzuca RateLimitMisconfiguredError w produkcji bez configu Upstash", async () => {
+		vi.stubEnv("NODE_ENV", "production");
+		vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+		vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+
+		const { assertRateLimitConfigured, RateLimitMisconfiguredError } = await import(
+			"../rate-limit"
+		);
+		expect(() => assertRateLimitConfigured()).toThrow(RateLimitMisconfiguredError);
+	});
+
+	it("assertRateLimitConfigured nie rzuca w produkcji, gdy Upstash jest skonfigurowany", async () => {
+		vi.stubEnv("NODE_ENV", "production");
+		vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://example.upstash.io");
+		vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "token123");
+
+		const { assertRateLimitConfigured } = await import("../rate-limit");
+		expect(() => assertRateLimitConfigured()).not.toThrow();
+	});
+
+	it("applyRateLimit fail-closed (success=false) w produkcji, gdy limiter=null", async () => {
+		vi.stubEnv("NODE_ENV", "production");
+		vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+		vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+
+		const { applyRateLimit, rateLimiters } = await import("../rate-limit");
+		expect(rateLimiters.aiHeavy).toBeNull();
+
+		const before = Date.now();
+		const result = await applyRateLimit(rateLimiters.aiHeavy, "user:123");
+
+		expect(result.success).toBe(false);
+		expect(result.remaining).toBe(0);
+		expect(result.reset).toBeGreaterThanOrEqual(before);
+	});
+
+	it("applyRateLimit pozostaje fail-open poza produkcją, gdy limiter=null", async () => {
+		vi.stubEnv("NODE_ENV", "development");
+		vi.stubEnv("UPSTASH_REDIS_REST_URL", "");
+		vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "");
+
+		const { applyRateLimit, rateLimiters } = await import("../rate-limit");
+		const result = await applyRateLimit(rateLimiters.aiHeavy, "user:123");
+
+		expect(result.success).toBe(true);
+		expect(result.remaining).toBe(Number.MAX_SAFE_INTEGER);
+	});
+});
+
 describe("getClientIp", () => {
 	it("returns first IP from x-forwarded-for", async () => {
 		const { getClientIp } = await import("../rate-limit");
