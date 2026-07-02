@@ -55,6 +55,32 @@ function competencySpread(compName: string, careers: Array<[string, string[]]>):
 const MAX_DISTINCTIVE_SPREAD = 8;
 
 /**
+ * Legacy projekty „Data Analyst" (sprzed procesu kuratorskiego QG-1…QG-7 dla nowych
+ * ścieżek) — kotwica algorytmiczna (Python/Pandas/Statystyka jako required LUB acquired,
+ * niski spread) błędnie przypisywała je też do „Data Scientist", mimo że nigdy nie przeszły
+ * runbooka dla tej ścieżki. Jawne wykluczenie per slug+kierunek, dopóki nie ma pola
+ * autorstwa/kuratorstwa w schemacie.
+ */
+const CAREER_EXCLUSIONS: Record<string, Set<string>> = {
+	"analiza-wynagrodzen-gus": new Set(["Data Scientist"]),
+	"demografia-powiatow": new Set(["Data Scientist"]),
+	"analiza-jakosci-powietrza": new Set(["Data Scientist"]),
+	"dashboard-edukacja-gus": new Set(["Data Scientist"]),
+	"predykcja-cen-mieszkan": new Set(["Data Scientist"]),
+	"analiza-budzetow-gmin": new Set(["Data Scientist"]),
+	"pipeline-etl-transport": new Set(["Data Scientist"]),
+};
+
+/**
+ * Blocklist bezpośredni — używany tam, gdzie widok pomija filtr `careerGoals` (np. widok
+ * „projekty zamykające lukę", który celowo nie zawęża po kierunku, żeby nie maskować luki
+ * słabo zakotwiczonym projektem kuratorskim). Niezależny od algorytmu kotwicy.
+ */
+export function isProjectExcludedFromCareer(slug: string, careerGoal: string): boolean {
+	return CAREER_EXCLUSIONS[slug]?.has(careerGoal) ?? false;
+}
+
+/**
  * Dla listy projektów i mapy kierunek→kompetencje zwraca dla każdego projektu listę
  * kierunków, do których pasuje. Liczone w pamięci (bez zmian w bazie).
  *
@@ -65,7 +91,11 @@ const MAX_DISTINCTIVE_SPREAD = 8;
  *       wyłącznie na generycznym „SQL"/„Python" (np. dashboard GUS → Data Analyst, nie cyber).
  */
 export function computeCareerGoalsForProjects<
-	P extends { id: string; competencies: Array<{ competencyName: string; role: string }> },
+	P extends {
+		id: string;
+		slug: string;
+		competencies: Array<{ competencyName: string; role: string }>;
+	},
 >(projects: P[], careerToCompetencies: Map<string, string[]>): Map<string, string[]> {
 	const careers = [...careerToCompetencies.entries()];
 	const spreadCache = new Map<string, number>();
@@ -79,8 +109,10 @@ export function computeCareerGoalsForProjects<
 
 	const out = new Map<string, string[]>();
 	for (const project of projects) {
+		const excluded = CAREER_EXCLUSIONS[project.slug];
 		const goals: string[] = [];
 		for (const [careerGoal, compNames] of careers) {
+			if (excluded?.has(careerGoal)) continue;
 			if (!projectMatchesCareer(project.competencies, compNames)) continue;
 			// Kotwica: kompetencja projektu obecna w tym kierunku I wyróżniająca (niski spread).
 			const anchored = project.competencies.some(

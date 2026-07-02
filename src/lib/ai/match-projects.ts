@@ -43,15 +43,16 @@ export async function matchProjects(
 	const gapName = gap.competencyName.toLowerCase();
 
 	const scored = allProjects.map((project) => {
-		const projCompNames = project.competencies.map((c) => c.competencyName.toLowerCase());
-
-		const gapMatch = projCompNames.some((name) => name.includes(gapName) || gapName.includes(name))
-			? 40
-			: 0;
-
+		// Luka jest zamknięta tylko przez kompetencje required — required-only, zgodnie z
+		// definicją „zamyka lukę" używaną też w filtrze siatki (project-catalog.tsx).
 		const requiredComps = project.competencies
 			.filter((c) => c.role === "required")
 			.map((c) => c.competencyName.toLowerCase());
+
+		const gapMatch = requiredComps.some((name) => name.includes(gapName) || gapName.includes(name))
+			? 40
+			: 0;
+
 		const overlapCount = requiredComps.filter((name) =>
 			acquiredNames.some((a) => a.includes(name) || name.includes(a)),
 		).length;
