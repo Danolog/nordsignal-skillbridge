@@ -81,6 +81,24 @@ export function isProjectExcludedFromCareer(slug: string, careerGoal: string): b
 }
 
 /**
+ * Autorstwo per konwencja sluga (runbook): prefiks sluga = ścieżka, dla której projekt
+ * powstał (`ds-` → Data Scientist, jak `cyber-` → Cybersecurity). Projekty kuratorskie mają
+ * wymagane kompetencje albo z KURACJI EKSPERCKIEJ (liście `absent` — poza zrzutem tagów, więc
+ * poza pulą `careerToCompetencies` budowaną z job_market_data), albo FUNDAMENTALNE bez
+ * wyróżniającej kotwicy (SQL/Git). Inferencja rynkowa gubi je z ICH WŁASNEJ ścieżki (bramka
+ * `every` albo brak kotwicy) → w katalogu DS widać było 4 z 10. Przypisujemy je do ścieżki
+ * autorskiej JAWNIE, niezależnie od inferencji. Docelowo: kolumna autorstwa w schemacie.
+ */
+const AUTHORED_CAREER_BY_PREFIX: Array<[string, string]> = [["ds-", "Data Scientist"]];
+
+function authoredCareerForSlug(slug: string): string | null {
+	for (const [prefix, careerGoal] of AUTHORED_CAREER_BY_PREFIX) {
+		if (slug.startsWith(prefix)) return careerGoal;
+	}
+	return null;
+}
+
+/**
  * Dla listy projektów i mapy kierunek→kompetencje zwraca dla każdego projektu listę
  * kierunków, do których pasuje. Liczone w pamięci (bez zmian w bazie).
  *
@@ -121,6 +139,17 @@ export function computeCareerGoalsForProjects<
 					spreadOf(pc.competencyName) <= MAX_DISTINCTIVE_SPREAD,
 			);
 			if (anchored) goals.push(careerGoal);
+		}
+		// Ścieżka autorska (prefiks sluga) — dołóż niezależnie od inferencji, jeśli kierunek
+		// istnieje w danych rynku i nie jest jawnie wykluczony.
+		const authored = authoredCareerForSlug(project.slug);
+		if (
+			authored &&
+			careerToCompetencies.has(authored) &&
+			!excluded?.has(authored) &&
+			!goals.includes(authored)
+		) {
+			goals.push(authored);
 		}
 		out.set(project.id, goals);
 	}
