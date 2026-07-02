@@ -5,7 +5,7 @@ import { ProjectCatalog } from "@/components/projects/project-catalog";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { CAREER_PATHS } from "@/lib/db/data/career-paths";
-import { jobMarketData, projects, students } from "@/lib/db/schema";
+import { projects, students } from "@/lib/db/schema";
 import { computeCareerGoalsForProjects } from "@/lib/projects/career-match";
 
 interface PageProps {
