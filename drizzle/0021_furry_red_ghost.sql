@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "uq_project_submissions_student_project" ON "project_submissions" USING btree ("student_id","project_id");

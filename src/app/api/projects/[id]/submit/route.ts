@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { runReviewPipeline } from "@/lib/ai/pipeline";
@@ -117,33 +117,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 		needsHumanReview,
 	};
 
-	// Cache check + upsert przez RLS — student_sees_own ON project_submissions.
+	// Upsert atomowy przez UNIQUE(student_id, project_id) (0.2b, drizzle/0021) —
+	// zamyka wyścig TOCTOU poprzedniego find-then-write (dwa równoległe submity
+	// mogły oba przejść "nie istnieje" i wstawić osobny wiersz). RLS: student_sees_own.
 	const submission = await withTenantContext(
 		{ userId, tenantId: studentMeta.tenantId, role: "student" },
 		async (tx) => {
-			const existing = await tx.query.projectSubmissions.findFirst({
-				where: and(
-					eq(projectSubmissions.studentId, studentMeta.id),
-					eq(projectSubmissions.projectId, projectId),
-				),
-			});
-
-			if (existing) {
-				const [updated] = await tx
-					.update(projectSubmissions)
-					.set({
-						...submissionData,
-						// aiReviewJson z potoku: review (wstecznie zgodny) + rodzeństwo
-						// (studentFeedback/recommendation/cheatSignals/hardChecks/contentMeta).
-						// Merge zachowuje pola spoza potoku (np. dawne klucze), nadpisuje nowe.
-						aiReviewJson: { ...((existing.aiReviewJson as object) ?? {}), ...aiReviewJson },
-						updatedAt: new Date(),
-					})
-					.where(eq(projectSubmissions.id, existing.id))
-					.returning();
-				return updated;
-			}
-			const [inserted] = await tx
+			const [result] = await tx
 				.insert(projectSubmissions)
 				.values({
 					studentId: studentMeta.id,
@@ -152,8 +132,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 					...submissionData,
 					aiReviewJson,
 				})
+				.onConflictDoUpdate({
+					target: [projectSubmissions.studentId, projectSubmissions.projectId],
+					set: {
+						...submissionData,
+						// aiReviewJson z potoku: review (wstecznie zgodny) + rodzeństwo
+						// (studentFeedback/recommendation/cheatSignals/hardChecks/contentMeta).
+						// Merge jsonb (||) — odpowiednik {...existing, ...new} w JS, atomowo w bazie
+						// (bez osobnego SELECT-a, którego wymagał poprzedni find-then-write).
+						// coalesce(...,'{}') — audyt Fable 5: kolumna jest nullable (np. seed-e2e
+						// wstawia zgłoszenia bez aiReviewJson); NULL || cokolwiek daje NULL w
+						// Postgresie, więc bez coalesce świeża recenzja cicho by zniknęła.
+						aiReviewJson: sql`coalesce(${projectSubmissions.aiReviewJson}, '{}'::jsonb) || ${JSON.stringify(aiReviewJson)}::jsonb`,
+						updatedAt: new Date(),
+					},
+				})
 				.returning();
-			return inserted;
+			return result;
 		},
 	);
 

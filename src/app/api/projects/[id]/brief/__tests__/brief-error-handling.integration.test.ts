@@ -236,3 +236,35 @@ d("Brief — happy path i izolacja zapisu (RLS app_student)", () => {
 		expect(rows?.rows[0].ai_review_json.brief).toEqual(FAKE_BRIEF);
 	});
 });
+
+// ── E. Upsert atomowy 0.2b (drizzle/0021) — ON CONFLICT DO UPDATE, NULL-safe ─────
+// Audyt Fable 5 (0.2b, ODRZUCONE — naprawione): persistence przeszła z find-then-write
+// na onConflictDoUpdate (ten sam wzorzec co submit/route.ts). Test ćwiczy GAŁĄŹ
+// UPDATE (wiersz już istnieje z ai_review_json=NULL — kształt jaki wstawia
+// tools/seed-e2e.ts) i dowodzi, że coalesce(...,'{}') nie gubi briefu przy merge'u.
+d("Brief — upsert atomowy (0.2b): gałąź ON CONFLICT, merge NULL-safe", () => {
+	it("wiersz z ai_review_json=NULL: brief zapisuje się (nie ginie w merge'u NULL || x)", async () => {
+		getSessionMock.mockResolvedValue({ user: { id: USER_ID } });
+		generateBriefMock.mockResolvedValue(FAKE_BRIEF);
+
+		// Symuluje kształt z tools/seed-e2e.ts — zgłoszenie bez aiReviewJson w ogóle.
+		await pool?.query(
+			`INSERT INTO project_submissions (id, student_id, tenant_id, project_id, status, needs_human_review, created_at, updated_at)
+			 VALUES (gen_random_uuid(),$1,$2,$3,'submitted',false,now(),now())`,
+			[STUDENT_ID, TENANT_ID, PROJECT_ID],
+		);
+
+		const res = await callBrief();
+		expect(res.status).toBe(200);
+
+		const rows = await pool?.query(
+			"SELECT ai_review_json FROM project_submissions WHERE project_id = $1",
+			[PROJECT_ID],
+		);
+		expect(rows?.rows.length).toBe(1);
+		// Gdyby coalesce brakowało: NULL || {"brief":...} = NULL w Postgresie — kolumna
+		// zostałaby NULL mimo statusu 200, mimo że generateBriefMock zwrócił dane.
+		expect(rows?.rows[0].ai_review_json).not.toBeNull();
+		expect(rows?.rows[0].ai_review_json.brief).toEqual(FAKE_BRIEF);
+	});
+});

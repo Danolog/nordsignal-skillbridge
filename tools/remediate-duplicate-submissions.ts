@@ -36,6 +36,14 @@
  * planu z dry-run) — zamyka lukę wyścigu między raportem a zapisem. Weryfikacja
  * końcowa (0 pozostałych duplikatów) przed COMMIT.
  *
+ * TESTY: rankCandidates/findConflicts mają czyste testy jednostkowe
+ * (tools/__tests__/remediate-duplicate-submissions.test.ts) — po 0.2b
+ * (UNIQUE(student_id, project_id), drizzle/0021) nie da się już wstawić do
+ * project_submissions dwóch rekordów tej samej pary przez zwykły INSERT, więc
+ * scenariusze priorytetu/konfliktu nie są odtwarzalne integracyjnie na w pełni
+ * zmigrowanej bazie. Integration test (bez duplikatów) zostaje jako dowód
+ * przewodowy do prawdziwych tabel/kolumn.
+ *
  * [CZERWONA LINIA gdy prod] — na bazie produkcyjnej to modyfikacja realnych
  * danych zgłoszeń. Uruchamia Darek osobiście (CONFIRM_PROD_DB=1), po backupie
  * gałęzią Neona, tak jak dotychczasowe operacje na prod DB.
@@ -48,7 +56,7 @@
 
 import { existsSync } from "node:fs";
 import { config } from "dotenv";
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/lib/db/schema";
@@ -73,6 +81,38 @@ export type RemediationConflict = {
 	childType: "review" | "reflection";
 	submissionIds: string[];
 };
+
+export type CandidateForRanking = {
+	id: string;
+	hasReview: boolean;
+	hasReflection: boolean;
+	updatedAt: Date;
+	createdAt: Date;
+};
+
+/**
+ * Sortuje kandydatów wg priorytetu wyboru rekordu kanonicznego (patrz docstring
+ * pliku): submission_reviews > project_reflections > najpóźniejszy updated_at >
+ * najpóźniejszy created_at > najniższe id. Pierwszy element wyniku = keeper.
+ *
+ * Czysta funkcja (bez bazy) — testowana bezpośrednio jednostkowo, ponieważ po
+ * 0.2b (UNIQUE(student_id, project_id), drizzle/0021) nie da się już wstawić
+ * do project_submissions dwóch rekordów z tą samą parą przez zwykły INSERT —
+ * scenariusze priorytetu nie są więc odtwarzalne integracyjnie na żywej bazie.
+ */
+export function rankCandidates<T extends CandidateForRanking>(candidates: T[]): T[] {
+	return [...candidates].sort((a, b) => {
+		if (a.hasReview !== b.hasReview) return a.hasReview ? -1 : 1;
+		if (a.hasReflection !== b.hasReflection) return a.hasReflection ? -1 : 1;
+		const updatedDiff = b.updatedAt.getTime() - a.updatedAt.getTime();
+		if (updatedDiff !== 0) return updatedDiff;
+		const createdDiff = b.createdAt.getTime() - a.createdAt.getTime();
+		if (createdDiff !== 0) return createdDiff;
+		if (a.id < b.id) return -1;
+		if (a.id > b.id) return 1;
+		return 0;
+	});
+}
 
 /** Grupy (student_id, project_id) z więcej niż jednym zgłoszeniem. */
 export async function findDuplicateGroups(
@@ -123,16 +163,10 @@ export async function planRemediation(db: Db): Promise<RemediationPlanItem[]> {
 					eq(schema.projectSubmissions.studentId, group.studentId),
 					eq(schema.projectSubmissions.projectId, group.projectId),
 				),
-			)
-			.orderBy(
-				desc(sql`${schema.submissionReviews.id} IS NOT NULL`),
-				desc(sql`${schema.projectReflections.id} IS NOT NULL`),
-				desc(schema.projectSubmissions.updatedAt),
-				desc(schema.projectSubmissions.createdAt),
-				asc(schema.projectSubmissions.id),
 			);
 
-		const [canonical, ...rest] = candidates;
+		const ranked = rankCandidates(candidates);
+		const [canonical, ...rest] = ranked;
 		if (!canonical) continue; // grupa zniknęła między zapytaniami — nic do zrobienia
 		plan.push({
 			studentId: group.studentId,
