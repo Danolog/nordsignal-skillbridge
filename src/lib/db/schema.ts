@@ -5,6 +5,7 @@ import {
 	index,
 	integer,
 	jsonb,
+	numeric,
 	pgEnum,
 	pgTable,
 	real,
@@ -691,6 +692,53 @@ export const auditLog = pgTable(
 	(table) => [
 		index("idx_audit_log_created_at").on(table.createdAt),
 		index("idx_audit_log_action").on(table.action),
+	],
+);
+
+// ============================================================================
+// Zadanie 0.0 — obserwowalność kosztu i błędów AI (migracja 0020).
+//
+// Rejestr KAŻDEGO wywołania LLM z warstwy `src/lib/ai/*` (wrapper withAiUsage
+// w src/lib/ai/usage.ts): tokeny wej./wyj., koszt USD wg cennika modelu,
+// sukces/nazwa błędu, latencja, atrybucja (scope = moduł/endpoint; studentId/
+// tenantId gdy funkcja je zna). To telemetria OPERACYJNA, nie dane produktowe:
+//  - zapis przez owner `db` (best-effort, jak audit_log) — nie przez tenant tx,
+//  - ZERO grantów dla app_student/app_faculty (ADR-002/004: koszty per student
+//    nie mogą wyciec do wykładowcy ani studenta) — tylko owner_passthrough,
+//  - studentId nullable + ON DELETE SET NULL: usunięcie studenta nie kasuje
+//    historii kosztów (agregaty per scope/dzień zostają, wiersz się anonimizuje).
+// costUsd nullable — NULL gdy cennik modelu nieznany (np. override env w CI).
+// ============================================================================
+
+export const aiUsageLedger = pgTable(
+	"ai_usage_ledger",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		// Moduł/endpoint wywołania, np. "generate-brief", "career-helper.turn".
+		scope: text("scope").notNull(),
+		// Warstwa modelu z src/lib/ai/model.ts — 'standard' | 'fast' | 'premium'.
+		tier: text("tier").notNull(),
+		modelId: text("model_id").notNull(),
+		inputTokens: integer("input_tokens").notNull().default(0),
+		outputTokens: integer("output_tokens").notNull().default(0),
+		// USD, 6 miejsc po przecinku; NULL = brak cennika dla modelu.
+		costUsd: numeric("cost_usd", { precision: 12, scale: 6 }),
+		success: boolean("success").notNull(),
+		// PII-safe: wyłącznie err.name (konwencja logError) — nigdy message/prompt.
+		errorName: text("error_name"),
+		latencyMs: integer("latency_ms"),
+		// Atrybucja best-effort — wypełniana tam, gdzie funkcja AI zna te ID.
+		userId: text("user_id"),
+		studentId: uuid("student_id").references(() => students.id, { onDelete: "set null" }),
+		tenantId: uuid("tenant_id").references(() => tenants.id),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_ai_usage_ledger_created_at").on(table.createdAt),
+		index("idx_ai_usage_ledger_scope").on(table.scope),
+		index("idx_ai_usage_ledger_student_id").on(table.studentId),
+		index("idx_ai_usage_ledger_tenant_id").on(table.tenantId),
+		check("ai_usage_ledger_tier_values", sql`${table.tier} IN ('standard','fast','premium')`),
 	],
 );
 

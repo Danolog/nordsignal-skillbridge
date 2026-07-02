@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { getModel } from "@/lib/ai/model";
+import { withAiUsage } from "@/lib/ai/usage";
 
 // Kroki nauki — używane w briefach projektów (Project Marketplace).
 // Wydzielone z usuniętego modułu micro-courses (ADR-008, Z3) — generate-brief
@@ -18,10 +19,11 @@ export async function generateLearningSteps(
 	relatedCompetencies: string[],
 	maxSteps = 3,
 ): Promise<LearningStep[]> {
-	const { text } = await generateText({
-		model: getModel("standard"),
-		maxOutputTokens: 2000,
-		prompt: `Jesteś ekspertem edukacji technicznej. Stwórz ${maxSteps} krótkich kroków nauki dla studenta ${semester}. semestru, który chce zostać ${careerGoal}.
+	const { text } = await withAiUsage({ scope: "learning-steps", tier: "standard" }, () =>
+		generateText({
+			model: getModel("standard"),
+			maxOutputTokens: 2000,
+			prompt: `Jesteś ekspertem edukacji technicznej. Stwórz ${maxSteps} krótkich kroków nauki dla studenta ${semester}. semestru, który chce zostać ${careerGoal}.
 
 Temat: ${competencyName}
 Student już zna: ${relatedCompetencies.slice(0, 5).join(", ") || "brak danych"}
@@ -31,7 +33,8 @@ Język: POLSKI
 
 Zwróć TYLKO JSON (bez markdown code block):
 [{"title": "...", "content": "...", "exercise": "..."}]`,
-	});
+		}),
+	);
 
 	const cleaned = text
 		.trim()

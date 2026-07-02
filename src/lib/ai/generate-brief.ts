@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { extractJsonObject } from "@/lib/ai/extract-json";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { withAiUsage } from "@/lib/ai/usage";
 import { db } from "@/lib/db";
 import { competencies, projects, students } from "@/lib/db/schema";
 import { generateLearningSteps, type LearningStep } from "./learning-steps";
@@ -65,10 +66,17 @@ export async function generateProjectBrief(
 	const safeMissing =
 		sanitizeForPrompt(missingComps.join(", "), 1000) || "brak — student jest gotowy";
 
-	const { text } = await generateText({
-		model: getModel("standard"),
-		maxOutputTokens: 3000,
-		prompt: `Jesteś mentorem projektów studenckich. Stwórz spersonalizowany brief projektu.
+	const { text } = await withAiUsage(
+		{
+			scope: "generate-brief",
+			tier: "standard",
+			attribution: { studentId, tenantId: student.tenantId },
+		},
+		() =>
+			generateText({
+				model: getModel("standard"),
+				maxOutputTokens: 3000,
+				prompt: `Jesteś mentorem projektów studenckich. Stwórz spersonalizowany brief projektu.
 
 Projekt: "${safeTitle}"
 Opis: ${safeDescription}
@@ -90,7 +98,8 @@ Zwróć TYLKO JSON (bez markdown code block):
   "suggestedSteps": ["Krok 1", "Krok 2", "Krok 3", "..."],
   "successDefinition": "Definicja sukcesu w 2-3 zdaniach"
 }`,
-	});
+			}),
+	);
 
 	// #4 cz. 2 (strumień D, Leo): odporne wyciągnięcie JSON z odpowiedzi modelu —
 	// tolerancja fence / prozy / trailing comma + wybór PIERWSZEGO zbalansowanego

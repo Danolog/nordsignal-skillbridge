@@ -141,6 +141,13 @@
       "when": 1782757485042,
       "tag": "0019_parched_black_bird",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1782987751796,
+      "tag": "0020_absent_red_ghost",
+      "breakpoints": true
     }
   ]
 }

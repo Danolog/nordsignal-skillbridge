@@ -2,6 +2,7 @@ import { generateObject, type LanguageModel, NoObjectGeneratedError, streamText 
 import { z } from "zod";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { streamUsageTracker, withAiUsage } from "@/lib/ai/usage";
 import { entryCareerPaths, isEntryCareerGoal, matchCareerGoal } from "@/lib/db/data/career-paths";
 import { extractValidationIssues, logError } from "@/lib/log";
 
@@ -163,12 +164,15 @@ ${safeMessage}
 
 Odpowiedz jedną wiadomością Pomocnika — pytanie pogłębiające albo krótkie podsumowanie wątku z kolejnym pytaniem. Bez werdyktu.`;
 
+	// Zadanie 0.0 — telemetria streamu: tokeny/koszt w onFinish, błąd w onError.
+	const track = streamUsageTracker({ scope: "career-helper.turn", tier: "standard" });
 	return streamText({
 		model,
 		maxOutputTokens: 1000,
 		system: TURN_SYSTEM_PROMPT,
 		prompt,
-		onFinish: args.onFinish ? ({ text }) => args.onFinish?.({ text }) : undefined,
+		onFinish: track.onFinish(({ text }: { text: string }) => args.onFinish?.({ text })),
+		onError: track.onError,
 	});
 }
 
@@ -393,13 +397,15 @@ async function judgeSummary(summary: CareerSummary, model: LanguageModel): Promi
 	if (violatesVerdictGuardrail(blob)) return false;
 
 	const { object } = await generateObjectWithRetry("career-helper.summary.judge", () =>
-		generateObject({
-			model,
-			schema: JudgeSchema,
-			maxOutputTokens: 200,
-			system: JUDGE_SYSTEM_PROMPT,
-			prompt: `<user_input untrusted="true">${sanitizeForPrompt(blob, 4000)}</user_input>`,
-		}),
+		withAiUsage({ scope: "career-helper.summary.judge", tier: "premium" }, () =>
+			generateObject({
+				model,
+				schema: JudgeSchema,
+				maxOutputTokens: 200,
+				system: JUDGE_SYSTEM_PROMPT,
+				prompt: `<user_input untrusted="true">${sanitizeForPrompt(blob, 4000)}</user_input>`,
+			}),
+		),
 	);
 	// verdict to teraz string (schemat tolerancyjny). Akceptujemy tylko jednoznaczne
 	// „YES"; cokolwiek innego (puste, „NO", „maybe", literówka) = odmowa. Bezpieczniej
@@ -442,16 +448,17 @@ export async function generateSummary(args: GenerateSummaryArgs): Promise<Summar
 			const { object: rawObject } = await generateObjectWithRetry(
 				"career-helper.summary.generate",
 				() =>
-					generateObject({
-						model: summaryModel,
-						schema: CareerSummarySchema,
-						// Cap długości wyjścia: dół-of-thumb summaryText(2000) + 3×(label 120
-						// + why 800) + narzut JSON ≈ 3.5 tys. znaków. Bez tego limitu AI SDK
-						// brał default, przy którym Opus bywał UCINANY w połowie JSON →
-						// niedomknięty obiekt → NoObjectGeneratedError. 4096 tokenów = z zapasem.
-						maxOutputTokens: 4096,
-						system: SUMMARY_SYSTEM_PROMPT,
-						prompt: `<user_input untrusted="true">
+					withAiUsage({ scope: "career-helper.summary.generate", tier: "premium" }, () =>
+						generateObject({
+							model: summaryModel,
+							schema: CareerSummarySchema,
+							// Cap długości wyjścia: dół-of-thumb summaryText(2000) + 3×(label 120
+							// + why 800) + narzut JSON ≈ 3.5 tys. znaków. Bez tego limitu AI SDK
+							// brał default, przy którym Opus bywał UCINANY w połowie JSON →
+							// niedomknięty obiekt → NoObjectGeneratedError. 4096 tokenów = z zapasem.
+							maxOutputTokens: 4096,
+							system: SUMMARY_SYSTEM_PROMPT,
+							prompt: `<user_input untrusted="true">
 Ankieta (JSON): ${safeAnswers}
 
 Rozmowa:
@@ -465,7 +472,8 @@ Zwróć podsumowanie jako obiekt:
 - summaryText: 2–3 zdania (maks. ${SUMMARY_TEXT_MAX} znaków), własnymi słowami studenta, bez werdyktu.
 - careerPaths: DOKŁADNIE 1–3 obszary. Każdy: label (DOKŁADNA etykieta z listy powyżej, maks. ${PATH_LABEL_MAX} znaków) + why (opis powiązania z ankietą/rozmową, maks. ${PATH_WHY_MAX} znaków).
 Trzymaj się limitów długości i liczby obszarów (najwyżej ${MAX_PATHS}). Bez procentów, rankingu i pól spoza schematu.`,
-					}),
+						}),
+					),
 			);
 			// F2 — ugruntuj etykiety w katalogu 23 PRZED kontraktem „≥1 ścieżka" i sędzią.
 			// Wpisy spoza 23 odsiane; pozostałe noszą kanoniczną etykietę. 0 po odsianiu →
