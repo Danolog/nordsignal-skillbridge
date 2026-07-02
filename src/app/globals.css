@@ -4078,6 +4078,31 @@
 	background: var(--ed-surface);
 }
 
+/* Gap banner — kontekst filtra po konkretnej luce (dashboard/gap-analysis → /projects?gapId=) */
+.proj-gap-banner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px 16px;
+	background: var(--ed-badge-bg);
+	border: 1px solid var(--ed-border);
+	border-radius: 14px;
+	padding: 12px 18px;
+	margin-block: 8px;
+	font-size: 14px;
+	color: var(--ed-ink);
+}
+.proj-gap-banner-reset {
+	font-weight: 600;
+	color: var(--ed-ink);
+	text-decoration: underline;
+	white-space: nowrap;
+}
+.proj-gap-banner-reset:hover {
+	color: var(--ed-amber);
+}
+
 /* Filters */
 .proj-filters {
 	display: flex;

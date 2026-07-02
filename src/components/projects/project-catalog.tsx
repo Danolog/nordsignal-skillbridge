@@ -39,6 +39,7 @@ interface CareerOption {
 interface ProjectCatalogProps {
 	projects: Project[];
 	gapId?: string;
+	gapCompetencyName?: string;
 	initialLevel?: string;
 	initialSourceType?: string;
 	initialCareer?: string;
@@ -61,6 +62,7 @@ function pluralizeProjekty(n: number): string {
 export function ProjectCatalog({
 	projects,
 	gapId,
+	gapCompetencyName,
 	initialLevel,
 	initialSourceType,
 	initialCareer,
@@ -112,13 +114,20 @@ export function ProjectCatalog({
 	}, [careerOptions]);
 
 	const filtered = useMemo(() => {
+		const gapName = gapCompetencyName?.toLowerCase();
 		return projects.filter((p) => {
 			if (level && p.level !== level) return false;
 			if (sourceType && p.sourceType !== sourceType) return false;
 			if (career && !p.careerGoals.includes(career)) return false;
+			if (gapName) {
+				const closesGap = p.competencies.some(
+					(c) => c.role === "required" && c.competencyName.toLowerCase() === gapName,
+				);
+				if (!closesGap) return false;
+			}
 			return true;
 		});
-	}, [projects, level, sourceType, career]);
+	}, [projects, level, sourceType, career, gapCompetencyName]);
 
 	// Metadane kierunku — liczone TYLKO po kierunku (niezależnie od pod-filtrów
 	// poziomu/źródła), żeby rozbicie L1–L5 i suma czasu opisywały cały kierunek.
@@ -248,6 +257,17 @@ export function ProjectCatalog({
 				</section>
 			)}
 
+			{gapCompetencyName && (
+				<div className="proj-gap-banner">
+					<span>
+						Pokazuję projekty zamykające lukę: <b>{gapCompetencyName}</b>
+					</span>
+					<a href="/projects" className="proj-gap-banner-reset">
+						Pokaż wszystkie projekty
+					</a>
+				</div>
+			)}
+
 			<div className="proj-grid">
 				{filtered.map((p) => (
 					<ProjectCard
@@ -264,7 +284,14 @@ export function ProjectCatalog({
 			</div>
 
 			{filtered.length === 0 &&
-				(career ? (
+				(gapCompetencyName ? (
+					<div className="proj-empty">
+						<p>Brak projektów zamykających lukę „{gapCompetencyName}".</p>
+						<a href="/projects" className="proj-empty-btn">
+							Pokaż wszystkie projekty
+						</a>
+					</div>
+				) : career ? (
 					<div className="proj-empty">
 						<p>Brak projektów dla kierunku „{career}".</p>
 						<button

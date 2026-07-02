@@ -1,11 +1,11 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ProjectCatalog } from "@/components/projects/project-catalog";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { CAREER_PATHS } from "@/lib/db/data/career-paths";
-import { projects, students } from "@/lib/db/schema";
+import { gaps, projects, students } from "@/lib/db/schema";
 import { computeCareerGoalsForProjects } from "@/lib/projects/career-match";
 
 interface PageProps {
@@ -43,8 +43,18 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 	}));
 
 	const { gapId, level, sourceType, career } = await searchParams;
+
+	const gap = gapId
+		? await db.query.gaps.findFirst({
+				where: and(eq(gaps.id, gapId), eq(gaps.studentId, student.id)),
+				columns: { competencyName: true },
+			})
+		: null;
+
 	// Domyślnie zawężamy do kierunku studenta — po onboardingu widzi od razu swoje projekty.
-	const defaultCareer = career ?? student.careerGoal ?? "";
+	// Wyjątek: aktywna luka nie może zostać zamaskowana filtrem kierunku (anchor-logika
+	// careerGoals mogłaby wyciąć szeroką kompetencję i pokazać pustą siatkę).
+	const defaultCareer = career ?? (gapId ? "" : (student.careerGoal ?? ""));
 	const careerOptions = CAREER_PATHS.map((c) => ({ careerGoal: c.careerGoal, family: c.family }));
 
 	return (
@@ -56,6 +66,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 			<ProjectCatalog
 				projects={projectsWithCareers}
 				gapId={gapId}
+				gapCompetencyName={gap?.competencyName ?? undefined}
 				initialLevel={level}
 				initialSourceType={sourceType}
 				initialCareer={defaultCareer}

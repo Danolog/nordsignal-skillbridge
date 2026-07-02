@@ -48,6 +48,7 @@ export default async function DashboardPage() {
 				where: eq(gaps.studentId, student.id),
 				orderBy: [desc(gaps.marketPercentage)],
 				columns: {
+					id: true,
 					competencyName: true,
 					priority: true,
 					marketPercentage: true,
