@@ -937,6 +937,54 @@
 					]
 				},
 				{
+					"name": "Fundamenty: statystyka, uczenie maszynowe i EDA",
+					"type": "context-group",
+					"demandPercentage": null,
+					"description": "Metodyczny rdzeń zawodu, którego rynkowe TAGI nie pokazują, choć OPISY ofert go wymagają: statystyka i wnioskowanie, trenowanie oraz ewaluacja modeli uczenia maszynowego, eksploracyjna analiza danych (EDA) i projektowanie eksperymentów A/B. W zrzucie tagów 2026-02 te kompetencje są cienkie lub nieobecne (scikit-learn 0 ofert, statystyka 1.6%), ale każda przeanalizowana oferta junior/mid wymaga ich w treści ogłoszenia — dlatego dopisujemy je jako kurację ekspercką (poza surowym zrzutem tagów). To fundament, na którym stoją chmura, LLM i big data z pozostałych grup: bez niego student obsługuje narzędzia, nie rozumiejąc, czy model działa.",
+					"unionShare": 1.6,
+					"leaves": [
+						{
+							"name": "Statystyka (Statistics)",
+							"type": "leaf",
+							"demandPercentage": 1.6,
+							"lift": 19.686507936507937,
+							"offers": 6,
+							"kind": "concept",
+							"source": "dane"
+						},
+						{
+							"name": "Uczenie maszynowe",
+							"type": "leaf",
+							"demandPercentage": null,
+							"lift": null,
+							"offers": null,
+							"kind": "concept",
+							"source": "kuracja ekspercka",
+							"note": "brak w zrzucie 2026-02"
+						},
+						{
+							"name": "EDA",
+							"type": "leaf",
+							"demandPercentage": null,
+							"lift": null,
+							"offers": null,
+							"kind": "concept",
+							"source": "kuracja ekspercka",
+							"note": "brak w zrzucie 2026-02"
+						},
+						{
+							"name": "A/B testing",
+							"type": "leaf",
+							"demandPercentage": null,
+							"lift": null,
+							"offers": null,
+							"kind": "concept",
+							"source": "kuracja ekspercka",
+							"note": "brak w zrzucie 2026-02"
+						}
+					]
+				},
+				{
 					"name": "Chmura i platformy danych",
 					"type": "context-group",
 					"demandPercentage": null,
@@ -991,11 +1039,11 @@
 					]
 				},
 				{
-					"name": "Sztuczna inteligencja: LLM, GenAI i uczenie maszynowe",
+					"name": "Sztuczna inteligencja: LLM, GenAI i NLP",
 					"type": "context-group",
 					"demandPercentage": null,
-					"description": "Rdzeń dziedziny widziany przez to, co rynek faktycznie nazywa. W tym zrzucie „uczenie maszynowe” pojawia się głównie jako ogólny tag, nie jako konkretne biblioteki (scikit-learn/PyTorch ledwo się przebijają) — dlatego grupa opiera się na nazwanych pod-technikach. Najmocniejszy realny sygnał to LLM (duże modele językowe) i GenAI (sztuczna inteligencja generatywna): polski „data scientist” coraz częściej znaczy „ktoś, kto umie wpiąć model językowy”. NLP (przetwarzanie języka naturalnego) i statystyka to fundament metodyczny, choć w tagach cienki.",
-					"unionShare": 21.2,
+					"description": "Najszybciej rosnąca warstwa roli: polski „data scientist” coraz częściej znaczy „ktoś, kto umie wpiąć model językowy”. Najmocniejszy realny sygnał to LLM (duże modele językowe) i GenAI (sztuczna inteligencja generatywna); NLP (przetwarzanie języka naturalnego) to klasyczna dziedzina, na której te modele wyrosły, a MLOps (operacjonalizacja modeli) pilnuje, żeby model działał niezawodnie po wdrożeniu. Metodyczny fundament (statystyka, uczenie maszynowe) mieszka w osobnej grupie „Fundamenty” — tu jest zastosowanie tego fundamentu do nowoczesnych modeli.",
+					"unionShare": 19.6,
 					"leaves": [
 						{
 							"name": "LLM",
@@ -1030,15 +1078,6 @@
 							"demandPercentage": 2.4,
 							"lift": 4.543040293040293,
 							"offers": 9,
-							"kind": "concept",
-							"source": "dane"
-						},
-						{
-							"name": "Statystyka (Statistics)",
-							"type": "leaf",
-							"demandPercentage": 1.6,
-							"lift": 19.686507936507937,
-							"offers": 6,
 							"kind": "concept",
 							"source": "dane"
 						}

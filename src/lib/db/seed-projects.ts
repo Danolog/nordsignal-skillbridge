@@ -515,282 +515,480 @@ export const DEMO_PROJECTS: DemoProject[] = [
 			{ name: "Cloud (AWS/GCP/Azure)", role: "acquired" },
 		],
 	},
-	// ── Data Scientist / ML (7 projects: 2 L1, 3 L2, 2 L3) ──
+	// ── Data Scientist (10 projects: 4 L1, 4 L2, 2 L3) — partia 1, zastąpiły 7 projektów-klisz ──
 	{
-		slug: "eda-titanic-pandas-numpy",
-		title: "Eksploracyjna analiza danych Titanic (Pandas + NumPy)",
+		slug: "ds-eda-polska-w-liczbach-bdl",
+		title: "Polska w liczbach: eksploracja danych regionalnych z API GUS BDL",
 		description:
-			"Pobierz klasyczny dataset Titanic z Kaggle. Wczytaj go za pomocą Pandas, przeprowadź czyszczenie i imputację braków, policz statystyki przeżywalności wg klas i płci. Wygeneruj wykresy w Matplotlib i Seaborn.",
+			"Zbudujesz notebook, który pobiera dane regionalne z API Banku Danych Lokalnych GUS (licencja CC BY 4.0) i przeprowadza rzetelną eksploracyjną analizę danych. Wyczyścisz braki, sprawdzisz typy i wartości odstające, zwizualizujesz trend wybranego wskaźnika w województwach i sformułujesz 2-3 hipotezy wprost z danych. Efektem jest reprodukowalne repozytorium z README i notebookiem opisującym każdą decyzję.",
 		level: "L1",
 		estimatedHours: 5,
 		sourceType: "open_data",
-		sourceUrl: "https://www.kaggle.com/c/titanic/data",
+		sourceUrl: "https://api.stat.gov.pl/Home/BdlApi",
 		rubricJson: [
 			{
-				criterion: "Wczytanie i czyszczenie danych",
-				weight: 25,
-				description: "Imputacja braków, kasty typów, podstawowa walidacja",
+				criterion: "Jakość czyszczenia danych i uzasadnienie decyzji",
+				weight: 30,
+				description:
+					"Notebook pokazuje kontrolę typów, świadomą obsługę braków (nie ślepe dropna) oraz identyfikację wartości odstających. Każda decyzja o usunięciu/imputacji jest krótko uzasadniona w komentarzu lub markdownie.",
 			},
 			{
-				criterion: "Analiza eksploracyjna",
-				weight: 35,
-				description: "Min. 5 wykresów (Matplotlib/Seaborn) z opisami",
+				criterion: "EDA z wnioskami i hipotezami",
+				weight: 30,
+				description:
+					"Analiza wykracza poza describe(): są pytania badawcze, rozkłady, relacje między zmiennymi oraz 2-3 hipotezy sformułowane wprost z danych, z zaznaczeniem, że wymagają dalszej weryfikacji.",
 			},
 			{
-				criterion: "Operacje NumPy",
+				criterion: "Wizualizacja trendu regionalnego",
 				weight: 20,
-				description: "Min. 3 operacje wektorowe / agregacje na ndarray",
+				description:
+					"Co najmniej jeden czytelny wykres trendu w ujęciu regionalnym: opisane osie, jednostki, tytuł, legenda. Wykres wspiera wniosek, a nie jest ozdobą.",
 			},
 			{
-				criterion: "Wnioski",
+				criterion: "Reprodukowalność repozytorium",
 				weight: 20,
-				description: "Min. 5 wniosków popartych statystykami",
+				description:
+					"Repo zawiera README z opisem uruchomienia, requirements.txt, ustawiony seed tam gdzie istnieje losowość oraz sensowną historię commitów w Git. Notebook uruchamia się od góry do dołu bez błędów.",
 			},
 		],
 		competencies: [
 			{ name: "Python", role: "required" },
 			{ name: "Pandas", role: "required" },
 			{ name: "NumPy", role: "required" },
-			{ name: "Matplotlib", role: "required" },
-			{ name: "Seaborn", role: "required" },
-			{ name: "Statystyka", role: "acquired" },
+			{ name: "EDA", role: "required" },
+			{ name: "SQL", role: "acquired" },
+			{ name: "Git", role: "acquired" },
 		],
 	},
 	{
-		slug: "klasyfikator-iris-scikit-learn",
-		title: "Pierwszy model ML: klasyfikator gatunków irysów (Scikit-learn)",
+		slug: "ds-sql-analiza-przejazdow",
+		title: "SQL w praktyce: analiza przejazdów taksówek NYC z funkcjami okna",
 		description:
-			"Zbuduj klasyfikator gatunków irysów na podstawie datasetu UCI Iris. Wytrenuj 3 modele (Logistic Regression, Random Forest, KNN), porównaj accuracy na train/test split i confusion matrix.",
+			"Przeanalizujesz próbkę zbioru NYC TLC Trip Records przy użyciu czystego SQL, uruchamianego lokalnie w DuckDB lub SQLite. Napiszesz zapytania z JOIN-ami, agregacjami i funkcjami okna, a następnie zoptymalizujesz najcięższe z nich. Efektem jest repozytorium z plikami .sql, skryptem ładującym próbkę oraz krótkim raportem wyników z wnioskami biznesowymi.",
 		level: "L1",
 		estimatedHours: 4,
 		sourceType: "open_data",
-		sourceUrl: "https://archive.ics.uci.edu/dataset/53/iris",
+		sourceUrl: "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page",
 		rubricJson: [
 			{
-				criterion: "Podział train/test i preprocessing",
-				weight: 25,
-				description: "Standaryzacja, train_test_split z stratify",
+				criterion: "Poprawność i czytelność zapytań",
+				weight: 30,
+				description:
+					"Zapytania zwracają poprawne wyniki, są sformatowane czytelnie (wcięcia, aliasy, komentarze) i używają JOIN-ów oraz agregacji zgodnie z ziarnem danych. Brak niejawnych iloczynów kartezjańskich.",
 			},
 			{
-				criterion: "Trzy modele Scikit-learn",
-				weight: 35,
-				description: "LogisticRegression, RandomForest, KNN — każdy fit i predict",
+				criterion: "Użycie funkcji okna",
+				weight: 30,
+				description:
+					"Co najmniej dwa zapytania stosują window functions (np. ROW_NUMBER, RANK, SUM OVER, LAG/LEAD) tam, gdzie GROUP BY byłoby niewystarczające, z krótkim uzasadnieniem wyboru.",
 			},
 			{
-				criterion: "Ewaluacja",
-				weight: 25,
-				description: "Accuracy + classification_report + confusion matrix",
+				criterion: "Wnioski z danych",
+				weight: 20,
+				description:
+					"Raport przekłada wyniki zapytań na 2-3 konkretne obserwacje o przejazdach (np. wzorce czasowe, różnice między strefami), a nie tylko wkleja tabele.",
 			},
 			{
-				criterion: "Interpretacja wyników",
-				weight: 15,
-				description: "Krótka analiza dlaczego dany model wygrał",
+				criterion: "Reprodukowalność",
+				weight: 20,
+				description:
+					"Repo zawiera skrypt ładujący próbkę danych, pliki .sql uruchamialne od zera, README z instrukcją oraz sensowną historię commitów w Git.",
 			},
 		],
 		competencies: [
-			{ name: "Python", role: "required" },
-			{ name: "Scikit-learn", role: "required" },
-			{ name: "Machine Learning", role: "required" },
-			{ name: "Pandas", role: "required" },
+			{ name: "SQL", role: "required" },
+			{ name: "Git", role: "required" },
+			{ name: "Python", role: "acquired" },
 		],
 	},
 	{
-		slug: "predykcja-churn-feature-engineering",
-		title: "Predykcja odejścia klientów telco (Feature Engineering + ML)",
+		slug: "ds-pierwszy-model-predykcyjny",
+		title: "Pierwszy model predykcyjny: od baseline do rzetelnej ewaluacji",
 		description:
-			"Zbuduj model przewidujący churn klientów na podstawie Telco Customer Churn (Kaggle). Skup się na feature engineeringu — kodowanie zmiennych kategorycznych, binning, interakcje cech, scaling. Porównaj 2 modele Scikit-learn z baseline.",
+			"Zbudujesz pierwszy model uczenia maszynowego w scikit-learn na realnych danych z UCI Online Retail (lub GUS BDL), unikając zbiorów-klisz. Przejdziesz pełną ścieżkę: model trywialny jako baseline, model właściwy, poprawna walidacja, metryki dobrane do problemu i krótka analiza błędów. Efektem jest reprodukowalny notebook oraz raport zawierający obowiązkową sekcję Ograniczenia.",
+		level: "L1",
+		estimatedHours: 6,
+		sourceType: "open_data",
+		sourceUrl: "https://archive.ics.uci.edu/dataset/352/online+retail",
+		rubricJson: [
+			{
+				criterion: "Baseline przed modelem",
+				weight: 20,
+				description:
+					"Notebook zawiera model trywialny (np. przewidywanie klasy większościowej lub średniej) policzony PRZED modelem właściwym, z metryką, do której odnosisz późniejszy wynik.",
+			},
+			{
+				criterion: "Poprawna walidacja i opis ryzyka leakage",
+				weight: 25,
+				description:
+					"Zastosowany jest rozdzielny podział train/test lub k-fold. Raport wprost opisuje, jak uniknięto wycieku danych (leakage): dopasowanie preprocessingu tylko na treningu, brak informacji z przyszłości, brak oceny na danych treningowych.",
+			},
+			{
+				criterion: "Dobór metryk do problemu",
+				weight: 20,
+				description:
+					"Metryki są dobrane świadomie do zadania i rozkładu klas (np. F1/precision/recall/ROC-AUC zamiast samej accuracy przy niezbalansowaniu; MAE/RMSE dla regresji), z uzasadnieniem wyboru.",
+			},
+			{
+				criterion: "Analiza błędów",
+				weight: 15,
+				description:
+					"Notebook zawiera krótką analizę, gdzie i dlaczego model się myli (np. macierz pomyłek, przykłady błędnych predykcji, grupy o gorszym wyniku).",
+			},
+			{
+				criterion: "Reprodukowalność i sekcja Ograniczenia",
+				weight: 20,
+				description:
+					"Ustawiony seed, requirements.txt, README, sensowna historia Git oraz raport z jawną sekcją Ograniczenia opisującą słabości danych, metody i wniosków.",
+			},
+		],
+		competencies: [
+			{ name: "Uczenie maszynowe", role: "required" },
+			{ name: "Statystyka (Statistics)", role: "required" },
+			{ name: "Python", role: "acquired" },
+			{ name: "Pandas", role: "acquired" },
+		],
+	},
+	{
+		slug: "ds-llm-strukturalna-ekstrakcja",
+		title: "Strukturalna ekstrakcja danych z tekstu za pomocą LLM",
+		description:
+			"Zbuduj mini-pipeline, który z surowych tekstów (np. ogłoszeń o pracę lub opisów produktów) wyciąga ustrukturyzowany JSON za pomocą modelu językowego i technik prompt engineering. Kluczem projektu nie jest samo wywołanie modelu, lecz zmierzenie jakości wyjścia na zbiorze ~30 przykładów: trafność wypełnionych pól i wykrywanie halucynacji. Artefaktem jest repozytorium z promptami, skryptem uruchomieniowym i tabelą ewaluacji. Pracuj na realnie darmowym tierze API bez karty kredytowej — Google Gemini API (free tier) lub Groq — w zupełności wystarczającym na ~30 przykładów; klucz API trzymaj w zmiennej środowiskowej, nie w repo. Jeśli używasz realnych ogłoszeń, usuń lub pseudonimizuj dane osobowe (nazwiska, e-maile, telefony) i nie commituj surowych rekordów kontaktowych.",
+		level: "L1",
+		estimatedHours: 5,
+		sourceType: "oss",
+		sourceUrl: "https://ai.google.dev/gemini-api/docs",
+		rubricJson: [
+			{
+				criterion: "Jakość promptu",
+				weight: 25,
+				description:
+					"Prompt jasno definiuje docelowy schemat JSON (nazwy i typy pól), zawiera instrukcje na wypadek braku danych (null zamiast zmyślania) i co najmniej jeden przykład (few-shot). Prompty są wersjonowane w repozytorium.",
+			},
+			{
+				criterion: "Poprawność struktury wyjścia",
+				weight: 25,
+				description:
+					"Skrypt parsuje odpowiedź modelu do walidowalnego JSON (np. przez schemat), obsługuje przypadki niepoprawnego formatu i raportuje odsetek odpowiedzi zgodnych ze schematem.",
+			},
+			{
+				criterion: "Mini-ewaluacja z metryką",
+				weight: 30,
+				description:
+					"Zbiór ~30 przykładów z ręcznie oznaczonym ground truth; policzona metryka trafności pól (np. accuracy per pole) oraz osobny wskaźnik halucynacji (pola wypełnione mimo braku danych w tekście). Wyniki w tabeli w repozytorium.",
+			},
+			{
+				criterion: "Reprodukowalność",
+				weight: 20,
+				description:
+					"README z instrukcją uruchomienia, plik requirements, ustawiony seed/temperatura, klucz API pobierany ze zmiennej środowiskowej (nie w repo), historia w Git.",
+			},
+		],
+		competencies: [
+			{ name: "LLM", role: "required" },
+			{ name: "GenAI", role: "required" },
+			{ name: "Python", role: "acquired" },
+		],
+	},
+	{
+		slug: "ds-databricks-pyspark-taxi",
+		title: "Analiza dużych danych NYC Taxi w PySpark na Databricks",
+		description:
+			"Pracuj na platformie chmurowej Databricks Free Edition: pobierz duży zbiór przejazdów NYC TLC w formacie Parquet, wykonaj transformacje w PySpark i EDA na skali, która nie mieści się w pandas, a na końcu zbuduj prosty model. Zdefiniujesz metrykę sukcesu analizy jeszcze przed kodowaniem. Projekt uczy myślenia rozproszonego: leniwej ewaluacji, partycjonowania i unikania operacji ściągających cały zbiór do sterownika. Wszystko projektuj pod darmowe limity Free Edition, pracując na próbce danych.",
 		level: "L2",
 		estimatedHours: 12,
 		sourceType: "open_data",
-		sourceUrl: "https://www.kaggle.com/datasets/blastchar/telco-customer-churn",
+		sourceUrl: "https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page",
 		rubricJson: [
 			{
-				criterion: "Feature engineering",
-				weight: 35,
-				description: "One-hot/target encoding, binning, min. 3 nowe cechy interakcyjne",
-			},
-			{
-				criterion: "Modele i tuning",
-				weight: 30,
-				description: "Min. 2 modele Scikit-learn + GridSearchCV",
-			},
-			{
-				criterion: "Ewaluacja",
-				weight: 20,
-				description: "ROC-AUC, precision/recall, krzywa PR, wykresy w Matplotlib",
-			},
-			{
-				criterion: "Wersjonowanie i powtarzalność",
+				criterion: "Framing problemu i metryka sukcesu",
 				weight: 15,
-				description: "Repo Git z requirements.txt i README",
+				description:
+					"Raport zaczyna się od jasno zdefiniowanej metryki sukcesu analizy (np. wyznaczenie średniego napiwku wg pory dnia z określoną dokładnością) i uzasadnienia, dlaczego skala danych wymaga Sparka, a nie pandas.",
+			},
+			{
+				criterion: "Ingest i partycjonowanie",
+				weight: 20,
+				description:
+					"Poprawny ingest plików Parquet NYC TLC do DataFrame Spark, świadomy dobór partycji, praca na reprezentatywnej próbce z uzasadnieniem doboru rozmiaru pod limity Free Edition.",
+			},
+			{
+				criterion: "Transformacje PySpark",
+				weight: 25,
+				description:
+					"Czyste, wektorowe transformacje w PySpark (filtry, agregacje, join, funkcje okna) bez zbędnych akcji materializujących; kod czytelny i skomentowany.",
+			},
+			{
+				criterion: "EDA na skali i wnioski",
+				weight: 25,
+				description:
+					"Analiza eksploracyjna prowadzona rozproszenie (agregaty liczone w Sparku, do pandas ściągane tylko zagregowane wyniki), z wnioskami odpowiadającymi na postawioną metrykę sukcesu. Wykryte anomalie i outliery opisane.",
+			},
+			{
+				criterion: "Reprodukowalność",
+				weight: 15,
+				description:
+					"Eksport notebooka Databricks + repozytorium z README, przypięte wersje bibliotek, ustawiony seed dla próbkowania i modelu, jawnie opisane kroki odtworzenia w Free Edition.",
 			},
 		],
 		competencies: [
-			{ name: "Scikit-learn", role: "required" },
-			{ name: "Feature Engineering", role: "required" },
-			{ name: "Pandas", role: "required" },
-			{ name: "NumPy", role: "required" },
-			{ name: "Machine Learning", role: "required" },
-			{ name: "Matplotlib", role: "required" },
-			{ name: "Git/GitHub", role: "acquired" },
+			{ name: "Databricks", role: "required" },
+			{ name: "PySpark", role: "required" },
+			{ name: "Spark", role: "required" },
+			{ name: "Python", role: "acquired" },
+			{ name: "SQL", role: "acquired" },
+			{ name: "EDA", role: "acquired" },
 		],
 	},
 	{
-		slug: "klasyfikator-mnist-tensorflow",
-		title: "Sieć neuronowa do rozpoznawania cyfr MNIST (TensorFlow)",
+		slug: "ds-chmura-wdrozenie-modelu",
+		title: "Wdrożenie modelu ML w chmurze jako endpoint",
 		description:
-			"Zbuduj prostą sieć neuronową w TensorFlow/Keras klasyfikującą ręcznie pisane cyfry z datasetu MNIST. Przetestuj 2 architektury (MLP vs CNN), porównaj accuracy i zwizualizuj błędne predykcje.",
+			"Weź wytrenowany model predykcyjny z wcześniejszego projektu i wdróż go jako działający, publiczny endpoint. Domyślną, w pełni darmową i bezkartową drogą jest Streamlit Community Cloud lub Hugging Face Spaces — to tam powstaje trwały endpoint, do którego rekruter kliknie i zobaczy predykcję. Następnie opisujesz mapę wdrożenia na trzy chmury (Azure, GCP, AWS): na jaką usługę zarządzaną każdej z nich trafiłby ten sam model, jaki jest koszt i kompromisy — to dowód rozumienia chmury bez zakładania kont. UWAGA: darmowe tiery Azure/GCP/AWS wymagają karty kredytowej (nawet bez naliczenia opłaty), a Microsoft Learn Sandbox jest efemeryczny i nie utrzyma trwałego endpointu — bez karty cały projekt zrobisz na Streamlit/HF plus mapa wdrożenia. Zaczynasz od metryki sukcesu (latencja, dostępność) i guardraila; bezwzględny zakaz przekraczania darmowych kwot.",
+		level: "L2",
+		estimatedHours: 12,
+		sourceType: "oss",
+		sourceUrl: "https://docs.streamlit.io/deploy/streamlit-community-cloud",
+		rubricJson: [
+			{
+				criterion: "Framing wdrożenia i metryka sukcesu",
+				weight: 15,
+				description:
+					"Zdefiniowana metryka sukcesu wdrożenia (latencja, dostępność) i guardrail — przed uruchomieniem, nie po.",
+			},
+			{
+				criterion: "Działające wdrożenie card-free (Streamlit/HF Spaces)",
+				weight: 25,
+				description:
+					"Publiczny, klikalny endpoint z modelem na Streamlit Community Cloud lub Hugging Face Spaces (bez karty kredytowej); link w README.",
+			},
+			{
+				criterion: "Mapa wdrożenia na Azure, GCP i AWS",
+				weight: 20,
+				description:
+					"Pisemne porównanie: na jaką usługę zarządzaną każdej z trzech chmur trafiłby model, jaki koszt i kompromisy — dowód rozumienia, nie kliknięcia jednej platformy.",
+			},
+			{
+				criterion: "Konteneryzacja i higiena konfiguracji",
+				weight: 20,
+				description:
+					"Dockerfile/konfiguracja, pinowane zależności, sekrety w zmiennych środowiskowych (nie w repo), .gitignore.",
+			},
+			{
+				criterion: "README dla rekrutera, reprodukowalność i Ograniczenia",
+				weight: 20,
+				description:
+					"README z problemem, linkiem do demo, metryką i instrukcją odtworzenia; sekcja Ograniczenia (koszt, skalowanie, brak monitoringu).",
+			},
+		],
+		competencies: [
+			{ name: "Azure", role: "required" },
+			{ name: "GCP", role: "required" },
+			{ name: "AWS", role: "required" },
+			{ name: "Python", role: "acquired" },
+			{ name: "Git", role: "acquired" },
+			{ name: "CI/CD", role: "acquired" },
+			{ name: "Uczenie maszynowe", role: "acquired" },
+		],
+	},
+	{
+		slug: "ds-eksperyment-ab-memo",
+		title: "Eksperyment A/B: od hipotezy do decision memo",
+		description:
+			"Przeprowadzisz pełny cykl eksperymentu A/B na publicznym zbiorze danych: od sformułowania hipotezy i metryki sukcesu, przez analizę mocy testu i minimalnego wykrywalnego efektu, po test statystyczny i interpretację istotności. Efektem końcowym jest jednostronicowe decision memo z rekomendacją biznesową napisaną dla nietechnicznego odbiorcy. Nauczysz się odróżniać istotność statystyczną od istotności praktycznej i unikać peekingu.",
 		level: "L2",
 		estimatedHours: 10,
 		sourceType: "open_data",
-		sourceUrl: "https://yann.lecun.com/exdb/mnist/",
+		sourceUrl: "https://www.kaggle.com/datasets/yufengsui/mobile-games-ab-testing",
 		rubricJson: [
 			{
-				criterion: "Przygotowanie danych",
-				weight: 15,
-				description: "Normalizacja pikseli, reshape, podział train/val/test",
-			},
-			{
-				criterion: "Architektura MLP",
+				criterion: "Framing: hipoteza, metryka sukcesu i guardrail",
 				weight: 25,
-				description: "Sekwencyjny model z min. 2 warstwami Dense + Dropout",
+				description:
+					"Notebook zaczyna od jasno postawionej hipotezy zerowej i alternatywnej, jednej głównej metryki sukcesu (np. retencja) oraz co najmniej jednej metryki guardrail. Zdefiniowana jest jednostka randomizacji i kierunek oczekiwanego efektu.",
 			},
 			{
-				criterion: "Architektura CNN",
-				weight: 30,
-				description: "Conv2D + MaxPooling + Dense, training z early stopping",
+				criterion: "Analiza mocy testu i MDE",
+				weight: 20,
+				description:
+					"Obliczona moc testu (power) oraz minimalny wykrywalny efekt (MDE) przy zadanym alfa i wielkości próby. Uzasadnione, czy próba jest wystarczająca do wykrycia efektu o rozmiarze istotnym biznesowo.",
 			},
 			{
-				criterion: "Analiza wyników",
-				weight: 30,
-				description: "Confusion matrix + galeria błędnych predykcji w Matplotlib",
+				criterion: "Poprawny test statystyczny i interpretacja istotności",
+				weight: 25,
+				description:
+					"Zastosowany właściwy test (t-test lub test proporcji z-test) z weryfikacją założeń, przedziałem ufności i rozmiarem efektu. Jeśli testowanych jest wiele metryk, zastosowana korekta wielokrotnych porównań. Interpretacja nie myli p-value z ważnością praktyczną.",
+			},
+			{
+				criterion: "Decision memo dla nietechnicznego odbiorcy",
+				weight: 20,
+				description:
+					"Jednostronicowe memo (Markdown/PDF) z jednoznaczną rekomendacją (wdrożyć / nie wdrażać / zebrać więcej danych), kontekstem biznesowym, ryzykami i guardrailami. Język zrozumiały bez wiedzy statystycznej, bez żargonu i surowych p-value bez interpretacji.",
+			},
+			{
+				criterion: "Reprodukowalność i ograniczenia",
+				weight: 10,
+				description:
+					"Repo z README, przypiętymi zależnościami i ustawionym ziarnem losowości; notebook uruchamia się od góry do dołu. Sekcja Ograniczenia opisuje zagrożenia walidacyjne (np. novelty effect, brak randomizacji na poziomie użytkownika, sezonowość).",
 			},
 		],
 		competencies: [
-			{ name: "Python", role: "required" },
-			{ name: "TensorFlow", role: "required" },
-			{ name: "Deep Learning", role: "required" },
-			{ name: "NumPy", role: "required" },
-			{ name: "Matplotlib", role: "acquired" },
+			{ name: "A/B testing", role: "required" },
+			{ name: "Statystyka (Statistics)", role: "required" },
+			{ name: "Python", role: "acquired" },
+			{ name: "Pandas", role: "acquired" },
 		],
 	},
 	{
-		slug: "pipeline-ml-git-dvc",
-		title: "End-to-end ML pipeline z wersjonowaniem (Git + DVC)",
+		slug: "ds-nlp-klasyfikacja-polskich-tekstow",
+		title: "NLP: klasyfikacja polskich tekstów — baseline vs embeddingi",
 		description:
-			"Zbuduj reprodukowalny pipeline ML: pobranie danych, czyszczenie, feature engineering, trening, ewaluacja. Wersjonuj kod w Git i dane/modele w DVC. Wszystko jako repozytorium gotowe do uruchomienia jednym `dvc repro`.",
+			"Zbudujesz klasyfikator tekstu po polsku na publicznym korpusie: najpierw prosty baseline TF-IDF z modelem klasycznym, potem porównanie z reprezentacjami embeddingowymi z Hugging Face. Przeprowadzisz rzetelną walidację, dobierzesz metrykę do niezbalansowania klas (F1) i wykonasz analizę błędów na macierzy pomyłek. Nauczysz się rozpoznawać wyciek danych i pułapki polskiej fleksji.",
 		level: "L2",
-		estimatedHours: 14,
-		sourceType: "oss",
-		sourceUrl: "https://github.com/iterative/example-versioning",
-		rubricJson: [
-			{
-				criterion: "Struktura repo i Git workflow",
-				weight: 25,
-				description: "Branche feature/main, min. 5 commitów z konkretnymi zmianami",
-			},
-			{
-				criterion: "DVC pipeline",
-				weight: 35,
-				description: "dvc.yaml z min. 3 stages, dvc repro działa end-to-end",
-			},
-			{
-				criterion: "Modelowanie i ewaluacja",
-				weight: 25,
-				description: "Model Scikit-learn + metryki w pliku JSON",
-			},
-			{
-				criterion: "Dokumentacja",
-				weight: 15,
-				description: "README z opisem pipeline i instrukcją uruchomienia",
-			},
-		],
-		competencies: [
-			{ name: "Git/GitHub", role: "required" },
-			{ name: "Scikit-learn", role: "required" },
-			{ name: "Feature Engineering", role: "required" },
-			{ name: "Machine Learning", role: "required" },
-			{ name: "Python", role: "required" },
-		],
-	},
-	{
-		slug: "sentiment-pytorch-cloud-deploy",
-		title: "Klasyfikacja sentymentu recenzji (PyTorch + deployment Cloud)",
-		description:
-			"Zbuduj model klasyfikacji sentymentu recenzji filmowych w PyTorch (LSTM lub fine-tune BERT z HuggingFace). Wystaw model jako REST API i zdeployuj na AWS Lambda lub Google Cloud Run. Udokumentuj koszt inferencji i latency.",
-		level: "L3",
-		estimatedHours: 25,
-		sourceType: "oss",
-		sourceUrl: "https://huggingface.co/datasets/imdb",
-		rubricJson: [
-			{
-				criterion: "Model PyTorch",
-				weight: 30,
-				description: "LSTM lub BERT fine-tune, training loop z DataLoader",
-			},
-			{
-				criterion: "REST API",
-				weight: 20,
-				description: "FastAPI/Flask endpoint /predict z walidacją inputu",
-			},
-			{
-				criterion: "Deployment Cloud",
-				weight: 30,
-				description: "AWS Lambda lub GCP Cloud Run, działa publiczny URL",
-			},
-			{
-				criterion: "Komunikacja wyników",
-				weight: 20,
-				description: "Raport: latency, koszt, accuracy, decyzje architektoniczne",
-			},
-		],
-		competencies: [
-			{ name: "PyTorch", role: "required" },
-			{ name: "Deep Learning", role: "required" },
-			{ name: "Cloud (AWS/GCP/Azure)", role: "required" },
-			{ name: "Python", role: "required" },
-			{ name: "Komunikacja wyników", role: "required" },
-			{ name: "Git/GitHub", role: "acquired" },
-		],
-	},
-	{
-		slug: "raport-ml-prezentacja-stakeholder",
-		title: "Case study ML: predykcja + raport biznesowy + prezentacja",
-		description:
-			"Wybierz dataset biznesowy (np. House Prices z Kaggle). Zbuduj model regresyjny, ale 70% pracy to komunikacja: napisz raport (markdown/PDF) z wnioskami dla nietechnicznego stakeholdera, przygotuj 10-slide deck i nagraj 5-minutową prezentację.",
-		level: "L3",
-		estimatedHours: 18,
+		estimatedHours: 12,
 		sourceType: "open_data",
-		sourceUrl: "https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques",
+		sourceUrl: "https://huggingface.co/datasets/clarin-pl/polemo2-official",
 		rubricJson: [
 			{
-				criterion: "Model i wyniki",
-				weight: 25,
-				description: "Min. 2 modele Scikit-learn + cross-validation + RMSE",
-			},
-			{
-				criterion: "Wizualizacje",
-				weight: 25,
-				description: "Min. 6 wykresów Matplotlib/Seaborn skierowanych do biznesu",
-			},
-			{
-				criterion: "Raport biznesowy",
-				weight: 30,
-				description: "Markdown/PDF: streszczenie, kluczowe insighty, rekomendacje",
-			},
-			{
-				criterion: "Prezentacja",
+				criterion: "Baseline TF-IDF + klasyczny model",
 				weight: 20,
-				description: "10-slide deck + nagranie 5 min — bez żargonu technicznego",
+				description:
+					"Zbudowany czytelny baseline: wektoryzacja TF-IDF plus prosty klasyfikator (regresja logistyczna lub liniowy SVM). Baseline jest punktem odniesienia, jego wynik jest raportowany, a preprocessing tekstu jest opisany.",
+			},
+			{
+				criterion: "Model embeddingowy i uczciwe porównanie",
+				weight: 25,
+				description:
+					"Reprezentacja embeddingowa z Hugging Face (np. polski model transformerowy lub zdaniowy) porównana z baseline na tym samym podziale i tej samej metryce. Wniosek, czy złożoność embeddingów jest uzasadniona zyskiem jakości.",
+			},
+			{
+				criterion: "Walidacja, metryka i brak wycieku danych",
+				weight: 25,
+				description:
+					"Poprawny podział train/val/test (lub walidacja krzyżowa), a wektoryzator dopasowany wyłącznie na treningu. Metryka dobrana do problemu — F1 (macro) przy niezbalansowaniu, nie sama accuracy. Uzasadniony wybór metryki.",
+			},
+			{
+				criterion: "Analiza błędów (macierz pomyłek)",
+				weight: 20,
+				description:
+					"Macierz pomyłek plus jakościowa analiza: które klasy się mylą, przykłady błędnych predykcji i hipotezy dlaczego (podobne słownictwo, fleksja, negacja, długość tekstu). Analiza prowadzi do konkretnych wniosków usprawniających.",
+			},
+			{
+				criterion: "Reprodukowalność i ograniczenia",
+				weight: 10,
+				description:
+					"Repo z README, przypiętymi zależnościami i ustawionym ziarnem; notebook uruchamia się od góry do dołu. Sekcja Ograniczenia opisuje ryzyka (licencja i dane osobowe w korpusie, obciążenie dziedzinowe, generalizacja poza korpus).",
 			},
 		],
 		competencies: [
-			{ name: "Komunikacja wyników", role: "required" },
-			{ name: "Machine Learning", role: "required" },
-			{ name: "Wizualizacja danych", role: "required" },
-			{ name: "Matplotlib", role: "required" },
-			{ name: "Seaborn", role: "required" },
-			{ name: "Pandas", role: "required" },
+			{ name: "NLP", role: "required" },
+			{ name: "Uczenie maszynowe", role: "required" },
+			{ name: "Python", role: "acquired" },
+			{ name: "Pandas", role: "acquired" },
+			{ name: "LLM", role: "acquired" },
+			{ name: "GenAI", role: "acquired" },
+		],
+	},
+	{
+		slug: "ds-mlops-pipeline-treningowy",
+		title: "MLOps: reprodukowalny pipeline treningowy end-to-end",
+		description:
+			"Zbudujesz kompletny pipeline MLOps, który prowadzi model od notatnika do powtarzalnego systemu: śledzenie eksperymentów w MLflow, konteneryzacja w Dockerze, uruchomienie na lokalnym Kubernetesie (kind/k3d), minimalna infrastruktura jako kod w Terraform oraz zielone CI w GitHub Actions. Celem nie jest najlepszy model, lecz dowód, że każdy krok jest zautomatyzowany, wersjonowany i odtwarzalny na czystej maszynie. Artefaktem jest publiczne repozytorium z pełnym pipeline'em, README portfolio i diagramem architektury.",
+		level: "L3",
+		estimatedHours: 28,
+		sourceType: "oss",
+		sourceUrl: "https://mlflow.org/docs/latest/ml/getting-started/",
+		rubricJson: [
+			{
+				criterion: "Śledzenie eksperymentów (MLflow)",
+				weight: 20,
+				description:
+					"MLflow Tracking loguje parametry, metryki i artefakty co najmniej dwóch przebiegów; zarejestrowany jest model wraz z sygnaturą wejścia/wyjścia i wersją; w repo widać, jak porównać przebiegi i wskazać baseline.",
+			},
+			{
+				criterion: "Konteneryzacja i deployment na Kubernetes",
+				weight: 25,
+				description:
+					"Dockerfile buduje obraz treningowy/serwujący z przypiętymi wersjami zależności; manifesty k8s (Deployment/Job/Service) uruchamiają się na lokalnym klastrze kind/k3d; README pokazuje polecenia od zera do działającego poda oraz sposób weryfikacji (logi, endpoint predykcji).",
+			},
+			{
+				criterion: "Infrastruktura jako kod (Terraform)",
+				weight: 20,
+				description:
+					"Terraform deklaratywnie tworzy zasoby lokalnego środowiska (np. namespace, ConfigMap/Secret, deployment przez provider kubernetes); stan jest wersjonowany świadomie, a `terraform plan/apply/destroy` jest udokumentowane; brak ręcznych, nieudokumentowanych kroków.",
+			},
+			{
+				criterion: "CI zielony (GitHub Actions)",
+				weight: 20,
+				description:
+					"Workflow w publicznym repo (darmowe minuty) uruchamia lint, testy i build obrazu przy każdym push/PR; pipeline jest zielony, a odznaka statusu widnieje w README; nieudany krok blokuje merge.",
+			},
+			{
+				criterion: "Reprodukowalność i README portfolio",
+				weight: 15,
+				description:
+					"README wg szablonu (Cel, Dane, Metoda, Wynik, Wnioski/Ograniczenia, sekcja dla nie-technicznego czytelnika) zawiera diagram architektury, przypięte wersje, instrukcję odtworzenia na czystej maszynie oraz sekcję Ograniczenia; obcy użytkownik jest w stanie powtórzyć wynik.",
+			},
+		],
+		competencies: [
+			{ name: "MLOps", role: "required" },
+			{ name: "CI/CD", role: "required" },
+			{ name: "Kubernetes", role: "required" },
+			{ name: "Terraform", role: "required" },
+			{ name: "Python", role: "acquired" },
+			{ name: "Git", role: "acquired" },
+			{ name: "Uczenie maszynowe", role: "acquired" },
+		],
+	},
+	{
+		slug: "ds-capstone-strumien-i-raport",
+		title: "CAPSTONE: strumień danych, detekcja anomalii i raport biznesowy",
+		description:
+			"Capstone spinający całą ścieżkę Data Scientist: zbudujesz strumień zdarzeń w Kafce (Docker/KRaft), zagregujesz go w PySpark Structured Streaming, wykryjesz anomalie z jawnym baseline'em (metoda statystyczna kontra prosty model) i przełożysz wynik na decyzję biznesową. Artefaktem portfolio-grade jest repozytorium z docker-compose, wdrożony dashboard w Streamlit oraz raport i decision memo wg szablonu Cel-Dane-Metoda-Wynik-Wnioski/Ograniczenia. Nacisk pada na poprawną obsługę czasu i okien oraz na walidację progu anomalii, a nie na efektowność modelu.",
+		level: "L3",
+		estimatedHours: 28,
+		sourceType: "oss",
+		sourceUrl: "https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html",
+		rubricJson: [
+			{
+				criterion: "Pipeline strumieniowy Kafka to Spark",
+				weight: 25,
+				description:
+					"Producent publikuje zdarzenia do topiku Kafka (KRaft, bez ZooKeepera) w Dockerze; PySpark Structured Streaming czyta topik, wykonuje agregacje w oknach czasowych z jawną obsługą event-time i watermark; strumień działa end-to-end i jest udokumentowany poleceniami uruchomienia.",
+			},
+			{
+				criterion: "Detekcja anomalii z baseline",
+				weight: 25,
+				description:
+					"Zaimplementowano co najmniej dwie metody detekcji (statystyczna, np. z-score/EWMA na oknie, oraz prosty model) porównane względem jawnego baseline; próg anomalii jest uzasadniony i zwalidowany, a nie dobrany arbitralnie; wykazano świadomość różnicy między szumem a sygnałem.",
+			},
+			{
+				criterion: "Wdrożony dashboard (Streamlit)",
+				weight: 20,
+				description:
+					"Dashboard w Streamlit prezentuje agregacje i wykryte anomalie w czasie; jest publicznie wdrożony (Streamlit Community Cloud lub odtwarzalny lokalnie z docker-compose) z działającym URL lub jednopoleceniową instrukcją uruchomienia.",
+			},
+			{
+				criterion: "Raport biznesowy i decision memo",
+				weight: 20,
+				description:
+					"Raport wg szablonu (Cel, Dane, Metoda, Wynik, Wnioski/Ograniczenia) jest zrozumiały dla nie-technicznego czytelnika i zawiera decision memo z konkretną rekomendacją; sekcja Ograniczenia uczciwie opisuje założenia, ryzyka fałszywych alarmów i granice metody.",
+			},
+			{
+				criterion: "Reprodukowalność",
+				weight: 10,
+				description:
+					"docker-compose podnosi Kafkę, producenta i przetwarzanie jednym poleceniem; README opisuje odtworzenie na czystej maszynie, przypięte wersje i sposób weryfikacji; obcy użytkownik uruchamia całość bez pomocy autora. docker-compose one-command; przypięte wersje Sparka i konektora spark-sql-kafka; README z instrukcją odtworzenia.",
+			},
+		],
+		competencies: [
+			{ name: "Kafka", role: "required" },
+			{ name: "Spark", role: "required" },
+			{ name: "PySpark", role: "required" },
+			{ name: "Databricks", role: "acquired" },
+			{ name: "MLOps", role: "acquired" },
+			{ name: "Statystyka (Statistics)", role: "acquired" },
+			{ name: "EDA", role: "acquired" },
 		],
 	},
 ];

@@ -81,8 +81,8 @@ describe("Seed job market — v5: BEZ widełek (decyzja Darka)", () => {
 });
 
 describe("Seed data — projects", () => {
-	it("has exactly 27 projects", () => {
-		expect(DEMO_PROJECTS).toHaveLength(27);
+	it("has exactly 30 projects", () => {
+		expect(DEMO_PROJECTS).toHaveLength(30);
 	});
 
 	it("each project has at least 2 competencies", () => {
@@ -94,20 +94,20 @@ describe("Seed data — projects", () => {
 		}
 	});
 
-	it("has correct level distribution: 10 L1, 11 L2, 6 L3", () => {
+	it("has correct level distribution: 12 L1, 12 L2, 6 L3", () => {
 		const l1 = DEMO_PROJECTS.filter((p) => p.level === "L1").length;
 		const l2 = DEMO_PROJECTS.filter((p) => p.level === "L2").length;
 		const l3 = DEMO_PROJECTS.filter((p) => p.level === "L3").length;
-		expect(l1).toBe(10);
-		expect(l2).toBe(11);
+		expect(l1).toBe(12);
+		expect(l2).toBe(12);
 		expect(l3).toBe(6);
 	});
 
-	it("has correct source type distribution: 20 open_data, 7 oss", () => {
+	it("has correct source type distribution: 21 open_data, 9 oss", () => {
 		const openData = DEMO_PROJECTS.filter((p) => p.sourceType === "open_data").length;
 		const oss = DEMO_PROJECTS.filter((p) => p.sourceType === "oss").length;
-		expect(openData).toBe(20);
-		expect(oss).toBe(7);
+		expect(openData).toBe(21);
+		expect(oss).toBe(9);
 	});
 
 	it("each sourceUrl starts with https://", () => {

@@ -689,7 +689,7 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 		const expected: Record<string, number> = {
 			// Partia 1
 			"QA Engineer": 8,
-			"Data Scientist": 4,
+			"Data Scientist": 5, // 4 grupy z danych + „Fundamenty" (kuracja ekspercka, 2026-07-01)
 			"AI Engineer": 6,
 			// Partia 2
 			"Backend Developer": 6,
@@ -728,7 +728,10 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 				expect(g.demandPercentage, `${goal}/${g.name}: dyskryminator → null`).toBeNull();
 				expect(typeof g.unionShare, `${goal}/${g.name}: unionShare number`).toBe("number");
 			}
-			// kind kuratorowany przez Sophię: tool/concept (+ cert dla PRINCE2 w PM), ≥1 concept, z danych.
+			// kind kuratorowany przez Sophię: tool/concept (+ cert dla PRINCE2 w PM), ≥1 concept.
+			// Źródło: „dane" dla wszystkich ścieżek; wyjątek DS — grupa „Fundamenty" dopisana
+			// jako kuracja ekspercka (2026-07-01), więc dopuszczamy oba źródła tylko dla DS.
+			const allowedSources = goal === "Data Scientist" ? ["dane", "kuracja ekspercka"] : ["dane"];
 			let conceptSeen = 0;
 			for (const a of path?.areas ?? []) {
 				for (const l of a.leaves) {
@@ -736,7 +739,7 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 						["tool", "concept", "cert"],
 						`${goal}/${l.name}: kind ∈ {tool,concept,cert}`,
 					).toContain(l.kind);
-					expect(l.source, `${goal}/${l.name}: z danych`).toBe("dane");
+					expect(allowedSources, `${goal}/${l.name}: źródło`).toContain(l.source);
 					if (l.kind === "concept") conceptSeen++;
 				}
 			}
@@ -761,10 +764,12 @@ describe("artefakt HIERARCHICZNY (career-model.json)", () => {
 				}
 			}
 		}
-		// A5 partia 5: kuracja PO/Manager z danych (bez Miro) usunęła ostatni liść-absent
-		// w katalogu (Miro był jedynym na c5cd860). Po pełnej kuracji 1–5 wszystkie liście
-		// pochodzą z danych — invariant odzwierciedla rzeczywisty stan artefaktu.
-		expect(absentSeen).toBe(0);
+		// 2026-07-01 (Oliver, decyzja Darka): ścieżka Data Scientist dostała grupę „Fundamenty"
+		// z 3 liśćmi kuracji eksperckiej (Uczenie maszynowe, EDA, A/B testing) — fundamenty roli
+		// obecne w OPISACH ofert, choć nieobecne w tagach (docs/curation/weryfikacja-ds-plan-
+		// projektow.md). To jedyne liście-absent w katalogu; kontrakt kształtu (null → „kuracja
+		// ekspercka") egzekwowany wyżej. Statystyka pozostaje liściem z danych (1.6%).
+		expect(absentSeen).toBe(3);
 		expect(presentSeen).toBeGreaterThan(0);
 	});
 

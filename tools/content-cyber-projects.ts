@@ -34,10 +34,15 @@
  * Connection string z procesu (DATABASE_URL). Załaduj .env.test wcześniej — narzędzie samo
  * go ładuje, jeśli istnieje (NIE nadpisuje już ustawionych env). NIE czyta .env.local (prod).
  *
+ * Narzędzie jest OGÓLNE względem ścieżki kariery: domyślnie waliduje nazwy kompetencji
+ * wobec liści ścieżki cyber (kompatybilność wsteczna), a `--path "Data Scientist"`
+ * przełącza walidację na liście dowolnej ścieżki z career-model.ts (jedno źródło prawdy).
+ *
  * Użycie (PowerShell):
  *   pnpm db:migrate:test                                                   # schemat na bazę testową
  *   pnpm exec tsx tools/content-cyber-projects.ts tools/content/cyber-projects.sample.json
  *   pnpm exec tsx tools/content-cyber-projects.ts <plik.json> --warn-unknown-competencies
+ *   pnpm exec tsx tools/content-cyber-projects.ts tools/content/ds-projects-partia-1.json --path "Data Scientist"
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -82,18 +87,21 @@ export type CyberProjectInput = {
 };
 
 // ── Walidator nazw kompetencji — KLUCZOWA BRAMKA JAKOŚCI ─────────────────────
-// Jedno źródło prawdy: liście ścieżki "Cybersecurity Specialist" z career-model.ts.
-// Każda competencyName w projekcie musi być DOKŁADNIE jednym z tych liści (E1 §1.2 B),
-// inaczej matcher (dopasowywarka) cicho traci pokrycie luki (ryzyko #1 z E1).
-const CYBER_PATH_LABEL = "Cybersecurity Specialist";
+// Jedno źródło prawdy: liście ścieżki kariery z career-model.ts (PATHS). Każda
+// competencyName w projekcie musi być DOKŁADNIE jednym z liści WYBRANEJ ścieżki
+// (E1 §1.2 B), inaczej matcher (dopasowywarka) cicho traci pokrycie luki (ryzyko #1 z E1).
+// Narzędzie jest ogólne: domyślnie cyber (kompatybilność wsteczna), a przez CLI
+// `--path "Data Scientist"` waliduje wobec liści dowolnej ścieżki (E1 §7.2 spec DS).
+const DEFAULT_PATH_LABEL = "Cybersecurity Specialist";
 
-/** Zbiór dokładnych nazw liści (kompetencji) ścieżki cyber z modelu kariery. */
-export function getCyberLeafNames(): Set<string> {
-	const path = PATHS.find((p) => p.label === CYBER_PATH_LABEL);
+/** Zbiór dokładnych nazw liści (kompetencji) DOWOLNEJ ścieżki kariery z modelu. */
+export function getPathLeafNames(pathLabel: string): Set<string> {
+	const path = PATHS.find((p) => p.label === pathLabel);
 	if (!path) {
 		throw new Error(
-			`[content-cyber-projects] Krytyczne: brak ścieżki "${CYBER_PATH_LABEL}" w career-model.ts ` +
-				"— walidator nazw kompetencji nie ma na czym pracować.",
+			`[content-cyber-projects] Krytyczne: brak ścieżki "${pathLabel}" w career-model.ts ` +
+				"— walidator nazw kompetencji nie ma na czym pracować. " +
+				`Dozwolone etykiety: ${PATHS.map((p) => `"${p.label}"`).join(", ")}.`,
 		);
 	}
 	const names = new Set<string>();
@@ -105,7 +113,12 @@ export function getCyberLeafNames(): Set<string> {
 	return names;
 }
 
-/** Czy nazwa kompetencji jest dokładnym liściem cyber. */
+/** Zbiór liści ścieżki cyber (kompatybilność wsteczna — domyślna ścieżka). */
+export function getCyberLeafNames(): Set<string> {
+	return getPathLeafNames(DEFAULT_PATH_LABEL);
+}
+
+/** Czy nazwa kompetencji jest dokładnym liściem ścieżki (domyślnie cyber). */
 export function isKnownCyberCompetency(name: string, known?: Set<string>): boolean {
 	return (known ?? getCyberLeafNames()).has(name);
 }
@@ -254,12 +267,13 @@ export function validateProjectStructure(p: CyberProjectInput, idx: number): str
 export function findUnknownCompetencies(
 	p: CyberProjectInput,
 	known: Set<string> = getCyberLeafNames(),
+	pathLabel = "wybranej ścieżki",
 ): string[] {
 	const out: string[] = [];
 	for (const c of p.competencies ?? []) {
 		if (typeof c?.name === "string" && !known.has(c.name)) {
 			out.push(
-				`slug "${p.slug}": competencyName "${c.name}" NIE jest liściem ścieżki cyber ` +
+				`slug "${p.slug}": competencyName "${c.name}" NIE jest liściem ${pathLabel} ` +
 					"(literówka? → cicha utrata pokrycia matchera). Przepisz dokładnie jak w career-model.ts.",
 			);
 		}
@@ -406,13 +420,36 @@ export async function ingestCyberProjects(
 async function main(): Promise<void> {
 	const args = process.argv.slice(2);
 	const warnUnknown = args.includes("--warn-unknown-competencies");
-	const jsonPath = args.find((a) => !a.startsWith("--"));
+
+	// Ścieżka kariery, wobec której walidujemy nazwy liści. Domyślnie cyber
+	// (kompatybilność wsteczna). Obsługa: `--path "Data Scientist"` i `--path=...`.
+	let pathLabel = DEFAULT_PATH_LABEL;
+	const positional: string[] = [];
+	for (let i = 0; i < args.length; i++) {
+		const a = args[i];
+		if (a === "--path") {
+			pathLabel = args[i + 1] ?? "";
+			i++; // pochłoń wartość (nie jest pozycyjnym argumentem/plikiem)
+		} else if (a.startsWith("--path=")) {
+			pathLabel = a.slice("--path=".length);
+		} else if (!a.startsWith("--")) {
+			positional.push(a);
+		}
+	}
+	if (pathLabel.trim() === "") {
+		console.error(
+			'[content-cyber-projects] STOP: --path wymaga wartości, np. --path "Data Scientist".',
+		);
+		process.exit(1);
+	}
+	const jsonPath = positional[0];
 
 	if (!jsonPath) {
 		console.error(
 			"[content-cyber-projects] STOP: podaj ścieżkę do pliku JSON jako argument.\n" +
 				"  pnpm exec tsx tools/content-cyber-projects.ts tools/content/cyber-projects.sample.json\n" +
-				"  (flaga opcjonalna: --warn-unknown-competencies — nazwa spoza liści cyber = WARN zamiast ERROR)",
+				'  ścieżka kariery (walidacja liści): --path "Data Scientist" (domyślnie "Cybersecurity Specialist")\n' +
+				"  (flaga opcjonalna: --warn-unknown-competencies — nazwa spoza liści ścieżki = WARN zamiast ERROR)",
 		);
 		process.exit(1);
 	}
@@ -458,13 +495,21 @@ async function main(): Promise<void> {
 	const input = parsed as CyberProjectInput[];
 
 	// ── Walidacja całego pliku PRZED bazą (fail-fast) ─────────────────────────
-	const known = getCyberLeafNames();
+	// Zbiór dozwolonych liści z career-model.ts dla WYBRANEJ ścieżki (jedno źródło prawdy).
+	let known: Set<string>;
+	try {
+		known = getPathLeafNames(pathLabel);
+	} catch (e) {
+		console.error(e instanceof Error ? e.message : String(e));
+		process.exit(1);
+	}
+	const pathTag = `ścieżki "${pathLabel}"`;
 	const structuralErrors: string[] = [];
 	const unknownCompetencyMsgs: string[] = [];
 	for (let i = 0; i < input.length; i++) {
 		const err = validateProjectStructure(input[i], i);
 		if (err) structuralErrors.push(err);
-		unknownCompetencyMsgs.push(...findUnknownCompetencies(input[i], known));
+		unknownCompetencyMsgs.push(...findUnknownCompetencies(input[i], known, pathTag));
 	}
 
 	if (structuralErrors.length > 0) {
@@ -475,7 +520,7 @@ async function main(): Promise<void> {
 
 	if (unknownCompetencyMsgs.length > 0) {
 		const tag = warnUnknown ? "WARN" : "STOP";
-		console.error(`[content-cyber-projects] ${tag}: nazwy kompetencji spoza liści cyber:`);
+		console.error(`[content-cyber-projects] ${tag}: nazwy kompetencji spoza liści ${pathTag}:`);
 		for (const m of unknownCompetencyMsgs) console.error(`  - ${m}`);
 		if (!warnUnknown) {
 			console.error(
