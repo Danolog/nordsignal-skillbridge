@@ -1,8 +1,8 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { isProjectExcludedFromCareer } from "@/lib/projects/career-match";
 import { ProjectCard } from "./project-card";
 
 interface ProjectCompetency {
@@ -25,12 +25,6 @@ interface Project {
 	careerGoals: string[];
 }
 
-interface Recommendation {
-	projectId: string;
-	matchScore: number;
-	reasoning: string;
-}
-
 interface CareerOption {
 	careerGoal: string;
 	family: string;
@@ -40,6 +34,7 @@ interface ProjectCatalogProps {
 	projects: Project[];
 	gapId?: string;
 	gapCompetencyName?: string;
+	studentCareerGoal?: string;
 	initialLevel?: string;
 	initialSourceType?: string;
 	initialCareer?: string;
@@ -63,6 +58,7 @@ export function ProjectCatalog({
 	projects,
 	gapId,
 	gapCompetencyName,
+	studentCareerGoal,
 	initialLevel,
 	initialSourceType,
 	initialCareer,
@@ -74,18 +70,6 @@ export function ProjectCatalog({
 	const [level, setLevel] = useState(initialLevel ?? "");
 	const [sourceType, setSourceType] = useState(initialSourceType ?? "");
 	const [career, setCareer] = useState(initialCareer ?? "");
-	const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-	const [loadingRecs, setLoadingRecs] = useState(false);
-
-	useEffect(() => {
-		if (!gapId) return;
-		setLoadingRecs(true);
-		fetch(`/api/projects/recommend?gapId=${gapId}`)
-			.then((res) => res.json())
-			.then((data) => setRecommendations(data.recommendations ?? []))
-			.catch(() => setRecommendations([]))
-			.finally(() => setLoadingRecs(false));
-	}, [gapId]);
 
 	const updateFilters = useCallback(
 		(newLevel: string, newSourceType: string, newCareer: string) => {
@@ -124,10 +108,16 @@ export function ProjectCatalog({
 					(c) => c.role === "required" && c.competencyName.toLowerCase() === gapName,
 				);
 				if (!closesGap) return false;
+				// Widok luki celowo pomija filtr `career` (patrz `career &&` wyżej), żeby nie
+				// maskować luki słabo zakotwiczonym projektem kuratorskim — więc legacy
+				// wykluczenia trzeba wymusić tu, niezależnie od `careerGoals`.
+				if (studentCareerGoal && isProjectExcludedFromCareer(p.slug, studentCareerGoal)) {
+					return false;
+				}
 			}
 			return true;
 		});
-	}, [projects, level, sourceType, career, gapCompetencyName]);
+	}, [projects, level, sourceType, career, gapCompetencyName, studentCareerGoal]);
 
 	// Metadane kierunku — liczone TYLKO po kierunku (niezależnie od pod-filtrów
 	// poziomu/źródła), żeby rozbicie L1–L5 i suma czasu opisywały cały kierunek.
@@ -144,42 +134,8 @@ export function ProjectCatalog({
 		return { total: inCareer.length, byLevel, totalHours };
 	}, [projects, career]);
 
-	const recommendedProjects = useMemo(() => {
-		const recIds = new Set(recommendations.map((r) => r.projectId));
-		return projects.filter((p) => recIds.has(p.id));
-	}, [projects, recommendations]);
-
 	return (
 		<div className="proj-catalog">
-			{gapId && (
-				<div className="proj-rec-section">
-					<h2 className="proj-rec-title">Rekomendowane dla Twojej luki</h2>
-					{loadingRecs ? (
-						<div className="proj-rec-loading">
-							<Loader2 size={20} className="animate-spin" />
-							Szukam najlepszych projektów...
-						</div>
-					) : recommendedProjects.length > 0 ? (
-						<div className="proj-grid">
-							{recommendedProjects.map((p) => (
-								<ProjectCard
-									key={p.id}
-									id={p.id}
-									title={p.title}
-									description={p.description}
-									level={p.level}
-									estimatedHours={p.estimatedHours}
-									sourceType={p.sourceType}
-									competencyCount={p.competencies.length}
-								/>
-							))}
-						</div>
-					) : (
-						<p className="proj-rec-empty">Brak rekomendacji dla tej luki.</p>
-					)}
-				</div>
-			)}
-
 			<div className="proj-filters">
 				{careerFamilies.length > 0 && (
 					<select

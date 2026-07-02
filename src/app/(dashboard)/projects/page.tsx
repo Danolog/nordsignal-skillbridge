@@ -67,6 +67,7 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 				projects={projectsWithCareers}
 				gapId={gapId}
 				gapCompetencyName={gap?.competencyName ?? undefined}
+				studentCareerGoal={student.careerGoal ?? undefined}
 				initialLevel={level}
 				initialSourceType={sourceType}
 				initialCareer={defaultCareer}
