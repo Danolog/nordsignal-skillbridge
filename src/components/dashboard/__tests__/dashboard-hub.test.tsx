@@ -41,6 +41,7 @@ const defaultProps = {
 	inProgressCount: 1,
 	marketCoverage: 42,
 	topGap: {
+		id: "1",
 		competencyName: "SIEM",
 		priority: "critical",
 		marketPercentage: 11,
