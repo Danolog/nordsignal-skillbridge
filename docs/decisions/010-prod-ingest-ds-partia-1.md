@@ -261,3 +261,16 @@ Zanotuj (audit log / commit-notatka, autor Darek): data/godzina UTC, branch back
 - **Weryfikacja §8:** 8a=10 · 8b=4/4/2 · 8c=0 · 8d=0 · 8e=23 nazwy, wszystkie ∈ liście DS (fundamenty EDA/Uczenie maszynowe/A-B testing/Statystyka obecne; Snowflake świadomie poza) · 8f stare_ds=0, total=**71** (=68+10−7). Wszystkie kryteria akceptacji spełnione.
 - **Rollback:** nie był potrzebny.
 - **Do zamknięcia po stronie operatora:** smoke `/projects` (filtr DS), retencja backup-brancha `br-curly-hall-alqqy3kl` min. kilka dni (potem `neonctl branches delete`), weryfikacja licencji D2 (P7/P8) przed publikacją/promocją.
+
+### 12a. Re-ingest D2 (korekty licencji P7/P8) — 2026-07-02
+
+> Status: **WYKONANE — 2026-07-02** (prowadzenie na żywo: Oliver; wykonał: Darek). Domknięcie bramki QG-6 **D2** (sign-off: Ryan/CRCO).
+
+Po sign-offie D2 Ryana skorygowano metadane licencji dwóch projektów (PR #97, commit `81b55ff` → `main`): P7 `ds-eksperyment-ab-memo` (koniec deklaracji CC0 jako pewnika — badge Kaggle za reCAPTCHA, re-upload DataCamp/Tactile) i P8 `ds-nlp-klasyfikacja-polskich-tekstow` (nota o rozbieżności tag HF/karta/kanon CLARIN + dodana wymagana atrybucja Kocoń i in. 2019). Zmiany dowieziono na prod idempotentnym re-ingestem.
+
+- **Backup (bramka #1):** świeży zero-copy branch `prod-backup-pre-ds-d2-2026-07-02` (utworzony przed zapisem; łapie stan po partii 1 = 71 projektów; branch-id zanotowany przez operatora).
+- **Kontekst kodu:** `main` = `24cc525` (zawiera D2 z PR #97 oraz niepowiązany PR #98 `ai_usage_ledger`; re-ingest nie dotyka narzędzia/modelu/treści zmienionych przez #98).
+- **Re-ingest** (`--path "Data Scientist"`, `CONFIRM_PROD_DB=1`, `.env.test` odsunięty i przywrócony): „Wstawiono: 0, **zaktualizowano: 10**, błędów: 0. Kompetencji: 53, materiałów: 39, **linków: 34**." — exit 0. Upsert keyed-by-slug + replace-per-projekt: 0 insertów (wszystkie sluggi istniały), 10 aktualizacji. Wzrost linków 33 → **34** = nowy link atrybucji CLARIN w P8.
+- **Weryfikacja (`project_source_links`):** P7 poz. 1 = „Licencja: sprawdź badge na karcie zbioru (re-upload DataCamp/Tactile)…" (bez deklaracji CC0); P8 poz. 0 = nota o rozbieżności tag/karta/kanon, poz. 4 = „Źródło kanoniczne + atrybucja (wymagana): Kocoń J., Miłkowski P., Zaśko-Zielińska M., PolEmo 2.0, CLARIN-PL 2019 (CC BY 4.0)". 8 wierszy (3 P7 + 5 P8) — zgodne z oczekiwaniem.
+- **Rollback:** nie był potrzebny.
+- **Otwarta bramka (backlog, NIE blokuje promocji edukacyjnej):** komercjalizacja P8 wymaga potwierdzenia CC BY 4.0 z CLARIN-PL lub zbioru alternatywnego. Retencja drugiego backup-brancha `prod-backup-pre-ds-d2-2026-07-02` jak wyżej.
