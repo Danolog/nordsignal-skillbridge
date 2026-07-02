@@ -18,6 +18,7 @@ interface Gap {
 }
 
 interface TopGap {
+	id: string;
 	competencyName: string;
 	priority: string;
 	marketPercentage: number;
@@ -240,10 +241,7 @@ export function DashboardHub(props: DashboardHubProps) {
 							</div>
 						</div>
 						<div className="db-nextstep-cta">
-							<Link
-								href={`/projects?career=${encodeURIComponent(student.careerGoal)}`}
-								className="db-anchor-dark"
-							>
+							<Link href={`/projects?gapId=${topGap.id}`} className="db-anchor-dark">
 								Otwórz projekty zamykające tę lukę →
 							</Link>
 						</div>
