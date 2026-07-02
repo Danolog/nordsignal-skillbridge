@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { eq } from "drizzle-orm";
 import { getModel } from "@/lib/ai/model";
+import { withAiUsage } from "@/lib/ai/usage";
 import { db } from "@/lib/db";
 import { competencies, gaps, projects, students } from "@/lib/db/schema";
 
@@ -74,10 +75,17 @@ export async function matchProjects(
 		)
 		.join("\n");
 
-	const { text } = await generateText({
-		model: getModel("fast"),
-		maxOutputTokens: 2000,
-		prompt: `Jesteś matchmakerem projektów edukacyjnych. Student chce zostać "${student.careerGoal}" (semestr ${student.semester}).
+	const { text } = await withAiUsage(
+		{
+			scope: "match-projects",
+			tier: "fast",
+			attribution: { studentId, tenantId: student.tenantId },
+		},
+		() =>
+			generateText({
+				model: getModel("fast"),
+				maxOutputTokens: 2000,
+				prompt: `Jesteś matchmakerem projektów edukacyjnych. Student chce zostać "${student.careerGoal}" (semestr ${student.semester}).
 
 Jego kompetencje: ${acquiredNames.join(", ") || "brak danych"}
 Luka do zamknięcia: "${gap.competencyName}" (priorytet: ${gap.priority}, popyt rynkowy: ${gap.marketPercentage}%)
@@ -94,7 +102,8 @@ Zwróć JSON (bez markdown code block) — tablicę max ${limit} najlepszych pro
 [{"projectId": "uuid", "matchScore": 0-100, "reasoning": "po polsku, 1-2 zdania"}]
 
 Sortuj od najlepszego dopasowania. Reasoning po polsku.`,
-	});
+			}),
+	);
 
 	const cleaned = text
 		.trim()

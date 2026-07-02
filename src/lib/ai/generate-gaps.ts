@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { withAiUsage } from "@/lib/ai/usage";
 import { db } from "@/lib/db";
 import { competencies, gaps, jobMarketData, passports } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
@@ -47,11 +48,14 @@ export async function generateGaps(
 		const safeCareer = sanitizeForPrompt(careerGoal, 200);
 		const safeComps = sanitizeForPrompt(JSON.stringify(studentCompetencies), 4000);
 
-		const { object: result } = await generateObject({
-			model: getModel("standard"),
-			schema: GapResultSchema,
-			maxOutputTokens: 6000,
-			prompt: `Jesteś ekspertem od rynku pracy IT w Polsce.
+		const { object: result } = await withAiUsage(
+			{ scope: "generate-gaps", tier: "standard", attribution: { studentId, tenantId } },
+			() =>
+				generateObject({
+					model: getModel("standard"),
+					schema: GapResultSchema,
+					maxOutputTokens: 6000,
+					prompt: `Jesteś ekspertem od rynku pracy IT w Polsce.
 
 Wymagania rynkowe dla celu "${safeCareer}":
 ${marketList}
@@ -70,7 +74,8 @@ Zasady:
 - "nice_to_have": <40% demand
 - competencyUpdates: aktualizuj status i marketPercentage dla kompetencji studenta
 - 8-20 gaps, 15-40 competencyUpdates`,
-		});
+				}),
+		);
 
 		// Save gaps (idempotent — wipe existing first so re-running on profile edit doesn't duplicate)
 		await db.delete(gaps).where(eq(gaps.studentId, studentId));

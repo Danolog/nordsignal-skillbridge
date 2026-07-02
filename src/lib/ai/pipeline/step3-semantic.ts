@@ -27,6 +27,7 @@ import type {
 	StepResult,
 } from "@/lib/ai/pipeline/types";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { withAiUsage } from "@/lib/ai/usage";
 
 const SemanticOutputSchema = z.object({
 	evaluations: z
@@ -191,12 +192,14 @@ export async function runSemanticReview(args: {
 
 	let raw: string;
 	try {
-		const { text } = await generateText({
-			model: getModel("standard"),
-			maxOutputTokens: 5000,
-			system: SYSTEM_PROMPT,
-			prompt: userPrompt,
-		});
+		const { text } = await withAiUsage({ scope: "pipeline.step3-semantic", tier: "standard" }, () =>
+			generateText({
+				model: getModel("standard"),
+				maxOutputTokens: 5000,
+				system: SYSTEM_PROMPT,
+				prompt: userPrompt,
+			}),
+		);
 		raw = text;
 	} catch {
 		return {
