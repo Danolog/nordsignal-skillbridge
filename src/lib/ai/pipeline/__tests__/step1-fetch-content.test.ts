@@ -48,6 +48,28 @@ describe("step1 — pobranie treści (mock GitHub API)", () => {
 		expect(r.data.artifact).toBe("");
 	});
 
+	it("repo prywatne (meta.private=true) → empty_or_unreadable, treść NIE pobierana (0.7)", async () => {
+		mockMeta.mockResolvedValue({ default_branch: "main", private: true });
+		const r = await fetchContent(url);
+		expect(r.ok).toBe(false);
+		expect(r.flags.some((f) => f.code === "empty_or_unreadable")).toBe(true);
+		expect(r.flags[0].message).toContain("prywatne");
+		// Confused-deputy: nie sięgamy po drzewo/bloby prywatnego repo.
+		expect(mockTree).not.toHaveBeenCalled();
+		expect(mockBlob).not.toHaveBeenCalled();
+	});
+
+	it("repo publiczne (meta.private=false) → przetwarzane normalnie (0.7)", async () => {
+		mockMeta.mockResolvedValue({ default_branch: "main", private: false });
+		mockTree.mockResolvedValue({
+			tree: [{ path: "main.py", type: "blob", size: 10, sha: "s" }],
+		});
+		mockBlob.mockResolvedValue("print(1)");
+		const r = await fetchContent(url);
+		expect(r.ok).toBe(true);
+		expect(mockTree).toHaveBeenCalled();
+	});
+
 	it("repo bez plików nadających się do oceny → empty_or_unreadable", async () => {
 		mockMeta.mockResolvedValue({ default_branch: "main" });
 		mockTree.mockResolvedValue({
