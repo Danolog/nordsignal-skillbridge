@@ -1,10 +1,18 @@
 import type { NextConfig } from "next";
 
-// CSP w trybie report-only: pozwala obserwować potencjalne naruszenia bez blokowania
-// (Recharts/React Flow/inline styles z shadcn). Po obserwacji można promote'ować do enforce.
-const cspReportOnly = [
+// 0.13: CSP w trybie ENFORCE (blokuje, nie tylko raportuje). Report-only obserwowaliśmy
+// wcześniej bez naruszeń, więc directives (connect-src/base-uri/form-action) są teraz
+// egzekwowane — realnie ograniczają exfiltrację i wstrzyknięcie <base>/<form action>.
+// `unsafe-eval` USUNIĘTE: Next.js prod nie używa eval, a nasze biblioteki runtime
+// (Recharts, React Flow, jsPDF, html2canvas) też nie — eval-XSS zablokowane.
+// `unsafe-inline` POZOSTAJE (skrypty hydration Next + inline style shadcn/Tailwind): jego
+// usunięcie wymaga migracji na nonce (per-request nonce w middleware + Next auto-wstrzykuje
+// go w swoje <script>) — osobny follow-up. WERYFIKACJA: enforce jest runtime'owe (build/testy
+// go nie ćwiczą) → sprawdzić na Preview (Vercel): konsola bez naruszeń CSP na skill-map
+// (React Flow), panelu faculty (Recharts), paszporcie (PDF export), hydration wszystkich stron.
+const csp = [
 	"default-src 'self'",
-	"script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+	"script-src 'self' 'unsafe-inline'",
 	"style-src 'self' 'unsafe-inline'",
 	"img-src 'self' data: https: blob:",
 	"font-src 'self' data:",
@@ -26,7 +34,7 @@ const securityHeaders = [
 		key: "Permissions-Policy",
 		value: "camera=(), microphone=(), geolocation=(), payment=()",
 	},
-	{ key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
+	{ key: "Content-Security-Policy", value: csp },
 ];
 
 const nextConfig: NextConfig = {
