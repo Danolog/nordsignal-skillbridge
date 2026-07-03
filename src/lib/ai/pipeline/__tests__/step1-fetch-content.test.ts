@@ -92,6 +92,35 @@ describe("step1 — pobranie treści (mock GitHub API)", () => {
 		expect(r.flags.some((f) => f.code === "content_truncated")).toBe(true);
 	});
 
+	it("pobiera bloby RÓWNOLEGLE, nie sekwencyjnie (0.10 — obrona przed 504)", async () => {
+		mockMeta.mockResolvedValue({ default_branch: "main", private: false });
+		mockTree.mockResolvedValue({
+			tree: Array.from({ length: 5 }, (_, i) => ({
+				path: `f${i}.py`,
+				type: "blob" as const,
+				size: 10,
+				sha: `s${i}`,
+			})),
+		});
+		let inFlight = 0;
+		let maxInFlight = 0;
+		mockBlob.mockImplementation(async () => {
+			inFlight++;
+			maxInFlight = Math.max(maxInFlight, inFlight);
+			await new Promise((r) => setTimeout(r, 10));
+			inFlight--;
+			return "print(1)";
+		});
+
+		const r = await fetchContent(url);
+
+		expect(r.data.files).toHaveLength(5);
+		// Sekwencyjnie maxInFlight byłoby 1; równolegle (chunk 6) wszystkie 5 naraz.
+		expect(maxInFlight).toBeGreaterThan(1);
+		// Kolejność zachowana mimo równoległości (Promise.all zwraca w kolejności wejścia).
+		expect(r.data.files.map((f) => f.path)).toEqual(["f0.py", "f1.py", "f2.py", "f3.py", "f4.py"]);
+	});
+
 	it("blob niepobrany (null) → plik trafia do omittedFiles, potok idzie dalej", async () => {
 		mockMeta.mockResolvedValue({ default_branch: "main" });
 		mockTree.mockResolvedValue({
