@@ -140,44 +140,62 @@ async function downloadAndPackage(
 	let truncated = false;
 	let readme = "";
 
-	for (const entry of ordered) {
-		if (files.length >= LIMITS.maxFiles) {
-			omittedFiles.push(entry.path);
+	// 0.10: bloby pobierane RÓWNOLEGLE w chunkach (wcześniej sekwencyjnie — przy repo
+	// z wieloma plikami kumulacja latencji GitHub API prowadziła do 504 na maxDuration).
+	// Semantyka pakowania NIEZMIENIONA: kandydaci w tej samej kolejności priorytetu, ten
+	// sam budżet/maxFiles, te same decyzje omittedFiles — zmienia się tylko to, że bloby
+	// jednego chunku lecą współbieżnie (Promise.all zachowuje kolejność wyników). Gdy
+	// limity (maxFiles/budżet) są wyczerpane, nie pobieramy kolejnych chunków — resztę
+	// kandydatów oznaczamy jako pominięte (parytet z pętlą sekwencyjną).
+	const FETCH_CONCURRENCY = 6;
+	for (let i = 0; i < ordered.length; i += FETCH_CONCURRENCY) {
+		if (files.length >= LIMITS.maxFiles || budget <= 0) {
+			for (const entry of ordered.slice(i)) omittedFiles.push(entry.path);
 			truncated = true;
-			continue;
+			break;
 		}
-		if (budget <= 0) {
-			omittedFiles.push(entry.path);
-			truncated = true;
-			continue;
+		const chunk = ordered.slice(i, i + FETCH_CONCURRENCY);
+		const fetched = await Promise.all(
+			chunk.map((entry) => fetchBlobText(coords, entry.sha).then((raw) => ({ entry, raw }))),
+		);
+
+		for (const { entry, raw } of fetched) {
+			if (files.length >= LIMITS.maxFiles) {
+				omittedFiles.push(entry.path);
+				truncated = true;
+				continue;
+			}
+			if (budget <= 0) {
+				omittedFiles.push(entry.path);
+				truncated = true;
+				continue;
+			}
+			if (raw === null) {
+				omittedFiles.push(entry.path);
+				continue;
+			}
+
+			const capped = truncateFileContent(raw);
+			const block = `${fileHeader(entry.path, countLines(capped.content))}\n${capped.content}`;
+
+			if (block.length > budget) {
+				// Nie zmieści się w całości — pomijamy (README mamy w priorytecie 0, więc
+				// budżet starcza na niego; tu chronimy spójność cytatów: bez pół-pliku).
+				omittedFiles.push(entry.path);
+				truncated = true;
+				continue;
+			}
+
+			budget -= block.length;
+			files.push({
+				path: entry.path,
+				content: capped.content,
+				lineCount: countLines(capped.content),
+				truncated: capped.truncated,
+			});
+			if (isReadme(entry.path)) readme = capped.content;
+			if (capped.truncated) truncated = true;
 		}
-
-		const raw = await fetchBlobText(coords, entry.sha);
-		if (raw === null) {
-			omittedFiles.push(entry.path);
-			continue;
-		}
-
-		const capped = truncateFileContent(raw);
-		const block = `${fileHeader(entry.path, countLines(capped.content))}\n${capped.content}`;
-
-		if (block.length > budget) {
-			// Nie zmieści się w całości — pomijamy (README mamy w priorytecie 0, więc
-			// budżet starcza na niego; tu chronimy spójność cytatów: bez pół-pliku).
-			omittedFiles.push(entry.path);
-			truncated = true;
-			continue;
-		}
-
-		budget -= block.length;
-		files.push({
-			path: entry.path,
-			content: capped.content,
-			lineCount: countLines(capped.content),
-			truncated: capped.truncated,
-		});
-		if (isReadme(entry.path)) readme = capped.content;
-		if (capped.truncated) truncated = true;
 	}
 
 	const artifact = files
