@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { getModel } from "@/lib/ai/model";
+import { aiTimeoutSignal } from "@/lib/ai/timeout";
 import { withAiUsage } from "@/lib/ai/usage";
 
 // Kroki nauki — używane w briefach projektów (Project Marketplace).
@@ -22,6 +23,7 @@ export async function generateLearningSteps(
 	const { text } = await withAiUsage({ scope: "learning-steps", tier: "standard" }, () =>
 		generateText({
 			model: getModel("standard"),
+			abortSignal: aiTimeoutSignal(),
 			maxOutputTokens: 2000,
 			prompt: `Jesteś ekspertem edukacji technicznej. Stwórz ${maxSteps} krótkich kroków nauki dla studenta ${semester}. semestru, który chce zostać ${careerGoal}.
 

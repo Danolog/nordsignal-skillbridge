@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { aiTimeoutSignal } from "@/lib/ai/timeout";
 import { withAiUsage } from "@/lib/ai/usage";
 
 export async function parseSyllabus(syllabusText: string, careerGoal: string): Promise<string[]> {
@@ -10,6 +11,7 @@ export async function parseSyllabus(syllabusText: string, careerGoal: string): P
 	const { text } = await withAiUsage({ scope: "parse-syllabus", tier: "standard" }, () =>
 		generateText({
 			model: getModel("standard"),
+			abortSignal: aiTimeoutSignal(),
 			maxOutputTokens: 2000,
 			prompt: `Jesteś ekspertem od analizy programów studiów i wymagań rynku pracy w Polsce.
 

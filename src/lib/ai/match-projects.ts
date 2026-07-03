@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { eq } from "drizzle-orm";
 import { getModel } from "@/lib/ai/model";
+import { aiTimeoutSignal } from "@/lib/ai/timeout";
 import { withAiUsage } from "@/lib/ai/usage";
 import { db } from "@/lib/db";
 import { competencies, gaps, projects, students } from "@/lib/db/schema";
@@ -93,6 +94,7 @@ export async function matchProjects(
 		() =>
 			generateText({
 				model: getModel("fast"),
+				abortSignal: aiTimeoutSignal(),
 				maxOutputTokens: 2000,
 				prompt: `Jesteś matchmakerem projektów edukacyjnych. Student chce zostać "${student.careerGoal}" (semestr ${student.semester}).
 

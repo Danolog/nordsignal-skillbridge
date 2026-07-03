@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { getModel } from "@/lib/ai/model";
+import { aiTimeoutSignal } from "@/lib/ai/timeout";
 import { withAiUsage } from "@/lib/ai/usage";
 
 export async function generateFacultySuggestions(
@@ -11,6 +12,7 @@ export async function generateFacultySuggestions(
 		() =>
 			generateText({
 				model: getModel("standard"),
+				abortSignal: aiTimeoutSignal(),
 				maxOutputTokens: 600,
 				prompt: `Jesteś ekspertem ds. programów nauczania. Masz dane z ${studentCount} studentów uczelni.
 

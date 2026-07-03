@@ -2,6 +2,7 @@ import { generateObject, type LanguageModel, NoObjectGeneratedError, streamText 
 import { z } from "zod";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { aiTimeoutSignal } from "@/lib/ai/timeout";
 import { streamUsageTracker, withAiUsage } from "@/lib/ai/usage";
 import { entryCareerPaths, isEntryCareerGoal, matchCareerGoal } from "@/lib/db/data/career-paths";
 import { extractValidationIssues, logError } from "@/lib/log";
@@ -168,6 +169,7 @@ Odpowiedz jedną wiadomością Pomocnika — pytanie pogłębiające albo krótk
 	const track = streamUsageTracker({ scope: "career-helper.turn", tier: "standard" });
 	return streamText({
 		model,
+		abortSignal: aiTimeoutSignal(),
 		maxOutputTokens: 1000,
 		system: TURN_SYSTEM_PROMPT,
 		prompt,
@@ -400,6 +402,7 @@ async function judgeSummary(summary: CareerSummary, model: LanguageModel): Promi
 		withAiUsage({ scope: "career-helper.summary.judge", tier: "premium" }, () =>
 			generateObject({
 				model,
+				abortSignal: aiTimeoutSignal(),
 				schema: JudgeSchema,
 				maxOutputTokens: 200,
 				system: JUDGE_SYSTEM_PROMPT,
@@ -451,6 +454,7 @@ export async function generateSummary(args: GenerateSummaryArgs): Promise<Summar
 					withAiUsage({ scope: "career-helper.summary.generate", tier: "premium" }, () =>
 						generateObject({
 							model: summaryModel,
+							abortSignal: aiTimeoutSignal(),
 							schema: CareerSummarySchema,
 							// Cap długości wyjścia: dół-of-thumb summaryText(2000) + 3×(label 120
 							// + why 800) + narzut JSON ≈ 3.5 tys. znaków. Bez tego limitu AI SDK

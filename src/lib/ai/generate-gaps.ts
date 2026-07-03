@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { aiTimeoutSignal } from "@/lib/ai/timeout";
 import { withAiUsage } from "@/lib/ai/usage";
 import { db } from "@/lib/db";
 import { competencies, gaps, jobMarketData, passports } from "@/lib/db/schema";
@@ -53,6 +54,7 @@ export async function generateGaps(
 			() =>
 				generateObject({
 					model: getModel("standard"),
+					abortSignal: aiTimeoutSignal(),
 					schema: GapResultSchema,
 					maxOutputTokens: 6000,
 					prompt: `Jesteś ekspertem od rynku pracy IT w Polsce.

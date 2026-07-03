@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { aiTimeoutSignal } from "@/lib/ai/timeout";
 import { withAiUsage } from "@/lib/ai/usage";
 
 export async function generateWhyImportant(
@@ -15,6 +16,7 @@ export async function generateWhyImportant(
 	const { text } = await withAiUsage({ scope: "generate-why", tier: "standard" }, () =>
 		generateText({
 			model: getModel("standard"),
+			abortSignal: aiTimeoutSignal(),
 			maxOutputTokens: 400,
 			prompt: `Jesteś doradcą kariery dla studentów w Polsce.
 
