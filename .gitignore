@@ -70,3 +70,7 @@ scratchpad/
 .env*
 !.env*.example
 .vercel
+
+# Lokalna konfiguracja uprawnień Claude Code (allowlista komend, w tym prod) —
+# NIGDY do repo: prod-access nie może być współdzielony z zespołem przez git.
+.claude/settings.local.json
