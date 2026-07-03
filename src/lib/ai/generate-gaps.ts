@@ -77,58 +77,69 @@ Zasady:
 				}),
 		);
 
-		// Save gaps (idempotent — wipe existing first so re-running on profile edit doesn't duplicate)
-		await db.delete(gaps).where(eq(gaps.studentId, studentId));
-		if (result.gaps.length > 0) {
-			await db.insert(gaps).values(
-				result.gaps.map((g) => ({
-					studentId,
-					tenantId,
-					competencyName: g.name,
-					priority: g.priority,
-					marketPercentage: g.marketPercentage,
-					estimatedHours: g.estimatedHours,
-				})),
-			);
-		}
+		// 0.3 (HIGH): wszystkie mutacje w JEDNEJ transakcji. Wcześniej delete→insert→
+		// update statusów→upsert paszportu leciały sekwencyjnie bez atomowości —
+		// przerwanie w środku zostawiało niespójny stan (luki skasowane ale nie
+		// wstawione = pulpit z 0 luk; statusy częściowo zaktualizowane; pokrycie
+		// nieodświeżone względem zapisanych luk). Atomowo: albo pełny nowy komplet
+		// (luki + statusy + pokrycie), albo stary stan bez zmian. Wywołanie LLM
+		// zostaje POZA transakcją (nie trzymamy jej otwartej przez 15–30 s generacji).
+		// Wzorzec spójny z persistMarketGaps (src/lib/onboarding/market-gaps.ts).
+		await db.transaction(async (tx) => {
+			// Save gaps (idempotent — wipe existing first so re-running on profile edit doesn't duplicate)
+			await tx.delete(gaps).where(eq(gaps.studentId, studentId));
+			if (result.gaps.length > 0) {
+				await tx.insert(gaps).values(
+					result.gaps.map((g) => ({
+						studentId,
+						tenantId,
+						competencyName: g.name,
+						priority: g.priority,
+						marketPercentage: g.marketPercentage,
+						estimatedHours: g.estimatedHours,
+					})),
+				);
+			}
 
-		// Update competency statuses
-		for (const update of result.competencyUpdates) {
-			await db
-				.update(competencies)
-				.set({
-					status: update.status,
-					marketPercentage: update.marketPercentage,
-				})
-				.where(and(eq(competencies.studentId, studentId), eq(competencies.name, update.name)));
-		}
+			// Update competency statuses
+			for (const update of result.competencyUpdates) {
+				await tx
+					.update(competencies)
+					.set({
+						status: update.status,
+						marketPercentage: update.marketPercentage,
+					})
+					.where(and(eq(competencies.studentId, studentId), eq(competencies.name, update.name)));
+			}
 
-		// Odśwież zapisane pokrycie rynkowe (passports.marketCoveragePercent).
-		// Wcześniej wartość była ZAMROŻONA (zapis tylko raz przy onboardingu) — publiczny
-		// paszport (bez sesji, src/app/passport/[id]/page.tsx) i metadane czytały starą
-		// liczbę nawet po regeneracji luk. Liczymy świeżo z tego samego źródła co reszta
-		// (calculateCoverage = ten sam wzór wszędzie: passport/page, api/passport,
-		// passport/[id]). Czytamy kompetencje PO aktualizacji statusów wyżej, żeby odbić
-		// stan właśnie zapisany. Idempotentne: dla istniejącego paszportu UPDATE, brak
-		// — INSERT z aktualnym pokryciem (np. gdy regeneracja poprzedza wizytę na /passport).
-		const freshComps = await db.query.competencies.findMany({
-			where: eq(competencies.studentId, studentId),
-			columns: { status: true },
+			// Odśwież zapisane pokrycie rynkowe (passports.marketCoveragePercent).
+			// Wcześniej wartość była ZAMROŻONA (zapis tylko raz przy onboardingu) — publiczny
+			// paszport (bez sesji, src/app/passport/[id]/page.tsx) i metadane czytały starą
+			// liczbę nawet po regeneracji luk. Liczymy świeżo z tego samego źródła co reszta
+			// (calculateCoverage = ten sam wzór wszędzie: passport/page, api/passport,
+			// passport/[id]). Czytamy kompetencje PO aktualizacji statusów wyżej (w tej samej
+			// transakcji widać już nowe statusy). Idempotentne: dla istniejącego paszportu
+			// UPDATE, brak — INSERT z aktualnym pokryciem (np. gdy regeneracja poprzedza wizytę
+			// na /passport).
+			const freshComps = await tx.query.competencies.findMany({
+				where: eq(competencies.studentId, studentId),
+				columns: { status: true },
+			});
+			const coverage = calculateCoverage(freshComps, result.gaps.length);
+
+			const existingPassport = await tx.query.passports.findFirst({
+				where: eq(passports.studentId, studentId),
+				columns: { id: true },
+			});
+			if (existingPassport) {
+				await tx
+					.update(passports)
+					.set({ marketCoveragePercent: coverage, updatedAt: new Date() })
+					.where(eq(passports.studentId, studentId));
+			} else {
+				await tx.insert(passports).values({ studentId, tenantId, marketCoveragePercent: coverage });
+			}
 		});
-		const coverage = calculateCoverage(freshComps, result.gaps.length);
-
-		const existingPassport = await db.query.passports.findFirst({
-			where: eq(passports.studentId, studentId),
-			columns: { id: true },
-		});
-		if (existingPassport) {
-			await db
-				.update(passports)
-				.set({ marketCoveragePercent: coverage, updatedAt: new Date() })
-				.where(eq(passports.studentId, studentId));
-		} else {
-			await db.insert(passports).values({ studentId, tenantId, marketCoveragePercent: coverage });
-		}
 	} catch (err) {
 		logError("generate-gaps", err, { studentId });
 		throw err;
