@@ -49,11 +49,19 @@ Wejście do Fazy 1/1E dopiero po zamknięciu HIGH/MEDIUM z audytu.
   `ai_usage_ledger` + wrapper `withAiUsage`/`streamUsageTracker`
   (src/lib/ai/usage.ts), raport `tools/report-ai-usage.ts`. Migracja 0020 na
   prodzie, RLS zweryfikowane.
-- **0.1** · Rate limiting fail-closed w produkcji (HIGH) — brak Upstash w prod →
-  twardy sygnał, nie success:true. `src/lib/rate-limit.ts` + boot-check.
-- **0.2a** · Remediacja duplikatów zgłoszeń (prekursor 0.2b) [CZERWONA LINIA gdy prod].
-- **0.2b** · Unikat (studentId, projectId) + onConflictDoUpdate (HIGH).
-- **0.3** · Transakcja w generate-gaps (HIGH).
+- **0.1 ✅ WYKONANE (2026-07-02, PR #102)** · Rate limiting fail-closed w produkcji
+  (HIGH) — brak Upstash w prod → twardy sygnał, nie success:true.
+  `src/lib/rate-limit.ts` (`assertRateLimitConfigured`) + boot-check
+  `src/instrumentation.ts`.
+- **0.2a ✅ WYKONANE (2026-07-02, PR #105)** · Remediacja duplikatów zgłoszeń
+  (prekursor 0.2b) — `tools/remediate-duplicate-submissions.ts` (dry-run/
+  --execute, ochrona dzieci przez przepięcie, wykrywanie konfliktów). Dry-run na
+  prodzie 2026-07-02: brak duplikatów.
+- **0.2b ✅ WYKONANE (2026-07-02, PR #107)** · Unikat (studentId, projectId) +
+  onConflictDoUpdate (HIGH). Migracja 0021 na prodzie (backup gałęzią Neona
+  `prod-backup-pre-0021-20260702-182815`), NULL-safe merge jsonb w submit +
+  brief. Kolejność: migracja PRZED merge (ON CONFLICT wymaga indeksu).
+- **0.3** · Transakcja w generate-gaps (HIGH). ← NASTĘPNY
 - **0.4** · matchProjects: kontrola własności + kontekst tenanta (MEDIUM, IDOR).
 - **0.5** · faculty/dashboard: rate-limit + cache sugestii LLM (MEDIUM, wallet).
 - **0.6** · Utwardzenie sanitizeForPrompt (MEDIUM, injection).
