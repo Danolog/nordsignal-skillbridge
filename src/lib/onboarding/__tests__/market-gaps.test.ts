@@ -13,14 +13,31 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// DB na granicy — deriveGaps jej nie używa (czysta), loadMarketCatalog tak.
+// DB na granicy — deriveGaps jej nie używa (czysta), loadMarketCatalog + persistMarketGaps tak.
+// Domknięcie 0.3: persistMarketGaps zapisuje luki + pokrycie paszportu w JEDNEJ
+// transakcji, więc mock musi mieć `transaction` przekazujący `tx` (na którym siedzą
+// spies mutacji). jobMarketData.findMany zostaje na db (loadMarketCatalog czyta je
+// PRZED transakcją, read-only); competencies/passports czytane przez tx (w transakcji).
 const findMany = vi.fn();
+const txMock = {
+	query: {
+		competencies: { findMany: vi.fn() },
+		passports: { findFirst: vi.fn() },
+	},
+	insert: vi.fn(() => ({ values: vi.fn() })),
+	update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
+	delete: vi.fn(() => ({ where: vi.fn() })),
+};
+const transaction = vi.fn(async (cb: (tx: typeof txMock) => Promise<unknown>) => cb(txMock));
 vi.mock("@/lib/db", () => ({
-	db: { query: { jobMarketData: { findMany: (...a: unknown[]) => findMany(...a) } } },
+	db: {
+		query: { jobMarketData: { findMany: (...a: unknown[]) => findMany(...a) } },
+		transaction: (cb: (tx: typeof txMock) => Promise<unknown>) => transaction(cb),
+	},
 }));
 
 import type { MarketCatalogItem } from "@/lib/onboarding/market-catalog";
-import { deriveGaps, loadMarketCatalog } from "@/lib/onboarding/market-gaps";
+import { deriveGaps, loadMarketCatalog, persistMarketGaps } from "@/lib/onboarding/market-gaps";
 
 function item(name: string, demand: number, category = "Język i framework"): MarketCatalogItem {
 	return { competencyName: name, demandPercentage: demand, category };
@@ -99,5 +116,68 @@ describe("loadMarketCatalog — katalog per ścieżka, sort malejąco wg popytu"
 	it("katalog pusty (brak danych rynku dla ścieżki) → []", async () => {
 		findMany.mockResolvedValue([]);
 		expect(await loadMarketCatalog("Nieistniejąca")).toEqual([]);
+	});
+});
+
+describe("persistMarketGaps — luki + pokrycie w JEDNEJ transakcji (domknięcie 0.3)", () => {
+	beforeEach(() => {
+		findMany.mockResolvedValue([
+			{ competencyName: "SQL", demandPercentage: 90, category: "Dane" },
+			{ competencyName: "Python", demandPercentage: 50, category: "Język" },
+		]);
+		// Odtwórz implementacje po vi.clearAllMocks() (czyści tylko calls, nie impl,
+		// ale test 3 nadpisuje insert — reset trzyma testy niezależnymi).
+		txMock.insert.mockReturnValue({ values: vi.fn() });
+		txMock.update.mockReturnValue({ set: vi.fn(() => ({ where: vi.fn() })) });
+		txMock.delete.mockReturnValue({ where: vi.fn() });
+		txMock.query.competencies.findMany.mockResolvedValue([{ status: "acquired" }] as never);
+		txMock.query.passports.findFirst.mockResolvedValue({ id: "p-1" } as never);
+	});
+
+	it("wszystkie zapisy + odczyt pokrycia idą przez tx (nie przez db) — atomowo", async () => {
+		await persistMarketGaps("student-1", "tenant-1", "Data Analyst", ["SQL"]);
+
+		expect(transaction).toHaveBeenCalledOnce();
+		expect(txMock.delete).toHaveBeenCalled(); // delete luk
+		expect(txMock.insert).toHaveBeenCalled(); // insert luki (Python)
+		// pokrycie i upsert paszportu czytane/pisane WEWNĄTRZ transakcji, nie po niej
+		expect(txMock.query.competencies.findMany).toHaveBeenCalled();
+		expect(txMock.query.passports.findFirst).toHaveBeenCalled();
+	});
+
+	it("upsert pokrycia paszportu wewnątrz tx — UPDATE gdy paszport istnieje", async () => {
+		txMock.query.passports.findFirst.mockResolvedValue({ id: "p-1" } as never);
+		const setSpy = vi.fn(() => ({ where: vi.fn() }));
+		txMock.update.mockReturnValue({ set: setSpy });
+
+		await persistMarketGaps("student-1", "tenant-1", "Data Analyst", ["SQL"]);
+
+		const passportUpdate = (setSpy.mock.calls as unknown[][]).find((call) => {
+			const arg = call[0] as Record<string, unknown>;
+			return "marketCoveragePercent" in arg;
+		});
+		expect(passportUpdate).toBeDefined();
+	});
+
+	it("brak paszportu → INSERT pokrycia wewnątrz tx", async () => {
+		txMock.query.passports.findFirst.mockResolvedValue(undefined as never);
+		const valuesSpy = vi.fn();
+		txMock.insert.mockReturnValue({ values: valuesSpy });
+
+		await persistMarketGaps("student-7", "tenant-1", "Data Analyst", ["SQL"]);
+
+		const passportInsert = (valuesSpy.mock.calls as unknown[][]).find((call) => {
+			const arg = call[0] as Record<string, unknown> | unknown[] | undefined;
+			return arg != null && !Array.isArray(arg) && "marketCoveragePercent" in arg;
+		});
+		expect(passportInsert).toBeDefined();
+		expect((passportInsert?.[0] as Record<string, unknown>).studentId).toBe("student-7");
+	});
+
+	it("błąd transakcji propaguje się (rollback — brak częściowego zapisu)", async () => {
+		transaction.mockRejectedValueOnce(new Error("deadlock detected"));
+		await expect(
+			persistMarketGaps("student-1", "tenant-1", "Data Analyst", ["SQL"]),
+		).rejects.toThrow("deadlock detected");
 	});
 });
