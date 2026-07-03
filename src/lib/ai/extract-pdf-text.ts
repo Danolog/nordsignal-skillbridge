@@ -23,6 +23,15 @@
  * Brak nowej zależności natywnej, brak binarki .node w bundlu funkcji.
  */
 
+/**
+ * 0.12 (DoS): twardy limit stron parsowanych z PDF. Route ogranicza rozmiar pliku
+ * (MAX_PDF_BYTES=10MB) i długość tekstu (MAX_TEXT), ale sama EKSTRAKCJA przetwarzała
+ * WSZYSTKIE strony — spreparowany PDF z tysiącami stron (kompaktny tekstowo) mógł zjeść
+ * CPU/pamięć na maxDuration. `getText({ first: N })` parsuje tylko pierwsze N stron
+ * (jeśli PDF ma mniej — całość). Sylabus mieści się w tym z zapasem.
+ */
+export const MAX_PDF_PAGES = 40;
+
 /** Błąd techniczny ekstrakcji (moduł/runtime/zniekształcony PDF) → 500 w route. */
 export class PdfExtractionError extends Error {
 	constructor(
@@ -176,7 +185,8 @@ export async function extractPdfText(buffer: Buffer): Promise<string> {
 			useWorkerFetch: false,
 			isEvalSupported: false,
 		});
-		const result = await parser.getText();
+		// 0.12: parsuj tylko pierwsze MAX_PDF_PAGES stron (obrona DoS — patrz stała).
+		const result = await parser.getText({ first: MAX_PDF_PAGES });
 		return result.text.trim();
 	} catch (err) {
 		throw new PdfExtractionError("Błąd odczytu tekstu z PDF", err);
