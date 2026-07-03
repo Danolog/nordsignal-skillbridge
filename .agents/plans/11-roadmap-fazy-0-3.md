@@ -61,24 +61,41 @@ Wejście do Fazy 1/1E dopiero po zamknięciu HIGH/MEDIUM z audytu.
   onConflictDoUpdate (HIGH). Migracja 0021 na prodzie (backup gałęzią Neona
   `prod-backup-pre-0021-20260702-182815`), NULL-safe merge jsonb w submit +
   brief. Kolejność: migracja PRZED merge (ON CONFLICT wymaga indeksu).
-- **0.3** · Transakcja w generate-gaps (HIGH). ← NASTĘPNY
-- **0.4** · matchProjects: kontrola własności + kontekst tenanta (MEDIUM, IDOR).
-- **0.5** · faculty/dashboard: rate-limit + cache sugestii LLM (MEDIUM, wallet).
-- **0.6** · Utwardzenie sanitizeForPrompt (MEDIUM, injection).
-- **0.7** · Zawężenie tokenu GitHub / weryfikacja repo publicznego (MEDIUM)
-  [CZERWONA LINIA — sekret prod].
-- **0.8** · Ujednolicenie walidacji outputu LLM + usunięcie review-submission.ts
-  (martwy kod; typ ReviewResult do przeniesienia).
-- **0.9** · Timeouty wywołań LLM (równolegle z 0.8).
-- **0.10** · Równoległe pobieranie blobów z GitHub (504) — równolegle.
-- **0.11** · Limit sesji Pomocnika per student (abuse) — równolegle.
-- **0.12** · Limit stron/pamięci PDF (DoS) — równolegle.
-- **0.13** · CSP → enforce, usunięcie unsafe-*.
-- **0.14** · Guard CONFIRM_PROD_DB w tools/run-sql-file.mjs i pozostałych
-  skryptach bez assertTestDb. Do PR-a dołączyć `tools/fix-drizzle-journal-0019.sql`
-  jako dokumentację incydentu.
-- **0.15** · Paczka LOW (jeden PR, osobne testy per pozycja).
-- **0.16** · Synchronizacja dokumentacji + deps-scan jako bramka blokująca.
+- **0.3 ✅ WYKONANE (2026-07-03, PR #110)** · Transakcja w generate-gaps (HIGH) —
+  wszystkie mutacje + odczyt pokrycia w jednej `db.transaction`, LLM poza tx.
+  Follow-up: to samo domknięte w `persistMarketGaps` (PR #111).
+- **0.4 ✅ WYKONANE (2026-07-03, PR #112)** · matchProjects IDOR — guard własności+tenanta
+  luki (obcy gapId → generyczne „Gap not found"). Marketplace globalny (projects bez tenantId).
+- **0.5 ✅ WYKONANE (2026-07-03, PR #113)** · faculty/dashboard: rate-limit per tenant
+  (aiLight) + cache sugestii LLM (in-memory TTL 10min, tylko udana generacja).
+- **0.6 ✅ WYKONANE (2026-07-03, PR #114)** · Utwardzenie sanitizeForPrompt — breakout
+  delimitera (`user_input`→`user input`), C1/U2028-29, zero-width/bidi.
+- **0.7 · CZĘŚCIOWO** [CZERWONA LINIA — sekret prod]:
+  - **0.7-kod ✅ WYKONANE (2026-07-03, PR #115)** · weryfikacja repo publicznego
+    (gate `meta.private` + krok 4 tylko gdy content.ok) — obrona confused-deputy.
+  - **0.7-sekret ⏳ DAREK (prod):** rotacja `GITHUB_TOKEN` na fine-grained public-read.
+- **0.8 ✅ WYKONANE (2026-07-03, PR #116)** · Usunięcie martwego review-submission.ts;
+  ReviewResult/ReviewSchema przeniesione do pipeline/types.ts. Walidacja LLM = SemanticOutputSchema.
+- **0.9 ✅ WYKONANE (2026-07-03, PR #117)** · Timeouty wywołań LLM — `abortSignal`
+  (45s) na wszystkich 11 wywołaniach + `src/lib/ai/timeout.ts`.
+- **0.10 ✅ WYKONANE (2026-07-03, PR #118)** · Równoległe pobieranie blobów (chunki
+  Promise.all, concurrency 6), identyczna semantyka pakowania.
+- **0.11 ✅ WYKONANE (2026-07-03, PR #119)** · Limit sesji Pomocnika `MAX_SESSIONS_PER_DAY=10`
+  w oknie 24h (check w tx przed zamknięciem aktywnej → 429).
+- **0.12 ✅ WYKONANE (2026-07-03, PR #120)** · Limit stron PDF `getText({ first: 40 })`
+  (tnie parsowanie, nie tylko output).
+- **0.13 ⏳ WSTRZYMANE — PREVIEW (Darek), PR #121 otwarty** · CSP enforce + drop unsafe-eval
+  (unsafe-inline zostaje). Runtime CSP niewykrywalny lokalnie → weryfikacja na Preview.
+  Follow-up: pełne usunięcie unsafe-inline = migracja na nonce w middleware.
+- **0.14 ✅ WYKONANE (2026-07-03, PR #122)** · Guard `assertTestDb` w run-sql-file (.mjs→.ts)
+  + testy guarda (był nietestowany). `tools/fix-drizzle-journal-0019.sql` już w repo.
+  Follow-up (Darek, prod-ops): guard dla k3-validate.ts (INSERT sondy do audit_log) i
+  activate-app-runtime.ts.
+- **0.15 ⏳ WYMAGA LISTY LOW (Darek)** · Paczka LOW — pozycje z oryginalnego audytu 2026-07,
+  brak wyliczonej listy w repo.
+- **0.16 ✅ WYKONANE (2026-07-03)** · Synchronizacja dokumentacji (ten wpis) + deps-scan
+  jako bramka blokująca: job `deps-scan` w `.github/workflows/pr.yml` (`pnpm deps:scan` =
+  `pnpm audit --audit-level high`) już blokuje PR na high/critical; secret-scan (gitleaks) też.
 
 ---
 

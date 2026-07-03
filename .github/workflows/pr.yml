@@ -164,7 +164,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Blokuje na podatnościach high/critical; moderate/low raportowane,
       # nie wywalają PR-u (szum na Becie). Dependabot pilnuje reszty.
-      - run: pnpm audit --audit-level high
+      # Skrypt deps:scan = jedno źródło progu (parytet CI ↔ lokalne `pnpm deps:scan`).
+      - run: pnpm deps:scan
 
   # ─────────────────────────────────────────────────────────────────────────
   # e2e-llm — Playwright, sciezka krytyczna #1 (rejestracja -> onboarding ->
