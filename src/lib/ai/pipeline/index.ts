@@ -160,7 +160,11 @@ export async function runReviewPipeline(args: {
 	allFlags.push(...semantic.flags);
 
 	// KROK 4 — cheat-risk z faktów (commity) + agregacja deterministyczna.
-	const coords = parsedRepo ? repoCoordsFromUrl(parsedRepo.url) : null;
+	// 0.7 (confused-deputy): coords TYLKO gdy krok 1 pobrał treść (content.ok). Gdy krok 1
+	// odrzucił repo (prywatne/niedostępne/puste), nie sięgamy po commity — inaczej dla
+	// prywatnego repo z dostępem tokenu wyciekłyby zagregowane metadane (commitCount/
+	// authorCount/timespan) do cheatSignals, mimo że treść słusznie odrzuciliśmy.
+	const coords = parsedRepo && content.ok ? repoCoordsFromUrl(parsedRepo.url) : null;
 	const cheat = await runCheatSignals(coords, semantic.data.cheatSignals);
 	allFlags.push(...cheat.flags);
 

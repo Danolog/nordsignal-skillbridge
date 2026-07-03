@@ -75,6 +75,18 @@ export async function fetchContent(repoUrl: URL): Promise<StepResult<FetchConten
 			message: "Repozytorium niedostępne (nie istnieje, prywatne lub błąd GitHub API).",
 		});
 	}
+	// 0.7 (CZERWONA LINIA — część kodowa): odrzuć repo prywatne PRZED pobraniem drzewa/blobów.
+	// Confused-deputy: gdyby nasz token GitHub miał dostęp do prywatnego repo (własnego lub
+	// organizacji), student mógłby podać jego URL i wyciągnąć prywatną treść do recenzji.
+	// Oceniamy wyłącznie repozytoria publiczne — nie pobieramy treści, dopóki tego nie
+	// potwierdzimy. (Rotacja tokenu na public-read to osobna, prod-owa część 0.7.)
+	if (meta.private === true) {
+		return emptyResult({
+			code: "empty_or_unreadable",
+			message:
+				"Repozytorium jest prywatne — oceniamy wyłącznie repozytoria publiczne. Ustaw repo jako publiczne i spróbuj ponownie.",
+		});
+	}
 	const defaultBranch = meta.default_branch?.trim() || "main";
 
 	const tree = await fetchRepoTree(coords, defaultBranch);

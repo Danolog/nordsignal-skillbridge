@@ -140,6 +140,28 @@ describe("runReviewPipeline — pełny potok (mock GitHub + model)", () => {
 		expect(r.flags.some((f) => f.code === "empty_or_unreadable")).toBe(true);
 	});
 
+	it("repo prywatne (krok 1 odrzuca) → ZERO pobrania treści i commitów (confused-deputy, 0.7)", async () => {
+		mockMeta.mockResolvedValue({ default_branch: "main", private: true });
+		mockGenerateText.mockResolvedValue({
+			text: modelOutput([{ id: "c0", score: 0 }]),
+		} as TextReturn);
+
+		const r = await runReviewPipeline({
+			repoUrl: "https://github.com/u/r",
+			notebookUrl: null,
+			rubricJson,
+			deliverableType: "code",
+		});
+
+		// meta sprawdzone, ale treść (drzewo/bloby) i commity NIE pobierane.
+		expect(mockMeta).toHaveBeenCalled();
+		expect(mockTree).not.toHaveBeenCalled();
+		expect(mockBlob).not.toHaveBeenCalled();
+		expect(mockCommits).not.toHaveBeenCalled();
+		expect(r.status).not.toBe("verified");
+		expect(r.flags.some((f) => f.code === "empty_or_unreadable")).toBe(true);
+	});
+
 	it("fail-closed: błąd parsowania modelu → needs_human_review, nie verified", async () => {
 		mockGenerateText.mockResolvedValue({ text: "nie-JSON" } as TextReturn);
 		const r = await runReviewPipeline({

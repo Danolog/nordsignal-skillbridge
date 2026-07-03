@@ -91,6 +91,10 @@ export type RepoMeta = {
 	pushed_at?: string;
 	default_branch?: string;
 	size?: number;
+	// 0.7: GitHub zwraca `private` w metadanych repo. Używane przez krok 1 do
+	// odrzucenia repozytoriów prywatnych PRZED pobraniem treści (confused-deputy —
+	// nasz token nie może czytać cudzych/prywatnych repo w imieniu studenta).
+	private?: boolean;
 };
 
 export type TreeEntry = {
