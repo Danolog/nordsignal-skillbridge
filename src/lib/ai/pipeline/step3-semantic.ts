@@ -27,6 +27,7 @@ import type {
 	StepResult,
 } from "@/lib/ai/pipeline/types";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { aiTimeoutSignal } from "@/lib/ai/timeout";
 import { withAiUsage } from "@/lib/ai/usage";
 
 const SemanticOutputSchema = z.object({
@@ -195,6 +196,7 @@ export async function runSemanticReview(args: {
 		const { text } = await withAiUsage({ scope: "pipeline.step3-semantic", tier: "standard" }, () =>
 			generateText({
 				model: getModel("standard"),
+				abortSignal: aiTimeoutSignal(),
 				maxOutputTokens: 5000,
 				system: SYSTEM_PROMPT,
 				prompt: userPrompt,

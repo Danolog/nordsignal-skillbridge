@@ -164,11 +164,17 @@ describe("generateGaps", () => {
 	it("passes schema and prompt with competencies and career goal", async () => {
 		await generateGaps("student-1", "tenant-1", ["Python", "SQL"], "Data Engineer");
 
-		const call = mockGenerateObject.mock.calls[0][0] as { schema?: unknown; prompt: string };
+		const call = mockGenerateObject.mock.calls[0][0] as {
+			schema?: unknown;
+			prompt: string;
+			abortSignal?: unknown;
+		};
 		expect(call.schema).toBeDefined();
 		expect(call.prompt).toContain("Python");
 		expect(call.prompt).toContain("SQL");
 		expect(call.prompt).toContain("Data Engineer");
+		// 0.9: timeout LLM wpięty (abortSignal).
+		expect(call.abortSignal).toBeInstanceOf(AbortSignal);
 	});
 
 	it("propagates AI SDK errors", async () => {

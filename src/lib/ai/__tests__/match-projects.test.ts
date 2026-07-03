@@ -125,6 +125,9 @@ describe("matchProjects", () => {
 		expect(results[0].projectId).toBe("proj-1");
 		expect(results[0].matchScore).toBe(85);
 		expect(results[0].reasoning).toBe("Idealny projekt do nauki Pandas");
+		// 0.9: timeout LLM wpięty (abortSignal) w wywołaniu generateText.
+		const call = mockGenerateText.mock.calls[0][0] as { abortSignal?: unknown };
+		expect(call.abortSignal).toBeInstanceOf(AbortSignal);
 	});
 
 	it("returns empty array when no projects exist", async () => {

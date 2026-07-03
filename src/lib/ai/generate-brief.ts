@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { extractJsonObject } from "@/lib/ai/extract-json";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
+import { aiTimeoutSignal } from "@/lib/ai/timeout";
 import { withAiUsage } from "@/lib/ai/usage";
 import { db } from "@/lib/db";
 import { competencies, projects, students } from "@/lib/db/schema";
@@ -75,6 +76,7 @@ export async function generateProjectBrief(
 		() =>
 			generateText({
 				model: getModel("standard"),
+				abortSignal: aiTimeoutSignal(),
 				maxOutputTokens: 3000,
 				prompt: `Jesteś mentorem projektów studenckich. Stwórz spersonalizowany brief projektu.
 
