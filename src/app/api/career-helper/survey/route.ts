@@ -1,6 +1,7 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, gte } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { MAX_SESSIONS_PER_DAY } from "@/lib/ai/career-helper";
 import { resolveOrProvisionStudent } from "@/lib/career-helper/session";
 import { careerHelperSessions } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
@@ -55,7 +56,23 @@ export async function POST(req: Request) {
 
 	try {
 		const { userId, studentId, tenantId } = studentAuth;
-		const sessionId = await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {
+		const result = await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {
+			// 0.11 (abuse): cap sesji na okno 24h. Sprawdzamy PRZED zamknięciem aktywnej —
+			// przekroczenie limitu nie niszczy trwającej sesji studenta (zwracamy 429).
+			const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+			const [recent] = await tx
+				.select({ c: count() })
+				.from(careerHelperSessions)
+				.where(
+					and(
+						eq(careerHelperSessions.studentId, studentId),
+						gte(careerHelperSessions.createdAt, cutoff),
+					),
+				);
+			if ((recent?.c ?? 0) >= MAX_SESSIONS_PER_DAY) {
+				return { capped: true as const };
+			}
+
 			// Cap: 1 aktywna sesja. Istniejąca in_progress → zamknij jako restarted.
 			const [active] = await tx
 				.select({ c: count() })
@@ -87,15 +104,23 @@ export async function POST(req: Request) {
 					answers: parsed.data.answers,
 				})
 				.returning({ id: careerHelperSessions.id });
-			return created?.id;
+			return { capped: false as const, sessionId: created?.id };
 		});
 
-		if (!sessionId) {
+		if (result.capped) {
+			return NextResponse.json(
+				{
+					error: `Limit sesji Pomocnika (${MAX_SESSIONS_PER_DAY}/dobę) osiągnięty. Spróbuj ponownie później.`,
+				},
+				{ status: 429 },
+			);
+		}
+		if (!result.sessionId) {
 			return NextResponse.json({ error: "Nie udało się utworzyć sesji." }, { status: 500 });
 		}
 		return NextResponse.json({
-			sessionId,
-			redirectTo: `/onboarding/step-3/chat?sessionId=${sessionId}`,
+			sessionId: result.sessionId,
+			redirectTo: `/onboarding/step-3/chat?sessionId=${result.sessionId}`,
 		});
 	} catch (err) {
 		logError("career-helper.survey", err, { studentId: studentAuth.studentId });
