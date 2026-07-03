@@ -8,32 +8,30 @@ vi.mock("@ai-sdk/anthropic", () => ({
 	anthropic: vi.fn(() => "mocked-model"),
 }));
 
+// 0.3 (HIGH): wszystkie mutacje idą teraz przez `tx` w db.transaction. Mock trzyma
+// spies mutacji na `txMock`, a db.transaction odpala callback z tym tx. Odczyt
+// kompetencji/paszportu do pokrycia (poprawka #1) też jest wewnątrz transakcji —
+// stąd competencies.findMany / passports.findFirst siedzą na tx, nie na db.
+const { txMock } = vi.hoisted(() => ({
+	txMock: {
+		query: {
+			competencies: { findMany: vi.fn() },
+			passports: { findFirst: vi.fn() },
+		},
+		insert: vi.fn(() => ({ values: vi.fn() })),
+		update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
+		delete: vi.fn(() => ({ where: vi.fn() })),
+	},
+}));
+
 vi.mock("@/lib/db", () => ({
 	db: {
 		query: {
 			jobMarketData: {
 				findMany: vi.fn(),
 			},
-			// Poprawka #1: generateGaps po aktualizacji statusów odświeża zapisane
-			// pokrycie — czyta kompetencje i sprawdza istnienie paszportu.
-			competencies: {
-				findMany: vi.fn(),
-			},
-			passports: {
-				findFirst: vi.fn(),
-			},
 		},
-		insert: vi.fn(() => ({
-			values: vi.fn(),
-		})),
-		update: vi.fn(() => ({
-			set: vi.fn(() => ({
-				where: vi.fn(),
-			})),
-		})),
-		delete: vi.fn(() => ({
-			where: vi.fn(),
-		})),
+		transaction: vi.fn(async (cb: (tx: typeof txMock) => Promise<unknown>) => cb(txMock)),
 	},
 }));
 
@@ -43,11 +41,12 @@ import { generateGaps } from "../generate-gaps";
 
 const mockGenerateObject = vi.mocked(generateObject);
 const mockFindMany = vi.mocked(db.query.jobMarketData.findMany);
-const mockCompetenciesFindMany = vi.mocked(db.query.competencies.findMany);
-const mockPassportsFindFirst = vi.mocked(db.query.passports.findFirst);
-const mockInsert = vi.mocked(db.insert);
-const mockUpdate = vi.mocked(db.update);
-const mockDelete = vi.mocked(db.delete);
+const mockTransaction = vi.mocked(db.transaction);
+const mockCompetenciesFindMany = txMock.query.competencies.findMany;
+const mockPassportsFindFirst = txMock.query.passports.findFirst;
+const mockInsert = txMock.insert;
+const mockUpdate = txMock.update;
+const mockDelete = txMock.delete;
 
 const validResponse = {
 	gaps: [
@@ -176,6 +175,26 @@ describe("generateGaps", () => {
 		mockGenerateObject.mockRejectedValue(new Error("rate limit"));
 		await expect(generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst")).rejects.toThrow(
 			"rate limit",
+		);
+	});
+
+	it("wraps all writes in a single transaction — atomic, no partial state (0.3)", async () => {
+		await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
+
+		// Cała sekwencja mutacji (delete+insert luk, update statusów, upsert paszportu)
+		// przechodzi przez tx z db.transaction, nie bezpośrednio przez db — przerwanie
+		// w środku rolluje wszystko, zamiast zostawić pulpit z 0 luk lub stare pokrycie.
+		expect(mockTransaction).toHaveBeenCalledOnce();
+		expect(mockDelete).toHaveBeenCalled();
+		expect(mockInsert).toHaveBeenCalled();
+		expect(mockUpdate).toHaveBeenCalled();
+	});
+
+	it("does no writes when the transaction fails (rolls back — propagates error)", async () => {
+		mockTransaction.mockRejectedValueOnce(new Error("deadlock detected"));
+
+		await expect(generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst")).rejects.toThrow(
+			"deadlock detected",
 		);
 	});
 });
