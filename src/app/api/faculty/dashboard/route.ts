@@ -1,11 +1,17 @@
 import { count, desc, eq, sql } from "drizzle-orm";
 import { headers as nextHeaders } from "next/headers";
 import { NextResponse } from "next/server";
+import {
+	buildSuggestionsCacheKey,
+	getCachedSuggestions,
+	setCachedSuggestions,
+} from "@/lib/ai/faculty-suggestions-cache";
 import { generateFacultySuggestions } from "@/lib/ai/generate-faculty-suggestions";
 import { recordAudit } from "@/lib/audit";
 import { gaps, jobMarketData, students } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { checkFacultyAuth } from "@/lib/faculty-auth";
+import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
 export const maxDuration = 30;
 
@@ -14,6 +20,12 @@ export async function GET() {
 	if (!facultyAuth) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
+
+	// 0.5 (wallet): rate-limit per tenant PRZED agregacją i generacją AI. Auth faculty
+	// to hasło współdzielone per kampus, więc kluczem jest tenant (jeden budżet na
+	// kampus). Fail-closed w prod bez Upstash (assertRateLimitConfigured, 0.1).
+	const rl = await applyRateLimit(rateLimiters.aiLight, `faculty:${facultyAuth.tenantId}`);
+	if (!rl.success) return rateLimitResponse(rl.reset);
 
 	const h = await nextHeaders();
 	await recordAudit({
@@ -121,18 +133,26 @@ export async function GET() {
 	}
 	const { studentCount, heatmapData, topMissingWithGoals } = data;
 
-	// AI suggestions (poza transakcją — nie trzymamy połączenia na czas wywołania modelu)
-	let aiSuggestions: string[] = [];
-	try {
-		aiSuggestions = await generateFacultySuggestions(
-			topMissingWithGoals.map((m) => ({
-				name: m.name,
-				requiredByPercent: m.requiredByPercent,
-			})),
-			studentCount,
-		);
-	} catch {
-		aiSuggestions = ["Nie udało się wygenerować sugestii AI. Spróbuj odświeżyć stronę."];
+	// AI suggestions (poza transakcją — nie trzymamy połączenia na czas wywołania modelu).
+	// 0.5: cache per (tenant + sygnatura wejścia). Powtórne ładowania w oknie TTL nie
+	// wołają modelu. Cache'ujemy TYLKO udaną generację — fallback się nie utrwala, więc
+	// następne ładowanie ponawia próbę.
+	const suggestionInput = topMissingWithGoals.map((m) => ({
+		name: m.name,
+		requiredByPercent: m.requiredByPercent,
+	}));
+	const cacheKey = buildSuggestionsCacheKey(facultyAuth.tenantId, {
+		studentCount,
+		items: suggestionInput,
+	});
+	let aiSuggestions = getCachedSuggestions(cacheKey);
+	if (!aiSuggestions) {
+		try {
+			aiSuggestions = await generateFacultySuggestions(suggestionInput, studentCount);
+			setCachedSuggestions(cacheKey, aiSuggestions);
+		} catch {
+			aiSuggestions = ["Nie udało się wygenerować sugestii AI. Spróbuj odświeżyć stronę."];
+		}
 	}
 
 	return NextResponse.json({
