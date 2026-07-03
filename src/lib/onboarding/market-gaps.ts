@@ -81,9 +81,12 @@ export async function persistMarketGaps(
 		const derived = deriveGaps(catalog, selectedNames);
 
 		// Idempotencja: wymaż istniejące luki studenta przed wstawieniem świeżych.
-		// Transakcyjnie (G) — przy zmianie kierunku DELETE kasuje realne stare luki;
-		// przerwanie między DELETE a INSERT zostawiłoby pulpit z 0 luk. Atomowo: albo
-		// nowy komplet, albo stary stan bez zmian.
+		// Transakcyjnie (G / domknięcie 0.3) — przy zmianie kierunku DELETE kasuje realne
+		// stare luki; przerwanie między DELETE a INSERT zostawiłoby pulpit z 0 luk. Cały
+		// zapis (luki + upsert pokrycia paszportu) w JEDNEJ transakcji: przerwanie po
+		// INSERT luk, a przed zapisem pokrycia, zostawiłoby paszport z pokryciem
+		// niespójnym względem właśnie zapisanych luk. Atomowo: albo nowy komplet
+		// (luki + pokrycie), albo stary stan bez zmian. Bliźniacze z generateGaps (0.3).
 		await db.transaction(async (tx) => {
 			await tx.delete(gaps).where(eq(gaps.studentId, studentId));
 			if (derived.length > 0) {
@@ -98,28 +101,29 @@ export async function persistMarketGaps(
 					})),
 				);
 			}
-		});
 
-		// Pokrycie z tego samego źródła co reszta (calculateCoverage): statusy zapisanych
-		// kompetencji (acquired/in_progress) + liczba luk jako mianownik.
-		const freshComps = await db.query.competencies.findMany({
-			where: eq(competencies.studentId, studentId),
-			columns: { status: true },
-		});
-		const coverage = calculateCoverage(freshComps, derived.length);
+			// Pokrycie z tego samego źródła co reszta (calculateCoverage): statusy zapisanych
+			// kompetencji (acquired/in_progress) + liczba luk jako mianownik. Odczyt przez tx —
+			// widzi luki właśnie zapisane w tej transakcji, spójnie z upsertem paszportu niżej.
+			const freshComps = await tx.query.competencies.findMany({
+				where: eq(competencies.studentId, studentId),
+				columns: { status: true },
+			});
+			const coverage = calculateCoverage(freshComps, derived.length);
 
-		const existingPassport = await db.query.passports.findFirst({
-			where: eq(passports.studentId, studentId),
-			columns: { id: true },
+			const existingPassport = await tx.query.passports.findFirst({
+				where: eq(passports.studentId, studentId),
+				columns: { id: true },
+			});
+			if (existingPassport) {
+				await tx
+					.update(passports)
+					.set({ marketCoveragePercent: coverage, updatedAt: new Date() })
+					.where(eq(passports.studentId, studentId));
+			} else {
+				await tx.insert(passports).values({ studentId, tenantId, marketCoveragePercent: coverage });
+			}
 		});
-		if (existingPassport) {
-			await db
-				.update(passports)
-				.set({ marketCoveragePercent: coverage, updatedAt: new Date() })
-				.where(eq(passports.studentId, studentId));
-		} else {
-			await db.insert(passports).values({ studentId, tenantId, marketCoveragePercent: coverage });
-		}
 	} catch (err) {
 		logError("persist-market-gaps", err, { studentId });
 		throw err;
