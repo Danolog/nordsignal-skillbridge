@@ -24,7 +24,15 @@ export async function matchProjects(
 	const gap = await db.query.gaps.findFirst({
 		where: eq(gaps.id, gapId),
 	});
-	if (!gap) throw new Error("Gap not found");
+	// 0.4 (IDOR, MEDIUM): luka musi należeć do TEGO studenta i tenanta. Bez tej kontroli
+	// zalogowany student mógł podać cudze gapId — funkcja pobierała lukę po samym id,
+	// wyciągała jej competencyName/priority/marketPercentage do promptu i zwracała matching
+	// na obcej luce (poziomy przeciek + eskalacja). Funkcja działa na owner-connection
+	// (RLS niewymuszane), więc kontrola własności musi być JAWNA tutaj. Generyczny komunikat
+	// „Gap not found" (jak dla nieistniejącej) — bez oracle istnienia cudzych luk.
+	if (!gap || gap.studentId !== studentId || gap.tenantId !== student.tenantId) {
+		throw new Error("Gap not found");
+	}
 
 	const studentComps = await db.query.competencies.findMany({
 		where: eq(competencies.studentId, studentId),

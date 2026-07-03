@@ -140,6 +140,27 @@ describe("matchProjects", () => {
 		await expect(matchProjects("unknown", "gap-1")).rejects.toThrow("Student not found");
 	});
 
+	it("throws Gap not found when gap belongs to another student (IDOR guard, 0.4)", async () => {
+		// Zalogowany student-1 podaje gapId luki należącej do student-2 — bez kontroli
+		// własności funkcja przeciekłaby cudzą lukę. Ten sam generyczny komunikat co dla
+		// nieistniejącej luki (brak oracle istnienia).
+		mockGaps.mockResolvedValue({ ...gap, studentId: "student-2" });
+
+		await expect(matchProjects("student-1", "gap-1")).rejects.toThrow("Gap not found");
+	});
+
+	it("throws Gap not found when gap belongs to another tenant (0.4)", async () => {
+		mockGaps.mockResolvedValue({ ...gap, tenantId: "tenant-999" });
+
+		await expect(matchProjects("student-1", "gap-1")).rejects.toThrow("Gap not found");
+	});
+
+	it("throws Gap not found when gap does not exist", async () => {
+		mockGaps.mockResolvedValue(undefined);
+
+		await expect(matchProjects("student-1", "missing-gap")).rejects.toThrow("Gap not found");
+	});
+
 	it("falls back to keyword scoring when LLM returns garbage", async () => {
 		mockProjects.mockResolvedValue([
 			{
