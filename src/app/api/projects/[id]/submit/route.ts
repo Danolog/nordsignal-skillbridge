@@ -16,7 +16,7 @@ export const maxDuration = 60;
 /**
  * §8 #1 Phase 2 / issue #19f (refactor sub-issue): odczyt/zapis
  * projectSubmissions przez withTenantContext({role: "student"}).
- * reviewSubmission (AI + cheat-detect) POZA tx. Audit log = owner db
+ * runReviewPipeline (AI + cheat-detect) POZA tx. Audit log = owner db
  * (audit_log nie ma RLS user-aware policy, server-only INSERT).
  *
  * Pre-fetch studentMeta + project (project = katalog publiczny, K-PUB) owner-side.

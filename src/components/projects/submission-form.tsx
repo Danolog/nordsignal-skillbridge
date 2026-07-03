@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { ReviewResult } from "@/lib/ai/review-submission";
+import type { ReviewResult } from "@/lib/ai/pipeline/types";
 
 interface SubmissionFormProps {
 	projectId: string;

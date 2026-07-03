@@ -9,7 +9,7 @@
  * niepewności).
  */
 
-import type { ReviewResult } from "@/lib/ai/review-submission";
+import { z } from "zod";
 
 /** Typ pracy (deliverable). Decyduje, co liczy się jako dowód i jak wygląda twarde sprawdzenie. */
 export type DeliverableType = "code" | "document" | "detection_rule" | "sql" | "mixed";
@@ -151,6 +151,44 @@ export type ContentMeta = {
 	filesSkipped: string[];
 	truncated: boolean;
 };
+
+/**
+ * Schemat oceny `review` zapisywanej w `aiReviewJson.review` — jedno źródło
+ * kształtu i walidacji (0.8: przeniesione z usuniętego review-submission.ts).
+ *
+ * WSTECZNA ZGODNOŚĆ L1–L3 (§4.3): pola istniejące od początku (`score`,
+ * `feedback`, `cheatRiskScore`, `criteriaScores[].criterion/score/comment`)
+ * zostają WYMAGANE — stare rekordy dalej się parsują. Pola dowodowe per
+ * kryterium (`status`/`evidence`/`evidencePath`/`evidenceLines`/`evidenceFound`/
+ * `justification`) są OPCJONALNE — dokłada je potok Fazy 1 (krok 3), a stare
+ * zgłoszenia bez nich front czyta jako „dowód niedostępny (ocena ze starego
+ * potoku)". Output LLM waliduje `SemanticOutputSchema` (step3); tu to kontrakt
+ * kształtu składanej deterministycznie recenzji.
+ */
+export const ReviewSchema = z.object({
+	score: z.number().min(0).max(100),
+	feedback: z.string().min(1).max(5000),
+	cheatRiskScore: z.number().min(0).max(1),
+	criteriaScores: z
+		.array(
+			z.object({
+				criterion: z.string().min(1).max(200),
+				score: z.number().min(0).max(100),
+				comment: z.string().max(2000),
+				// Pola dowodowe (krok 3, prompt v0.2) — opcjonalne dla wstecznej zgodności.
+				status: z.enum(["met", "partially_met", "not_met", "not_assessable"]).optional(),
+				evidence: z.string().max(2000).optional(),
+				evidencePath: z.string().max(500).optional(),
+				evidenceLines: z.string().max(50).optional(),
+				evidenceFound: z.boolean().optional(),
+				justification: z.string().max(2000).optional(),
+			}),
+		)
+		.min(1)
+		.max(20),
+});
+
+export type ReviewResult = z.infer<typeof ReviewSchema>;
 
 /**
  * Pełny dokument aiReviewJson po redesignie (§4.4/§5.3/§6.1).
