@@ -33,6 +33,15 @@ export const MAX_TURNS = 9;
 export const MAX_RESTARTS = 2;
 /** Cap długości wiadomości studenta (kontrakt /turn). */
 export const USER_MESSAGE_MAX_LEN = 4000;
+/**
+ * 0.11 (abuse): cap sesji Pomocnika tworzonych przez jednego studenta w oknie 24h.
+ * Cap „1 aktywna sesja" + MAX_RESTARTS chronią pojedynczą sesję, ale każdy POST /survey
+ * zamyka starą i tworzy NOWĄ (każda = do MAX_TURNS wywołań LLM). Bez limitu łącznego
+ * zdeterminowany użytkownik drenuje budżet modelu. Okno kroczące (nie lifetime) nie
+ * blokuje trwale legalnego re-onboardingu. Rate-limit (30/min) tnie burst; ten cap tnie
+ * wolumen dzienny.
+ */
+export const MAX_SESSIONS_PER_DAY = 10;
 
 // Modele warstw zbiera centralny helper `@/lib/ai/model` (getModel):
 //   - rozmowa (/turn)        → warstwa "standard" (prod: Sonnet 4.6, streaming),
