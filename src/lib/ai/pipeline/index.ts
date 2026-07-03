@@ -22,9 +22,9 @@ import type {
 	NormalizedRubricItem,
 	PipelineFlag,
 	PipelineResult,
+	ReviewResult,
 	SemanticData,
 } from "@/lib/ai/pipeline/types";
-import type { ReviewResult } from "@/lib/ai/review-submission";
 import { parseRepoUrl } from "@/lib/ai/sanitize";
 
 type RawRubricItem = { criterion?: unknown; weight?: unknown; description?: unknown };
