@@ -26,12 +26,22 @@
 
 import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
-import { extractPdfText, PdfExtractionError } from "@/lib/ai/extract-pdf-text";
+import { extractPdfText, MAX_PDF_PAGES, PdfExtractionError } from "@/lib/ai/extract-pdf-text";
 
 async function makePdf(text: string): Promise<Buffer> {
 	const jsPDF = (await import("jspdf")).default;
 	const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 	doc.text(doc.splitTextToSize(text, 180), 10, 10);
+	return Buffer.from(doc.output("arraybuffer"));
+}
+
+async function makeMultiPagePdf(pages: string[]): Promise<Buffer> {
+	const jsPDF = (await import("jspdf")).default;
+	const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+	pages.forEach((text, i) => {
+		if (i > 0) doc.addPage();
+		doc.text(text, 10, 10);
+	});
 	return Buffer.from(doc.output("arraybuffer"));
 }
 
@@ -67,6 +77,17 @@ describe("extractPdfText — canvas-free (shim DOMMatrix)", () => {
 		const translate = new DM([1, 0, 0, 1, 10, 10]);
 		const r = scale.multiply(translate);
 		expect([r.a, r.d, r.e, r.f]).toEqual([2, 3, 20, 30]);
+	});
+
+	it("parsuje tylko pierwsze MAX_PDF_PAGES stron — pomija resztę (obrona DoS, 0.12)", async () => {
+		// PDF z jedną stroną ponad limit; każda strona ma unikalny marker-token.
+		const pages = Array.from({ length: MAX_PDF_PAGES + 1 }, (_, i) => `PAGEMARKER${i + 1}`);
+		const buf = await makeMultiPagePdf(pages);
+		const text = await extractPdfText(buf);
+
+		expect(text).toContain("PAGEMARKER1"); // pierwsza strona parsowana
+		expect(text).toContain(`PAGEMARKER${MAX_PDF_PAGES}`); // ostatnia w limicie parsowana
+		expect(text).not.toContain(`PAGEMARKER${MAX_PDF_PAGES + 1}`); // strona ponad limit pominięta
 	});
 
 	it("uszkodzone bajty → PdfExtractionError (route mapuje na 500, nie maskuje jako skan)", async () => {
