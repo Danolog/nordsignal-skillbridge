@@ -108,11 +108,12 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 			);
 		}
 		if ("capped24h" in out) {
+			// 0.15/C3: Retry-After jak w survey (klient z retry-logiką nie ponawia agresywnie).
 			return NextResponse.json(
 				{
 					error: `Limit sesji Pomocnika (${MAX_SESSIONS_PER_DAY}/dobę) osiągnięty. Spróbuj ponownie później.`,
 				},
-				{ status: 429 },
+				{ status: 429, headers: { "retry-after": "3600" } },
 			);
 		}
 		if (!out.sessionId) {

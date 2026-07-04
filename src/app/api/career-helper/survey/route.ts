@@ -48,9 +48,10 @@ export async function POST(req: Request) {
 	}
 	const parsed = SurveySchema.safeParse(raw);
 	if (!parsed.success) {
+		// 0.15/C3: 400 jak w pozostałych trasach (turn/select-path/onboarding) — było 422.
 		return NextResponse.json(
 			{ error: "Invalid input", issues: parsed.error.flatten() },
-			{ status: 422 },
+			{ status: 400 },
 		);
 	}
 
@@ -108,11 +109,14 @@ export async function POST(req: Request) {
 		});
 
 		if (result.capped) {
+			// 0.15/C3: Retry-After (follow-up audytu 0.11) — bez niego klient z retry-logiką
+			// ponawia agresywnie. Konserwatywnie 1h (dokładny czas wyjścia najstarszej sesji
+			// z okna wymagałby dodatkowego odczytu; wystarcza wskazówka rzędu wielkości).
 			return NextResponse.json(
 				{
 					error: `Limit sesji Pomocnika (${MAX_SESSIONS_PER_DAY}/dobę) osiągnięty. Spróbuj ponownie później.`,
 				},
-				{ status: 429 },
+				{ status: 429, headers: { "retry-after": "3600" } },
 			);
 		}
 		if (!result.sessionId) {

@@ -39,7 +39,16 @@ if (!dbUrl) {
 assertTestDb(dbUrl, "DATABASE_URL");
 
 async function main(): Promise<void> {
-	const sqlText = readFileSync(file as string, "utf8");
+	// 0.15/E2 (follow-up audytu 0.14): odczyt pliku w try — brak/zły plik daje czysty
+	// komunikat i exit 1 zamiast unhandled rejection.
+	let sqlText: string;
+	try {
+		sqlText = readFileSync(file as string, "utf8");
+	} catch (e) {
+		console.error("BŁĄD odczytu pliku SQL:", (e as Error).message);
+		process.exitCode = 1;
+		return;
+	}
 	const client = new pg.Client({ connectionString: dbUrl });
 	try {
 		await client.connect();

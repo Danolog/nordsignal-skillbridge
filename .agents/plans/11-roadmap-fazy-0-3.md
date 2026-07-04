@@ -91,8 +91,12 @@ Wejście do Fazy 1/1E dopiero po zamknięciu HIGH/MEDIUM z audytu.
   + testy guarda (był nietestowany). `tools/fix-drizzle-journal-0019.sql` już w repo.
   Follow-up (Darek, prod-ops): guard dla k3-validate.ts (INSERT sondy do audit_log) i
   activate-app-runtime.ts.
-- **0.15 ⏳ WYMAGA LISTY LOW (Darek)** · Paczka LOW — pozycje z oryginalnego audytu 2026-07,
-  brak wyliczonej listy w repo.
+- **0.15 ✅ WYKONANE (2026-07-04)** · Paczka LOW — oryginalna lista audytu 2026-07 była
+  nieodtwarzalna (brak w repo/historii); zregenerowana świeżym przeglądem (3 soczewki:
+  bugi/martwy kod/walidacja), zakres zaakceptowany przez Darka. A1 (obejście capu sesji
+  przez /restart — podniesione ponad LOW) osobnym PR #124; paczka B1–B8/C1–C5/D1–D6/E1–E2
+  (21 pozycji: hardening API, drobne bugi, −1400 linii martwego kodu, follow-upy audytów)
+  jednym PR. Bonus: naprawa 2 zaszłych błędów tsc (czerwony typecheck na main).
 - **0.16 ✅ WYKONANE (2026-07-03)** · Synchronizacja dokumentacji (ten wpis) + deps-scan
   jako bramka blokująca: job `deps-scan` w `.github/workflows/pr.yml` (`pnpm deps:scan` =
   `pnpm audit --audit-level high`) już blokuje PR na high/critical; secret-scan (gitleaks) też.

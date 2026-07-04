@@ -5,7 +5,7 @@ import { type PassportData, PassportView } from "@/components/passport/passport-
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { competencies, gaps, passports, projectSubmissions, students } from "@/lib/db/schema";
-import { calculateCoverage } from "@/lib/passport-utils";
+import { calculateCoverage, mapSubmissionsToReceipts } from "@/lib/passport-utils";
 
 export default async function PassportPage() {
 	const session = await auth.api.getSession({ headers: await headers() });
@@ -59,17 +59,9 @@ export default async function PassportPage() {
 		with: { project: true },
 	});
 
-	const projectReceipts = verifiedSubmissions.map((s) => ({
-		projectTitle: s.project.title,
-		projectLevel: s.project.level,
-		score: s.score ?? 0,
-		verifiedAt: (s.submittedAt ?? s.createdAt).toISOString(),
-		repoUrl: s.repoUrl,
-		notebookUrl: s.notebookUrl,
-		feedback: (s.aiReviewJson as Record<string, unknown>)?.review
-			? ((s.aiReviewJson as Record<string, Record<string, unknown>>).review.feedback as string)
-			: null,
-	}));
+	// 0.15/D5: mapowanie z jednego źródła (passport-utils) — identyczny blok żył
+	// też w publicznym paszporcie.
+	const projectReceipts = mapSubmissionsToReceipts(verifiedSubmissions);
 
 	const passportData: PassportData = {
 		id: passport.id,

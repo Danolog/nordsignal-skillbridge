@@ -38,10 +38,22 @@ export function getCachedSuggestions(key: string): string[] | null {
 
 /** Zapisuje sugestie do cache z TTL. Wołane TYLKO dla udanej generacji (nie dla fallbacku). */
 export function setCachedSuggestions(key: string, value: string[]): void {
-	store.set(key, { value, expires: Date.now() + TTL_MS });
+	// 0.15/E1 (follow-up audytu 0.5): leniwa eksmisja usuwała tylko odpytywane klucze —
+	// wpisy o nieaktualnej sygnaturze (stary agregat) zostawały w mapie na zawsze.
+	// Zamiatamy przeterminowane przy zapisie (zapis = rzadki, po realnej generacji LLM).
+	const now = Date.now();
+	for (const [k, entry] of store) {
+		if (entry.expires <= now) store.delete(k);
+	}
+	store.set(key, { value, expires: now + TTL_MS });
 }
 
 /** Czyści cache — wyłącznie dla testów (izolacja między przypadkami). */
 export function clearSuggestionsCache(): void {
 	store.clear();
+}
+
+/** Rozmiar mapy — wyłącznie dla testów (własność pamięciowa eksmisji z E1). */
+export function suggestionsCacheSize(): number {
+	return store.size;
 }

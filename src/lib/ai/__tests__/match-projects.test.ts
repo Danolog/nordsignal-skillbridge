@@ -164,6 +164,80 @@ describe("matchProjects", () => {
 		await expect(matchProjects("student-1", "missing-gap")).rejects.toThrow("Gap not found");
 	});
 
+	it("falls back (nie 500) gdy JSON niepoprawny także po greedy matchu (0.15/C2)", async () => {
+		mockProjects.mockResolvedValue([
+			{
+				id: "proj-2",
+				slug: "demo",
+				title: "Demo",
+				description: "Opis",
+				level: "L1",
+				estimatedHours: 3,
+				sourceType: "open_data",
+				sourceUrl: "https://example.com",
+				partnerId: null,
+				exclusivity: false,
+				briefTemplate: null,
+				rubricJson: [],
+				status: "active",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				competencies: [
+					{ id: "pc3", projectId: "proj-2", competencyName: "Pandas", role: "required" },
+				],
+			},
+		] as unknown as Awaited<ReturnType<typeof mockProjects>>);
+
+		// Tekst zawiera nawiasy [] (greedy match COŚ znajdzie), ale to nie jest poprawny
+		// JSON — stary kod rzucał na DRUGIM parse (poza try) i omijał fallback → 500.
+		mockGenerateText.mockResolvedValue({
+			text: 'oto wynik: [{"projectId": "proj-2", "matchScore": 90,},]',
+		} as ReturnType<typeof generateText> extends Promise<infer T> ? T : never);
+
+		const results = await matchProjects("student-1", "gap-1");
+		expect(results).toHaveLength(1);
+		expect(results[0].projectId).toBe("proj-2");
+		expect(results[0].reasoning).toBe("Dopasowanie na podstawie kompetencji");
+	});
+
+	it("filtruje zhalucynowane projectId (spoza kandydatów) i clampuje score (0.15/C2)", async () => {
+		mockProjects.mockResolvedValue([
+			{
+				id: "proj-2",
+				slug: "demo",
+				title: "Demo",
+				description: "Opis",
+				level: "L1",
+				estimatedHours: 3,
+				sourceType: "open_data",
+				sourceUrl: "https://example.com",
+				partnerId: null,
+				exclusivity: false,
+				briefTemplate: null,
+				rubricJson: [],
+				status: "active",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				competencies: [
+					{ id: "pc3", projectId: "proj-2", competencyName: "Pandas", role: "required" },
+				],
+			},
+		] as unknown as Awaited<ReturnType<typeof mockProjects>>);
+
+		mockGenerateText.mockResolvedValue({
+			text: JSON.stringify([
+				{ projectId: "halucynacja-uuid", matchScore: 95, reasoning: "nie istnieje" },
+				{ projectId: "proj-2", matchScore: 150, reasoning: "ok" },
+			]),
+		} as ReturnType<typeof generateText> extends Promise<infer T> ? T : never);
+
+		const results = await matchProjects("student-1", "gap-1");
+		// Zhalucynowany id odfiltrowany; score sklampowany do 100.
+		expect(results).toHaveLength(1);
+		expect(results[0].projectId).toBe("proj-2");
+		expect(results[0].matchScore).toBe(100);
+	});
+
 	it("falls back to keyword scoring when LLM returns garbage", async () => {
 		mockProjects.mockResolvedValue([
 			{

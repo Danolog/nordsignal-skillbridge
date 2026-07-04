@@ -31,7 +31,13 @@ const PatchSchema = z.object({
 type RouteContext = { params: Promise<{ competencyId: string }> };
 
 export async function PATCH(req: Request, ctx: RouteContext) {
-	const { competencyId } = await ctx.params;
+	// 0.15/B3: uuid param — zły format leciał do UPDATE jako 22P02 → 500 „Save failed"
+	// + fałszywy alarm w logError (autosave z debounce potrafił generować to seriami).
+	const parsedParams = z.object({ competencyId: z.string().uuid() }).safeParse(await ctx.params);
+	if (!parsedParams.success) {
+		return NextResponse.json({ error: "Invalid competency id" }, { status: 400 });
+	}
+	const { competencyId } = parsedParams.data;
 
 	const session = await auth.api.getSession({ headers: await headers() });
 	if (!session) {

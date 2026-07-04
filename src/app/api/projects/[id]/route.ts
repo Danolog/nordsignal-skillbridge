@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { projectLearningResources, projectSourceLinks, projects } from "@/lib/db/schema";
@@ -22,11 +23,18 @@ import { projectLearningResources, projectSourceLinks, projects } from "@/lib/db
 // trasami dashboardu (wzorzec: /api/projects/[id]/brief, /submit). Trasa publiczna
 // (anonimowa) jest tu intencją tylko dla /api/passport/[id] (gated share_token).
 
+// 0.15/B3: projects.id to uuid — zły format dawał 22P02 z Postgresa → 500 zamiast 400.
+const ParamsSchema = z.object({ id: z.string().uuid() });
+
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
 	const session = await auth.api.getSession({ headers: await headers() });
 	if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-	const { id } = await params;
+	const parsedParams = ParamsSchema.safeParse(await params);
+	if (!parsedParams.success) {
+		return NextResponse.json({ error: "Invalid project id" }, { status: 400 });
+	}
+	const { id } = parsedParams.data;
 
 	// Odczyt projektu wraz z kompetencjami (istniejący kontrakt).
 	const project = await db.query.projects.findFirst({

@@ -37,11 +37,12 @@ const OnboardingSchema = z.object({
 	careerGoal: z.string().trim().min(1).max(200),
 	syllabusText: z.string().max(50_000).optional().default(""),
 	// UNIA dwóch kontraktów (kompatybilność wsteczna):
-	//  • NOWY (onboarding Partii 4): obiekty z poziomem — ścieżka DETERMINISTYCZNA
-	//    (status z samooceny levelToStatus, luki z katalogu rynku).
-	//  • LEGACY (profil-editor — edycja po onboardingu): tablica nazw — stare zachowanie
-	//    (status 'acquired', luki przez model generateGaps). Nietknięte, by nie zepsuć
-	//    edytora profilu poza zakresem Partii 4.
+	//  • NOWY (onboarding Partii 4 ORAZ profil-editor — oba żywe fronty wysyłają obiekty):
+	//    ścieżka DETERMINISTYCZNA (status z samooceny levelToStatus, luki z katalogu rynku).
+	//  • LEGACY (tablica nazw): dziś BEZ żywego wołacza w UI — zostaje wyłącznie dla
+	//    kompatybilności wstecznej (stary cached JS klienta); status 'acquired', luki
+	//    przez model generateGaps. Kandydat do usunięcia w osobnym kroku (razem z
+	//    generate-gaps.ts, którego jedynym konsumentem jest ta gałąź).
 	// Pusta tablica [] dopasowuje się do pierwszego wariantu → ścieżka nowa, 0 zaznaczeń (D5).
 	competencies: z.union([
 		z.array(SelectedCompetencySchema).max(100),

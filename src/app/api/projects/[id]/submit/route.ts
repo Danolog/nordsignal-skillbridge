@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { runReviewPipeline } from "@/lib/ai/pipeline";
 import type { DeliverableType } from "@/lib/ai/pipeline/types";
 import { parseNotebookUrl, parseRepoUrl } from "@/lib/ai/sanitize";
@@ -29,7 +30,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 	const rl = await applyRateLimit(rateLimiters.aiHeavy, `user:${session.user.id}`);
 	if (!rl.success) return rateLimitResponse(rl.reset);
 
-	const { id: projectId } = await params;
+	// 0.15/B3: uuid param — zły format dawał 22P02 (lookup projektu poza try/catch) → 500.
+	const parsedParams = z.object({ id: z.string().uuid() }).safeParse(await params);
+	if (!parsedParams.success) {
+		return NextResponse.json({ error: "Invalid project id" }, { status: 400 });
+	}
+	const projectId = parsedParams.data.id;
 	let body: unknown;
 	try {
 		body = await req.json();

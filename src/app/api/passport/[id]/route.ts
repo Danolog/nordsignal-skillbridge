@@ -51,22 +51,31 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 		}),
 	]);
 
-	return NextResponse.json({
-		id: passport.id,
-		student: {
-			name: studentUser?.name ?? "Student",
-			university: student.university,
-			fieldOfStudy: student.fieldOfStudy,
-			semester: student.semester,
-			careerGoal: student.careerGoal,
+	return NextResponse.json(
+		{
+			id: passport.id,
+			student: {
+				name: studentUser?.name ?? "Student",
+				university: student.university,
+				fieldOfStudy: student.fieldOfStudy,
+				semester: student.semester,
+				careerGoal: student.careerGoal,
+			},
+			marketCoveragePercent: passport.marketCoveragePercent,
+			competencies: studentCompetencies.map((c) => ({
+				name: c.name,
+				status: c.status,
+				marketPercentage: c.marketPercentage,
+			})),
+			gapCount: studentGaps.length,
+			generatedAt: passport.updatedAt.toISOString(),
 		},
-		marketCoveragePercent: passport.marketCoveragePercent,
-		competencies: studentCompetencies.map((c) => ({
-			name: c.name,
-			status: c.status,
-			marketPercentage: c.marketPercentage,
-		})),
-		gapCount: studentGaps.length,
-		generatedAt: passport.updatedAt.toISOString(),
-	});
+		{
+			// 0.15/B8: jedyna anonimowa trasa z PII (imię, uczelnia, cel) — bez jawnego
+			// no-store odpowiedź tokenowa mogła osiąść w cache'ach pośredniczących i być
+			// odtwarzalna PO rotacji tokenu (DELETE /share zeruje token właśnie po to,
+			// by wyciekły link przestał działać).
+			headers: { "Cache-Control": "private, no-store" },
+		},
+	);
 }
