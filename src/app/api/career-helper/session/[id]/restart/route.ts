@@ -1,7 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, gte } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { MAX_RESTARTS } from "@/lib/ai/career-helper";
+import { MAX_RESTARTS, MAX_SESSIONS_PER_DAY } from "@/lib/ai/career-helper";
 import { resolveStudent } from "@/lib/career-helper/session";
 import { careerHelperSessions } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
@@ -38,6 +38,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 			const [old] = await tx
 				.select({
 					id: careerHelperSessions.id,
+					status: careerHelperSessions.status,
 					answers: careerHelperSessions.answers,
 					restartCount: careerHelperSessions.restartCount,
 				})
@@ -49,7 +50,27 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 					),
 				);
 			if (!old) return { notFound: true as const };
+			// A1 (obejście 0.11): restart tylko z sesji AKTYWNEJ. Bez tego wielokrotny
+			// POST /restart na pierwotnym id (status już "restarted", restartCount=0)
+			// tworzył za każdym razem świeżą sesję — nieograniczenie, z pominięciem
+			// MAX_RESTARTS (licznik rośnie tylko w NOWYM wierszu) i capu dziennego.
+			if (old.status !== "in_progress") return { stale: true as const };
 			if (old.restartCount >= MAX_RESTARTS) return { capped: true as const };
+
+			// A1: parytet z survey (0.11) — restart też tworzy sesję, więc podlega temu
+			// samemu oknu 24h. Survey liczy wszystkie sesje (także z restartów), ale sam
+			// restart tego nie sprawdzał — tędy dało się przekroczyć wolumen dzienny.
+			const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+			const [recent] = await tx
+				.select({ c: count() })
+				.from(careerHelperSessions)
+				.where(
+					and(
+						eq(careerHelperSessions.studentId, studentId),
+						gte(careerHelperSessions.createdAt, cutoff),
+					),
+				);
+			if ((recent?.c ?? 0) >= MAX_SESSIONS_PER_DAY) return { capped24h: true as const };
 
 			await tx
 				.update(careerHelperSessions)
@@ -74,10 +95,24 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 
 		if ("notFound" in out)
 			return NextResponse.json({ error: "Session not found" }, { status: 404 });
+		if ("stale" in out) {
+			return NextResponse.json(
+				{ error: "Ta rozmowa została już zastąpiona nowszą sesją." },
+				{ status: 409 },
+			);
+		}
 		if ("capped" in out) {
 			return NextResponse.json(
 				{ error: "Osiągnięto limit restartów dla tej rozmowy." },
 				{ status: 409 },
+			);
+		}
+		if ("capped24h" in out) {
+			return NextResponse.json(
+				{
+					error: `Limit sesji Pomocnika (${MAX_SESSIONS_PER_DAY}/dobę) osiągnięty. Spróbuj ponownie później.`,
+				},
+				{ status: 429 },
 			);
 		}
 		if (!out.sessionId) {
