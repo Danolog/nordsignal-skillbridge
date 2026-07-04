@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveStudent } from "@/lib/career-helper/session";
@@ -59,7 +59,15 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 						eq(careerHelperTurns.studentId, studentId),
 					),
 				)
-				.orderBy(asc(careerHelperTurns.turnIndex), asc(careerHelperTurns.createdAt));
+				// 0.15/C4: para user+ai jednej tury wstawiana jednym INSERT-em → identyczny
+				// createdAt (defaultNow) — bez tiebreakera kolejność w parze była
+				// niedeterministyczna (odpowiedź AI mogła stanąć przed pytaniem studenta).
+				// Jawny CASE (nie kolejność enuma — krucha przy reorderze definicji).
+				.orderBy(
+					asc(careerHelperTurns.turnIndex),
+					asc(sql`CASE ${careerHelperTurns.role} WHEN 'user' THEN 0 ELSE 1 END`),
+					asc(careerHelperTurns.createdAt),
+				);
 
 			return { sessionRow, turns };
 		});

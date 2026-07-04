@@ -101,7 +101,11 @@ export async function GET() {
 				.select({
 					name: gaps.competencyName,
 					missingCount: count(),
-					avgMarketPct: sql<number>`ROUND(AVG(${gaps.marketPercentage}))`.as("avg_market_pct"),
+					// 0.15/C5: node-pg zwraca NUMERIC jako string — bez mapWith pole trafiało
+					// do JSON jako "72" zamiast 72 (koercja JS maskowała to w UI).
+					avgMarketPct: sql<number>`ROUND(AVG(${gaps.marketPercentage}))`
+						.mapWith(Number)
+						.as("avg_market_pct"),
 				})
 				.from(gaps)
 				.where(eq(gaps.tenantId, tid))

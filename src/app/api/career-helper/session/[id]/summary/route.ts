@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateSummary } from "@/lib/ai/career-helper";
@@ -64,7 +64,13 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 						eq(careerHelperTurns.studentId, studentId),
 					),
 				)
-				.orderBy(asc(careerHelperTurns.turnIndex), asc(careerHelperTurns.createdAt));
+				// 0.15/C4: tiebreaker roli w parze tej samej tury (identyczny createdAt z
+				// jednego INSERT-u) — transkrypt dla sędziego musi mieć pytanie przed odpowiedzią.
+				.orderBy(
+					asc(careerHelperTurns.turnIndex),
+					asc(sql`CASE ${careerHelperTurns.role} WHEN 'user' THEN 0 ELSE 1 END`),
+					asc(careerHelperTurns.createdAt),
+				);
 			return {
 				answers: sessionRow.answers,
 				history: history as { role: "ai" | "user"; content: string }[],

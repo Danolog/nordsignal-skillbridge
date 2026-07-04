@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { auditContextFromRequest, recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth/server";
 import { PASSPORT_SHARE_CONSENT_VERSION } from "@/lib/consent";
@@ -38,7 +39,11 @@ export async function POST(req: Request) {
 	// A1/RODO: klient deklaruje wersję zgody, którą wyświetlił. Rozjazd = stary
 	// klient pokazał nieaktualną treść → odrzucamy, niech przeładuje i zobaczy
 	// bieżący ekran zgody, zanim cokolwiek stanie się publiczne.
-	const body = (await req.json().catch(() => ({}))) as { consentVersion?: string };
+	// 0.15/B7: body przez Zod (jedyny POST z body w repo, który szedł rzutowaniem `as`).
+	const parsed = z
+		.object({ consentVersion: z.string().max(50) })
+		.safeParse(await req.json().catch(() => ({})));
+	const body: { consentVersion?: string } = parsed.success ? parsed.data : {};
 	if (body.consentVersion !== PASSPORT_SHARE_CONSENT_VERSION) {
 		return NextResponse.json(
 			{ error: "consent_version_mismatch", currentVersion: PASSPORT_SHARE_CONSENT_VERSION },

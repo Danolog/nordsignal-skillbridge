@@ -18,6 +18,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { CAREER_PATHS } from "@/lib/db/data/career-paths";
 import type {
 	GroupCatalog,
 	MarketCatalogItem,
@@ -25,18 +26,12 @@ import type {
 	SelectedCompetency,
 } from "@/lib/onboarding/market-catalog";
 
-// Cele kariery — lokalne dla edytora /profil (jak dawniej).
-const CAREER_GOALS = [
-	"Data Analyst",
-	"Data Scientist",
-	"Frontend Developer",
-	"Backend Developer",
-	"Full-stack Developer",
-	"UX/UI Designer",
-	"Project Manager",
-	"DevOps Engineer",
-	"Cybersecurity Analyst",
-];
+// 0.15/C1: cele kariery Z KATALOGU (career-paths.ts, jedno źródło prawdy — 23 ścieżki),
+// nie lokalna hardcodowana lista. Stara lista zdryfowała („Full-stack Developer" vs
+// katalogowe „Full-Stack Developer", „Cybersecurity Analyst" vs „Cybersecurity
+// Specialist") — wybór zdryfowanej opcji nie przechodził exact-matchowego
+// isRealCareerGoal → pusty katalog rynku i zablokowany zapis (canSave=false).
+const CAREER_GOALS = CAREER_PATHS.map((p) => p.careerGoal);
 
 interface InitialCompetency {
 	name: string;

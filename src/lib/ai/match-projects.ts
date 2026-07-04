@@ -120,18 +120,49 @@ Sortuj od najlepszego dopasowania. Reasoning po polsku.`,
 		.trim()
 		.replace(/^```(?:json)?\n?/, "")
 		.replace(/\n?```$/, "");
-	try {
-		const results = JSON.parse(cleaned) as MatchResult[];
-		return results.slice(0, limit);
-	} catch {
-		const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
-		if (jsonMatch) {
-			return (JSON.parse(jsonMatch[0]) as MatchResult[]).slice(0, limit);
-		}
-		return top20.slice(0, limit).map((s) => ({
+
+	// 0.15/C2: deterministyczny fallback keyword + sanityzacja outputu LLM.
+	// Wcześniej: (a) drugi JSON.parse (na TYM SAMYM niepoprawnym tekście z greedy
+	// matcha) był poza try — rzucał ponownie i wyjątek omijał gotowy fallback dwie
+	// linie niżej (500 w recommend); (b) projectId z modelu szedł do klienta bez
+	// filtra — zhalucynowany UUID dawał martwy link (404).
+	const keywordFallback = () =>
+		top20.slice(0, limit).map((s) => ({
 			projectId: s.project.id,
 			matchScore: s.keywordScore,
 			reasoning: "Dopasowanie na podstawie kompetencji",
 		}));
+
+	const knownIds = new Set(top20.map((s) => s.project.id));
+	const sanitizeResults = (parsed: unknown): MatchResult[] | null => {
+		if (!Array.isArray(parsed)) return null;
+		const valid = parsed
+			.filter(
+				(r): r is MatchResult =>
+					typeof (r as MatchResult)?.projectId === "string" &&
+					knownIds.has((r as MatchResult).projectId),
+			)
+			.map((r) => ({
+				projectId: r.projectId,
+				matchScore: Math.min(100, Math.max(0, Number(r.matchScore) || 0)),
+				reasoning: typeof r.reasoning === "string" ? r.reasoning : "",
+			}));
+		return valid.length > 0 ? valid : null;
+	};
+
+	try {
+		const out = sanitizeResults(JSON.parse(cleaned));
+		if (out) return out.slice(0, limit);
+	} catch {
+		const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+		if (jsonMatch) {
+			try {
+				const out = sanitizeResults(JSON.parse(jsonMatch[0]));
+				if (out) return out.slice(0, limit);
+			} catch {
+				// niepoprawny JSON także po greedy matchu → fallback niżej
+			}
+		}
 	}
+	return keywordFallback();
 }

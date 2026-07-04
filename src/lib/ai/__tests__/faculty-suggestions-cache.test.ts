@@ -4,6 +4,7 @@ import {
 	clearSuggestionsCache,
 	getCachedSuggestions,
 	setCachedSuggestions,
+	suggestionsCacheSize,
 } from "../faculty-suggestions-cache";
 
 beforeEach(() => {
@@ -33,6 +34,24 @@ describe("faculty-suggestions-cache", () => {
 		expect(getCachedSuggestions(cCount)).toBeNull();
 		expect(getCachedSuggestions(dItems)).toBeNull();
 		expect(getCachedSuggestions(a)).toEqual(["A"]);
+	});
+
+	it("set zamiata przeterminowane wpisy innych kluczy (0.15/E1 — brak wiecznego wzrostu)", () => {
+		vi.useFakeTimers();
+		try {
+			const stale = buildSuggestionsCacheKey("t1", input(1));
+			setCachedSuggestions(stale, ["stary"]);
+			vi.advanceTimersByTime(10 * 60_000 + 1); // stale przeterminowany
+			const fresh = buildSuggestionsCacheKey("t1", input(2));
+			setCachedSuggestions(fresh, ["nowy"]); // zapis zamiata przeterminowane
+			// Sonda rozmiaru — leniwa eksmisja (stary kod) zostawiłaby 2 wpisy w mapie;
+			// eksmisja przy set zostawia tylko świeży (własność pamięciowa, nie tylko get).
+			expect(suggestionsCacheSize()).toBe(1);
+			expect(getCachedSuggestions(stale)).toBeNull();
+			expect(getCachedSuggestions(fresh)).toEqual(["nowy"]);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("wpis wygasa po TTL (10 min) — leniwa eksmisja", () => {

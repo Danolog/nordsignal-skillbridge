@@ -12,9 +12,9 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { PASSPORT_SHARE_CONSENT_VERSION } from "@/lib/consent";
+import type { ProjectReceipt } from "@/lib/passport-utils";
 import { PassportDocument, type PassportMentor } from "./passport-document";
 import { PdfExportButton } from "./pdf-export";
-import type { ProjectReceipt } from "./project-receipts";
 
 export interface PassportData {
 	id: string;

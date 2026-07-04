@@ -31,7 +31,6 @@
 	"dependencies": {
 		"@ai-sdk/anthropic": "^3.0.58",
 		"@ai-sdk/react": "^3.0.118",
-		"@neondatabase/serverless": "^1.0.2",
 		"@rollup/rollup-linux-x64-gnu": "^4.58.0",
 		"@tailwindcss/oxide-linux-x64-gnu": "^4.2.0",
 		"@upstash/ratelimit": "^2.0.8",

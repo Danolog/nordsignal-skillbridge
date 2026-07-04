@@ -80,14 +80,16 @@ describe("generateGaps", () => {
 
 	it("deletes existing gaps before inserting new ones (idempotent re-run)", async () => {
 		const callOrder: string[] = [];
+		// Cast przez `never`: mocki tx mają uproszczony kształt ({where}/{values}), a cast
+		// na realne typy drizzle (typeof db.delete) przestał się typować po dryfie typów.
 		mockDelete.mockImplementation(((..._args: unknown[]) => {
 			callOrder.push("delete");
 			return { where: vi.fn() } as never;
-		}) as typeof db.delete);
+		}) as never);
 		mockInsert.mockImplementation(((..._args: unknown[]) => {
 			callOrder.push("insert");
 			return { values: vi.fn() } as never;
-		}) as typeof db.insert);
+		}) as never);
 
 		await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
 

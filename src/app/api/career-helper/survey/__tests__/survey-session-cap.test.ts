@@ -90,4 +90,22 @@ describe("POST /survey — cap sesji 24h (0.11)", () => {
 		const res = await POST(makeReq());
 		expect(res.status).toBe(429);
 	});
+
+	it("429 niesie Retry-After (0.15/C3 — klient z retry-logiką nie ponawia agresywnie)", async () => {
+		countQueue.push([{ c: MAX_SESSIONS_PER_DAY }]);
+		const res = await POST(makeReq());
+		expect(res.status).toBe(429);
+		expect(res.headers.get("retry-after")).toBe("3600");
+	});
+
+	it("niepoprawne body → 400 (0.15/C3 — ujednolicone z resztą tras, było 422)", async () => {
+		const res = await POST(
+			new Request("http://localhost/api/career-helper/survey", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ answers: { q1: "" } }),
+			}),
+		);
+		expect(res.status).toBe(400);
+	});
 });
