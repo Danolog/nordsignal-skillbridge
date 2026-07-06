@@ -32,7 +32,8 @@ const d = isLocalTestDb ? describe : describe.skip;
 const TENANT_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 const USER_ID = "submit-upsert-user-integ";
 const STUDENT_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-const PROJECT_ID = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+// RFC-poprawny UUID (v4/wariant 8) — route waliduje param przez z.string().uuid() (0.15/B3).
+const PROJECT_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 
 const getSessionMock = vi.fn();
 vi.mock("@/lib/auth/server", () => ({
