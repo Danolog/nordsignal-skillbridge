@@ -51,7 +51,8 @@ const d = isLocalTestDb ? describe : describe.skip;
 const TENANT_ID = "33333333-3333-3333-3333-333333333333";
 const USER_ID = "z3-user-brief-test";
 const STUDENT_ID = "44444444-4444-4444-4444-444444444444";
-const PROJECT_ID = "55555555-5555-5555-5555-555555555555";
+// RFC-poprawny UUID (v4/wariant 8) — route waliduje param przez z.string().uuid() (0.15/B3).
+const PROJECT_ID = "55555555-5555-4555-8555-555555555555";
 
 // ── Atrapy kontraktowe (poza naszą kontrolą) ────────────────────────────────────
 const getSessionMock = vi.fn();

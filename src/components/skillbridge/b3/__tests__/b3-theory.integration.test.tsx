@@ -25,8 +25,10 @@ const isLocalTestDb = /@(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//.test(DATABASE
 // Guard: bez lokalnej bazy testowej → describe pomijane (skip), nie failuje.
 const d = isLocalTestDb ? describe : describe.skip;
 
-const PROJ_WITH_THEORY = "11111111-1111-1111-1111-111111111111";
-const PROJ_NO_THEORY = "22222222-2222-2222-2222-222222222222";
+// UUID-y project-id MUSZĄ być RFC-poprawne (wersja 4, wariant 8): route waliduje
+// param przez z.string().uuid() (0.15/B3), które odrzuca placeholdery z samych cyfr.
+const PROJ_WITH_THEORY = "11111111-1111-4111-8111-111111111111";
+const PROJ_NO_THEORY = "22222222-2222-4222-8222-222222222222";
 
 // Teoria z wektorem XSS w środku — realna ścieżka musi go zsanityzować przy renderze.
 const THEORY_MD = [
