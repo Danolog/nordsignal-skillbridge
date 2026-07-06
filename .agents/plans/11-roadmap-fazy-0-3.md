@@ -107,6 +107,12 @@ Wejście do Fazy 1/1E dopiero po zamknięciu HIGH/MEDIUM z audytu.
 
 Wejście: Faza 0 zielona. Cel: receipt obronny wobec sceptycznego rekrutera.
 
+> **[NOWE — restart F1]** Pierwsza akcja przy wznowieniu Fazy 1: **AG.0 — harness
+> ewaluacyjny gap detection** (Blok AG, §4-bis). Bez zmierzonej jakości wykrywania
+> luk każda funkcja budowana wyżej (powiadomienia, doradca) wzmacnia błędy. AG.0
+> nie ma zależności — może ruszyć natychmiast, równolegle do 1.0/1.1. Dalej wg
+> ścieżki krytycznej: 1.0 → 1.1, a warstwa agentowa (AG.1+) po 1.1.
+
 - **1.0** · Migracja modelu kariery JSON→DB (P0, prerekwizyt 1E.0/D17/E19)
   [CZERWONA LINIA]. Test: model z DB identyczny bajtowo z JSON.
 - **1.1** · System feature flags + szkielet (P0). Flaga off = zero zmian.
@@ -245,6 +251,103 @@ osobny sign-off po przeglądzie metryk pilotażu.
 
 ---
 
+## 4-bis. **[NOWE]** BLOK AG — Warstwa agentowa (eval + proaktywny rynek + doradca z pamięcią)
+
+**Teza:** przejście od „analizy luk na żądanie" do **procesu, który sam nadąża za
+rynkiem** — cykliczne odświeżanie danych, deterministyczny recompute luk,
+powiadomienie „pojawiła się nowa luka", oraz doradca pamiętający studenta między
+sesjami. Fundamentem jest **eval**: gap detection musi mieć zmierzoną jakość,
+zanim cokolwiek zbudujemy na wierzchu.
+
+**Korekta platformowa (WAŻNE — unikanie ślepego zaułka):** „Routines" i „Dynamic
+Workflows" z warsztatów Anthropic to **narzędzia deweloperskie Claude Code, NIE
+runtime produktu** — nie da się ich wywołać z API route Next.js. Produktowe
+odpowiedniki, których używamy tutaj:
+- harmonogram „bez laptopa" → **Vercel Cron** (wpis `crons` w `vercel.json`);
+- fan-out + weryfikator → **Messages API (ai-sdk) + `Promise.all`** w API route;
+- pamięć doradcy → **Postgres** (źródło prawdy), nie Managed Agents memory store;
+- Managed Agents API świadomie **odłożone** (nowa zależność w becie, [CZERWONA
+  LINIA] usługi zewnętrznej) — wracamy do tematu, gdy pojawi się potrzeba długich
+  stanowych zadań przekraczających timeout funkcji Vercela.
+
+**Wejście:** Faza 0 zielona. AG.0 bez zależności (rusza od razu). AG.1+ po 1.1
+(flagi) — cała warstwa produktowa za flagą. AG.3–AG.6 używają istniejącego modelu
+`job_market_data` i ETL `tools/etl-justjoinit.ts` (reużycie). Strumień może biec
+równolegle do 1E i bloków B6–B8 (inne pliki).
+
+**Reużycie istniejącego kodu (nie budujemy od zera):** wzorzec potoku
+`src/lib/ai/pipeline/` (step1–5); agent-sędzia z Pomocnika (`career-helper.ts`,
+tryb Opus blokujący) jako wzorzec weryfikatora; ETL JustJoinIT; `ai_usage_ledger`
+(`withAiUsage`) do kosztu; backup-tabele (wzorzec `students_bak`/
+`job_market_data_bak` + ADR-009/010) do swapu.
+
+- **AG.0 · Harness ewaluacyjny gap detection (P0 — PIERWSZE, bramkuje jakość)**.
+  Golden set 10–20 przypadków: sylabus + ręcznie zweryfikowane oczekiwane luki.
+  Metryki programistyczne (precision/recall wykrytych luk vs golden) + LLM-as-judge
+  dla trafności opisu (wzorzec agenta-sędziego z Pomocnika). Uruchamiane jak
+  `pnpm test:evals` (poza zwykłym `test:run`, żeby koszt LLM nie szedł w każdym CI).
+  Nie jest twardą bramką merge'a, ALE każda zmiana promptu/modelu gap detection
+  MUSI raportować deltę metryki (dziedziczy Bramkę DoD pkt 4 — red-green). Dowód:
+  eval zielony na baseline; celowe pogorszenie promptu → mierzalny spadek metryki.
+
+- **AG.1 · Weryfikator luk w potoku (P0, za flagą)**. Drugi przebieg Messages API:
+  dla każdej wykrytej luki sprawdza, czy wynika z danych rynkowych
+  (`job_market_data`), zanim trafi do studenta. Wzorzec: agent-sędzia z Pomocnika
+  (blokująco). Fan-out weryfikacji równolegle (`Promise.all`), koszt w
+  `ai_usage_ledger`, budżet z 0.0. Dowód: luka bez pokrycia w rynku
+  odrzucona/oznaczona; golden set AG.0 pokazuje poprawę precision.
+
+- **AG.2 · Analiza sylabusa jako potok (P1)**. Refactor `generate-gaps` na etapy:
+  parse → fan-out po kompetencjach (`Promise.all`) → dopasowanie do rynku
+  (deterministyczne) → weryfikacja (AG.1) → synteza rekomendacji. Wzorzec kopiowany
+  z `src/lib/ai/pipeline/` — czysty Messages API, **nie** Dynamic Workflows. Dowód:
+  wynik ≥ baseline na golden set AG.0; parsowanie równoległe skraca latencję.
+
+- **AG.3 · Cron tygodniowego odświeżania rynku → STAGING (P1) [CZERWONA LINIA —
+  dane prod]**. Vercel Cron → API route → ETL JustJoinIT (reuse
+  `tools/etl-justjoinit.ts`) pisze do `job_market_data_staging`, liczy diff vs prod
+  (nowe/zmienione/zniknięte ścieżki i kompetencje), zapisuje raport diffu. ZERO
+  zapisu na prod. Powiadomienie do Darka z podsumowaniem. ⚠ Limit czasu funkcji
+  Vercela — jeśli ETL nie mieści się w timeout, podział na chunki (wzorzec 0.10).
+  Dowód: cron pisze do staging, diff poprawny na sztucznym delcie, prod nietknięty.
+
+- **AG.4 · Bramka akceptacji + swap na prod (P1) [CZERWONA LINIA]**. Widok/endpoint:
+  Darek ogląda diff z AG.3, akceptuje jednym tapnięciem (mobile-friendly) →
+  transakcyjny swap `staging`→prod z auto-backupem (wzorzec `job_market_data_bak` +
+  ADR-009/010), rollback udokumentowany. Odrzucenie zostawia prod bez zmian. To
+  świadomy kompromis z „bez laptopa": pobranie i recompute są automatyczne, sam
+  swap wymaga jednego tapnięcia (decyzja: szanujemy czerwoną linię). Dowód: E2E —
+  akceptacja robi swap w tx z backupem; odrzucenie = prod bez zmian.
+
+- **AG.5 · Deterministyczny recompute luk po swapie (P0 dla wartości)**. Po
+  zaakceptowanym swapie: dla każdego studenta przelicz pokrycie kompetencji vs nowy
+  rynek **operacjami na zbiorach (~0 LLM)**. Wykryj NOWE luki (były pokryte, teraz
+  nie). LLM woła się TYLKO na nową lukę, by wygenerować opis — raz, cache w DB
+  (wzorzec `generate-why`). Koszt w `ai_usage_ledger`. Dowód: recompute bez LLM dla
+  niezmienionych; LLM tylko dla nowej luki; drugi odczyt opisu z cache (0 wywołań).
+
+- **AG.6 · Powiadomienie „nowa luka" (P1, feature produktowy)**. Nowa luka z AG.5 →
+  powiadomienie „w Twoim profilu pojawiła się nowa luka — rynek zaczął wymagać X".
+  Wpięte w system powiadomień (styk z 1.18 rytm/accountability). Za flagą. RODO:
+  zgoda studenta na monitoring rynku (jak 1.17). Dowód: E2E — swap wprowadzający
+  nową kompetencję generuje powiadomienie u dotkniętego studenta, nie u innych.
+
+- **AG.7 · Pamięć doradcy między sesjami (P1) — rozszerza Pomocnika**. Trwała pamięć
+  per student w Postgresie (źródło prawdy): ukończone mikrokursy/projekty,
+  zainteresowania, historia luk. Doradca (`career-helper`/`session.ts`) czyta
+  kontekst z DB do promptu, zamiast zaczynać od zera. **Nie** Managed Agents memory
+  store (decyzja) — opcjonalnie Memory Tool później. Styk z tutorem 1.13 (wspólny
+  kontekst modułu). RLS wg DoD. Dowód: test — druga sesja doradcy zna stan z
+  pierwszej; kontekst zbudowany z DB, nie z modelu.
+
+**Bramka wyjścia AG:** gap detection ma zmierzoną jakość (AG.0) + weryfikator
+(AG.1); rynek odświeża się cyklicznie z akceptacją Darka (AG.3/AG.4) bez ręcznego
+ETL; nowe luki generują powiadomienia (AG.6); doradca pamięta studenta między
+sesjami (AG.7); koszt per student/tydzień w `ai_usage_ledger` mieści się w
+założeniach P&L.
+
+---
+
 ## 5. FAZA 2 — Horyzont 2 „Sygnał ma popyt"
 
 Wejście: Faza 1 zielona (dla E2.D dodatkowo: bramka 1E dla DS).
@@ -304,8 +407,23 @@ dojrzałych, receipty w ≥2 ATS.
 5. 1E (pilotaż DS) → E2.C → rollout curriculum na kolejne ścieżki. Nie odwrotnie.
 6. Wiarygodność F1 (1.5/1.9/1.16) przed E2.B; 1.17 rusza z pierwszą kohortą.
 7. D14 (L4/L5) po bramce 1E dla DS — L4 ma być szczytem drabiny, nie luźnym bytem.
+8. **Blok AG: AG.0 (eval) najpierw** — bez niego AG.1/AG.2 nie mają czym mierzyć
+   poprawy. Łańcuch rynku: **AG.3 → AG.4 → AG.5 → AG.6** (staging → akceptacja →
+   recompute → powiadomienie). AG.7 (pamięć doradcy) równolegle — inne pliki
+   (`career-helper`). AG zastępuje ad-hoc pomysł „auto-ingest bez laptopa"
+   kontrolowanym procesem staging+akceptacja (patrz ryzyko niżej).
 
 **Ryzyka nowe:**
+- **AG „bez laptopa" vs [CZERWONA LINIA] danych prod** — pełny auto-swap na prod
+  bez człowieka łamałby regułę sign-offu. Wybrany kompromis: pobranie (AG.3) i
+  recompute (AG.5) automatyczne, sam swap (AG.4) za jednym tapnięciem Darka. Nie
+  „zero laptopa", ale „zero ręcznego ETL".
+- **Timeout funkcji Vercela dla crona/ETL** — długi ingest może nie zmieścić się w
+  limicie funkcji; podział na chunki (wzorzec 0.10) albo kolejka. Zweryfikować
+  wcześnie w AG.3, bo determinuje architekturę odświeżania.
+- **Ślepy zaułek platformowy** — Routines/Dynamic Workflows to narzędzia dev, nie
+  runtime produktu (patrz Blok AG). Trzymać się Vercel Cron + Messages API +
+  Postgres; Managed Agents dopiero przy realnej potrzebie długich stanowych zadań.
 - **Treści to nie kod** — 1E.2/1E.5 skalują się liczbą godzin kuracji i QG,
   nie PR-ami. Time-boxować partie (jak DS partia 1), nie „całość naraz".
 - **Mastery gate vs dropout** — próg 90% bez tutora (1.13) i powtórek (1E.4)
