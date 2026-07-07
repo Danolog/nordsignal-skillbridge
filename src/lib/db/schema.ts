@@ -272,6 +272,40 @@ export const jobMarketData = pgTable(
 	(table) => [index("idx_job_market_career_goal").on(table.careerGoal)],
 );
 
+// 1.0 — Model kariery w DB (career-model.json → wersjonowany artefakt).
+//
+// Tabela GLOBALNA (jak job_market_data): bez tenant_id, read-only dla ról
+// aplikacyjnych (GRANT SELECT w migracji 0022 — wzorzec 0008). `content` to
+// DOKŁADNE bajty artefaktu ETL (test akceptacyjny 1.0: model z DB bajtowo
+// identyczny z JSON w repo) — świadomie text, nie jsonb (jsonb normalizuje
+// klucze/duplikaty i gubi formatowanie, więc łamie bajtową identyczność).
+// Wersjonowanie: nowy ingest = nowy wiersz + przełączenie is_active w jednej
+// transakcji; częściowy unikalny indeks pilnuje JEDNEGO aktywnego wiersza.
+// Normalizacja do encji (curriculum 1E.1, kuracja D17) = osobne zadania,
+// które FK-ują do wersji artefaktu, nie do blobów wewnątrz.
+export const careerModelVersions = pgTable(
+	"career_model_versions",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		/** Snapshot źródła z _meta (np. "2026-02") — identyfikacja wersji dla ludzi. */
+		snapshot: text("snapshot").notNull(),
+		/** Źródło z _meta (np. "JustJoinIT"). */
+		source: text("source").notNull(),
+		/** SHA-256 (hex) bajtów `content` — idempotencja ingestu i szybkie porównanie. */
+		checksum: text("checksum").notNull().unique(),
+		/** Dokładne bajty career-model.json (źródło prawdy po migracji z repo). */
+		content: text("content").notNull(),
+		isActive: boolean("is_active").notNull().default(false),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+	},
+	(table) => [
+		// Dokładnie jeden aktywny wiersz (indeks częściowy tylko po is_active = true).
+		uniqueIndex("uq_career_model_versions_active")
+			.on(table.isActive)
+			.where(sql`${table.isActive} = true`),
+	],
+);
+
 // Project Marketplace tables
 
 export const projects = pgTable(

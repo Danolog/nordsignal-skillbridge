@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { ensureCareerModelLoaded } from "@/lib/career-model/loader";
 import { db } from "@/lib/db";
 import { competencies, gaps, skillMaps, students } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
@@ -52,8 +53,10 @@ export async function generateSkillMap(studentId: string, tenantId: string): Pro
 		);
 
 		// C4: dokładamy kontekst grupy (nazwa, opis „po co", unionShare, kind) do węzłów
-		// PO zbudowaniu czystego grafu — złączenie przy renderze z career-model.json po
-		// careerGoal + nazwie (BEZ migracji bazy). buildGraph zostaje czysty.
+		// PO zbudowaniu czystego grafu — złączenie przy renderze z modelem kariery po
+		// careerGoal + nazwie. buildGraph zostaje czysty.
+		// 1.0: preload modelu (flaga off = no-op) — getCompetencyContext niżej czyta sync.
+		await ensureCareerModelLoaded();
 		const careerGoal = student?.careerGoal;
 		const nodes = careerGoal
 			? enrichNodesWithGroupContext(rawNodes, (name) => getCompetencyContext(careerGoal, name))
