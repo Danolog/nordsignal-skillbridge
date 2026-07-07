@@ -82,6 +82,14 @@ const K_PUB_TABLES = [
 	// seed/system (brak endpointu zapisu klienta), odczyt server-side (faculty
 	// login lookup). Migracja 0005.
 	"tenants",
+	// AG.3 — kuchnia operacyjna miesięcznego odświeżania rynku (migracja 0023).
+	// Obie tabele bez danych studenta/tenanta: staging to brudnopis przyszłego
+	// job_market_data, runy to prowenicja przebiegów (md5, diff, artefakty).
+	// ODWROTNIE niż pozostałe K-PUB: ZERO grantów dla app_student/app_faculty
+	// (dostęp wyłącznie owner przez POST /api/market-refresh/ingest za flagą
+	// + sekretem; strażnik grantów: test 13a niżej). Uzasadnienie: rls-matrix §4.
+	"job_market_data_staging",
+	"market_refresh_runs",
 ] as const;
 
 async function main() {
@@ -142,6 +150,24 @@ async function main() {
 					? `wszystkie ${allPublic.rowCount} tabel public pokryte (RLS lub lista wyjątków)`
 					: `tabela(e) bez RLS i NIE na liście wyjątków K-PUB: ${unaccounted.join(", ")} — ` +
 							"dodaj do K_PUB_TABLES z uzasadnieniem (rls-matrix §4) albo włącz RLS",
+			);
+		}
+
+		// 13a. AG.3 — tabele operacyjne odświeżania rynku SĄ K-PUB, ale ODWROTNIE
+		// niż pozostałe wyjątki: role aplikacyjne nie mają na nich ŻADNYCH grantów
+		// (deny-by-default jak 12a). Staging/runy to kuchnia operacyjna (diff, md5,
+		// artefakty) — student/faculty nie mają czego tu czytać; dostęp tylko owner.
+		{
+			const r13a = await client.query(
+				`SELECT count(*)::int AS c
+				   FROM information_schema.role_table_grants
+				  WHERE grantee IN ('app_student', 'app_faculty')
+				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs')`,
+			);
+			check(
+				"13a. AG.3 — zero grantów app_student/app_faculty na staging/runy rynku",
+				r13a.rows[0].c === 0,
+				`znaleziono ${r13a.rows[0].c} grantów ról aplikacyjnych (oczekiwano 0)`,
 			);
 		}
 
