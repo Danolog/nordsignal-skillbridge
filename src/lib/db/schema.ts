@@ -306,6 +306,67 @@ export const careerModelVersions = pgTable(
 	],
 );
 
+// AG.3 — Potok miesięcznego odświeżania rynku (upload CSV → ETL → STAGING + diff).
+//
+// [CZERWONA LINIA — dane prod]: ingest pisze WYŁĄCZNIE tutaj; `job_market_data`
+// zostaje nietknięta do czasu akceptacji Darka i transakcyjnego swapu (AG.4).
+// Obie tabele BEZ grantów dla ról aplikacyjnych (odwrotnie niż K-PUB
+// career_model_versions): staging i przebiegi to wewnętrzna kuchnia operacyjna,
+// student/faculty nie mają czego tu czytać. Dostęp wyłącznie owner (route ingest).
+
+/** Lustro `job_market_data` (łącznie z martwą salary_range) — swap w AG.4 to
+ *  wtedy proste INSERT…SELECT bez mapowania kolumn. Wipe+insert per przebieg. */
+export const jobMarketDataStaging = pgTable(
+	"job_market_data_staging",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		careerGoal: text("career_goal").notNull(),
+		competencyName: text("competency_name").notNull(),
+		demandPercentage: integer("demand_percentage").notNull(),
+		category: text("category").notNull(),
+		salaryRange: text("salary_range"),
+	},
+	(table) => [index("idx_job_market_staging_career_goal").on(table.careerGoal)],
+);
+
+/**
+ * Przebieg odświeżenia rynku: prowenicja wejścia (md5 obu CSV — jak w
+ * docs/data/job-market-provenance.md §0.2), liczniki silnika, raport diffu
+ * vs prod i DOKŁADNE bajty obu artefaktów (płaski 72K + model 212K) — AG.4
+ * zrobi z nich swap i ingest career-model bez ponownego uploadu. Status:
+ * staged → accepted/rejected (decyzja Darka w AG.4).
+ */
+export const marketRefreshRuns = pgTable(
+	"market_refresh_runs",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		/** md5 rozpakowanego JustJoinIT_Oferty.csv (prowenicja, anty-dryf). */
+		ofertyMd5: text("oferty_md5").notNull(),
+		/** md5 rozpakowanego JustJoinIT_Technologie.csv. */
+		technologieMd5: text("technologie_md5").notNull(),
+		/** Liczniki z _meta artefaktu (surowe/unikalne/przypisane oferty). */
+		rawOffers: integer("raw_offers").notNull(),
+		uniqueOffers: integer("unique_offers").notNull(),
+		assignedOffers: integer("assigned_offers").notNull(),
+		/** Liczba wierszy zapisanych do stagingu w tym przebiegu. */
+		stagedRows: integer("staged_rows").notNull(),
+		/** Raport diffu staging vs prod (kształt: src/lib/market-refresh/diff.ts). */
+		diff: jsonb("diff").notNull(),
+		/** Dokładne bajty artefaktów tego przebiegu (prowenicja + wsad dla AG.4). */
+		contentFlat: text("content_flat").notNull(),
+		contentModel: text("content_model").notNull(),
+		status: text("status").notNull().default("staged"),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		acceptedAt: timestamp("accepted_at"),
+	},
+	(table) => [
+		check(
+			"chk_market_refresh_runs_status",
+			sql`${table.status} IN ('staged', 'accepted', 'rejected')`,
+		),
+	],
+);
+
 // Project Marketplace tables
 
 export const projects = pgTable(

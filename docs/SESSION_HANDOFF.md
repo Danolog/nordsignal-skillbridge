@@ -90,7 +90,28 @@ Zrobione tę sesję (WSL, 2026-07-07):
   `verifierJudge`), próg 0.9 + asercja falseAccepts=[]. Unit 915/915, build/tsc/
   Biome 0. **Flaga na żadnym środowisku jeszcze nie zapalona** (deploy ≠ release).
 
-Migracje: lokalne/test/**prod na 0022**.
+- **AG.3 — miesięczne odświeżanie rynku → STAGING ⏳ PR otwarty**. Architektura
+  UPLOAD-DRIVEN (decyzja Darka: automatyczne źródło nie istnieje — dane to ręczny
+  eksport CSV JustJoinIT): `POST /api/market-refresh/ingest` (flaga
+  `proactiveMarketRefresh` + sekret `MARKET_REFRESH_TOKEN`, limit body 8 MB
+  per-trasa w middleware) przyjmuje oba CSV (.gz, gunzip po magic bytes, BOM
+  zdejmowany) → TEN SAM silnik ETL (shim `src/lib/market-refresh/etl-core` →
+  `tools/etl-justjoinit.ts`, zero przenoszenia kodu — prowenicja nienaruszona) →
+  wipe+insert `job_market_data_staging` + wiersz `market_refresh_runs` (md5 obu
+  CSV, liczniki, diff jsonb, bajty OBU artefaktów — wsad dla AG.4) w JEDNEJ tx.
+  ZERO zapisu do `job_market_data` (integracja dowodzi bajt-w-bajt). Silnik diffu
+  `src/lib/market-refresh/diff.ts` (nowe/zniknięte/zmienione ścieżki i kompetencje,
+  delta p.p., sort po |delcie|). ⚠ Timeout ROZSTRZYGNIĘTY pomiarem: pełna skala
+  zrzutu (9 922/49 610) = **~0,4 s** (`tests/unit/etl-scale.test.ts`) — chunking
+  0.10 zbędny. Migracja **0023** (staging + runs; bez grantów dla ról — kuchnia
+  operacyjna). Runbook: `docs/runbooks/market-refresh-runbook.md`. Bramki: tsc 0,
+  Biome 0, unit 935/935, integration 59/59, build OK.
+  **Kolejność wdrożenia:** merge BEZPIECZNY przed migracją prod (trasa za flagą
+  off, schema-only w TS); migracja 0023 na prod + env (token, flaga) = akcje
+  Darka PRZED pierwszym użyciem (runbook, sekcja „Wymagania wstępne").
+
+Migracje: lokalne/test na **0023**; **prod na 0022** (0023 czeka na Darka przy
+pierwszym użyciu AG.3 — patrz runbook).
 
 ### Plan v2 — ZAKTUALIZOWANY tę sesję
 `.agents/plans/11-roadmap-fazy-0-3.md` — dopisany **Blok AG** (warstwa agentowa):
@@ -128,9 +149,12 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    `generate-gaps.ts`; `verify-gaps.ts` zostaje jako klocek reużywalny).
    AG.3: cron **RAZ W MIESIĄCU** (nie co tydzień). Szczegóły w roadmapie
    (adnotacje [ZMIANA] przy AG.2/AG.3).
-6. Następne do implementacji: **AG.3** (cron miesięczny rynku → STAGING,
-   [CZERWONA LINIA — dane prod, ale zapis tylko do staging]) — sprawdzić
-   wcześnie limit czasu funkcji przy ETL; równolegle/potem AG.2 (kasacja legacy).
+6. ~~AG.3~~ ⏳ zaimplementowane (PR — patrz wyżej). Po merge'u do pierwszego
+   użycia potrzebne akcje Darka: migracja 0023 na prod + `MARKET_REFRESH_TOKEN`
+   + flaga `FLAG_PROACTIVE_MARKET_REFRESH` (runbook market-refresh).
+7. Następne do implementacji: **AG.4** (bramka akceptacji + transakcyjny swap
+   staging→prod, [CZERWONA LINIA]) — konsumuje `market_refresh_runs` z AG.3;
+   równolegle/potem **AG.2** (kasacja gałęzi legacy LLM luk).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
