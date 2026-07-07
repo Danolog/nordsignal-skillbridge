@@ -7,5 +7,14 @@
 	"whyJudge": {
 		"avgOverall": 5,
 		"note": "Po poprawce generate-why (maxOutputTokens 400→700 + zakaz markdownu): 4/4 próbki 5/5, zero ucięć. Poprzedni baseline 4.0 (opisy ucinane w każdej próbce) — delta +1.0 zaraportowana zgodnie z regułą DoD."
+	},
+	"verifier": {
+		"macroAfterPrecision": 1,
+		"note": "AG.1: golden set + 3 zmyłki spoza katalogu — precision wejścia 0.854 (makro), po przebiegu weryfikatora 1.0 przy recall 1.0 (delta +0.146). Prawdziwe luki gruntują się deterministycznie (0 wywołań sędziego), zmyłki eskalują do sędziego."
+	},
+	"verifierJudge": {
+		"accuracy": 1,
+		"model": "claude-haiku-4-5-20251001",
+		"note": "AG.1: sędzia ugruntowania (warstwa fast) — 2 runy po 10/10 na próbkach z pułapkami (Ruby on Rails/Power BI u DS, Kotlin u FE); zero fałszywych akceptacji halucynacji. Próg dociśnięty: accuracy ≥ 0.9 + twarda asercja falseAccepts = []."
 	}
 }
