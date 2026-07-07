@@ -70,8 +70,11 @@ Zrobione tę sesję (WSL, 2026-07-07):
   `career-model-loader` w logach runtime (fallback by je logował); dodatkowo
   dowód bezpośredni: loader z flagą ON na prod DB ładuje model (pokolenie 1).
   Konto testowe `test-weryfikacja-10@skillbridge-verify.pl` zostało w prod DB
-  (do ew. skasowania). **DECYZJA DARKA:** FLAG_CAREER_MODEL_FROM_DB=1 na prod
-  (deploy ≠ release; rollback = flaga off) — dziś flaga na prodzie OFF.
+  (do ew. skasowania). **FLAGA NA PRODZIE ON ✅ (Darek, 2026-07-07):**
+  env production + redeploy (alias skill-bridge-ai-seven.vercel.app); smoke
+  na prodzie: login + analiza luk z kontekstem grup, logi czyste (0 wpisów
+  career-model-loader, same 200-tki). **Prod czyta model kariery z DB.**
+  Rollback w każdej chwili: flaga off + redeploy.
 
 Migracje: lokalne/test/**prod na 0022**.
 
