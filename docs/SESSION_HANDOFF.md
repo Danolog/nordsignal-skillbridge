@@ -110,8 +110,15 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
 1. ~~AG.0 — harness ewaluacyjny~~ ✅ zmergowane (#132) + baseline LLM utrwalony.
 2. ~~1.1 feature flags~~ ✅ zrobione (#129).
 3. ~~1.0 — migracja kariery JSON→DB~~ ✅ LIVE na prodzie (#134, flaga ON).
-4. ~~AG.1 — weryfikator luk~~ ✅ zmergowane (#135). Otwarta decyzja Darka:
-   zapalenie flagi `FLAG_GAP_VERIFIER` (Preview → prod); off = zero zmian.
+4. ~~AG.1 — weryfikator luk~~ ✅ zmergowane (#135). **FLAGA ZAPALONA (2026-07-07,
+   decyzja Darka):** `FLAG_GAP_VERIFIER=1` na Preview i Production + redeploy
+   prod (alias skill-bridge-ai-seven.vercel.app), smoke czysty (200-tki, logi
+   bez błędów). Uwaga operacyjna: zmienne env tego projektu są typu *sensitive* —
+   `vercel env pull` pokazuje `""` dla WSZYSTKICH takich (także działającej
+   FLAG_CAREER_MODEL_FROM_DB); wartości nie da się odczytać z zewnątrz, dowód
+   działania flagi = zachowanie runtime. Flaga dotyczy tylko gałęzi legacy LLM
+   (bez żywego wołacza w UI) — realny dowód pojawi się wpisami
+   `verify-gaps.judge` w `ai_usage_ledger` przy pierwszym użyciu legacy.
 5. **AG.2** (potok analizy) / **AG.3** (cron rynku → STAGING, [CZERWONA LINIA])
    oraz reszta Fazy 1 wg ścieżki krytycznej (§7 roadmapy).
 
