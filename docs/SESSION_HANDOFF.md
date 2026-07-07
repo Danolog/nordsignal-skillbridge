@@ -44,10 +44,11 @@ Zrobione tę sesję (WSL, 2026-07-07):
   **Baseline LLM ✅ zmierzony i utrwalony** (klucz uzupełniony, 2 runy):
   avgOverall 4.0/5 na claude-sonnet-4-6, wszystkie kryteria 4/4 próbek; próg
   dociśnięty do 3.75 (`thresholds.ts`), baseline commitowany (`baseline.json`).
-  **Znalezisko harnessu:** sędzia w każdej próbce odnotował UCIĘTY koniec opisu
-  — `generate-why` ma `maxOutputTokens: 400`, za mało na polskie opisy z tabelą
-  widełek. Kandydat na drobną poprawkę (podbicie limitu / zakaz tabel) — per
-  reguła DoD zmiana MUSI raportować deltę `pnpm test:evals`.
+- **Poprawka uciętych opisów `generate-why` ✅** (znalezisko harnessu AG.0:
+  ucięcia w 4/4 próbek + surowy markdown w UI, które renderuje czysty tekst).
+  Fix: `maxOutputTokens` 400→700 + zakaz markdownu w prompcie. Delta evala
+  zaraportowana zgodnie z DoD: avgOverall 4.0 → **5.0** (+1.0), baseline
+  i próg (3.75→4.5) zaktualizowane.
 
 Migracje wciąż na 0021 (1.0 jeszcze nie ruszone), model kariery nadal w JSON.
 
