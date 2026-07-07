@@ -62,9 +62,16 @@ Zrobione tę sesję (WSL, 2026-07-07):
   `prod-backup-pre-0022-20260707-154154` → migracja 0022 (dziennik zweryfikowany
   przed: 22 wpisy, prefiks zgodny) → ingest (snapshot 2026-02, sha256
   93f8c2c09023…). Weryfikacja na prodzie: 1 wiersz aktywny, content BAJTOWO
-  identyczny z plikiem, GRANT-y OK. **Zostało:** merge PR → weryfikacja Preview
-  z FLAG_CAREER_MODEL_FROM_DB=1 → ewentualnie flaga na prod (deploy ≠ release;
-  rollback = flaga off).
+  identyczny z plikiem, GRANT-y OK. Zmergowane jako PR #134.
+  **Weryfikacja Preview ✅ (2026-07-07):** gałąź weryfikacyjna z flagą ON —
+  pełny onboarding w przeglądarce (rejestracja → DS → kompetencje → wnioski →
+  analiza luk): grupy/opisy/kind z modelu, pokrycie 5% (1/21), luki 0 kryt /
+  4 ważne / 16 nice — spójne z golden setem AG.0; zero błędów
+  `career-model-loader` w logach runtime (fallback by je logował); dodatkowo
+  dowód bezpośredni: loader z flagą ON na prod DB ładuje model (pokolenie 1).
+  Konto testowe `test-weryfikacja-10@skillbridge-verify.pl` zostało w prod DB
+  (do ew. skasowania). **DECYZJA DARKA:** FLAG_CAREER_MODEL_FROM_DB=1 na prod
+  (deploy ≠ release; rollback = flaga off) — dziś flaga na prodzie OFF.
 
 Migracje: lokalne/test/**prod na 0022**.
 
