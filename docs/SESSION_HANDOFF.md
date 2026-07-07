@@ -188,8 +188,10 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    Ryana przy review). Bramki: tsc 0, Biome 0, unit 941/941, integration
    68/68 + k3 zielony, build OK. **Przed pierwszym realnym przebiegiem na
    prod: migracja 0025** (razem z 0023/0024 w jednej sesji migracyjnej Darka).
-9. **AG.6 — powiadomienie „nowa luka" ⏳ PR otwarty (ostatnie zadanie Bloku
-   AG)**. Decyzje Darka 2026-07-08: kanał **in-app** (bez e-maila — zero nowych
+9. ~~AG.6~~ ✅ **zmergowane (#143, squash `29de42e`, decyzja Darka „merge",
+   2026-07-08) — OSTATNIE zadanie kodowe Bloku AG; CI w całości zielone**
+   (typecheck po poprawce typowania mocka w teście — kod produkcyjny bez zmian).
+   Decyzje Darka 2026-07-08: kanał **in-app** (bez e-maila — zero nowych
    usług zewnętrznych), RODO **opt-in checkbox** (bez zgody recompute działa,
    powiadomienia się nie pokazują; zgoda odwoływalna). Zakres: migracja **0026**
    (kolumny zgody na `students`, bez zmian RLS), flaga
