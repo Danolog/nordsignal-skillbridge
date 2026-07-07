@@ -18,13 +18,13 @@
 // celowo poza Better Auth.
 // ============================================================================
 
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash } from "node:crypto";
 import { gunzipSync } from "node:zlib";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { jobMarketData, jobMarketDataStaging, marketRefreshRuns } from "@/lib/db/schema";
-import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
+import { guardMarketRefresh } from "@/lib/market-refresh/auth";
 import { diffMarket } from "@/lib/market-refresh/diff";
 import { buildArtifact, parseCsv } from "@/lib/market-refresh/etl-core";
 
@@ -33,18 +33,6 @@ import { buildArtifact, parseCsv } from "@/lib/market-refresh/etl-core";
 // gunzip + insert dokładają swoje — bierzemy pełny limit, żeby nie ścinać
 // przebiegu na wolnym łączu.
 export const maxDuration = 300;
-
-/** Porównanie stałoczasowe przez hash (wyrównuje długości — timingSafeEqual
- *  wymaga równych buforów; hash zdejmuje też sygnał długości sekretu). */
-function tokenMatches(req: Request): boolean {
-	const expected = process.env.MARKET_REFRESH_TOKEN?.trim();
-	// Brak skonfigurowanego sekretu = trasa zamknięta (nigdy fail-open).
-	if (!expected) return false;
-	const provided = req.headers.get("x-market-refresh-token") ?? "";
-	const a = createHash("sha256").update(provided).digest();
-	const b = createHash("sha256").update(expected).digest();
-	return timingSafeEqual(a, b);
-}
 
 /** Gunzip po magic bytes (1f 8b) — przyjmujemy .gz i goły CSV (testy/lokalnie). */
 function maybeGunzip(buf: Buffer): Buffer {
@@ -70,12 +58,9 @@ function missingColumns(rows: Record<string, string>[], required: string[]): str
 }
 
 export async function POST(req: Request) {
-	if (!isFeatureEnabled("proactiveMarketRefresh")) {
-		return NextResponse.json({ error: "Not found" }, { status: 404 });
-	}
-	if (!tokenMatches(req)) {
-		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-	}
+	// Wspólna bramka rodziny market-refresh (flaga → 404, token → 401).
+	const denied = guardMarketRefresh(req);
+	if (denied) return denied;
 
 	let ofertyFile: File | null;
 	let technologieFile: File | null;
