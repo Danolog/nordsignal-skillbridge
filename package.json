@@ -14,6 +14,7 @@
 		"test": "vitest",
 		"test:run": "vitest run --project unit",
 		"test:integration": "vitest run --project integration",
+		"test:evals": "vitest run --project evals",
 		"test:coverage": "vitest run --coverage",
 		"test:e2e": "bash tests/e2e/run-all.sh",
 		"deps:scan": "pnpm audit --audit-level high",

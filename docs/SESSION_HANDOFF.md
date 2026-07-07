@@ -11,15 +11,14 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-06
+## STAN NA DZIŚ — 2026-07-07
 
 ### Gdzie żyje repo
-- **Lokalnie:** `~/Claude_Cowork/SkillBridge` (przeniesione z iCloud
-  `~/Documents/kodowanie/SkillBridge_AI`, które eksmitowało pliki i wieszało git).
-  Nie trzymać aktywnego repo pod iCloud (`~/Documents`, `~/Desktop`).
-- **Zdalnie:** `github.com/Danolog/SkillBridge_AI`, gałąź `main`.
-- **Baseline:** `main` zielony — build, `tsc` 0, Biome 0 (337 plików), unit 881/881,
-  **integration 52/52** (bramka naprawiona, patrz niżej).
+- **Lokalnie (2 maszyny):** macOS `~/Claude_Cowork/SkillBridge` · WSL
+  `~/projekty/nordsignal-skillbridge`. Nie trzymać aktywnego repo pod iCloud.
+- **Zdalnie:** `github.com/Danolog/nordsignal-skillbridge`, gałąź `main`.
+- **Baseline:** `main` zielony — build, `tsc` 0, Biome 0, unit 891/891,
+  integration 52/52.
 
 ### Faza 0 — ZAMKNIĘTA i wypchnięta
 Zadania 0.0–0.16 zmergowane (ostatni: PR #125 „paczka LOW 0.15", 2026-07-04).
@@ -29,15 +28,26 @@ Dwie zaległości — **akcje Darka, nie kod:**
    mimo notki „nie merge'ować" — jest żywy na `main`/prod. Runtime CSP niewykrywalny
    lokalnie → **potwierdzić na Preview/prod, że nic nie psuje, albo rollback.**
 
-### Faza 1 — W TOKU (restart udany)
-Poprzednia sesja Fazy 1 padła (awaria sprzętu) i nic z niej nie trafiło do repo —
-restart od zera. Zrobione tę sesję (wszystko na `main`):
-- **1.1 — feature flags ✅ (PR #129)** — typowany rejestr `src/lib/flags.ts` +
-  `isFeatureEnabled`, env-driven, domyślnie off. 3 flagi seed (AG, B8).
-- **Naprawa bramki `integration` ✅ (PR #130)** — regresja z 0.15/B3: `z.string().uuid()`
-  na param `[id]` odrzucał placeholderowe UUID-y fixture'ów (`5555…`, `dddd…`, `1111/2222`
-  — nie-RFC). Fix: fixture'y na RFC-poprawne (v4/wariant 8); guard route'a nietknięty.
-- **Plan v2 + Blok AG ✅ (PR #128)** — patrz niżej.
+### Faza 1 — W TOKU
+Zrobione wcześniej (na `main`): **1.1 feature flags ✅ (#129)**, naprawa bramki
+integration ✅ (#130), plan v2 + Blok AG ✅ (#128).
+
+Zrobione tę sesję (WSL, 2026-07-07):
+- **AG.0 — harness ewaluacyjny gap detection ⏳ PR #132 (czeka na review/merge)**.
+  Korekta modelu (Darek): luki liczą się WYŁĄCZNIE z katalogu rynku minus
+  zaznaczenia; sylabus = adnotacja bez wpływu → golden set BEZ sylabusów.
+  Zakres: golden set 12 przypadków / 5 ścieżek (ręcznie zweryfikowane, w tym
+  granice progu 0.33), suita deterministyczna (P/R=1.0, zawsze, bez LLM/DB),
+  suita LLM-as-judge opisów `generate-why` (tylko `pnpm test:evals` + klucz),
+  raporty z deltą vs `baseline.json`. Dowód red-green wykonany (próg 0.33→0.35
+  wywala dokładnie sentinele graniczne).
+  **Baseline LLM ✅ zmierzony i utrwalony** (klucz uzupełniony, 2 runy):
+  avgOverall 4.0/5 na claude-sonnet-4-6, wszystkie kryteria 4/4 próbek; próg
+  dociśnięty do 3.75 (`thresholds.ts`), baseline commitowany (`baseline.json`).
+  **Znalezisko harnessu:** sędzia w każdej próbce odnotował UCIĘTY koniec opisu
+  — `generate-why` ma `maxOutputTokens: 400`, za mało na polskie opisy z tabelą
+  widełek. Kandydat na drobną poprawkę (podbicie limitu / zakaz tabel) — per
+  reguła DoD zmiana MUSI raportować deltę `pnpm test:evals`.
 
 Migracje wciąż na 0021 (1.0 jeszcze nie ruszone), model kariery nadal w JSON.
 
@@ -55,10 +65,9 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
 - **Pamięć = Postgres**, reużycie: potok `src/lib/ai/pipeline/`, agent-sędzia z
   Pomocnika (`career-helper.ts`), ETL `tools/etl-justjoinit.ts`, `ai_usage_ledger`.
 
-### NASTĘPNE (kolejność restartu Fazy 1)
-1. **AG.0 — harness ewaluacyjny gap detection** (P0, bez zależności, NASTĘPNE;
-   bramkuje jakość wszystkiego wyżej). Start od rozpoznania: jak dziś liczą się luki
-   (`generate-gaps.ts`, `market-gaps.ts`), golden set 10–20 przypadków, próg „wiarygodny".
+### NASTĘPNE (kolejność Fazy 1)
+1. ~~AG.0 — harness ewaluacyjny~~ ⏳ kod gotowy (PR #132) — do merge'a + baseline
+   LLM po uzupełnieniu klucza (akcja Darka, patrz wyżej).
 2. ~~1.1 feature flags~~ ✅ zrobione (#129).
 3. **1.0 — migracja kariery JSON→DB** (P0, [CZERWONA LINIA] — sign-off Darka +
    backup gałęzią Neona + transakcyjny SQL; model z DB bajtowo identyczny z JSON).
