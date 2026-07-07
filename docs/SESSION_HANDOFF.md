@@ -58,12 +58,15 @@ Zrobione tę sesję (WSL, 2026-07-07):
   JSON, ingest `pnpm db:ingest-career-model` (guard assertTestDb, idempotentny),
   preload w 4 wejściach serwerowych. **Test akceptacyjny zielony na lokalnej
   bazie: content z DB bajtowo identyczny z plikiem.** Integration 56/56.
-  **Procedura prod (Darek, PO merge — kolejność wg lekcji „migracja przed
-  deploy"):** backup gałęzią Neona → `CONFIRM_PROD_DB=1 pnpm db:migrate` (0022)
-  → `CONFIRM_PROD_DB=1 pnpm db:ingest-career-model` → weryfikacja na Preview
-  z flagą on → dopiero wtedy ewentualnie FLAG_CAREER_MODEL_FROM_DB=1 na prod.
+  **Prod WYKONANE (Darek, 2026-07-07):** backup gałęzią Neona
+  `prod-backup-pre-0022-20260707-154154` → migracja 0022 (dziennik zweryfikowany
+  przed: 22 wpisy, prefiks zgodny) → ingest (snapshot 2026-02, sha256
+  93f8c2c09023…). Weryfikacja na prodzie: 1 wiersz aktywny, content BAJTOWO
+  identyczny z plikiem, GRANT-y OK. **Zostało:** merge PR → weryfikacja Preview
+  z FLAG_CAREER_MODEL_FROM_DB=1 → ewentualnie flaga na prod (deploy ≠ release;
+  rollback = flaga off).
 
-Migracje lokalne/test na **0022**; prod wciąż na 0021 do czasu procedury wyżej.
+Migracje: lokalne/test/**prod na 0022**.
 
 ### Plan v2 — ZAKTUALIZOWANY tę sesję
 `.agents/plans/11-roadmap-fazy-0-3.md` — dopisany **Blok AG** (warstwa agentowa):
