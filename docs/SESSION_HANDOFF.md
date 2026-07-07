@@ -90,7 +90,8 @@ Zrobione tę sesję (WSL, 2026-07-07):
   `verifierJudge`), próg 0.9 + asercja falseAccepts=[]. Unit 915/915, build/tsc/
   Biome 0. **Flaga na żadnym środowisku jeszcze nie zapalona** (deploy ≠ release).
 
-- **AG.3 — miesięczne odświeżanie rynku → STAGING ⏳ PR otwarty**. Architektura
+- **AG.3 — miesięczne odświeżanie rynku → STAGING ✅ zmergowane (PR #136,
+  2026-07-07)**. Architektura
   UPLOAD-DRIVEN (decyzja Darka: automatyczne źródło nie istnieje — dane to ręczny
   eksport CSV JustJoinIT): `POST /api/market-refresh/ingest` (flaga
   `proactiveMarketRefresh` + sekret `MARKET_REFRESH_TOKEN`, limit body 8 MB
@@ -149,9 +150,10 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    `generate-gaps.ts`; `verify-gaps.ts` zostaje jako klocek reużywalny).
    AG.3: cron **RAZ W MIESIĄCU** (nie co tydzień). Szczegóły w roadmapie
    (adnotacje [ZMIANA] przy AG.2/AG.3).
-6. ~~AG.3~~ ⏳ zaimplementowane (PR — patrz wyżej). Po merge'u do pierwszego
-   użycia potrzebne akcje Darka: migracja 0023 na prod + `MARKET_REFRESH_TOKEN`
-   + flaga `FLAG_PROACTIVE_MARKET_REFRESH` (runbook market-refresh).
+6. ~~AG.3~~ ✅ zmergowane (#136). Do PIERWSZEGO użycia potrzebne akcje Darka
+   (bez pośpiechu — trasa martwa przy zgaszonej fladze): migracja 0023 na prod +
+   `MARKET_REFRESH_TOKEN` + `FLAG_PROACTIVE_MARKET_REFRESH` (runbook
+   market-refresh). Do review PR-a przypięty sign-off Ryana rls-matrix v0.16.
 7. Następne do implementacji: **AG.4** (bramka akceptacji + transakcyjny swap
    staging→prod, [CZERWONA LINIA]) — konsumuje `market_refresh_runs` z AG.3;
    równolegle/potem **AG.2** (kasacja gałęzi legacy LLM luk).
