@@ -90,6 +90,13 @@ const K_PUB_TABLES = [
 	// + sekretem; strażnik grantów: test 13a niżej). Uzasadnienie: rls-matrix §4.
 	"job_market_data_staging",
 	"market_refresh_runs",
+	// AG.4 — TRANSIENT: auto-backup tworzony w transakcji swapu (DECYZJA Darka,
+	// trasa /api/market-refresh/runs/[id]/decision) wzorcem §10 prowenicji;
+	// żyje do następnego swapu (okno rollbacku, runbook market-refresh). Zero
+	// grantów dla ról aplikacyjnych (jak staging — strażnik #13a niżej).
+	// Zwykle NIE istnieje w świeżej bazie — wpis tu, żeby k3 nie padał na prodzie
+	// po pierwszej akceptacji.
+	"job_market_data_bak",
 ] as const;
 
 async function main() {
@@ -162,7 +169,7 @@ async function main() {
 				`SELECT count(*)::int AS c
 				   FROM information_schema.role_table_grants
 				  WHERE grantee IN ('app_student', 'app_faculty')
-				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs')`,
+				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs', 'job_market_data_bak')`,
 			);
 			check(
 				"13a. AG.3 — zero grantów app_student/app_faculty na staging/runy rynku",
