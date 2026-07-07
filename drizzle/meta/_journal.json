@@ -169,6 +169,13 @@
       "when": 1783446582091,
       "tag": "0023_pale_mentallo",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1783454198296,
+      "tag": "0024_perpetual_purple_man",
+      "breakpoints": true
     }
   ]
 }

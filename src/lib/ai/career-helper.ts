@@ -129,11 +129,35 @@ export type RunTurnArgs = {
 	 * egzekwuje tę regułę; runTurn tylko buduje właściwy prompt.
 	 */
 	userMessage?: string;
+	/**
+	 * AG.7 (flaga advisorMemory): kontekst studenta z BAZY (loadAdvisorContext) —
+	 * profil, wcześniejsze obszary, luki, projekty, fakty z poprzednich rozmów.
+	 * Brak/undefined = prompt bajt-w-bajt jak przed AG.7 (flaga off = zero zmian).
+	 */
+	memoryContext?: string;
 	/** Wstrzykiwany model — default Sonnet. Testy podają mock. */
 	model?: LanguageModel;
 	/** onFinish z route handlera — zapis tury w osobnym withTenantContext. */
 	onFinish?: (args: { text: string }) => Promise<void> | void;
 };
+
+/**
+ * Blok kontekstu pamięci doradcy (AG.7) — wspólny dla /turn i /summary.
+ * Pusty/brak kontekstu → pusty string (prompt niezmieniony). Treść pochodzi
+ * z bazy (już sanityzowana per-fragment w composeAdvisorContext), ale idzie
+ * w osobnym tagu z adnotacją untrusted — częścią faktów są teksty, które
+ * wcześniej wyszły z LLM (podsumowania) i od studenta (nazwy, cel).
+ */
+function memoryBlock(memoryContext: string | undefined): string {
+	const trimmed = memoryContext?.trim();
+	if (!trimmed) return "";
+	return `
+
+Kontekst studenta z poprzednich sesji (zbudowany z bazy SkillBridge — nawiązuj naturalnie, nie recytuj):
+<student_context untrusted="true">
+${trimmed}
+</student_context>`;
+}
 
 /**
  * Buduje strumień odpowiedzi Pomocnika. Zwraca obiekt streamText — route
@@ -156,10 +180,13 @@ export function runTurn(args: RunTurnArgs) {
 	const isOpening = trimmedMessage.length === 0;
 	const safeMessage = sanitizeForPrompt(trimmedMessage, USER_MESSAGE_MAX_LEN);
 
+	// AG.7: blok pamięci (pusty string gdy brak — prompt jak przed zmianą).
+	const memory = memoryBlock(args.memoryContext);
+
 	const prompt = isOpening
 		? `<user_input untrusted="true">
 Ankieta studenta (JSON): ${safeAnswers}
-</user_input>
+</user_input>${memory}
 
 To jest PIERWSZA tura — student jeszcze nic nie napisał. Odezwij się pierwszy: przywitaj krótko i zadaj JEDNO otwierające pytanie pogłębiające, nawiązując do ankiety studenta. Bez werdyktu.`
 		: `<user_input untrusted="true">
@@ -170,7 +197,7 @@ ${transcript || "(brak — to pierwsza tura)"}
 
 Nowa wiadomość studenta:
 ${safeMessage}
-</user_input>
+</user_input>${memory}
 
 Odpowiedz jedną wiadomością Pomocnika — pytanie pogłębiające albo krótkie podsumowanie wątku z kolejnym pytaniem. Bez werdyktu.`;
 
@@ -428,6 +455,8 @@ async function judgeSummary(summary: CareerSummary, model: LanguageModel): Promi
 export type GenerateSummaryArgs = {
 	answers: unknown;
 	history: CareerTurnMessage[];
+	/** AG.7 (flaga advisorMemory) — jak w RunTurnArgs; brak = prompt bez zmian. */
+	memoryContext?: string;
 	/** Default Opus. Testy podają mock. */
 	summaryModel?: LanguageModel;
 	/** Default Opus. Testy podają mock. */
@@ -476,7 +505,7 @@ Ankieta (JSON): ${safeAnswers}
 
 Rozmowa:
 ${transcript}
-</user_input>
+</user_input>${memoryBlock(args.memoryContext)}
 
 Dozwolone etykiety obszarów (label MUSI być DOKŁADNĄ kopią jednej z poniższych — słowo w słowo, bez tłumaczenia i bez modyfikacji):
 ${ALLOWED_PATH_LABELS_BLOCK}

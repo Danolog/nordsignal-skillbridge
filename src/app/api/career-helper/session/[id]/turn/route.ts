@@ -2,9 +2,11 @@ import { and, asc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { detectCrisis, MAX_TURNS, runTurn, USER_MESSAGE_MAX_LEN } from "@/lib/ai/career-helper";
+import { loadAdvisorContext } from "@/lib/career-helper/advisor-memory";
 import { resolveStudent } from "@/lib/career-helper/session";
 import { careerHelperSessions, careerHelperTurns } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
+import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
@@ -77,6 +79,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 		answers: unknown;
 		history: { role: "ai" | "user"; content: string }[];
 		nextTurn: number;
+		/** AG.7: kontekst z bazy (flaga advisorMemory); null = flaga off/pusto/błąd. */
+		memoryContext: string | null;
 	};
 	// `finalAnswer` = student odpowiada na 9. (ostatnie) pytanie AI. Zapis user-only,
 	// bez modelu, bez podbicia `turn`. Niezmiennik kontraktu Darka: ostatnia
@@ -143,10 +147,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 				return { finalAnswer: true as const, nextTurn: FINAL_ANSWER_TURN_INDEX };
 			}
 
+			// AG.7 (flaga advisorMemory): kontekst budowany W TYM SAMYM tx (RLS
+			// przycina odczyt do własnych wierszy). Best-effort: błąd budowy NIE
+			// blokuje tury — doradca po prostu leci bez pamięci (jak przy fladze off).
+			let memoryContext: string | null = null;
+			if (isFeatureEnabled("advisorMemory")) {
+				try {
+					memoryContext = await loadAdvisorContext(tx, studentId);
+				} catch (err) {
+					logError("career-helper.turn.memory", err, { studentId });
+				}
+			}
+
 			return {
 				answers: sessionRow.answers,
 				history: cleanHistory,
 				nextTurn: sessionRow.turn + 1,
+				memoryContext,
 			};
 		});
 	} catch (err) {
@@ -200,7 +217,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 		);
 	}
 
-	const { answers, history, nextTurn } = prep;
+	const { answers, history, nextTurn, memoryContext } = prep;
 
 	// Reguła tury otwierającej (decyzja kontraktu Ethana §2):
 	//  - history pusta + wiadomość pusta  → tura OTWIERAJĄCA: zapisujemy TYLKO
@@ -220,6 +237,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 		history,
 		// Puste = tryb otwierający w runTurn (prompt z samej ankiety).
 		userMessage: isOpeningTurn ? undefined : userMessage,
+		// AG.7: null → undefined = prompt bajt-w-bajt jak przed zmianą.
+		memoryContext: memoryContext ?? undefined,
 		onFinish: async ({ text }) => {
 			try {
 				await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {

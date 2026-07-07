@@ -47,6 +47,10 @@ const TENANT_TABLES = [
 	// Tenant-owa, FORCE RLS + owner_passthrough; grant tylko app_faculty
 	// (SELECT+INSERT), polityki faculty_sees_tenant/faculty_moderates_tenant.
 	"submission_reviews",
+	// AG.7 — pamięć doradcy (migracja 0024). K-PII (prywatny kontekst studenta),
+	// FORCE RLS + student_sees_own + owner_passthrough; grant tylko app_student
+	// (app_faculty bez grantu — jak career_helper_turns).
+	"advisor_memory",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.
@@ -113,11 +117,14 @@ async function main() {
 			 WHERE relname = ANY($1) AND relrowsecurity = true`,
 			[[...TENANT_TABLES, "audit_log", "faculty_sessions"]],
 		);
-		check(
-			"3. RLS włączony (8 tenant + audit_log + faculty_sessions)",
-			rls.rowCount === 10,
-			`włączony na ${rls.rowCount}/10`,
-		);
+		{
+			const expected = TENANT_TABLES.length + 2;
+			check(
+				`3. RLS włączony (${TENANT_TABLES.length} tenant + audit_log + faculty_sessions)`,
+				rls.rowCount === expected,
+				`włączony na ${rls.rowCount}/${expected}`,
+			);
+		}
 
 		// 13. KOMPLETNOŚĆ WYJĄTKÓW RLS (DoD domeny 8, rls-matrix §4; rekomendacja
 		// Ethana wariant (a) — realny test zamiast martwej stałej K_PUB_TABLES).
@@ -309,9 +316,9 @@ async function main() {
 				[TENANT_TABLES],
 			);
 			check(
-				"10a. FORCE RLS na 8 tabelach tenant-owych",
-				forceTables.rowCount === 8,
-				`FORCE na ${forceTables.rowCount}/8`,
+				`10a. FORCE RLS na ${TENANT_TABLES.length} tabelach tenant-owych`,
+				forceTables.rowCount === TENANT_TABLES.length,
+				`FORCE na ${forceTables.rowCount}/${TENANT_TABLES.length}`,
 			);
 
 			// Polityka idzie `TO <current_user>` (prod = neondb_owner, CI = test) —
@@ -331,9 +338,10 @@ async function main() {
 				(r) => Number(r.role_count) >= 1,
 			).length;
 			check(
-				"10b. owner_passthrough policy na 8 tabelach (>=1 rola każda)",
-				passthroughPolicies.rowCount === 8 && okPolicyCount === 8,
-				`policy na ${passthroughPolicies.rowCount}/8 (>=1 rola: ${okPolicyCount}/8)`,
+				`10b. owner_passthrough policy na ${TENANT_TABLES.length} tabelach (>=1 rola każda)`,
+				passthroughPolicies.rowCount === TENANT_TABLES.length &&
+					okPolicyCount === TENANT_TABLES.length,
+				`policy na ${passthroughPolicies.rowCount}/${TENANT_TABLES.length} (>=1 rola: ${okPolicyCount}/${TENANT_TABLES.length})`,
 			);
 
 			// Cross-role deny-default: SET LOCAL ROLE app_student BEZ

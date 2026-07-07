@@ -443,3 +443,124 @@ describe("limity w KODZIE (nie w prompcie)", () => {
 		expect(MAX_RESTARTS).toBe(2);
 	});
 });
+
+// ── AG.7 — memoryContext w promptach /turn i /summary (flaga advisorMemory) ──
+
+describe("AG.7 · memoryContext w promptach doradcy", () => {
+	function capturingStreamModel(onPrompt: (serialized: string) => void) {
+		return new MockLanguageModelV3({
+			doStream: async (options) => {
+				onPrompt(JSON.stringify(options.prompt));
+				return {
+					stream: convertArrayToReadableStream([
+						{ type: "text-start", id: "0" },
+						{ type: "text-delta", id: "0", delta: "Cześć!" },
+						{ type: "text-end", id: "0" },
+						{
+							type: "finish",
+							finishReason: { unified: "stop", raw: "stop" },
+							usage: {
+								inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+								outputTokens: { total: 1, text: 1, reasoning: 0 },
+							},
+						},
+					]),
+				};
+			},
+		});
+	}
+
+	const MEMORY = 'Profil: cel kariery „Data Analyst".\nNajwiększe luki kompetencyjne: SQL (ważna).';
+
+	it("runTurn Z memoryContext → prompt niesie blok <student_context> z treścią", async () => {
+		let captured = "";
+		const result = runTurn({
+			answers: { q1: "dane" },
+			history: [],
+			userMessage: undefined,
+			memoryContext: MEMORY,
+			model: capturingStreamModel((p) => {
+				captured = p;
+			}),
+		});
+		await result.text;
+		expect(captured).toContain("student_context");
+		expect(captured).toContain("Data Analyst");
+		expect(captured).toContain("SQL (ważna)");
+	});
+
+	it("runTurn BEZ memoryContext (flaga off) → prompt bajt-w-bajt bez bloku pamięci", async () => {
+		let withUndefined = "";
+		let legacyShape = "";
+		const argsBase = {
+			answers: { q1: "dane" },
+			history: [{ role: "user" as const, content: "lubię excela" }],
+			userMessage: "co dalej?",
+		};
+		await runTurn({
+			...argsBase,
+			memoryContext: undefined,
+			model: capturingStreamModel((p) => {
+				withUndefined = p;
+			}),
+		}).text;
+		// Kształt sprzed AG.7: wywołanie bez pola memoryContext w ogóle.
+		await runTurn({
+			...argsBase,
+			model: capturingStreamModel((p) => {
+				legacyShape = p;
+			}),
+		}).text;
+		expect(withUndefined).toBe(legacyShape);
+		expect(withUndefined).not.toContain("student_context");
+	});
+
+	it("runTurn z pustym/białym memoryContext → bez bloku (nie wstrzykujemy pustych nagłówków)", async () => {
+		let captured = "";
+		await runTurn({
+			answers: {},
+			history: [],
+			memoryContext: "   ",
+			model: capturingStreamModel((p) => {
+				captured = p;
+			}),
+		}).text;
+		expect(captured).not.toContain("student_context");
+	});
+
+	it("generateSummary Z memoryContext → prompt generatora niesie blok pamięci", async () => {
+		let capturedPrompt = "";
+		const model = new MockLanguageModelV3({
+			doGenerate: async (options) => {
+				capturedPrompt = JSON.stringify(options.prompt.at(-1));
+				return generateResult(SAFE_SUMMARY);
+			},
+		});
+		await generateSummary({
+			answers: {},
+			history: [{ role: "user", content: "lubię dane" }],
+			memoryContext: MEMORY,
+			summaryModel: model,
+			judgeModel: objectModel({ verdict: "YES", reason: "ok" }),
+		});
+		expect(capturedPrompt).toContain("student_context");
+		expect(capturedPrompt).toContain("Data Analyst");
+	});
+
+	it("generateSummary BEZ memoryContext → prompt bez bloku pamięci (zero zmian)", async () => {
+		let capturedPrompt = "";
+		const model = new MockLanguageModelV3({
+			doGenerate: async (options) => {
+				capturedPrompt = JSON.stringify(options.prompt.at(-1));
+				return generateResult(SAFE_SUMMARY);
+			},
+		});
+		await generateSummary({
+			answers: {},
+			history: [{ role: "user", content: "lubię dane" }],
+			summaryModel: model,
+			judgeModel: objectModel({ verdict: "YES", reason: "ok" }),
+		});
+		expect(capturedPrompt).not.toContain("student_context");
+	});
+});
