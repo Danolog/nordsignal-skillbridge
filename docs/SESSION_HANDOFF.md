@@ -123,8 +123,14 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    Uwaga operacyjna: zmienne env projektu są typu *sensitive* — `vercel env
    pull` pokazuje `""` dla wszystkich (także działającej
    FLAG_CAREER_MODEL_FROM_DB); to artefakt pulla, nie stan flagi.
-5. **AG.2** (potok analizy) / **AG.3** (cron rynku → STAGING, [CZERWONA LINIA])
-   oraz reszta Fazy 1 wg ścieżki krytycznej (§7 roadmapy).
+5. **[ZMIANA — decyzje Darka 2026-07-07]** AG.2 przekwalifikowane: usunięcie
+   gałęzi legacy LLM luk (POST /api/onboarding kontrakt stringów +
+   `generate-gaps.ts`; `verify-gaps.ts` zostaje jako klocek reużywalny).
+   AG.3: cron **RAZ W MIESIĄCU** (nie co tydzień). Szczegóły w roadmapie
+   (adnotacje [ZMIANA] przy AG.2/AG.3).
+6. Następne do implementacji: **AG.3** (cron miesięczny rynku → STAGING,
+   [CZERWONA LINIA — dane prod, ale zapis tylko do staging]) — sprawdzić
+   wcześnie limit czasu funkcji przy ETL; równolegle/potem AG.2 (kasacja legacy).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).

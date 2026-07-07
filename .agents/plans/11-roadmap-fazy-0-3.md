@@ -297,14 +297,22 @@ tryb Opus blokujący) jako wzorzec weryfikatora; ETL JustJoinIT; `ai_usage_ledge
   `ai_usage_ledger`, budżet z 0.0. Dowód: luka bez pokrycia w rynku
   odrzucona/oznaczona; golden set AG.0 pokazuje poprawę precision.
 
-- **AG.2 · Analiza sylabusa jako potok (P1)**. Refactor `generate-gaps` na etapy:
-  parse → fan-out po kompetencjach (`Promise.all`) → dopasowanie do rynku
-  (deterministyczne) → weryfikacja (AG.1) → synteza rekomendacji. Wzorzec kopiowany
-  z `src/lib/ai/pipeline/` — czysty Messages API, **nie** Dynamic Workflows. Dowód:
-  wynik ≥ baseline na golden set AG.0; parsowanie równoległe skraca latencję.
+- **AG.2 · Usunięcie legacy ścieżki LLM luk (P1) [ZMIANA — decyzja Darka
+  2026-07-07]**. Pierwotny zakres (refactor `generate-gaps` na potok) zdezaktualizowany:
+  po Partii 4 + korekcie AG.0 luki liczą się deterministycznie z katalogu rynku,
+  a LLM-owy `generate-gaps` żyje tylko w gałęzi legacy POST /api/onboarding bez
+  żywego wołacza w UI (w kodzie oznaczony jako kandydat do usunięcia). Nowy zakres:
+  usunąć gałąź legacy (kontrakt tablicy stringów) + `generate-gaps.ts` i jego testy;
+  `verify-gaps.ts` (AG.1) ZOSTAJE — klocek reużywalny wszędzie, gdzie model produkuje
+  nazwy kompetencji (AG.5 opisy nowych luk, przyszłe potoki). Opcjonalny osobny
+  punkt P2 (poza AG.2): jakość adnotacji sylabusem — lepsze dopasowanie nazw
+  z `/api/syllabus/parse` do katalogu (wartość dla panelu wykładowcy program vs
+  rynek), NIE wpływa na luki. Dowód: kontrakt legacy zwraca 400 (albo ścieżka
+  znika ze schematu), testy i build zielone, zero martwego kodu LLM luk.
 
-- **AG.3 · Cron tygodniowego odświeżania rynku → STAGING (P1) [CZERWONA LINIA —
-  dane prod]**. Vercel Cron → API route → ETL JustJoinIT (reuse
+- **AG.3 · Cron MIESIĘCZNEGO odświeżania rynku → STAGING (P1) [CZERWONA LINIA —
+  dane prod] [ZMIANA — decyzja Darka 2026-07-07: raz w miesiącu, nie co
+  tydzień]**. Vercel Cron → API route → ETL JustJoinIT (reuse
   `tools/etl-justjoinit.ts`) pisze do `job_market_data_staging`, liczy diff vs prod
   (nowe/zmienione/zniknięte ścieżki i kompetencje), zapisuje raport diffu. ZERO
   zapisu na prod. Powiadomienie do Darka z podsumowaniem. ⚠ Limit czasu funkcji
@@ -407,8 +415,9 @@ dojrzałych, receipty w ≥2 ATS.
 5. 1E (pilotaż DS) → E2.C → rollout curriculum na kolejne ścieżki. Nie odwrotnie.
 6. Wiarygodność F1 (1.5/1.9/1.16) przed E2.B; 1.17 rusza z pierwszą kohortą.
 7. D14 (L4/L5) po bramce 1E dla DS — L4 ma być szczytem drabiny, nie luźnym bytem.
-8. **Blok AG: AG.0 (eval) najpierw** — bez niego AG.1/AG.2 nie mają czym mierzyć
-   poprawy. Łańcuch rynku: **AG.3 → AG.4 → AG.5 → AG.6** (staging → akceptacja →
+8. **Blok AG: AG.0 (eval) najpierw** — bez niego AG.1 nie ma czym mierzyć
+   poprawy (AG.2 po [ZMIANIE] to kasacja legacy — bez metryki).
+   Łańcuch rynku: **AG.3 → AG.4 → AG.5 → AG.6** (staging → akceptacja →
    recompute → powiadomienie). AG.7 (pamięć doradcy) równolegle — inne pliki
    (`career-helper`). AG zastępuje ad-hoc pomysł „auto-ingest bez laptopa"
    kontrolowanym procesem staging+akceptacja (patrz ryzyko niżej).
