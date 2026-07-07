@@ -76,8 +76,8 @@ Zrobione tę sesję (WSL, 2026-07-07):
   career-model-loader, same 200-tki). **Prod czyta model kariery z DB.**
   Rollback w każdej chwili: flaga off + redeploy.
 
-- **AG.1 — weryfikator ugruntowania luk ⏳ PR #135 (CI zielone, czeka na merge
-  Darka — klasyfikator zablokował self-merge)**. Zakres: `src/lib/ai/verify-gaps.ts`
+- **AG.1 — weryfikator ugruntowania luk ✅ zmergowane (PR #135, 2026-07-07)**.
+  Zakres: `src/lib/ai/verify-gaps.ts`
   (2 etapy: ugruntowanie deterministyczne w katalogu 0 LLM → agent-sędzia Haiku,
   fan-out `Promise.all`, tylko jednoznaczne YES weryfikuje; błąd sędziego = luka
   zostaje unverified — awaria nie obcina recall; koszt w `ai_usage_ledger`
@@ -110,8 +110,8 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
 1. ~~AG.0 — harness ewaluacyjny~~ ✅ zmergowane (#132) + baseline LLM utrwalony.
 2. ~~1.1 feature flags~~ ✅ zrobione (#129).
 3. ~~1.0 — migracja kariery JSON→DB~~ ✅ LIVE na prodzie (#134, flaga ON).
-4. **AG.1 — weryfikator luk** ⏳ PR #135 czeka na merge (Darek). Po merge'u
-   decyzja o zapaleniu flagi `FLAG_GAP_VERIFIER` (Preview → prod).
+4. ~~AG.1 — weryfikator luk~~ ✅ zmergowane (#135). Otwarta decyzja Darka:
+   zapalenie flagi `FLAG_GAP_VERIFIER` (Preview → prod); off = zero zmian.
 5. **AG.2** (potok analizy) / **AG.3** (cron rynku → STAGING, [CZERWONA LINIA])
    oraz reszta Fazy 1 wg ścieżki krytycznej (§7 roadmapy).
 
