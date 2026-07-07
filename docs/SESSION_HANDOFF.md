@@ -110,15 +110,19 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
 1. ~~AG.0 — harness ewaluacyjny~~ ✅ zmergowane (#132) + baseline LLM utrwalony.
 2. ~~1.1 feature flags~~ ✅ zrobione (#129).
 3. ~~1.0 — migracja kariery JSON→DB~~ ✅ LIVE na prodzie (#134, flaga ON).
-4. ~~AG.1 — weryfikator luk~~ ✅ zmergowane (#135). **FLAGA ZAPALONA (2026-07-07,
-   decyzja Darka):** `FLAG_GAP_VERIFIER=1` na Preview i Production + redeploy
-   prod (alias skill-bridge-ai-seven.vercel.app), smoke czysty (200-tki, logi
-   bez błędów). Uwaga operacyjna: zmienne env tego projektu są typu *sensitive* —
-   `vercel env pull` pokazuje `""` dla WSZYSTKICH takich (także działającej
-   FLAG_CAREER_MODEL_FROM_DB); wartości nie da się odczytać z zewnątrz, dowód
-   działania flagi = zachowanie runtime. Flaga dotyczy tylko gałęzi legacy LLM
-   (bez żywego wołacza w UI) — realny dowód pojawi się wpisami
-   `verify-gaps.judge` w `ai_usage_ledger` przy pierwszym użyciu legacy.
+4. ~~AG.1 — weryfikator luk~~ ✅ **DOMKNIĘTE** (zmergowane #135; flaga zapalona
+   decyzją Darka 2026-07-07: `FLAG_GAP_VERIFIER=1` Preview+Production + redeploy
+   prod, smoke czysty). **Dowód runtime wykonany E2E na żywych modelach**
+   (lokalna baza testowa 5433, zero zapisów na prod): flaga OFF → 1 wpis
+   generate-gaps, 0 wywołań sędziego (zachowanie sprzed AG.1); flaga ON →
+   weryfikator biegnie: 18/18 luk Sonneta ugruntowanych deterministycznie
+   w katalogu (0 kosztu LLM — optymalnie), a żywy sędzia Haiku odrzucił
+   halucynację „Kowalstwo artystyczne" z poprawnym uzasadnieniem i wpisem
+   w `ai_usage_ledger` (verify-gaps.judge, $0.0014, success=t); pozycja
+   katalogowa „MS Excel" zweryfikowana za darmo (method=catalog).
+   Uwaga operacyjna: zmienne env projektu są typu *sensitive* — `vercel env
+   pull` pokazuje `""` dla wszystkich (także działającej
+   FLAG_CAREER_MODEL_FROM_DB); to artefakt pulla, nie stan flagi.
 5. **AG.2** (potok analizy) / **AG.3** (cron rynku → STAGING, [CZERWONA LINIA])
    oraz reszta Fazy 1 wg ścieżki krytycznej (§7 roadmapy).
 
