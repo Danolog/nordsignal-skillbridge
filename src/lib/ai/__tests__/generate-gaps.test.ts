@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("ai", () => ({
 	generateObject: vi.fn(),
@@ -35,11 +35,19 @@ vi.mock("@/lib/db", () => ({
 	},
 }));
 
+// AG.1: weryfikator mockowany na poziomie modułu — testy sterują werdyktami,
+// a przypadek „flaga off" dowodzi, że moduł w ogóle nie jest wołany.
+vi.mock("@/lib/ai/verify-gaps", () => ({
+	verifyGapsAgainstMarket: vi.fn(),
+}));
+
 import { generateObject } from "ai";
+import { verifyGapsAgainstMarket } from "@/lib/ai/verify-gaps";
 import { db } from "@/lib/db";
 import { generateGaps } from "../generate-gaps";
 
 const mockGenerateObject = vi.mocked(generateObject);
+const mockVerifyGaps = vi.mocked(verifyGapsAgainstMarket);
 const mockFindMany = vi.mocked(db.query.jobMarketData.findMany);
 const mockTransaction = vi.mocked(db.transaction);
 const mockCompetenciesFindMany = txMock.query.competencies.findMany;
@@ -204,5 +212,96 @@ describe("generateGaps", () => {
 		await expect(generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst")).rejects.toThrow(
 			"deadlock detected",
 		);
+	});
+
+	// ── AG.1: weryfikator luk za flagą gapVerifier ────────────────────────────
+
+	describe("AG.1 · gapVerifier", () => {
+		const MARKET_ROW = {
+			competencyName: "Docker",
+			demandPercentage: 70,
+			category: "DevOps",
+		};
+
+		afterEach(() => {
+			vi.unstubAllEnvs();
+		});
+
+		it("flaga OFF (default) = weryfikator w ogóle nie jest wołany — zero zmian", async () => {
+			mockFindMany.mockResolvedValue([MARKET_ROW] as never);
+
+			await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
+
+			expect(mockVerifyGaps).not.toHaveBeenCalled();
+		});
+
+		it("flaga ON: odrzucone luki NIE trafiają do INSERT-u, zweryfikowane zostają", async () => {
+			vi.stubEnv("FLAG_GAP_VERIFIER", "1");
+			mockFindMany.mockResolvedValue([MARKET_ROW] as never);
+			// validResponse ma gaps: Docker + Kubernetes — sędzia odrzuca Kubernetes.
+			mockVerifyGaps.mockResolvedValue([
+				{ competencyName: "Docker", status: "verified", method: "catalog", reason: null },
+				{
+					competencyName: "Kubernetes",
+					status: "rejected",
+					method: "judge",
+					reason: "brak w katalogu",
+				},
+			]);
+			const valuesSpy = vi.fn();
+			mockInsert.mockReturnValue({ values: valuesSpy } as never);
+
+			await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
+
+			expect(mockVerifyGaps).toHaveBeenCalledOnce();
+			const inserted = valuesSpy.mock.calls[0][0] as Array<{ competencyName: string }>;
+			expect(inserted.map((r) => r.competencyName)).toEqual(["Docker"]);
+		});
+
+		it("flaga ON: pokrycie paszportu liczone z PRZEFILTROWANEJ listy luk", async () => {
+			vi.stubEnv("FLAG_GAP_VERIFIER", "1");
+			mockFindMany.mockResolvedValue([MARKET_ROW] as never);
+			mockVerifyGaps.mockResolvedValue([
+				{ competencyName: "Docker", status: "verified", method: "catalog", reason: null },
+				{ competencyName: "Kubernetes", status: "rejected", method: "judge", reason: null },
+			]);
+			const setSpy = vi.fn(() => ({ where: vi.fn() }));
+			mockUpdate.mockReturnValue({ set: setSpy } as never);
+
+			await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
+
+			const passportUpdate = (setSpy.mock.calls as unknown[][]).find((call) => {
+				const arg = call[0] as Record<string, unknown>;
+				return "marketCoveragePercent" in arg;
+			});
+			// 1 acquired (default mock) + 1 luka po filtrze ⇒ covered=1, total=2 ⇒ 50%
+			// (bez filtra byłoby 33% przy 2 lukach).
+			expect((passportUpdate?.[0] as Record<string, unknown>).marketCoveragePercent).toBe(50);
+		});
+
+		it("flaga ON: luki unverified (błąd sędziego) zostają zapisane — awaria nie obcina recall", async () => {
+			vi.stubEnv("FLAG_GAP_VERIFIER", "1");
+			mockFindMany.mockResolvedValue([MARKET_ROW] as never);
+			mockVerifyGaps.mockResolvedValue([
+				{ competencyName: "Docker", status: "verified", method: "catalog", reason: null },
+				{ competencyName: "Kubernetes", status: "unverified", method: "judge-error", reason: null },
+			]);
+			const valuesSpy = vi.fn();
+			mockInsert.mockReturnValue({ values: valuesSpy } as never);
+
+			await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
+
+			const inserted = valuesSpy.mock.calls[0][0] as Array<{ competencyName: string }>;
+			expect(inserted.map((r) => r.competencyName)).toEqual(["Docker", "Kubernetes"]);
+		});
+
+		it("flaga ON + pusty rynek: weryfikacja świadomie POMINIĘTA (model zmyślał dane — nie ma katalogu)", async () => {
+			vi.stubEnv("FLAG_GAP_VERIFIER", "1");
+			mockFindMany.mockResolvedValue([] as never);
+
+			await generateGaps("student-1", "tenant-1", ["Python"], "Data Analyst");
+
+			expect(mockVerifyGaps).not.toHaveBeenCalled();
+		});
 	});
 });

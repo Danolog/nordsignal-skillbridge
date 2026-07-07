@@ -5,8 +5,10 @@ import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
 import { aiTimeoutSignal } from "@/lib/ai/timeout";
 import { withAiUsage } from "@/lib/ai/usage";
+import { verifyGapsAgainstMarket } from "@/lib/ai/verify-gaps";
 import { db } from "@/lib/db";
 import { competencies, gaps, jobMarketData, passports } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 import { calculateCoverage } from "@/lib/passport-utils";
 
@@ -79,6 +81,38 @@ Zasady:
 				}),
 		);
 
+		// AG.1 (za flagą gapVerifier): drugi przebieg — luka z modelu musi mieć
+		// pokrycie w danych rynkowych, zanim trafi do studenta. Odrzucone NIE są
+		// zapisywane (pokrycie paszportu liczy się niżej już z przefiltrowanej listy).
+		// POZA transakcją jak samo generateObject (nie trzymamy tx przez LLM).
+		// Guard `marketData.length > 0`: przy pustym rynku prompt wyżej każe modelowi
+		// ZMYŚLIĆ dane — weryfikacja względem pustego katalogu odrzuciłaby wszystko
+		// i zostawiła studenta bez luk, więc wtedy świadomie pomijamy przebieg.
+		let gapsToPersist = result.gaps;
+		if (isFeatureEnabled("gapVerifier") && marketData.length > 0) {
+			const verdicts = await verifyGapsAgainstMarket({
+				gapNames: result.gaps.map((g) => g.name),
+				marketCompetencies: marketData.map((m) => ({
+					competencyName: m.competencyName,
+					demandPercentage: m.demandPercentage,
+				})),
+				careerGoal,
+				attribution: { studentId, tenantId },
+			});
+			const rejected = verdicts.filter((v) => v.status === "rejected");
+			if (rejected.length > 0) {
+				// Nazwy kompetencji to nie PII — log daje obserwowalność „co obcina
+				// weryfikator" bez zaglądania do ledgera (precedens: console.warn w db/index).
+				console.warn(
+					`[verify-gaps] odrzucono ${rejected.length}/${result.gaps.length} luk bez pokrycia w rynku (student ${studentId}): ${rejected
+						.map((v) => v.competencyName)
+						.join(", ")}`,
+				);
+				const rejectedNames = new Set(rejected.map((v) => v.competencyName));
+				gapsToPersist = result.gaps.filter((g) => !rejectedNames.has(g.name));
+			}
+		}
+
 		// 0.3 (HIGH): wszystkie mutacje w JEDNEJ transakcji. Wcześniej delete→insert→
 		// update statusów→upsert paszportu leciały sekwencyjnie bez atomowości —
 		// przerwanie w środku zostawiało niespójny stan (luki skasowane ale nie
@@ -90,9 +124,9 @@ Zasady:
 		await db.transaction(async (tx) => {
 			// Save gaps (idempotent — wipe existing first so re-running on profile edit doesn't duplicate)
 			await tx.delete(gaps).where(eq(gaps.studentId, studentId));
-			if (result.gaps.length > 0) {
+			if (gapsToPersist.length > 0) {
 				await tx.insert(gaps).values(
-					result.gaps.map((g) => ({
+					gapsToPersist.map((g) => ({
 						studentId,
 						tenantId,
 						competencyName: g.name,
@@ -127,7 +161,7 @@ Zasady:
 				where: eq(competencies.studentId, studentId),
 				columns: { status: true },
 			});
-			const coverage = calculateCoverage(freshComps, result.gaps.length);
+			const coverage = calculateCoverage(freshComps, gapsToPersist.length);
 
 			const existingPassport = await tx.query.passports.findFirst({
 				where: eq(passports.studentId, studentId),
