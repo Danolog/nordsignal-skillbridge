@@ -11,14 +11,14 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-07
+## STAN NA DZIŚ — 2026-07-08
 
 ### Gdzie żyje repo
 - **Lokalnie (2 maszyny):** macOS `~/Claude_Cowork/SkillBridge` · WSL
   `~/projekty/nordsignal-skillbridge`. Nie trzymać aktywnego repo pod iCloud.
 - **Zdalnie:** `github.com/Danolog/nordsignal-skillbridge`, gałąź `main`.
-- **Baseline:** `main` zielony — build, `tsc` 0, Biome 0, unit 891/891,
-  integration 52/52.
+- **Baseline:** `main` zielony — build, `tsc` 0, Biome 0, unit 957/957,
+  integration 74/74 (stan po gałęzi AG.6).
 
 ### Faza 0 — ZAMKNIĘTA i wypchnięta
 Zadania 0.0–0.16 zmergowane (ostatni: PR #125 „paczka LOW 0.15", 2026-07-04).
@@ -168,7 +168,7 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    smoke prod 200-tki. Migracje: lokalna-test na **0024**; prod na **0022**
    (0023 czeka przy pierwszym użyciu AG.3/AG.4; **0024 przed zapaleniem
    `FLAG_ADVISOR_MEMORY`**).
-8. **AG.5 — deterministyczny recompute luk po swapie ⏳ PR otwarty**.
+8. ~~AG.5~~ ✅ **zmergowane (#142, decyzja Darka „merge", 2026-07-08)**.
    Migracja **0025** (`market_new_gap_events` — zdarzenia „rynek
    zaczął wymagać X" dla AG.6, RLS wzorem 0024 z grantem TYLKO SELECT dla
    studenta; + `market_refresh_runs.recompute` jsonb). Moduł
@@ -188,9 +188,28 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    Ryana przy review). Bramki: tsc 0, Biome 0, unit 941/941, integration
    68/68 + k3 zielony, build OK. **Przed pierwszym realnym przebiegiem na
    prod: migracja 0025** (razem z 0023/0024 w jednej sesji migracyjnej Darka).
-9. Następne do implementacji: **AG.6** (powiadomienie „nowa luka" — konsumuje
-   `market_new_gap_events.notified_at`; styk z 1.18, RODO: zgoda na monitoring
-   rynku). Potem bramka wyjścia Bloku AG.
+9. **AG.6 — powiadomienie „nowa luka" ⏳ PR otwarty (ostatnie zadanie Bloku
+   AG)**. Decyzje Darka 2026-07-08: kanał **in-app** (bez e-maila — zero nowych
+   usług zewnętrznych), RODO **opt-in checkbox** (bez zgody recompute działa,
+   powiadomienia się nie pokazują; zgoda odwoływalna). Zakres: migracja **0026**
+   (kolumny zgody na `students`, bez zmian RLS), flaga
+   `FLAG_MARKET_GAP_NOTIFICATIONS` (osobna od potoku rynku — release UI
+   niezależny), `src/lib/market-notifications.ts` (odczyt zdarzeń jako
+   app_student przez withTenantContext), trasy POST
+   `/api/market-notifications/{consent,read}` (sesja Better Auth; zapisy
+   owner-side zgodnie z zapowiedzią w 0025), komponent `MarketGapNotifications`
+   na dashboardzie (karta zgody → lista „Rynek zaczął wymagać: X" → mark-read;
+   bez lustrzanego stanu — POST + router.refresh). DoD dowiedzione integracyjnie
+   na realnej bazie: zmiana rynku → zdarzenie i powiadomienie WYŁĄCZNIE u
+   dotkniętego studenta; bramkowanie zgodą; mark-read → `notified_at`, drugi
+   odczyt pusty; wycofanie zgody chowa; flaga off = feature nie istnieje
+   (ogniwo swap→recompute dowiedzione suitami AG.4/AG.5 + unit wiring).
+   Bramki: tsc 0, Biome 0, unit 957/957, integration 74/74 + k3 zielony,
+   BUILD_OK. **Przed zapaleniem flagi na prod: migracja 0026** (razem z
+   0023/0024/0025 w jednej sesji migracyjnej Darka).
+10. Po merge AG.6: **bramka wyjścia Bloku AG** (przegląd: jakość zmierzona AG.0,
+   weryfikator AG.1, rynek cykliczny AG.3/AG.4, recompute AG.5, powiadomienia
+   AG.6, pamięć doradcy AG.7, koszt per student w `ai_usage_ledger` vs P&L).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).

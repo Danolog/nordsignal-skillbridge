@@ -41,6 +41,8 @@ const student = {
 	onboardingStep: 5,
 	syllabusText: null,
 	careerHelperCompletedAt: null,
+	marketMonitoringConsent: false,
+	marketMonitoringDecidedAt: null,
 	createdAt: new Date(),
 	updatedAt: new Date(),
 };

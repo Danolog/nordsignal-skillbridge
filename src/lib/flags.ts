@@ -33,8 +33,14 @@ type FlagDefinition = {
 export const FLAGS = {
 	proactiveMarketRefresh: {
 		envVar: "FLAG_PROACTIVE_MARKET_REFRESH",
+		description: "Blok AG: cykliczne odświeżanie rynku + recompute luk (strona operacyjna Darka).",
+		defaultValue: false,
+	},
+	marketGapNotifications: {
+		envVar: "FLAG_MARKET_GAP_NOTIFICATIONS",
 		description:
-			"Blok AG: cykliczne odświeżanie rynku + recompute luk + powiadomienia o nowej luce.",
+			"AG.6: powiadomienia studenta „nowa luka — rynek zaczął wymagać X” (strona studencka; " +
+			"niezależna od proactiveMarketRefresh — release UI nie jest sprzężony z potokiem rynku).",
 		defaultValue: false,
 	},
 	advisorMemory: {

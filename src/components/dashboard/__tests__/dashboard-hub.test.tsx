@@ -3,6 +3,9 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { DashboardHub } from "../dashboard-hub";
 
+// AG.6: hub renderuje MarketGapNotifications (useRouter) — router poza Next musi być zmockowany.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 vi.mock("next/link", () => ({
 	default: ({
 		children,
@@ -46,6 +49,14 @@ const defaultProps = {
 		priority: "critical",
 		marketPercentage: 11,
 		whyImportant: "Rynek wymaga monitorowania zdarzeń.",
+	},
+	// AG.6: flaga off → komponent powiadomień nie renderuje się (osobne testy
+	// stanów w market-gap-notifications.test.tsx).
+	marketNotifications: {
+		enabled: false,
+		decided: false,
+		consent: false,
+		notifications: [],
 	},
 };
 
