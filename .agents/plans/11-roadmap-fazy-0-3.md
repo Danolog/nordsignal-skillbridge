@@ -304,7 +304,9 @@ tryb Opus blokujący) jako wzorzec weryfikatora; ETL JustJoinIT; `ai_usage_ledge
   żywego wołacza w UI (w kodzie oznaczony jako kandydat do usunięcia). Nowy zakres:
   usunąć gałąź legacy (kontrakt tablicy stringów) + `generate-gaps.ts` i jego testy;
   `verify-gaps.ts` (AG.1) ZOSTAJE — klocek reużywalny wszędzie, gdzie model produkuje
-  nazwy kompetencji (AG.5 opisy nowych luk, przyszłe potoki). Opcjonalny osobny
+  nazwy kompetencji (AG.5 opisy nowych luk, przyszłe potoki). Wraz z gałęzią znika
+  flaga `gapVerifier` (jedyny konsument skasowany; env `FLAG_GAP_VERIFIER` na
+  Vercelu do usunięcia — nieszkodliwa, nic jej nie czyta). Opcjonalny osobny
   punkt P2 (poza AG.2): jakość adnotacji sylabusem — lepsze dopasowanie nazw
   z `/api/syllabus/parse` do katalogu (wartość dla panelu wykładowcy program vs
   rynek), NIE wpływa na luki. Dowód: kontrakt legacy zwraca 400 (albo ścieżka

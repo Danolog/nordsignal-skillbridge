@@ -1,25 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * POST /api/onboarding — kontrakt walidacji po PRZEBUDOWIE Partii 4.
+ * POST /api/onboarding — kontrakt walidacji po Partii 4 i kasacji legacy (AG.2).
  *
- * CO SIĘ ZMIENIŁO (flip bramy #3): próg „min 5 kompetencji" ZNIESIONY (D5). Kontrakt
- * `competencies` to teraz UNIA:
- *   • NOWY (onboarding): tablica obiektów { name, level∈{2,3,4}, marketPercentage, inSyllabus? }.
- *     0 zaznaczeń dozwolone (pusta tablica → ścieżka nowa, 0% pokrycia = uczciwy start).
- *     Luki liczone DETERMINISTYCZNIE (persistMarketGaps), NIE modelem.
- *   • LEGACY (profil-editor): tablica nazw (string[]) — stara ścieżka (generateGaps).
- *     Nietknięta, by nie zepsuć edytora profilu poza zakresem Partii 4.
+ * Kontrakt `competencies` to JEDNA forma (AG.2, 2026-07-07): tablica obiektów
+ * { name, level∈{2,3,4}, marketPercentage, inSyllabus? }. 0 zaznaczeń dozwolone
+ * (pusta tablica → 0% pokrycia = uczciwy start, D5). Luki liczone
+ * DETERMINISTYCZNIE (persistMarketGaps), NIE modelem. Gałąź LEGACY (string[]
+ * → generateGaps) USUNIĘTA — stary kontrakt pada na walidacji (400).
  *
- * Co testujemy realnie (route handler + OnboardingSchema), DB/AI zamockowane na granicy:
- *   - 0 kompetencji → 200 (próg zniesiony — sedno flipu);
- *   - nowy kontrakt (obiekty z poziomem) → ścieżka persistMarketGaps (NIE generateGaps);
- *   - legacy string[] zachowany → ścieżka generateGaps (NIE persistMarketGaps);
+ * Co testujemy realnie (route handler + OnboardingSchema), DB zamockowane na granicy:
+ *   - 0 kompetencji → 200 (próg zniesiony);
+ *   - obiekty z poziomem → persistMarketGaps z nazwami zaznaczonych;
+ *   - LEGACY string[] → 400 PRZED bazą (dowód kasacji AG.2);
  *   - poziom spoza {2,3,4} / % popytu poza zakresem → 400 PRZED bazą;
  *   - 401 bez sesji.
  *
- * Mock NA GRANICY: auth, rate-limit, tenant-mapping, tenant-context (DB), persistMarketGaps,
- * AI (generateGaps/generateSkillMap). Realny: parsowanie body + OnboardingSchema + routing ścieżki.
+ * Mock NA GRANICY: auth, rate-limit, tenant-mapping, tenant-context (DB),
+ * persistMarketGaps, generateSkillMap. Realny: parsowanie body + OnboardingSchema.
  */
 
 // --- Mocks na granicy (zero realnej bazy, zero realnego LLM) -----------------
@@ -58,10 +56,7 @@ vi.mock("@/lib/onboarding/market-gaps", () => ({
 	persistMarketGaps: (...a: unknown[]) => mockPersistMarketGaps(...a),
 }));
 
-// Ścieżka LEGACY (profil-editor) — luki przez model.
-const mockGenerateGaps = vi.fn(async () => undefined);
 const mockGenerateSkillMap = vi.fn(async () => undefined);
-vi.mock("@/lib/ai/generate-gaps", () => ({ generateGaps: () => mockGenerateGaps() }));
 vi.mock("@/lib/ai/generate-skill-map", () => ({ generateSkillMap: () => mockGenerateSkillMap() }));
 
 const mockLogError = vi.fn();
@@ -109,13 +104,12 @@ describe("POST /api/onboarding — kontrakt Partii 4 (próg min-5 zniesiony)", (
 		const json = (await res.json()) as { success: boolean; studentId: string };
 		expect(json.success).toBe(true);
 		expect(json.studentId).toBe("student-1");
-		// Pusta tablica = NOWY kontrakt (0 zaznaczeń): ścieżka deterministyczna, nie model.
+		// Pusta tablica = 0 zaznaczeń: ścieżka deterministyczna liczy luki z całego katalogu.
 		expect(mockPersistMarketGaps).toHaveBeenCalledOnce();
-		expect(mockGenerateGaps).not.toHaveBeenCalled();
 		expect(mockGenerateSkillMap).toHaveBeenCalledOnce();
 	});
 
-	it("nowy kontrakt (obiekty z poziomem) → ścieżka persistMarketGaps, NIE generateGaps", async () => {
+	it("obiekty z poziomem → persistMarketGaps z nazwami zaznaczonych", async () => {
 		const competencies = [comp("SQL", 3, 90), comp("Python", 2, 70), comp("Pandas", 4, 40)];
 		const res = await POST(makeReq({ ...VALID_PROFILE, competencies }));
 		expect(res.status).toBe(200);
@@ -125,19 +119,17 @@ describe("POST /api/onboarding — kontrakt Partii 4 (próg min-5 zniesiony)", (
 		expect(mockPersistMarketGaps).toHaveBeenCalledOnce();
 		const args = mockPersistMarketGaps.mock.calls[0] as unknown[];
 		expect(args[3]).toEqual(["SQL", "Python", "Pandas"]); // (studentId, tenantId, careerGoal, names)
-		expect(mockGenerateGaps).not.toHaveBeenCalled();
 		expect(mockGenerateSkillMap).toHaveBeenCalledOnce();
 	});
 
-	it("LEGACY string[] zachowany (profil-editor) → ścieżka generateGaps, NIE persistMarketGaps", async () => {
+	it("AG.2: LEGACY string[] → 400 PRZED bazą (gałąź modelu skasowana, DoD kasacji)", async () => {
 		const res = await POST(makeReq({ ...VALID_PROFILE, competencies: ["Python", "SQL", "Git"] }));
-		expect(res.status).toBe(200);
-		const json = (await res.json()) as { success: boolean };
-		expect(json.success).toBe(true);
-		// Stringi → kontrakt legacy → model (zachowanie sprzed Partii 4 nietknięte).
-		expect(mockGenerateGaps).toHaveBeenCalledOnce();
+		expect(res.status).toBe(400);
+		const json = (await res.json()) as { error: string };
+		expect(json.error).toBe("Invalid input");
+		// Walidacja odrzuca PRZED withTenantContext i PRZED liczeniem luk.
+		expect(mockWithTenant).not.toHaveBeenCalled();
 		expect(mockPersistMarketGaps).not.toHaveBeenCalled();
-		expect(mockGenerateSkillMap).toHaveBeenCalledOnce();
 	});
 
 	it("poziom spoza {2,3,4} (np. 1 = Brak, albo 5) → 400 PRZED bazą", async () => {

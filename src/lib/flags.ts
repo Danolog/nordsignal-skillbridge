@@ -53,12 +53,10 @@ export const FLAGS = {
 			"1.0: model kariery czytany z career_model_versions (DB) zamiast statycznego JSON w repo.",
 		defaultValue: false,
 	},
-	gapVerifier: {
-		envVar: "FLAG_GAP_VERIFIER",
-		description:
-			"AG.1: weryfikator luk — drugi przebieg sprawdza pokrycie każdej luki z modelu w danych rynkowych (job_market_data), zanim luka trafi do studenta.",
-		defaultValue: false,
-	},
+	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
+	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
+	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).
+	// Env FLAG_GAP_VERIFIER na Vercelu można usunąć (nieszkodliwa, nic jej nie czyta).
 } as const satisfies Record<string, FlagDefinition>;
 
 /** Nazwa istniejącej flagi — węższy typ niż string, wymuszony przez rejestr. */

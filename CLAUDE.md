@@ -77,7 +77,7 @@ pnpm db:seed       # seed demo data
 - Submission review with cheat detection (`review-submission.ts`)
 - Competency Passport: private view + public shareable link (UUID) + PDF export + Verified Project Receipts
 - Faculty Panel: shared password auth (`FACULTY_PASSWORD` cookie), heatmap dashboard (Recharts), top missing competencies, AI curriculum suggestions
-- AI modules: `parse-syllabus`, `generate-skill-map`, `generate-gaps`, `generate-why`, `generate-micro-course` (deprecated — `generateLearningSteps` extracted), `generate-faculty-suggestions`, `match-projects`, `generate-brief`, `review-submission`, `verify-gaps` (AG.1 — weryfikator ugruntowania luk, za flagą `gapVerifier`)
+- AI modules: `parse-syllabus`, `generate-skill-map`, `generate-why`, `generate-micro-course` (deprecated — `generateLearningSteps` extracted), `generate-faculty-suggestions`, `match-projects`, `generate-brief`, `review-submission`, `verify-gaps` (AG.1 — reusable gap-grounding verifier; jego pierwotny konsument `generate-gaps` usunięty w AG.2)
 - Route protection middleware for authenticated routes
 - Seed data: 15 demo students across 5 career paths, 90 job market records, 20 demo projects (L1-L3)
 - Drizzle migrations as source of truth (in `drizzle/`)
@@ -155,8 +155,7 @@ src/
     ├── ai/                      # AI generation modules
     │   ├── parse-syllabus.ts
     │   ├── generate-skill-map.ts
-    │   ├── generate-gaps.ts
-    │   ├── verify-gaps.ts       # AG.1: gap grounding verifier (Haiku, flag gapVerifier)
+    │   ├── verify-gaps.ts       # AG.1: reusable gap-grounding verifier (Haiku)
     │   ├── generate-why.ts      # "Why is this important?"
     │   ├── generate-micro-course.ts  # @deprecated, Learning Steps extracted
     │   ├── generate-faculty-suggestions.ts

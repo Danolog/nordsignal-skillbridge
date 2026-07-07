@@ -37,7 +37,6 @@ vi.mock("@/lib/rate-limit", () => ({
 	applyRateLimit: vi.fn(async () => ({ success: true, reset: 0, remaining: 99 })),
 	rateLimitResponse: () => new Response("rate", { status: 429 }),
 }));
-vi.mock("@/lib/ai/generate-gaps", () => ({ generateGaps: vi.fn(async () => undefined) }));
 vi.mock("@/lib/ai/generate-skill-map", () => ({ generateSkillMap: vi.fn(async () => undefined) }));
 
 const dBack = isLocalTestDb ? describe : describe.skip;
@@ -93,7 +92,10 @@ dBack("POST /api/onboarding NIE zapala ukończenia przedwcześnie (realna baza)"
 			semester: 4,
 			careerGoal: "Data Analyst",
 			syllabusText: "",
-			competencies: ["Python", "SQL", "Statystyka", "Git", "Wizualizacja danych"],
+			competencies: ["Python", "SQL", "Statystyka", "Git", "Wizualizacja danych"].map(
+				// AG.2: kontrakt legacy string[] skasowany — testy kroków wysyłają obiekty.
+				(name) => ({ name, level: 3, marketPercentage: 50, inSyllabus: false }),
+			),
 		};
 		const res = await POST(
 			new Request("http://localhost/api/onboarding", {
@@ -130,7 +132,9 @@ dBack("POST /api/onboarding NIE zapala ukończenia przedwcześnie (realna baza)"
 			semester: 4,
 			careerGoal: "Data Analyst",
 			syllabusText: "",
-			competencies: ["Python", "SQL", "Statystyka", "Git", "Wizualizacja danych", "Pandas"],
+			competencies: ["Python", "SQL", "Statystyka", "Git", "Wizualizacja danych", "Pandas"].map(
+				(name) => ({ name, level: 3, marketPercentage: 50, inSyllabus: false }),
+			),
 		};
 		const res = await POST(
 			new Request("http://localhost/api/onboarding", {

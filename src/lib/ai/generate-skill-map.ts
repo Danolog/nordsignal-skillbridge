@@ -18,8 +18,8 @@ import { buildGraph, enrichNodesWithGroupContext } from "@/lib/skill-map/build-g
  * węzłów "missing" na mapie == liczba luk wszędzie indziej. Logika grafu w
  * `src/lib/skill-map/build-graph.ts` (czysta funkcja, testowalna jednostkowo).
  *
- * WAŻNE: wołać PO `generateGaps` — graf czyta świeże luki i statusy, które
- * `generateGaps` właśnie zapisał. Kolejność egzekwuje POST /api/onboarding
+ * WAŻNE: wołać PO `persistMarketGaps` — graf czyta świeże luki i statusy,
+ * które tamten zapis właśnie utrwalił. Kolejność egzekwuje POST /api/onboarding
  * (sekwencja zamiast Promise.all).
  *
  * Sygnatura uproszczona do (studentId, tenantId) — funkcja czyta kompetencje
