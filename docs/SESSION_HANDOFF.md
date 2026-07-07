@@ -154,31 +154,26 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    (bez pośpiechu — trasa martwa przy zgaszonej fladze): migracja 0023 na prod +
    `MARKET_REFRESH_TOKEN` + `FLAG_PROACTIVE_MARKET_REFRESH` (runbook
    market-refresh). Do review PR-a przypięty sign-off Ryana rls-matrix v0.16.
-7. **TRZY PR-y CZEKAJĄ NA MERGE DARKA** (równoległość AG.4+AG.7 — decyzja
-   Darka; wszystkie z zielonym CI, bez wspólnych plików kodowych):
-   - **#137 — AG.2** kasacja gałęzi legacy LLM luk (−602/+102; string[] → 400;
-     flaga `gapVerifier` usunięta — env `FLAG_GAP_VERIFIER` na Vercelu do
-     skasowania; `verify-gaps.ts` zostaje jako klocek). Unit 921, integ 59.
-   - **#138 — AG.4** bramka akceptacji + transakcyjny swap staging→prod
-     [CZERWONA LINIA]: widok mobile `/market-refresh` (token), decyzja
-     accept/reject; accept = tx wzorem ADR-009/§10 (auto-backup
-     `job_market_data_bak`, kontrola liczb przed COMMIT, 4 strażnice → 409);
-     E2E na realnej bazie: swap+backup / reject bez zmian / starszy run 409;
-     rollback udokumentowany W RUNBOOKU i wykonywany przez sprzątanie testu.
-     rls-matrix **v0.17** (transient _bak). Unit 941, integ 63. Bez migracji.
-   - **#139 — AG.7** pamięć doradcy (agent równoległy, worktree): tabela
-     `advisor_memory` (migracja **0024**, pełny RLS wzorem 0013, deny-faculty),
-     builder kontekstu z DB (profil/luki/projekty/fakty, cap 1500 znaków,
-     sanitize), wpięcie w turn/summary za flagą `advisorMemory` (off =
-     prompty bajt-w-bajt), zapis faktu po podsumowaniu HITL-gated. DoD: druga
-     sesja zna stan z pierwszej (integracja). rls-matrix **v0.18**.
-     Unit 946, integ 61. **Przed zapaleniem flagi na prod: migracja 0024.**
-   ⚠ Kolejność merge: #138 i #139 OBA dotykają `docs/security/rls-matrix.md`
-   (changelogi v0.17/v0.18) — drugi merge może wymagać trywialnego scalenia
-   nagłówka; robi to sesja, nie Darek. Po AG.2 (#137) env `FLAG_GAP_VERIFIER`
-   do skasowania.
+7. ~~AG.2 / AG.4 / AG.7~~ ✅ **WSZYSTKIE ZMERGOWANE (decyzja Darka „merge
+   wszystkie trzy", 2026-07-07):** #137 (AG.2 kasacja legacy), #138 (AG.4
+   bramka akceptacji + swap), #139 (AG.7 pamięć doradcy — agent równoległy,
+   worktree posprzątany). Po drodze: świeże KRYTYCZNE advisory better-auth
+   <1.6.11 (replay refresh-tokenów OAuth w pluginach oidc/mcp, których NIE
+   używamy) zablokowało deps-scan → **#140 bump better-auth 1.5.4→1.6.23**
+   (+ overrides sso/core 1.6.23) zmergowany między nimi; konflikt rls-matrix
+   #138↔#139 scalony do **v0.18** z oboma changelogami (v0.17 AG.4 + v0.18
+   AG.7 — oba do sign-offu Ryana). Osierocony env `FLAG_GAP_VERIFIER` usunięty
+   z Vercela (Preview+Production). **Weryfikacja SCALONEGO main:** tsc 0,
+   Biome 0, unit 927/927, integration 63/63 + k3-validate zielony, build OK;
+   smoke prod 200-tki. Migracje: lokalna-test na **0024**; prod na **0022**
+   (0023 czeka przy pierwszym użyciu AG.3/AG.4; **0024 przed zapaleniem
+   `FLAG_ADVISOR_MEMORY`**).
 8. Następne do implementacji: **AG.5** (deterministyczny recompute luk po
-   swapie) → **AG.6** (powiadomienie „nowa luka"). Blok AG będzie wtedy domknięty.
+   swapie, ~0 LLM, opisy nowych luk przez cache + verify-gaps jako klocek) →
+   **AG.6** (powiadomienie „nowa luka"). Potem Blok AG domknięty (bramka
+   wyjścia AG). Drobiazg porządkowy z raportu AG.7: tabele `career_helper_*`/
+   `student_career_paths` (0013) mają RLS, ale brak ich w §3 rls-matrix
+   i TENANT_TABLES — domknąć przy AG.5.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
