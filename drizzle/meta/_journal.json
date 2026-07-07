@@ -162,6 +162,13 @@
       "when": 1783424073094,
       "tag": "0022_swift_iron_monger",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1783446582091,
+      "tag": "0023_pale_mentallo",
+      "breakpoints": true
     }
   ]
 }

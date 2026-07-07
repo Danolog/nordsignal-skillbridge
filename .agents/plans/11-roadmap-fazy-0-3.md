@@ -310,14 +310,24 @@ tryb Opus blokujący) jako wzorzec weryfikatora; ETL JustJoinIT; `ai_usage_ledge
   rynek), NIE wpływa na luki. Dowód: kontrakt legacy zwraca 400 (albo ścieżka
   znika ze schematu), testy i build zielone, zero martwego kodu LLM luk.
 
-- **AG.3 · Cron MIESIĘCZNEGO odświeżania rynku → STAGING (P1) [CZERWONA LINIA —
-  dane prod] [ZMIANA — decyzja Darka 2026-07-07: raz w miesiącu, nie co
-  tydzień]**. Vercel Cron → API route → ETL JustJoinIT (reuse
-  `tools/etl-justjoinit.ts`) pisze do `job_market_data_staging`, liczy diff vs prod
-  (nowe/zmienione/zniknięte ścieżki i kompetencje), zapisuje raport diffu. ZERO
-  zapisu na prod. Powiadomienie do Darka z podsumowaniem. ⚠ Limit czasu funkcji
-  Vercela — jeśli ETL nie mieści się w timeout, podział na chunki (wzorzec 0.10).
-  Dowód: cron pisze do staging, diff poprawny na sztucznym delcie, prod nietknięty.
+- **AG.3 · MIESIĘCZNE odświeżanie rynku → STAGING (P1) [CZERWONA LINIA — dane
+  prod] [ZMIANA ×2 — decyzje Darka 2026-07-07: (a) raz w miesiącu, nie co
+  tydzień; (b) architektura UPLOAD-DRIVEN zamiast crona pobierającego]**.
+  Powód (b): dane rynku pochodzą z RĘCZNEGO eksportu CSV JustJoinIT (prowenicja
+  §0, md5) — automatyczne źródło nie istnieje, cron nie miałby czego pobrać.
+  Realizacja: Darek raz w miesiącu wgrywa oba CSV (.gz) na
+  `POST /api/market-refresh/ingest` (flaga `proactiveMarketRefresh` + sekret
+  `MARKET_REFRESH_TOKEN`, limit body 8 MB per-trasa) → TEN SAM silnik ETL
+  (`tools/etl-justjoinit.ts` przez shim `src/lib/market-refresh/etl-core`) →
+  wipe+insert `job_market_data_staging` + wiersz `market_refresh_runs` (md5 obu
+  CSV, liczniki silnika, diff jsonb, dokładne bajty OBU artefaktów — wsad dla
+  AG.4 bez ponownego uploadu). ZERO zapisu na prod. Przypomnienie miesięczne =
+  kalendarz Darka do czasu warstwy powiadomień (AG.6). ⚠ Limit czasu
+  ROZSTRZYGNIĘTY pomiarem: pełna skala zrzutu (9 922 ofert / ~50k wierszy tech)
+  = ~0,4 s (`tests/unit/etl-scale.test.ts`) — chunking (0.10) zbędny.
+  Dowód: ingest pisze staging + run (integracja na realnej bazie), diff poprawny
+  na sztucznym delcie (unit), prod bajt-w-bajt nietknięty (integracja).
+  Runbook: `docs/runbooks/market-refresh-runbook.md`.
 
 - **AG.4 · Bramka akceptacji + swap na prod (P1) [CZERWONA LINIA]**. Widok/endpoint:
   Darek ogląda diff z AG.3, akceptuje jednym tapnięciem (mobile-friendly) →
@@ -427,9 +437,11 @@ dojrzałych, receipty w ≥2 ATS.
   bez człowieka łamałby regułę sign-offu. Wybrany kompromis: pobranie (AG.3) i
   recompute (AG.5) automatyczne, sam swap (AG.4) za jednym tapnięciem Darka. Nie
   „zero laptopa", ale „zero ręcznego ETL".
-- **Timeout funkcji Vercela dla crona/ETL** — długi ingest może nie zmieścić się w
-  limicie funkcji; podział na chunki (wzorzec 0.10) albo kolejka. Zweryfikować
-  wcześnie w AG.3, bo determinuje architekturę odświeżania.
+- **Timeout funkcji Vercela dla ETL — ROZSTRZYGNIĘTE (AG.3, 2026-07-07):** pomiar
+  na pełnej skali zrzutu (9 922 ofert / ~50k wierszy tech) = ~0,4 s
+  (`tests/unit/etl-scale.test.ts`) przy `maxDuration=300` trasy ingest — chunking
+  (0.10) i kolejka zbędne. Ryzyko wraca dopiero, gdyby źródło danych urosło o rzędy
+  wielkości.
 - **Ślepy zaułek platformowy** — Routines/Dynamic Workflows to narzędzia dev, nie
   runtime produktu (patrz Blok AG). Trzymać się Vercel Cron + Messages API +
   Postgres; Managed Agents dopiero przy realnej potrzebie długich stanowych zadań.
