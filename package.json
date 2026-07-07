@@ -39,7 +39,7 @@
 		"@upstash/redis": "^1.37.0",
 		"@xyflow/react": "^12.10.1",
 		"ai": "^6.0.116",
-		"better-auth": "^1.5.4",
+		"better-auth": "^1.6.23",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"drizzle-orm": "^0.45.2",
@@ -86,8 +86,8 @@
 	},
 	"pnpm": {
 		"overrides": {
-			"@better-auth/sso": "1.6.9",
-			"@better-auth/core": "1.6.9",
+			"@better-auth/sso": "1.6.23",
+			"@better-auth/core": "1.6.23",
 			"samlify": ">=2.13.0",
 			"@xmldom/xmldom": ">=0.9.8",
 			"undici": "^7.28.0",
