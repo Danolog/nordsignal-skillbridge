@@ -164,7 +164,7 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    #138↔#139 scalony do **v0.18** z oboma changelogami (v0.17 AG.4 + v0.18
    AG.7 — oba do sign-offu Ryana). Osierocony env `FLAG_GAP_VERIFIER` usunięty
    z Vercela (Preview+Production). **Weryfikacja SCALONEGO main:** tsc 0,
-   Biome 0, unit 927/927, integration 63/63 + k3-validate zielony, build OK;
+   Biome 0, unit 938/938, integration 65/65 + k3-validate zielony, build OK;
    smoke prod 200-tki. Migracje: lokalna-test na **0024**; prod na **0022**
    (0023 czeka przy pierwszym użyciu AG.3/AG.4; **0024 przed zapaleniem
    `FLAG_ADVISOR_MEMORY`**).
