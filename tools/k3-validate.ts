@@ -51,6 +51,17 @@ const TENANT_TABLES = [
 	// FORCE RLS + student_sees_own + owner_passthrough; grant tylko app_student
 	// (app_faculty bez grantu — jak career_helper_turns).
 	"advisor_memory",
+	// AG.5 — zdarzenia „nowa luka po odświeżeniu rynku" (migracja 0025). Dane
+	// studenta; grant TYLKO SELECT dla app_student (zapis wyłącznie owner —
+	// recompute/AG.6); FORCE RLS + student_sees_own + owner_passthrough.
+	"market_new_gap_events",
+	// Porządek (dryf z raportu AG.7): tabele Pomocnika z migracji 0013 miały
+	// pełny wzorzec RLS (ENABLE+FORCE+student_sees_own+owner_passthrough,
+	// zweryfikowane na bazie), ale historycznie nie trafiły na tę listę —
+	// przez co testy #3/#4/#10 ich nie pilnowały. Domknięte przy AG.5.
+	"career_helper_sessions",
+	"career_helper_turns",
+	"student_career_paths",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.

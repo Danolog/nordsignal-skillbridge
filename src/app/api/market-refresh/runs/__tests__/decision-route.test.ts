@@ -11,7 +11,22 @@ const { dbMock } = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({ db: dbMock }));
 
+// AG.5: recompute mockowany na granicy modułu (wiring testowany niżej).
+vi.mock("@/lib/market-refresh/recompute", () => ({
+	runMarketRecompute: vi.fn(async () => ({
+		students: 3,
+		studentsWithNewGaps: 1,
+		newGapsTotal: 2,
+		uniqueDescriptionsGenerated: 1,
+		llmCalls: 1,
+		errors: 0,
+	})),
+}));
+
+import { runMarketRecompute } from "@/lib/market-refresh/recompute";
 import { POST } from "../[id]/decision/route";
+
+const mockRecompute = vi.mocked(runMarketRecompute);
 
 const TOKEN = "sekret-testowy-ag4";
 // Poprawny UUIDv4 (zod waliduje bity wersji/wariantu, nie sam format 8-4-4-4-12).
@@ -83,6 +98,40 @@ describe("POST /api/market-refresh/runs/[id]/decision", () => {
 		mockUpdateReturning([]);
 		const res = await POST(makeRequest({ decision: "reject" }, TOKEN), ctx(RUN_ID));
 		expect(res.status).toBe(409);
+	});
+
+	it("accept OK → AG.5: recompute wywołany z runId PO swapie; podsumowanie w odpowiedzi", async () => {
+		dbMock.transaction.mockResolvedValue({ rows: 240 });
+		const res = await POST(makeRequest({ decision: "accept" }, TOKEN), ctx(RUN_ID));
+		expect(res.status).toBe(200);
+		const body = (await res.json()) as {
+			recompute: { llmCalls: number };
+			recomputeFailed?: boolean;
+		};
+		expect(mockRecompute).toHaveBeenCalledExactlyOnceWith({ runId: RUN_ID });
+		expect(body.recompute.llmCalls).toBe(1);
+		expect(body.recomputeFailed).toBeUndefined();
+	});
+
+	it("accept OK, ale recompute pada → swap ZOSTAJE (200), recomputeFailed + wskazówka retry", async () => {
+		dbMock.transaction.mockResolvedValue({ rows: 240 });
+		mockRecompute.mockRejectedValueOnce(new Error("db hiccup"));
+		const res = await POST(makeRequest({ decision: "accept" }, TOKEN), ctx(RUN_ID));
+		expect(res.status).toBe(200);
+		const body = (await res.json()) as {
+			prodChanged: boolean;
+			recomputeFailed?: boolean;
+			retry?: string;
+		};
+		expect(body.prodChanged).toBe(true);
+		expect(body.recomputeFailed).toBe(true);
+		expect(body.retry).toContain("/api/market-refresh/recompute");
+	});
+
+	it("reject NIE wywołuje recompute (prod bez zmian = nie ma czego przeliczać)", async () => {
+		mockUpdateReturning([{ id: RUN_ID }]);
+		await POST(makeRequest({ decision: "reject" }, TOKEN), ctx(RUN_ID));
+		expect(mockRecompute).not.toHaveBeenCalled();
 	});
 
 	it("accept: awaria transakcji (błąd nie-konfliktowy) → 500 bez wycieku szczegółów", async () => {
