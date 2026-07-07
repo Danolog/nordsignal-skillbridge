@@ -46,9 +46,37 @@ AG.4 (akceptacja jednym tapnięciem), do tego czasu prod czyta stary snapshot.
    SELECT id, created_at, status, staged_rows, diff->'summary' AS summary
    FROM market_refresh_runs ORDER BY created_at DESC LIMIT 5;
    ```
-6. **Decyzja** (do AG.4 ręcznie): akceptacja/odrzucenie = AG.4; na razie staging
-   po prostu czeka. Ponowny upload nadpisuje staging (wipe+insert) i dokłada
-   nowy wiersz runu — nic nie trzeba sprzątać.
+6. **Decyzja (AG.4 — jedno tapnięcie, mobile-friendly):** wejdź na
+   `https://skill-bridge-ai-seven.vercel.app/market-refresh`, wklej
+   `MARKET_REFRESH_TOKEN`, „Pobierz ostatni przebieg" → przejrzyj diff →
+   **Akceptuję** (transakcyjny swap staging→prod z auto-backupem
+   `job_market_data_bak` + kontrolą liczb przed COMMIT) albo **Odrzuć**
+   (prod bez zmian). Strażnice: podwójna decyzja i akceptacja starszego runu
+   niż ostatni upload = 409, prod nietknięty. Ponowny upload nadpisuje staging
+   (wipe+insert) i dokłada nowy wiersz runu — nic nie trzeba sprzątać.
+7. **Model kariery (świadomie OSOBNO):** akceptacja podmienia TYLKO
+   `job_market_data`. Bajty świeżego `career-model.json` siedzą w
+   `market_refresh_runs.content_model` — jego ingest do
+   `career_model_versions` to istniejąca procedura 1.0
+   (`pnpm db:ingest-career-model`, czerwona linia, odpalasz Ty). Bez tego kroku
+   aplikacja dalej czyta poprzedni model (spójna, tylko starsza wersja opisów
+   grup/kind).
+
+## Rollback po akceptacji (dopóki istnieje `job_market_data_bak`)
+
+Backup żyje do NASTĘPNEGO swapu. Przywrócenie poprzedniego rynku:
+
+```sql
+BEGIN;
+DELETE FROM job_market_data;
+INSERT INTO job_market_data SELECT * FROM job_market_data_bak;
+COMMIT;
+```
+
+(Procedura zweryfikowana automatycznie — test integracyjny AG.4 używa jej jako
+sprzątania po każdym swapie.) Po rollbacku zaakceptowany run zostaje ze statusem
+`accepted` — to zapis historii decyzji, nie stanu proda; kolejny upload i tak
+otworzy nowy run.
 
 ## Diagnostyka
 
@@ -64,4 +92,5 @@ AG.4 (akceptacja jednym tapnięciem), do tego czasu prod czyta stary snapshot.
 się ~0,4 s (pomiar: `tests/unit/etl-scale.test.ts`); `maxDuration=300` to głównie
 zapas na powolny upload.
 
-**Rollback:** nie dotyczy — staging i runy to brudnopis; prod nietknięty z definicji.
+**Rollback uploadu:** nie dotyczy — staging i runy to brudnopis; prod nietknięty
+do momentu Twojej akceptacji (rollback PO akceptacji — sekcja wyżej).

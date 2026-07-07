@@ -78,3 +78,6 @@ scratchpad/
 # Lokalna konfiguracja uprawnień Claude Code (allowlista komend, w tym prod) —
 # NIGDY do repo: prod-access nie może być współdzielony z zespołem przez git.
 .claude/settings.local.json
+
+# Worktree'y agentów Claude (izolowane kopie repo — nigdy nie commitować)
+.claude/worktrees/
