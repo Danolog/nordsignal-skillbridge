@@ -32,7 +32,9 @@ const WhyVerdictSchema = z.object({
 	grounded: z
 		.boolean()
 		.describe("Nie przeczy podanemu % popytu ani nie zmyśla danych sprzecznych z wejściem"),
-	overall: z.number().min(1).max(5).describe("Ocena ogólna 1–5 (5 = do pokazania bez poprawek)"),
+	// Bez .min()/.max() — strukturalne wyjście API Anthropic odrzuca minimum/maximum
+	// w schemacie liczbowym; zakres pilnowany promptem + clampem po stronie kodu.
+	overall: z.number().describe("Ocena ogólna 1–5 (5 = do pokazania bez poprawek)"),
 	justification: z.string().describe("Jedno-dwa zdania uzasadnienia oceny"),
 });
 
@@ -71,7 +73,8 @@ ${description}
 Oceń opis surowo według rubryki ze schematu. "grounded" = fałsz, jeśli opis
 podaje procent popytu sprzeczny z wejściem albo zmyśla twarde dane rynkowe.`,
 	});
-	return object;
+	// Clamp zakresu 1–5 (schemat nie może go egzekwować — ograniczenie API wyżej).
+	return { ...object, overall: Math.min(5, Math.max(1, object.overall)) };
 }
 
 describe.skipIf(!hasKey)("AG.0 · trafność opisów luk (generate-why, LLM-as-judge)", () => {
@@ -93,12 +96,16 @@ describe.skipIf(!hasKey)("AG.0 · trafność opisów luk (generate-why, LLM-as-j
 		avgOverall = judged.reduce((sum, j) => sum + j.verdict.overall, 0) / judged.length;
 
 		const baseline = loadBaseline<{ whyJudge?: { avgOverall: number } }>();
-		console.log(formatDelta("why-judge avgOverall", avgOverall, baseline?.whyJudge?.avgOverall));
+		const baselineAvg = baseline?.whyJudge?.avgOverall;
+		console.log(formatDelta("why-judge avgOverall", avgOverall, baselineAvg));
 
 		writeReport("why-judge-latest", {
 			eval: "gap-detection/why-judge",
 			model: getModelId("standard"),
 			avgOverall,
+			// Delta także w raporcie (konsola vitest bywa wycinana z output CI).
+			baselineAvgOverall: baselineAvg ?? null,
+			deltaVsBaseline: baselineAvg === undefined ? null : avgOverall - baselineAvg,
 			samples: judged.map(({ description, ...rest }) => ({
 				...rest,
 				descriptionPreview: `${description.slice(0, 160)}…`,

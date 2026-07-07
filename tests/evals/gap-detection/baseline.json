@@ -1,0 +1,11 @@
+{
+	"createdAt": "2026-07-07",
+	"model": "claude-sonnet-4-6",
+	"deterministic": {
+		"macro": { "precision": 1, "recall": 1, "f1": 1 }
+	},
+	"whyJudge": {
+		"avgOverall": 4,
+		"note": "4/4 próbki: wszystkie kryteria true; sędzia w każdej odnotował ucięty koniec opisu (generate-why maxOutputTokens=400 za mało na tabele PLN) — znany deficyt baseline'u, kandydat na poprawkę z raportem delty"
+	}
+}

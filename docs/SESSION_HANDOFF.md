@@ -41,10 +41,13 @@ Zrobione tę sesję (WSL, 2026-07-07):
   suita LLM-as-judge opisów `generate-why` (tylko `pnpm test:evals` + klucz),
   raporty z deltą vs `baseline.json`. Dowód red-green wykonany (próg 0.33→0.35
   wywala dokładnie sentinele graniczne).
-  **Zaległość AG.0 (Darek):** `ANTHROPIC_API_KEY` pusty na maszynie WSL →
-  uzupełnić, odpalić `pnpm test:evals`, zaakceptowany raport skopiować do
-  `tests/evals/gap-detection/baseline.json`, docisnąć progi w `thresholds.ts`
-  (procedura w `tests/evals/README.md`).
+  **Baseline LLM ✅ zmierzony i utrwalony** (klucz uzupełniony, 2 runy):
+  avgOverall 4.0/5 na claude-sonnet-4-6, wszystkie kryteria 4/4 próbek; próg
+  dociśnięty do 3.75 (`thresholds.ts`), baseline commitowany (`baseline.json`).
+  **Znalezisko harnessu:** sędzia w każdej próbce odnotował UCIĘTY koniec opisu
+  — `generate-why` ma `maxOutputTokens: 400`, za mało na polskie opisy z tabelą
+  widełek. Kandydat na drobną poprawkę (podbicie limitu / zakaz tabel) — per
+  reguła DoD zmiana MUSI raportować deltę `pnpm test:evals`.
 
 Migracje wciąż na 0021 (1.0 jeszcze nie ruszone), model kariery nadal w JSON.
 
