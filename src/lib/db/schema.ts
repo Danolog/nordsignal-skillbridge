@@ -142,6 +142,14 @@ export const students = pgTable(
 		// B0: znacznik domknięcia Pomocnika Wyboru Kariery (NULL = nieukończony).
 		// Gate dla Phase 2 (reset Pomocnika z dashboardu) — zerowy koszt teraz.
 		careerHelperCompletedAt: timestamp("career_helper_completed_at", { withTimezone: true }),
+		// AG.6 (RODO, decyzja Darka 2026-07-08): zgoda opt-in na POWIADOMIENIA
+		// o monitoringu rynku. Sam recompute luk (AG.5) to rdzeń usługi i działa
+		// niezależnie — zgoda bramkuje wyłącznie pokazywanie powiadomień.
+		// decidedAt NULL = nigdy nie pytany (dashboard pokazuje kartę zgody);
+		// wypełniony = decyzja zapadła (consent mówi jaka). Zgoda odwoływalna
+		// (ponowny POST consent) — wspólny moduł zgód przyjdzie z 1.17.
+		marketMonitoringConsent: boolean("market_monitoring_consent").notNull().default(false),
+		marketMonitoringDecidedAt: timestamp("market_monitoring_decided_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},

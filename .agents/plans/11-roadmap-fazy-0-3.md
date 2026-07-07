@@ -346,11 +346,18 @@ tryb Opus blokujący) jako wzorzec weryfikatora; ETL JustJoinIT; `ai_usage_ledge
   (wzorzec `generate-why`). Koszt w `ai_usage_ledger`. Dowód: recompute bez LLM dla
   niezmienionych; LLM tylko dla nowej luki; drugi odczyt opisu z cache (0 wywołań).
 
-- **AG.6 · Powiadomienie „nowa luka" (P1, feature produktowy)**. Nowa luka z AG.5 →
-  powiadomienie „w Twoim profilu pojawiła się nowa luka — rynek zaczął wymagać X".
-  Wpięte w system powiadomień (styk z 1.18 rytm/accountability). Za flagą. RODO:
-  zgoda studenta na monitoring rynku (jak 1.17). Dowód: E2E — swap wprowadzający
-  nową kompetencję generuje powiadomienie u dotkniętego studenta, nie u innych.
+- **AG.6 · Powiadomienie „nowa luka" (P1, feature produktowy) [ZMIANA — decyzje
+  Darka 2026-07-08]**. Nowa luka z AG.5 → powiadomienie „w Twoim profilu pojawiła
+  się nowa luka — rynek zaczął wymagać X". Decyzje: kanał **in-app** (karta na
+  dashboardzie czytająca `market_new_gap_events`; zero nowych usług zewnętrznych,
+  e-mail może dojść później jako drugi konsument tych samych zdarzeń); RODO
+  **opt-in checkbox** (kolumny zgody na `students`, migracja 0026; bez zgody
+  recompute działa — rdzeń usługi — ale powiadomienia się nie pokazują; zgoda
+  odwoływalna tym samym endpointem). System powiadomień 1.18 nie istnieje —
+  AG.6 buduje fundament (zdarzenia + `notified_at`), w który 1.18 się wepnie.
+  Osobna flaga `marketGapNotifications` (release UI studenta niezależny od
+  potoku rynku). Dowód: E2E — swap wprowadzający nową kompetencję generuje
+  powiadomienie u dotkniętego studenta, nie u innych.
 
 - **AG.7 · Pamięć doradcy między sesjami (P1) — rozszerza Pomocnika**. Trwała pamięć
   per student w Postgresie (źródło prawdy): ukończone mikrokursy/projekty,

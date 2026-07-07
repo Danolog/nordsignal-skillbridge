@@ -2,6 +2,8 @@
 
 import { ArrowRight, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { MarketGapNotifications } from "@/components/dashboard/market-gap-notifications";
+import type { MarketNotificationsState } from "@/lib/market-notifications";
 
 interface Competency {
 	id: string;
@@ -40,6 +42,8 @@ interface DashboardHubProps {
 	inProgressCount: number;
 	marketCoverage: number;
 	topGap: TopGap | null;
+	/** AG.6: stan powiadomień „nowa luka" (flaga off → komponent nic nie renderuje). */
+	marketNotifications: MarketNotificationsState;
 }
 
 const GOAL_COVERAGE = 80;
@@ -141,6 +145,7 @@ export function DashboardHub(props: DashboardHubProps) {
 		inProgressCount,
 		marketCoverage,
 		topGap,
+		marketNotifications,
 	} = props;
 
 	const firstName = user.name.split(" ")[0];
@@ -184,6 +189,9 @@ export function DashboardHub(props: DashboardHubProps) {
 				</div>
 				<div className="db-goal-pill">🎯 Cel kariery: {student.careerGoal}</div>
 			</header>
+
+			{/* AG.6: zgoda RODO / powiadomienia „nowa luka" (flaga off → null) */}
+			<MarketGapNotifications state={marketNotifications} />
 
 			{/* Pokrycie rynku */}
 			<div className="db-card db-cov">

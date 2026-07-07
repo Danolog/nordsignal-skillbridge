@@ -5,6 +5,7 @@ import { DashboardHub } from "@/components/dashboard/dashboard-hub";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { competencies, gaps, projectSubmissions, students } from "@/lib/db/schema";
+import { getMarketNotificationsState } from "@/lib/market-notifications";
 import { calculateCoverage } from "@/lib/passport-utils";
 
 export default async function DashboardPage() {
@@ -18,44 +19,52 @@ export default async function DashboardPage() {
 
 	// Pokrycie liczone ŚWIEŻO (ten sam wzór co /passport). Kompetencje pobieramy z
 	// polami potrzebnymi na kanban (nazwa, status, popyt, samoocena) — nie sam count.
-	const [studentCompetencies, gapRows, criticalGapCount, inProgressCount, topGaps] =
-		await Promise.all([
-			db.query.competencies.findMany({
-				where: eq(competencies.studentId, student.id),
-				columns: {
-					id: true,
-					name: true,
-					status: true,
-					marketPercentage: true,
-					selfAssessment: true,
-				},
-			}),
-			db.select({ count: count() }).from(gaps).where(eq(gaps.studentId, student.id)),
-			db
-				.select({ count: count() })
-				.from(gaps)
-				.where(and(eq(gaps.studentId, student.id), eq(gaps.priority, "critical"))),
-			db
-				.select({ count: count() })
-				.from(projectSubmissions)
-				.where(
-					and(
-						eq(projectSubmissions.studentId, student.id),
-						eq(projectSubmissions.status, "in_progress"),
-					),
+	const [
+		studentCompetencies,
+		gapRows,
+		criticalGapCount,
+		inProgressCount,
+		topGaps,
+		marketNotifications,
+	] = await Promise.all([
+		db.query.competencies.findMany({
+			where: eq(competencies.studentId, student.id),
+			columns: {
+				id: true,
+				name: true,
+				status: true,
+				marketPercentage: true,
+				selfAssessment: true,
+			},
+		}),
+		db.select({ count: count() }).from(gaps).where(eq(gaps.studentId, student.id)),
+		db
+			.select({ count: count() })
+			.from(gaps)
+			.where(and(eq(gaps.studentId, student.id), eq(gaps.priority, "critical"))),
+		db
+			.select({ count: count() })
+			.from(projectSubmissions)
+			.where(
+				and(
+					eq(projectSubmissions.studentId, student.id),
+					eq(projectSubmissions.status, "in_progress"),
 				),
-			db.query.gaps.findMany({
-				where: eq(gaps.studentId, student.id),
-				orderBy: [desc(gaps.marketPercentage)],
-				columns: {
-					id: true,
-					competencyName: true,
-					priority: true,
-					marketPercentage: true,
-					whyImportant: true,
-				},
-			}),
-		]);
+			),
+		db.query.gaps.findMany({
+			where: eq(gaps.studentId, student.id),
+			orderBy: [desc(gaps.marketPercentage)],
+			columns: {
+				id: true,
+				competencyName: true,
+				priority: true,
+				marketPercentage: true,
+				whyImportant: true,
+			},
+		}),
+		// AG.6: stan powiadomień „nowa luka" (flaga + zgoda RODO + nieprzeczytane).
+		getMarketNotificationsState(student, session.user.id),
+	]);
 
 	const gapTotal = gapRows[0]?.count ?? 0;
 	const marketCoverage = calculateCoverage(
@@ -81,6 +90,7 @@ export default async function DashboardPage() {
 			inProgressCount={inProgressCount[0]?.count ?? 0}
 			marketCoverage={marketCoverage}
 			topGap={topGap}
+			marketNotifications={marketNotifications}
 		/>
 	);
 }

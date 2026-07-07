@@ -1,7 +1,8 @@
 # Runbook: miesięczne odświeżenie rynku (AG.3 — upload → STAGING)
 
-**Rytm:** raz w miesiącu (decyzja Darka 2026-07-07). Do czasu warstwy powiadomień
-(AG.6) przypomnienie = kalendarz Darka.
+**Rytm:** raz w miesiącu (decyzja Darka 2026-07-07). Przypomnienie o samym
+uploadzie = kalendarz Darka (AG.6 powiadamia STUDENTÓW o nowych lukach, nie
+Darka o terminie uploadu).
 
 **Czerwona linia:** ta procedura NIE dotyka `job_market_data` (prod). Ingest pisze
 wyłącznie do `job_market_data_staging` + `market_refresh_runs`. Swap na prod =
@@ -16,6 +17,11 @@ AG.4 (akceptacja jednym tapnięciem), do tego czasu prod czyta stary snapshot.
 2. **Env na Vercelu:** `FLAG_PROACTIVE_MARKET_REFRESH=1` + `MARKET_REFRESH_TOKEN`
    (długi losowy sekret, np. `openssl rand -hex 32`) → redeploy. Bez flagi trasa
    zwraca 404, bez tokenu 401 — kolejność dowolna, bezpiecznie ustawiać osobno.
+3. **(AG.6, opcjonalnie osobno)** `FLAG_MARKET_GAP_NOTIFICATIONS=1` — zapala
+   STUDENCKĄ warstwę powiadomień „nowa luka" na dashboardzie (karta zgody RODO
+   opt-in + lista nieprzeczytanych zdarzeń z `market_new_gap_events`). Celowo
+   osobna flaga: potok rynku może działać, zanim wypuścimy UI studenta.
+   Wymaga migracji **0026** na prodzie (kolumny zgody na `students`).
 
 ## Procedura miesięczna
 
@@ -79,6 +85,16 @@ curl -sS -X POST https://skill-bridge-ai-seven.vercel.app/api/market-refresh/rec
 ```
 Idempotentne — powtórka na tym samym rynku nie tworzy duplikatów i nie woła LLM.
 Po ręcznym rollbacku z `_bak` też warto odpalić (luki wrócą do starego rynku).
+
+## Po recompute: powiadomienia studentów (AG.6)
+
+Nic do zrobienia ręcznie. Przy `FLAG_MARKET_GAP_NOTIFICATIONS=1` student z nową
+luką zobaczy na dashboardzie kartę „Rynek zaczął wymagać: X" — pod warunkiem, że
+wyraził zgodę RODO na monitoring rynku (opt-in na dashboardzie; bez zgody
+zdarzenia czekają nieprzeczytane i pokażą się po ewentualnym włączeniu zgody).
+„Oznacz jako przeczytane" wypełnia `notified_at`; wycofanie zgody chowa
+powiadomienia. Diagnostyka: `SELECT count(*) FROM market_new_gap_events WHERE
+notified_at IS NULL;` — ile powiadomień czeka na odczyt.
 
 ## Rollback po akceptacji (dopóki istnieje `job_market_data_bak`)
 

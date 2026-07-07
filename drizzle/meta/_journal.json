@@ -183,6 +183,13 @@
       "when": 1783461019069,
       "tag": "0025_cynical_blazing_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1783463902949,
+      "tag": "0026_known_micromax",
+      "breakpoints": true
     }
   ]
 }

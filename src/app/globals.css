@@ -5234,6 +5234,81 @@
 .db-quicklink:hover {
 	background: var(--ed-badge-bg);
 }
+
+/* AG.6 — powiadomienia „nowa luka" (karta zgody + lista) */
+.db-notif {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+.db-notif-head {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	color: var(--ed-amber-text);
+}
+.db-notif-h3 {
+	font-family: var(--font-heading);
+	font-weight: 700;
+	font-size: 17px;
+	color: var(--ed-ink);
+}
+.db-notif-text {
+	font-size: 14px;
+	color: var(--ed-muted);
+	line-height: 1.55;
+}
+.db-notif-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	list-style: none;
+}
+.db-notif-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	flex-wrap: wrap;
+	font-size: 14px;
+	padding: 10px 12px;
+	border: 1px solid var(--ed-border);
+	border-radius: 12px;
+	background: var(--ed-surface);
+}
+.db-notif-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+.db-notif-decline {
+	background: none;
+	border: 1px solid var(--ed-border);
+	border-radius: 999px;
+	padding: 10px 16px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--ed-ink);
+	cursor: pointer;
+}
+.db-notif-decline:hover {
+	background: var(--ed-badge-bg);
+}
+.db-notif-optout {
+	background: none;
+	border: none;
+	font-size: 13px;
+	color: var(--ed-muted);
+	cursor: pointer;
+	text-decoration: underline;
+}
+.db-notif-decline:disabled,
+.db-notif-optout:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
 @media (max-width: 900px) {
 	.db-stats2,
 	.db-kanban {
