@@ -168,12 +168,29 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    smoke prod 200-tki. Migracje: lokalna-test na **0024**; prod na **0022**
    (0023 czeka przy pierwszym użyciu AG.3/AG.4; **0024 przed zapaleniem
    `FLAG_ADVISOR_MEMORY`**).
-8. Następne do implementacji: **AG.5** (deterministyczny recompute luk po
-   swapie, ~0 LLM, opisy nowych luk przez cache + verify-gaps jako klocek) →
-   **AG.6** (powiadomienie „nowa luka"). Potem Blok AG domknięty (bramka
-   wyjścia AG). Drobiazg porządkowy z raportu AG.7: tabele `career_helper_*`/
-   `student_career_paths` (0013) mają RLS, ale brak ich w §3 rls-matrix
-   i TENANT_TABLES — domknąć przy AG.5.
+8. **AG.5 — deterministyczny recompute luk po swapie ⏳ PR otwarty**.
+   Migracja **0025** (`market_new_gap_events` — zdarzenia „rynek
+   zaczął wymagać X" dla AG.6, RLS wzorem 0024 z grantem TYLKO SELECT dla
+   studenta; + `market_refresh_runs.recompute` jsonb). Moduł
+   `src/lib/market-refresh/recompute.ts`: deriveGaps per student (zbiory,
+   0 LLM), **carry-over cache'u `why_important`** dla luk, które przetrwały,
+   **memo opisów między studentami** (1 unikalna nowa luka = 1 wywołanie LLM
+   niezależnie od liczby studentów; wstrzykiwalny describe), zdarzenia +
+   odświeżenie mapy (deterministyczne) + pokrycie paszportu; błąd per student
+   nie wywraca przebiegu. Wyzwalacz: decision route po commicie swapu
+   (best-effort, `recomputeFailed` + retry) + ręczny
+   `POST /api/market-refresh/recompute` (idempotentny właz naprawczy).
+   DoD dowiedzione integracyjnie (describe-stub): nowa kompetencja w katalogu →
+   dokładnie 1 opis + 1 zdarzenie + priorytet względny OK; cache starej luki
+   PRZENIESIONY; drugi przebieg = 0 LLM, 0 zdarzeń; węzeł nowej luki na mapie.
+   Przy okazji domknięty dryf z raportu AG.7: `career_helper_*`/
+   `student_career_paths` w TENANT_TABLES + rls-matrix **v0.19** (sign-off
+   Ryana przy review). Bramki: tsc 0, Biome 0, unit 941/941, integration
+   68/68 + k3 zielony, build OK. **Przed pierwszym realnym przebiegiem na
+   prod: migracja 0025** (razem z 0023/0024 w jednej sesji migracyjnej Darka).
+9. Następne do implementacji: **AG.6** (powiadomienie „nowa luka" — konsumuje
+   `market_new_gap_events.notified_at`; styk z 1.18, RODO: zgoda na monitoring
+   rynku). Potem bramka wyjścia Bloku AG.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).

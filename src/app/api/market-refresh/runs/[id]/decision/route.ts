@@ -30,6 +30,11 @@ import { db } from "@/lib/db";
 import { jobMarketDataStaging, marketRefreshRuns } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
 import { guardMarketRefresh } from "@/lib/market-refresh/auth";
+import { type RecomputeSummary, runMarketRecompute } from "@/lib/market-refresh/recompute";
+
+// AG.5: po swapie leci recompute wszystkich studentów (+ ewentualne opisy LLM
+// nowych luk) — 300 s to zapas; sam swap trwa ułamki sekund.
+export const maxDuration = 300;
 
 const DecisionSchema = z.object({
 	decision: z.enum(["accept", "reject"]),
@@ -146,12 +151,28 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 			return { rows: c };
 		});
 
+		// AG.5: recompute PO commicie swapu, best-effort — awaria przeliczenia NIE
+		// unieważnia swapu (rynek już legalnie podmieniony); przebieg jest
+		// idempotentny i można go powtórzyć przez POST /api/market-refresh/recompute.
+		let recompute: RecomputeSummary | null = null;
+		let recomputeFailed = false;
+		try {
+			recompute = await runMarketRecompute({ runId: id });
+		} catch (err) {
+			recomputeFailed = true;
+			logError("market-refresh.recompute-after-swap", err, { runId: id });
+		}
+
 		return NextResponse.json({
 			success: true,
 			decision: "accepted",
 			prodChanged: true,
 			prodRows: swapped.rows,
 			backupTable: "job_market_data_bak",
+			recompute,
+			...(recomputeFailed
+				? { recomputeFailed: true, retry: "POST /api/market-refresh/recompute" }
+				: {}),
 		});
 	} catch (err) {
 		if (err instanceof SwapConflictError) {

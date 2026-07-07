@@ -62,6 +62,24 @@ AG.4 (akceptacja jednym tapnięciem), do tego czasu prod czyta stary snapshot.
    aplikacja dalej czyta poprzedni model (spójna, tylko starsza wersja opisów
    grup/kind).
 
+## Po akceptacji: automatyczny recompute luk (AG.5)
+
+Akceptacja odpala od razu deterministyczny recompute wszystkich studentów
+(operacje na zbiorach, ~0 LLM): luki przeliczone vs nowy rynek, cache opisów
+przeniesiony dla luk, które przetrwały; **LLM tylko dla NOWYCH luk** (memo:
+jedna unikalna nowa luka = jedno wywołanie, niezależnie od liczby studentów;
+koszt w `ai_usage_ledger`, scope `generate-why`). Nowe luki lądują też w
+`market_new_gap_events` (wsad dla powiadomień AG.6). Podsumowanie wraca w
+odpowiedzi decyzji (`recompute`) i zapisuje się w `market_refresh_runs.recompute`.
+
+Jeśli odpowiedź ma `recomputeFailed: true` (swap PRZESZEDŁ, przeliczenie padło):
+```bash
+curl -sS -X POST https://skill-bridge-ai-seven.vercel.app/api/market-refresh/recompute \
+  -H "x-market-refresh-token: $MARKET_REFRESH_TOKEN"
+```
+Idempotentne — powtórka na tym samym rynku nie tworzy duplikatów i nie woła LLM.
+Po ręcznym rollbacku z `_bak` też warto odpalić (luki wrócą do starego rynku).
+
 ## Rollback po akceptacji (dopóki istnieje `job_market_data_bak`)
 
 Backup żyje do NASTĘPNEGO swapu. Przywrócenie poprzedniego rynku:

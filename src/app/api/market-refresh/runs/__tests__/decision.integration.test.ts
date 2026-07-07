@@ -17,6 +17,21 @@ import { gzipSync } from "node:zlib";
 import { sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// AG.5: recompute mockowany — ta suita dowodzi MECHANIKI SWAPU (tx, backup,
+// strażnice). Realny recompute po swapie na katalog Java-only przepisałby luki
+// WSZYSTKICH zaseedowanych studentów. Pełny recompute ma własną suitę:
+// src/app/api/market-refresh/recompute/__tests__/recompute.integration.test.ts.
+vi.mock("@/lib/market-refresh/recompute", () => ({
+	runMarketRecompute: vi.fn(async () => ({
+		students: 0,
+		studentsWithNewGaps: 0,
+		newGapsTotal: 0,
+		uniqueDescriptionsGenerated: 0,
+		llmCalls: 0,
+		errors: 0,
+	})),
+}));
+
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
 const isLocalTestDb = /@(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//.test(DATABASE_URL);
 const dBack = isLocalTestDb ? describe : describe.skip;

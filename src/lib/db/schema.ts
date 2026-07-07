@@ -358,12 +358,48 @@ export const marketRefreshRuns = pgTable(
 		status: text("status").notNull().default("staged"),
 		createdAt: timestamp("created_at").notNull().defaultNow(),
 		acceptedAt: timestamp("accepted_at"),
+		/** AG.5: podsumowanie recompute po akceptacji (studenci/nowe luki/LLM/błędy). */
+		recompute: jsonb("recompute"),
 	},
 	(table) => [
 		check(
 			"chk_market_refresh_runs_status",
 			sql`${table.status} IN ('staged', 'accepted', 'rejected')`,
 		),
+	],
+);
+
+/**
+ * AG.5 — zdarzenie „NOWA luka po odświeżeniu rynku": po zaakceptowanym swapie
+ * recompute wykrył, że rynek zaczął wymagać kompetencji, której student nie ma,
+ * a wcześniej luki nie było. Wsad dla AG.6 (powiadomienie „rynek zaczął wymagać
+ * X" — notified_at wypełni AG.6). Tabela TENANT-owa (dane studenta): RLS pełnym
+ * wzorcem 0024 (GRANT SELECT tylko app_student, student_sees_own, FORCE,
+ * owner_passthrough; app_faculty bez grantu). Zapis wyłącznie server-side
+ * (owner) w recompute.
+ */
+export const marketNewGapEvents = pgTable(
+	"market_new_gap_events",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		/** Przebieg, którego akceptacja wywołała recompute (null = recompute ręczny). */
+		runId: uuid("run_id").references(() => marketRefreshRuns.id, { onDelete: "set null" }),
+		competencyName: text("competency_name").notNull(),
+		priority: text("priority").notNull(),
+		marketPercentage: integer("market_percentage").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		/** AG.6: kiedy studenta powiadomiono (null = jeszcze nie). */
+		notifiedAt: timestamp("notified_at"),
+	},
+	(table) => [
+		index("idx_market_new_gap_events_student_id").on(table.studentId),
+		index("idx_market_new_gap_events_tenant_id").on(table.tenantId),
 	],
 );
 

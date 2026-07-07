@@ -176,6 +176,13 @@
       "when": 1783454198296,
       "tag": "0024_perpetual_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1783461019069,
+      "tag": "0025_cynical_blazing_skull",
+      "breakpoints": true
     }
   ]
 }
