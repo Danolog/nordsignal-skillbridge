@@ -44,7 +44,9 @@ function consentReq(body: unknown): Request {
 function mockUpdateReturning(rows: unknown[]) {
 	const returning = vi.fn(async () => rows);
 	const where = vi.fn(() => ({ returning }));
-	const set = vi.fn(() => ({ where }));
+	// Parametr jawnie typowany — bez niego mock.calls to krotka `[]` i odczyt
+	// patcha w asercjach nie przechodzi typecheku.
+	const set = vi.fn((_patch: Record<string, unknown>) => ({ where }));
 	dbMock.update.mockReturnValue({ set } as never);
 	return { set, where, returning };
 }
@@ -83,7 +85,7 @@ describe("POST /api/market-notifications/consent", () => {
 		const res = await consentPOST(consentReq({ consent: true }));
 		expect(res.status).toBe(200);
 		expect((await res.json()) as { consent: boolean }).toMatchObject({ consent: true });
-		const patch = set.mock.calls[0][0] as Record<string, unknown>;
+		const patch = set.mock.calls[0][0];
 		expect(patch.marketMonitoringConsent).toBe(true);
 		expect(patch.marketMonitoringDecidedAt).toBeInstanceOf(Date);
 	});
@@ -92,7 +94,7 @@ describe("POST /api/market-notifications/consent", () => {
 		const { set } = mockUpdateReturning([{ id: "s-1" }]);
 		const res = await consentPOST(consentReq({ consent: false }));
 		expect(res.status).toBe(200);
-		expect((set.mock.calls[0][0] as Record<string, unknown>).marketMonitoringConsent).toBe(false);
+		expect(set.mock.calls[0][0].marketMonitoringConsent).toBe(false);
 	});
 
 	it("sesja bez rekordu studenta (0 wierszy z UPDATE) → 404", async () => {
