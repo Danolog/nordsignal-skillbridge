@@ -76,6 +76,20 @@ Zrobione tę sesję (WSL, 2026-07-07):
   career-model-loader, same 200-tki). **Prod czyta model kariery z DB.**
   Rollback w każdej chwili: flaga off + redeploy.
 
+- **AG.1 — weryfikator ugruntowania luk ⏳ PR #135 (CI zielone, czeka na merge
+  Darka — klasyfikator zablokował self-merge)**. Zakres: `src/lib/ai/verify-gaps.ts`
+  (2 etapy: ugruntowanie deterministyczne w katalogu 0 LLM → agent-sędzia Haiku,
+  fan-out `Promise.all`, tylko jednoznaczne YES weryfikuje; błąd sędziego = luka
+  zostaje unverified — awaria nie obcina recall; koszt w `ai_usage_ledger`
+  scope `verify-gaps.judge`), wpięcie w `generateGaps` za flagą **`gapVerifier`**
+  (off = zero zmian; dotyczy tylko gałęzi legacy LLM — ścieżka deterministyczna
+  z konstrukcji nie halucynuje; pusty rynek → przebieg pominięty). Dowód DoD:
+  eval deterministyczny golden+3 zmyłki: precision **0.854→1.0**, recall 1.0;
+  sędzia LLM 2 runy po 10/10 z pułapkami (Ruby on Rails/Power BI u DS, Kotlin
+  u FE), zero fałszywych akceptacji; baseline utrwalony (`verifier`,
+  `verifierJudge`), próg 0.9 + asercja falseAccepts=[]. Unit 915/915, build/tsc/
+  Biome 0. **Flaga na żadnym środowisku jeszcze nie zapalona** (deploy ≠ release).
+
 Migracje: lokalne/test/**prod na 0022**.
 
 ### Plan v2 — ZAKTUALIZOWANY tę sesję
@@ -93,12 +107,13 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
   Pomocnika (`career-helper.ts`), ETL `tools/etl-justjoinit.ts`, `ai_usage_ledger`.
 
 ### NASTĘPNE (kolejność Fazy 1)
-1. ~~AG.0 — harness ewaluacyjny~~ ⏳ kod gotowy (PR #132) — do merge'a + baseline
-   LLM po uzupełnieniu klucza (akcja Darka, patrz wyżej).
+1. ~~AG.0 — harness ewaluacyjny~~ ✅ zmergowane (#132) + baseline LLM utrwalony.
 2. ~~1.1 feature flags~~ ✅ zrobione (#129).
-3. **1.0 — migracja kariery JSON→DB** (P0, [CZERWONA LINIA] — sign-off Darka +
-   backup gałęzią Neona + transakcyjny SQL; model z DB bajtowo identyczny z JSON).
-4. **AG.1+** oraz reszta Fazy 1 wg ścieżki krytycznej (§7 roadmapy).
+3. ~~1.0 — migracja kariery JSON→DB~~ ✅ LIVE na prodzie (#134, flaga ON).
+4. **AG.1 — weryfikator luk** ⏳ PR #135 czeka na merge (Darek). Po merge'u
+   decyzja o zapaleniu flagi `FLAG_GAP_VERIFIER` (Preview → prod).
+5. **AG.2** (potok analizy) / **AG.3** (cron rynku → STAGING, [CZERWONA LINIA])
+   oraz reszta Fazy 1 wg ścieżki krytycznej (§7 roadmapy).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
@@ -108,6 +123,10 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
   `pnpm test:integration` dało się odpalić lokalnie bez ręcznego setupu.
 
 ### Ostrzeżenia / kontekst dla nowej sesji
+- **Tryb Wykonawca/Audytor PORZUCONY NA ZAWSZE** (decyzja Darka 2026-07-07) —
+  jeden agent implementuje i weryfikuje, niezależnie od modelu. Autonomia
+  merge/deploy bez zmian; self-merge PR-ów bywa blokowany przez klasyfikator
+  (wtedy merge klika Darek).
 - „Partie 0–5" w starszych handoffach to tor **10 poprawek**, NIE partie treści B3
   ani fazy 0–3 z roadmapy — nie mylić numeracji.
 - Ingest na prod = [CZERWONA LINIA]: sign-off + backup + transakcyjny SQL
