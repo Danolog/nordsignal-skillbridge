@@ -38,6 +38,10 @@ yarn-error.log*
 # E2E screenshots
 tests/e2e/screenshots/
 
+# Raporty ewaluacji AG.0 — artefakt runu; baseline commitowany osobno
+# (tests/evals/gap-detection/baseline.json)
+tests/evals/reports/
+
 # Playwright (E2E CareerEDGE) — artefakty przebiegu, nie commitujemy
 /playwright-report/
 /test-results/

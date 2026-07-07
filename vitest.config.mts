@@ -31,6 +31,26 @@ export default defineConfig({
 				},
 			},
 			{
+				// Projekt EVALS (AG.0) — harness ewaluacyjny gap detection. Uruchamiany
+				// WYŁĄCZNIE ręcznie/`pnpm test:evals` (poza test:run i CI), bo suity LLM
+				// kosztują wywołania API. Bez ANTHROPIC_API_KEY suity LLM jawnie się
+				// pomijają; część deterministyczna biegnie zawsze. Setup dołącza dotenv
+				// (vitest sam nie czyta .env).
+				plugins: [tsconfigPaths(), react()],
+				test: {
+					name: "evals",
+					environment: "node",
+					globals: true,
+					setupFiles: ["./src/test/setup.ts", "./tests/evals/setup.ts"],
+					css: true,
+					include: ["tests/evals/**/*.eval.test.{ts,tsx}"],
+					exclude: ["**/node_modules/**", "**/dist/**"],
+					// Wywołania LLM (45 s timeout per call) + fan-out w beforeAll.
+					testTimeout: 60_000,
+					hookTimeout: 300_000,
+				},
+			},
+			{
 				// Projekt INTEGRATION — uruchamiany TYLKO w jobie `integration` (ma Postgres
 				// + db:migrate + db:seed). Komenda: `pnpm exec vitest run --project integration`
 				// (skrypt `test:integration`). Bez zmigrowanej bazy testy się POMIJAJĄ
