@@ -27,7 +27,7 @@ export default defineConfig({
 					setupFiles: ["./src/test/setup.ts"],
 					css: true,
 					include: ["src/**/*.{test,spec}.{ts,tsx}", "tests/unit/**/*.{test,spec}.{ts,tsx}"],
-					exclude: ["**/node_modules/**", "**/dist/**", INTEGRATION_GLOB],
+					exclude: ["**/node_modules/**", "**/dist/**", "**/.claude/**", INTEGRATION_GLOB],
 				},
 			},
 			{
@@ -44,7 +44,7 @@ export default defineConfig({
 					setupFiles: ["./src/test/setup.ts", "./tests/evals/setup.ts"],
 					css: true,
 					include: ["tests/evals/**/*.eval.test.{ts,tsx}"],
-					exclude: ["**/node_modules/**", "**/dist/**"],
+					exclude: ["**/node_modules/**", "**/dist/**", "**/.claude/**"],
 					// Wywołania LLM (45 s timeout per call) + fan-out w beforeAll.
 					testTimeout: 60_000,
 					hookTimeout: 300_000,
@@ -59,11 +59,15 @@ export default defineConfig({
 				test: {
 					name: "integration",
 					environment: "node",
+					// Pliki sekwencyjnie: testy współdzielą jedną bazę :5433 i te same
+					// tabele (np. market-refresh: ingest + decision piszą staging/runy) —
+					// równoległość plików = wzajemne kasowanie stanu w beforeEach.
+					fileParallelism: false,
 					globals: true,
 					setupFiles: ["./src/test/setup.ts"],
 					css: true,
 					include: [INTEGRATION_GLOB],
-					exclude: ["**/node_modules/**", "**/dist/**"],
+					exclude: ["**/node_modules/**", "**/dist/**", "**/.claude/**"],
 				},
 			},
 		],
