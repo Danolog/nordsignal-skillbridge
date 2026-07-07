@@ -62,7 +62,7 @@ describe("generateWhyImportant", () => {
 		expect(call.prompt).toContain("45%");
 	});
 
-	it("uses maxOutputTokens of 400", async () => {
+	it("uses maxOutputTokens of 700 (400 obcinał opisy — znalezisko AG.0)", async () => {
 		mockGenerateText.mockResolvedValue({
 			text: "Opis",
 		} as ReturnType<typeof generateText> extends Promise<infer T> ? T : never);
@@ -70,7 +70,19 @@ describe("generateWhyImportant", () => {
 		await generateWhyImportant("Python", "Data Analyst", 78);
 
 		const call = mockGenerateText.mock.calls[0][0];
-		expect(call.maxOutputTokens).toBe(400);
+		expect(call.maxOutputTokens).toBe(700);
+	});
+
+	it("prompt zakazuje markdownu (UI renderuje czysty tekst, nie markdown)", async () => {
+		mockGenerateText.mockResolvedValue({
+			text: "Opis",
+		} as ReturnType<typeof generateText> extends Promise<infer T> ? T : never);
+
+		await generateWhyImportant("Python", "Data Analyst", 78);
+
+		const call = mockGenerateText.mock.calls[0][0];
+		expect(call.prompt).toContain("CZYSTY TEKST");
+		expect(call.prompt).toContain("ZERO składni markdown");
 	});
 
 	it("propagates AI SDK errors", async () => {
