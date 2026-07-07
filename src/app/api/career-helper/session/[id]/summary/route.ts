@@ -2,14 +2,17 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateSummary } from "@/lib/ai/career-helper";
+import { loadAdvisorContext } from "@/lib/career-helper/advisor-memory";
 import { resolveStudent } from "@/lib/career-helper/session";
 import {
+	advisorMemory,
 	careerHelperSessions,
 	careerHelperTurns,
 	studentCareerPaths,
 	students,
 } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
+import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
@@ -42,7 +45,11 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 	const { userId, studentId, tenantId } = studentAuth;
 
 	// (1) Odczyt sesji + historii w withTenantContext, PRZED wywołaniem modelu.
-	let data: { answers: unknown; history: { role: "ai" | "user"; content: string }[] } | null;
+	let data: {
+		answers: unknown;
+		history: { role: "ai" | "user"; content: string }[];
+		memoryContext: string | null;
+	} | null;
 	try {
 		data = await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {
 			const [sessionRow] = await tx
@@ -71,9 +78,19 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 					asc(sql`CASE ${careerHelperTurns.role} WHEN 'user' THEN 0 ELSE 1 END`),
 					asc(careerHelperTurns.createdAt),
 				);
+			// AG.7 (flaga advisorMemory): kontekst z bazy w tym samym tx; best-effort.
+			let memoryContext: string | null = null;
+			if (isFeatureEnabled("advisorMemory")) {
+				try {
+					memoryContext = await loadAdvisorContext(tx, studentId);
+				} catch (err) {
+					logError("career-helper.summary.memory", err, { studentId });
+				}
+			}
 			return {
 				answers: sessionRow.answers,
 				history: history as { role: "ai" | "user"; content: string }[],
+				memoryContext,
 			};
 		});
 	} catch (err) {
@@ -86,7 +103,12 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 	// (2) Model + sędzia POZA transakcją (nie trzymamy połączenia na czas LLM).
 	let summary: Awaited<ReturnType<typeof generateSummary>>;
 	try {
-		summary = await generateSummary({ answers: data.answers, history: data.history });
+		summary = await generateSummary({
+			answers: data.answers,
+			history: data.history,
+			// AG.7: null → undefined = prompt bajt-w-bajt jak przed zmianą.
+			memoryContext: data.memoryContext ?? undefined,
+		});
 	} catch (err) {
 		logError("career-helper.summary.generate", err, { studentId });
 		return NextResponse.json(
@@ -131,6 +153,24 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 					.update(students)
 					.set({ careerHelperCompletedAt: new Date(), updatedAt: new Date() })
 					.where(eq(students.id, studentId));
+
+				// AG.7 (flaga advisorMemory): utrwal FAKT z rozmowy — treść podsumowania,
+				// które przeszło sędziego (HITL-gated; odrzucone/warstwa4_failed NIE
+				// wchodzi do pamięci). To jedyne dane, których nie ma nigdzie indziej —
+				// reszta kontekstu doradcy czyta się z istniejących tabel.
+				if (isFeatureEnabled("advisorMemory") && summary.summaryText) {
+					const pathsNote =
+						summary.careerPaths.length > 0
+							? ` Wskazane obszary: ${summary.careerPaths.map((p) => p.label).join(", ")}.`
+							: "";
+					await tx.insert(advisorMemory).values({
+						studentId,
+						tenantId,
+						sessionId: params.data.id,
+						kind: "summary",
+						content: `${summary.summaryText}${pathsNote}`.slice(0, 2000),
+					});
+				}
 			}
 		});
 	} catch (err) {

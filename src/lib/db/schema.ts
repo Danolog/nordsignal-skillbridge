@@ -752,6 +752,42 @@ export const studentCareerPaths = pgTable(
 	],
 );
 
+// AG.7 — Trwała pamięć doradcy między sesjami (za flagą `advisorMemory`).
+//
+// Fakty DESTYLOWANE z rozmów Pomocnika (dziś: treść zaakceptowanego przez
+// sędziego podsumowania /summary), zapisywane po zamknięciu sesji. Reszta
+// kontekstu doradcy (profil, luki, zweryfikowane projekty, wskazane obszary)
+// jest czytana z ISTNIEJĄCYCH tabel — ta tabela trzyma tylko to, czego nigdzie
+// indziej nie ma. Postgres = źródło prawdy (decyzja: NIE Managed Agents memory
+// store). Dane studenta → tabela TENANT-owa: RLS student_sees_own + FORCE +
+// owner_passthrough w migracji 0024 (wzorzec 0013); app_faculty bez grantu
+// (prywatna rozmowa studenta, jak career_helper_turns).
+export const advisorMemory = pgTable(
+	"advisor_memory",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		// Sesja źródłowa faktu — informacyjnie; kasacja sesji nie kasuje pamięci.
+		sessionId: uuid("session_id").references(() => careerHelperSessions.id, {
+			onDelete: "set null",
+		}),
+		/** Rodzaj faktu — dziś tylko podsumowanie sesji; nowe rodzaje = migracja CHECK. */
+		kind: text("kind").notNull(),
+		content: text("content").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_advisor_memory_student_id").on(table.studentId),
+		index("idx_advisor_memory_tenant_id").on(table.tenantId),
+		check("advisor_memory_kind", sql`${table.kind} IN ('summary')`),
+	],
+);
+
 // Faculty sessions — DB-backed, replaces static cookie value.
 // Cookie carries random 256-bit token; DB stores its SHA-256 hash for lookup.
 export const facultySessions = pgTable(
