@@ -70,6 +70,12 @@ const K_PUB_TABLES = [
 	// globalny katalog, brak właściciela tenant-owego, zapis tylko seed/system,
 	// GRANT SELECT app_student/app_faculty. Uzasadnienie: rls-matrix §4.
 	"project_source_links",
+	// 1.0 — wersjonowany artefakt modelu kariery (migracja 0022, K-PUB).
+	// Publiczna konfiguracja jak job_market_data (ten sam ETL ją produkuje):
+	// brak właściciela tenant-owego, zapis tylko ingest/system
+	// (tools/ingest-career-model.ts, owner), GRANT SELECT app_student/app_faculty.
+	// Uzasadnienie: rls-matrix §4.
+	"career_model_versions",
 	// tenants — rejestr uczelni (slug/name). To rejestr najemców, nie dane
 	// studenta; sam nie ma właściciela tenant-owego, więc brak RLS tenant-owej
 	// jest poprawnym stanem (analogicznie do katalogu projects). Zapis tylko

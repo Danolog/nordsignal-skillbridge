@@ -15,6 +15,7 @@
 // ============================================================================
 
 import { eq } from "drizzle-orm";
+import { ensureCareerModelLoaded } from "@/lib/career-model/loader";
 import { db } from "@/lib/db";
 import { competencies, gaps, jobMarketData, passports } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
@@ -39,6 +40,8 @@ export { deriveGaps, type DerivedGap };
  * generyk. Priorytet z udziału WZGLĘDNEGO (r = popyt/max ścieżki), bez krotności.
  */
 export async function loadMarketCatalog(careerGoal: string): Promise<MarketCatalogItem[]> {
+	// 1.0: preload modelu kariery (flaga off = no-op) — enrichWithKind niżej czyta sync.
+	await ensureCareerModelLoaded();
 	const rows = await db.query.jobMarketData.findMany({
 		where: eq(jobMarketData.careerGoal, careerGoal),
 	});

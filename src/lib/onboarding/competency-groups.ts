@@ -6,42 +6,25 @@
 // (nazwa grupy, unionShare, proza „po co się uczysz", kind liścia) żyje w
 // career-model.json. Klucz złączenia: careerGoal + znormalizowana nazwa kompetencji.
 //
-// BEZ migracji bazy (czerwona linia): career-model.json jest w repo, czytany STATYCZNIE
-// po stronie serwera. NIE importuj tego modułu z komponentu klienckiego („use client") —
-// ciągnąłby duży JSON do bundla; endpoint zwraca gotowe `groups[]`/`kind` jako dane.
+// Od 1.0 model kariery ma DWA źródła za flagą `careerModelFromDb`: statyczny JSON
+// w repo (flaga off — zachowanie sprzed 1.0) albo aktywny wiersz career_model_versions
+// (flaga on). Ten moduł czyta model przez loader (getCareerModel) — WEJŚCIA serwerowe
+// wołają wcześniej `await ensureCareerModelLoaded()`; sync sygnatury funkcji bez zmian.
+// NIE importuj tego modułu z komponentu klienckiego („use client") — ciągnąłby duży
+// JSON do bundla; endpoint zwraca gotowe `groups[]`/`kind` jako dane.
 //
 // Reguła twarda (Built-to-Sell): złączenie deterministyczne, zero modelu. Pozycja bez
 // dopasowania w hierarchii zostaje w płaskiej liście (zgodność wstecz) i trafia do
 // grupy „Pozostałe" w widoku grupowym — niezmiennik: suma items grup == płaska lista.
 // ============================================================================
 
+import { getCareerModel, getCareerModelGeneration } from "@/lib/career-model/loader";
 import type { LeafKind } from "@/lib/db/data/anchor-config";
-import careerModelData from "@/lib/db/data/career-model.json";
 import type {
 	GroupCatalog,
 	GroupCatalogItem,
 	MarketCatalogItem,
 } from "@/lib/onboarding/market-catalog";
-
-// Zawężony kształt career-model.json (resolveJsonModule daje szeroki typ literałowy —
-// czytamy tylko te pola). Liść ZAWSZE ma kind w artefakcie (ETL: leaf.kind ?? auto).
-interface ModelLeaf {
-	name: string;
-	kind?: string;
-}
-interface ModelArea {
-	name: string;
-	description?: string;
-	unionShare: number | null;
-	leaves: ModelLeaf[];
-}
-interface ModelPath {
-	careerGoal: string;
-	/** ETAP H: adnotacja-zastrzeżenie profilu ścieżki (etykieta UI; nieobecna gdy brak). */
-	profileNote?: string;
-	areas: ModelArea[];
-}
-const MODEL = careerModelData as unknown as { paths: ModelPath[] };
 
 /** Normalizacja nazwy do złączenia — trim + lower (odporne na różnice wielkości liter). */
 function norm(s: string): string {
@@ -71,11 +54,14 @@ interface CareerModelIndex {
 	groups: GroupMeta[];
 }
 
-// Indeks per careerGoal — budowany leniwie i zapamiętany (JSON statyczny, deterministyczny).
+// Indeks per careerGoal — budowany leniwie i zapamiętany. Cache przypięty do
+// POKOLENIA modelu z loadera: podmiana źródła (statyczny → DB po preloadzie)
+// unieważnia indeksy zbudowane na starym modelu.
 const indexCache = new Map<string, CareerModelIndex | null>();
+let indexCacheGeneration = getCareerModelGeneration();
 
 function buildIndex(careerGoal: string): CareerModelIndex | null {
-	const path = MODEL.paths.find((p) => p.careerGoal === careerGoal);
+	const path = getCareerModel().paths.find((p) => p.careerGoal === careerGoal);
 	if (!path) return null;
 	const leafToGroup = new Map<string, LeafHit>();
 	const groups: GroupMeta[] = [];
@@ -99,6 +85,11 @@ function buildIndex(careerGoal: string): CareerModelIndex | null {
 }
 
 function getIndex(careerGoal: string): CareerModelIndex | null {
+	const gen = getCareerModelGeneration();
+	if (gen !== indexCacheGeneration) {
+		indexCache.clear();
+		indexCacheGeneration = gen;
+	}
 	if (!indexCache.has(careerGoal)) indexCache.set(careerGoal, buildIndex(careerGoal));
 	return indexCache.get(careerGoal) ?? null;
 }
@@ -169,7 +160,7 @@ export function buildCatalogGroups(careerGoal: string, items: MarketCatalogItem[
  * importować z komponentu klienckiego; endpoint zwraca już gotowy string.
  */
 export function getPathProfileNote(careerGoal: string): string | null {
-	return MODEL.paths.find((p) => p.careerGoal === careerGoal)?.profileNote ?? null;
+	return getCareerModel().paths.find((p) => p.careerGoal === careerGoal)?.profileNote ?? null;
 }
 
 /** Kontekst pojedynczej kompetencji do PANELU studenta (B3). */

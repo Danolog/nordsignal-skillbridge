@@ -47,6 +47,12 @@ export const FLAGS = {
 		description: "Blok B8 (1.2–1.6): kolejka recenzji człowieka i akcje approve/reject.",
 		defaultValue: false,
 	},
+	careerModelFromDb: {
+		envVar: "FLAG_CAREER_MODEL_FROM_DB",
+		description:
+			"1.0: model kariery czytany z career_model_versions (DB) zamiast statycznego JSON w repo.",
+		defaultValue: false,
+	},
 } as const satisfies Record<string, FlagDefinition>;
 
 /** Nazwa istniejącej flagi — węższy typ niż string, wymuszony przez rejestr. */

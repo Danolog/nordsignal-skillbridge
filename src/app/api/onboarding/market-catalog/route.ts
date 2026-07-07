@@ -18,6 +18,7 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
+import { ensureCareerModelLoaded } from "@/lib/career-model/loader";
 import { isRealCareerGoal } from "@/lib/db/data/career-paths";
 import { logError } from "@/lib/log";
 import { buildCatalogGroups, getPathProfileNote } from "@/lib/onboarding/competency-groups";
@@ -40,6 +41,10 @@ export async function GET(req: Request) {
 	const real = isRealCareerGoal(careerGoal);
 
 	try {
+		// 1.0: preload modelu kariery (flaga off = no-op) — buildCatalogGroups i
+		// getPathProfileNote niżej czytają sync. loadMarketCatalog też preloaduje,
+		// ale gałąź !real go omija, a groups/profileNote i tak potrzebują modelu.
+		await ensureCareerModelLoaded();
 		const items = real ? await loadMarketCatalog(careerGoal) : [];
 		// B2: widok grupowy z kontekstem (unionShare + opis + kind) OBOK płaskiego items[].
 		// Płaska lista ZOSTAJE źródłem pokrycia (computeMarketCoverage) — groups[] to dodatek.

@@ -50,7 +50,20 @@ Zrobione tę sesję (WSL, 2026-07-07):
   zaraportowana zgodnie z DoD: avgOverall 4.0 → **5.0** (+1.0), baseline
   i próg (3.75→4.5) zaktualizowane.
 
-Migracje wciąż na 0021 (1.0 jeszcze nie ruszone), model kariery nadal w JSON.
+- **1.0 — migracja modelu kariery JSON→DB ⏳ PR otwarty [CZERWONA LINIA]**.
+  Zakres: migracja **0022** (`career_model_versions` — wersjonowany artefakt,
+  content = dokładne bajty, sha256, jeden aktywny wiersz; GRANT SELECT + wpis
+  K-PUB w rls-matrix v0.15 do sign-offu Ryana), flaga `careerModelFromDb`
+  (off = zero zmian), loader z weryfikacją checksum i fallbackiem na statyczny
+  JSON, ingest `pnpm db:ingest-career-model` (guard assertTestDb, idempotentny),
+  preload w 4 wejściach serwerowych. **Test akceptacyjny zielony na lokalnej
+  bazie: content z DB bajtowo identyczny z plikiem.** Integration 56/56.
+  **Procedura prod (Darek, PO merge — kolejność wg lekcji „migracja przed
+  deploy"):** backup gałęzią Neona → `CONFIRM_PROD_DB=1 pnpm db:migrate` (0022)
+  → `CONFIRM_PROD_DB=1 pnpm db:ingest-career-model` → weryfikacja na Preview
+  z flagą on → dopiero wtedy ewentualnie FLAG_CAREER_MODEL_FROM_DB=1 na prod.
+
+Migracje lokalne/test na **0022**; prod wciąż na 0021 do czasu procedury wyżej.
 
 ### Plan v2 — ZAKTUALIZOWANY tę sesję
 `.agents/plans/11-roadmap-fazy-0-3.md` — dopisany **Blok AG** (warstwa agentowa):

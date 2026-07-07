@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { GapList } from "@/components/gap-analysis/gap-list";
 import { auth } from "@/lib/auth/server";
+import { ensureCareerModelLoaded } from "@/lib/career-model/loader";
 import { db } from "@/lib/db";
 import { gaps, students } from "@/lib/db/schema";
 import { getCompetencyContext } from "@/lib/onboarding/competency-groups";
@@ -38,6 +39,8 @@ export default async function GapAnalysisPage() {
 	// złączeniem po careerGoal + nazwie z career-model.json — BEZ migracji bazy (tabela `gaps`
 	// nie niesie grupy/kind). Warstwa czysto prezentacyjna: nie zmienia liczby ani kolejności
 	// luk (niezmiennik pokrycia/luk zachowany — to wciąż te same `sortedGaps`).
+	// 1.0: preload modelu kariery (flaga off = no-op) — getCompetencyContext niżej czyta sync.
+	await ensureCareerModelLoaded();
 	const enrichedGaps = sortedGaps.map((gap) => {
 		const ctx = getCompetencyContext(student.careerGoal, gap.competencyName);
 		return {
