@@ -43,7 +43,6 @@ vi.mock("@/lib/rate-limit", () => ({
 	rateLimitResponse: () => new Response("rate", { status: 429 }),
 }));
 // AI poza kontraktem celu — atrapujemy, żeby test nie wołał LLM ani nie pisał gaps/skill-map.
-vi.mock("@/lib/ai/generate-gaps", () => ({ generateGaps: vi.fn(async () => undefined) }));
 vi.mock("@/lib/ai/generate-skill-map", () => ({ generateSkillMap: vi.fn(async () => undefined) }));
 
 const dBack = isLocalTestDb ? describe : describe.skip;
@@ -100,7 +99,10 @@ dBack("Krok 0 → submit persystuje students.career_goal (realna baza)", () => {
 			semester: 4,
 			careerGoal: KROK0_GOAL, // ← cel ustalony w Kroku 0, niesiony przez submit
 			syllabusText: "",
-			competencies: ["Python", "SQL", "Statystyka", "Git", "Wizualizacja danych"],
+			competencies: ["Python", "SQL", "Statystyka", "Git", "Wizualizacja danych"].map(
+				// AG.2: kontrakt legacy string[] skasowany — testy kroków wysyłają obiekty.
+				(name) => ({ name, level: 3, marketPercentage: 50, inSyllabus: false }),
+			),
 		};
 		const res = await POST(
 			new Request("http://localhost/api/onboarding", {

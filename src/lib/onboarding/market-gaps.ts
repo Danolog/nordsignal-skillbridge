@@ -1,7 +1,8 @@
 // ============================================================================
 // DETERMINISTYCZNE LUKI Z KATALOGU RYNKU (Partia 4)
 //
-// Zastępuje LLM-owy `generate-gaps.ts` w ścieżce onboardingu. W nowym modelu
+// Zastąpił LLM-owy `generate-gaps.ts` w ścieżce onboardingu (tamten moduł
+// skasowany w AG.2, 2026-07-07 — ostatnia gałąź legacy zniknęła). W tym modelu
 // kompetencje pochodzą WPROST z katalogu rynku (`job_market_data` per career_goal),
 // a student deklaruje poziom posiadania — więc luka = pozycja katalogu, której
 // student NIE zaznaczył (Brak). Liczymy ją deterministycznie:
@@ -89,7 +90,7 @@ export async function persistMarketGaps(
 		// zapis (luki + upsert pokrycia paszportu) w JEDNEJ transakcji: przerwanie po
 		// INSERT luk, a przed zapisem pokrycia, zostawiłoby paszport z pokryciem
 		// niespójnym względem właśnie zapisanych luk. Atomowo: albo nowy komplet
-		// (luki + pokrycie), albo stary stan bez zmian. Bliźniacze z generateGaps (0.3).
+		// (luki + pokrycie), albo stary stan bez zmian (wzorzec 0.3).
 		await db.transaction(async (tx) => {
 			await tx.delete(gaps).where(eq(gaps.studentId, studentId));
 			if (derived.length > 0) {

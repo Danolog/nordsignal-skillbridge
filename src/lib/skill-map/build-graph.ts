@@ -21,7 +21,8 @@
  *
  * DECYZJA — kompetencja studenta ze statusem "missing" (FORK, do akceptacji Ethana):
  *   Kolumna `competencies.status` może być "missing" (samoocena poziom 1 = „nie znam",
- *   levelToStatus; albo competencyUpdates z generateGaps). Gdybyśmy renderowali takie
+ *   levelToStatus; historycznie też competencyUpdates z usuniętego w AG.2
+ *   generateGaps). Gdybyśmy renderowali takie
  *   wiersze jako czerwone węzły "missing" NA RÓWNI z lukami, to „Brakuje" na mapie
  *   = (kompetencje missing) + (luki) > gapCount — i złamałoby to twardy niezmiennik
  *   #1: „Brakuje na mapie == gapCount == suma luk". Dlatego JEDYNYM źródłem węzłów

@@ -1,7 +1,7 @@
 import { gzipSync } from "node:zlib";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// DB mockowane — unit nie dotyka Postgresa. tx-mock wzorem generate-gaps.test.
+// DB mockowane — unit nie dotyka Postgresa (tx-mock: spies na db.transaction).
 const { txMock } = vi.hoisted(() => ({
 	txMock: {
 		delete: vi.fn(async () => undefined),

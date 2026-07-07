@@ -111,6 +111,17 @@ Zrobione tę sesję (WSL, 2026-07-07):
   off, schema-only w TS); migracja 0023 na prod + env (token, flaga) = akcje
   Darka PRZED pierwszym użyciem (runbook, sekcja „Wymagania wstępne").
 
+- **AG.2 — kasacja gałęzi legacy LLM luk ⏳ PR otwarty**. Usunięte:
+  `generate-gaps.ts` + jego testy, gałąź legacy string[] w POST /api/onboarding
+  (unia kontraktów → JEDEN kontrakt obiektowy; stary string[] pada na walidacji
+  → 400, dowód w teście), flaga `gapVerifier` z rejestru (jedyny konsument
+  zniknął — **env `FLAG_GAP_VERIFIER` na Vercelu można usunąć**, nieszkodliwa).
+  `verify-gaps.ts` ZOSTAJE jako klocek reużywalny (AG.5+), z zaktualizowanym
+  nagłówkiem; harness AG.0/AG.1 (evale weryfikatora) nietknięty. Testy
+  integracyjne kroków onboardingu przełączone z payloadu legacy na kontrakt
+  obiektowy. Zero martwego kodu LLM luk (DoD). Bramki: tsc 0, Biome 0,
+  unit 921/921, integration 59/59, build OK.
+
 Migracje: lokalne/test na **0023**; **prod na 0022** (0023 czeka na Darka przy
 pierwszym użyciu AG.3 — patrz runbook).
 
@@ -154,9 +165,9 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    (bez pośpiechu — trasa martwa przy zgaszonej fladze): migracja 0023 na prod +
    `MARKET_REFRESH_TOKEN` + `FLAG_PROACTIVE_MARKET_REFRESH` (runbook
    market-refresh). Do review PR-a przypięty sign-off Ryana rls-matrix v0.16.
-7. Następne do implementacji: **AG.4** (bramka akceptacji + transakcyjny swap
-   staging→prod, [CZERWONA LINIA]) — konsumuje `market_refresh_runs` z AG.3;
-   równolegle/potem **AG.2** (kasacja gałęzi legacy LLM luk).
+7. ~~AG.2 (kasacja legacy)~~ ⏳ PR otwarty (patrz wyżej).
+8. Następne do implementacji: **AG.4** (bramka akceptacji + transakcyjny swap
+   staging→prod, [CZERWONA LINIA]) — konsumuje `market_refresh_runs` z AG.3.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).

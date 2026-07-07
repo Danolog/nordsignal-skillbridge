@@ -44,7 +44,6 @@ vi.mock("@/lib/rate-limit", () => ({
 	rateLimitResponse: () => new Response("rate", { status: 429 }),
 }));
 // AI poza kontraktem (onboarding finalny woła gaps/skill-map) — atrapujemy.
-vi.mock("@/lib/ai/generate-gaps", () => ({ generateGaps: vi.fn(async () => undefined) }));
 vi.mock("@/lib/ai/generate-skill-map", () => ({ generateSkillMap: vi.fn(async () => undefined) }));
 
 const dBack = isLocalTestDb ? describe : describe.skip;
@@ -164,7 +163,10 @@ dBack("POST /api/career-helper/survey — NOWY user bez rekordu students (Krok 0
 					semester: 4,
 					careerGoal: "Data Analyst",
 					syllabusText: "",
-					competencies: ["Python", "SQL", "Statystyka", "Git", "Wizualizacja danych"],
+					competencies: ["Python", "SQL", "Statystyka", "Git", "Wizualizacja danych"].map(
+						// AG.2: kontrakt legacy string[] skasowany — testy kroków wysyłają obiekty.
+						(name) => ({ name, level: 3, marketPercentage: 50, inSyllabus: false }),
+					),
 				}),
 			}),
 		);

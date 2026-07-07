@@ -1,10 +1,15 @@
 // ============================================================================
-// AG.1 — WERYFIKATOR LUK W POTOKU (za flagą `gapVerifier`).
+// AG.1 — WERYFIKATOR UGRUNTOWANIA LUK (klocek reużywalny).
 //
-// Drugi przebieg nad lukami wykrytymi przez MODEL (generate-gaps, gałąź legacy):
-// każda luka musi WYNIKAĆ z danych rynkowych (`job_market_data`), zanim trafi
-// do studenta. Ścieżka deterministyczna (market-gaps) NIE potrzebuje weryfikacji
-// — tam luka z konstrukcji jest pozycją katalogu; halucynować może tylko model.
+// Drugi przebieg nad nazwami kompetencji wyprodukowanymi przez MODEL: każda
+// musi WYNIKAĆ z danych rynkowych (`job_market_data`), zanim trafi do studenta.
+// Pierwotny konsument (LLM-owa gałąź legacy generate-gaps + flaga gapVerifier)
+// USUNIĘTY w AG.2 (2026-07-07) — moduł zostaje zgodnie z roadmapą jako klocek
+// dla przyszłych potoków, gdzie model emituje nazwy kompetencji (np. AG.5 opisy
+// nowych luk po swapie rynku). Jakość zmierzona w harnessie AG.0
+// (tests/evals/gap-detection/verifier*.eval.test.ts) — baseline commitowany.
+// Ścieżka deterministyczna (market-gaps) NIE potrzebuje weryfikacji — tam luka
+// z konstrukcji jest pozycją katalogu; halucynować może tylko model.
 //
 // Dwa etapy (tani przed drogim — wzorzec guardrail→sędzia z career-helper.ts):
 //  1. UGRUNTOWANIE DETERMINISTYCZNE (0 LLM): nazwa luki po normalizacji

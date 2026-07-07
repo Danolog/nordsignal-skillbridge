@@ -2,7 +2,6 @@ import { eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generateGaps } from "@/lib/ai/generate-gaps";
 import { generateSkillMap } from "@/lib/ai/generate-skill-map";
 import { auth } from "@/lib/auth/server";
 import { competencies, passports, projectSubmissions, students } from "@/lib/db/schema";
@@ -36,18 +35,14 @@ const OnboardingSchema = z.object({
 	// Pomocnika zamknięty u źródła (/summary grounding + select-path 400).
 	careerGoal: z.string().trim().min(1).max(200),
 	syllabusText: z.string().max(50_000).optional().default(""),
-	// UNIA dwóch kontraktów (kompatybilność wsteczna):
-	//  • NOWY (onboarding Partii 4 ORAZ profil-editor — oba żywe fronty wysyłają obiekty):
-	//    ścieżka DETERMINISTYCZNA (status z samooceny levelToStatus, luki z katalogu rynku).
-	//  • LEGACY (tablica nazw): dziś BEZ żywego wołacza w UI — zostaje wyłącznie dla
-	//    kompatybilności wstecznej (stary cached JS klienta); status 'acquired', luki
-	//    przez model generateGaps. Kandydat do usunięcia w osobnym kroku (razem z
-	//    generate-gaps.ts, którego jedynym konsumentem jest ta gałąź).
-	// Pusta tablica [] dopasowuje się do pierwszego wariantu → ścieżka nowa, 0 zaznaczeń (D5).
-	competencies: z.union([
-		z.array(SelectedCompetencySchema).max(100),
-		z.array(z.string().min(1).max(200)).max(100),
-	]),
+	// JEDEN kontrakt (AG.2, decyzja Darka 2026-07-07): obiekty z poziomem —
+	// ścieżka DETERMINISTYCZNA (status z samooceny levelToStatus, luki z katalogu
+	// rynku). Gałąź LEGACY (tablica nazw → model generateGaps) USUNIĘTA razem
+	// z generate-gaps.ts: nie miała żywego wołacza w UI, a LLM potrafił
+	// halucynować luki (stąd weryfikator AG.1 — moduł verify-gaps zostaje jako
+	// klocek dla AG.5+). Stary kontrakt string[] pada teraz na walidacji → 400.
+	// Pusta tablica [] = 0 zaznaczeń (D5) — student startuje z 0% pokrycia.
+	competencies: z.array(SelectedCompetencySchema).max(100),
 });
 
 export async function POST(req: Request) {
@@ -73,13 +68,9 @@ export async function POST(req: Request) {
 		);
 	}
 	const { university, fieldOfStudy, semester, careerGoal, syllabusText } = parsed.data;
-	const rawComps = parsed.data.competencies;
-	// Detekcja kontraktu: pusta tablica lub obiekty → NOWY (Partia 4); stringi → LEGACY.
-	const isNewContract = rawComps.length === 0 || typeof rawComps[0] === "object";
-	const selected: SelectedComp[] = isNewContract ? (rawComps as SelectedComp[]) : [];
-	const legacyNames: string[] = isNewContract ? [] : (rawComps as string[]);
-	// Nazwy zaznaczonych — wejście liczenia luk (katalog rynku \ wybór / model legacy).
-	const competencyNames = isNewContract ? selected.map((c) => c.name) : legacyNames;
+	const selected: SelectedComp[] = parsed.data.competencies;
+	// Nazwy zaznaczonych — wejście liczenia luk (katalog rynku \ wybór).
+	const competencyNames = selected.map((c) => c.name);
 
 	const userId = session.user.id;
 
@@ -101,10 +92,10 @@ export async function POST(req: Request) {
 	// niezależnie od ścieżki kodu (zapomniany WHERE = 0 wierszy). Dziś fallback
 	// na owner+SET LOCAL ROLE — semantyka identyczna.
 	//
-	// AI calls (generateGaps + generateSkillMap) POZA tx — nie trzymamy
-	// połączenia przez LLM, plus ich własne DB calls idą jeszcze przez owner
+	// persistMarketGaps + generateSkillMap POZA tx — nie trzymamy połączenia
+	// przez dłuższą pracę, plus ich własne DB calls idą jeszcze przez owner
 	// (sub-issues #19c..#19f domkną je per trasa). Studentid + competency-rows
-	// committed po commit transakcji ⇒ AI widzi je w swoim własnym połączeniu.
+	// committed po commit transakcji ⇒ dalsze kroki widzą je w swoim połączeniu.
 	let studentId: string;
 	try {
 		studentId = await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {
@@ -157,31 +148,19 @@ export async function POST(req: Request) {
 
 			// Insert competencies (po INSERT studentu w tej samej tx — RLS
 			// student_sees_own widzi własny wiersz w ramach tx read-committed).
-			if (isNewContract) {
-				// NOWY (Partia 4): każda niesie POZIOM samooceny (2/3/4) ze scalonego kroku —
-				// status z ratyfikowanej mapy levelToStatus, verifiedByMethod='self' (Beta),
-				// realny % popytu z katalogu. Pusta tablica (0 zaznaczeń, D5) → brak insertu.
-				if (selected.length > 0) {
-					await tx.insert(competencies).values(
-						selected.map((c) => ({
-							studentId: sid,
-							tenantId,
-							name: c.name,
-							status: levelToStatus(c.level),
-							selfAssessment: c.level,
-							verifiedByMethod: "self" as const,
-							marketPercentage: c.marketPercentage,
-						})),
-					);
-				}
-			} else {
-				// LEGACY (profil-editor): nazwy bez poziomu, status 'acquired' (jak przed Partią 4).
+			// Każda niesie POZIOM samooceny (2/3/4) ze scalonego kroku — status
+			// z ratyfikowanej mapy levelToStatus, verifiedByMethod='self' (Beta),
+			// realny % popytu z katalogu. Pusta tablica (0 zaznaczeń, D5) → brak insertu.
+			if (selected.length > 0) {
 				await tx.insert(competencies).values(
-					legacyNames.map((name) => ({
+					selected.map((c) => ({
 						studentId: sid,
 						tenantId,
-						name,
-						status: "acquired" as const,
+						name: c.name,
+						status: levelToStatus(c.level),
+						selfAssessment: c.level,
+						verifiedByMethod: "self" as const,
+						marketPercentage: c.marketPercentage,
 					})),
 				);
 			}
@@ -226,13 +205,8 @@ export async function POST(req: Request) {
 	// modelu, bez nadpisywania statusu samooceny (HITL). Status kompetencji pochodzi
 	// wyłącznie od studenta (levelToStatus przy insercie wyżej).
 	try {
-		if (isNewContract) {
-			// Luki DETERMINISTYCZNE: katalog rynku \ wybór (popyt z danych, bez modelu).
-			await persistMarketGaps(studentId, tenantId, careerGoal, competencyNames);
-		} else {
-			// LEGACY (profil-editor): luki przez model (zachowanie sprzed Partii 4).
-			await generateGaps(studentId, tenantId, competencyNames, careerGoal);
-		}
+		// Luki DETERMINISTYCZNE: katalog rynku \ wybór (popyt z danych, bez modelu).
+		await persistMarketGaps(studentId, tenantId, careerGoal, competencyNames);
 		await generateSkillMap(studentId, tenantId);
 	} catch (err) {
 		logError("onboarding", err, { studentId });
