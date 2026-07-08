@@ -20,7 +20,11 @@ import { checkFacultyAuth, hashToken } from "@/lib/faculty-auth";
 
 export const OPERATOR_COOKIE_NAME = "operator_session";
 
-export type ReviewerAuth = { kind: "quality_operator" } | { kind: "faculty"; tenantId: string };
+// sessionId = id wiersza faculty_sessions (ślad audytowy — reviewer_id
+// w submission_reviews, ADR-011).
+export type ReviewerAuth =
+	| { kind: "quality_operator"; sessionId: string }
+	| { kind: "faculty"; tenantId: string; sessionId: string };
 
 /**
  * Zwraca kontekst zalogowanego recenzenta albo null. Operator sprawdzany
@@ -40,7 +44,7 @@ export async function checkReviewerAuth(): Promise<ReviewerAuth | null> {
 				),
 				columns: { id: true },
 			});
-			if (row) return { kind: "quality_operator" };
+			if (row) return { kind: "quality_operator", sessionId: row.id };
 		} catch {
 			// awaria odczytu sesji operatora nie może otworzyć ścieżki — spadamy
 			// do próby faculty, a ta ma własny fail-closed.
@@ -48,6 +52,8 @@ export async function checkReviewerAuth(): Promise<ReviewerAuth | null> {
 	}
 
 	const faculty = await checkFacultyAuth();
-	if (faculty) return { kind: "faculty", tenantId: faculty.tenantId };
+	if (faculty) {
+		return { kind: "faculty", tenantId: faculty.tenantId, sessionId: faculty.sessionId };
+	}
 	return null;
 }

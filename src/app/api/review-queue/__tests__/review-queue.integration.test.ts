@@ -43,6 +43,8 @@ dBack(
 		let queueGET: any;
 		// biome-ignore lint/suspicious/noExplicitAny: handlery ładowane dynamicznie.
 		let loginPOST: any;
+		// biome-ignore lint/suspicious/noExplicitAny: handlery ładowane dynamicznie.
+		let decisionPOST: any;
 		// biome-ignore lint/suspicious/noExplicitAny: funkcje ładowane dynamicznie.
 		let hashToken: any;
 
@@ -81,6 +83,7 @@ dBack(
 			({ hashToken } = await import("@/lib/faculty-auth"));
 			({ GET: queueGET } = await import("../route"));
 			({ POST: loginPOST } = await import("../../operator/login/route"));
+			({ POST: decisionPOST } = await import("../[id]/decision/route"));
 			await cleanup();
 
 			const tenantRows = await db.select({ id: schema.tenants.id }).from(schema.tenants).limit(2);
@@ -163,6 +166,7 @@ dBack(
 			for (const item of body.queue) {
 				expect(Object.keys(item).sort()).toEqual(
 					[
+						"machineStatus",
 						"projectId",
 						"projectLevel",
 						"projectTitle",
@@ -173,6 +177,41 @@ dBack(
 					].sort(),
 				);
 			}
+		});
+
+		it("[korekta 1.4] verified+needsHumanReview TEŻ w kolejce (filtr bez zawężenia po statusie)", async () => {
+			// Twarde sprawdzenia padły przy wysokim wyniku semantycznym → maszyna
+			// dała 'verified', ale flaga needs_human_review czeka na człowieka.
+			const student = await db.query.students.findFirst({
+				where: (s: { tenantId: unknown }, { eq: eqOp }: { eq: CallableFunction }) =>
+					eqOp(s.tenantId, tenantA),
+				columns: { id: true },
+			});
+			const [project] = await db
+				.select({ id: schema.projects.id })
+				.from(schema.projects)
+				.offset(1)
+				.limit(1);
+			const [sub] = await db
+				.insert(schema.projectSubmissions)
+				.values({
+					studentId: student.id,
+					tenantId: tenantA,
+					projectId: project.id,
+					repoUrl: `https://example.test/${MARKER}/verified-risky`,
+					status: "verified",
+					needsHumanReview: true,
+					submittedAt: new Date(),
+				})
+				.returning({ id: schema.projectSubmissions.id });
+
+			cookieJar = { operator_session: await seedSession("quality_operator", null) };
+			const body = (await (await queueGET()).json()) as {
+				queue: Array<{ submissionId: string; machineStatus: string }>;
+			};
+			const entry = body.queue.find((q) => q.submissionId === sub.id);
+			expect(entry).toBeTruthy();
+			expect(entry?.machineStatus).toBe("verified");
 		});
 
 		it("faculty widzi WYŁĄCZNIE swój kampus (WHERE + RLS)", async () => {
@@ -213,6 +252,90 @@ dBack(
 			const ids = body.queue.map((q) => q.submissionId);
 			expect(ids).toContain(submissionByTenant[tenantA]);
 			expect(ids).not.toContain(reviewedSubmissionId);
+		});
+
+		// ── B8/1.4 — decyzja człowieka (transakcja, idempotencja, izolacja) ──
+
+		function decisionReq(
+			submissionId: string,
+			decision: string,
+		): [Request, { params: Promise<{ id: string }> }] {
+			return [
+				new Request(`http://test.local/api/review-queue/${submissionId}/decision`, {
+					method: "POST",
+					body: JSON.stringify({ decision }),
+					headers: { "Content-Type": "application/json" },
+				}),
+				{ params: Promise.resolve({ id: submissionId }) },
+			];
+		}
+
+		it("1.4: faculty NIE zdecyduje o zgłoszeniu cudzego tenanta → 404, zero wiersza recenzji", async () => {
+			cookieJar = { faculty_session: await seedSession("faculty", tenantB) };
+			const res = await decisionPOST(...decisionReq(submissionByTenant[tenantA], "approved"));
+			expect(res.status).toBe(404);
+
+			const rows = await db.execute(
+				sql`SELECT 1 FROM submission_reviews WHERE submission_id = ${submissionByTenant[tenantA]}`,
+			);
+			expect(rows.rows).toHaveLength(0);
+		});
+
+		it("1.4: approve (operator) → status 'verified' + wiersz recenzji z typem i sesją recenzenta", async () => {
+			cookieJar = { operator_session: await seedSession("quality_operator", null) };
+			const res = await decisionPOST(...decisionReq(submissionByTenant[tenantA], "approved"));
+			expect(res.status).toBe(200);
+			const body = (await res.json()) as Record<string, unknown>;
+			expect(body).toMatchObject({ previousStatus: "submitted", newStatus: "verified" });
+
+			const sub = await db.execute(
+				sql`SELECT status FROM project_submissions WHERE id = ${submissionByTenant[tenantA]}`,
+			);
+			expect((sub.rows[0] as { status: string }).status).toBe("verified");
+			const review = await db.execute(
+				sql`SELECT decision, reviewer_type, reviewer_id FROM submission_reviews
+				    WHERE submission_id = ${submissionByTenant[tenantA]}`,
+			);
+			const r = review.rows[0] as { decision: string; reviewer_type: string; reviewer_id: string };
+			expect(r.decision).toBe("approved");
+			expect(r.reviewer_type).toBe("quality_operator");
+			expect(r.reviewer_id).toBeTruthy(); // id sesji — ślad audytowy (ADR-011)
+		});
+
+		it("1.4: druga decyzja o tym samym zgłoszeniu → 409, status NIETKNIĘTY (idempotencja)", async () => {
+			cookieJar = { operator_session: await seedSession("quality_operator", null) };
+			const res = await decisionPOST(...decisionReq(submissionByTenant[tenantA], "rejected"));
+			expect(res.status).toBe(409);
+
+			const sub = await db.execute(
+				sql`SELECT status FROM project_submissions WHERE id = ${submissionByTenant[tenantA]}`,
+			);
+			expect((sub.rows[0] as { status: string }).status).toBe("verified"); // pierwsza decyzja stoi
+		});
+
+		it("1.4: reject (faculty, własny tenant) uchyla werdykt maszyny 'verified' → 'rejected' (ADR-008)", async () => {
+			// Zgłoszenie verified+needsHumanReview z testu [korekta 1.4].
+			const risky = await db.execute(
+				sql`SELECT id FROM project_submissions WHERE repo_url LIKE ${`%${MARKER}/verified-risky%`}`,
+			);
+			const riskyId = (risky.rows[0] as { id: string }).id;
+
+			cookieJar = { faculty_session: await seedSession("faculty", tenantA) };
+			const res = await decisionPOST(...decisionReq(riskyId, "rejected"));
+			expect(res.status).toBe(200);
+			expect((await res.json()) as Record<string, unknown>).toMatchObject({
+				previousStatus: "verified",
+				newStatus: "rejected",
+			});
+
+			const sub = await db.execute(
+				sql`SELECT status FROM project_submissions WHERE id = ${riskyId}`,
+			);
+			expect((sub.rows[0] as { status: string }).status).toBe("rejected");
+			const review = await db.execute(
+				sql`SELECT reviewer_type FROM submission_reviews WHERE submission_id = ${riskyId}`,
+			);
+			expect((review.rows[0] as { reviewer_type: string }).reviewer_type).toBe("faculty");
 		});
 	},
 );

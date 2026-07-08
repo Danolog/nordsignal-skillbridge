@@ -19,7 +19,9 @@ export function hashToken(token: string): string {
 	return createHash("sha256").update(token).digest("hex");
 }
 
-export type FacultyAuth = { tenantId: string };
+// B8/1.4: sessionId = id wiersza faculty_sessions — ślad audytowy decyzji
+// recenzenckich (reviewer_id w submission_reviews wskazuje sesję, ADR-011).
+export type FacultyAuth = { tenantId: string; sessionId: string };
 
 /**
  * Zwraca tenant zalogowanego wykładowcy albo null. Sesja bez tenant_id
@@ -42,7 +44,7 @@ export async function checkFacultyAuth(): Promise<FacultyAuth | null> {
 			),
 		});
 		if (!row || !row.tenantId) return null;
-		return { tenantId: row.tenantId };
+		return { tenantId: row.tenantId, sessionId: row.id };
 	} catch {
 		return null;
 	}
