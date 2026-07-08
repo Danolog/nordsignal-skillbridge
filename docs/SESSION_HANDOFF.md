@@ -209,9 +209,25 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    Bramki: tsc 0, Biome 0, unit 957/957, integration 74/74 + k3 zielony,
    BUILD_OK. **Przed zapaleniem flagi na prod: migracja 0026** (razem z
    0023/0024/0025 w jednej sesji migracyjnej Darka).
-10. Po merge AG.6: **bramka wyjścia Bloku AG** (przegląd: jakość zmierzona AG.0,
-   weryfikator AG.1, rynek cykliczny AG.3/AG.4, recompute AG.5, powiadomienia
-   AG.6, pamięć doradcy AG.7, koszt per student w `ai_usage_ledger` vs P&L).
+10. ~~Bramka wyjścia Bloku AG~~ ✅ **ZALICZONA (2026-07-08, przegląd na
+   dowodach)**. Kryteria z roadmapy: (1) jakość zmierzona — baseline.json
+   P/R/F1=1.0 + opisy 5.0/5, świeży przebieg deterministyczny 95/95; (2)
+   weryfikator — precision 0.854→1.0, sędzia 2×10/10, dowód runtime z wpisem
+   ledgera; (3) rynek cykliczny z akceptacją — łańcuch AG.3/AG.4/AG.5
+   dowiedziony integracyjnie (74/74) + runbook; (4) powiadomienia — DoD AG.6
+   (dotknięty student, nie inni); (5) pamięć doradcy — druga sesja zna stan
+   pierwszej (integracja); (6) koszt vs P&L — **zmierzony na prod ledger
+   przez Darka (Neon SQL Editor):** total $0.0187 (1 student, jednorazowy
+   onboarding 2026-07-02, od tego czasu $0 cyklicznych); realne ceny wywołań
+   2,7–3,1× NIŻSZE niż założenia P&L (parse $0.0144 vs $0.045, match $0.0044
+   vs $0.012); koszt per student/tydzień ≈ 0 z konstrukcji (recompute 0 LLM,
+   1 opis/unikalna luka na populację). Uwaga infra: prod connection string
+   NIE istnieje lokalnie (`.env` = localhost:5432; `.env.local` nie ma) —
+   prod czyta się przez Neon SQL Editor albo string z konsoli Neona.
+11. **NASTĘPNE:** Blok AG w całości domknięty (kod + bramka). Aktywacja na
+   prodzie = akcje Darka (migracje 0023–0026 + env wg runbooka; bez pośpiechu,
+   flagi off = zero zmian). Dalej wg roadmapy Fazy 1: bloki B6–B8 / 1E —
+   kolejność wskaże Darek.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
