@@ -224,10 +224,23 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    1 opis/unikalna luka na populację). Uwaga infra: prod connection string
    NIE istnieje lokalnie (`.env` = localhost:5432; `.env.local` nie ma) —
    prod czyta się przez Neon SQL Editor albo string z konsoli Neona.
-11. **NASTĘPNE:** Blok AG w całości domknięty (kod + bramka). Aktywacja na
-   prodzie = akcje Darka (migracje 0023–0026 + env wg runbooka; bez pośpiechu,
-   flagi off = zero zmian). Dalej wg roadmapy Fazy 1: bloki B6–B8 / 1E —
-   kolejność wskaże Darek.
+11. ~~Migracje prod 0023–0026~~ ✅ **WGRANE (Darek, 2026-07-08)** wg procedury:
+   backup gałęzią Neona (`backup/pre-0023-0026-2026-07-08`) → kontrola
+   dziennika PRZED (23 wpisy, when=1783424073094 — zgodne z _journal.json) →
+   `drizzle-kit migrate` bezpośrednio (guard db:migrate hard-denyuje prod
+   z konstrukcji; connection string TYLKO w terminalu Darka, nie w sesji) →
+   weryfikacja PO: **27 wpisów**, staging/runs/advisor_memory/
+   market_new_gap_events istnieją, kolumny zgody na students, RLS t/t.
+   **PROD = 0026** (pełna parzystość z bazą testową). Po drodze dwie nauki:
+   placeholder w instrukcji został wyeksportowany dosłownie (host „base",
+   zero szkód — błąd DNS przed połączeniem); connection string do migracji =
+   wariant DIRECT (bez poolera), z Connect w konsoli Neona.
+12. **NASTĘPNE:** Blok AG domknięty w całości (kod + bramka + migracje prod).
+   Do aktywacji funkcji zostały TYLKO env na Vercelu (w dowolnym momencie,
+   osobno lub razem): `MARKET_REFRESH_TOKEN` + `FLAG_PROACTIVE_MARKET_REFRESH`
+   (potok rynku), `FLAG_MARKET_GAP_NOTIFICATIONS` (UI studenta),
+   `FLAG_ADVISOR_MEMORY` (pamięć doradcy) — wg runbooka market-refresh.
+   Dalej wg roadmapy Fazy 1: bloki B6–B8 / 1E — kolejność wskaże Darek.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
