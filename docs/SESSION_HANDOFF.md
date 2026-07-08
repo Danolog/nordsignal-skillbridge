@@ -300,10 +300,16 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
      FLAG_HUMAN_REVIEW_QUEUE. Incydent po drodze: GitHub Actions zablokowane
      billingiem (payment failed / spending limit) — wszystkie joby padały w
      2 s bez kroków; Darek odblokował w Billing & plans, rerun zielony.
-14. **NASTĘPNE (kolejność roadmapy F1):** Blok B6 — sandbox: **1.7 design
-   spike + ADR [CZERWONA LINIA — usługa zewnętrzna, SIGN-OFF Darka]**
-   (blokuje 1.8/1.9), potem Blok A5 (diagnoza zamiast samooceny), C11
-   (tutor sokratyczny), B7 (viva), cross-cutting 1.17/1.18.
+14. ~~1.7~~ ✅ **ADR-012** (sign-off Darka 2026-07-08): piaskownica = **Vercel
+   Sandbox** (istniejący vendor, zero nowych usług; microVM, deny-all,
+   python3.13/node24). Twarde niezmienniki dla 1.8 w ADR: zero sekretów
+   w piaskownicy, limity+timeout ≪ maxDuration, jednorazowość, ukryte
+   test-suites server-side, licznik biegów pod budżetem 0.0, ścieżka
+   odwrotu = E2B (ADR-012b), fail-closed w 1.9.
+15. **NASTĘPNE:** B6/**1.8** — spike wykonalności (zimny start + pandas/numpy
+   w budżecie czasu submitu) → integracja runnera za flagą; potem **1.9**
+   (runOk do kroku 2/5, fail-closed). Dalej: Blok A5 (diagnoza), C11 (tutor),
+   B7 (viva), cross-cutting 1.17/1.18.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
