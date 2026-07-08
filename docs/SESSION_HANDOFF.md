@@ -273,8 +273,18 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
      [KOREKTA 1.3]: filtr kolejki bez zawężenia po statusie — verified/rejected
      + needsHumanReview też czekają na człowieka (pierwotny warunek
      status='submitted' je gubił); odpowiedź kolejki + machineStatus.
-   - Następne: **1.5** (UI kolejki + akcje, E2E), potem 1.6 (plakietka
-     „Oceniał człowiek" na receipcie wg reviewerType).
+   - ~~1.4~~ ✅ zmergowane (#145, squash `0aad803`; CI zielone za pierwszym
+     podejściem).
+   - **1.5 ⏳ PR otwarty**: UI kolejki — /review/login (formularz operatora,
+     lustro faculty; wykładowca wchodzi na /review z istniejącą sesją panelu
+     uczelni) + /review (server component: flaga off → notFound, brak sesji →
+     redirect na login; klient ReviewQueueView: karty mobile-first wzorem
+     /market-refresh, rekomendacja maszyny wg machineStatus, notatka
+     opcjonalna, Zatwierdź/Odrzuć → wpis znika, 409 wyścigu → toast + refetch).
+     Style rq-* w globals.css. Middleware nie obejmuje /review (standalone jak
+     /faculty — auth w server component + trasach API).
+   - Następne: **1.6** (plakietka „Oceniał człowiek" na receipcie wg
+     reviewerType — ostatnie zadanie Bloku B8).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
