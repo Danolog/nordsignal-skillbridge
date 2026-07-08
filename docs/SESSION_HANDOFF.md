@@ -334,14 +334,39 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    kodowo domknięty po merge** (1.7 ADR + 1.8 runner + 1.9 wpięcie);
    otwarta kuracja suite'ów dla projektów DS (wątek treściowy Sophii —
    tabela project_hidden_tests pusta = runner nie odpala, bez szkód).
-17. **A5/1.10 ⏳ PR otwarty**: migracja **0029** — CHECK `verified_by_method`
+17. ~~A5/1.10~~ ✅ **zmergowane (#150, squash `107f815`; CI zielone za
+   pierwszym podejściem)**: migracja **0029** — CHECK `verified_by_method`
    otwarty na `'diagnostic'` (lista miękka; DROP+ADD bezpieczne, bo Beta
    miała wyłącznie 'self'); test integracyjny constraintu na realnej bazie.
-   Prod: 0029 do następnej sesji migracyjnej Darka (razem z 0027/0028).
-18. **NASTĘPNE:** A5/**1.11** — silnik testu adaptacyjnego + bank pytań
-   ([ZMIANA]: encje wspólne z egzaminami modułowymi 1E.3 i spaced repetition
-   1E.4 — decyzja projektowa przed kodem!), potem 1.12 (wpięcie w onboarding,
-   wynik jako placement 1E.7). Dalej: C11 (tutor), B7 (viva), 1.17/1.18.
+   Zero zmian zachowania (nic jeszcze nie pisze 'diagnostic').
+
+### KOLEJKA MIGRACJI PROD (następna sesja migracyjna Darka)
+Prod stoi na **0026**. Czekają: **0027** (role na faculty_sessions — przed
+FLAG_HUMAN_REVIEW_QUEUE, do tego env OPERATOR_PASSWORD), **0028**
+(project_hidden_tests — przed FLAG_SANDBOX_RUNNER), **0029**
+(verified_by_method 'diagnostic' — przed silnikiem diagnozy 1.11/1.12).
+Procedura jak 2026-07-08: backup gałęzią Neona → kontrola dziennika
+(oczekiwane 27 wpisów PRZED) → `drizzle-kit migrate` bezpośrednio (guard
+db:migrate hard-denyuje prod; string DIRECT z Connect, nie pooler; TYLKO
+w terminalu Darka) → weryfikacja PO (30 wpisów).
+
+18. **NASTĘPNE:** A5/**1.11** — silnik testu adaptacyjnego + bank pytań.
+   [ZMIANA] Twardy wymóg projektowy: encje banku pytań WSPÓLNE z egzaminami
+   modułowymi (1E.3) i spaced repetition (1E.4) — projekt schematu i decyzja
+   PRZED kodem (Oliver przynosi propozycję Darkowi). Deterministyczne
+   mapowanie odpowiedzi → poziom kompetencji. Potem **1.12** (wpięcie
+   w onboarding: równorzędna ścieżka bez sylabusa; wynik reprezentowalny
+   jako placement w curriculum — konsumuje 1E.7). Dalej: C11 (tutor,
+   1.13–1.14), B7 (viva, 1.15–1.16), cross-cutting 1.17/1.18.
+
+### Stan bloków Fazy 1 (2026-07-08 wieczorem)
+- **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
+- **Blok B8** ✅ CAŁY (1.2–1.6, PR #144–#147) — aktywacja = 0027 + env.
+- **Blok B6** ✅ CAŁY (1.7 ADR-012 + 1.8 #148 + 1.9 #149) — aktywacja =
+  0028 + flaga; otwarta kuracja suite'ów (wątek Sophii, bez presji).
+- **Blok A5** ⏳ w toku: 1.10 ✅ (#150) · 1.11 następne · 1.12 czeka.
+- Baseline main: tsc 0, Biome 0, unit 991/991, integration 86/86, k3
+  zielony, BUILD_OK; migracje: test DB = 0029, prod = 0026.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
