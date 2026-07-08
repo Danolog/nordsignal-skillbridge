@@ -235,12 +235,33 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    placeholder w instrukcji został wyeksportowany dosłownie (host „base",
    zero szkód — błąd DNS przed połączeniem); connection string do migracji =
    wariant DIRECT (bez poolera), z Connect w konsoli Neona.
-12. **NASTĘPNE:** Blok AG domknięty w całości (kod + bramka + migracje prod).
-   Do aktywacji funkcji zostały TYLKO env na Vercelu (w dowolnym momencie,
-   osobno lub razem): `MARKET_REFRESH_TOKEN` + `FLAG_PROACTIVE_MARKET_REFRESH`
-   (potok rynku), `FLAG_MARKET_GAP_NOTIFICATIONS` (UI studenta),
-   `FLAG_ADVISOR_MEMORY` (pamięć doradcy) — wg runbooka market-refresh.
-   Dalej wg roadmapy Fazy 1: bloki B6–B8 / 1E — kolejność wskaże Darek.
+12. Blok AG domknięty w całości (kod + bramka + migracje prod). Do aktywacji
+   funkcji AG zostały TYLKO env na Vercelu (w dowolnym momencie, osobno lub
+   razem): `MARKET_REFRESH_TOKEN` + `FLAG_PROACTIVE_MARKET_REFRESH` (potok
+   rynku), `FLAG_MARKET_GAP_NOTIFICATIONS` (UI studenta), `FLAG_ADVISOR_MEMORY`
+   (pamięć doradcy) — wg runbooka market-refresh. Decyzja Darka: flagi NA RAZIE
+   zostają zgaszone, jedziemy dalej z planem.
+13. **Blok B8 (recenzja człowieka) W TOKU — decyzja Darka „jedziemy dalej
+   z planem" (2026-07-08):**
+   - ~~1.2~~ ✅ **ADR-011** (na main, `fc6c773`): w Becie recenzuje operator
+     jakości (Darek) od dnia 1, cross-tenant; wykładowcy dołączają per wydział
+     (istniejące hasła kampusów); `auto_no_human` dla receiptów bez człowieka.
+   - **1.3 ⏳ PR otwarty**: migracja **0027** (kolumna `role` na
+     faculty_sessions, CHECK faculty/quality_operator, DEFAULT 'faculty');
+     `reviewer-auth.ts` (checkReviewerAuth: operator cross-tenant / faculty
+     tenant; checkFacultyAuth honoruje odtąd TYLKO role='faculty' — twardy
+     rozdział ról); POST /api/operator/login (lustro faculty: rate-limit,
+     origin, siła hasła, audyt z actorType 'operator', sekret
+     `OPERATOR_PASSWORD`); GET /api/review-queue (needs_human_review +
+     status='submitted' + bez decyzji; faculty przez withTenantContext,
+     operator owner-side; odpowiedź ANONIMOWA — bez danych studenta; tytuły
+     projektów dociągane owner-side, żeby nie zależeć od grantów app_faculty
+     na projects). Wszystko za flagą `humanReviewQueue`. DoD integracyjnie:
+     operator widzi oba tenanty, faculty tylko swój, decyzja usuwa z kolejki,
+     tokeny ról nie krzyżują się. **Przed zapaleniem FLAG_HUMAN_REVIEW_QUEUE
+     na prod: migracja 0027 + env OPERATOR_PASSWORD.**
+   - Następne: **1.4** (API approve/reject — transakcyjnie, idempotentnie,
+     audit), potem 1.5 (UI kolejki) i 1.6 (plakietka na receipcie).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).

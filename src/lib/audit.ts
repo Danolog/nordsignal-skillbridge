@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { auditLog } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
 
-export type AuditActorType = "student" | "faculty" | "system" | "anonymous";
+export type AuditActorType = "student" | "faculty" | "operator" | "system" | "anonymous";
 
 export interface AuditEntry {
 	actorType: AuditActorType;

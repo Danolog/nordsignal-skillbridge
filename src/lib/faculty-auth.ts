@@ -35,6 +35,9 @@ export async function checkFacultyAuth(): Promise<FacultyAuth | null> {
 		const row = await db.query.facultySessions.findFirst({
 			where: and(
 				eq(facultySessions.tokenHash, tokenHash),
+				// B8/1.3: sesja operatora (role='quality_operator') NIGDY nie daje
+				// kontekstu wykładowcy — role rozdzielone twardo (ADR-011).
+				eq(facultySessions.role, "faculty"),
 				gt(facultySessions.expiresAt, new Date()),
 			),
 		});
