@@ -1080,34 +1080,43 @@ export function PassportDocument({
 											<span>·</span>
 											<span>Zweryfikowano: {fmtDateLong(p.verifiedAt)}</span>
 											<span>·</span>
-											<span
-												style={{
-													display: "inline-flex",
-													alignItems: "center",
-													gap: "4px",
-													color: "var(--ok)",
-												}}
-											>
-												<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
-													<circle
-														cx="12"
-														cy="12"
-														r="11"
-														fill="none"
-														stroke="var(--ok)"
-														strokeWidth="2"
-													/>
-													<path
-														d="M7 12.5l3 3 7-7.5"
-														fill="none"
-														stroke="var(--ok)"
-														strokeWidth="2"
-														strokeLinecap="round"
-														strokeLinejoin="round"
-													/>
-												</svg>
-												ocena zweryfikowana
-											</span>
+											{/* B8/1.6 (ADR-008/ADR-011): etykieta nigdy nie kłamie —
+											    „Oceniał człowiek" TYLKO przy realnej decyzji człowieka;
+											    bez niej uczciwe „ocena automatyczna". */}
+											{p.humanReviewerType ? (
+												<span
+													style={{
+														display: "inline-flex",
+														alignItems: "center",
+														gap: "4px",
+														color: "var(--ok)",
+														fontWeight: 600,
+													}}
+												>
+													<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+														<circle
+															cx="12"
+															cy="12"
+															r="11"
+															fill="none"
+															stroke="var(--ok)"
+															strokeWidth="2"
+														/>
+														<path
+															d="M7 12.5l3 3 7-7.5"
+															fill="none"
+															stroke="var(--ok)"
+															strokeWidth="2"
+															strokeLinecap="round"
+															strokeLinejoin="round"
+														/>
+													</svg>
+													Oceniał człowiek:{" "}
+													{p.humanReviewerType === "faculty" ? "wykładowca" : "operator jakości"}
+												</span>
+											) : (
+												<span style={{ color: "var(--muted)" }}>ocena automatyczna</span>
+											)}
 										</div>
 										{(p.repoUrl || p.notebookUrl) && (
 											<div

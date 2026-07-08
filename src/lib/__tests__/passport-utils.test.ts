@@ -86,3 +86,52 @@ describe("calculateCoverage", () => {
 		expect(calculateCoverage(comps)).toBe(100);
 	});
 });
+
+// ── B8/1.6 — plakietka „Oceniał człowiek" (ADR-011): mapowanie recenzji ──
+
+import { buildHumanReviewMap, mapSubmissionsToReceipts } from "../passport-utils";
+
+const SUB = {
+	id: "sub-1",
+	project: { title: "Dashboard", level: "L2" },
+	score: 82,
+	submittedAt: new Date("2026-07-01T10:00:00Z"),
+	createdAt: new Date("2026-06-30T10:00:00Z"),
+	repoUrl: "https://example.test/repo",
+	notebookUrl: null,
+	aiReviewJson: { review: { feedback: "Solidnie." } },
+};
+
+describe("buildHumanReviewMap (B8/1.6)", () => {
+	it("approved od faculty/quality_operator trafia do mapy", () => {
+		const map = buildHumanReviewMap([
+			{ submissionId: "a", decision: "approved", reviewerType: "faculty" },
+			{ submissionId: "b", decision: "approved", reviewerType: "quality_operator" },
+		]);
+		expect(map.get("a")).toBe("faculty");
+		expect(map.get("b")).toBe("quality_operator");
+	});
+
+	it("rejected i auto_no_human NIGDY nie dają plakietki (etykieta nie kłamie)", () => {
+		const map = buildHumanReviewMap([
+			{ submissionId: "a", decision: "rejected", reviewerType: "faculty" },
+			{ submissionId: "b", decision: "approved", reviewerType: "auto_no_human" },
+		]);
+		expect(map.size).toBe(0);
+	});
+});
+
+describe("mapSubmissionsToReceipts + humanReviewerType (B8/1.6)", () => {
+	it("wpis w mapie → humanReviewerType na receipcie", () => {
+		const [receipt] = mapSubmissionsToReceipts(
+			[SUB],
+			new Map([["sub-1", "quality_operator" as const]]),
+		);
+		expect(receipt.humanReviewerType).toBe("quality_operator");
+	});
+
+	it("brak mapy / brak wpisu → null (wyłącznie ocena automatyczna)", () => {
+		expect(mapSubmissionsToReceipts([SUB])[0].humanReviewerType).toBeNull();
+		expect(mapSubmissionsToReceipts([SUB], new Map())[0].humanReviewerType).toBeNull();
+	});
+});

@@ -283,8 +283,20 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
      opcjonalna, Zatwierdź/Odrzuć → wpis znika, 409 wyścigu → toast + refetch).
      Style rq-* w globals.css. Middleware nie obejmuje /review (standalone jak
      /faculty — auth w server component + trasach API).
-   - Następne: **1.6** (plakietka „Oceniał człowiek" na receipcie wg
-     reviewerType — ostatnie zadanie Bloku B8).
+   - ~~1.5~~ ✅ zmergowane (#146, squash `51621e9`; CI zielone za pierwszym
+     podejściem).
+   - **1.6 ⏳ PR otwarty (OSTATNIE zadanie Bloku B8)**: plakietka na receipcie
+     paszportu (prywatny + publiczny) sterowana DANYMI, nie flagą: wiersz
+     submission_reviews z decision='approved' od faculty/quality_operator →
+     „Oceniał człowiek: wykładowca / operator jakości"; bez recenzji →
+     uczciwe „ocena automatyczna" (poprzednia etykieta „ocena zweryfikowana"
+     była na granicy kłamstwa wg ADR-008). buildHumanReviewMap +
+     humanReviewerType w ProjectReceipt (passport-utils, jedno źródło dla
+     obu stron). Flaga off → zero wierszy recenzji → plakietka nigdy się nie
+     renderuje (samo-bramkowanie danymi).
+   - Po merge 1.6: **Blok B8 DOMKNIĘTY** (1.2–1.6). Dalej wg roadmapy F1:
+     Blok B6 (sandbox — 1.7 design spike ADR [CZERWONA LINIA usługa
+     zewnętrzna]), Blok A5 (diagnoza), C11 (tutor), B7 (viva), 1.17/1.18.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
