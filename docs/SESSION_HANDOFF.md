@@ -319,9 +319,20 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    limiter `sandboxRun` 5/dzień per student; flaga `sandboxRunner`.
    **Przed zapaleniem flagi na prod: migracja 0028** (+ SDK uwierzytelnia się
    OIDC automatycznie na Vercelu — bez nowych env).
-16. **NASTĘPNE:** B6/**1.9** — runOk do kroku 2/5 potoku (fail-closed: null →
-   flaga do człowieka) + kuracja pierwszych ukrytych suite'ów (wątek Sophii).
-   Dalej: Blok A5 (diagnoza), C11 (tutor), B7 (viva), 1.17/1.18.
+16. **B6/1.9 ⏳ PR otwarty**: runOk wpięty w potok. Krok 2b (index.ts):
+   sandbox arg (studentId+suite) podaje trasa submitu TYLKO za flagą i gdy
+   projekt ma suite; bieg po twardych sprawdzeniach, wynik w
+   hardChecks.runOk + aiReviewJson.sandboxRun (ogon dla recenzenta). Flagi:
+   run_failed (testy nie przeszły) / run_unavailable (budżet/infra). Krok 5:
+   **runOk=false BLOKUJE 'verified'** mimo dobrego score (praca musi
+   działać); null NIE blokuje (dokładnie zachowanie Fazy 1) — ale obie flagi
+   → needsHumanReview (fail-closed). Submit route: maxDuration 60→120,
+   suite ładowany owner-side, treść suite'u nigdy w odpowiedzi. **BLOK B6
+   kodowo domknięty po merge** (1.7 ADR + 1.8 runner + 1.9 wpięcie);
+   otwarta kuracja suite'ów dla projektów DS (wątek treściowy Sophii —
+   tabela project_hidden_tests pusta = runner nie odpala, bez szkód).
+17. **NASTĘPNE:** Blok A5 (diagnoza zamiast samooceny, 1.10–1.12), C11
+   (tutor, 1.13–1.14), B7 (viva, 1.15–1.16), cross-cutting 1.17/1.18.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).

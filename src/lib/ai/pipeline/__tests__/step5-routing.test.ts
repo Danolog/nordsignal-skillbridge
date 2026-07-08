@@ -143,3 +143,44 @@ describe("step5 — routing i status", () => {
 		expect(r.recommendation.evidenceRefs[0]).toContain("f.py");
 	});
 });
+
+// ── B6/1.9 — runOk w routingu (ADR-012, fail-closed) ──
+
+describe("route + runOk (B6/1.9)", () => {
+	const verifiedWorthy = {
+		evaluations: [evaln("c0", 45), evaln("c1", 27), evaln("c2", 18)],
+		rubric,
+		cheatSignals: lowRisk,
+	};
+
+	it("runOk=false blokuje 'verified' mimo score 90 (praca musi działać)", () => {
+		const withRun = route({
+			...verifiedWorthy,
+			upstreamFlags: [{ code: "run_failed", message: "testy nie przeszły" }],
+			runOk: false,
+		});
+		expect(withRun.score).toBe(90);
+		expect(withRun.status).toBe("submitted");
+		expect(withRun.needsHumanReview).toBe(true);
+
+		// Kontrola: bez runOk ten sam wsad daje verified (zachowanie Fazy 1).
+		const without = route({ ...verifiedWorthy, upstreamFlags: [] });
+		expect(without.status).toBe("verified");
+	});
+
+	it("runOk=null + run_unavailable → verified zostaje (jak Faza 1), ale człowiek potwierdza", () => {
+		const r = route({
+			...verifiedWorthy,
+			upstreamFlags: [{ code: "run_unavailable", message: "budżet" }],
+			runOk: null,
+		});
+		expect(r.status).toBe("verified");
+		expect(r.needsHumanReview).toBe(true);
+	});
+
+	it("runOk=true niczego nie psuje (verified przy dobrych wynikach)", () => {
+		const r = route({ ...verifiedWorthy, upstreamFlags: [], runOk: true });
+		expect(r.status).toBe("verified");
+		expect(r.needsHumanReview).toBe(false);
+	});
+});

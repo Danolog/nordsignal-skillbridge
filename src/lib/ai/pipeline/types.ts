@@ -38,7 +38,10 @@ export type PipelineFlagCode =
 	| "semantic_parse_failed" // krok 3: model nie zwrócił poprawnego JSON
 	| "missing_evidence" // krok 3: brak dowodu w kryteriach o dużej wadze
 	| "high_cheat_risk" // krok 4: zagregowane ryzyko ≥ próg
-	| "borderline_score"; // krok 5: wynik na pograniczu
+	| "borderline_score" // krok 5: wynik na pograniczu
+	// B6/1.9 (ADR-012) — bieg ukrytych testów w piaskownicy:
+	| "run_failed" // testy pobiegły i NIE przeszły (runOk=false) — blokuje 'verified'
+	| "run_unavailable"; // bieg się nie odbył (budżet/infra) — fail-closed do człowieka
 
 /** Wynik pojedynczego kroku potoku. */
 export type StepResult<T> = {
@@ -87,7 +90,11 @@ export type HardTestResults = {
 	syntaxOk: boolean | null;
 	/** Wskazany plik wejściowy / deliverable obecny? null = nie dotyczy. */
 	inputFilePresent: boolean | null;
-	/** Faza 1: zawsze null (NIE uruchamiamy kodu — piaskownica to Faza 2). */
+	/**
+	 * B6/1.9: wynik biegu ukrytych testów w piaskownicy (ADR-012). null =
+	 * bieg się nie odbył (flaga off / projekt bez suite'u / budżet / infra —
+	 * rozróżnienie w flagach run_unavailable i aiReviewJson.sandboxRun).
+	 */
 	runOk: boolean | null;
 	messages: string[];
 };
@@ -204,6 +211,14 @@ export type PipelineReviewJson = {
 	cheatSignals?: CheatSignals;
 	hardChecks?: HardTestResults;
 	contentMeta?: ContentMeta;
+	/** B6/1.9: raport biegu piaskownicy (ogon wyjścia dla recenzenta). */
+	sandboxRun?: {
+		runOk: boolean | null;
+		exitCode: number | null;
+		durationMs: number;
+		outputTail: string;
+		reason?: "budget" | "infra";
+	};
 };
 
 /** Znormalizowane kryterium rubryki podawane modelowi (<RUBRIC>). */

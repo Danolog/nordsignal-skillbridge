@@ -74,6 +74,12 @@ export function route(args: {
 	cheatSignals: CheatSignals;
 	upstreamFlags: PipelineFlag[];
 	thresholds?: Thresholds;
+	/**
+	 * B6/1.9 (ADR-012): wynik biegu ukrytych testów. false = testy nie
+	 * przeszły (blokada 'verified'); null przy fladze run_unavailable =
+	 * fail-closed do człowieka; undefined/null bez flag = zachowanie Fazy 1.
+	 */
+	runOk?: boolean | null;
 }): RoutingResult {
 	const t = args.thresholds ?? getThresholds();
 	const { score, assessableCount } = computeWeightedScore(args.evaluations, args.rubric);
@@ -87,8 +93,16 @@ export function route(args: {
 		assessableCount === 0;
 
 	// Status (werdykt maszyny — obowiązuje sam dla oceny formującej, ADR-008).
+	// B6/1.9: oblane ukryte testy (runOk=false) blokują 'verified' — praca,
+	// która nie działa, nie dostaje kredencjału niezależnie od oceny treści.
 	let status: RoutingResult["status"] = "submitted";
-	if (!failClosed && score >= t.verifyMinScore && risk < t.verifyMaxRisk && assessableCount >= 3) {
+	if (
+		!failClosed &&
+		args.runOk !== false &&
+		score >= t.verifyMinScore &&
+		risk < t.verifyMaxRisk &&
+		assessableCount >= 3
+	) {
 		status = "verified";
 	} else if (!failClosed && score < t.rejectMaxScore && assessableCount > 0) {
 		status = "rejected";
@@ -105,7 +119,11 @@ export function route(args: {
 		risk >= t.riskThreshold ||
 		hardFailed ||
 		failClosed ||
-		flagCodes.has("missing_evidence");
+		flagCodes.has("missing_evidence") ||
+		// B6/1.9: oblany bieg = człowiek rozstrzyga; bieg niedostępny
+		// (budżet/infra) = fail-closed do człowieka.
+		flagCodes.has("run_failed") ||
+		flagCodes.has("run_unavailable");
 
 	// Rekomendacja dla człowieka-nie-eksperta (Etap 2, §6.1).
 	let verdict: Recommendation["verdict"] = "borderline";

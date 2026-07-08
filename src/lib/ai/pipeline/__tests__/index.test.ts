@@ -13,6 +13,13 @@ vi.mock("../github", async () => {
 	};
 });
 
+// B6/1.9: runner piaskownicy mockowany na granicy modułu (żywy bieg dowiedziony
+// spikiem; kontrakt runnera ma własną suitę w src/lib/sandbox/__tests__).
+const mockRunHiddenTests = vi.fn();
+vi.mock("@/lib/sandbox/run-hidden-tests", () => ({
+	runHiddenTests: (...a: unknown[]) => mockRunHiddenTests(...(a as [unknown])),
+}));
+
 import { generateText } from "ai";
 import { fetchBlobText, fetchCommits, fetchRepoMeta, fetchRepoTree } from "../github";
 import { normalizeRubric, runReviewPipeline } from "../index";
@@ -172,5 +179,103 @@ describe("runReviewPipeline — pełny potok (mock GitHub + model)", () => {
 		});
 		expect(r.status).not.toBe("verified");
 		expect(r.needsHumanReview).toBe(true);
+	});
+	// ── B6/1.9 — piaskownica w potoku (ADR-012) ──
+
+	const SUITE = {
+		deps: [],
+		files: [{ path: "t.py", content: "print(1)" }],
+		command: ["python3", "t.py"],
+		timeoutMs: 60_000,
+	};
+	const goodModel = () =>
+		mockGenerateText.mockResolvedValue({
+			text: modelOutput([
+				{ id: "c0", score: 45 },
+				{ id: "c1", score: 27 },
+				{ id: "c2", score: 18 },
+			]),
+		} as TextReturn);
+
+	it("1.9: bez arg. sandbox → runner NIE wołany, runOk null, zero flag piaskownicy", async () => {
+		goodModel();
+		const r = await runReviewPipeline({
+			repoUrl: "https://github.com/u/r",
+			notebookUrl: null,
+			rubricJson,
+			deliverableType: "code",
+		});
+		expect(mockRunHiddenTests).not.toHaveBeenCalled();
+		expect(r.aiReviewJson.hardChecks?.runOk).toBeNull();
+		expect(r.aiReviewJson.sandboxRun).toBeUndefined();
+	});
+
+	it("1.9: runOk=true → verified zostaje, sandboxRun w raporcie, pliki studenta do runnera", async () => {
+		goodModel();
+		mockRunHiddenTests.mockResolvedValue({
+			runOk: true,
+			exitCode: 0,
+			outputTail: "3 passed",
+			durationMs: 9700,
+		});
+		const r = await runReviewPipeline({
+			repoUrl: "https://github.com/u/r",
+			notebookUrl: null,
+			rubricJson,
+			deliverableType: "code",
+			sandbox: { studentId: "s-1", suite: SUITE },
+		});
+		expect(r.status).toBe("verified");
+		expect(r.aiReviewJson.hardChecks?.runOk).toBe(true);
+		expect(r.aiReviewJson.sandboxRun?.outputTail).toBe("3 passed");
+		const callArg = mockRunHiddenTests.mock.calls[0][0] as {
+			studentId: string;
+			studentFiles: { path: string }[];
+		};
+		expect(callArg.studentId).toBe("s-1");
+		expect(callArg.studentFiles.map((f) => f.path)).toContain("main.py");
+	});
+
+	it("1.9: runOk=false → flaga run_failed, status NIE verified mimo score 90, człowiek", async () => {
+		goodModel();
+		mockRunHiddenTests.mockResolvedValue({
+			runOk: false,
+			exitCode: 1,
+			outputTail: "1 failed",
+			durationMs: 8000,
+		});
+		const r = await runReviewPipeline({
+			repoUrl: "https://github.com/u/r",
+			notebookUrl: null,
+			rubricJson,
+			deliverableType: "code",
+			sandbox: { studentId: "s-1", suite: SUITE },
+		});
+		expect(r.score).toBe(90);
+		expect(r.status).toBe("submitted"); // blokada verified przez runOk=false
+		expect(r.needsHumanReview).toBe(true);
+		expect(r.flags.some((f) => f.code === "run_failed")).toBe(true);
+	});
+
+	it("1.9: runOk=null (budżet) → run_unavailable + człowiek; status wg treści (jak Faza 1)", async () => {
+		goodModel();
+		mockRunHiddenTests.mockResolvedValue({
+			runOk: null,
+			exitCode: null,
+			outputTail: "",
+			durationMs: 5,
+			reason: "budget",
+		});
+		const r = await runReviewPipeline({
+			repoUrl: "https://github.com/u/r",
+			notebookUrl: null,
+			rubricJson,
+			deliverableType: "code",
+			sandbox: { studentId: "s-1", suite: SUITE },
+		});
+		expect(r.status).toBe("verified"); // null nie blokuje — dokładnie zachowanie Fazy 1
+		expect(r.needsHumanReview).toBe(true); // ...ale człowiek potwierdza (fail-closed)
+		expect(r.flags.some((f) => f.code === "run_unavailable")).toBe(true);
+		expect(r.aiReviewJson.sandboxRun?.reason).toBe("budget");
 	});
 });
