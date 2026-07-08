@@ -30,7 +30,8 @@ vi.mock("@/lib/audit", () => ({
 
 import { POST } from "../login/route";
 
-const PASSWORD = "operator-sekret-testowy-123";
+// Fixture testowe, nie sekret (fałszywy alarm generic-api-key). gitleaks:allow
+const PASSWORD = "operator-sekret-testowy-123"; // gitleaks:allow
 
 function makeReq(body: unknown): Request {
 	return new Request("http://test.local/api/operator/login", {

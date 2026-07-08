@@ -28,7 +28,8 @@ vi.mock("next/headers", () => ({
 	headers: async () => new Headers(),
 }));
 
-const OPERATOR_PASSWORD = "operator-integ-b8-sekret";
+// Fixture testowe, nie sekret (fałszywy alarm generic-api-key). gitleaks:allow
+const OPERATOR_PASSWORD = "operator-integ-b8-sekret"; // gitleaks:allow
 const MARKER = "b8-13-integ";
 
 dBack(
