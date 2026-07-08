@@ -353,7 +353,7 @@ Procedura jak 2026-07-08: backup gałęzią Neona → kontrola dziennika
 db:migrate hard-denyuje prod; string DIRECT z Connect, nie pooler; TYLKO
 w terminalu Darka) → weryfikacja PO (31 wpisów).
 
-18. **A5/1.11 ⏳ PR otwarty** — silnik testu adaptacyjnego + bank pytań.
+18. **A5/1.11 ⏳ PR otwarty (#151)** — silnik testu adaptacyjnego + bank pytań.
    **Przebieg wg wymogu handoffu:** projekt schematu PRZED kodem — spec
    `docs/design/skillbridge-a5-bank-pytan-diagnoza-spec-v0.2.md` (v0.1 →
    krytyczny przegląd 3 agentów: konsumenci 1E / bezpieczeństwo-RLS /
