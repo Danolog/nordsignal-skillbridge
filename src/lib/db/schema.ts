@@ -180,8 +180,9 @@ export const competencies = pgTable(
 		//   1 → 'missing', 2 → 'in_progress', 3 → 'acquired', 4 → 'acquired', NULL → 'missing'
 		// app_faculty NIE widzi tej kolumny (izolacja R1, migracja 0015 część 2).
 		selfAssessment: smallint("self_assessment"),
-		// verifiedByMethod: w Becie zawsze 'self'; non-breaking pod silnik testów (Phase 3+, OUT).
-		// DEFAULT 'self' — backfill bezpieczny dla istniejących wierszy (non-breaking ALTER).
+		// verifiedByMethod: 'self' (samoocena z onboardingu) | 'diagnostic'
+		// (A5/1.10, migracja 0029 — wynik testu adaptacyjnego, silnik w 1.11,
+		// wpięcie w onboarding w 1.12). DEFAULT 'self' — backfill bezpieczny.
 		// app_faculty NIE widzi tej kolumny (deny-by-default, jak selfAssessment).
 		verifiedByMethod: text("verified_by_method").notNull().default("self"),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -194,8 +195,12 @@ export const competencies = pgTable(
 			"competencies_self_assessment_range",
 			sql`${table.selfAssessment} IS NULL OR ${table.selfAssessment} BETWEEN 1 AND 4`,
 		),
-		// CHECK na verifiedByMethod: Beta zamknięta na 'self' (silnik testów = OUT)
-		check("competencies_verified_by_method_values", sql`${table.verifiedByMethod} IN ('self')`),
+		// CHECK na verifiedByMethod: A5/1.10 otwiera 'diagnostic' (test adaptacyjny);
+		// lista miękka (CHECK, nie enum PG — odwracalność jak reviewer_type).
+		check(
+			"competencies_verified_by_method_values",
+			sql`${table.verifiedByMethod} IN ('self','diagnostic')`,
+		),
 	],
 );
 

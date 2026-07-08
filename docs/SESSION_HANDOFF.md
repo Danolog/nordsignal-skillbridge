@@ -319,7 +319,10 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    limiter `sandboxRun` 5/dzień per student; flaga `sandboxRunner`.
    **Przed zapaleniem flagi na prod: migracja 0028** (+ SDK uwierzytelnia się
    OIDC automatycznie na Vercelu — bez nowych env).
-16. **B6/1.9 ⏳ PR otwarty**: runOk wpięty w potok. Krok 2b (index.ts):
+16. ~~B6/1.9~~ ✅ **zmergowane (#149, squash `a86420b`; CI zielone za
+   pierwszym podejściem). BLOK B6 DOMKNIĘTY W CAŁOŚCI** (1.7 ADR-012 +
+   1.8 runner #148 + 1.9 wpięcie #149). Szczegóły 1.9: runOk wpięty w potok.
+   Krok 2b (index.ts):
    sandbox arg (studentId+suite) podaje trasa submitu TYLKO za flagą i gdy
    projekt ma suite; bieg po twardych sprawdzeniach, wynik w
    hardChecks.runOk + aiReviewJson.sandboxRun (ogon dla recenzenta). Flagi:
@@ -331,8 +334,14 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    kodowo domknięty po merge** (1.7 ADR + 1.8 runner + 1.9 wpięcie);
    otwarta kuracja suite'ów dla projektów DS (wątek treściowy Sophii —
    tabela project_hidden_tests pusta = runner nie odpala, bez szkód).
-17. **NASTĘPNE:** Blok A5 (diagnoza zamiast samooceny, 1.10–1.12), C11
-   (tutor, 1.13–1.14), B7 (viva, 1.15–1.16), cross-cutting 1.17/1.18.
+17. **A5/1.10 ⏳ PR otwarty**: migracja **0029** — CHECK `verified_by_method`
+   otwarty na `'diagnostic'` (lista miękka; DROP+ADD bezpieczne, bo Beta
+   miała wyłącznie 'self'); test integracyjny constraintu na realnej bazie.
+   Prod: 0029 do następnej sesji migracyjnej Darka (razem z 0027/0028).
+18. **NASTĘPNE:** A5/**1.11** — silnik testu adaptacyjnego + bank pytań
+   ([ZMIANA]: encje wspólne z egzaminami modułowymi 1E.3 i spaced repetition
+   1E.4 — decyzja projektowa przed kodem!), potem 1.12 (wpięcie w onboarding,
+   wynik jako placement 1E.7). Dalej: C11 (tutor), B7 (viva), 1.17/1.18.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
