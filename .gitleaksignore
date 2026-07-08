@@ -1,0 +1,8 @@
+# Fałszywe alarmy gitleaks — fingerprinty per COMMIT (format:
+# <sha>:<plik>:<reguła>:<linia>). Wpis tłumi znalezisko w konkretnym commicie
+# historii; bieżące wersje plików mają adnotacje `gitleaks:allow` w linii.
+#
+# B8/1.3 (PR #144): hasła FIXTURE w testach logowania operatora — nie sekrety
+# (realny sekret to env OPERATOR_PASSWORD, nigdy commitowany).
+9211909e3e24a3d55aa24da4d429450254657bae:src/app/api/operator/__tests__/operator-login.test.ts:generic-api-key:33
+9211909e3e24a3d55aa24da4d429450254657bae:src/app/api/review-queue/__tests__/review-queue.integration.test.ts:generic-api-key:31

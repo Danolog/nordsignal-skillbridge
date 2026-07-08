@@ -842,13 +842,23 @@ export const facultySessions = pgTable(
 		// K3: which campus this faculty session belongs to (set at login by
 		// per-campus password). Nullable: pre-K3 sessions resolve to no tenant
 		// (must re-login). RLS faculty policy reads tenant via app context.
+		// B8/1.3: dla role='quality_operator' tenant_id celowo NULL (operator
+		// jest cross-tenant z definicji — ADR-011).
 		tenantId: uuid("tenant_id").references(() => tenants.id),
+		// B8/1.3 (migracja 0027, ADR-011): jedna tabela sesji dla obu ról
+		// recenzenckich. 'faculty' = wykładowca kampusu (tenant wymagany przez
+		// checkFacultyAuth); 'quality_operator' = operator jakości (osobny
+		// cookie + OPERATOR_PASSWORD). CHECK zamiast enuma — odwracalność.
+		role: text("role").notNull().default("faculty"),
 		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 		ipAddress: text("ip_address"),
 		userAgent: text("user_agent"),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 	},
-	(table) => [index("idx_faculty_sessions_expires_at").on(table.expiresAt)],
+	(table) => [
+		index("idx_faculty_sessions_expires_at").on(table.expiresAt),
+		check("faculty_sessions_role_values", sql`${table.role} IN ('faculty','quality_operator')`),
+	],
 );
 
 // Audit log — privileged actions and security-relevant events.
@@ -856,8 +866,10 @@ export const auditLog = pgTable(
 	"audit_log",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
+		// B8/1.3: + 'operator' (operator jakości, ADR-011). Enum na poziomie TS
+		// (kolumna to text bez CHECK) — rozszerzenie bez migracji.
 		actorType: text("actor_type", {
-			enum: ["student", "faculty", "system", "anonymous"],
+			enum: ["student", "faculty", "operator", "system", "anonymous"],
 		}).notNull(),
 		actorId: text("actor_id"),
 		action: text("action").notNull(),
