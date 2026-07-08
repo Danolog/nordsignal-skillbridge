@@ -294,9 +294,16 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
      humanReviewerType w ProjectReceipt (passport-utils, jedno źródło dla
      obu stron). Flaga off → zero wierszy recenzji → plakietka nigdy się nie
      renderuje (samo-bramkowanie danymi).
-   - Po merge 1.6: **Blok B8 DOMKNIĘTY** (1.2–1.6). Dalej wg roadmapy F1:
-     Blok B6 (sandbox — 1.7 design spike ADR [CZERWONA LINIA usługa
-     zewnętrzna]), Blok A5 (diagnoza), C11 (tutor), B7 (viva), 1.17/1.18.
+   - ~~1.6~~ ✅ zmergowane (#147, squash `4c3371f`). **BLOK B8 DOMKNIĘTY
+     (1.2–1.6)**: ADR-011 → API kolejki → decyzje → UI /review → plakietka.
+     Aktywacja prod (bez pośpiechu): migracja 0027 + env OPERATOR_PASSWORD +
+     FLAG_HUMAN_REVIEW_QUEUE. Incydent po drodze: GitHub Actions zablokowane
+     billingiem (payment failed / spending limit) — wszystkie joby padały w
+     2 s bez kroków; Darek odblokował w Billing & plans, rerun zielony.
+14. **NASTĘPNE (kolejność roadmapy F1):** Blok B6 — sandbox: **1.7 design
+   spike + ADR [CZERWONA LINIA — usługa zewnętrzna, SIGN-OFF Darka]**
+   (blokuje 1.8/1.9), potem Blok A5 (diagnoza zamiast samooceny), C11
+   (tutor sokratyczny), B7 (viva), cross-cutting 1.17/1.18.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
