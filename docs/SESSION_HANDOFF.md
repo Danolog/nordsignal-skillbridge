@@ -353,7 +353,7 @@ Procedura jak 2026-07-08: backup gałęzią Neona → kontrola dziennika
 db:migrate hard-denyuje prod; string DIRECT z Connect, nie pooler; TYLKO
 w terminalu Darka) → weryfikacja PO (31 wpisów).
 
-18. **A5/1.11 ⏳ PR otwarty (#151)** — silnik testu adaptacyjnego + bank pytań.
+18. **A5/1.11 ✅ zmergowane (#151, squash `bded868`; CI zielone za pierwszym podejściem)** — silnik testu adaptacyjnego + bank pytań.
    **Przebieg wg wymogu handoffu:** projekt schematu PRZED kodem — spec
    `docs/design/skillbridge-a5-bank-pytan-diagnoza-spec-v0.2.md` (v0.1 →
    krytyczny przegląd 3 agentów: konsumenci 1E / bezpieczeństwo-RLS /
@@ -396,8 +396,8 @@ w terminalu Darka) → weryfikacja PO (31 wpisów).
 - **Blok B8** ✅ CAŁY (1.2–1.6, PR #144–#147) — aktywacja = 0027 + env.
 - **Blok B6** ✅ CAŁY (1.7 ADR-012 + 1.8 #148 + 1.9 #149) — aktywacja =
   0028 + flaga; otwarta kuracja suite'ów (wątek Sophii, bez presji).
-- **Blok A5** ⏳ w toku: 1.10 ✅ (#150) · 1.11 ⏳ PR otwarty · 1.12 następne.
-- Baseline gałęzi 1.11: tsc 0, Biome 0, unit 1046/1046, integration 94/94,
+- **Blok A5** ⏳ w toku: 1.10 ✅ (#150) · 1.11 ✅ (#151) · 1.12 następne.
+- Baseline main: tsc 0, Biome 0, unit 1046/1046, integration 94/94,
   k3 zielony, BUILD_OK; migracje: test DB = 0030, prod = 0026.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
