@@ -1,11 +1,23 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PassportPublic } from "@/components/passport/passport-public";
 import type { PassportData } from "@/components/passport/passport-view";
 import { db } from "@/lib/db";
-import { competencies, gaps, passports, projectSubmissions, students, user } from "@/lib/db/schema";
-import { calculateCoverage, mapSubmissionsToReceipts } from "@/lib/passport-utils";
+import {
+	competencies,
+	gaps,
+	passports,
+	projectSubmissions,
+	students,
+	submissionReviews,
+	user,
+} from "@/lib/db/schema";
+import {
+	buildHumanReviewMap,
+	calculateCoverage,
+	mapSubmissionsToReceipts,
+} from "@/lib/passport-utils";
 
 export async function generateMetadata({
 	params,
@@ -70,9 +82,24 @@ export default async function PublicPassportPage({ params }: { params: Promise<{
 		}),
 	]);
 
+	// B8/1.6: decyzje człowieka dla plakietki „Oceniał człowiek" (ADR-011) —
+	// widoczne też publicznie (to sedno wiarygodności receiptu dla rekrutera).
+	const humanReviews = verifiedSubmissions.length
+		? await db.query.submissionReviews.findMany({
+				where: inArray(
+					submissionReviews.submissionId,
+					verifiedSubmissions.map((s) => s.id),
+				),
+				columns: { submissionId: true, decision: true, reviewerType: true },
+			})
+		: [];
+
 	// 0.15/D5: mapowanie z jednego źródła (passport-utils) — identyczny blok żył
 	// też w paszporcie zalogowanego (dashboard).
-	const projectReceipts = mapSubmissionsToReceipts(verifiedSubmissions);
+	const projectReceipts = mapSubmissionsToReceipts(
+		verifiedSubmissions,
+		buildHumanReviewMap(humanReviews),
+	);
 
 	const data: PassportData = {
 		id: passport.id,
