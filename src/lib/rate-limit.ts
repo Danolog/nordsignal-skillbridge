@@ -49,6 +49,10 @@ export const rateLimiters = {
 	facultyLogin: makeLimiter(Ratelimit.slidingWindow(5, "15 m"), "faculty-login"),
 	aiHeavy: makeLimiter(Ratelimit.slidingWindow(5, "1 m"), "ai-heavy"),
 	aiLight: makeLimiter(Ratelimit.slidingWindow(30, "1 m"), "ai-light"),
+	// B6/1.8 (ADR-012): budżet biegów piaskownicy per student/dzień — koszt
+	// Active CPU pod kontrolą (wzorzec budżetu z 0.0); przekroczenie =
+	// runOk null + flaga do człowieka (fail-closed), nigdy cichy bieg.
+	sandboxRun: makeLimiter(Ratelimit.slidingWindow(5, "1 d"), "sandbox-run"),
 };
 
 export type RateLimitResult = {

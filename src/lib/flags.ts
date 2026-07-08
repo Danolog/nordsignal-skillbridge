@@ -53,6 +53,12 @@ export const FLAGS = {
 		description: "Blok B8 (1.2–1.6): kolejka recenzji człowieka i akcje approve/reject.",
 		defaultValue: false,
 	},
+	sandboxRunner: {
+		envVar: "FLAG_SANDBOX_RUNNER",
+		description:
+			"Blok B6 (1.8–1.9, ADR-012): bieg ukrytych test-suites w Vercel Sandbox (runOk w potoku).",
+		defaultValue: false,
+	},
 	careerModelFromDb: {
 		envVar: "FLAG_CAREER_MODEL_FROM_DB",
 		description:
