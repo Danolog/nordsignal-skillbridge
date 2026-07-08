@@ -972,6 +972,170 @@ export const aiUsageLedger = pgTable(
 	],
 );
 
+// ============================================================================
+// A5/1.11 — Bank pytań (wspólny 1.11/1E.2/1E.3/1E.4) + sesje diagnozy.
+// Spec: docs/design/skillbridge-a5-bank-pytan-diagnoza-spec-v0.2.md
+// (ZATWIERDZONE Darek 2026-07-08). Migracja 0030.
+//
+// Bank (question_concepts/question_items): globalny katalog treści, wariant
+// DENY jak project_hidden_tests — bank czytelny dla roli studenta =
+// memoryzacja przed egzaminem mastery 1E.3; pytania serwuje WYŁĄCZNIE API
+// per sesja (stem + opcje, nigdy answer_json), grading server-side owner.
+// Oś banku = KONCEPT (liść modelu kariery bywa za gruby; fundamenty 1E.2
+// nie mają liścia) — curriculum 1E.1 będzie wskazywać koncepty, bank nie
+// zna modułów (zero migracji scalającej).
+// Niemutowalność itemów: poprawka merytoryczna = retire + NOWY item
+// (audytowalność historycznych is_correct przy mastery gate); w miejscu
+// wolno edytować tylko explanation_md.
+// ============================================================================
+
+export const questionConcepts = pgTable(
+	"question_concepts",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		// Stabilny identyfikator treści (jak projects.slug) — klucz ingestu.
+		slug: text("slug").notNull().unique(),
+		name: text("name").notNull(),
+		// 'market' = koncept zmapowany na liść modelu kariery; 'foundations' =
+		// trzon fundamentów CS/matmy (1E.2) bez liścia. CHECK niżej wymusza parę.
+		trunk: text("trunk").notNull(),
+		// Dokładny liść modelu kariery (kontrakt-test literówek jak DS partia 1).
+		competencyName: text("competency_name"),
+		// Koncept używany przez diagnozę 1.11 (partia 1: dokładnie 1 per liść DS);
+		// koncepty drobnoziarniste 1E.2/1E.3 wchodzą z false.
+		diagnostic: boolean("diagnostic").notNull().default(false),
+		status: text("status").notNull().default("active"),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		check("question_concepts_trunk_values", sql`${table.trunk} IN ('market','foundations')`),
+		check(
+			"question_concepts_market_has_competency",
+			sql`${table.trunk} <> 'market' OR ${table.competencyName} IS NOT NULL`,
+		),
+		check("question_concepts_status_values", sql`${table.status} IN ('active','retired')`),
+	],
+);
+
+export const questionItems = pgTable(
+	"question_items",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		conceptId: uuid("concept_id")
+			.notNull()
+			.references(() => questionConcepts.id, { onDelete: "cascade" }),
+		// 1–3 (podstawowa/średnia/zaawansowana); staircase §2.4 spec — wynik
+		// na skali poziomów 1–4 (levelFromTrajectory), NIE 1:1 z trudnością.
+		difficulty: smallint("difficulty").notNull(),
+		type: text("type").notNull(),
+		stem: text("stem").notNull(),
+		// Tylko typy choice: lista opcji [{text}] — indeksowana od 0.
+		optionsJson: jsonb("options_json"),
+		// Klucz odpowiedzi per typ (spec §2.3) — NIGDY w odpowiedzi API.
+		answerJson: jsonb("answer_json").notNull(),
+		// Feedback po odpowiedzi — konsument: 1E.4 (diagnoza go NIE zwraca §2.2).
+		explanationMd: text("explanation_md"),
+		status: text("status").notNull().default("active"),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_question_items_concept_difficulty").on(table.conceptId, table.difficulty),
+		check("question_items_difficulty_range", sql`${table.difficulty} BETWEEN 1 AND 3`),
+		check(
+			"question_items_type_values",
+			sql`${table.type} IN ('single_choice','multi_choice','numeric','short_text')`,
+		),
+		check("question_items_status_values", sql`${table.status} IN ('active','retired')`),
+	],
+);
+
+// ============================================================================
+// A5/1.11 — Sesje diagnozy (dane studenta, tenant RLS).
+//
+// assessment_sessions: grant TYLKO SELECT dla app_student (wzorzec 0025 —
+// market_new_gap_events); wszystkie zapisy owner-side przez trasy API.
+// plan_json zawiera WYŁĄCZNIE question_item_id + kolejność/gałęzie staircase
+// (nigdy treść itemu — student ma SELECT na swój wiersz). result_json =
+// koperta {schemaVersion, kind, concepts: {slug → {correct, asked, level}},
+// competencies: {name → poziom 1–4}} — koncepty to źródło prawdy (placement
+// 1E.7), kompetencje to rollup dla 1.12.
+//
+// assessment_answers: wariant DENY (zero grantów app_*) — student nie
+// potrzebuje surowych odpowiedzi (dostaje result_json); historia służy
+// silnikowi i kalibracji banku (owner-side). student_id obok session_id:
+// polityki RLS/przyszłe zapytania bez joinu.
+//
+// kind: CHECK lista miękka — 'module_exam' w 1E.3 = ALTER CHECK (koszt
+// zaakceptowany w spec §3, konwencja repo jak deliverable_type).
+// career_goal NULL-owalne od dnia 1 (egzamin fundamentów nie ma ścieżki).
+// Jedna aktywna sesja per (student, kind): partial unique index (0030,
+// sekcja ręczna — drizzle-kit nie generuje partial unique z WHERE).
+// ============================================================================
+
+export const assessmentSessions = pgTable(
+	"assessment_sessions",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		kind: text("kind").notNull(),
+		careerGoal: text("career_goal"),
+		// Odcisk wejścia (careerGoal + posortowana lista kompetencji) — mismatch
+		// przy wznowieniu (student zmienił zaznaczenia w kreatorze) → abandoned.
+		inputHash: text("input_hash").notNull(),
+		status: text("status").notNull().default("in_progress"),
+		planJson: jsonb("plan_json").notNull(),
+		resultJson: jsonb("result_json"),
+		startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+		completedAt: timestamp("completed_at", { withTimezone: true }),
+	},
+	(table) => [
+		index("idx_assessment_sessions_student_id").on(table.studentId),
+		index("idx_assessment_sessions_tenant_id").on(table.tenantId),
+		check("assessment_sessions_kind_values", sql`${table.kind} IN ('diagnostic')`),
+		check(
+			"assessment_sessions_status_values",
+			sql`${table.status} IN ('in_progress','completed','abandoned')`,
+		),
+	],
+);
+
+export const assessmentAnswers = pgTable(
+	"assessment_answers",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		sessionId: uuid("session_id")
+			.notNull()
+			.references(() => assessmentSessions.id, { onDelete: "cascade" }),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		questionItemId: uuid("question_item_id")
+			.notNull()
+			.references(() => questionItems.id),
+		answerJson: jsonb("answer_json").notNull(),
+		// Ocenione deterministycznie przy zapisie (grade.ts) — 0 LLM.
+		isCorrect: boolean("is_correct").notNull(),
+		position: smallint("position").notNull(),
+		answeredAt: timestamp("answered_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_assessment_answers_session_id").on(table.sessionId),
+		index("idx_assessment_answers_tenant_id").on(table.tenantId),
+		uniqueIndex("uq_assessment_answers_session_item").on(table.sessionId, table.questionItemId),
+		uniqueIndex("uq_assessment_answers_session_position").on(table.sessionId, table.position),
+	],
+);
+
 // Relations
 
 export const studentsRelations = relations(students, ({ one, many }) => ({

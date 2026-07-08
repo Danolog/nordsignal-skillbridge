@@ -59,6 +59,13 @@ export const FLAGS = {
 			"Blok B6 (1.8–1.9, ADR-012): bieg ukrytych test-suites w Vercel Sandbox (runOk w potoku).",
 		defaultValue: false,
 	},
+	diagnosticAssessment: {
+		envVar: "FLAG_DIAGNOSTIC_ASSESSMENT",
+		description:
+			"A5/1.11–1.12: test adaptacyjny (diagnoza zamiast samooceny) — trasy /api/assessment/* " +
+			"i ścieżka onboardingu bez sylabusa. Off = onboarding jak dziś (samoocena).",
+		defaultValue: false,
+	},
 	careerModelFromDb: {
 		envVar: "FLAG_CAREER_MODEL_FROM_DB",
 		description:
