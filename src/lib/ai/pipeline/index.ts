@@ -22,10 +22,12 @@ import type {
 	NormalizedRubricItem,
 	PipelineFlag,
 	PipelineResult,
+	PipelineReviewJson,
 	ReviewResult,
 	SemanticData,
 } from "@/lib/ai/pipeline/types";
 import { parseRepoUrl } from "@/lib/ai/sanitize";
+import { type HiddenTestSuite, runHiddenTests } from "@/lib/sandbox/run-hidden-tests";
 
 type RawRubricItem = { criterion?: unknown; weight?: unknown; description?: unknown };
 
@@ -109,12 +111,17 @@ function feedbackFromSemantic(semantic: SemanticData, score: number): string {
  * @param repoUrl       adres repo (string; walidacja github.com tutaj — SSRF).
  * @param rubricJson    rubryka projektu (`projects.rubricJson`).
  * @param deliverableType typ pracy (`projects.deliverable_type`; default `mixed`).
+ * @param sandbox       B6/1.9 (ADR-012): ukryty suite + studentId (budżet) —
+ *                      podaje trasa submitu TYLKO przy zapalonej fladze
+ *                      sandboxRunner i projekcie z suite'em; brak = zachowanie
+ *                      Fazy 1 (runOk null, zero flag piaskownicy).
  */
 export async function runReviewPipeline(args: {
 	repoUrl: string | null;
 	notebookUrl: string | null;
 	rubricJson: unknown;
 	deliverableType?: DeliverableType;
+	sandbox?: { studentId: string; suite: HiddenTestSuite };
 }): Promise<PipelineResult> {
 	const deliverableType: DeliverableType = args.deliverableType ?? "mixed";
 	const { rubric, nameById } = normalizeRubric(args.rubricJson);
@@ -148,6 +155,42 @@ export async function runReviewPipeline(args: {
 	const hard = runHardChecks(content.data, deliverableType);
 	allFlags.push(...hard.flags);
 
+	// KROK 2b (B6/1.9, ADR-012) — bieg ukrytych testów w piaskownicy.
+	// Tylko: suite podany przez trasę + treść realnie pobrana (bez repo nie ma
+	// czego uruchamiać — krok 1 już zapalił empty_or_unreadable).
+	let sandboxRun: PipelineReviewJson["sandboxRun"];
+	if (args.sandbox && content.ok) {
+		const run = await runHiddenTests({
+			studentId: args.sandbox.studentId,
+			studentFiles: content.data.files.map((f) => ({ path: f.path, content: f.content })),
+			suite: args.sandbox.suite,
+		});
+		hard.data.runOk = run.runOk;
+		sandboxRun = {
+			runOk: run.runOk,
+			exitCode: run.exitCode,
+			durationMs: run.durationMs,
+			outputTail: run.outputTail,
+			...(run.reason ? { reason: run.reason } : {}),
+		};
+		if (run.runOk === false) {
+			allFlags.push({
+				code: "run_failed",
+				message: "Ukryte testy w piaskownicy NIE przeszły (blokuje werdykt 'verified').",
+			});
+		} else if (run.runOk === null) {
+			// Fail-closed: bieg się nie odbył (budżet/infra) — NIE zgadujemy
+			// werdyktu, kierujemy do człowieka (krok 5).
+			allFlags.push({
+				code: "run_unavailable",
+				message:
+					run.reason === "budget"
+						? "Budżet biegów piaskownicy wyczerpany — decyzja człowieka."
+						: "Piaskownica niedostępna (awaria infrastruktury) — decyzja człowieka.",
+			});
+		}
+	}
+
 	// KROK 3 (+4 AI) — ocena semantyczna + feedback + sygnały AI (jedno wywołanie).
 	const semantic = await runSemanticReview({
 		deliverableType,
@@ -174,6 +217,9 @@ export async function runReviewPipeline(args: {
 		rubric,
 		cheatSignals: cheat.data,
 		upstreamFlags: allFlags,
+		// B6/1.9: runOk=false blokuje 'verified'; null z flagą run_unavailable
+		// kieruje do człowieka (fail-closed) — logika w kroku 5.
+		runOk: hard.data.runOk,
 	});
 	allFlags.push(...routing.flags);
 
@@ -197,6 +243,7 @@ export async function runReviewPipeline(args: {
 			recommendation: routing.recommendation,
 			cheatSignals: cheat.data,
 			hardChecks: hard.data,
+			...(sandboxRun ? { sandboxRun } : {}),
 			contentMeta: {
 				filesFetched: content.data.files.map((f) => f.path),
 				filesSkipped: content.data.omittedFiles,

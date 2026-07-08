@@ -8,11 +8,15 @@ import { parseNotebookUrl, parseRepoUrl } from "@/lib/ai/sanitize";
 import { auditContextFromRequest, recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { projectSubmissions, projects, students } from "@/lib/db/schema";
+import { projectHiddenTests, projectSubmissions, projects, students } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
+import { isFeatureEnabled } from "@/lib/flags";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
+import type { HiddenTestSuite, SandboxFile } from "@/lib/sandbox/run-hidden-tests";
 
-export const maxDuration = 60;
+// B6/1.9: bieg piaskownicy (spike: ~10 s E2E z instalacją deps) mieści się
+// z zapasem, ale 60 s robiło się ciasne przy AI + sandbox — podbite do 120.
+export const maxDuration = 120;
 
 /**
  * §8 #1 Phase 2 / issue #19f (refactor sub-issue): odczyt/zapis
@@ -91,6 +95,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 	});
 	if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
 
+	// B6/1.9 (ADR-012): ukryty suite ładowany owner-side TYLKO za flagą —
+	// tabela project_hidden_tests jest deny-by-default (sekret przed studentem),
+	// a jej zawartość NIGDY nie trafia do odpowiedzi (do potoku idzie sam obiekt).
+	let sandbox: { studentId: string; suite: HiddenTestSuite } | undefined;
+	if (isFeatureEnabled("sandboxRunner")) {
+		const suiteRow = await db.query.projectHiddenTests.findFirst({
+			where: eq(projectHiddenTests.projectId, projectId),
+		});
+		if (suiteRow) {
+			sandbox = {
+				studentId: studentMeta.id,
+				suite: {
+					deps: suiteRow.deps as string[],
+					files: suiteRow.files as SandboxFile[],
+					command: suiteRow.command as string[],
+					timeoutMs: suiteRow.timeoutMs,
+				},
+			};
+		}
+	}
+
 	// AI POZA tx — nie trzymamy połączenia przez potok oceny (sieć GitHub + LLM).
 	// Potok (Faza 1): pobranie treści → twarde sprawdzenia → ocena semantyczna z
 	// cytatami + feedback studenta → cheat-risk z faktów → routing. Suma i status
@@ -102,6 +127,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 			notebookUrl: notebookUrlStr,
 			rubricJson: project.rubricJson,
 			deliverableType: project.deliverableType as DeliverableType,
+			sandbox,
 		});
 	} catch {
 		return NextResponse.json(
