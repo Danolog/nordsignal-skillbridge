@@ -2,8 +2,14 @@
 // B8/1.3 (ADR-011) — KOLEJKA RECENZJI CZŁOWIEKA.
 //
 // GET: zgłoszenia czekające na decyzję człowieka = needs_human_review=true,
-// status 'submitted', BEZ wiersza w submission_reviews (decyzja jeszcze nie
-// zapadła; unique na submission_id gwarantuje jedną decyzję).
+// ZŁOŻONE (submitted_at wypełnione), BEZ wiersza w submission_reviews (decyzja
+// jeszcze nie zapadła; unique na submission_id gwarantuje jedną decyzję).
+//
+// [KOREKTA 1.4] Filtr celowo NIE zawęża po statusie: needs_human_review bywa
+// prawdziwe także przy statusie 'verified' (twarde sprawdzenia padły przy
+// wysokim wyniku semantycznym) i 'rejected' — te przypadki też czekają na
+// człowieka (potwierdzenie/uchylenie werdyktu maszyny, ADR-008). Pierwotny
+// warunek status='submitted' gubił je z kolejki.
 //
 // Zasięg wg roli (checkReviewerAuth):
 //   • quality_operator — WSZYSTKIE tenanty (cross-tenant z definicji, ADR-011);
@@ -21,7 +27,7 @@
 // Flaga humanReviewQueue off → 404 (rodzina B8 nie istnieje).
 // ============================================================================
 
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { projectSubmissions, projects, submissionReviews, tenants } from "@/lib/db/schema";
@@ -35,6 +41,7 @@ type QueueRow = {
 	projectId: string;
 	tenantId: string;
 	score: number | null;
+	machineStatus: string;
 	submittedAt: Date | null;
 };
 
@@ -47,6 +54,7 @@ function queueQuery(tx: any, tenantId?: string): Promise<QueueRow[]> {
 			projectId: projectSubmissions.projectId,
 			tenantId: projectSubmissions.tenantId,
 			score: projectSubmissions.score,
+			machineStatus: projectSubmissions.status,
 			submittedAt: projectSubmissions.submittedAt,
 		})
 		.from(projectSubmissions)
@@ -54,7 +62,7 @@ function queueQuery(tx: any, tenantId?: string): Promise<QueueRow[]> {
 		.where(
 			and(
 				eq(projectSubmissions.needsHumanReview, true),
-				eq(projectSubmissions.status, "submitted"),
+				isNotNull(projectSubmissions.submittedAt),
 				isNull(submissionReviews.id),
 				...(tenantId ? [eq(projectSubmissions.tenantId, tenantId)] : []),
 			),
@@ -108,6 +116,8 @@ export async function GET() {
 				projectLevel: projectById.get(r.projectId)?.level ?? null,
 				tenantSlug: tenantSlugById.get(r.tenantId) ?? null,
 				score: r.score,
+				// Werdykt maszyny — rekomendacja dla recenzenta (approve/borderline/reject).
+				machineStatus: r.machineStatus,
 				submittedAt: r.submittedAt,
 			})),
 		});

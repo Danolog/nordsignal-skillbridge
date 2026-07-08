@@ -260,8 +260,21 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
      operator widzi oba tenanty, faculty tylko swój, decyzja usuwa z kolejki,
      tokeny ról nie krzyżują się. **Przed zapaleniem FLAG_HUMAN_REVIEW_QUEUE
      na prod: migracja 0027 + env OPERATOR_PASSWORD.**
-   - Następne: **1.4** (API approve/reject — transakcyjnie, idempotentnie,
-     audit), potem 1.5 (UI kolejki) i 1.6 (plakietka na receipcie).
+   - ~~1.3~~ ✅ zmergowane (#144, squash `8933826`; po drodze fałszywe alarmy
+     gitleaks na hasłach-fixture'ach → adnotacje gitleaks:allow +
+     .gitleaksignore z fingerprintami).
+   - **1.4 ⏳ PR otwarty**: POST /api/review-queue/[id]/decision — człowiek ma
+     ostatnie słowo (ADR-008): approve→'verified', reject→'rejected' (nadpisuje
+     werdykt maszyny w obie strony; werdykt zostaje w ai_review_json). Tx z FOR
+     UPDATE + UNIQUE(submission_id) → druga decyzja 409, status nietknięty;
+     faculty tylko swój tenant (cudzy → 404 bez potwierdzania istnienia);
+     reviewer_type z kontekstu logowania, reviewer_id = id sesji (ReviewerAuth
+     rozszerzone o sessionId); audyt submission.review.approved/rejected.
+     [KOREKTA 1.3]: filtr kolejki bez zawężenia po statusie — verified/rejected
+     + needsHumanReview też czekają na człowieka (pierwotny warunek
+     status='submitted' je gubił); odpowiedź kolejki + machineStatus.
+   - Następne: **1.5** (UI kolejki + akcje, E2E), potem 1.6 (plakietka
+     „Oceniał człowiek" na receipcie wg reviewerType).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
