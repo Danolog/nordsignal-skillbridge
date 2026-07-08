@@ -112,6 +112,12 @@ const K_PUB_TABLES = [
 	// Zwykle NIE istnieje w świeżej bazie — wpis tu, żeby k3 nie padał na prodzie
 	// po pierwszej akceptacji.
 	"job_market_data_bak",
+	// B6/1.8 (ADR-012) — ukryte test-suites piaskownicy (migracja 0028).
+	// Katalog per projekt (bez tenant_id), ale sekret dokładnie PRZED studentem
+	// (zna testy = pisze pod nie) → wariant DENY: zero grantów app_*
+	// (strażnik #13a), czyta wyłącznie server-side runner jako owner.
+	// Uzasadnienie: rls-matrix §4.
+	"project_hidden_tests",
 ] as const;
 
 async function main() {
@@ -187,10 +193,10 @@ async function main() {
 				`SELECT count(*)::int AS c
 				   FROM information_schema.role_table_grants
 				  WHERE grantee IN ('app_student', 'app_faculty')
-				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs', 'job_market_data_bak')`,
+				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs', 'job_market_data_bak', 'project_hidden_tests')`,
 			);
 			check(
-				"13a. AG.3 — zero grantów app_student/app_faculty na staging/runy rynku",
+				"13a. AG.3/B6 — zero grantów app_student/app_faculty na tabelach DENY (staging/runy/ukryte testy)",
 				r13a.rows[0].c === 0,
 				`znaleziono ${r13a.rows[0].c} grantów ról aplikacyjnych (oczekiwano 0)`,
 			);

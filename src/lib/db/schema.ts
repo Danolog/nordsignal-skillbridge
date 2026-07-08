@@ -585,6 +585,40 @@ export const projectSubmissions = pgTable(
 	],
 );
 
+// ============================================================================
+// B6/1.8 (ADR-012) — UKRYTE TEST-SUITES piaskownicy. Migracja 0028.
+//
+// Decyzja schematu: OSOBNA tabela, NIE kolumna na projects — trasy katalogu
+// (/api/projects, /api/projects/[id]) zwracają PEŁNE wiersze zalogowanym
+// studentom (zaakceptowane dla rubricJson w 0.15/B1), a ukryte testy to
+// sekret dokładnie PRZED studentem (zna testy = może pod nie pisać).
+// Wzorzec project_reflections: osobna tabela + zero grantów app_* =
+// deny-by-default; czyta ją WYŁĄCZNIE server-side runner (owner).
+// Bez tenant_id (katalog per projekt, nie dane studenta) → w k3-validate
+// klasyfikacja K_PUB wariant DENY (jak job_market_data_staging).
+// ============================================================================
+
+export const projectHiddenTests = pgTable(
+	"project_hidden_tests",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		projectId: uuid("project_id")
+			.notNull()
+			.references(() => projects.id, { onDelete: "cascade" }),
+		/** Pakiety pip instalowane przed biegiem (sieć zawężona do PyPI tylko wtedy). */
+		deps: jsonb("deps").notNull().default([]),
+		/** Pliki testowe wpisywane do piaskownicy: [{path, content}]. */
+		files: jsonb("files").notNull().default([]),
+		/** Komenda biegu, np. ["python3","run_hidden_tests.py"]. */
+		command: jsonb("command").notNull(),
+		/** Budżet czasu pojedynczego biegu (≪ maxDuration trasy submitu). */
+		timeoutMs: integer("timeout_ms").notNull().default(60_000),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [uniqueIndex("uq_project_hidden_tests_project").on(table.projectId)],
+);
+
 export const projectSources = pgTable("project_sources", {
 	id: uuid("id").defaultRandom().primaryKey(),
 	type: projectSourceTypeEnum("type").notNull(),

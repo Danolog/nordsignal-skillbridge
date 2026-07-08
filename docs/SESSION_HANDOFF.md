@@ -306,10 +306,22 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    w piaskownicy, limity+timeout ≪ maxDuration, jednorazowość, ukryte
    test-suites server-side, licznik biegów pod budżetem 0.0, ścieżka
    odwrotu = E2B (ADR-012b), fail-closed w 1.9.
-15. **NASTĘPNE:** B6/**1.8** — spike wykonalności (zimny start + pandas/numpy
-   w budżecie czasu submitu) → integracja runnera za flagą; potem **1.9**
-   (runOk do kroku 2/5, fail-closed). Dalej: Blok A5 (diagnoza), C11 (tutor),
-   B7 (viva), cross-cutting 1.17/1.18.
+15. **B6/1.8 ⏳ PR otwarty**: SPIKE na żywej usłudze ZALICZONY
+   (tools/spike-sandbox.ts, OIDC z `vercel env pull`): mikroVM 0,7 s +
+   pip pandas/numpy 7,6 s + bieg 0,8 s = **9,7 s E2E** (~30× zapasu w 300 s);
+   izolacja potwierdzona (domena spoza allowlisty odcięta). Integracja:
+   migracja **0028** `project_hidden_tests` (OSOBNA tabela, nie kolumna na
+   projects — trasy katalogu zwracają studentom pełne wiersze; wariant DENY,
+   REVOKE ALL, k3 #13a rozszerzony, rls-matrix **v0.20** do sign-offu Ryana);
+   runner `src/lib/sandbox/run-hidden-tests.ts` (@vercel/sandbox: deny-all /
+   PyPI-only przy deps, zero sekretów, jednorazowość, stop() w finally,
+   runOk true/false/null z reason budget|infra — nigdy werdykt przy awarii);
+   limiter `sandboxRun` 5/dzień per student; flaga `sandboxRunner`.
+   **Przed zapaleniem flagi na prod: migracja 0028** (+ SDK uwierzytelnia się
+   OIDC automatycznie na Vercelu — bez nowych env).
+16. **NASTĘPNE:** B6/**1.9** — runOk do kroku 2/5 potoku (fail-closed: null →
+   flaga do człowieka) + kuracja pierwszych ukrytych suite'ów (wątek Sophii).
+   Dalej: Blok A5 (diagnoza), C11 (tutor), B7 (viva), 1.17/1.18.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
