@@ -344,29 +344,61 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
 Prod stoi na **0026**. Czekają: **0027** (role na faculty_sessions — przed
 FLAG_HUMAN_REVIEW_QUEUE, do tego env OPERATOR_PASSWORD), **0028**
 (project_hidden_tests — przed FLAG_SANDBOX_RUNNER), **0029**
-(verified_by_method 'diagnostic' — przed silnikiem diagnozy 1.11/1.12).
+(verified_by_method 'diagnostic'), **0030** (bank pytań + sesje diagnozy —
+przed FLAG_DIAGNOSTIC_ASSESSMENT; do tego ingest treści banku na prod =
+[CZERWONA LINIA], procedura jak ADR-009/010, plik
+`tools/content/question-bank-ds-partia-1.json` + `pnpm db:ingest-question-bank`).
 Procedura jak 2026-07-08: backup gałęzią Neona → kontrola dziennika
 (oczekiwane 27 wpisów PRZED) → `drizzle-kit migrate` bezpośrednio (guard
 db:migrate hard-denyuje prod; string DIRECT z Connect, nie pooler; TYLKO
-w terminalu Darka) → weryfikacja PO (30 wpisów).
+w terminalu Darka) → weryfikacja PO (31 wpisów).
 
-18. **NASTĘPNE:** A5/**1.11** — silnik testu adaptacyjnego + bank pytań.
-   [ZMIANA] Twardy wymóg projektowy: encje banku pytań WSPÓLNE z egzaminami
-   modułowymi (1E.3) i spaced repetition (1E.4) — projekt schematu i decyzja
-   PRZED kodem (Oliver przynosi propozycję Darkowi). Deterministyczne
-   mapowanie odpowiedzi → poziom kompetencji. Potem **1.12** (wpięcie
-   w onboarding: równorzędna ścieżka bez sylabusa; wynik reprezentowalny
-   jako placement w curriculum — konsumuje 1E.7). Dalej: C11 (tutor,
-   1.13–1.14), B7 (viva, 1.15–1.16), cross-cutting 1.17/1.18.
+18. **A5/1.11 ⏳ PR otwarty** — silnik testu adaptacyjnego + bank pytań.
+   **Przebieg wg wymogu handoffu:** projekt schematu PRZED kodem — spec
+   `docs/design/skillbridge-a5-bank-pytan-diagnoza-spec-v0.2.md` (v0.1 →
+   krytyczny przegląd 3 agentów: konsumenci 1E / bezpieczeństwo-RLS /
+   determinizm — 24 znaleziska, 5 krytycznych, wcielone → v0.2)
+   **ZATWIERDZONA przez Darka (2026-07-08)** z decyzjami: zakres diagnozy =
+   Opcja A (tylko zaznaczone kompetencje), powtórki tylko przez
+   re-onboarding, bramka F1 „zero samooceny" zawężona do DS (adnotacja
+   [ZMIANA] w roadmapie).
+   Zakres: migracja **0030** (question_concepts/question_items — bank DENY
+   jak hidden tests, wspólny dla 1.11/1E.2/1E.3/1E.4, oś = KONCEPT;
+   assessment_sessions SELECT-only + assessment_answers DENY, tenant RLS,
+   partial unique 1 aktywna sesja; k3 rozszerzone, rls-matrix **v0.21** do
+   sign-offu Ryana); silnik `src/lib/assessment/` (grade 4 typów z polską
+   normalizacją numeric, staircase 2 pytania/kompetencję → poziom 1–4 przez
+   ratyfikowane levelToStatus, deterministyczny plan z solą sesji i rotacją
+   wariantów, golden test 4/4); trasy `/api/assessment/{start,[id]/answer,
+   [id]/complete}` za flagą **`diagnosticAssessment`** (kolejność staircase
+   egzekwowana server-side, zero is_correct w trakcie, complete idempotentne,
+   precedencja: nadpisuje TYLKO 'self'/'diagnostic'); treść partia 1:
+   **24 koncepty × 6 itemów = 144 pytania DS** (agenci-kuratorzy → kontrakt-
+   test jak DS partia 1 → QG: 3 adwersaryjnych weryfikatorów przeliczyło
+   144/144 itemów kodem, 0 błędnych kluczy, 9 poprawek redakcyjnych
+   naniesionych); ingest `pnpm db:ingest-question-bank` (idempotentny,
+   NIEMUTOWALNOŚĆ: poprawka = retire + nowy item — dowiedzione na bazie).
+   Dowody: unit 1046/1046 (w tym 49 silnika + 6 kontraktu), integration
+   94/94 (w tym 8 nowych: pełny przepływ, RLS/granty DENY, rotacja
+   wariantów, 409/422/404), k3 zielony (15 tabel tenant), BUILD_OK; smoke:
+   realny katalog rynku DS 21/21 pokryty planem, 0 uncovered.
+   **Uwaga dla 1.12** (spec §4a): kontrakt zapisu onboardingu nie przyjmuje
+   poziomu 1 (z.union([2,3,4])), a luki liczą się z zaznaczeń, nie statusów;
+   re-onboarding kasuje wyniki diagnozy — oba do rozwiązania w 1.12.
+
+19. **NASTĘPNE:** A5/**1.12** — wpięcie diagnozy w onboarding (równorzędna
+   ścieżka bez sylabusa; wynik reprezentowalny jako placement — konsumuje
+   1E.7; twarde punkty §4a spec v0.2). Dalej: C11 (tutor, 1.13–1.14),
+   B7 (viva, 1.15–1.16), cross-cutting 1.17/1.18.
 
 ### Stan bloków Fazy 1 (2026-07-08 wieczorem)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
 - **Blok B8** ✅ CAŁY (1.2–1.6, PR #144–#147) — aktywacja = 0027 + env.
 - **Blok B6** ✅ CAŁY (1.7 ADR-012 + 1.8 #148 + 1.9 #149) — aktywacja =
   0028 + flaga; otwarta kuracja suite'ów (wątek Sophii, bez presji).
-- **Blok A5** ⏳ w toku: 1.10 ✅ (#150) · 1.11 następne · 1.12 czeka.
-- Baseline main: tsc 0, Biome 0, unit 991/991, integration 86/86, k3
-  zielony, BUILD_OK; migracje: test DB = 0029, prod = 0026.
+- **Blok A5** ⏳ w toku: 1.10 ✅ (#150) · 1.11 ⏳ PR otwarty · 1.12 następne.
+- Baseline gałęzi 1.11: tsc 0, Biome 0, unit 1046/1046, integration 94/94,
+  k3 zielony, BUILD_OK; migracje: test DB = 0030, prod = 0026.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).

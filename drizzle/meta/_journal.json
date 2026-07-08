@@ -211,6 +211,13 @@
       "when": 1783528810767,
       "tag": "0029_tan_gertrude_yorkes",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1783537805664,
+      "tag": "0030_bizarre_black_widow",
+      "breakpoints": true
     }
   ]
 }

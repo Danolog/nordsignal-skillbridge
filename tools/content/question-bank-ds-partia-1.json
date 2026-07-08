@@ -1,0 +1,2180 @@
+[
+	{
+		"slug": "ds-python",
+		"name": "Python",
+		"trunk": "market",
+		"competencyName": "Python",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Która funkcja wbudowana w Pythonie zwraca liczbę elementów listy?",
+				"options": ["len()", "count()", "size()", "length()"],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Funkcja `len()` zwraca liczbę elementów sekwencji (listy, napisu, krotki). Pozostałe nazwy nie są funkcjami wbudowanymi Pythona."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Jaki typ danych ma w Pythonie wartość True?",
+				"options": ["bool", "str", "float", "list"],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "`True` i `False` to wartości typu logicznego `bool`. Można to sprawdzić wywołaniem `type(True)`."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Co wypisze poniższy kod?\n\n```python\nprint(len([1, 2, 3] + [4, 5]))\n```",
+				"answer": {
+					"value": 5,
+					"tolerance": 0
+				},
+				"explanationMd": "Operator `+` dla list wykonuje konkatenację: powstaje lista `[1, 2, 3, 4, 5]` o długości 5."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia o listach w Pythonie.",
+				"options": [
+					"Metoda list.append(x) dodaje element x na koniec listy",
+					"Lista może zawierać elementy różnych typów jednocześnie",
+					"Długość listy jest ustalana raz przy jej utworzeniu i nie może się zmieniać",
+					"Indeksowanie list zaczyna się od 1"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "Listy w Pythonie są dynamiczne (rosną i kurczą się) i heterogeniczne. `append` dodaje na koniec, a indeksowanie zaczyna się od 0."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia dotyczące mutowalności obiektów w Pythonie.",
+				"options": [
+					"Krotka (tuple) jest niemutowalna — nie można podmienić jej elementu przez przypisanie t[0] = 1",
+					"Mutowalna wartość domyślna argumentu funkcji (np. def f(x=[])) jest współdzielona między kolejnymi wywołaniami",
+					"Napis (str) można zmodyfikować w miejscu przez przypisanie s[0] = 'a'",
+					"Przypisanie b = a, gdzie a jest listą, tworzy niezależną kopię tej listy"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "Krotki i napisy są niemutowalne (przypisanie do elementu rzuca TypeError). Domyślna lista argumentu powstaje raz przy definicji funkcji, a `b = a` kopiuje tylko referencję, nie dane."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "Co wypisze poniższy kod?\n\n```python\na = [1, 2, 3]\nb = a\nb.append(4)\nprint(len(a))\n```",
+				"answer": {
+					"value": 4,
+					"tolerance": 0
+				},
+				"explanationMd": "`b = a` nie kopiuje listy — obie nazwy wskazują ten sam obiekt, więc `b.append(4)` wydłuża także `a` do 4 elementów."
+			}
+		]
+	},
+	{
+		"slug": "ds-sql",
+		"name": "SQL",
+		"trunk": "market",
+		"competencyName": "SQL",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Które polecenie SQL służy do pobierania (odczytu) danych z tabeli?",
+				"options": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "`SELECT` odczytuje dane. `INSERT` dodaje wiersze, `UPDATE` je modyfikuje, a `DELETE` usuwa."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Która klauzula SQL filtruje wiersze na podstawie warunku (np. wiek > 18)?",
+				"options": ["WHERE", "ORDER BY", "GROUP BY", "LIMIT"],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "`WHERE` odfiltrowuje wiersze niespełniające warunku. `ORDER BY` sortuje, `GROUP BY` grupuje, a `LIMIT` ogranicza liczbę zwróconych wierszy."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Tabela orders ma 10 wierszy: 4 z wartością status = 'new' i 6 z status = 'done'. Jaką liczbę zwróci zapytanie:\n\n```sql\nSELECT COUNT(*) FROM orders WHERE status = 'done';\n```",
+				"answer": {
+					"value": 6,
+					"tolerance": 0
+				},
+				"explanationMd": "`WHERE status = 'done'` przepuszcza 6 wierszy, a `COUNT(*)` zlicza je, zwracając 6."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia o zapytaniu:\n\n```sql\nSELECT name FROM users ORDER BY name DESC LIMIT 3;\n```",
+				"options": [
+					"Zwróci co najwyżej 3 wiersze",
+					"Wyniki będą posortowane malejąco według kolumny name",
+					"Zapytanie zmodyfikuje dane w tabeli users",
+					"Zapytanie zwróci wszystkie kolumny tabeli users"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "`LIMIT 3` ogranicza wynik do maksymalnie 3 wierszy, a `DESC` sortuje malejąco. `SELECT` niczego nie modyfikuje i zwraca tylko wskazane kolumny (tutaj samą `name`)."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia o złączeniach (JOIN) w SQL.",
+				"options": [
+					"LEFT JOIN zwraca wszystkie wiersze z lewej tabeli, także te bez dopasowania w prawej",
+					"INNER JOIN zwraca wyłącznie wiersze mające dopasowanie w obu tabelach",
+					"INNER JOIN zawsze zwraca więcej wierszy niż LEFT JOIN na tych samych danych",
+					"W LEFT JOIN kolumny z prawej tabeli bez dopasowania otrzymują wartość 0"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "LEFT JOIN zachowuje całą lewą tabelę, INNER JOIN tylko część wspólną — dlatego INNER nigdy nie zwróci więcej wierszy niż LEFT. Brak dopasowania w LEFT JOIN daje NULL, nie 0."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "Tabela klienci ma 5 wierszy. Tabela zamowienia ma 3 wiersze i każde zamówienie wskazuje innego, istniejącego klienta. Ile wierszy zwróci zapytanie:\n\n```sql\nSELECT * FROM klienci k\nLEFT JOIN zamowienia z ON z.klient_id = k.id;\n```",
+				"answer": {
+					"value": 5,
+					"tolerance": 0
+				},
+				"explanationMd": "LEFT JOIN zachowuje wszystkich 5 klientów: 3 z dopasowanym zamówieniem i 2 z wartościami NULL po stronie zamówień. Żaden klient nie ma więcej niż jednego zamówienia, więc wierszy nie przybywa."
+			}
+		]
+	},
+	{
+		"slug": "ds-git",
+		"name": "Git",
+		"trunk": "market",
+		"competencyName": "Git",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Które polecenie tworzy nowe, puste repozytorium Git w bieżącym katalogu?",
+				"options": ["git init", "git start", "git create", "git new"],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "`git init` inicjalizuje repozytorium, tworząc katalog `.git`. Pozostałe polecenia nie istnieją w Gicie."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Które polecenie zapisuje przygotowane (staged) zmiany jako nowy commit w historii?",
+				"options": ["git commit", "git push", "git add", "git status"],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "`git commit` tworzy commit ze zmian z poczekalni (staging area). `git add` dopiero je tam dodaje, `git push` wysyła commity na zdalne repozytorium, a `git status` tylko pokazuje stan."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia o poleceniu git add.",
+				"options": [
+					"git add plik.txt dodaje zmiany z tego pliku do poczekalni (staging area)",
+					"git add . dodaje zmiany ze wszystkich nieignorowanych plików w bieżącym katalogu i podkatalogach",
+					"git add wysyła zmiany na zdalne repozytorium",
+					"git add samodzielnie tworzy nowy commit"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "`git add` jedynie przenosi zmiany do poczekalni. Commit tworzy dopiero `git commit`, a wysyłką na zdalne repozytorium zajmuje się `git push`."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Repozytorium ma na gałęzi 3 commity. Modyfikujesz dwa pliki, wykonujesz git add dla obu, a następnie jedno polecenie git commit. Ile commitów ma teraz ta gałąź?",
+				"answer": {
+					"value": 4,
+					"tolerance": 0
+				},
+				"explanationMd": "Jedno wywołanie `git commit` tworzy dokładnie jeden commit, niezależnie od liczby zmienionych plików — historia rośnie z 3 do 4 commitów."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia porównujące git merge i git rebase.",
+				"options": [
+					"git rebase przepisuje historię — nakładane commity dostają nowe hashe",
+					"git merge może utworzyć dodatkowy commit scalenia (merge commit)",
+					"git merge i git rebase zawsze dają identyczny kształt historii commitów",
+					"git merge usuwa commity z gałęzi, którą scalamy"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "Rebase odtwarza commity na nowej podstawie (nowe hashe, liniowa historia), a merge łączy gałęzie, często dodając commit scalenia — kształt historii się różni, a merge niczego nie usuwa."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "Gałąź main zawiera commity A-B-C. Gałąź feature odgałęziła się po commicie B i ma 2 własne commity. Na gałęzi feature wykonujesz git rebase main (bez konfliktów). Ile commitów łącznie zawiera teraz historia gałęzi feature?",
+				"answer": {
+					"value": 5,
+					"tolerance": 0
+				},
+				"explanationMd": "Po rebase historia feature to A, B, C oraz 2 przełożone commity gałęzi — łącznie 5. Rebase nie dodaje commitu scalenia."
+			}
+		]
+	},
+	{
+		"slug": "ds-pandas",
+		"name": "Pandas",
+		"trunk": "market",
+		"competencyName": "Pandas",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Która funkcja biblioteki pandas wczytuje plik CSV do obiektu DataFrame?",
+				"options": ["pd.read_csv()", "pd.load_csv()", "pd.open_csv()", "pd.import_csv()"],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Standardową funkcją wczytywania plików CSV w pandas jest `pd.read_csv()`. Pozostałe nazwy nie istnieją w bibliotece."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Która metoda DataFrame zwraca kilka pierwszych wierszy (domyślnie 5) do szybkiego podglądu danych?",
+				"options": ["df.head()", "df.top()", "df.first_rows()", "df.preview()"],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "`df.head()` zwraca domyślnie 5 pierwszych wierszy DataFrame. Pozostałe metody nie istnieją w pandas."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Co wypisze poniższy kod?\n\n```python\nimport pandas as pd\ndf = pd.DataFrame({\"a\": [1, 2, 3], \"b\": [4, 5, 6]})\nprint(df[\"b\"].mean())\n```",
+				"answer": {
+					"value": 5,
+					"tolerance": 0
+				},
+				"explanationMd": "Średnia kolumny `b` to (4 + 5 + 6) / 3 = 5.0."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia o metodzie df.dropna() wywołanej z domyślnymi parametrami.",
+				"options": [
+					"Usuwa wiersze zawierające co najmniej jedną wartość NaN",
+					"Zwraca nowy DataFrame, nie modyfikując oryginalnego obiektu",
+					"Zastępuje wartości NaN zerami",
+					"Usuwa zduplikowane wiersze"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "Domyślnie `dropna()` działa wierszami (how='any') i zwraca nowy obiekt. Zastępowaniem NaN zajmuje się `fillna()`, a duplikatami `drop_duplicates()`."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia o indeksowaniu loc i iloc w pandas.",
+				"options": [
+					"df.iloc[0] wybiera pierwszy wiersz według pozycji, niezależnie od etykiet indeksu",
+					"df.loc[2] wybiera wiersz o etykiecie indeksu 2, a nie trzeci wiersz z kolei",
+					"Wycinki df.loc[0:2] i df.iloc[0:2] zawsze zwracają tyle samo wierszy",
+					"df.iloc przyjmuje etykiety tekstowe indeksu, np. df.iloc[\"styczen\"]"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "`iloc` działa po pozycjach (wycinek wyłącza koniec), a `loc` po etykietach (wycinek WŁĄCZA koniec) — stąd `loc[0:2]` może zwrócić 3 wiersze, gdy `iloc[0:2]` zwraca 2. `iloc` nie przyjmuje etykiet tekstowych."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "df1 ma kolumnę key z wartościami ['a', 'a', 'b'], a df2 kolumnę key z wartościami ['a', 'c']. Ile wierszy będzie miał wynik pd.merge(df1, df2, on=\"key\") z domyślnym how=\"inner\"?",
+				"answer": {
+					"value": 2,
+					"tolerance": 0
+				},
+				"explanationMd": "Inner merge paruje wiersze o wspólnym kluczu: 'a' występuje 2 razy w df1 i 1 raz w df2 (2×1 = 2 wiersze), a 'b' i 'c' nie mają dopasowania."
+			}
+		]
+	},
+	{
+		"slug": "ds-numpy",
+		"name": "NumPy",
+		"trunk": "market",
+		"competencyName": "NumPy",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Która funkcja tworzy tablicę NumPy (ndarray) z listy Pythona?",
+				"options": ["np.array()", "np.list()", "np.make()", "np.tab()"],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "`np.array([1, 2, 3])` tworzy tablicę ndarray z listy. Pozostałe funkcje nie istnieją w NumPy."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Co przechowuje atrybut shape tablicy NumPy?",
+				"options": [
+					"Rozmiary tablicy w każdym z jej wymiarów",
+					"Typ danych elementów tablicy",
+					"Łączną liczbę bajtów zajmowanych przez tablicę",
+					"Nazwy kolumn tablicy"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "`shape` to krotka z rozmiarem tablicy w każdym wymiarze, np. `(3, 2)` dla tablicy 3×2. Typ danych opisuje `dtype`, a rozmiar w bajtach — `nbytes`."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Co wypisze poniższy kod?\n\n```python\nimport numpy as np\nprint(np.arange(2, 11, 2).sum())\n```",
+				"answer": {
+					"value": 30,
+					"tolerance": 0
+				},
+				"explanationMd": "`np.arange(2, 11, 2)` daje [2, 4, 6, 8, 10] (koniec 11 wyłączony), a suma tych wartości to 30."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia o tablicach NumPy (ndarray).",
+				"options": [
+					"Wszystkie elementy tablicy mają ten sam typ danych (dtype)",
+					"Wyrażenie a * 2 mnoży każdy element tablicy a przez 2, bez pisania pętli",
+					"np.append modyfikuje tablicę w miejscu, nie tworząc kopii danych",
+					"Tablica dwuwymiarowa musi mieć tyle samo wierszy co kolumn"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "ndarray jest jednorodna typowo i wspiera operacje wektorowe jak `a * 2`. `np.append` zawsze zwraca nową tablicę (kopię), a tablica 2D może mieć dowolny kształt, np. 3×5."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia o widokach (views) i kopiach w NumPy.",
+				"options": [
+					"Wycinek b = a[1:3] tablicy NumPy jest widokiem — modyfikacja b zmienia też a",
+					"Metoda a.copy() tworzy niezależną kopię danych tablicy",
+					"Metoda reshape zawsze kopiuje dane do nowej pamięci",
+					"Wycinki list Pythona i tablic NumPy działają identycznie — oba tworzą kopię danych"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "Podstawowe wycinanie w NumPy zwraca widok współdzielący pamięć (inaczej niż wycinek listy, który kopiuje), a `copy()` tworzy niezależne dane. `reshape` zwraca widok, gdy tylko układ pamięci na to pozwala."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "Tablica a = np.array([[1], [2], [3]]) ma kształt (3, 1), a tablica b = np.array([10, 20]) kształt (2,). Ile elementów łącznie ma wynik wyrażenia a + b po rozgłaszaniu (broadcastingu)?",
+				"answer": {
+					"value": 6,
+					"tolerance": 0
+				},
+				"explanationMd": "Broadcasting rozciąga (3, 1) i (2,) do wspólnego kształtu (3, 2), więc wynik ma 3 × 2 = 6 elementów."
+			}
+		]
+	},
+	{
+		"slug": "ds-statystyka",
+		"name": "Statystyka (Statistics)",
+		"trunk": "market",
+		"competencyName": "Statystyka (Statistics)",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest mediana zbioru danych liczbowych?",
+				"options": [
+					"Sumą wszystkich wartości podzieloną przez ich liczbę",
+					"Wartością środkową po uporządkowaniu danych rosnąco",
+					"Najczęściej występującą wartością w zbiorze",
+					"Różnicą między wartością największą a najmniejszą"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Mediana to wartość środkowa uporządkowanego zbioru — połowa obserwacji jest od niej mniejsza lub równa, a połowa większa lub równa. Suma podzielona przez liczbę to średnia, a najczęstsza wartość to dominanta."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Która miara statystyczna opisuje rozproszenie danych wokół średniej?",
+				"options": [
+					"Odchylenie standardowe",
+					"Dominanta (moda)",
+					"Kwartyl pierwszy",
+					"Średnia arytmetyczna"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Odchylenie standardowe mierzy, jak bardzo obserwacje odchylają się przeciętnie od średniej. Dominanta i średnia to miary tendencji centralnej, a sam kwartyl pierwszy wskazuje punkt rozkładu, nie rozproszenie wokół średniej."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Oblicz medianę zbioru danych: 3, 7, 1, 9, 5, 4.",
+				"answer": {
+					"value": 4.5,
+					"tolerance": 0
+				},
+				"explanationMd": "Po uporządkowaniu: 1, 3, 4, 5, 7, 9. Przy parzystej liczbie obserwacji mediana to średnia dwóch środkowych wartości: (4 + 5) / 2 = 4.5."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia dotyczące p-value w teście istotności statystycznej.",
+				"options": [
+					"P-value to prawdopodobieństwo uzyskania wyniku co najmniej tak skrajnego jak zaobserwowany, przy założeniu prawdziwości hipotezy zerowej",
+					"P-value to prawdopodobieństwo, że hipoteza zerowa jest prawdziwa",
+					"Małe p-value (np. poniżej przyjętego poziomu istotności) stanowi przesłankę przeciwko hipotezie zerowej",
+					"P-value mierzy wielkość efektu — im mniejsze p-value, tym większy efekt praktyczny"
+				],
+				"answer": {
+					"correct": [0, 2]
+				},
+				"explanationMd": "P-value opisuje, jak nietypowy byłby zaobserwowany wynik, gdyby hipoteza zerowa była prawdziwa — dlatego małe p-value podważa H0. Nie jest to ani prawdopodobieństwo prawdziwości H0, ani miara wielkości efektu."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "Test diagnostyczny ma czułość 90% i swoistość 90%. Choroba występuje u 1% populacji. Losowa osoba otrzymała wynik pozytywny. Podaj prawdopodobieństwo (w procentach), że rzeczywiście jest chora.",
+				"answer": {
+					"value": 8.33,
+					"tolerance": 0.5
+				},
+				"explanationMd": "Z twierdzenia Bayesa: P(chory|+) = (0.9 · 0.01) / (0.9 · 0.01 + 0.1 · 0.99) = 0.009 / 0.108 ≈ 8.33%. To klasyczny przykład błędu bazowego (base rate fallacy) — mimo dobrego testu niski odsetek chorych sprawia, że większość wyników pozytywnych to fałszywe alarmy."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia dotyczące testowania wielu hipotez naraz (problem wielokrotnych porównań).",
+				"options": [
+					"Przy 20 niezależnych testach na poziomie istotności 0.05 prawdopodobieństwo co najmniej jednego fałszywie pozytywnego wyniku wynosi około 64%",
+					"Wykonywanie wielu testów bez korekty zmniejsza ryzyko błędu I rodzaju",
+					"Korekta Bonferroniego polega na podzieleniu poziomu istotności przez liczbę wykonywanych testów",
+					"Jeśli w jednym z 20 testów uzyskano p < 0.05, badany efekt jest na pewno prawdziwy"
+				],
+				"answer": {
+					"correct": [0, 2]
+				},
+				"explanationMd": "Przy 20 testach: 1 − 0.95^20 ≈ 0.64, więc szansa na fałszywy alarm rośnie drastycznie — dlatego stosuje się korekty, np. Bonferroniego (α/m). Wielokrotne testowanie zwiększa, a nie zmniejsza, ryzyko błędu I rodzaju i nigdy nie daje pewności co do efektu."
+			}
+		]
+	},
+	{
+		"slug": "ds-uczenie-maszynowe",
+		"name": "Uczenie maszynowe",
+		"trunk": "market",
+		"competencyName": "Uczenie maszynowe",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Do czego służy zbiór testowy w uczeniu maszynowym?",
+				"options": [
+					"Do trenowania parametrów modelu",
+					"Do oceny jakości modelu na danych niewidzianych podczas treningu",
+					"Do automatycznego czyszczenia danych wejściowych",
+					"Do zwiększenia liczby przykładów treningowych"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Zbiór testowy jest odkładany na bok i nie uczestniczy w treningu — służy wyłącznie do sprawdzenia, jak model generalizuje na nowych danych."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Które z poniższych zadań jest przykładem klasyfikacji?",
+				"options": [
+					"Przewidywanie dokładnej ceny mieszkania w złotych",
+					"Grupowanie klientów o podobnych zachowaniach bez znanych etykiet",
+					"Rozstrzyganie, czy wiadomość e-mail jest spamem, czy nie",
+					"Redukcja liczby wymiarów zbioru danych"
+				],
+				"answer": {
+					"correct": 2
+				},
+				"explanationMd": "Klasyfikacja przypisuje obserwację do jednej z dyskretnych klas (spam / nie-spam). Przewidywanie ceny to regresja, grupowanie bez etykiet to klasteryzacja, a redukcja wymiarów to osobna technika nienadzorowana."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Macierz pomyłek klasyfikatora binarnego: TP = 40, TN = 50, FP = 5, FN = 5. Oblicz accuracy (dokładność) jako ułamek dziesiętny.",
+				"answer": {
+					"value": 0.9,
+					"tolerance": 0.01
+				},
+				"explanationMd": "Accuracy = (TP + TN) / (TP + TN + FP + FN) = (40 + 50) / 100 = 0.9."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia dotyczące overfittingu (przeuczenia) modelu.",
+				"options": [
+					"Typowy objaw to wynik znacznie lepszy na zbiorze treningowym niż na zbiorze testowym",
+					"Overfitting oznacza, że model jest zbyt prosty, by uchwycić zależności w danych",
+					"Regularyzacja (np. L1/L2) może ograniczyć overfitting",
+					"Dodanie większej liczby cech zawsze redukuje overfitting"
+				],
+				"answer": {
+					"correct": [0, 2]
+				},
+				"explanationMd": "Przeuczony model zapamiętuje dane treningowe zamiast generalizować, stąd duża różnica wyników train/test; regularyzacja karze nadmierną złożoność i pomaga temu zapobiec. Zbyt prosty model to underfitting, a dodawanie cech zwykle zwiększa ryzyko przeuczenia."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "W zbiorze testowym jest 950 przykładów klasy negatywnej i 50 przykładów klasy pozytywnej. Model zawsze przewiduje klasę negatywną. Oblicz accuracy tego modelu jako ułamek dziesiętny.",
+				"answer": {
+					"value": 0.95,
+					"tolerance": 0.01
+				},
+				"explanationMd": "Model trafia we wszystkie 950 przykładów negatywnych i myli się na 50 pozytywnych: 950/1000 = 0.95. To pokazuje pułapkę accuracy na danych niezbalansowanych — bezużyteczny model wygląda na bardzo dobry, dlatego stosuje się precision, recall czy F1."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia dotyczące wycieku danych (data leakage).",
+				"options": [
+					"Dopasowanie skalowania cech (np. standaryzacji) na całym zbiorze przed podziałem na train/test powoduje wyciek informacji z danych testowych",
+					"Użycie cechy, która w praktyce jest dostępna dopiero po zajściu przewidywanego zdarzenia, to forma wycieku danych",
+					"Wyciek danych zawsze poprawia jakość modelu na produkcji",
+					"Zwykła walidacja krzyżowa eliminuje każdy rodzaj wycieku danych"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "Wyciek to każda sytuacja, w której model podczas treningu widzi informację niedostępną w momencie predykcji — np. statystyki policzone na danych testowych albo cechy „z przyszłości”. Zawyża on wyniki walidacji, ale na produkcji jakość spada, a sama walidacja krzyżowa nie chroni np. przed wyciekiem przy skalowaniu całego zbioru czy w danych czasowych."
+			}
+		]
+	},
+	{
+		"slug": "ds-eda",
+		"name": "EDA",
+		"trunk": "market",
+		"competencyName": "EDA",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Co jest głównym celem eksploracyjnej analizy danych (EDA)?",
+				"options": [
+					"Wdrożenie modelu na środowisko produkcyjne",
+					"Poznanie struktury, rozkładów i anomalii w danych przed modelowaniem",
+					"Zebranie nowych danych z zewnętrznych źródeł",
+					"Optymalizacja hiperparametrów gotowego modelu"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "EDA to etap, na którym analityk poznaje dane: rozkłady zmiennych, braki, wartości odstające i zależności — zanim podejmie decyzje o czyszczeniu i modelowaniu."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Który wykres najlepiej pokazuje rozkład pojedynczej zmiennej numerycznej?",
+				"options": [
+					"Histogram",
+					"Wykres kołowy",
+					"Wykres punktowy (scatter plot) dwóch zmiennych",
+					"Wykres liniowy w czasie"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Histogram dzieli zakres zmiennej na przedziały i pokazuje liczność każdego z nich, ujawniając kształt rozkładu. Wykres kołowy służy do udziałów kategorii, scatter do relacji dwóch zmiennych, a liniowy do trendów w czasie."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "W analizie wartości odstających metodą IQR pierwszy kwartyl wynosi Q1 = 10, a trzeci kwartyl Q3 = 20. Oblicz górną granicę wykrywania outlierów według reguły Q3 + 1.5·IQR.",
+				"answer": {
+					"value": 35,
+					"tolerance": 0
+				},
+				"explanationMd": "IQR = Q3 − Q1 = 10, więc górna granica to 20 + 1.5 · 10 = 35. Wartości powyżej 35 traktuje się jako potencjalne outliery."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia dotyczące obsługi braków danych podczas EDA.",
+				"options": [
+					"Imputacja medianą jest odporniejsza na wartości odstające niż imputacja średnią",
+					"Braki danych zawsze należy zastępować zerem",
+					"Usunięcie wierszy z brakami może wprowadzić obciążenie (bias), jeśli braki nie występują losowo",
+					"Kolumnę zawierającą jakiekolwiek braki trzeba zawsze usunąć z analizy"
+				],
+				"answer": {
+					"correct": [0, 2]
+				},
+				"explanationMd": "Mediana nie reaguje na skrajne wartości, więc jest bezpieczniejsza przy outlierach, a usuwanie wierszy z brakami nielosowymi (np. częstszymi w jednej grupie) zniekształca próbę. Zastępowanie zerem czy automatyczne usuwanie kolumn to błędne, zbyt radykalne heurystyki."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia dotyczące interpretacji korelacji podczas EDA.",
+				"options": [
+					"Współczynnik Pearsona bliski 0 nie wyklucza istnienia silnej zależności nieliniowej między zmiennymi",
+					"Współczynnik Pearsona wykrywa każdą zależność monotoniczną równie dobrze jak korelacja Spearmana",
+					"Wysoka korelacja dwóch zmiennych nie dowodzi, że jedna z nich powoduje drugą",
+					"Korelacja równa 0.9 oznacza, że pierwsza zmienna jest przyczyną drugiej"
+				],
+				"answer": {
+					"correct": [0, 2]
+				},
+				"explanationMd": "Pearson mierzy tylko zależność liniową — np. zależność kwadratowa może dać wynik bliski 0; zależności monotoniczne, ale nieliniowe, lepiej wychwytuje Spearman. Korelacja, nawet bardzo wysoka, nigdy sama w sobie nie dowodzi przyczynowości (możliwa zmienna ukryta lub przypadek)."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia dotyczące pułapek agregacji i podsumowań danych w EDA.",
+				"options": [
+					"Trend widoczny w każdej z podgrup może się odwrócić po zagregowaniu danych (paradoks Simpsona)",
+					"Średnia arytmetyczna może być myląca jako miara typowej wartości przy rozkładach silnie skośnych",
+					"Usunięcie wszystkich obserwacji odstających zawsze poprawia jakość analizy",
+					"Wykres pudełkowy (box plot) wiernie pokazuje wielomodalność rozkładu"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "Paradoks Simpsona pokazuje, że kierunek zależności może się odwrócić po agregacji, a przy rozkładach skośnych (np. dochody) średnią zawyżają skrajne wartości — lepsza bywa mediana. Outliery bywają cennym sygnałem, a box plot ukrywa liczbę mod rozkładu (tu przydaje się histogram lub wykres gęstości)."
+			}
+		]
+	},
+	{
+		"slug": "ds-ab-testing",
+		"name": "A/B testing",
+		"trunk": "market",
+		"competencyName": "A/B testing",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest grupa kontrolna w teście A/B?",
+				"options": [
+					"Grupą użytkowników, która widzi dotychczasową (niezmienioną) wersję produktu",
+					"Grupą użytkowników, która widzi nową, testowaną wersję produktu",
+					"Zespołem analityków nadzorującym przebieg eksperymentu",
+					"Grupą użytkowników wykluczoną z eksperymentu z powodu błędów danych"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Grupa kontrolna otrzymuje wersję bazową i stanowi punkt odniesienia, względem którego mierzy się efekt nowego wariantu pokazywanego grupie testowej."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Jaki jest główny cel przeprowadzania testu A/B?",
+				"options": [
+					"Zwiększenie liczby użytkowników odwiedzających stronę",
+					"Porównanie dwóch wariantów produktu poprzez losowy podział użytkowników i pomiar różnicy w wynikach",
+					"Zebranie opinii użytkowników w ankiecie jakościowej",
+					"Wykrycie błędów technicznych w nowej wersji aplikacji"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Test A/B to kontrolowany eksperyment: użytkownicy są losowo dzieleni między warianty, a różnica w metryce (np. konwersji) pozwala ocenić, który wariant działa lepiej."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "W wariancie B testu A/B odnotowano 240 konwersji wśród 3000 użytkowników. Oblicz współczynnik konwersji tego wariantu w procentach.",
+				"answer": {
+					"value": 8,
+					"tolerance": 0.01
+				},
+				"explanationMd": "Współczynnik konwersji = 240 / 3000 = 0.08, czyli 8%."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia dotyczące poprawnego projektowania testu A/B.",
+				"options": [
+					"Użytkownicy powinni być przydzielani do wariantów w sposób losowy",
+					"Wymaganą wielkość próby należy oszacować przed rozpoczęciem testu",
+					"Grupy A i B najlepiej rekrutować w różnych okresach — np. A w styczniu, B w lutym",
+					"Im mniejsza próba, tym bardziej wiarygodny wynik testu"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "Randomizacja eliminuje systematyczne różnice między grupami, a wyliczenie wielkości próby z góry zapewnia odpowiednią moc testu. Rekrutacja grup w różnych okresach wprowadza efekt czasu (sezonowość), a mała próba zmniejsza, nie zwiększa, wiarygodność."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne stwierdzenia dotyczące pułapek przy prowadzeniu i interpretacji testów A/B.",
+				"options": [
+					"Wielokrotne podglądanie wyników i kończenie testu przy pierwszym p < 0.05 (peeking) zwiększa ryzyko fałszywie pozytywnego wniosku",
+					"Efekt nowości może na początku testu sztucznie zawyżać wyniki nowego wariantu",
+					"Istotność statystyczna wyniku gwarantuje jego istotność biznesową",
+					"Wydłużenie testu do zaplanowanej wielkości próby pogarsza jakość wniosków"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "Peeking to forma wielokrotnego testowania — każdy „podgląd” zwiększa łączne ryzyko błędu I rodzaju, a efekt nowości sprawia, że początkowe wyniki nowego wariantu bywają zawyżone. Istotność statystyczna nie przesądza o wartości biznesowej (efekt może być znikomy), a dotrwanie do zaplanowanej próby poprawia, nie pogarsza, jakość wniosków."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "W teście A/B grupa kontrolna A uzyskała 200 konwersji na 2000 użytkowników, a wariant B uzyskał 250 konwersji na 2000 użytkowników. Oblicz względny wzrost (relative uplift) współczynnika konwersji wariantu B względem A, wyrażony w procentach.",
+				"answer": {
+					"value": 25,
+					"tolerance": 0.1
+				},
+				"explanationMd": "Konwersja A = 10%, konwersja B = 12.5%. Względny wzrost = (12.5 − 10) / 10 = 25%. To co innego niż wzrost bezwzględny (2.5 punktu procentowego) — mylenie tych pojęć to częsty błąd w raportowaniu wyników testów."
+			}
+		]
+	},
+	{
+		"slug": "ds-azure",
+		"name": "Azure",
+		"trunk": "market",
+		"competencyName": "Azure",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest Azure Blob Storage?",
+				"options": [
+					"Relacyjną bazą danych do transakcji OLTP",
+					"Magazynem obiektowym do przechowywania danych nieustrukturyzowanych (pliki, obrazy, kopie zapasowe)",
+					"Usługą do uruchamiania maszyn wirtualnych",
+					"Narzędziem do automatyzacji wdrożeń CI/CD"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Blob Storage to magazyn obiektowy Azure — przechowuje dowolne pliki (dane nieustrukturyzowane) dostępne przez HTTP/HTTPS. Nie jest bazą relacyjną ani usługą obliczeniową."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Do czego służy usługa Azure Machine Learning?",
+				"options": [
+					"Do zarządzania domenami i rekordami DNS",
+					"Do hostowania statycznych stron internetowych",
+					"Do budowania, trenowania i wdrażania modeli uczenia maszynowego",
+					"Do przesyłania wiadomości e-mail w aplikacjach"
+				],
+				"answer": {
+					"correct": 2
+				},
+				"explanationMd": "Azure Machine Learning to platforma ML — obejmuje cały cykl życia modelu: przygotowanie danych, trenowanie, śledzenie eksperymentów i wdrażanie."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie usługi Azure, które służą do przechowywania danych.",
+				"options": [
+					"Azure Blob Storage",
+					"Azure Data Lake Storage",
+					"Azure DevOps",
+					"Azure SQL Database",
+					"Azure Virtual Network"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Blob Storage i Data Lake Storage przechowują pliki i dane obiektowe, a Azure SQL Database to zarządzana baza relacyjna. Azure DevOps służy do CI/CD, a Virtual Network do sieci."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zespół data science w Azure chce uruchamiać notebooki i trenować modele na dużych zbiorach danych. Zaznacz wszystkie usługi, które to umożliwiają.",
+				"options": [
+					"Azure Machine Learning",
+					"Azure Databricks",
+					"Azure DNS",
+					"Azure Synapse Analytics (pule Spark)",
+					"Azure Key Vault"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Azure ML, Azure Databricks i pule Spark w Synapse oferują środowiska notebookowe i moc obliczeniową do trenowania. Azure DNS obsługuje domeny, a Key Vault przechowuje sekrety."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia dotyczące Azure Data Lake Storage Gen2.",
+				"options": [
+					"Oferuje hierarchiczną przestrzeń nazw (katalogi i podkatalogi jak w systemie plików)",
+					"Jest zbudowany na bazie Azure Blob Storage",
+					"Jest relacyjną bazą danych z transakcjami OLTP",
+					"Wspiera listy kontroli dostępu (ACL) na poziomie plików i katalogów",
+					"Do samego odczytu danych wymaga uruchomionego klastra Spark"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "ADLS Gen2 to Blob Storage rozszerzony o hierarchiczną przestrzeń nazw i ACL w stylu POSIX. Nie jest bazą relacyjną, a dane można czytać dowolnym klientem — Spark nie jest wymagany."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Azure Blob Storage oferuje m.in. warstwy dostępu Hot, Cool i Archive. Zaznacz wszystkie prawdziwe stwierdzenia o tych warstwach.",
+				"options": [
+					"Warstwa Archive ma najniższy koszt samego przechowywania danych",
+					"Dane z warstwy Archive można odczytać natychmiast, bez procesu rehydratacji",
+					"Warstwa Cool jest przeznaczona dla danych odczytywanych rzadziej niż w warstwie Hot",
+					"Warstwy różnią się między sobą kosztem przechowywania i kosztem dostępu do danych"
+				],
+				"answer": {
+					"correct": [0, 2, 3]
+				},
+				"explanationMd": "Archive jest najtańsza w przechowywaniu, ale odczyt wymaga rehydratacji (trwającej nawet godziny) — dlatego opcja o natychmiastowym odczycie jest fałszywa. Cool to warstwa dla danych rzadziej używanych, a cały model opiera się na kompromisie koszt przechowywania vs koszt dostępu."
+			}
+		]
+	},
+	{
+		"slug": "ds-databricks",
+		"name": "Databricks",
+		"trunk": "market",
+		"competencyName": "Databricks",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Wokół jakiego silnika przetwarzania danych zbudowana jest platforma Databricks?",
+				"options": ["Apache Spark", "MySQL", "Redis", "Apache Kafka"],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Databricks został założony przez twórców Apache Spark i platforma jest zbudowana wokół tego silnika rozproszonego przetwarzania danych."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Jaki jest podstawowy interfejs interaktywnej pracy z danymi i kodem w Databricks?",
+				"options": [
+					"Arkusz kalkulacyjny",
+					"Notebook (notatnik) z komórkami kodu",
+					"Klient FTP",
+					"Graficzny edytor diagramów UML"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Notebooki to centralny sposób pracy w Databricks — łączą kod, wyniki i wizualizacje w komórkach, podobnie jak Jupyter."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie języki, w których można pisać kod w notebookach Databricks.",
+				"options": ["Python", "SQL", "Scala", "R", "COBOL"],
+				"answer": {
+					"correct": [0, 1, 2, 3]
+				},
+				"explanationMd": "Notebooki Databricks natywnie wspierają Pythona, SQL, Scalę i R (magic commands %python, %sql, %scala, %r). COBOL nie jest wspierany."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie zadania, do których Databricks jest typowo wykorzystywany w projektach data science.",
+				"options": [
+					"Przetwarzanie ETL na dużych zbiorach danych",
+					"Trenowanie modeli uczenia maszynowego",
+					"Hostowanie transakcyjnej bazy OLTP dla aplikacji webowej",
+					"Interaktywna eksploracja i analiza danych",
+					"Zarządzanie rekordami DNS firmowej domeny"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Databricks to platforma analityczno-ML: ETL na Sparku, trenowanie modeli (m.in. z MLflow) i eksploracja w notebookach. Hostowanie bazy OLTP dla aplikacji webowej nie jest typowym zadaniem projektu data science na tej platformie."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia dotyczące formatu Delta Lake.",
+				"options": [
+					"Zapewnia transakcje ACID na danych przechowywanych w plikach Parquet",
+					"Umożliwia time travel — odczyt wcześniejszych wersji tabeli",
+					"Wymaga dedykowanego serwera bazodanowego zamiast magazynu obiektowego",
+					"Wspiera operacje MERGE (upsert) na tabelach"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Delta Lake to warstwa transakcyjna nad plikami Parquet w magazynie obiektowym — daje ACID, wersjonowanie (time travel) i MERGE. Nie potrzebuje osobnego serwera bazodanowego, działa na object storage (S3, ADLS, GCS)."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia dotyczące Unity Catalog w Databricks.",
+				"options": [
+					"Zapewnia centralne zarządzanie uprawnieniami do danych w wielu workspace'ach",
+					"Śledzi pochodzenie danych (data lineage)",
+					"Jest silnikiem wykonawczym, który zastępuje Apache Spark",
+					"Organizuje dane w trójpoziomowej przestrzeni nazw: catalog.schema.table"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Unity Catalog to warstwa zarządzania (governance): centralne uprawnienia, lineage i trójpoziomowa przestrzeń nazw catalog.schema.table. Nie wykonuje obliczeń — silnikiem pozostaje Spark."
+			}
+		]
+	},
+	{
+		"slug": "ds-gcp",
+		"name": "GCP",
+		"trunk": "market",
+		"competencyName": "GCP",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest BigQuery w Google Cloud Platform?",
+				"options": [
+					"Usługą do zarządzania kontenerami Kubernetes",
+					"Serwerlesową hurtownią danych z zapytaniami SQL",
+					"Systemem kolejkowania wiadomości",
+					"Usługą do rejestrowania domen internetowych"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "BigQuery to w pełni zarządzana, serwerlesowa hurtownia danych GCP — analizuje duże zbiory danych za pomocą SQL bez zarządzania infrastrukturą."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Do czego służy usługa Google Cloud Storage?",
+				"options": [
+					"Do przechowywania obiektów (plików) w chmurze",
+					"Do uruchamiania zapytań SQL na danych relacyjnych",
+					"Do trenowania sieci neuronowych",
+					"Do monitorowania wydajności aplikacji"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Cloud Storage to magazyn obiektowy GCP — odpowiednik S3 w AWS i Blob Storage w Azure; przechowuje pliki w kubełkach (buckets)."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie usługi GCP, których data scientist użyje bezpośrednio do pracy z danymi i modelami ML.",
+				"options": ["Vertex AI", "BigQuery", "Cloud DNS", "Dataproc", "Cloud CDN"],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Vertex AI to platforma ML, BigQuery to hurtownia danych, a Dataproc to zarządzane klastry Spark/Hadoop. Cloud DNS i Cloud CDN to usługi sieciowe, nie analityczne."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o pracy z BigQuery z perspektywy analityka danych.",
+				"options": [
+					"Zapytania pisze się w języku SQL",
+					"Warstwa przechowywania danych jest oddzielona od warstwy obliczeniowej",
+					"Przed każdym zapytaniem trzeba ręcznie uruchomić i skonfigurować serwery",
+					"Usługa dobrze nadaje się do analizy bardzo dużych zbiorów danych"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "BigQuery używa SQL, rozdziela storage od compute i skaluje się do petabajtów. Jest serwerlesowy — nie zarządza się żadnymi serwerami, więc trzecia opcja jest fałszywa."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o partycjonowaniu i klastrowaniu tabel w BigQuery.",
+				"options": [
+					"Partycjonowanie po kolumnie daty pozwala skanować tylko partycje pasujące do filtra",
+					"Klastrowanie porządkuje dane według wskazanych kolumn, co przyspiesza filtrowanie po nich",
+					"Partycjonowanie przyspiesza każde zapytanie, nawet bez filtra na kolumnie partycjonującej",
+					"W modelu rozliczeń on-demand koszt zapytania zależy od ilości przeskanowanych danych, więc partycjonowanie może go obniżać"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Partycjonowanie i klastrowanie ograniczają ilość skanowanych danych — ale tylko gdy zapytanie filtruje po odpowiednich kolumnach. Bez filtra na kolumnie partycjonującej BigQuery i tak skanuje wszystkie partycje."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o usługach przetwarzania danych Dataproc i Dataflow w GCP.",
+				"options": [
+					"Dataproc to zarządzane klastry Apache Spark i Hadoop",
+					"Dataflow wykonuje potoki Apache Beam zarówno wsadowo, jak i strumieniowo",
+					"Dataflow służy przede wszystkim do hostowania stron internetowych",
+					"Dataproc wymaga zakupu i utrzymania własnego fizycznego sprzętu"
+				],
+				"answer": {
+					"correct": [0, 1]
+				},
+				"explanationMd": "Dataproc dostarcza zarządzane klastry Spark/Hadoop, a Dataflow to serwerlesowy silnik dla potoków Apache Beam (batch i streaming). Obie usługi działają na infrastrukturze Google — nie hostują stron ani nie wymagają własnego sprzętu."
+			}
+		]
+	},
+	{
+		"slug": "ds-aws",
+		"name": "AWS",
+		"trunk": "market",
+		"competencyName": "AWS",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest Amazon S3?",
+				"options": [
+					"Usługą magazynu obiektowego do przechowywania plików w kubełkach (buckets)",
+					"Relacyjną bazą danych typu OLTP",
+					"Usługą do wynajmu maszyn wirtualnych",
+					"Platformą do tworzenia chatbotów"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "S3 (Simple Storage Service) to magazyn obiektowy AWS — przechowuje pliki jako obiekty w kubełkach; to standardowe miejsce na surowe dane w projektach data science."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Do czego służy Amazon SageMaker?",
+				"options": [
+					"Do zarządzania fakturami i płatnościami w AWS",
+					"Do budowania, trenowania i wdrażania modeli uczenia maszynowego",
+					"Do tworzenia kopii zapasowych maszyn wirtualnych",
+					"Do dystrybucji treści przez sieć CDN"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "SageMaker to platforma ML w AWS — obejmuje notebooki, trenowanie na zarządzanej infrastrukturze i wdrażanie modeli jako endpointy."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie usługi AWS przeznaczone do przechowywania lub analizy danych.",
+				"options": [
+					"Amazon S3",
+					"Amazon Redshift",
+					"Amazon Route 53",
+					"Amazon Athena",
+					"Amazon CloudFront"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "S3 przechowuje pliki, Redshift to hurtownia danych, a Athena wykonuje zapytania SQL na danych w S3. Route 53 to DNS, a CloudFront to CDN — usługi sieciowe."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zespół buduje w AWS platformę analityczną: potrzebuje miejsca na surowe pliki, hurtowni danych i środowiska do trenowania modeli. Zaznacz wszystkie poprawne dopasowania usługi do zadania.",
+				"options": [
+					"Surowe pliki CSV i obrazy — Amazon S3",
+					"Hurtownia danych do raportowania — Amazon Redshift",
+					"Hurtownia danych do raportowania — Amazon Route 53",
+					"Trenowanie modeli ML — Amazon SageMaker"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "S3 to standard na surowe dane, Redshift to hurtownia danych, a SageMaker to platforma ML. Route 53 obsługuje DNS i nie ma nic wspólnego z hurtownią danych."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o klasach przechowywania (storage classes) w Amazon S3.",
+				"options": [
+					"S3 Standard jest przeznaczony dla danych często odczytywanych",
+					"Klasy Glacier służą do archiwizacji danych, a odczyt z nich może wymagać dłuższego czasu",
+					"Wybór klasy przechowywania wpływa na koszt składowania obiektów",
+					"Obiekty w S3 Glacier Deep Archive są dostępne natychmiast, tak samo jak w S3 Standard"
+				],
+				"answer": {
+					"correct": [0, 1, 2]
+				},
+				"explanationMd": "Klasy S3 to kompromis między kosztem a czasem dostępu: Standard dla danych gorących, Glacier dla archiwów z odczytem trwającym od minut do godzin. Deep Archive ma najdłuższy czas odzyskania, więc ostatnia opcja jest fałszywa."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie praktyki, które obniżają koszt i skracają czas zapytań w Amazon Athena.",
+				"options": [
+					"Przechowywanie danych w formacie kolumnowym, np. Parquet",
+					"Partycjonowanie danych w S3 według często filtrowanych kolumn (np. daty)",
+					"Kompresowanie plików z danymi",
+					"Używanie SELECT * na całej tabeli zamiast wybierania potrzebnych kolumn"
+				],
+				"answer": {
+					"correct": [0, 1, 2]
+				},
+				"explanationMd": "Athena rozlicza się za przeskanowane dane, więc format kolumnowy, partycjonowanie i kompresja zmniejszają skan — a przez to koszt i czas. SELECT * działa odwrotnie: skanuje wszystkie kolumny."
+			}
+		]
+	},
+	{
+		"slug": "ds-snowflake",
+		"name": "Snowflake",
+		"trunk": "market",
+		"competencyName": "Snowflake",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest Snowflake?",
+				"options": [
+					"Biblioteką Pythona do wizualizacji danych",
+					"Chmurową hurtownią danych oferowaną w modelu SaaS",
+					"Systemem operacyjnym dla serwerów",
+					"Frameworkiem do budowy aplikacji mobilnych"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Snowflake to w pełni zarządzana chmurowa platforma danych (hurtownia danych w modelu SaaS) — użytkownik pisze SQL, a infrastrukturą zarządza dostawca."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Jak nazywa się zasób obliczeniowy, który wykonuje zapytania w Snowflake?",
+				"options": [
+					"Virtual warehouse (wirtualna hurtownia)",
+					"Lambda function",
+					"Pod Kubernetes",
+					"Compute Engine"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "W Snowflake zapytania wykonuje virtual warehouse — klaster obliczeniowy o wybranym rozmiarze, niezależny od warstwy przechowywania danych."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o architekturze i sposobie działania Snowflake.",
+				"options": [
+					"Warstwa przechowywania danych jest oddzielona od warstwy obliczeniowej",
+					"Snowflake działa na infrastrukturze chmur publicznych (AWS, Azure, GCP)",
+					"Snowflake trzeba zainstalować na własnych serwerach firmy",
+					"Do danych odpytuje się językiem SQL"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Snowflake rozdziela storage od compute, działa wyłącznie w chmurach publicznych i udostępnia dane przez SQL. Nie ma wersji instalowanej lokalnie (on-premises)."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o virtual warehouse w Snowflake z perspektywy codziennej pracy.",
+				"options": [
+					"Na tych samych danych może równolegle pracować wiele warehouse'ów bez kopiowania danych",
+					"Warehouse można zatrzymać (wstrzymać), gdy nie jest używany",
+					"Rozmiar warehouse'a określa dostępną moc obliczeniową",
+					"Warehouse trwale przechowuje dane tabel — po jego usunięciu dane znikają"
+				],
+				"answer": {
+					"correct": [0, 1, 2]
+				},
+				"explanationMd": "Warehouse to wyłącznie moc obliczeniowa: skaluje się rozmiarem, można go wstrzymywać, a wiele warehouse'ów czyta te same dane. Dane tabel żyją w oddzielnej warstwie storage — usunięcie warehouse'a ich nie kasuje."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o funkcji Time Travel w Snowflake.",
+				"options": [
+					"Pozwala odczytać stan danych sprzed zmian w ramach okresu retencji",
+					"Umożliwia przywrócenie usuniętej tabeli poleceniem UNDROP",
+					"Dostęp do historycznych wersji danych jest bezterminowy i nigdy nie wygasa",
+					"W zapytaniu SELECT można wskazać punkt w czasie klauzulami AT lub BEFORE"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Time Travel działa w ramach ograniczonego okresu retencji — po jego upływie historyczne wersje nie są dostępne, więc opcja o bezterminowości jest fałszywa. W tym okresie można czytać dane klauzulami AT/BEFORE i przywracać obiekty przez UNDROP."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o mechanizmach wewnętrznych Snowflake: klonowaniu, mikropartycjach i cache'u wyników.",
+				"options": [
+					"Zero-copy clone tworzy klon tabeli bez fizycznego kopiowania danych w momencie klonowania",
+					"Dane tabel są przechowywane w mikropartycjach zarządzanych automatycznie przez Snowflake",
+					"Użytkownik musi ręcznie tworzyć indeksy B-tree, tak jak w klasycznych bazach relacyjnych",
+					"Powtórzenie identycznego zapytania może zwrócić wynik z cache'u bez angażowania warehouse'a"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Snowflake sam zarządza mikropartycjami i nie używa ręcznie definiowanych indeksów B-tree. Zero-copy clone współdzieli dane z oryginałem do momentu modyfikacji, a result cache potrafi obsłużyć powtórzone zapytanie bez uruchamiania warehouse'a."
+			}
+		]
+	},
+	{
+		"slug": "ds-llm",
+		"name": "LLM",
+		"trunk": "market",
+		"competencyName": "LLM",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest token w kontekście dużych modeli językowych (LLM)?",
+				"options": [
+					"Jednostką mocy obliczeniowej karty graficznej",
+					"Fragmentem tekstu (np. słowem lub częścią słowa), na jakie model dzieli i przetwarza tekst",
+					"Kluczem dostępowym do API modelu",
+					"Rodzajem warstwy sieci neuronowej"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Token to podstawowa jednostka tekstu przetwarzana przez LLM — może to być całe słowo, jego fragment lub znak interpunkcyjny. Limity kontekstu i rozliczenia liczy się właśnie w tokenach."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Co to jest prompt w pracy z modelem językowym?",
+				"options": [
+					"Tekst wejściowy (instrukcja, pytanie lub kontekst) przekazywany modelowi, na podstawie którego generuje on odpowiedź",
+					"Plik konfiguracyjny z wagami modelu",
+					"Metryka jakości odpowiedzi modelu",
+					"Proces trenowania modelu od zera"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Prompt to wejście dla modelu — instrukcja, pytanie i ewentualny kontekst. Jakość i precyzja promptu bezpośrednio wpływają na jakość wygenerowanej odpowiedzi."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie sytuacje, w których RAG (Retrieval-Augmented Generation) jest lepszym wyborem niż fine-tuning modelu:",
+				"options": [
+					"Baza wiedzy firmy często się zmienia i odpowiedzi muszą być aktualne bez ponownego trenowania",
+					"Potrzebujemy, aby model wskazywał źródła, na których oparł odpowiedź",
+					"Chcemy trwale zmienić styl i format wypowiedzi modelu",
+					"Chcemy zmniejszyć liczbę parametrów modelu",
+					"Model ma odpowiadać na pytania o dokumenty, których nie było w danych treningowych, a odpowiedzi mają wskazywać konkretne fragmenty źródłowe"
+				],
+				"answer": {
+					"correct": [0, 1, 4]
+				},
+				"explanationMd": "RAG dokleja do promptu aktualne, wyszukane dokumenty — stąd aktualność wiedzy, cytowanie źródeł i dostęp do treści spoza danych treningowych. Zmiana stylu wypowiedzi to typowy przypadek dla fine-tuningu, a żadna z tych technik nie zmniejsza liczby parametrów."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Model ma okno kontekstu 8000 tokenów. Prompt systemowy zajmuje 1500 tokenów, a historia rozmowy 4500 tokenów. Ile tokenów pozostaje maksymalnie na odpowiedź modelu? Przyjmij, że okno kontekstu obejmuje łącznie tokeny wejścia i wyjścia.",
+				"answer": {
+					"value": 2000,
+					"tolerance": 0
+				},
+				"explanationMd": "Okno kontekstu obejmuje łącznie wejście i wyjście: 8000 − 1500 − 4500 = 2000 tokenów na odpowiedź."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie techniki, które realnie ograniczają halucynacje modeli językowych:",
+				"options": [
+					"Uziemienie odpowiedzi w dostarczonych dokumentach (RAG)",
+					"Weryfikacja twierdzeń z odpowiedzi względem dostarczonych źródeł przed pokazaniem użytkownikowi",
+					"Jawna instrukcja pozwalająca modelowi odpowiedzieć „nie wiem”, gdy brakuje danych",
+					"Zwiększenie maksymalnej długości generowanej odpowiedzi",
+					"Zadanie pytania wielokrotnie z bardzo wysoką temperaturą i wybranie najdłuższej odpowiedzi"
+				],
+				"answer": {
+					"correct": [0, 1, 2]
+				},
+				"explanationMd": "RAG uziemia odpowiedzi w źródłach, weryfikacja twierdzeń względem dostarczonych źródeł wyłapuje konfabulacje przed publikacją, a pozwolenie na „nie wiem” zmniejsza presję na konfabulację. Dłuższe odpowiedzi ani wysoka temperatura nie poprawiają wierności faktom."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "Warstwa liniowa (feed-forward) w transformerze mapuje wektor o wymiarze 512 na wymiar 2048 i ma wektor biasów. Ile łącznie parametrów (wagi + biasy) ma ta warstwa?",
+				"answer": {
+					"value": 1050624,
+					"tolerance": 0
+				},
+				"explanationMd": "Macierz wag ma 512 × 2048 = 1 048 576 parametrów, a bias dodaje 2048. Razem 1 050 624 — tak właśnie sumują się miliardy parametrów w dużych modelach."
+			}
+		]
+	},
+	{
+		"slug": "ds-genai",
+		"name": "GenAI",
+		"trunk": "market",
+		"competencyName": "GenAI",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Co oznacza termin „generatywna sztuczna inteligencja” (GenAI)?",
+				"options": [
+					"Systemy, które wyłącznie klasyfikują dane do z góry ustalonych kategorii",
+					"Algorytmy sortowania dużych zbiorów danych",
+					"Modele, które tworzą nowe treści (tekst, obrazy, dźwięk, kod) na podstawie wzorców wyuczonych z danych",
+					"Sprzęt komputerowy dedykowany do trenowania sieci neuronowych"
+				],
+				"answer": {
+					"correct": 2
+				},
+				"explanationMd": "GenAI to klasa modeli generujących nowe treści — w odróżnieniu od modeli dyskryminacyjnych, które jedynie klasyfikują lub przewidują wartości."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Które z poniższych zadań jest przykładem zastosowania generatywnej AI?",
+				"options": [
+					"Klasyfikacja e-maili jako spam lub nie-spam",
+					"Tworzenie obrazu na podstawie opisu tekstowego",
+					"Przewidywanie ceny mieszkania na podstawie metrażu",
+					"Grupowanie klientów o podobnych zachowaniach zakupowych"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Generowanie obrazu z opisu tekstowego to tworzenie nowej treści, czyli zadanie generatywne. Pozostałe przykłady to klasyfikacja, regresja i klastrowanie — zadania niegeneratywne."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o parametrze temperatury w modelach generatywnych:",
+				"options": [
+					"Wyższa temperatura zwiększa losowość i różnorodność generowanych odpowiedzi",
+					"Temperatura bliska zeru daje odpowiedzi bardziej deterministyczne i powtarzalne",
+					"Temperatura zmienia liczbę parametrów wytrenowanego modelu",
+					"Temperatura wpływa na rozkład prawdopodobieństwa, z którego próbkowany jest kolejny token",
+					"Wyższa temperatura zawsze poprawia poprawność faktograficzną odpowiedzi"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Temperatura skaluje rozkład prawdopodobieństwa przy próbkowaniu tokenów: wysoka spłaszcza rozkład (więcej losowości), niska go wyostrza (determinizm). Nie zmienia wag modelu i nie poprawia faktografii — raczej odwrotnie."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Generujesz opisy produktów modelem językowym. Każdy opis wymaga średnio 200 tokenów wejścia i 300 tokenów wyjścia. Ile łącznie tokenów (wejście + wyjście) zużyje wygenerowanie 40 opisów?",
+				"answer": {
+					"value": 20000,
+					"tolerance": 0
+				},
+				"explanationMd": "Jeden opis to 200 + 300 = 500 tokenów, więc 40 opisów zużyje 40 × 500 = 20 000 tokenów. Takie szacunki to podstawa planowania kosztów w projektach GenAI."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie sensowne metody ewaluacji jakości tekstów generowanych przez model:",
+				"options": [
+					"Ocena odpowiedzi przez ludzi według ustalonej rubryki",
+					"Użycie innego modelu językowego jako sędziego (LLM-as-a-judge)",
+					"Porównanie z tekstami referencyjnymi metrykami typu ROUGE lub BLEU",
+					"Mierzenie wyłącznie długości wygenerowanej odpowiedzi",
+					"Zastosowanie metryki accuracy bez żadnych danych referencyjnych ani etykiet"
+				],
+				"answer": {
+					"correct": [0, 1, 2]
+				},
+				"explanationMd": "Teksty generowane ocenia się ludzką rubryką, sędzią-LLM lub metrykami porównującymi z referencjami (ROUGE/BLEU). Sama długość nic nie mówi o jakości, a accuracy wymaga etykiet i zadania klasyfikacyjnego."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o ryzykach systemów opartych na generatywnej AI:",
+				"options": [
+					"Prompt injection polega na przemyceniu złośliwych instrukcji w danych, które model przetwarza",
+					"Model może odtworzyć fragmenty danych treningowych, co grozi wyciekiem informacji",
+					"Halucynacje występują wyłącznie w modelach generujących obrazy",
+					"Filtrowanie wejścia i wyjścia modelu ogranicza ryzyko nadużyć"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Prompt injection i memoryzacja danych treningowych to realne ryzyka, a filtry wejścia/wyjścia są standardową mitygacją. Halucynacje dotyczą przede wszystkim modeli tekstowych, nie tylko obrazowych."
+			}
+		]
+	},
+	{
+		"slug": "ds-mlops",
+		"name": "MLOps",
+		"trunk": "market",
+		"competencyName": "MLOps",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest MLOps?",
+				"options": [
+					"Językiem programowania do trenowania sieci neuronowych",
+					"Zestawem praktyk łączących machine learning i DevOps: automatyzacją wdrażania, monitorowania i utrzymania modeli na produkcji",
+					"Biblioteką do wizualizacji danych",
+					"Metodą kompresji zbiorów danych treningowych"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "MLOps przenosi praktyki DevOps do świata ML: automatyzuje cykl życia modelu od treningu, przez wdrożenie, po monitorowanie na produkcji."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Co to jest pipeline ML?",
+				"options": [
+					"Pojedynczy skrypt uruchamiany ręcznie raz na kwartał",
+					"Baza danych przechowująca wyłącznie wyniki predykcji",
+					"Protokół sieciowy do przesyłania modeli między serwerami",
+					"Zautomatyzowana sekwencja kroków: przygotowanie danych, trening, ewaluacja i wdrożenie modelu"
+				],
+				"answer": {
+					"correct": 3
+				},
+				"explanationMd": "Pipeline ML to powtarzalny, zautomatyzowany ciąg etapów przetwarzania — od danych po wdrożony model — który można uruchamiać wielokrotnie i wersjonować."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie funkcje, które typowo zapewnia rejestr modeli (model registry):",
+				"options": [
+					"Wersjonowanie modeli wraz z metadanymi (metryki, data treningu, autor)",
+					"Oznaczanie, która wersja modelu jest w fazie staging, a która na produkcji",
+					"Automatyczne usuwanie dryfu danych z ruchu produkcyjnego",
+					"Ułatwienie szybkiego rollbacku do poprzedniej wersji modelu",
+					"Przyspieszanie inferencji przez automatyczną kwantyzację wag"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Rejestr modeli to katalog wersji z metadanymi i etykietami środowisk, co umożliwia kontrolowane promowanie i rollback. Nie zajmuje się usuwaniem dryfu ani optymalizacją inferencji."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Model na produkcji obsłużył w ciągu doby 2000 żądań predykcji, z czego 150 zakończyło się błędem serwisu. Jaki jest wskaźnik błędów (error rate) wyrażony jako ułamek?",
+				"answer": {
+					"value": 0.075,
+					"tolerance": 0.001
+				},
+				"explanationMd": "Error rate = 150 / 2000 = 0,075 (czyli 7,5%). Monitorowanie takich wskaźników operacyjnych to codzienność MLOps."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o dryfie w systemach uczenia maszynowego:",
+				"options": [
+					"Dryf danych (data drift) to zmiana rozkładu cech wejściowych względem danych treningowych",
+					"Dryf koncepcji (concept drift) to zmiana zależności między cechami wejściowymi a przewidywaną zmienną",
+					"Dryf danych zawsze natychmiast obniża dokładność modelu",
+					"Monitorowanie rozkładów wejść pozwala wykryć dryf, zanim spadną metryki jakości predykcji",
+					"Jednorazowy retrening eliminuje problem dryfu raz na zawsze"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Data drift dotyczy rozkładu wejść, concept drift — relacji wejście–etykieta; monitoring rozkładów jest sygnałem wczesnego ostrzegania. Dryf nie zawsze od razu psuje metryki, a retrening trzeba powtarzać, bo świat zmienia się dalej."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie elementy, które powinny znaleźć się w automatycznych bramkach jakości pipeline'u ML przed wdrożeniem nowej wersji modelu:",
+				"options": [
+					"Walidacja schematu i jakości danych wejściowych",
+					"Ewaluacja modelu na odłożonym zbiorze testowym względem ustalonego progu jakości",
+					"Porównanie nowego modelu z aktualnym modelem produkcyjnym (champion–challenger)",
+					"Dotrenowanie modelu na zbiorze testowym, aby podbić raportowane metryki",
+					"Ręczne kopiowanie pliku modelu na serwer produkcyjny poza pipeline'em"
+				],
+				"answer": {
+					"correct": [0, 1, 2]
+				},
+				"explanationMd": "Bramki jakości obejmują walidację danych, ewaluację na odłożonym zbiorze i porównanie champion–challenger. Trening na zbiorze testowym to wyciek danych, a ręczne wdrożenia poza pipeline'em łamią powtarzalność procesu."
+			}
+		]
+	},
+	{
+		"slug": "ds-nlp",
+		"name": "NLP",
+		"trunk": "market",
+		"competencyName": "NLP",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest tokenizacja w przetwarzaniu języka naturalnego?",
+				"options": [
+					"Szyfrowaniem tekstu przed wysłaniem do modelu",
+					"Tłumaczeniem tekstu na inny język",
+					"Podziałem tekstu na mniejsze jednostki (tokeny), np. słowa lub ich fragmenty",
+					"Usuwaniem wszystkich znaków interpunkcyjnych z dokumentu"
+				],
+				"answer": {
+					"correct": 2
+				},
+				"explanationMd": "Tokenizacja to pierwszy krok większości potoków NLP: tekst dzielony jest na tokeny, które dopiero potem są przetwarzane przez model."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest korpus w kontekście NLP?",
+				"options": [
+					"Zbiorem tekstów wykorzystywanym do analizy językowej lub trenowania modeli",
+					"Programem do sprawdzania pisowni",
+					"Pojedynczym zdaniem poddawanym analizie składniowej",
+					"Sprzętowym akceleratorem obliczeń tekstowych"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Korpus to uporządkowany zbiór tekstów (np. artykułów, rozmów), na którym trenuje się i ewaluuje modele językowe oraz prowadzi analizy statystyczne języka."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o stemmingu i lemmatyzacji:",
+				"options": [
+					"Lemmatyzacja sprowadza słowo do jego formy słownikowej (lematu)",
+					"Stemming obcina końcówki według reguł i może tworzyć formy niebędące poprawnymi słowami",
+					"Stemming zawsze wymaga pełnego słownika danego języka",
+					"Oba procesy służą sprowadzeniu różnych form fleksyjnych do wspólnej postaci"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Lemmatyzacja korzysta z wiedzy słownikowej i zwraca lemat, stemming działa regułowo i bywa „brutalny” (np. obcięte pseudosłowa). Oba redukują warianty fleksyjne — to słownika wymaga lemmatyzacja, nie stemming."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Dane są wektory dwóch dokumentów: A = [1, 0, 1] oraz B = [1, 1, 0]. Oblicz podobieństwo kosinusowe między A i B (podaj wynik z dokładnością do dwóch miejsc po przecinku).",
+				"answer": {
+					"value": 0.5,
+					"tolerance": 0.01
+				},
+				"explanationMd": "Iloczyn skalarny A·B = 1, a normy |A| = |B| = √2, więc cos = 1 / (√2 · √2) = 0,5. Podobieństwo kosinusowe to podstawowa miara bliskości dokumentów i embeddingów."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "Korpus liczy 100 dokumentów, a słowo „transformer” występuje w 10 z nich. W dokumencie D słowo to pojawia się 4 razy na 100 słów. Oblicz wagę TF-IDF według wzoru TF × log10(N/df), gdzie TF to częstość względna słowa w dokumencie.",
+				"answer": {
+					"value": 0.04,
+					"tolerance": 0.001
+				},
+				"explanationMd": "TF = 4/100 = 0,04, a IDF = log10(100/10) = 1, więc TF-IDF = 0,04 × 1 = 0,04. Wysokie TF-IDF mają słowa częste w dokumencie, a rzadkie w całym korpusie."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o embeddingach słów i tekstów:",
+				"options": [
+					"Statyczne embeddingi (np. word2vec) przypisują słowu jeden wektor niezależnie od kontekstu zdania",
+					"Embeddingi kontekstowe (np. z transformerów) dają różne wektory tego samego słowa w różnych zdaniach",
+					"Podobieństwo kosinusowe embeddingów przybliża podobieństwo znaczeniowe tekstów",
+					"Embeddingi to zawsze wektory binarne złożone wyłącznie z zer i jedynek",
+					"Wymiar embeddingu musi być równy liczbie znaków w słowie"
+				],
+				"answer": {
+					"correct": [0, 1, 2]
+				},
+				"explanationMd": "Word2vec daje jeden wektor na słowo, transformery — wektory zależne od kontekstu, a bliskość kosinusowa jest standardową miarą podobieństwa semantycznego. Embeddingi są wektorami liczb rzeczywistych o stałym wymiarze, niezwiązanym z długością słowa."
+			}
+		]
+	},
+	{
+		"slug": "ds-ci-cd",
+		"name": "CI/CD",
+		"trunk": "market",
+		"competencyName": "CI/CD",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest pipeline CI (Continuous Integration)?",
+				"options": [
+					"Ręczna procedura wdrażania aplikacji na serwer produkcyjny raz w miesiącu",
+					"Automatyczna sekwencja kroków (np. budowanie, testy), uruchamiana po każdej zmianie w repozytorium",
+					"Narzędzie do wizualizacji danych w czasie rzeczywistym",
+					"System kontroli wersji przechowujący historię zmian kodu"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Pipeline CI to zautomatyzowany ciąg kroków (build, testy, analiza statyczna), który uruchamia się automatycznie po zmianie kodu, aby szybko wykryć błędy integracji."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Jaka jest kluczowa różnica między Continuous Delivery a Continuous Deployment?",
+				"options": [
+					"Continuous Delivery dotyczy tylko aplikacji mobilnych, a Continuous Deployment webowych",
+					"W Continuous Deployment nie uruchamia się testów automatycznych",
+					"W Continuous Delivery wdrożenie na produkcję wymaga ręcznej decyzji, a w Continuous Deployment następuje automatycznie",
+					"Continuous Delivery nie korzysta z systemu kontroli wersji"
+				],
+				"answer": {
+					"correct": 2
+				},
+				"explanationMd": "W Continuous Delivery każda zmiana jest gotowa do wdrożenia, ale ostatnie kliknięcie wykonuje człowiek; w Continuous Deployment zmiany po przejściu testów trafiają na produkcję automatycznie."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie kroki, które typowo należą do pipeline'u CI dla projektu w Pythonie wdrażanego jako kontener Docker.",
+				"options": [
+					"Uruchomienie testów jednostkowych",
+					"Ręczna edycja plików bezpośrednio na serwerze produkcyjnym",
+					"Analiza statyczna kodu (lint)",
+					"Budowa obrazu Docker z aplikacją",
+					"Trenowanie finalnego modelu na laptopie programisty"
+				],
+				"answer": {
+					"correct": [0, 2, 3]
+				},
+				"explanationMd": "Typowy pipeline CI automatyzuje testy, lint i budowę artefaktu (np. obrazu Docker). Ręczne zmiany na produkcji i praca na prywatnym laptopie są zaprzeczeniem idei CI."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Pipeline składa się z etapu lint (2 min), po którym równolegle uruchamiają się testy (6 min) i budowa obrazu (4 min), a po zakończeniu obu następuje deploy (2 min). Ile minut trwa cały przebieg pipeline'u?",
+				"answer": {
+					"value": 10,
+					"tolerance": 0
+				},
+				"explanationMd": "Lint (2 min) + dłuższa z równoległych gałęzi, czyli testy (6 min) + deploy (2 min) = 10 minut. Etapy równoległe liczymy po najdłuższym."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o strategiach wdrożeń blue-green i canary.",
+				"options": [
+					"Wdrożenie canary kieruje najpierw niewielki procent ruchu do nowej wersji",
+					"Blue-green utrzymuje dwa środowiska i przełącza między nimi ruch",
+					"Rolling update wymaga całkowitego wyłączenia aplikacji na czas wdrożenia",
+					"Blue-green umożliwia szybki rollback przez przełączenie ruchu z powrotem na poprzednie środowisko",
+					"Canary wyklucza monitorowanie metryk podczas wdrożenia"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Canary stopniowo zwiększa udział ruchu do nowej wersji (obserwując metryki), a blue-green przełącza ruch między dwoma pełnymi środowiskami, co daje niemal natychmiastowy rollback. Rolling update wymienia instancje stopniowo, bez przestoju."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia dotyczące wersjonowania artefaktów i rollbacku w Continuous Delivery.",
+				"options": [
+					"Nadpisywanie w rejestrze wyłącznie tagu latest utrudnia ustalenie, która wersja działa na produkcji",
+					"Niemutowalne, unikalnie tagowane artefakty (np. obrazy Docker) umożliwiają powtarzalny rollback",
+					"Rollback migracji bazy danych jest zawsze automatyczny i pozbawiony ryzyka",
+					"Wstecznie kompatybilne migracje schematu ułatwiają bezpieczny rollback samej aplikacji"
+				],
+				"answer": {
+					"correct": [0, 1, 3]
+				},
+				"explanationMd": "Rollback jest wiarygodny tylko przy niemutowalnych, jednoznacznie wersjonowanych artefaktach; sam tag latest nie identyfikuje wersji. Migracje bazy to najtrudniejszy element rollbacku — kompatybilność wsteczna schematu pozwala cofnąć aplikację bez cofania danych."
+			}
+		]
+	},
+	{
+		"slug": "ds-kubernetes",
+		"name": "Kubernetes",
+		"trunk": "market",
+		"competencyName": "Kubernetes",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest pod w Kubernetesie?",
+				"options": [
+					"Fizycznym serwerem, na którym działa klaster",
+					"Najmniejszą jednostką wdrożeniową, zawierającą jeden lub więcej kontenerów",
+					"Narzędziem wiersza poleceń do zarządzania klastrem",
+					"Plikiem konfiguracyjnym opisującym sieć klastra"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Pod to najmniejsza jednostka, jaką Kubernetes planuje i uruchamia — grupuje jeden lub więcej kontenerów współdzielących sieć i przestrzeń dyskową."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Do czego służy obiekt Service w Kubernetesie?",
+				"options": [
+					"Do przechowywania obrazów kontenerów w klastrze",
+					"Do definiowania limitów pamięci dla węzłów",
+					"Do kompilowania kodu aplikacji przed wdrożeniem",
+					"Do zapewnienia stałego punktu dostępu sieciowego i rozkładania ruchu na zbiór podów"
+				],
+				"answer": {
+					"correct": 3
+				},
+				"explanationMd": "Pody są ulotne i zmieniają adresy IP; Service daje stabilną nazwę/adres i kieruje ruch do aktualnie działających podów pasujących do selektora."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o obiekcie Deployment.",
+				"options": [
+					"Deployment przechowuje trwałe dane podów po ich usunięciu",
+					"Deployment deklaratywnie utrzymuje zadaną liczbę replik podów",
+					"Deployment umożliwia stopniową aktualizację wersji (rolling update)",
+					"Deployment zarządza podami pośrednio poprzez ReplicaSety"
+				],
+				"answer": {
+					"correct": [1, 2, 3]
+				},
+				"explanationMd": "Deployment opisuje pożądany stan (liczbę replik, wersję obrazu) i realizuje go przez ReplicaSety, w tym rolling update. Trwałe dane to rola PersistentVolume, nie Deploymentu."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Deployment ma ustawione replicas: 5. Węzeł, na którym działały 2 z tych podów, uległ awarii. Ile nowych podów utworzy Kubernetes, aby przywrócić zadeklarowany stan?",
+				"answer": {
+					"value": 2,
+					"tolerance": 0
+				},
+				"explanationMd": "Kontroler porównuje stan faktyczny (3 działające pody) z zadeklarowanym (5) i tworzy brakujące 2 pody na zdrowych węzłach."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o resource requests i limits w Kubernetesie.",
+				"options": [
+					"Wartości requests są używane przez scheduler przy wyborze węzła dla poda",
+					"Przekroczenie limitu CPU powoduje natychmiastowe zabicie poda",
+					"Przekroczenie limitu pamięci kończy się zabiciem kontenera (OOMKilled)",
+					"Pod bez zdefiniowanych requests i limits ma klasę QoS BestEffort i jest usuwany w pierwszej kolejności przy presji na zasoby"
+				],
+				"answer": {
+					"correct": [0, 2, 3]
+				},
+				"explanationMd": "Requests decydują o schedulingu, przekroczenie limitu pamięci kończy się OOMKilled, a brak requests/limits daje QoS BestEffort. CPU jest zasobem ściśliwym — jego przekroczenie powoduje throttling, nie zabicie poda."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o sondach liveness i readiness.",
+				"options": [
+					"Niepowodzenie sondy readiness powoduje natychmiastowy restart kontenera",
+					"Niepowodzenie sondy liveness prowadzi do restartu kontenera",
+					"Niepowodzenie sondy readiness usuwa pod z puli endpointów Service, ale go nie restartuje",
+					"Zbyt agresywna sonda liveness (np. krótki timeout przy wolnym starcie) może wywołać pętlę restartów"
+				],
+				"answer": {
+					"correct": [1, 2, 3]
+				},
+				"explanationMd": "Liveness decyduje o restarcie kontenera, readiness tylko o kierowaniu ruchu — jej niepowodzenie wyłącza pod z load balancingu. Źle skalibrowana liveness restartuje aplikację, zanim ta zdąży wstać."
+			}
+		]
+	},
+	{
+		"slug": "ds-spark",
+		"name": "Spark",
+		"trunk": "market",
+		"competencyName": "Spark",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest Apache Spark?",
+				"options": [
+					"Relacyjną bazą danych do przechowywania dużych tabel",
+					"Rozproszonym silnikiem przetwarzania danych, wykonującym obliczenia w pamięci na klastrze maszyn",
+					"Biblioteką do tworzenia wykresów w Pythonie",
+					"Systemem kolejkowania wiadomości między mikroserwisami"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Spark to silnik obliczeń rozproszonych — dzieli dane na partycje i przetwarza je równolegle na wielu maszynach, intensywnie korzystając z pamięci RAM."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Jaką rolę pełni driver w aplikacji Spark?",
+				"options": [
+					"Wykonuje wszystkie obliczenia na danych zamiast executorów",
+					"Przechowuje trwałe kopie danych wejściowych",
+					"Koordynuje aplikację: buduje plan wykonania i rozdziela zadania między executory",
+					"Odpowiada wyłącznie za zapis logów klastra"
+				],
+				"answer": {
+					"correct": 2
+				},
+				"explanationMd": "Driver tworzy plan wykonania (DAG) i przydziela taski executorom; to executory wykonują faktyczne obliczenia na partycjach danych."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie operacje, które w Sparku są transformacjami (a nie akcjami).",
+				"options": ["df.count()", "filter()", "df.collect()", "select()", "groupBy()"],
+				"answer": {
+					"correct": [1, 3, 4]
+				},
+				"explanationMd": "filter, select i groupBy budują leniwie plan wykonania (transformacje). count i collect to akcje — wyzwalają faktyczne obliczenia i zwracają wynik do drivera."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Klaster Spark ma 4 executory, każdy z 5 rdzeniami CPU, a każdy task zajmuje 1 rdzeń. Ile tasków może wykonywać się równocześnie na tym klastrze?",
+				"answer": {
+					"value": 20,
+					"tolerance": 0
+				},
+				"explanationMd": "Równoległość to liczba executorów razy liczba rdzeni na executor: 4 × 5 = 20 tasków jednocześnie."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o leniwej ewaluacji (lazy evaluation) w Sparku.",
+				"options": [
+					"Transformacje budują graf zależności (DAG) i nie wykonują się natychmiast",
+					"Samo wywołanie cache() natychmiast materializuje dane w pamięci, bez żadnej akcji",
+					"Dopiero akcja (np. count, write) wyzwala wykonanie zaplanowanych transformacji",
+					"Wywołanie kilku akcji na tym samym niecache'owanym DataFrame powoduje ponowne przeliczenie lineage'u"
+				],
+				"answer": {
+					"correct": [0, 2, 3]
+				},
+				"explanationMd": "Spark odkłada obliczenia do momentu akcji, co pozwala optymalizować cały plan. cache() jedynie oznacza dane do zapamiętania — materializacja następuje przy pierwszej akcji; bez cache każda akcja liczy lineage od nowa."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie operacje, które typowo powodują shuffle (przetasowanie danych między partycjami) w Sparku.",
+				"options": [
+					"filter() na pojedynczej kolumnie",
+					"groupBy() z agregacją po kluczu",
+					"map()/withColumn() przekształcające wartości wiersz po wierszu",
+					"join() dwóch dużych ramek danych po kluczu",
+					"repartition(n) zmieniające liczbę partycji"
+				],
+				"answer": {
+					"correct": [1, 3, 4]
+				},
+				"explanationMd": "groupBy, join dużych zbiorów i repartition wymagają przemieszczenia rekordów o tym samym kluczu na te same partycje (shuffle). filter i map działają lokalnie w obrębie partycji (narrow transformations)."
+			}
+		]
+	},
+	{
+		"slug": "ds-pyspark",
+		"name": "PySpark",
+		"trunk": "market",
+		"competencyName": "PySpark",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest SparkSession w PySpark?",
+				"options": [
+					"Sesją logowania użytkownika do interfejsu webowego Sparka",
+					"Punktem wejścia do API — obiektem, przez który tworzy się DataFrame'y i wykonuje zapytania",
+					"Mechanizmem przechowywania haseł do klastra",
+					"Wątkiem systemowym odpowiedzialnym za garbage collection"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "SparkSession (tworzony np. przez SparkSession.builder.getOrCreate()) to główny punkt wejścia do API DataFrame i SQL w PySpark."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Co zwraca wywołanie df.withColumn(\"nowa\", ...) w PySpark?",
+				"options": [
+					"Modyfikuje DataFrame df w miejscu i zwraca None",
+					"Zwraca pojedynczą wartość z pierwszego wiersza kolumny",
+					"Zwraca nowy DataFrame z dodaną lub nadpisaną kolumną, nie zmieniając oryginału",
+					"Zapisuje kolumnę bezpośrednio do pliku na dysku"
+				],
+				"answer": {
+					"correct": 2
+				},
+				"explanationMd": "DataFrame'y w Sparku są niemutowalne — withColumn zwraca nowy DataFrame z dodatkową (lub nadpisaną) kolumną, a oryginał pozostaje bez zmian."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie poprawne sposoby wybrania kolumny wiek z DataFrame df w PySpark (zakładając from pyspark.sql.functions import col).",
+				"options": [
+					"df.select(\"wiek\")",
+					"df.pick(\"wiek\")",
+					"df.select(col(\"wiek\"))",
+					"df.fetch_column(\"wiek\")"
+				],
+				"answer": {
+					"correct": [0, 2]
+				},
+				"explanationMd": "select przyjmuje zarówno nazwę kolumny jako string, jak i obiekt Column z funkcji col(). Metody pick i fetch_column nie istnieją w API DataFrame."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "DataFrame df ma kolumnę x z wartościami 1, 2, 3, 4, 5, 6 (po jednym wierszu). Jaką liczbę zwróci df.filter(col(\"x\") > 3).count()?",
+				"answer": {
+					"value": 3,
+					"tolerance": 0
+				},
+				"explanationMd": "Warunek x > 3 spełniają wartości 4, 5 i 6, więc count() zwróci 3."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o df.toPandas() w PySpark.",
+				"options": [
+					"toPandas() ściąga cały DataFrame do pamięci procesu drivera",
+					"toPandas() wykonuje się leniwie i nie uruchamia żadnych obliczeń",
+					"Wywołanie toPandas() na bardzo dużym zbiorze może spowodować błąd braku pamięci na driverze",
+					"Włączenie Apache Arrow może znacząco przyspieszyć konwersję do pandas"
+				],
+				"answer": {
+					"correct": [0, 2, 3]
+				},
+				"explanationMd": "toPandas() jest akcją: zbiera wszystkie dane na driver, co przy dużych zbiorach grozi OOM. Format kolumnowy Arrow przyspiesza serializację między JVM a Pythonem."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o UDF-ach (user-defined functions) w PySpark.",
+				"options": [
+					"Optymalizator Catalyst potrafi zajrzeć do wnętrza pythonowego UDF-a i go zoptymalizować jak funkcje wbudowane",
+					"Zwykłe pythonowe UDF-y są zazwyczaj wolniejsze niż odpowiedniki z pyspark.sql.functions z powodu serializacji między JVM a Pythonem",
+					"Pandas UDF-y (wektoryzowane) przetwarzają dane partiami z użyciem Apache Arrow, co ogranicza narzut serializacji",
+					"Jeśli istnieje funkcja wbudowana realizująca tę samą logikę, zwykle należy ją preferować zamiast UDF-a"
+				],
+				"answer": {
+					"correct": [1, 2, 3]
+				},
+				"explanationMd": "Pythonowy UDF jest dla Catalysta czarną skrzynką i wymaga kosztownej wymiany danych JVM–Python; pandas UDF-y łagodzą to dzięki Arrow i wektoryzacji, ale funkcje wbudowane pozostają pierwszym wyborem."
+			}
+		]
+	},
+	{
+		"slug": "ds-terraform",
+		"name": "Terraform",
+		"trunk": "market",
+		"competencyName": "Terraform",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest Terraform?",
+				"options": [
+					"Narzędziem Infrastructure as Code — infrastrukturę opisuje się deklaratywnie w plikach konfiguracyjnych",
+					"Systemem operacyjnym dla serwerów chmurowych",
+					"Bazą danych do przechowywania metryk infrastruktury",
+					"Frameworkiem do pisania testów jednostkowych w Pythonie"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Terraform pozwala zapisać pożądany stan infrastruktury (serwery, sieci, uprawnienia) w plikach konfiguracyjnych i automatycznie doprowadzić do niego środowisko u wielu dostawców chmury."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Co robi polecenie terraform plan?",
+				"options": [
+					"Natychmiast tworzy wszystkie zasoby opisane w konfiguracji",
+					"Pokazuje przewidywane zmiany (co zostanie utworzone, zmienione, usunięte) bez ich wykonywania",
+					"Usuwa całą infrastrukturę zarządzaną przez Terraform",
+					"Formatuje pliki konfiguracyjne zgodnie z konwencją"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "terraform plan porównuje konfigurację ze stanem i wypisuje planowane operacje; zmiany wykonuje dopiero terraform apply."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o podstawowym cyklu pracy z Terraformem.",
+				"options": [
+					"terraform plan modyfikuje infrastrukturę w chmurze",
+					"terraform init pobiera wymagane providery i inicjalizuje backend stanu",
+					"terraform apply tworzy i zmienia zasoby, doprowadzając infrastrukturę do stanu z konfiguracji",
+					"terraform destroy usuwa zasoby zarządzane przez daną konfigurację"
+				],
+				"answer": {
+					"correct": [1, 2, 3]
+				},
+				"explanationMd": "Cykl to init → plan → apply (destroy usuwa zarządzane zasoby). plan jest operacją tylko do odczytu — niczego nie zmienia."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Konfiguracja Terraforma zawiera zasób aws_instance z count = 3 oraz zasób aws_s3_bucket z count = 2. Stan jest pusty (nic wcześniej nie utworzono). Ile zasobów do utworzenia pokaże terraform plan?",
+				"answer": {
+					"value": 5,
+					"tolerance": 0
+				},
+				"explanationMd": "count powiela zasób: 3 instancje + 2 buckety = 5 zasobów do utworzenia (plan pokaże \"5 to add\")."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o pliku stanu (state) Terraforma.",
+				"options": [
+					"Stan mapuje zasoby z konfiguracji na rzeczywiste obiekty w infrastrukturze",
+					"Zdalny backend z blokadą (locking) zapobiega równoczesnym, konfliktowym modyfikacjom stanu przez wiele osób",
+					"Plik stanu nigdy nie zawiera danych wrażliwych, więc można go bezpiecznie publikować",
+					"Ręczna edycja pliku stanu w edytorze tekstu to zalecana codzienna praktyka",
+					"Zmiany wykonane ręcznie w konsoli chmury powodują dryf, który Terraform wykrywa podczas plan (po odświeżeniu stanu)"
+				],
+				"answer": {
+					"correct": [0, 1, 4]
+				},
+				"explanationMd": "Stan to źródło mapowania konfiguracja–rzeczywistość; zdalny backend z lockingiem chroni pracę zespołową, a plan/refresh ujawnia dryf. Stan może zawierać sekrety (np. hasła z outputów) i nie należy go edytować ręcznie — od tego są polecenia terraform state."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o tym, jak Terraform realizuje zmiany atrybutów istniejących zasobów.",
+				"options": [
+					"Terraform zawsze modyfikuje zasoby w miejscu, niezależnie od zmienianego atrybutu",
+					"Zmiana niektórych atrybutów wymusza zniszczenie i ponowne utworzenie zasobu (replacement)",
+					"terraform plan oznacza takie zasoby jako przeznaczone do wymiany (destroy and then create replacement)",
+					"Ustawienie lifecycle { prevent_destroy = true } blokuje operacje, które usunęłyby dany zasób"
+				],
+				"answer": {
+					"correct": [1, 2, 3]
+				},
+				"explanationMd": "Część atrybutów (np. tych niezmienialnych po stronie dostawcy) wymaga odtworzenia zasobu — plan jawnie to sygnalizuje. prevent_destroy zabezpiecza krytyczne zasoby (np. bazy danych) przed przypadkowym usunięciem."
+			}
+		]
+	},
+	{
+		"slug": "ds-kafka",
+		"name": "Kafka",
+		"trunk": "market",
+		"competencyName": "Kafka",
+		"diagnostic": true,
+		"items": [
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest topic w Apache Kafka?",
+				"options": [
+					"Nazwanym strumieniem (logiem) rekordów, do którego producenci piszą, a konsumenci z niego czytają",
+					"Pojedynczym serwerem w klastrze Kafki",
+					"Formatem kompresji wiadomości",
+					"Narzędziem do monitorowania opóźnień konsumentów"
+				],
+				"answer": {
+					"correct": 0
+				},
+				"explanationMd": "Topic to logiczny, nazwany strumień rekordów podzielony na partycje — producenci dopisują do niego wiadomości, a konsumenci je odczytują."
+			},
+			{
+				"difficulty": 1,
+				"type": "single_choice",
+				"stem": "Czym jest offset w Kafce?",
+				"options": [
+					"Maksymalnym rozmiarem pojedynczej wiadomości w bajtach",
+					"Rosnącym numerem pozycji rekordu w obrębie partycji, po którym konsument wie, dokąd doczytał",
+					"Czasem oczekiwania producenta na potwierdzenie zapisu",
+					"Liczbą brokerów w klastrze"
+				],
+				"answer": {
+					"correct": 1
+				},
+				"explanationMd": "Offset to sekwencyjny numer rekordu w partycji; konsumenci zapamiętują (commitują) offsety, aby po restarcie wznowić czytanie od właściwego miejsca."
+			},
+			{
+				"difficulty": 2,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o grupach konsumentów (consumer groups) w Kafce.",
+				"options": [
+					"Każdy konsument w tej samej grupie otrzymuje wszystkie wiadomości z topiku",
+					"W obrębie jednej grupy dana partycja jest czytana przez co najwyżej jednego konsumenta",
+					"Grupy konsumentów pozwalają skalować odczyt topiku poprzez podział partycji między instancje",
+					"Konsumenci ponad liczbę partycji w topiku pozostają bezczynni"
+				],
+				"answer": {
+					"correct": [1, 2, 3]
+				},
+				"explanationMd": "Wewnątrz grupy partycje są dzielone między konsumentów (jedna partycja → maks. jeden konsument z grupy), co umożliwia skalowanie; nadmiarowi konsumenci nie dostają partycji. Wszystkie wiadomości otrzymują dopiero osobne grupy."
+			},
+			{
+				"difficulty": 2,
+				"type": "numeric",
+				"stem": "Topic w Kafce ma 12 partycji, a grupa konsumentów liczy 4 instancje. Przy równym przydziale ile partycji obsługuje każdy konsument?",
+				"answer": {
+					"value": 3,
+					"tolerance": 0
+				},
+				"explanationMd": "Partycje dzielone są między członków grupy: 12 / 4 = 3 partycje na konsumenta."
+			},
+			{
+				"difficulty": 3,
+				"type": "multi_choice",
+				"stem": "Zaznacz wszystkie prawdziwe stwierdzenia o semantyce dostarczania wiadomości w Kafce.",
+				"options": [
+					"Przy at-most-once wiadomości mogą zostać utracone, ale nie zduplikowane",
+					"Przy at-least-once wiadomości mogą zostać dostarczone wielokrotnie, np. po ponowieniu przez producenta",
+					"Semantyka exactly-once w Kafce opiera się m.in. na producencie idempotentnym i transakcjach",
+					"At-least-once gwarantuje brak duplikatów po stronie konsumenta"
+				],
+				"answer": {
+					"correct": [0, 1, 2]
+				},
+				"explanationMd": "at-most-once ryzykuje utratę, at-least-once — duplikaty (retry po braku potwierdzenia), a exactly-once wymaga idempotencji producenta i transakcji. Ostatnie stwierdzenie przeczy definicji at-least-once."
+			},
+			{
+				"difficulty": 3,
+				"type": "numeric",
+				"stem": "Topic ma replication factor 3, ustawiono min.insync.replicas = 2, a producent wysyła z acks=all. Przy acks=all lider czeka na potwierdzenie od wszystkich replik aktualnie w ISR. Do jakiej minimalnej liczby replik in-sync (łącznie z liderem) może skurczyć się ISR, aby zapis nadal był przyjmowany?",
+				"answer": {
+					"value": 2,
+					"tolerance": 0
+				},
+				"explanationMd": "min.insync.replicas = 2 wyznacza dolną granicę liczebności ISR dla zapisów z acks=all: przy pełnym ISR potwierdzają wszystkie 3 repliki, ale zapis pozostaje możliwy, dopóki ISR ma co najmniej 2 repliki (lider + 1 follower). Poniżej tej granicy broker odrzuca zapis (NotEnoughReplicas)."
+			}
+		]
+	}
+]

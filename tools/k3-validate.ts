@@ -62,6 +62,12 @@ const TENANT_TABLES = [
 	"career_helper_sessions",
 	"career_helper_turns",
 	"student_career_paths",
+	// A5/1.11 — sesje diagnozy (migracja 0030, spec v0.2 §3). Dane studenta:
+	// assessment_sessions = grant TYLKO SELECT dla app_student (wzorzec 0025),
+	// zapisy owner-side; assessment_answers = wariant DENY (zero grantów app_*,
+	// strażnik #13a) — obie z pełnym wzorcem RLS (ENABLE+FORCE+owner_passthrough).
+	"assessment_sessions",
+	"assessment_answers",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.
@@ -118,6 +124,13 @@ const K_PUB_TABLES = [
 	// (strażnik #13a), czyta wyłącznie server-side runner jako owner.
 	// Uzasadnienie: rls-matrix §4.
 	"project_hidden_tests",
+	// A5/1.11 — bank pytań (migracja 0030, spec v0.2 §2.2). Globalny katalog
+	// treści BEZ tenant_id, ale wariant DENY jak project_hidden_tests:
+	// answer_json to sekret dokładnie PRZED studentem (memoryzacja przed
+	// mastery gate 1E.3) → zero grantów app_* (strażnik #13a); pytania
+	// serwuje wyłącznie API per sesja (owner). Uzasadnienie: rls-matrix §4.
+	"question_concepts",
+	"question_items",
 ] as const;
 
 async function main() {
@@ -193,10 +206,10 @@ async function main() {
 				`SELECT count(*)::int AS c
 				   FROM information_schema.role_table_grants
 				  WHERE grantee IN ('app_student', 'app_faculty')
-				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs', 'job_market_data_bak', 'project_hidden_tests')`,
+				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs', 'job_market_data_bak', 'project_hidden_tests', 'question_concepts', 'question_items', 'assessment_answers')`,
 			);
 			check(
-				"13a. AG.3/B6 — zero grantów app_student/app_faculty na tabelach DENY (staging/runy/ukryte testy)",
+				"13a. AG.3/B6/A5 — zero grantów app_student/app_faculty na tabelach DENY (staging/runy/ukryte testy/bank pytań/odpowiedzi)",
 				r13a.rows[0].c === 0,
 				`znaleziono ${r13a.rows[0].c} grantów ról aplikacyjnych (oczekiwano 0)`,
 			);

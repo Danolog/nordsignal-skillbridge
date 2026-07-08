@@ -159,8 +159,11 @@ Wejście: Faza 0 zielona. Cel: receipt obronny wobec sceptycznego rekrutera.
   Harmonogram spina się z modułami curriculum (1E.6), nie tylko projektami.
 
 **Bramka wyjścia F1:** receipt = sandbox (1.9) + obrona (1.16) + recenzja
-człowieka (1.5); zero mapy wyłącznie z samooceny (1.12); model kariery w DB
-(1.0); placement mierzony (1.17).
+człowieka (1.5); zero mapy wyłącznie z samooceny (1.12) **[ZMIANA — decyzja
+Darka 2026-07-08 przy 1.11: kryterium zawężone do ścieżki pilotażowej DS
+(spójnie z pilotażem 1E); pozostałe ścieżki mają samoocenę jako jawny
+fallback do czasu kuracji banku pytań (diagnoza degraduje do `uncovered`,
+nie udaje pomiaru)]**; model kariery w DB (1.0); placement mierzony (1.17).
 
 ---
 

@@ -28,7 +28,8 @@
 		"db:push": "tsx tools/db-guard-push.ts",
 		"db:studio": "tsx tools/db-guard-studio.ts",
 		"db:seed": "tsx tools/db-guard-seed.ts",
-		"db:ingest-career-model": "tsx tools/ingest-career-model.ts"
+		"db:ingest-career-model": "tsx tools/ingest-career-model.ts",
+		"db:ingest-question-bank": "tsx tools/ingest-question-bank.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^3.0.58",
