@@ -432,7 +432,21 @@ flagi AG — migracje już są.
    (rejestracja → DS → zaznacz → test) — dowody E2E są integracyjne+komponentowe,
    przeglądarkowego przejścia nowego UI nikt jeszcze nie zrobił.
 
-21. **NASTĘPNE:** C11 (tutor sokratyczny, 1.13–1.14), B7 (viva, 1.15–1.16),
+21. **Hotfix po prod-smoke Darka ✅ zmergowany (#153, squash `c11bbe7`)**:
+   test z SQL na ŚWIEŻYM koncie → po odpowiedziach POST /api/onboarding
+   padał 409 i kreator wracał do kroku 3. Przyczyna: prowizoryczny wiersz
+   studenta (autosave kroku 1) ma `careerGoal=""` do finalnego POST, a
+   /api/assessment/start snapshotował cel Z WIERSZA → sesja z celem "" ≠
+   zapis z realnym celem → walidacja 409. Dotykało KAŻDE świeże konto
+   przez picker (krok 0 przez Pomocnika zapisuje cel — stąd pierwotnie
+   złudny trop „tylko change-mode"). Fix: /start przyjmuje `careerGoal`
+   Z KREATORA (fallback = wiersz; POST dalej wymaga zgodności z sesją —
+   zero eskalacji, poziomy mierzone per kompetencja) + PII-safe log powodu
+   409 (debugowaliśmy na ślepo) + test regresu (DB z innym celem niż
+   kreator → 200). Bramki: unit 1051/1051, integration 100/100, BUILD_OK.
+   **Czeka na powtórny smoke przeglądarkowy Darka po deployu.**
+
+22. **NASTĘPNE:** C11 (tutor sokratyczny, 1.13–1.14), B7 (viva, 1.15–1.16),
    cross-cutting 1.17/1.18.
 
 ### Stan bloków Fazy 1 (2026-07-08 wieczorem)
