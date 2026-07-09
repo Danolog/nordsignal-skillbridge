@@ -498,9 +498,35 @@ flagi AG — migracje już są.
    - **Przed zapaleniem FLAG_SOCRATIC_TUTOR na prod: migracja 0031** (merge
      był bezpieczny przed migracją — trasa za zgaszoną flagą nie dotyka DB).
 
-24. **NASTĘPNE:** C11/1.14 (panel czatu tutora w widoku projektu — czysto UI,
-   endpoint z GET-em do rehydracji gotowy), potem B7 (viva, 1.15–1.16),
-   cross-cutting 1.17/1.18.
+24. **C11/1.14 ✅ zmergowane (#155, squash `d9cc57e`; CI zielone za pierwszym
+   podejściem) — BLOK C11 DOMKNIĘTY (1.13 #154 + 1.14 #155)**. Panel czatu
+   tutora w widoku projektu (`TutorPanel` w project-detail; flaga czytana
+   server-side w page.tsx → prop, rejestr flag nie wycieka do klienta):
+   GET = rehydracja z tutor_turns, POST = tura blokująca ze spinnerem
+   (sędzia ocenia całość zanim student zobaczy); stany kontraktu 1:1
+   (crisis 116 123 + dymek zdjęty, 409 limit chowa pole, 429/5xx wiadomość
+   wraca do pola + toast, licznik x/30); wzorce Pomocnika (auto-scroll
+   z guardem, fokus, role=log).
+   - **DoD „E2E; licznik kosztu rośnie" DOWIEDZIONE**: spec Playwright
+     `60-c11-tutor.spec.ts` (@dbwrite @llm, zawory jak B4) zielony na ŻYWYCH
+     modelach (27,5 s): login → projekt → pytanie → odpowiedź sokratyczna →
+     ai_usage_ledger +2 (turn Sonnet $0.0084 + judge Haiku $0.0017) → reload
+     odtwarza rozmowę z bazy.
+   - Unit 1077/1077 (10 testów panelu; flake stubu scrollTo w jsdom
+     zdiagnozowany do przyczyny — spóźniony passive effect po delete
+     z afterEach — naprawiony stubem per plik, 15/15 zielonych);
+     integration 110/110 (asercje 1.13 zawężone do studentów testu).
+   - Zaszłości naprawione przy pierwszym realnym biegu e2e-pw od dawna:
+     `getByLabel("Hasło")` łapał przycisk „Pokaż hasło" (exact: true
+     w helpers/auth + spec 01/50); `PLAYWRIGHT_CHANNEL=chrome` opt-in na
+     systemową przeglądarkę (Playwright 1.60 bez chromium dla ubuntu 26.04
+     / WSL Darka); CI bez zmian. Konta e2e zasiane w bazie testowej 5433
+     (`pnpm seed:e2e` z env z .env.test).
+   - **Aktywacja prod = release całego C11**: migracja 0031 +
+     `FLAG_SOCRATIC_TUTOR` (akcja Darka, bez pośpiechu).
+
+25. **NASTĘPNE:** B7 (obrona ustna viva: 1.15 design spike [SIGN-OFF Darka]
+   → 1.16 krok 6 pipeline'u), potem cross-cutting 1.17/1.18.
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
@@ -510,9 +536,9 @@ flagi AG — migracje już są.
 - **Blok A5** ✅ CAŁY (1.10 #150 · 1.11 #151 · 1.12 #152) — LIVE na prod
   (jedyny blok F1 z zapaloną flagą; smoke przeglądarkowy nowego kreatora
   do kliknięcia).
-- **Blok C11** W TOKU: 1.13 ✅ (#154) — aktywacja = 0031 + FLAG_SOCRATIC_TUTOR;
-  następne 1.14 (panel czatu, czysto UI).
-- Baseline main: tsc 0, Biome 0, unit 1067/1067, integration 110/110,
+- **Blok C11** ✅ CAŁY (1.13 #154 + 1.14 #155, w tym E2E na żywych modelach) —
+  aktywacja = migracja 0031 + FLAG_SOCRATIC_TUTOR.
+- Baseline main: tsc 0, Biome 0, unit 1077/1077, integration 110/110,
   k3 zielony (16 tabel tenant), BUILD_OK; migracje: **test DB = 0031, prod =
   0030** (0031 czeka przed zapaleniem FLAG_SOCRATIC_TUTOR; bank zaingestowany,
   FLAG_DIAGNOSTIC_ASSESSMENT ON na Production+Preview).
