@@ -340,10 +340,18 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    miała wyłącznie 'self'); test integracyjny constraintu na realnej bazie.
    Zero zmian zachowania (nic jeszcze nie pisze 'diagnostic').
 
-### KOLEJKA MIGRACJI PROD — czeka 0031 (2026-07-09, po #154)
-Prod = **0030**; lokalna/test = **0031** (`tutor_turns`). 0031 potrzebna
-DOPIERO przed zapaleniem `FLAG_SOCRATIC_TUTOR` (trasa za zgaszoną flagą nie
-dotyka DB — merge był bezpieczny). Sesja migracyjna Darka 0027–0030
+### KOLEJKA MIGRACJI PROD — PUSTA (2026-07-09 wieczorem)
+Prod = **0031** (pełna parzystość z bazą testową). Migracja 0031 wgrana przez
+Darka 2026-07-09 (backup gałęzią Neona `backup/pre-0031-2026-07-09`, dziennik
+PRZED 31/1783537805664 → PO 32/1783610643728, weryfikacja RLS t/t + polityki
++ granty OK). **FLAG_SOCRATIC_TUTOR=1 na Production+Preview ✅ (Oliver,
+2026-07-09):** Production przez vercel CLI; Preview przez REST API
+(`POST /v10/projects/{id}/env` z tokenem CLI — obejście buga pętli
+interaktywnej CLI 54.5.0, które działa, w odróżnieniu od `--value --yes`);
+redeploy prod (alias skill-bridge-ai-seven.vercel.app). Smoke: GET/POST
+trasy tutora bez sesji 404→**401** (flaga żyje, bramka auth działa),
+home/login 200, runtime errors: zero. **BLOK C11 LIVE NA PRODZIE** —
+drugi blok F1 z zapaloną flagą (po A5). Sesja migracyjna Darka 0027–0030
 2026-07-09: backup gałęzią Neona (`backup/pre-0027-0030-2026-07-09`) →
 kontrola dziennika PRZED (27 wpisów, when=1783463902949 — zgodne) →
 `drizzle-kit migrate` (string DIRECT, terminal Darka; uwaga: spinner NIE
@@ -536,12 +544,11 @@ flagi AG — migracje już są.
 - **Blok A5** ✅ CAŁY (1.10 #150 · 1.11 #151 · 1.12 #152) — LIVE na prod
   (jedyny blok F1 z zapaloną flagą; smoke przeglądarkowy nowego kreatora
   do kliknięcia).
-- **Blok C11** ✅ CAŁY (1.13 #154 + 1.14 #155, w tym E2E na żywych modelach) —
-  aktywacja = migracja 0031 + FLAG_SOCRATIC_TUTOR.
+- **Blok C11** ✅ CAŁY i **LIVE NA PRODZIE** (1.13 #154 + 1.14 #155; migracja
+  0031 + FLAG_SOCRATIC_TUTOR=1 Production+Preview, smoke czysty 2026-07-09).
 - Baseline main: tsc 0, Biome 0, unit 1077/1077, integration 110/110,
-  k3 zielony (16 tabel tenant), BUILD_OK; migracje: **test DB = 0031, prod =
-  0030** (0031 czeka przed zapaleniem FLAG_SOCRATIC_TUTOR; bank zaingestowany,
-  FLAG_DIAGNOSTIC_ASSESSMENT ON na Production+Preview).
+  k3 zielony (16 tabel tenant), BUILD_OK; migracje: **test DB = prod = 0031**
+  (bank zaingestowany, FLAG_DIAGNOSTIC_ASSESSMENT i FLAG_SOCRATIC_TUTOR ON).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
