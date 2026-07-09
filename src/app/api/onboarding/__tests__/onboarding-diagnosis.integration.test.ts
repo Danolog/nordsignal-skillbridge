@@ -343,6 +343,56 @@ dBack("A5/1.12 · diagnoza → onboarding → luki/mapa/pokrycie (realna baza)",
 		expect(wrongGoal.status).toBe(409);
 	});
 
+	it("tryb zmiany kierunku: cel z KREATORA w start → sesja spójna z zapisem (regres 409)", async () => {
+		// Scenariusz z prod-smoke Darka (2026-07-09): wiersz studenta trzyma STARY cel
+		// (nowy żyje w stanie kreatora aż do POST), a diagnoza rusza dla NOWEGO celu.
+		// Przed fixem /start snapshotował cel z DB → POST z nowym celem padał 409.
+		const NEW_GOAL = "Ścieżka A512 Nowa";
+		await db.execute(
+			sql`INSERT INTO job_market_data (career_goal, competency_name, demand_percentage, category)
+			    VALUES (${NEW_GOAL}, ${COMP_A}, 55, 'II')`,
+		);
+		try {
+			// DB: student ma STARY cel (GOAL); start dostaje NOWY cel z kreatora.
+			const started = await (
+				await startPOST(postJson({ competencyNames: [COMP_A], careerGoal: NEW_GOAL }))
+			).json();
+			// Komplet odpowiedzi (A: d2✓ → d3✓ → poziom 4).
+			let res = await answerPOST(
+				postJson({ questionItemId: started.question.itemId, answer: { value: "7" } }),
+				ctxFor(started.sessionId),
+			);
+			let body = await res.json();
+			res = await answerPOST(
+				postJson({ questionItemId: body.question.itemId, answer: { selected: [0, 2] } }),
+				ctxFor(started.sessionId),
+			);
+			body = await res.json();
+			expect(body.done).toBe(true);
+			await completePOST(postJson({}), ctxFor(started.sessionId));
+
+			// POST z NOWYM celem (jak kreator w trybie zmiany) — musi przejść.
+			const onboardingRes = await onboardingPOST(
+				postJson({
+					university: "Testowa",
+					fieldOfStudy: "Informatyka",
+					semester: 4,
+					careerGoal: NEW_GOAL,
+					syllabusText: "",
+					competencies: [{ name: COMP_A, marketPercentage: 55 }],
+					diagnosticSessionId: started.sessionId,
+				}),
+			);
+			expect(onboardingRes.status).toBe(200);
+			const rows = await competencyRows();
+			expect(rows).toEqual([{ name: COMP_A, status: "acquired", level: 4, method: "diagnostic" }]);
+		} finally {
+			// Przywróć stan dla kolejnych testów (cel studenta z powrotem na GOAL).
+			await db.execute(sql`UPDATE students SET career_goal = ${GOAL} WHERE id = ${studentId}`);
+			await db.execute(sql`DELETE FROM job_market_data WHERE career_goal = ${NEW_GOAL}`);
+		}
+	});
+
 	it("flaga off: sessionId ignorowany → wpis bez poziomu odrzucony (zachowanie sprzed 1.12)", async () => {
 		vi.stubEnv("FLAG_DIAGNOSTIC_ASSESSMENT", "0");
 		try {

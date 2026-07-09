@@ -117,6 +117,21 @@ export async function POST(req: Request) {
 			assessment.careerGoal !== careerGoal ||
 			!result
 		) {
+			// Obserwowalność (lekcja smoke 1.12: 409 bez logu = ślepe debugowanie).
+			// PII-safe: sam powód odrzucenia, bez treści sesji i nazw kompetencji.
+			logError("onboarding", new Error("diagnostic session rejected"), {
+				phase: "diagnosticSession",
+				reason: !assessment
+					? "not_found"
+					: assessment.studentUserId !== userId
+						? "wrong_owner"
+						: assessment.status !== "completed"
+							? `status_${assessment.status}`
+							: assessment.careerGoal !== careerGoal
+								? "career_goal_mismatch"
+								: "no_result",
+				userId,
+			});
 			return NextResponse.json(
 				{ error: "Sesja diagnozy nie pasuje do tego zapisu — przejdź test ponownie." },
 				{ status: 409 },

@@ -374,7 +374,9 @@ export function OnboardingWizard({
 			const res = await fetch("/api/assessment/start", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ competencyNames: names }),
+				// careerGoal Z KREATORA — w trybie „zmień kierunek" DB trzyma stary cel
+				// aż do POST /api/onboarding; sesja musi nieść ten sam cel co zapis.
+				body: JSON.stringify({ competencyNames: names, careerGoal: profile.careerGoal }),
 			});
 			if (res.status === 422) {
 				// Bank nie pokrywa tej ścieżki (partia 1 = DS) → jawny fallback do samooceny.

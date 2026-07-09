@@ -42,6 +42,14 @@ import { logError } from "@/lib/log";
 
 const StartSchema = z.object({
 	competencyNames: z.array(z.string().min(1).max(200)).min(1).max(60),
+	// [FIX po smoke 1.12] Cel kariery Z KREATORA. W trybie „zmień kierunek" nowy
+	// cel żyje wyłącznie w stanie wizarda aż do finalnego POST /api/onboarding —
+	// snapshot z wiersza studenta (stary cel) rozjeżdżał się z payloadem zapisu
+	// i walidacja sesji ubijała zapis 409-tką. Cel służy TYLKO spójności
+	// test↔zapis (POST wymaga zgodności z sesją) i scope'owaniu odcisku wejścia —
+	// poziomy mierzone są per kompetencja, więc deklaracja klienta niczego nie
+	// eskaluje. Brak pola = wiersz studenta (zgodność wstecz).
+	careerGoal: z.string().trim().min(1).max(200).optional(),
 });
 
 function isUniqueViolation(err: unknown): boolean {
@@ -59,6 +67,7 @@ export async function POST(req: Request) {
 	if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	let competencyNames: string[];
+	let requestedCareerGoal: string | undefined;
 	try {
 		const parsed = StartSchema.safeParse(await req.json());
 		if (!parsed.success) {
@@ -68,6 +77,7 @@ export async function POST(req: Request) {
 			);
 		}
 		competencyNames = parsed.data.competencyNames;
+		requestedCareerGoal = parsed.data.careerGoal;
 	} catch {
 		return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 	}
@@ -77,7 +87,8 @@ export async function POST(req: Request) {
 		return NextResponse.json({ error: "Najpierw uzupełnij profil studenta." }, { status: 404 });
 	}
 
-	const inputHash = computeInputHash(student.careerGoal, competencyNames);
+	const careerGoal = requestedCareerGoal ?? student.careerGoal;
+	const inputHash = computeInputHash(careerGoal, competencyNames);
 
 	try {
 		// Aktywna sesja: wznowienie na zamrożonym planie ALBO abandon (mismatch/TTL).
@@ -145,7 +156,7 @@ export async function POST(req: Request) {
 			studentId: student.id,
 			tenantId: student.tenantId,
 			kind: "diagnostic",
-			careerGoal: student.careerGoal,
+			careerGoal,
 			inputHash,
 			planJson: plan,
 		});
