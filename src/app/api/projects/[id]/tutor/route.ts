@@ -16,11 +16,12 @@ import {
 import { parseRepoUrl } from "@/lib/ai/sanitize";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { projectSubmissions, projects, students, tutorTurns } from "@/lib/db/schema";
+import { projectSubmissions, projects, students, tutorTurns, vivaSessions } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
+import { isVivaSessionExpired } from "@/lib/viva/service";
 
 // Tura = pobranie repo (best-effort) + Sonnet + sędzia Haiku (+ ew. regeneracja).
 export const maxDuration = 60;
@@ -152,12 +153,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 		nextTurnIndex: number;
 		turnsUsed: number;
 		submission: {
+			id: string;
 			repoUrl: string | null;
 			status: string;
 			score: number | null;
 			needsHumanReview: boolean;
 			aiReviewJson: unknown;
 		} | null;
+		/** B7 (ADR-013 D2.2): otwarta sesja obrony blokuje tutora dla projektu. */
+		vivaActive: boolean;
 	};
 	let prep: Prep | { limit: true };
 	try {
@@ -183,6 +187,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 						eq(projectSubmissions.projectId, projectId),
 					),
 					columns: {
+						id: true,
 						repoUrl: true,
 						status: true,
 						score: true,
@@ -191,11 +196,30 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 					},
 				});
 
+				// B7 (ADR-013 D2.2): tutor milczy w trakcie OTWARTEJ obrony (in_progress
+				// w oknie TTL). Wygaśnięcie liczone wirtualnie (bez zapisu — trasy vivy
+				// rozstrzygają leniwie; porzucona sesja NIE blokuje tutora). Odczyt przez
+				// RLS: student_sees_own FOR SELECT na viva_sessions.
+				let vivaActive = false;
+				if (submission && isFeatureEnabled("vivaDefense")) {
+					const [open] = await tx
+						.select({ startedAt: vivaSessions.startedAt })
+						.from(vivaSessions)
+						.where(
+							and(
+								eq(vivaSessions.submissionId, submission.id),
+								eq(vivaSessions.status, "in_progress"),
+							),
+						);
+					vivaActive = Boolean(open) && !isVivaSessionExpired(open?.startedAt ?? null);
+				}
+
 				return {
 					history: history.map((h) => ({ role: h.role, content: h.content })),
 					nextTurnIndex: history.reduce((max, h) => Math.max(max, h.turnIndex), 0) + 1,
 					turnsUsed,
 					submission: submission ?? null,
+					vivaActive,
 				};
 			},
 		);
@@ -206,6 +230,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 	if ("limit" in prep) {
 		return NextResponse.json(
 			{ error: "Turn limit reached", maxTurns: MAX_TUTOR_TURNS },
+			{ status: 409 },
+		);
+	}
+	if (prep.vivaActive) {
+		return NextResponse.json(
+			{ error: "Trwa obrona ustna tego projektu — tutor wróci po jej zakończeniu." },
 			{ status: 409 },
 		);
 	}

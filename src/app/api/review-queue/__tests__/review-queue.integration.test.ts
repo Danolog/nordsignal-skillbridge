@@ -174,6 +174,9 @@ dBack(
 						"submissionId",
 						"submittedAt",
 						"tenantSlug",
+						// B7/1.16a: projekcja stanu obrony (state/score) — nie zawiera
+						// danych osobowych studenta ani surowych odpowiedzi.
+						"viva",
 					].sort(),
 				);
 			}

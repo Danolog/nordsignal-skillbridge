@@ -20,6 +20,13 @@ vi.mock("@/lib/sandbox/run-hidden-tests", () => ({
 	runHiddenTests: (...a: unknown[]) => mockRunHiddenTests(...(a as [unknown])),
 }));
 
+// B7/1.16a: generator pytań obrony mockowany na granicy modułu (jego kontrakt
+// ma własną suitę w src/lib/viva/__tests__) — tu testujemy WIRING kroku 6-prep.
+const mockGenerateVivaQuestions = vi.fn();
+vi.mock("@/lib/viva/generate-questions", () => ({
+	generateVivaQuestions: (...a: unknown[]) => mockGenerateVivaQuestions(...(a as [unknown])),
+}));
+
 import { generateText } from "ai";
 import { fetchBlobText, fetchCommits, fetchRepoMeta, fetchRepoTree } from "../github";
 import { normalizeRubric, runReviewPipeline } from "../index";
@@ -277,5 +284,104 @@ describe("runReviewPipeline — pełny potok (mock GitHub + model)", () => {
 		expect(r.needsHumanReview).toBe(true); // ...ale człowiek potwierdza (fail-closed)
 		expect(r.flags.some((f) => f.code === "run_unavailable")).toBe(true);
 		expect(r.aiReviewJson.sandboxRun?.reason).toBe("budget");
+	});
+});
+
+describe("runReviewPipeline — krok 6-prep: generacja pytań obrony (B7/1.16a, ADR-013)", () => {
+	const VIVA_ARG = { attribution: { studentId: "s-1", tenantId: "t-1" } };
+	const QUESTIONS = [
+		{ position: 0, question: "Dlaczego merge zamiast join?", filePath: "main.py" },
+		{ position: 1, question: "Co przy brakach danych?", filePath: "main.py" },
+		{ position: 2, question: "Skąd taka agregacja?", filePath: "README.md" },
+	];
+
+	beforeEach(() => {
+		mockMeta.mockResolvedValue({ default_branch: "main" });
+		mockTree.mockResolvedValue({
+			tree: [
+				{ path: "README.md", type: "blob", size: 50, sha: "s1" },
+				{ path: "main.py", type: "blob", size: 30, sha: "s2" },
+			],
+		});
+		mockBlob.mockImplementation(async (_c, sha) => (sha === "s1" ? "# Cel\nx" : "print(1)"));
+		mockCommits.mockResolvedValue([
+			{ sha: "1", commit: { author: { date: "2026-06-01T10:00:00Z", email: "a@x" } } },
+		]);
+		mockGenerateVivaQuestions.mockResolvedValue(QUESTIONS);
+	});
+
+	function highScores() {
+		mockGenerateText.mockResolvedValue({
+			text: modelOutput([
+				{ id: "c0", score: 45 },
+				{ id: "c1", score: 27 },
+				{ id: "c2", score: 18 },
+			]),
+		} as TextReturn);
+	}
+
+	it("viva + werdykt 'verified' → generator dostaje TEN SAM artefakt co ocena; vivaPrep w wyniku", async () => {
+		highScores();
+		const r = await runReviewPipeline({
+			repoUrl: "https://github.com/u/r",
+			notebookUrl: null,
+			rubricJson,
+			deliverableType: "code",
+			viva: VIVA_ARG,
+		});
+		expect(r.status).toBe("verified");
+		expect(r.vivaPrep).toEqual({ questions: QUESTIONS });
+		const args = mockGenerateVivaQuestions.mock.calls[0][0] as {
+			artifact: string;
+			deliverableType: string;
+			attribution: unknown;
+		};
+		// Artefakt kroku 1 (zero dryfu): zawiera pobrane pliki, nie świeży fetch.
+		expect(args.artifact).toContain("main.py");
+		expect(args.artifact).toContain("print(1)");
+		expect(args.deliverableType).toBe("code");
+		expect(args.attribution).toEqual(VIVA_ARG.attribution);
+	});
+
+	it("viva + werdykt NIE-'verified' → generator NIE wołany, brak vivaPrep", async () => {
+		mockGenerateText.mockResolvedValue({
+			text: modelOutput([{ id: "c0", score: 5 }]),
+		} as TextReturn);
+		const r = await runReviewPipeline({
+			repoUrl: "https://github.com/u/r",
+			notebookUrl: null,
+			rubricJson,
+			deliverableType: "code",
+			viva: VIVA_ARG,
+		});
+		expect(r.status).not.toBe("verified");
+		expect(mockGenerateVivaQuestions).not.toHaveBeenCalled();
+		expect(r.vivaPrep).toBeUndefined();
+	});
+
+	it("BEZ arg viva (flaga off) → generator nie istnieje w przebiegu, wynik bajt-w-bajt bez vivaPrep", async () => {
+		highScores();
+		const r = await runReviewPipeline({
+			repoUrl: "https://github.com/u/r",
+			notebookUrl: null,
+			rubricJson,
+			deliverableType: "code",
+		});
+		expect(r.status).toBe("verified");
+		expect(mockGenerateVivaQuestions).not.toHaveBeenCalled();
+		expect("vivaPrep" in r).toBe(false);
+	});
+
+	it("generator fail-closed (null) → vivaPrep.questions=null (trasa robi inconclusive)", async () => {
+		highScores();
+		mockGenerateVivaQuestions.mockResolvedValue(null);
+		const r = await runReviewPipeline({
+			repoUrl: "https://github.com/u/r",
+			notebookUrl: null,
+			rubricJson,
+			deliverableType: "code",
+			viva: VIVA_ARG,
+		});
+		expect(r.vivaPrep).toEqual({ questions: null });
 	});
 });

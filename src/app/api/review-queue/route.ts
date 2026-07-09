@@ -27,7 +27,7 @@
 // Flaga humanReviewQueue off → 404 (rodzina B8 nie istnieje).
 // ============================================================================
 
-import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { projectSubmissions, projects, submissionReviews, tenants } from "@/lib/db/schema";
@@ -43,6 +43,8 @@ type QueueRow = {
 	score: number | null;
 	machineStatus: string;
 	submittedAt: Date | null;
+	/** B7/1.16a: projekcja stanu obrony (aiReviewJson.viva) — null gdy brak. */
+	viva: unknown;
 };
 
 /** Wspólny kształt zapytania kolejki — tx = db (operator) albo tx tenantowe (faculty). */
@@ -56,6 +58,9 @@ function queueQuery(tx: any, tenantId?: string): Promise<QueueRow[]> {
 			score: projectSubmissions.score,
 			machineStatus: projectSubmissions.status,
 			submittedAt: projectSubmissions.submittedAt,
+			// B7/1.16a (ADR-013): recenzent widzi stan obrony przy decyzji (projekcja,
+			// nie surowe odpowiedzi — te przez GET /api/review-queue/[id]/viva).
+			viva: sql`${projectSubmissions.aiReviewJson} -> 'viva'`,
 		})
 		.from(projectSubmissions)
 		.leftJoin(submissionReviews, eq(submissionReviews.submissionId, projectSubmissions.id))
@@ -119,6 +124,7 @@ export async function GET() {
 				// Werdykt maszyny — rekomendacja dla recenzenta (approve/borderline/reject).
 				machineStatus: r.machineStatus,
 				submittedAt: r.submittedAt,
+				viva: r.viva ?? null,
 			})),
 		});
 	} catch (err) {

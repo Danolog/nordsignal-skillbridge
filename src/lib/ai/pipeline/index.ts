@@ -28,6 +28,7 @@ import type {
 } from "@/lib/ai/pipeline/types";
 import { parseRepoUrl } from "@/lib/ai/sanitize";
 import { type HiddenTestSuite, runHiddenTests } from "@/lib/sandbox/run-hidden-tests";
+import { generateVivaQuestions } from "@/lib/viva/generate-questions";
 
 type RawRubricItem = { criterion?: unknown; weight?: unknown; description?: unknown };
 
@@ -122,6 +123,12 @@ export async function runReviewPipeline(args: {
 	rubricJson: unknown;
 	deliverableType?: DeliverableType;
 	sandbox?: { studentId: string; suite: HiddenTestSuite };
+	/**
+	 * B7/1.16a (ADR-013): krok 6-prep — generacja pytań obrony. Podaje trasa
+	 * submitu TYLKO za flagą vivaDefense; brak = zero zmian (żadnego wywołania,
+	 * żadnego pola vivaPrep — zachowanie sprzed B7).
+	 */
+	viva?: { attribution: { studentId: string; tenantId: string } };
 }): Promise<PipelineResult> {
 	const deliverableType: DeliverableType = args.deliverableType ?? "mixed";
 	const { rubric, nameById } = normalizeRubric(args.rubricJson);
@@ -223,6 +230,21 @@ export async function runReviewPipeline(args: {
 	});
 	allFlags.push(...routing.flags);
 
+	// KROK 6-prep (B7/1.16a, ADR-013) — pytania obrony z TEGO SAMEGO artefaktu,
+	// który ocenił krok 3 (zero dryfu). Tylko gdy werdykt maszyny = 'verified'
+	// (nie ma czego bronić przed poprawą pracy). Fail-closed w generatorze:
+	// null → trasa tworzy sesję inconclusive (needsHumanReview), submit żyje.
+	let vivaPrep: PipelineResult["vivaPrep"];
+	if (args.viva && routing.status === "verified") {
+		vivaPrep = {
+			questions: await generateVivaQuestions({
+				artifact: content.data.artifact,
+				deliverableType,
+				attribution: args.viva.attribution,
+			}),
+		};
+	}
+
 	const criteriaScores = buildCriteriaScores(semantic.data.evaluations, rubric, nameById);
 	const review: ReviewResult = {
 		score: routing.score,
@@ -251,5 +273,6 @@ export async function runReviewPipeline(args: {
 			},
 		},
 		flags: allFlags,
+		...(vivaPrep ? { vivaPrep } : {}),
 	};
 }

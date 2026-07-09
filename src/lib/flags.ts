@@ -73,6 +73,13 @@ export const FLAGS = {
 			"trasy /api/projects/[id]/tutor. Off = trasa nie istnieje (404).",
 		defaultValue: false,
 	},
+	vivaDefense: {
+		envVar: "FLAG_VIVA_DEFENSE",
+		description:
+			"B7/1.16 (ADR-013): obrona ustna AI bramkująca status 'verified' — krok 6-prep w potoku " +
+			"(generacja pytań) + trasy /api/submissions/[id]/viva/*. Off = potok i statusy jak dotąd.",
+		defaultValue: false,
+	},
 	careerModelFromDb: {
 		envVar: "FLAG_CAREER_MODEL_FROM_DB",
 		description:

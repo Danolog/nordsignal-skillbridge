@@ -19,15 +19,16 @@
 // Flaga humanReviewQueue off → 404 (rodzina B8 nie istnieje).
 // ============================================================================
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
-import { projectSubmissions, submissionReviews } from "@/lib/db/schema";
+import { projectSubmissions, submissionReviews, vivaSessions } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 import { checkReviewerAuth } from "@/lib/reviewer-auth";
+import { vivaProjection } from "@/lib/viva/service";
 
 const DecisionSchema = z.object({
 	decision: z.enum(["approved", "rejected"]),
@@ -116,6 +117,26 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 				.update(projectSubmissions)
 				.set({ status: newStatus, updatedAt: new Date() })
 				.where(eq(projectSubmissions.id, id));
+
+			// B7/1.16a (ADR-013 D1): decyzja człowieka jest ostateczna — żywa sesja
+			// obrony staje się bezprzedmiotowa (superseded); po decyzji viva nie
+			// startuje (start sprawdza brak wiersza submission_reviews). Projekcję
+			// aktualizujemy w TEJ SAMEJ tx (jedno źródło prawdy = sesja).
+			const superseded = await tx
+				.update(vivaSessions)
+				.set({ status: "superseded", completedAt: new Date() })
+				.where(
+					sql`${vivaSessions.submissionId} = ${id} AND ${vivaSessions.status} IN ('pending','in_progress')`,
+				)
+				.returning({ id: vivaSessions.id });
+			if (superseded.length > 0) {
+				await tx
+					.update(projectSubmissions)
+					.set({
+						aiReviewJson: sql`jsonb_set(coalesce(${projectSubmissions.aiReviewJson}, '{}'::jsonb), '{viva}', ${JSON.stringify(vivaProjection("superseded"))}::jsonb)`,
+					})
+					.where(eq(projectSubmissions.id, id));
+			}
 
 			return {
 				outcome: "decided" as const,

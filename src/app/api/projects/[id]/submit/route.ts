@@ -8,11 +8,19 @@ import { parseNotebookUrl, parseRepoUrl } from "@/lib/ai/sanitize";
 import { auditContextFromRequest, recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { projectHiddenTests, projectSubmissions, projects, students } from "@/lib/db/schema";
+import {
+	projectHiddenTests,
+	projectSubmissions,
+	projects,
+	students,
+	vivaSessions,
+} from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { isFeatureEnabled } from "@/lib/flags";
+import { logError } from "@/lib/log";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 import type { HiddenTestSuite, SandboxFile } from "@/lib/sandbox/run-hidden-tests";
+import { vivaProjection } from "@/lib/viva/service";
 
 // B6/1.9: bieg piaskownicy (spike: ~10 s E2E z instalacją deps) mieści się
 // z zapasem, ale 60 s robiło się ciasne przy AI + sandbox — podbite do 120.
@@ -120,6 +128,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 	// Potok (Faza 1): pobranie treści → twarde sprawdzenia → ocena semantyczna z
 	// cytatami + feedback studenta → cheat-risk z faktów → routing. Suma i status
 	// liczone DETERMINISTYCZNIE w kodzie (krok 5), nie przez model.
+	const vivaEnabled = isFeatureEnabled("vivaDefense");
+
 	let pipeline: Awaited<ReturnType<typeof runReviewPipeline>>;
 	try {
 		pipeline = await runReviewPipeline({
@@ -128,6 +138,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 			rubricJson: project.rubricJson,
 			deliverableType: project.deliverableType as DeliverableType,
 			sandbox,
+			// B7/1.16a (ADR-013): krok 6-prep TYLKO za flagą — brak = zero zmian.
+			viva: vivaEnabled
+				? { attribution: { studentId: studentMeta.id, tenantId: studentMeta.tenantId } }
+				: undefined,
 		});
 	} catch {
 		return NextResponse.json(
@@ -136,8 +150,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 		);
 	}
 
-	const { status, needsHumanReview, aiReviewJson } = pipeline;
+	const { aiReviewJson } = pipeline;
 	const review = aiReviewJson.review;
+
+	// B7/1.16a (ADR-013 D1): viva bramkuje 'verified'. Werdykt maszyny zostaje
+	// w recommendation (nic nie ginie); utrwalany status to 'submitted' do czasu
+	// zdanej obrony. Generacja fail-closed (questions=null) → od razu człowiek.
+	const vivaPending = pipeline.vivaPrep !== undefined && pipeline.vivaPrep.questions !== null;
+	const vivaInconclusive = pipeline.vivaPrep !== undefined && pipeline.vivaPrep.questions === null;
+	const status = pipeline.vivaPrep ? ("submitted" as const) : pipeline.status;
+	const needsHumanReview = vivaInconclusive ? true : pipeline.needsHumanReview;
+
+	// Projekcja stanu vivy do aiReviewJson (jedno źródło prawdy = sesja; projekcja
+	// pending/inconclusive jest znana z góry, więc może iść w tym samym upsercie).
+	const aiReviewJsonToStore = pipeline.vivaPrep
+		? { ...aiReviewJson, viva: vivaProjection(vivaPending ? "pending" : "inconclusive") }
+		: aiReviewJson;
 
 	const submissionData = {
 		repoUrl: repoUrlStr,
@@ -162,7 +190,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 					tenantId: studentMeta.tenantId,
 					projectId,
 					...submissionData,
-					aiReviewJson,
+					aiReviewJson: aiReviewJsonToStore,
 				})
 				.onConflictDoUpdate({
 					target: [projectSubmissions.studentId, projectSubmissions.projectId],
@@ -175,7 +203,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 						// coalesce(...,'{}') — audyt Fable 5: kolumna jest nullable (np. seed-e2e
 						// wstawia zgłoszenia bez aiReviewJson); NULL || cokolwiek daje NULL w
 						// Postgresie, więc bez coalesce świeża recenzja cicho by zniknęła.
-						aiReviewJson: sql`coalesce(${projectSubmissions.aiReviewJson}, '{}'::jsonb) || ${JSON.stringify(aiReviewJson)}::jsonb`,
+						// B7/1.16a: `- 'viva'` PRZED merge — płytki merge zachowałby stan vivy
+						// POPRZEDNIEJ wersji pracy (plakietka/kolejka czytałyby nieaktualny
+						// stan); świeży submit = świeży (lub żaden) stan obrony.
+						aiReviewJson: sql`(coalesce(${projectSubmissions.aiReviewJson}, '{}'::jsonb) - 'viva') || ${JSON.stringify(aiReviewJsonToStore)}::jsonb`,
 						updatedAt: new Date(),
 					},
 				})
@@ -183,6 +214,59 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 			return result;
 		},
 	);
+
+	// B7/1.16a (ADR-013 D1): cykl życia sesji obrony per WERSJA zgłoszenia —
+	// owner-side (viva_sessions: zapisy wyłącznie owner; app_student ma tylko
+	// SELECT). Re-submit wygasza żywe sesje poprzedniej wersji (superseded);
+	// nowa sesja pending (plan zamrożony z kroku 6-prep) albo inconclusive
+	// (generacja fail-closed → człowiek już zapalony w needsHumanReview).
+	try {
+		await db.transaction(async (tx) => {
+			await tx
+				.update(vivaSessions)
+				.set({ status: "superseded", completedAt: new Date() })
+				.where(
+					sql`${vivaSessions.submissionId} = ${submission.id} AND ${vivaSessions.status} IN ('pending','in_progress')`,
+				);
+			if (pipeline.vivaPrep) {
+				await tx.insert(vivaSessions).values({
+					submissionId: submission.id,
+					studentId: studentMeta.id,
+					tenantId: studentMeta.tenantId,
+					status: vivaPending ? "pending" : "inconclusive",
+					questionsJson: pipeline.vivaPrep.questions ?? [],
+					...(vivaPending ? {} : { completedAt: new Date() }),
+				});
+			}
+		});
+		if (vivaInconclusive) {
+			await recordAudit({
+				actorType: "system",
+				actorId: studentMeta.id,
+				action: "submission.viva.inconclusive",
+				targetType: "submission",
+				targetId: submission.id,
+				...auditContextFromRequest(req),
+				metadata: { reason: "generation_failed", projectId },
+			});
+		}
+	} catch (err) {
+		// Sesja nie powstała, a status już zdemotowany — bez włazu student utknąłby
+		// bez ścieżki. Best-effort: zapal needsHumanReview (kolejka B8 = poduszka).
+		logError("submit.viva.session", err, { submissionId: submission.id });
+		if (vivaPending) {
+			try {
+				await withTenantContext({ userId, tenantId: studentMeta.tenantId, role: "student" }, (tx) =>
+					tx
+						.update(projectSubmissions)
+						.set({ needsHumanReview: true, updatedAt: new Date() })
+						.where(eq(projectSubmissions.id, submission.id)),
+				);
+			} catch (err2) {
+				logError("submit.viva.session.fallback", err2, { submissionId: submission.id });
+			}
+		}
+	}
 
 	// Audit log idzie przez owner db — audit_log ma deny-all RLS dla
 	// klienta, INSERT tylko server (jak dziś). Append-only chroni trigger.
