@@ -1,6 +1,6 @@
 # ADR-013 — B7/1.15: obrona ustna AI (viva) — odpytanie studenta o własną pracę
 
-**Status:** propozycja v0.2 — do sign-offu Darka · **Data:** 2026-07-09 · **Autor spike'u:** Oliver (time-box 1.15)
+**Status:** zaakceptowany · **Data:** 2026-07-09 · **Decyzja:** Darek (sign-off „zatwierdzone" w sesji 2026-07-09 — wszystkie 5 punktów wg rekomendacji: bramka; human-approve jako jawny wyjątek; parametry 3 pytania·4/6·TTL 60 min·self-restart·1 podejście/wersja; odczyt odpowiedzi operator+wykładowca własnego tenanta z audytem; retencja 12 m-cy) · **Autor spike'u:** Oliver (time-box 1.15)
 **Przebieg:** v0.1 → krytyczny przegląd 3 agentów (soczewki: integracja/konsumenci, bezpieczeństwo-RLS-RODO, determinizm-koszt-UX) — **30 znalezisk, 7 krytycznych, wszystkie wcielone** → v0.2.
 **Powiązania:** roadmapa §3 Blok B7 (1.15→1.16) i bramka wyjścia F1 („receipt = sandbox + obrona + recenzja człowieka"); ADR-008 (HITL — człowiek ma ostatnie słowo); ADR-011 (kolejka recenzji B8); ADR-012 (sandbox — wzorzec fail-closed); `src/lib/ai/pipeline/` (kroki 1–5); silnik diagnozy 1.11 (zamrożony plan, TTL leniwie); C11 (tutor — guardraile, ledger).
 
