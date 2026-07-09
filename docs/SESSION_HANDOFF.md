@@ -340,18 +340,23 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    miała wyłącznie 'self'); test integracyjny constraintu na realnej bazie.
    Zero zmian zachowania (nic jeszcze nie pisze 'diagnostic').
 
-### KOLEJKA MIGRACJI PROD (następna sesja migracyjna Darka)
-Prod stoi na **0026**. Czekają: **0027** (role na faculty_sessions — przed
-FLAG_HUMAN_REVIEW_QUEUE, do tego env OPERATOR_PASSWORD), **0028**
-(project_hidden_tests — przed FLAG_SANDBOX_RUNNER), **0029**
-(verified_by_method 'diagnostic'), **0030** (bank pytań + sesje diagnozy —
-przed FLAG_DIAGNOSTIC_ASSESSMENT; do tego ingest treści banku na prod =
-[CZERWONA LINIA], procedura jak ADR-009/010, plik
-`tools/content/question-bank-ds-partia-1.json` + `pnpm db:ingest-question-bank`).
-Procedura jak 2026-07-08: backup gałęzią Neona → kontrola dziennika
-(oczekiwane 27 wpisów PRZED) → `drizzle-kit migrate` bezpośrednio (guard
-db:migrate hard-denyuje prod; string DIRECT z Connect, nie pooler; TYLKO
-w terminalu Darka) → weryfikacja PO (31 wpisów).
+### KOLEJKA MIGRACJI PROD — PUSTA (2026-07-09)
+Prod = **0030** (pełna parzystość z bazą testową). Sesja migracyjna Darka
+2026-07-09: backup gałęzią Neona (`backup/pre-0027-0030-2026-07-09`) →
+kontrola dziennika PRZED (27 wpisów, when=1783463902949 — zgodne) →
+`drizzle-kit migrate` (string DIRECT, terminal Darka; uwaga: spinner NIE
+wyrenderował linii sukcesu — prawdę pokazał dziennik: 31 wpisów,
+when=1783537805664 = lokalny 0030) → weryfikacja PO OK (tabele, RLS t/t,
+granty: dokładnie 1 wiersz assessment_sessions|app_student|SELECT).
+**Ingest banku pytań na prod WYKONANY** (czerwona linia, polecenie Darka =
+sign-off): koncepty 24, itemy +144 nowe. **FLAG_DIAGNOSTIC_ASSESSMENT=1 na
+Production ✅ (Oliver przez vercel CLI, 2026-07-09)** + redeploy; smoke:
+POST /api/assessment/start bez sesji 404→**401** (flaga żyje, bramka auth
+działa), home/login 200, runtime errors: zero. Preview-flaga NIE ustawiona
+(bug pętli interaktywnej w vercel CLI 54.5.0) — dodać z dashboardu przy
+weryfikacji 1.12. Do aktywacji pozostałych bloków wciąż brakuje TYLKO env:
+OPERATOR_PASSWORD+FLAG_HUMAN_REVIEW_QUEUE (B8), FLAG_SANDBOX_RUNNER (B6),
+flagi AG — migracje już są.
 
 18. **A5/1.11 ✅ zmergowane (#151, squash `bded868`; CI zielone za pierwszym podejściem)** — silnik testu adaptacyjnego + bank pytań.
    **Przebieg wg wymogu handoffu:** projekt schematu PRZED kodem — spec
@@ -398,7 +403,8 @@ w terminalu Darka) → weryfikacja PO (31 wpisów).
   0028 + flaga; otwarta kuracja suite'ów (wątek Sophii, bez presji).
 - **Blok A5** ⏳ w toku: 1.10 ✅ (#150) · 1.11 ✅ (#151) · 1.12 następne.
 - Baseline main: tsc 0, Biome 0, unit 1046/1046, integration 94/94,
-  k3 zielony, BUILD_OK; migracje: test DB = 0030, prod = 0026.
+  k3 zielony, BUILD_OK; migracje: test DB = 0030, **prod = 0030** (bank
+  zaingestowany, FLAG_DIAGNOSTIC_ASSESSMENT ON na Production).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
