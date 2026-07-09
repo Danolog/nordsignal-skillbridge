@@ -35,7 +35,7 @@ async function signup(page: Page, name: string, email: string): Promise<void> {
 	await page.goto("/signup");
 	await page.getByLabel("Imię i nazwisko").fill(name);
 	await page.getByLabel("Email").fill(email);
-	await page.getByLabel("Hasło").fill(PASSWORD);
+	await page.getByLabel("Hasło", { exact: true }).fill(PASSWORD);
 	await page.getByRole("button", { name: /Utwórz konto/i }).click();
 	await page.waitForURL((url) => !url.pathname.startsWith("/signup"), { timeout: 20_000 });
 	await expect(page).toHaveURL(/\/(dashboard|onboarding)/, { timeout: 10_000 });

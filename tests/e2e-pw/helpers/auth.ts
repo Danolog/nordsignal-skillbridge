@@ -37,7 +37,7 @@ export async function loginWithPassword(page: Page, account: Account = "main"): 
 	const password = cred;
 	await page.goto("/login");
 	await page.getByLabel("Email").fill(email);
-	await page.getByLabel("Hasło").fill(password);
+	await page.getByLabel("Hasło", { exact: true }).fill(password);
 	await page.getByRole("button", { name: /Zaloguj się/i }).click();
 	await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15_000 });
 }

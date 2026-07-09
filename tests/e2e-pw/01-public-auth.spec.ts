@@ -25,7 +25,7 @@ test.describe("@safe Strona publiczna i bramka auth", () => {
 		await expect(page.getByRole("button", { name: /Google/i })).toBeVisible();
 		// E-mail/hasło — pola i przycisk.
 		await expect(page.getByLabel("Email")).toBeVisible();
-		await expect(page.getByLabel("Hasło")).toBeVisible();
+		await expect(page.getByLabel("Hasło", { exact: true })).toBeVisible();
 		await expect(page.getByRole("button", { name: /Zaloguj się/i })).toBeVisible();
 	});
 
@@ -37,7 +37,7 @@ test.describe("@safe Strona publiczna i bramka auth", () => {
 		// Oba są poprawnym zachowaniem: sesja nie została utworzona.
 		await page.goto("/login");
 		await page.getByLabel("Email").fill("nie-istnieje@example.com");
-		await page.getByLabel("Hasło").fill("zle-haslo-123");
+		await page.getByLabel("Hasło", { exact: true }).fill("zle-haslo-123");
 		await page.getByRole("button", { name: /Zaloguj się/i }).click();
 		await expect(
 			page.getByText(/Nieprawidłowy email lub hasło/i).or(page.getByText(/Coś poszło nie tak/i)),
@@ -47,7 +47,7 @@ test.describe("@safe Strona publiczna i bramka auth", () => {
 	test("Rejestracja /signup: formularz dostępny", async ({ page }) => {
 		await page.goto("/signup");
 		await expect(page.getByLabel("Email")).toBeVisible();
-		await expect(page.getByLabel("Hasło")).toBeVisible();
+		await expect(page.getByLabel("Hasło", { exact: true })).toBeVisible();
 	});
 
 	test("Panel wykładowcy /faculty/login: formularz logowania", async ({ page }) => {
