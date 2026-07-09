@@ -446,7 +446,26 @@ flagi AG — migracje już są.
    kreator → 200). Bramki: unit 1051/1051, integration 100/100, BUILD_OK.
    **Czeka na powtórny smoke przeglądarkowy Darka po deployu.**
 
-22. **NASTĘPNE:** C11 (tutor sokratyczny, 1.13–1.14), B7 (viva, 1.15–1.16),
+22. **ODŁOŻONE (decyzja Darka 2026-07-09, po pytaniu o wiarygodność 2 pytań):**
+   dwa ulepszenia diagnozy do zrobienia później, oba zaakceptowane co do
+   kierunku, bez presji:
+   (a) **złagodzić etykiety wyników testu** — poziom 4 „mocna strona" →
+   np. „zaawansowany wynik testu" + dopisek „wynik krótkiego testu, nie
+   certyfikat" (panel Wniosków `DIAGNOSIS_LEVEL_LABEL` w step-wnioski.tsx);
+   (b) **pytanie potwierdzające dla poziomu 4** — rozszerzenie staircase:
+   d2✓+d3✓ → drugi wariant d3; poziom 4 tylko przy obu trafionych, inaczej 3
+   (+1 pytanie tylko u najlepszych; zmiana w staircase.ts/plan.ts — plan już
+   mrozi itemy per trudność, trzeba domrozić 2. wariant d3; golden test
+   4→5 trajektorii; zero zmian schematu). Kontekst: diagnoza = placement,
+   nie certyfikat; twarde roszczenia = receipty + egzaminy mastery 1E.3.
+
+   **ODŁOŻONE (ten sam dzień):** luka danych rynku DS — grupa „Fundamenty"
+   ma w katalogu tylko Statystykę (UM/EDA/A-B nie mapują się z tagów
+   JustJoinIT; ML żyje w opisach, nie tagach). Ścieżka: kuracja aliasów ETL
+   → miesięczne odświeżenie AG.3→AG.4 (wątek danych, Sophia); bank pytań
+   już pokrywa te liście (24/24) — wejdą do diagnozy bez zmian kodu.
+
+23. **NASTĘPNE:** C11 (tutor sokratyczny, 1.13–1.14), B7 (viva, 1.15–1.16),
    cross-cutting 1.17/1.18.
 
 ### Stan bloków Fazy 1 (2026-07-08 wieczorem)
