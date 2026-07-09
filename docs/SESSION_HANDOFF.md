@@ -391,7 +391,7 @@ flagi AG — migracje już są.
    poziomu 1 (z.union([2,3,4])), a luki liczą się z zaznaczeń, nie statusów;
    re-onboarding kasuje wyniki diagnozy — oba do rozwiązania w 1.12.
 
-19. **A5/1.12 ⏳ PR otwarty** — diagnoza wpięta w onboarding (za flagą
+19. **A5/1.12 ✅ zmergowane (#152, squash `eac7de5`; CI zielone — watcher 2× do poprawki: nowy commit = nowy przebieg, potem 502 GitHuba; rozstrzygał `gh pr checks`)** — diagnoza wpięta w onboarding (za flagą
    `diagnosticAssessment`; off = kreator jak dotąd, zero zmian):
    - **Kontrakt POST /api/onboarding rozszerzony:** `diagnosticSessionId` +
      wpisy kompetencji z `level` OPCJONALNYM — brak poziomu = „zmierzone":
@@ -424,18 +424,28 @@ flagi AG — migracje już są.
      pomiar wbrew deklaracji; luka B przeżywa recompute; 400/409; flaga
      off = kontrakt sprzed 1.12. Zero migracji (schemat z 0030 wystarczył).
 
-20. **NASTĘPNE:** C11 (tutor sokratyczny, 1.13–1.14), B7 (viva, 1.15–1.16),
-   cross-cutting 1.17/1.18. Blok A5 domknięty kodowo po merge 1.12.
+20. **BLOK A5 DOMKNIĘTY W CAŁOŚCI** (1.10 #150 + 1.11 #151 + 1.12 #152) —
+   i JEDYNY blok F1 w pełni AKTYWNY na prod (migracja 0030 + bank 24/144 +
+   FLAG_DIAGNOSTIC_ASSESSMENT ON): merge #152 auto-deployem RELEASE'UJE
+   ścieżkę diagnozy w kreatorze (DS mierzy się testem; inne ścieżki mają
+   jawny fallback samooceny). Warto kliknąć smoke w przeglądarce na prodzie
+   (rejestracja → DS → zaznacz → test) — dowody E2E są integracyjne+komponentowe,
+   przeglądarkowego przejścia nowego UI nikt jeszcze nie zrobił.
+
+21. **NASTĘPNE:** C11 (tutor sokratyczny, 1.13–1.14), B7 (viva, 1.15–1.16),
+   cross-cutting 1.17/1.18.
 
 ### Stan bloków Fazy 1 (2026-07-08 wieczorem)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
 - **Blok B8** ✅ CAŁY (1.2–1.6, PR #144–#147) — aktywacja = 0027 + env.
 - **Blok B6** ✅ CAŁY (1.7 ADR-012 + 1.8 #148 + 1.9 #149) — aktywacja =
   0028 + flaga; otwarta kuracja suite'ów (wątek Sophii, bez presji).
-- **Blok A5** ⏳: 1.10 ✅ (#150) · 1.11 ✅ (#151, LIVE na prod) · 1.12 ⏳ PR.
-- Baseline main: tsc 0, Biome 0, unit 1046/1046, integration 94/94,
+- **Blok A5** ✅ CAŁY (1.10 #150 · 1.11 #151 · 1.12 #152) — LIVE na prod
+  (jedyny blok F1 z zapaloną flagą; smoke przeglądarkowy nowego kreatora
+  do kliknięcia).
+- Baseline main: tsc 0, Biome 0, unit 1051/1051, integration 99/99,
   k3 zielony, BUILD_OK; migracje: test DB = 0030, **prod = 0030** (bank
-  zaingestowany, FLAG_DIAGNOSTIC_ASSESSMENT ON na Production).
+  zaingestowany, FLAG_DIAGNOSTIC_ASSESSMENT ON na Production+Preview).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
