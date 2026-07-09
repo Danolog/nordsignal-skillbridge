@@ -53,6 +53,11 @@ export const rateLimiters = {
 	// Active CPU pod kontrolą (wzorzec budżetu z 0.0); przekroczenie =
 	// runOk null + flaga do człowieka (fail-closed), nigdy cichy bieg.
 	sandboxRun: makeLimiter(Ratelimit.slidingWindow(5, "1 d"), "sandbox-run"),
+	// C11/1.13: dzienne domknięcie budżetu tutora per student (wzorzec sandboxRun,
+	// budżet z 0.0). Tura = Sonnet + sędzia Haiku; aiHeavy (5/min) tnie burst,
+	// ten limiter tnie wolumen dzienny. Twardy cap długości rozmowy per projekt
+	// (MAX_TUTOR_TURNS) siedzi w kodzie trasy — to inne wymiary.
+	tutorDaily: makeLimiter(Ratelimit.slidingWindow(40, "1 d"), "tutor-daily"),
 };
 
 export type RateLimitResult = {
