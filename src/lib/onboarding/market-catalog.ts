@@ -334,7 +334,12 @@ export function annotateWithSyllabus(
 // Każda niesie poziom (2/3/4), realny % popytu (z katalogu) i flagę „w programie".
 export interface SelectedCompetency {
 	name: string;
-	level: PossessionLevel;
+	/**
+	 * Poziom samooceny (2/3/4). A5/1.12: NIEOBECNY dla wpisu zmierzonego diagnozą —
+	 * serwer bierze poziom (1–4) z result_json sesji podanej w diagnosticSessionId
+	 * (kontrakt POST /api/onboarding; bez sesji brak poziomu = 400).
+	 */
+	level?: PossessionLevel;
 	marketPercentage: number;
 	inSyllabus: boolean;
 }

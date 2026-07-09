@@ -85,7 +85,11 @@ export function calculateCoverage(
 	const acquired = comps.filter((c) => c.status === "acquired").length;
 	const inProgress = comps.filter((c) => c.status === "in_progress").length;
 	const covered = acquired + inProgress * 0.5;
-	const total = comps.length + gapCount;
+	// [1.12/§4a] Mianownik = POSIADANE (status ≠ missing) + luki. Wiersz 'missing'
+	// (zmierzony diagnozą poziom 1) jest już reprezentowany przez lukę — liczenie
+	// go także w comps podwajałoby pozycję katalogu i zaniżało pokrycie.
+	const possessed = acquired + inProgress;
+	const total = possessed + gapCount;
 	if (total === 0) return 0;
 	return Math.round((covered / total) * 100);
 }

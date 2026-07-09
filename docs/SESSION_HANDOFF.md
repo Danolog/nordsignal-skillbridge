@@ -391,17 +391,48 @@ flagi AG — migracje już są.
    poziomu 1 (z.union([2,3,4])), a luki liczą się z zaznaczeń, nie statusów;
    re-onboarding kasuje wyniki diagnozy — oba do rozwiązania w 1.12.
 
-19. **NASTĘPNE:** A5/**1.12** — wpięcie diagnozy w onboarding (równorzędna
-   ścieżka bez sylabusa; wynik reprezentowalny jako placement — konsumuje
-   1E.7; twarde punkty §4a spec v0.2). Dalej: C11 (tutor, 1.13–1.14),
-   B7 (viva, 1.15–1.16), cross-cutting 1.17/1.18.
+19. **A5/1.12 ⏳ PR otwarty** — diagnoza wpięta w onboarding (za flagą
+   `diagnosticAssessment`; off = kreator jak dotąd, zero zmian):
+   - **Kontrakt POST /api/onboarding rozszerzony:** `diagnosticSessionId` +
+     wpisy kompetencji z `level` OPCJONALNYM — brak poziomu = „zmierzone":
+     serwer bierze poziomy (1–4, w tym 1) z result_json UKOŃCZONEJ sesji
+     studenta (walidacja: właściciel, completed, careerGoal; klientowi nie
+     ufa). Bez sesji brak poziomu = 400 (stary kontrakt nienaruszony).
+   - **§4a.1 (twardy punkt spec):** luki liczone ze STATUSÓW — posiadane =
+     wiersz `status ≠ missing`. Filtr w POST (possessedNames), w recompute
+     AG.5 (pierwsze odświeżenie rynku nie „zalicza" oblanej) i centralnie w
+     `calculateCoverage` (mianownik = katalog; wiersz missing reprezentuje
+     luka — bez podwójnego liczenia). Niezmiennik ratyfikowany bez zmian:
+     luka ≡ wymagana ∧ missing; `buildGraph` już pomijał wiersze missing.
+   - **§4a.2 (polityka re-onboardingu):** carry-over pomiaru — POST bez
+     nowej sesji (edytor profilu / ponowny kreator) NIE degraduje wierszy
+     `diagnostic` do `self`: poziom zmierzony (także 1) wygrywa z deklaracją;
+     nadpisze go dopiero nowa sesja. Odznaczenie = świadome usunięcie (luka).
+   - **UI kreatora:** krok 3 w trybie binarnym („Mam styczność — zmierz
+     testem", bez poziomów i bez % przed pomiarem), pod-widok `StepDiagnosis`
+     (pytanie po pytaniu, zero feedbacku w trakcie, wznowienie po 409),
+     mini-samoocena dla `uncovered` (jawnie „ocena własna, nie pomiar"),
+     panel „Wynik testu" we Wnioskach (w tym oblane), zmiana zaznaczeń
+     unieważnia test; 422 ze startu (ścieżka bez banku — partia 1 = DS) →
+     jawny fallback do klasycznej samooceny (bramka F1 zawężona do DS).
+   - **Placement (roadmapa [ZMIANA]):** wynik reprezentowalny dla 1E.7 przez
+     `result_json.concepts` sesji (koperta z 1.11) — 1.12 nic nie dokłada.
+   - Dowód E2E integracyjnie (5 testów, realna baza, prawdziwe trasy):
+     diagnoza (A=3, B=1) + uncovered → wiersze zmierzone (B: missing/
+     diagnostic zostaje w competencies), luka DOKŁADNIE B, pokrycie 67%
+     (missing nie podwaja), mapa z 1 węzłem missing; carry-over trzyma
+     pomiar wbrew deklaracji; luka B przeżywa recompute; 400/409; flaga
+     off = kontrakt sprzed 1.12. Zero migracji (schemat z 0030 wystarczył).
+
+20. **NASTĘPNE:** C11 (tutor sokratyczny, 1.13–1.14), B7 (viva, 1.15–1.16),
+   cross-cutting 1.17/1.18. Blok A5 domknięty kodowo po merge 1.12.
 
 ### Stan bloków Fazy 1 (2026-07-08 wieczorem)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
 - **Blok B8** ✅ CAŁY (1.2–1.6, PR #144–#147) — aktywacja = 0027 + env.
 - **Blok B6** ✅ CAŁY (1.7 ADR-012 + 1.8 #148 + 1.9 #149) — aktywacja =
   0028 + flaga; otwarta kuracja suite'ów (wątek Sophii, bez presji).
-- **Blok A5** ⏳ w toku: 1.10 ✅ (#150) · 1.11 ✅ (#151) · 1.12 następne.
+- **Blok A5** ⏳: 1.10 ✅ (#150) · 1.11 ✅ (#151, LIVE na prod) · 1.12 ⏳ PR.
 - Baseline main: tsc 0, Biome 0, unit 1046/1046, integration 94/94,
   k3 zielony, BUILD_OK; migracje: test DB = 0030, **prod = 0030** (bank
   zaingestowany, FLAG_DIAGNOSTIC_ASSESSMENT ON na Production).

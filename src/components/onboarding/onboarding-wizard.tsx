@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CareerHelperFlow } from "@/components/career-helper/career-helper-flow";
 import { Button } from "@/components/ui/button";
+import type { AssessmentResult } from "@/lib/assessment/types";
 import {
 	annotateWithSyllabus,
 	type GroupCatalog,
@@ -14,6 +15,7 @@ import {
 	type SelectedCompetency,
 } from "@/lib/onboarding/market-catalog";
 import { CareerPathPicker } from "./career-path-picker";
+import { type DiagnosisOutcome, type DiagnosisQuestion, StepDiagnosis } from "./step-diagnosis";
 import { StepMarketCompetencies } from "./step-market-competencies";
 import { type ProfileData, StepProfile } from "./step-profile";
 import { StepSyllabus } from "./step-syllabus";
@@ -69,6 +71,12 @@ interface OnboardingWizardProps {
 	 * bo `handleCareerGoalChosen` czyści `selections` przy zmianie celu.
 	 */
 	carryoverSelfAssessments?: Record<string, PossessionLevel>;
+	/**
+	 * A5/1.12: flaga diagnosticAssessment (czytana server-side w page.tsx).
+	 * true → krok 3 w trybie binarnym + test adaptacyjny zamiast samooceny;
+	 * false → kreator dokładnie jak dotąd (zero zmian).
+	 */
+	diagnosticEnabled?: boolean;
 }
 
 export function OnboardingWizard({
@@ -76,6 +84,7 @@ export function OnboardingWizard({
 	initialStep = 0,
 	initialData,
 	carryoverSelfAssessments,
+	diagnosticEnabled = false,
 }: OnboardingWizardProps) {
 	const router = useRouter();
 	const [step, setStep] = useState(initialStep);
@@ -112,9 +121,30 @@ export function OnboardingWizard({
 	const [isRealGoal, setIsRealGoal] = useState(true);
 
 	// Wybór studenta: nazwa kompetencji → poziom posiadania (2/3/4). Brak klucza = Brak = luka.
+	// W trybie diagnozy (1.12) wartość jest MARKEREM zaznaczenia do czasu pomiaru;
+	// po teście nadpisują ją poziomy zmierzone (>=2; oblane wypadają = luka).
 	const [selections, setSelections] = useState<Record<string, PossessionLevel>>(
 		initialData?.selections ?? {},
 	);
+
+	// ── A5/1.12: stan diagnozy (za flagą) ────────────────────────────────────
+	// Aktywna sesja testu (render pod-widoku w kroku 3). null = lista zaznaczeń.
+	const [diagnosis, setDiagnosis] = useState<{
+		sessionId: string;
+		total: number;
+		question: DiagnosisQuestion | null;
+		uncovered: string[];
+	} | null>(null);
+	// Wynik ukończonego testu — źródło poziomów dla POST (sessionId) i panelu Wniosków.
+	const [diagnosisOutcome, setDiagnosisOutcome] = useState<{
+		sessionId: string;
+		result: AssessmentResult;
+	} | null>(null);
+	// 422 ze startu (bank nie pokrywa ścieżki) → jawny fallback do klasycznej samooceny.
+	const [diagnosisFallback, setDiagnosisFallback] = useState(false);
+	const [startingDiagnosis, setStartingDiagnosis] = useState(false);
+	// Tryb diagnozy aktywny: flaga ON i bank nie odmówił pokrycia tej ścieżki.
+	const diagnosticMode = diagnosticEnabled && !diagnosisFallback;
 
 	// Katalog z nałożoną adnotacją sylabusa (D4) — pochodna, nie osobny stan.
 	const catalog = useMemo(
@@ -314,6 +344,12 @@ export function OnboardingWizard({
 
 	// ── Wybór kompetencji (krok 3) ──────────────────────────────────────────
 	const handleSelectionChange = (name: string, level: PossessionLevel | null) => {
+		// Zmiana zaznaczeń unieważnia trwający/ukończony test (1.12) — pomiar
+		// dotyczył innego zestawu; serwer i tak wznowi/odrzuci po odcisku wejścia.
+		if (diagnosis || diagnosisOutcome) {
+			setDiagnosis(null);
+			setDiagnosisOutcome(null);
+		}
 		setSelections((prev) => {
 			const next = { ...prev };
 			if (level === null) {
@@ -325,17 +361,123 @@ export function OnboardingWizard({
 		});
 	};
 
+	// ── A5/1.12: start/wznowienie testu adaptacyjnego (tryb diagnozy) ───────
+	const startDiagnosis = async () => {
+		const names = Object.keys(selections);
+		if (names.length === 0) {
+			// 0 zaznaczeń = nie ma czego mierzyć — klasyczny zapis (cały rynek luką, D5).
+			await runSubmit();
+			return;
+		}
+		setStartingDiagnosis(true);
+		try {
+			const res = await fetch("/api/assessment/start", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ competencyNames: names }),
+			});
+			if (res.status === 422) {
+				// Bank nie pokrywa tej ścieżki (partia 1 = DS) → jawny fallback do samooceny.
+				setDiagnosisFallback(true);
+				toast.info(
+					"Dla tej ścieżki nie mamy jeszcze pytań testowych — oceń swoje poziomy samodzielnie.",
+				);
+				return;
+			}
+			if (!res.ok) {
+				const data = (await res.json().catch(() => ({}))) as { error?: string };
+				throw new Error(data.error || "Nie udało się rozpocząć testu.");
+			}
+			const data = (await res.json()) as {
+				sessionId: string;
+				total: number;
+				question: DiagnosisQuestion | null;
+				uncovered: string[];
+			};
+			setDiagnosisOutcome(null);
+			setDiagnosis({
+				sessionId: data.sessionId,
+				total: data.total,
+				question: data.question,
+				uncovered: data.uncovered,
+			});
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Nie udało się rozpocząć testu.");
+		} finally {
+			setStartingDiagnosis(false);
+		}
+	};
+
+	// Po teście (+ mini-samoocenie uncovered): poziomy zmierzone nadpisują markery
+	// zaznaczeń (oblane, poziom 1, WYPADAJĄ z selections → luka we Wnioskach — to
+	// samo widzi serwer przez statusy), po czym zapis z sessionId.
+	const handleDiagnosisFinished = async (outcome: DiagnosisOutcome) => {
+		const measured: Record<string, PossessionLevel> = {};
+		for (const [name, level] of Object.entries(outcome.result.competencies)) {
+			if (level >= 2) measured[name] = level as PossessionLevel;
+		}
+		const nextSelections = { ...measured, ...outcome.uncoveredLevels };
+		setSelections(nextSelections);
+		setDiagnosisOutcome({ sessionId: diagnosis?.sessionId ?? "", result: outcome.result });
+		setDiagnosis(null);
+		await runSubmit({
+			diagnosticSessionId: diagnosis?.sessionId,
+			measuredNames: Object.keys(outcome.result.competencies),
+			uncoveredLevels: outcome.uncoveredLevels,
+		});
+	};
+
 	// Submit kroku 3 — POST /api/onboarding (delete+insert competencies z poziomem,
 	// deterministyczne luki + Skill Map). Próg „min 5" zniesiony — 0 dozwolone (D5).
-	const runSubmit = async () => {
-		const selected: SelectedCompetency[] = catalog
-			.filter((item) => selections[item.competencyName] !== undefined)
-			.map((item) => ({
-				name: item.competencyName,
-				level: selections[item.competencyName],
-				marketPercentage: item.demandPercentage,
-				inSyllabus: Boolean(item.inSyllabus),
-			}));
+	// Wariant diagnozy (1.12): wpisy zmierzone idą BEZ poziomu (serwer bierze
+	// poziomy — także 1 — z result_json sesji; klientowi nie ufa), uncovered
+	// z samooceną z mini-kroku.
+	const runSubmit = async (diagnostic?: {
+		diagnosticSessionId?: string;
+		measuredNames: string[];
+		uncoveredLevels: Record<string, PossessionLevel>;
+	}) => {
+		const byName = new Map(catalog.map((item) => [item.competencyName, item]));
+		let selected: SelectedCompetency[];
+		if (diagnostic?.diagnosticSessionId) {
+			const measuredEntries = diagnostic.measuredNames.flatMap((name) => {
+				const item = byName.get(name);
+				return item
+					? [
+							{
+								name,
+								marketPercentage: item.demandPercentage,
+								inSyllabus: Boolean(item.inSyllabus),
+							},
+						]
+					: [];
+			});
+			const uncoveredEntries = Object.entries(diagnostic.uncoveredLevels).flatMap(
+				([name, level]) => {
+					const item = byName.get(name);
+					return item
+						? [
+								{
+									name,
+									level,
+									marketPercentage: item.demandPercentage,
+									inSyllabus: Boolean(item.inSyllabus),
+								},
+							]
+						: [];
+				},
+			);
+			selected = [...measuredEntries, ...uncoveredEntries];
+		} else {
+			selected = catalog
+				.filter((item) => selections[item.competencyName] !== undefined)
+				.map((item) => ({
+					name: item.competencyName,
+					level: selections[item.competencyName],
+					marketPercentage: item.demandPercentage,
+					inSyllabus: Boolean(item.inSyllabus),
+				}));
+		}
 
 		setSubmitting(true);
 		try {
@@ -349,6 +491,9 @@ export function OnboardingWizard({
 					careerGoal: profile.careerGoal,
 					syllabusText,
 					competencies: selected,
+					...(diagnostic?.diagnosticSessionId
+						? { diagnosticSessionId: diagnostic.diagnosticSessionId }
+						: {}),
 				}),
 			});
 			if (!res.ok) {
@@ -566,13 +711,34 @@ export function OnboardingWizard({
 					</>
 				)}
 
-				{/* Step 3 — Kompetencje + poziom (scalone, z rynku). Element 2/4/5. */}
-				{step === 3 && (
+				{/* Step 3 — Kompetencje + poziom (scalone, z rynku). Element 2/4/5.
+				    A5/1.12 (tryb diagnozy): zaznaczenia binarne → test adaptacyjny
+				    (pod-widok StepDiagnosis) zamiast deklaracji poziomów. */}
+				{step === 3 && diagnosticMode && diagnosis ? (
+					<>
+						<h2 className="font-heading text-2xl font-extrabold">Sprawdź się</h2>
+						<p className="mb-6 mt-1.5 text-sm text-muted-foreground">
+							Krótki test mierzy poziom zaznaczonych kompetencji — 2 pytania na każdą. Wyniki
+							zobaczysz na końcu; w trakcie nie zdradzamy odpowiedzi.
+						</p>
+						<StepDiagnosis
+							key={diagnosis.sessionId}
+							sessionId={diagnosis.sessionId}
+							total={diagnosis.total}
+							initialQuestion={diagnosis.question}
+							uncoveredNames={diagnosis.uncovered}
+							onFinished={handleDiagnosisFinished}
+							onRestart={startDiagnosis}
+							onBack={() => setDiagnosis(null)}
+						/>
+					</>
+				) : step === 3 ? (
 					<>
 						<h2 className="font-heading text-2xl font-extrabold">Twoje kompetencje</h2>
 						<p className="mb-6 mt-1.5 text-sm text-muted-foreground">
-							Zaznacz przy każdej umiejętności poziom, jaki masz. Czego nie zaznaczysz, zostaje
-							Twoim planem nauki. Nie musisz zaznaczać nic — możesz zacząć od zera.
+							{diagnosticMode
+								? "Zaznacz, z czym masz styczność — poziom zmierzy krótki test, nie deklaracja. Czego nie zaznaczysz, zostaje Twoim planem nauki."
+								: "Zaznacz przy każdej umiejętności poziom, jaki masz. Czego nie zaznaczysz, zostaje Twoim planem nauki. Nie musisz zaznaczać nic — możesz zacząć od zera."}
 						</p>
 						<StepMarketCompetencies
 							careerGoal={profile.careerGoal}
@@ -585,6 +751,7 @@ export function OnboardingWizard({
 							onRetry={() => loadCatalog(profile.careerGoal)}
 							isRealCareerGoal={isRealGoal}
 							profileNote={profileNote}
+							binaryMode={diagnosticMode}
 						/>
 						<div className="mt-8 flex items-center justify-between">
 							<Button variant="ghost" onClick={() => goToStep(2)} className="gap-2">
@@ -598,14 +765,25 @@ export function OnboardingWizard({
 							    zaznaczeń: realny cel + niepusty katalog + 0 zaznaczeń zostaje aktywny
 							    (próg min-5→0, D5). Nie mylić tych dwóch. */}
 							<Button
-								onClick={runSubmit}
-								disabled={submitting || catalogLoading || !isRealGoal || catalog.length === 0}
+								onClick={diagnosticMode ? startDiagnosis : () => runSubmit()}
+								disabled={
+									submitting ||
+									startingDiagnosis ||
+									catalogLoading ||
+									!isRealGoal ||
+									catalog.length === 0
+								}
 								className="ob-btn-accent gap-2"
 							>
-								{submitting ? (
+								{submitting || startingDiagnosis ? (
 									<>
 										<BookOpen className="h-4 w-4 animate-spin" />
-										Zapisywanie…
+										{startingDiagnosis ? "Przygotowuję test…" : "Zapisywanie…"}
+									</>
+								) : diagnosticMode && Object.keys(selections).length > 0 ? (
+									<>
+										<Check className="h-4 w-4" />
+										Zatwierdź i sprawdź się testem
 									</>
 								) : (
 									<>
@@ -616,7 +794,7 @@ export function OnboardingWizard({
 							</Button>
 						</div>
 					</>
-				)}
+				) : null}
 
 				{/* Step 4 — Wnioski (ETAP D): bogaty ekran domykający z danych policzalnych. */}
 				{step === 4 && (
@@ -629,6 +807,7 @@ export function OnboardingWizard({
 						syllabusUsed={syllabusCompetencies.length > 0}
 						onComplete={handleComplete}
 						completing={completing}
+						diagnosisResult={diagnosisOutcome?.result ?? null}
 					/>
 				)}
 			</div>

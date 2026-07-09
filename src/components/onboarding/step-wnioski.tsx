@@ -17,6 +17,7 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import { useMemo } from "react";
 import { SharePill } from "@/components/skill-map/group-context";
 import { Button } from "@/components/ui/button";
+import type { AssessmentResult } from "@/lib/assessment/types";
 import {
 	computeMarketCoverage,
 	deriveGaps,
@@ -43,6 +44,14 @@ const PRIORITY_LABEL: Record<GapPriority, string> = {
 	nice_to_have: "Warto znać",
 };
 
+/** Etykiety poziomów zmierzonych diagnozą (1.12) — skala 1–4 jak levelToStatus. */
+const DIAGNOSIS_LEVEL_LABEL: Record<number, string> = {
+	1: "do nauki (test niezaliczony)",
+	2: "podstawy",
+	3: "dobry poziom",
+	4: "mocna strona",
+};
+
 interface StepWnioskiProps {
 	careerGoal: string;
 	/** Katalog rynku (posortowany, zaadnotowany sylabusem) — ŹRÓDŁO pokrycia i luk. */
@@ -58,6 +67,12 @@ interface StepWnioskiProps {
 	/** Domknięcie onboardingu + nawigacja; target domyślny = /dashboard. */
 	onComplete: (target?: string) => void;
 	completing: boolean;
+	/**
+	 * A5/1.12: wynik testu adaptacyjnego (null = klasyczna samoocena). Poziomy
+	 * w `selections` są już ZMIERZONE (wizard nadpisał markery po complete) —
+	 * ten prop dokłada panel „Wynik testu" (w tym uczciwie oblane, poziom 1).
+	 */
+	diagnosisResult?: AssessmentResult | null;
 }
 
 export function StepWnioski({
@@ -69,6 +84,7 @@ export function StepWnioski({
 	syllabusUsed,
 	onComplete,
 	completing,
+	diagnosisResult = null,
 }: StepWnioskiProps) {
 	const view = useMemo(() => {
 		// Lustrzane filtrowanie po katalogu (jak runSubmit w wizardzie) — odporne na
@@ -162,6 +178,42 @@ export function StepWnioski({
 					<span className="font-medium text-ed-amber-text">Teraz: {coverage}%</span>
 				</div>
 			</section>
+
+			{/* 2b. A5/1.12 — panel wyniku testu: poziomy ZMIERZONE, nie deklarowane.
+			    Uczciwie pokazuje też oblane (poziom 1 → luka) i uncovered (samoocena). */}
+			{diagnosisResult && (
+				<section
+					className="rounded-lg border border-border bg-card p-4 space-y-2"
+					aria-label="Wynik testu kompetencji"
+				>
+					<h3 className="font-heading text-base font-semibold text-foreground">
+						Wynik testu — poziomy zmierzone, nie deklarowane
+					</h3>
+					<ul className="space-y-1">
+						{Object.entries(diagnosisResult.competencies)
+							.sort(([, a], [, b]) => b - a)
+							.map(([name, level]) => (
+								<li key={name} className="flex items-center justify-between text-sm">
+									<span className="text-foreground">{name}</span>
+									<span
+										className={
+											level === 1
+												? "font-medium text-destructive"
+												: "font-medium text-ed-amber-text"
+										}
+									>
+										{DIAGNOSIS_LEVEL_LABEL[level] ?? `poziom ${level}`}
+									</span>
+								</li>
+							))}
+					</ul>
+					{diagnosisResult.uncovered.length > 0 && (
+						<p className="text-xs text-muted-foreground">
+							Bez pytań w banku (ocena własna, nie pomiar): {diagnosisResult.uncovered.join(", ")}.
+						</p>
+					)}
+				</section>
+			)}
 
 			{/* 5. profileNote — uczciwe zastrzeżenie, jak czytać te liczby */}
 			{profileNote && (

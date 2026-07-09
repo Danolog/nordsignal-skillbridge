@@ -41,9 +41,11 @@ vi.mock("@/lib/db/tenant-mapping", () => ({
 	resolveTenantId: vi.fn(async () => "tenant-test"),
 }));
 
-// withTenantContext: pomija realny DB — zwraca stały studentId. Callback NIE jest
-// wołany (resolve wprost), więc insert competencies/levelToStatus się nie wykonują —
-// ten test pilnuje kontraktu walidacji + ROUTINGU ścieżki, nie persystencji wierszy.
+// withTenantContext: pomija realny DB — zwraca kontrakt transakcji 1.12
+// {studentId, possessedNames}. Callback NIE jest wołany (resolve wprost), więc
+// insert competencies/levelToStatus się nie wykonują — ten test pilnuje kontraktu
+// walidacji + ROUTINGU (possessedNames z tx → persistMarketGaps), nie persystencji;
+// semantykę filtra statusów (§4a) dowodzi onboarding-diagnosis.integration.test.ts.
 const mockWithTenant = vi.fn();
 vi.mock("@/lib/db/tenant-context", () => ({
 	withTenantContext: (ctx: unknown, fn: (tx: unknown) => Promise<unknown>) =>
@@ -88,7 +90,10 @@ function makeReq(body: unknown) {
 beforeEach(() => {
 	vi.clearAllMocks();
 	mockGetSession.mockResolvedValue({ user: { id: "user-1" } });
-	mockWithTenant.mockResolvedValue("student-1");
+	mockWithTenant.mockResolvedValue({
+		studentId: "student-1",
+		possessedNames: ["SQL", "Python", "Pandas"],
+	});
 });
 
 describe("POST /api/onboarding — kontrakt Partii 4 (próg min-5 zniesiony)", () => {
@@ -115,10 +120,11 @@ describe("POST /api/onboarding — kontrakt Partii 4 (próg min-5 zniesiony)", (
 		expect(res.status).toBe(200);
 		const json = (await res.json()) as { success: boolean };
 		expect(json.success).toBe(true);
-		// persistMarketGaps dostaje NAZWY zaznaczonych (wejście liczenia luk deterministycznych).
+		// persistMarketGaps dostaje POSIADANE z kontraktu transakcji (1.12: status ≠
+		// missing — tu z mocka withTenantContext; semantyka filtra w teście integracyjnym).
 		expect(mockPersistMarketGaps).toHaveBeenCalledOnce();
 		const args = mockPersistMarketGaps.mock.calls[0] as unknown[];
-		expect(args[3]).toEqual(["SQL", "Python", "Pandas"]); // (studentId, tenantId, careerGoal, names)
+		expect(args[3]).toEqual(["SQL", "Python", "Pandas"]); // (studentId, tenantId, careerGoal, possessedNames)
 		expect(mockGenerateSkillMap).toHaveBeenCalledOnce();
 	});
 

@@ -55,6 +55,14 @@ interface StepMarketCompetenciesProps {
 	 * null/brak → bez noty. Czysta etykieta — nie wpływa na pokrycie ani listę kompetencji.
 	 */
 	profileNote?: string | null;
+	/**
+	 * A5/1.12 (za flagą diagnosticAssessment): tryb BINARNY — student tylko ZAZNACZA,
+	 * z czym ma styczność (poziom zmierzy test adaptacyjny). Selektor 4 stanów →
+	 * 2 stany (Brak / „Mam styczność", zapis jako poziom 2 — marker, nie samoocena;
+	 * POST i tak nie wysyła poziomu dla zmierzonych). Nagłówek pokrycia % ukryty —
+	 * przed pomiarem liczba byłaby zgadywana.
+	 */
+	binaryMode?: boolean;
 }
 
 export function StepMarketCompetencies({
@@ -68,6 +76,7 @@ export function StepMarketCompetencies({
 	onRetry,
 	isRealCareerGoal,
 	profileNote = null,
+	binaryMode = false,
 }: StepMarketCompetenciesProps) {
 	// Pokrycie (9c B1) — liczone na żywo z wyboru. Mianownik = cały katalog rynku (płaski).
 	const selectedLevels = Object.values(selections);
@@ -123,21 +132,41 @@ export function StepMarketCompetencies({
 
 	return (
 		<div className="space-y-5">
-			{/* Nagłówek zatrudnialności (9c B1–B4) — % POKRYCIA, nigdy obietnica pracy. */}
+			{/* Nagłówek: klasycznie % POKRYCIA (9c B1–B4); w trybie binarnym (1.12) bez
+			    liczby — przed pomiarem % byłby zgadywany, pokaże go dopiero ekran Wniosków. */}
 			<section
 				className="rounded-lg border border-border bg-card p-4"
-				aria-label={`Pokrycie kompetencji wymaganych przez rynek: ${coverage} procent`}
+				aria-label={
+					binaryMode
+						? `Zaznaczono ${selectedCount} z ${catalog.length} kompetencji do zmierzenia testem`
+						: `Pokrycie kompetencji wymaganych przez rynek: ${coverage} procent`
+				}
 			>
-				<div className="flex items-baseline gap-2">
-					<span className="font-heading text-3xl font-extrabold text-foreground">{coverage}%</span>
-					<span className="text-sm font-medium text-muted-foreground">
-						pokrycia kompetencji wymaganych przez rynek dla roli {careerGoal}
-					</span>
-				</div>
-				{/* B2: jawne „to pokrycie umiejętności z ofert, nie gwarancja zatrudnienia". */}
-				<p className="mt-1 text-xs text-muted-foreground">
-					To pokrycie umiejętności z ofert pracy, nie gwarancja zatrudnienia.
-				</p>
+				{binaryMode ? (
+					<div className="flex items-baseline gap-2">
+						<span className="font-heading text-3xl font-extrabold text-foreground">
+							{selectedCount}/{catalog.length}
+						</span>
+						<span className="text-sm font-medium text-muted-foreground">
+							kompetencji zaznaczonych do zmierzenia — poziom sprawdzi krótki test, nie deklaracja
+						</span>
+					</div>
+				) : (
+					<>
+						<div className="flex items-baseline gap-2">
+							<span className="font-heading text-3xl font-extrabold text-foreground">
+								{coverage}%
+							</span>
+							<span className="text-sm font-medium text-muted-foreground">
+								pokrycia kompetencji wymaganych przez rynek dla roli {careerGoal}
+							</span>
+						</div>
+						{/* B2: jawne „to pokrycie umiejętności z ofert, nie gwarancja zatrudnienia". */}
+						<p className="mt-1 text-xs text-muted-foreground">
+							To pokrycie umiejętności z ofert pracy, nie gwarancja zatrudnienia.
+						</p>
+					</>
+				)}
 				<p className="mt-3 text-sm text-foreground">
 					Uczysz się tego, czego realnie chcą pracodawcy. Oznaczone „w programie studiów" dostajesz
 					z toku — resztę dobierasz projektami.
@@ -177,6 +206,7 @@ export function StepMarketCompetencies({
 										inSyllabus={inSyllabusByName.get(item.competencyName) ?? false}
 										level={selections[item.competencyName] ?? null}
 										onChange={(level) => onChange(item.competencyName, level)}
+										binaryMode={binaryMode}
 									/>
 								))}
 							</ul>
@@ -195,6 +225,7 @@ export function StepMarketCompetencies({
 							inSyllabus={Boolean(item.inSyllabus)}
 							level={selections[item.competencyName] ?? null}
 							onChange={(level) => onChange(item.competencyName, level)}
+							binaryMode={binaryMode}
 						/>
 					))}
 				</ul>
@@ -300,6 +331,7 @@ function CompetencyRow({
 	inSyllabus,
 	level,
 	onChange,
+	binaryMode = false,
 }: {
 	name: string;
 	demandPercentage: number;
@@ -307,6 +339,7 @@ function CompetencyRow({
 	inSyllabus: boolean;
 	level: PossessionLevel | null;
 	onChange: (level: PossessionLevel | null) => void;
+	binaryMode?: boolean;
 }) {
 	const possession = possessionLabelsForKind(kind);
 	return (
@@ -325,24 +358,36 @@ function CompetencyRow({
 					</span>
 				)}
 			</div>
-			{/* Selektor 4 stanów: Brak (odznacz) + 3 poziomy posiadania (czasownik per rodzaj). */}
+			{/* Selektor: klasycznie 4 stany (Brak + 3 poziomy, czasownik per rodzaj);
+			    tryb binarny (1.12) — 2 stany, poziom zmierzy test (2 = marker zaznaczenia). */}
 			<fieldset className="m-0 flex flex-wrap gap-1.5 border-0 p-0">
 				<legend className="sr-only">Poziom: {name}</legend>
 				<LevelButton
 					selected={level === null}
 					label="Brak"
-					title="Nie znam — to luka do nauki"
+					title={
+						binaryMode ? "Nie mam styczności — to luka do nauki" : "Nie znam — to luka do nauki"
+					}
 					onClick={() => onChange(null)}
 				/>
-				{possession.map((opt) => (
+				{binaryMode ? (
 					<LevelButton
-						key={opt.level}
-						selected={level === opt.level}
-						label={opt.label}
-						title={opt.title}
-						onClick={() => onChange(opt.level)}
+						selected={level !== null}
+						label="Mam styczność — zmierz testem"
+						title="Poziom sprawdzi krótki test, nie deklaracja"
+						onClick={() => onChange(2)}
 					/>
-				))}
+				) : (
+					possession.map((opt) => (
+						<LevelButton
+							key={opt.level}
+							selected={level === opt.level}
+							label={opt.label}
+							title={opt.title}
+							onClick={() => onChange(opt.level)}
+						/>
+					))
+				)}
 			</fieldset>
 		</li>
 	);

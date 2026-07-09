@@ -27,13 +27,15 @@ describe("calculateCoverage", () => {
 	});
 
 	it("calculates mixed statuses correctly", () => {
+		// [1.12/§4a] Wiersz 'missing' (zmierzony poziom 1) jest reprezentowany
+		// przez LUKĘ — mianownik = posiadane + luki, wiersz missing nie podwaja.
 		const comps = [
 			{ status: "acquired" as const },
 			{ status: "in_progress" as const },
 			{ status: "missing" as const },
 		];
-		// (1 + 1*0.5) / 3 * 100 = 50
-		expect(calculateCoverage(comps, 0)).toBe(50);
+		// (1 + 1*0.5) / (2 posiadane + 1 luka-lustro) * 100 = 50
+		expect(calculateCoverage(comps, 1)).toBe(50);
 	});
 
 	it("rounds to nearest integer", () => {
@@ -42,8 +44,19 @@ describe("calculateCoverage", () => {
 			{ status: "missing" as const },
 			{ status: "missing" as const },
 		];
-		// (1 + 0) / 3 * 100 = 33.33... → 33
-		expect(calculateCoverage(comps, 0)).toBe(33);
+		// (1 + 0) / (1 posiadana + 2 luki-lustra) * 100 = 33.33... → 33
+		expect(calculateCoverage(comps, 2)).toBe(33);
+	});
+
+	it("[1.12/§4a] wiersz missing nie podwaja pozycji katalogu w mianowniku", () => {
+		// Katalog 3 pozycje: 2 posiadane + 1 oblana w diagnozie (wiersz missing
+		// ORAZ luka). Mianownik musi być 3 (katalog), nie 4 (podwójne liczenie).
+		const comps = [
+			{ status: "acquired" as const },
+			{ status: "acquired" as const },
+			{ status: "missing" as const },
+		];
+		expect(calculateCoverage(comps, 1)).toBe(67); // 2/3, nie 2/4
 	});
 
 	it("handles single acquired competency", () => {
@@ -77,8 +90,9 @@ describe("calculateCoverage", () => {
 			{ status: "in_progress" as const },
 			{ status: "missing" as const },
 		];
-		// covered = 2 + 0.5 = 2.5, total = 4 + 6 = 10 → 25%
-		expect(calculateCoverage(comps, 6)).toBe(25);
+		// covered = 2 + 0.5 = 2.5, total = 3 posiadane + 6 luk (w tym lustro
+		// wiersza missing) = 9 → 27.7… → 28%
+		expect(calculateCoverage(comps, 6)).toBe(28);
 	});
 
 	it("defaults gapCount to 0 for backward compatibility", () => {
