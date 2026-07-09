@@ -66,6 +66,13 @@ export const FLAGS = {
 			"i ścieżka onboardingu bez sylabusa. Off = onboarding jak dziś (samoocena).",
 		defaultValue: false,
 	},
+	socraticTutor: {
+		envVar: "FLAG_SOCRATIC_TUTOR",
+		description:
+			"C11/1.13–1.14: tutor sokratyczny w widoku projektu (naprowadza, nie podaje rozwiązań) — " +
+			"trasy /api/projects/[id]/tutor. Off = trasa nie istnieje (404).",
+		defaultValue: false,
+	},
 	careerModelFromDb: {
 		envVar: "FLAG_CAREER_MODEL_FROM_DB",
 		description:

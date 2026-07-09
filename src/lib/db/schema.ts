@@ -1136,6 +1136,49 @@ export const assessmentAnswers = pgTable(
 	],
 );
 
+// ============================================================================
+// C11/1.13 — TUTOR SOKRATYCZNY (migracja 0031). Rozmowa studenta z tutorem
+// w kontekście projektu (brief+rubryka+recenzja+repo). Klucz konwersacji =
+// (student_id, project_id) — bez osobnej tabeli sesji: tutor to JEDNA ciągła
+// rozmowa nad projektem, limit tur w KODZIE (MAX_TUTOR_TURNS, wzorzec
+// Pomocnika golden-adr §3.1), nie ma restartów ani statusów do modelowania.
+//
+// Klasa danych: PRYWATNA rozmowa studenta (jak career_helper_turns /
+// project_reflections) — grant TYLKO app_student, app_faculty fizycznie bez
+// wstępu (deny-by-default). Pełny wzorzec RLS z 0013: ENABLE+FORCE +
+// student_sees_own + owner_passthrough. Sekcja RLS dopisana ręcznie w
+// drizzle/0031_*.sql (drizzle-kit nie generuje RLS).
+// ============================================================================
+
+export const tutorTurnRoleEnum = pgEnum("tutor_turn_role", ["ai", "user"]);
+
+export const tutorTurns = pgTable(
+	"tutor_turns",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		projectId: uuid("project_id")
+			.notNull()
+			.references(() => projects.id, { onDelete: "cascade" }),
+		role: tutorTurnRoleEnum("role").notNull(),
+		content: text("content").notNull(),
+		// Kolejność liczona przez serwer (para user+ai dzieli indeks, jak
+		// career_helper_turns) — limit tur egzekwowany w kodzie trasy.
+		turnIndex: smallint("turn_index").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		// Główne zapytanie trasy: historia jednej rozmowy (student+projekt).
+		index("idx_tutor_turns_student_project").on(table.studentId, table.projectId),
+		index("idx_tutor_turns_tenant_id").on(table.tenantId),
+	],
+);
+
 // Relations
 
 export const studentsRelations = relations(students, ({ one, many }) => ({
@@ -1249,4 +1292,10 @@ export const projectReflectionsRelations = relations(projectReflections, ({ one 
 		fields: [projectReflections.projectId],
 		references: [projects.id],
 	}),
+}));
+
+// C11/1.13 — Tutor sokratyczny relations
+export const tutorTurnsRelations = relations(tutorTurns, ({ one }) => ({
+	student: one(students, { fields: [tutorTurns.studentId], references: [students.id] }),
+	project: one(projects, { fields: [tutorTurns.projectId], references: [projects.id] }),
 }));

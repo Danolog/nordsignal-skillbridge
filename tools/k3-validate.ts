@@ -68,6 +68,10 @@ const TENANT_TABLES = [
 	// strażnik #13a) — obie z pełnym wzorcem RLS (ENABLE+FORCE+owner_passthrough).
 	"assessment_sessions",
 	"assessment_answers",
+	// C11/1.13 — rozmowy tutora sokratycznego (migracja 0031). K-PII (prywatna
+	// rozmowa studenta, jak career_helper_turns); grant tylko app_student,
+	// app_faculty bez grantu; ENABLE+FORCE + student_sees_own + owner_passthrough.
+	"tutor_turns",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.
