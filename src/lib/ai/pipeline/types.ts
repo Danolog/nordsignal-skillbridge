@@ -237,4 +237,11 @@ export type PipelineResult = {
 	needsHumanReview: boolean;
 	aiReviewJson: PipelineReviewJson;
 	flags: PipelineFlag[];
+	/**
+	 * B7/1.16a (ADR-013) — krok 6-prep: zamrożony plan pytań obrony wygenerowany
+	 * z artefaktu kroku 1 (zero dryfu). Obecny TYLKO gdy trasa podała viva
+	 * (flaga ON) i status z kroku 5 = 'verified'. `questions: null` =
+	 * generacja fail-closed → trasa tworzy sesję inconclusive (człowiek).
+	 */
+	vivaPrep?: { questions: import("@/lib/viva/types").VivaQuestion[] | null };
 };

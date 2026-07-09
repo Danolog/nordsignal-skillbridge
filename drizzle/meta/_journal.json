@@ -225,6 +225,13 @@
       "when": 1783610643728,
       "tag": "0031_abandoned_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1783620996022,
+      "tag": "0032_deep_the_executioner",
+      "breakpoints": true
     }
   ]
 }

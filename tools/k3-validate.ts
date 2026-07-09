@@ -72,6 +72,12 @@ const TENANT_TABLES = [
 	// rozmowa studenta, jak career_helper_turns); grant tylko app_student,
 	// app_faculty bez grantu; ENABLE+FORCE + student_sees_own + owner_passthrough.
 	"tutor_turns",
+	// B7/1.16a (ADR-013) — obrona ustna (migracja 0032). viva_sessions: grant
+	// TYLKO SELECT dla app_student (zapisy owner-side); viva_answers: wariant
+	// DENY (zero grantów app_*, strażnik #13a) — obie ENABLE+FORCE+
+	// student_sees_own(sessions)+owner_passthrough.
+	"viva_sessions",
+	"viva_answers",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.
@@ -210,7 +216,7 @@ async function main() {
 				`SELECT count(*)::int AS c
 				   FROM information_schema.role_table_grants
 				  WHERE grantee IN ('app_student', 'app_faculty')
-				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs', 'job_market_data_bak', 'project_hidden_tests', 'question_concepts', 'question_items', 'assessment_answers')`,
+				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs', 'job_market_data_bak', 'project_hidden_tests', 'question_concepts', 'question_items', 'assessment_answers', 'viva_answers')`,
 			);
 			check(
 				"13a. AG.3/B6/A5 — zero grantów app_student/app_faculty na tabelach DENY (staging/runy/ukryte testy/bank pytań/odpowiedzi)",

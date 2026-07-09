@@ -1179,6 +1179,97 @@ export const tutorTurns = pgTable(
 	],
 );
 
+// ============================================================================
+// B7/1.16a — OBRONA USTNA (viva), ADR-013. Migracja 0032.
+//
+// Viva bramkuje status 'verified' (za flagą vivaDefense): pytania generowane
+// W POTOKU (krok 6-prep, ten sam artefakt co ocena — zero dryfu), sesja
+// pending tworzona przy submicie, student odpowiada asynchronicznie.
+//
+// Klasy danych (ADR-013 D3):
+//  - viva_sessions: student widzi WŁASNĄ sesję (pytania są dla niego), ale
+//    zapisy WYŁĄCZNIE owner-side → grant TYLKO SELECT (wzorzec 0030
+//    assessment_sessions). questionsJson zamrożony przed pierwszym pokazaniem.
+//  - viva_answers: wariant DENY (zero grantów app_*, strażnik k3 #13a) —
+//    surowe odpowiedzi czyta serwer i recenzent przez dedykowaną trasę
+//    z audytem; student dostaje wynik z resultJson sesji.
+// Jedno źródło prawdy stanu = viva_sessions.status; aiReviewJson.viva to
+// projekcja zapisywana w tej samej tx. Sekcja RLS ręcznie w drizzle/0032_*.sql.
+// ============================================================================
+
+export const vivaSessions = pgTable(
+	"viva_sessions",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		submissionId: uuid("submission_id")
+			.notNull()
+			.references(() => projectSubmissions.id, { onDelete: "cascade" }),
+		// Jawny cascade po studencie (art. 17 RODO) — nie polegamy na kolejności
+		// kaskad przez submission (wzorzec 0030).
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		// pending → in_progress → passed|failed|inconclusive|expired|superseded.
+		// CHECK (lista miękka) zamiast enuma — przyszły stan to ALTER CHECK.
+		status: text("status").notNull().default("pending"),
+		// Zamrożony plan: [{ position, question, filePath? }] — walidowany schematem
+		// przed zapisem (second-order injection: pytania są wyświetlane studentowi).
+		questionsJson: jsonb("questions_json").notNull(),
+		// Po zamknięciu: punkty, werdykty sędziego per pytanie, próg. Surowego
+		// tekstu odpowiedzi tu NIE ma (retencja odpowiedzi ≠ retencja wyniku).
+		resultJson: jsonb("result_json"),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		// Odsłonięcie pierwszego pytania — od tego liczy się TTL 60 min.
+		startedAt: timestamp("started_at", { withTimezone: true }),
+		completedAt: timestamp("completed_at", { withTimezone: true }),
+	},
+	(table) => [
+		index("idx_viva_sessions_submission_id").on(table.submissionId),
+		index("idx_viva_sessions_student_id").on(table.studentId),
+		index("idx_viva_sessions_tenant_id").on(table.tenantId),
+		check(
+			"viva_sessions_status_values",
+			sql`${table.status} IN ('pending','in_progress','passed','failed','inconclusive','expired','superseded')`,
+		),
+		// Jedna ŻYWA sesja per zgłoszenie (pending/in_progress); stany końcowe
+		// nie blokują ponownej vivy otwartej przez człowieka (ADR-013 D2.4).
+		uniqueIndex("uq_viva_sessions_active")
+			.on(table.submissionId)
+			.where(sql`${table.status} IN ('pending','in_progress')`),
+	],
+);
+
+export const vivaAnswers = pgTable(
+	"viva_answers",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		sessionId: uuid("session_id")
+			.notNull()
+			.references(() => vivaSessions.id, { onDelete: "cascade" }),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		position: smallint("position").notNull(),
+		// Surowa odpowiedź studenta — retencja 12 m-cy po rozstrzygnięciu
+		// (ADR-013 D3; kasowanie zostawia resultJson sesji).
+		content: text("content").notNull(),
+		// Werdykt sędziego: { points 0-2, justification } — zapis po ocenie.
+		verdictJson: jsonb("verdict_json"),
+		answeredAt: timestamp("answered_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_viva_answers_session_id").on(table.sessionId),
+		index("idx_viva_answers_tenant_id").on(table.tenantId),
+		uniqueIndex("uq_viva_answers_session_position").on(table.sessionId, table.position),
+	],
+);
+
 // Relations
 
 export const studentsRelations = relations(students, ({ one, many }) => ({

@@ -58,6 +58,9 @@ export const rateLimiters = {
 	// ten limiter tnie wolumen dzienny. Twardy cap długości rozmowy per projekt
 	// (MAX_TUTOR_TURNS) siedzi w kodzie trasy — to inne wymiary.
 	tutorDaily: makeLimiter(Ratelimit.slidingWindow(40, "1 d"), "tutor-daily"),
+	// B7/1.16a (ADR-013): dzienny cap odpowiedzi vivy per student — koszt sędziego
+	// pod kontrolą (viva ma stały koszt 4 wywołań, cap tnie farmę restartów).
+	vivaDaily: makeLimiter(Ratelimit.slidingWindow(30, "1 d"), "viva-daily"),
 };
 
 export type RateLimitResult = {
