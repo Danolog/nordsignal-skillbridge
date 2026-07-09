@@ -9,6 +9,7 @@ import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { matchCareerGoal } from "@/lib/db/data/career-paths";
 import { competencies, students } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
 
 export default async function OnboardingPage({
 	searchParams,
@@ -104,6 +105,9 @@ export default async function OnboardingPage({
 			initialStep={initialStep}
 			initialData={initialData}
 			carryoverSelfAssessments={carryoverSelfAssessments}
+			// A5/1.12: flaga czytana server-side (env bez NEXT_PUBLIC_ — nie
+			// eksponujemy rejestru flag na klient); off = kreator jak dotąd.
+			diagnosticEnabled={isFeatureEnabled("diagnosticAssessment")}
 		/>
 	);
 }

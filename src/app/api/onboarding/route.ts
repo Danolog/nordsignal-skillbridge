@@ -3,10 +3,19 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateSkillMap } from "@/lib/ai/generate-skill-map";
+import type { AssessmentResult } from "@/lib/assessment/types";
 import { auth } from "@/lib/auth/server";
-import { competencies, passports, projectSubmissions, students } from "@/lib/db/schema";
+import { db } from "@/lib/db";
+import {
+	assessmentSessions,
+	competencies,
+	passports,
+	projectSubmissions,
+	students,
+} from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { resolveTenantId } from "@/lib/db/tenant-mapping";
+import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 import { persistMarketGaps } from "@/lib/onboarding/market-gaps";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
@@ -17,9 +26,14 @@ export const maxDuration = 60;
 // Partia 4: NOWY kontrakt kompetencji = wybór z katalogu rynku z POZIOMEM posiadania.
 // Poziom 2/3/4 = samoocena (Brak nie jest wysyłane — niezaznaczone = luka). Próg
 // „min 5" ZNIESIONY (0 dozwolone — D5); pusta tablica = student startuje z 0% pokrycia.
+//
+// A5/1.12: `level` OPCJONALNY, gdy przyszło `diagnosticSessionId` — wpis bez poziomu
+// = „zmierzone testem": serwer bierze poziom (1–4, w tym 1!) z result_json UKOŃCZONEJ
+// sesji diagnozy, klientowi nie ufa. Bez sesji brak poziomu = 400 (walidacja niżej).
+// Poziom 1 nigdy nie przychodzi od klienta — wchodzi wyłącznie ścieżką pomiaru.
 const SelectedCompetencySchema = z.object({
 	name: z.string().min(1).max(200),
-	level: z.union([z.literal(2), z.literal(3), z.literal(4)]),
+	level: z.union([z.literal(2), z.literal(3), z.literal(4)]).optional(),
 	marketPercentage: z.number().int().min(0).max(100),
 	inSyllabus: z.boolean().optional().default(false),
 });
@@ -43,6 +57,9 @@ const OnboardingSchema = z.object({
 	// klocek dla AG.5+). Stary kontrakt string[] pada teraz na walidacji → 400.
 	// Pusta tablica [] = 0 zaznaczeń (D5) — student startuje z 0% pokrycia.
 	competencies: z.array(SelectedCompetencySchema).max(100),
+	// A5/1.12: id UKOŃCZONEJ sesji diagnozy (za flagą diagnosticAssessment).
+	// Obecne → wpisy bez `level` dostają poziom zmierzony (result_json sesji).
+	diagnosticSessionId: z.string().uuid().optional(),
 });
 
 export async function POST(req: Request) {
@@ -69,10 +86,62 @@ export async function POST(req: Request) {
 	}
 	const { university, fieldOfStudy, semester, careerGoal, syllabusText } = parsed.data;
 	const selected: SelectedComp[] = parsed.data.competencies;
-	// Nazwy zaznaczonych — wejście liczenia luk (katalog rynku \ wybór).
-	const competencyNames = selected.map((c) => c.name);
 
 	const userId = session.user.id;
+
+	// ── A5/1.12: poziomy zmierzone diagnozą (za flagą; klientowi nie ufamy) ──
+	// measuredByName: nazwa → poziom 1–4 z result_json UKOŃCZONEJ sesji studenta.
+	// Wpis payloadu bez `level` MUSI być zmierzony (inaczej 400 niżej).
+	const diagnosticEnabled = isFeatureEnabled("diagnosticAssessment");
+	let measuredByName = new Map<string, number>();
+	if (diagnosticEnabled && parsed.data.diagnosticSessionId) {
+		const [assessment] = await db
+			.select({
+				studentUserId: students.userId,
+				kind: assessmentSessions.kind,
+				status: assessmentSessions.status,
+				careerGoal: assessmentSessions.careerGoal,
+				resultJson: assessmentSessions.resultJson,
+			})
+			.from(assessmentSessions)
+			.innerJoin(students, eq(assessmentSessions.studentId, students.id))
+			.where(eq(assessmentSessions.id, parsed.data.diagnosticSessionId));
+		// Cudza/nieukończona/z innego celu → 409 (nie 404 — sesja może istnieć,
+		// ale nie nadaje się jako źródło poziomów dla TEGO zapisu).
+		const result = assessment?.resultJson as AssessmentResult | null | undefined;
+		if (
+			!assessment ||
+			assessment.studentUserId !== userId ||
+			assessment.kind !== "diagnostic" ||
+			assessment.status !== "completed" ||
+			assessment.careerGoal !== careerGoal ||
+			!result
+		) {
+			return NextResponse.json(
+				{ error: "Sesja diagnozy nie pasuje do tego zapisu — przejdź test ponownie." },
+				{ status: 409 },
+			);
+		}
+		measuredByName = new Map(
+			Object.entries(result.competencies).map(([name, level]) => [name, level]),
+		);
+	}
+
+	// Walidacja spójności wpisów: bez poziomu wolno przyjść TYLKO wpisowi
+	// zmierzonemu w podanej sesji. (Bez sesji/flagi → każdy wpis wymaga poziomu —
+	// dokładnie stary kontrakt.)
+	const unmeasuredWithoutLevel = selected.filter(
+		(c) => c.level === undefined && !measuredByName.has(c.name),
+	);
+	if (unmeasuredWithoutLevel.length > 0) {
+		return NextResponse.json(
+			{
+				error: "Kompetencje bez poziomu muszą pochodzić z ukończonej diagnozy.",
+				names: unmeasuredWithoutLevel.map((c) => c.name),
+			},
+			{ status: 400 },
+		);
+	}
 
 	// K3: resolve tenant from (free-form) university — mirror of 0006 backfill.
 	// resolveTenantId rzuca, gdy brak tenanta __unmapped (seed 0005) — łapiemy,
@@ -96,9 +165,18 @@ export async function POST(req: Request) {
 	// przez dłuższą pracę, plus ich własne DB calls idą jeszcze przez owner
 	// (sub-issues #19c..#19f domkną je per trasa). Studentid + competency-rows
 	// committed po commit transakcji ⇒ dalsze kroki widzą je w swoim połączeniu.
+	// Transakcja zwraca id studenta + nazwy kompetencji POSIADANYCH (status ≠
+	// missing) — wejście liczenia luk. [1.12/§4a] Niezmiennik ratyfikowany:
+	// luka ≡ „wymagana przez rynek ∧ missing". Dotąd „posiadane" = „zaznaczone"
+	// (poziom 1 nie istniał w kontrakcie); diagnoza wprowadza zmierzony poziom 1
+	// (status missing) — taka kompetencja MUSI zostać luką, więc luki liczymy ze
+	// STATUSÓW zapisanych wierszy, nie z listy zaznaczeń.
 	let studentId: string;
+	let possessedNames: string[];
 	try {
-		studentId = await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {
+		const persisted = await withTenantContext({ userId, tenantId, role: "student" }, async (tx) => {
+			// Carry-over pomiaru przy re-onboardingu (wypełniany niżej, w tej tx).
+			const carryoverByName = new Map<string, number>();
 			// Upsert student record
 			const existing = await tx.query.students.findFirst({
 				where: eq(students.userId, userId),
@@ -124,6 +202,25 @@ export async function POST(req: Request) {
 					.where(eq(students.userId, userId));
 				sid = existing.id;
 
+				// [1.12/§4a — polityka re-onboardingu] Carry-over POMIARU: zanim
+				// skasujemy stare wiersze, zapamiętujemy te zmierzone diagnozą.
+				// POST bez nowej sesji (edytor profilu, ponowny przebieg kreatora
+				// bez testu) NIE degraduje pomiaru do deklaracji — poziom zmierzony
+				// wygrywa z samooceną; nadpisze go dopiero NOWA sesja diagnozy
+				// (measuredByName ma pierwszeństwo przy budowie wierszy niżej).
+				// Odznaczenie kompetencji = świadome usunięcie (wpis znika → luka).
+				if (diagnosticEnabled) {
+					const previousDiagnostic = await tx.query.competencies.findMany({
+						where: eq(competencies.studentId, sid),
+						columns: { name: true, selfAssessment: true, verifiedByMethod: true },
+					});
+					for (const row of previousDiagnostic) {
+						if (row.verifiedByMethod === "diagnostic" && row.selfAssessment !== null) {
+							carryoverByName.set(row.name, row.selfAssessment);
+						}
+					}
+				}
+
 				// Delete old competencies for idempotency
 				await tx.delete(competencies).where(eq(competencies.studentId, sid));
 			} else {
@@ -148,21 +245,36 @@ export async function POST(req: Request) {
 
 			// Insert competencies (po INSERT studentu w tej samej tx — RLS
 			// student_sees_own widzi własny wiersz w ramach tx read-committed).
-			// Każda niesie POZIOM samooceny (2/3/4) ze scalonego kroku — status
-			// z ratyfikowanej mapy levelToStatus, verifiedByMethod='self' (Beta),
-			// realny % popytu z katalogu. Pusta tablica (0 zaznaczeń, D5) → brak insertu.
-			if (selected.length > 0) {
-				await tx.insert(competencies).values(
-					selected.map((c) => ({
-						studentId: sid,
-						tenantId,
-						name: c.name,
-						status: levelToStatus(c.level),
-						selfAssessment: c.level,
-						verifiedByMethod: "self" as const,
-						marketPercentage: c.marketPercentage,
-					})),
-				);
+			// Poziom per wiersz wg PRECEDENCJI (1.12): zmierzony w podanej sesji
+			// (1–4, method='diagnostic') > carry-over poprzedniego pomiaru
+			// (method='diagnostic') > samoocena klienta (2/3/4, method='self').
+			// Status z ratyfikowanej mapy levelToStatus; poziom 1 (tylko pomiar)
+			// → status 'missing' — wiersz zostaje (prowieniencja: „zmierzono: brak"),
+			// a luka powstaje z niezmiennika statusowego (possessedNames niżej).
+			// Pusta tablica (0 zaznaczeń, D5) → brak insertu.
+			const rows = selected.map((c) => {
+				const measured = measuredByName.get(c.name);
+				const carryover = carryoverByName.get(c.name);
+				const level = measured ?? carryover ?? c.level;
+				if (level === undefined) {
+					// Nieosiągalne po walidacji wyżej — twarda asercja zamiast cichego NULL.
+					throw new Error(`Kompetencja "${c.name}" bez poziomu po walidacji`);
+				}
+				return {
+					studentId: sid,
+					tenantId,
+					name: c.name,
+					status: levelToStatus(level),
+					selfAssessment: level,
+					verifiedByMethod:
+						measured !== undefined || carryover !== undefined
+							? ("diagnostic" as const)
+							: ("self" as const),
+					marketPercentage: c.marketPercentage,
+				};
+			});
+			if (rows.length > 0) {
+				await tx.insert(competencies).values(rows);
 			}
 
 			// Create passport if not exists; jeśli istnieje — odśwież tenantId
@@ -186,8 +298,13 @@ export async function POST(req: Request) {
 				.set({ tenantId })
 				.where(eq(projectSubmissions.studentId, sid));
 
-			return sid;
+			return {
+				studentId: sid,
+				possessedNames: rows.filter((r) => r.status !== "missing").map((r) => r.name),
+			};
 		});
+		studentId = persisted.studentId;
+		possessedNames = persisted.possessedNames;
 	} catch (err) {
 		logError("onboarding", err, { phase: "persist", userId });
 		return NextResponse.json({ error: "Persistence failed" }, { status: 500 });
@@ -205,8 +322,9 @@ export async function POST(req: Request) {
 	// modelu, bez nadpisywania statusu samooceny (HITL). Status kompetencji pochodzi
 	// wyłącznie od studenta (levelToStatus przy insercie wyżej).
 	try {
-		// Luki DETERMINISTYCZNE: katalog rynku \ wybór (popyt z danych, bez modelu).
-		await persistMarketGaps(studentId, tenantId, careerGoal, competencyNames);
+		// Luki DETERMINISTYCZNE: katalog rynku \ POSIADANE (status ≠ missing —
+		// zmierzony poziom 1 zostaje luką mimo zaznaczenia; §4a/1.12).
+		await persistMarketGaps(studentId, tenantId, careerGoal, possessedNames);
 		await generateSkillMap(studentId, tenantId);
 	} catch (err) {
 		logError("onboarding", err, { studentId });

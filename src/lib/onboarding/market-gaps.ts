@@ -71,18 +71,21 @@ export async function loadMarketCatalog(careerGoal: string): Promise<MarketCatal
  * Wołane PRZED `generateSkillMap` (graf czyta świeże luki + statusy). Idempotentne:
  * najpierw kasuje stare luki studenta (re-onboarding nie duplikuje).
  *
- * `selectedNames` = nazwy zaznaczonych kompetencji (status już ustawiony przy insercie
- * z poziomu samooceny). Status zapisanych kompetencji NIE jest tu ruszany (HITL).
+ * `possessedNames` = nazwy kompetencji POSIADANYCH (status ≠ missing). [1.12/§4a]
+ * Do 1.11 było to tożsame z „zaznaczone" (kontrakt nie znał poziomu 1); diagnoza
+ * wprowadza zmierzony poziom 1 (status missing) — taka pozycja MUSI zostać luką,
+ * więc wołający filtruje po statusie. Niezmiennik ratyfikowany bez zmian:
+ * luka ≡ „wymagana przez rynek ∧ missing". Status wierszy NIE jest tu ruszany (HITL).
  */
 export async function persistMarketGaps(
 	studentId: string,
 	tenantId: string,
 	careerGoal: string,
-	selectedNames: string[],
+	possessedNames: string[],
 ): Promise<void> {
 	try {
 		const catalog = await loadMarketCatalog(careerGoal);
-		const derived = deriveGaps(catalog, selectedNames);
+		const derived = deriveGaps(catalog, possessedNames);
 
 		// Idempotencja: wymaż istniejące luki studenta przed wstawieniem świeżych.
 		// Transakcyjnie (G / domknięcie 0.3) — przy zmianie kierunku DELETE kasuje realne
