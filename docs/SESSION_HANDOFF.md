@@ -533,8 +533,53 @@ flagi AG — migracje już są.
    - **Aktywacja prod = release całego C11**: migracja 0031 +
      `FLAG_SOCRATIC_TUTOR` (akcja Darka, bez pośpiechu).
 
-25. **NASTĘPNE:** B7 (obrona ustna viva: 1.15 design spike [SIGN-OFF Darka]
-   → 1.16 krok 6 pipeline'u), potem cross-cutting 1.17/1.18.
+25. **B7/1.15 ✅ DOMKNIĘTE — ADR-013 zaakceptowany (sign-off Darka
+   „zatwierdzone", 2026-07-09, commit `c40ea9e`)**. Spike wg wymogu: draft →
+   krytyczny przegląd 3 agentów (integracja/konsumenci, bezpieczeństwo-RLS-
+   RODO, determinizm-koszt-UX) — 30 znalezisk, 7 krytycznych, wcielone → v0.2
+   → sign-off. Decyzje (wszystkie wg rekomendacji): viva BRAMKUJE 'verified';
+   human-approve = jawny wyjątek (plakietka „Oceniał człowiek" zamiast
+   „Obroniona"); parametry 3 pytania · próg 4/6 · TTL 60 min wznawialne ·
+   self-restart przy 0 odp. · 1 podejście/wersja zgłoszenia; surowe odpowiedzi
+   dla operatora + wykładowcy własnego tenanta przez API z audytem; retencja
+   12 m-cy. Kluczowe rozstrzygnięcia architektoniczne: generacja pytań
+   W POTOKU (krok 6-prep — zero dryfu artefaktu), pierwszeństwo decyzji
+   człowieka nad vivą, reset stanu viva przy re-submicie, golden set sędziego
+   z falseAccepts=[] jako twardy DoD.
+
+26. **B7/1.16a ✅ zmergowane (#156, squash `fe10934`; CI zielone za pierwszym
+   podejściem)** — silnik obrony ustnej wg ADR-013:
+   - **Migracja 0032**: viva_sessions (grant SELECT-only, student_sees_own
+     FOR SELECT, FORCE+owner_passthrough, partial unique żywej sesji) +
+     viva_answers (wariant DENY, k3 #13a); cascades po studencie; k3 =
+     **18 tabel tenant**, zielone; **rls-matrix v0.23 do sign-offu Ryana**;
+     retencja odpowiedzi 12 m-cy → NOWY centralny rejestr
+     `docs/data/retention.md`.
+   - **Krok 6-prep w potoku**: pytania z TEGO SAMEGO artefaktu co ocena;
+     fail-closed → sesja inconclusive → człowiek; plan zamrożony, walidowany
+     schematem; strategia per deliverableType.
+   - **Submit**: 'verified' → demotacja do 'submitted' + sesja pending;
+     re-submit superseduje sesje i resetuje klucz viva (`- 'viva'` w merge'u
+     jsonb); audit submission.verified emituje zdana viva.
+   - **Trasy** viva/{GET,start,answer}: własność 404-pattern, kolejność
+     server-side, sędzia poza tx, próg 4/6 w kodzie, TTL 60 min wznawialne
+     + lazy expiry, self-restart (0 odp.), kryzys przed zapisem, awaria
+     sędziego = inconclusive. **Pierwszeństwo człowieka**: decyzja B8
+     superseduje sesję; po decyzji viva nie startuje. Kolejka B8 + projekcja
+     viva; surowe odpowiedzi przez GET /api/review-queue/[id]/viva (owner-
+     side, audyt per odczyt). Tutor C11 zablokowany w trakcie otwartej obrony.
+   - **Właz**: tools/viva-flag-off-recompute.ts (dry-run/--execute).
+   - Dowody: unit 1097/1097 (+20), integration 124/124 (+14, pełny cykl na
+     realnej bazie), BUILD_OK; **golden set sędziego na żywym Sonnecie:
+     13/13, falseAccepts=[]** (4 merytoryczne zdają, 4 słabe + 5 injection
+     = 0 pkt); sonda kontrolna: naiwny sędzia też odporny (Sonnet 4.6) —
+     tagi untrusted to defense-in-depth, golden set to tripwire regresji.
+   - **Aktywacja prod: razem z 1.16b** (migracja 0032 + FLAG_VIVA_DEFENSE).
+
+27. **NASTĘPNE:** B7/1.16b — UI obrony (baner + przepływ pytanie-po-pytaniu
+   wzorcem StepDiagnosis/TutorPanel, plakietka „Obroniona ustnie" na
+   receipcie, sekcja viva w UI kolejki /review) + E2E na żywych modelach
+   (wzorzec C11). Potem cross-cutting 1.17/1.18.
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
@@ -546,9 +591,12 @@ flagi AG — migracje już są.
   do kliknięcia).
 - **Blok C11** ✅ CAŁY i **LIVE NA PRODZIE** (1.13 #154 + 1.14 #155; migracja
   0031 + FLAG_SOCRATIC_TUTOR=1 Production+Preview, smoke czysty 2026-07-09).
-- Baseline main: tsc 0, Biome 0, unit 1077/1077, integration 110/110,
-  k3 zielony (16 tabel tenant), BUILD_OK; migracje: **test DB = prod = 0031**
-  (bank zaingestowany, FLAG_DIAGNOSTIC_ASSESSMENT i FLAG_SOCRATIC_TUTOR ON).
+- **Blok B7** W TOKU: 1.15 ✅ (ADR-013, sign-off Darka) · 1.16a ✅ (#156,
+  silnik + 0032 + golden set falseAccepts=[]) — zostało 1.16b (UI + E2E).
+- Baseline main: tsc 0, Biome 0, unit 1097/1097, integration 124/124,
+  k3 zielony (18 tabel tenant), BUILD_OK; migracje: **test DB = 0032, prod =
+  0031** (0032 czeka przed zapaleniem FLAG_VIVA_DEFENSE — razem z 1.16b;
+  FLAG_DIAGNOSTIC_ASSESSMENT i FLAG_SOCRATIC_TUTOR ON).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
