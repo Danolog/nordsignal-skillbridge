@@ -44,7 +44,10 @@ export default defineConfig({
 	projects: [
 		{
 			name: "chromium",
-			use: { ...devices["Desktop Chrome"] },
+			// PLAYWRIGHT_CHANNEL=chrome → systemowa przeglądarka zamiast pobieranej
+			// (Playwright 1.60 nie publikuje chromium dla ubuntu 26.04 — WSL Darka).
+			// Bez env zachowanie bez zmian (CI pobiera chromium jak dotąd).
+			use: { ...devices["Desktop Chrome"], channel: process.env.PLAYWRIGHT_CHANNEL || undefined },
 		},
 	],
 });

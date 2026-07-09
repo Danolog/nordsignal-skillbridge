@@ -11,6 +11,7 @@ import type { ProjectBrief } from "@/lib/ai/generate-brief";
 import type { ProjectSourceLink } from "./project-source-links";
 import { ProjectSourceLinks } from "./project-source-links";
 import { SubmissionForm } from "./submission-form";
+import { TutorPanel } from "./tutor-panel";
 
 interface ProjectCompetency {
 	id: string;
@@ -51,6 +52,9 @@ interface ProjectDetailProps {
 	/** #7 — linki źródła danych (2–3), posortowane po position (backend). [] = brak rekordów
 	 *  → widok degraduje do project.sourceUrl (kompatybilność wsteczna, projekty bez backfillu). */
 	sourceLinks: ProjectSourceLink[];
+	/** C11/1.14 — flaga socraticTutor czytana w server component (page.tsx);
+	 *  false = panel tutora nie istnieje w drzewie (deploy ≠ release). */
+	tutorEnabled: boolean;
 }
 
 export function ProjectDetail({
@@ -60,6 +64,7 @@ export function ProjectDetail({
 	theoryMd,
 	learningResources,
 	sourceLinks,
+	tutorEnabled,
 }: ProjectDetailProps) {
 	const [brief, setBrief] = useState<ProjectBrief | null>(
 		submission?.aiReviewJson
@@ -227,6 +232,10 @@ export function ProjectDetail({
 					)}
 				</div>
 			)}
+
+			{/* C11/1.14 — tutor sokratyczny: dostępny w trakcie pracy (przed briefem
+			    i po zgłoszeniu). Renderowany wyłącznie za flagą z server component. */}
+			{tutorEnabled && <TutorPanel projectId={project.id} />}
 
 			{showSubmitForm && <SubmissionForm projectId={project.id} />}
 

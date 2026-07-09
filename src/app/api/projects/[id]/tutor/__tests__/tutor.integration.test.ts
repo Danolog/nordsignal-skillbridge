@@ -168,7 +168,10 @@ dBack("C11/1.13 · endpoint tutora sokratycznego (realna baza, DoD)", () => {
 		expect(get.status).toBe(404);
 		expect(post.status).toBe(404);
 		expect(runTutorTurnMock).not.toHaveBeenCalled();
-		const rows = await pool?.query("SELECT count(*)::int AS c FROM tutor_turns");
+		const rows = await pool?.query(
+			"SELECT count(*)::int AS c FROM tutor_turns WHERE student_id IN ($1, $2)",
+			[studentId, student2Id],
+		);
 		expect(rows?.rows[0].c).toBe(0);
 	});
 
@@ -272,7 +275,10 @@ dBack("C11/1.13 · endpoint tutora sokratycznego (realna baza, DoD)", () => {
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ crisis: true });
 		expect(runTutorTurnMock).not.toHaveBeenCalled();
-		const rows = await pool?.query("SELECT count(*)::int AS c FROM tutor_turns");
+		const rows = await pool?.query(
+			"SELECT count(*)::int AS c FROM tutor_turns WHERE student_id IN ($1, $2)",
+			[studentId, student2Id],
+		);
 		expect(rows?.rows[0].c).toBe(0);
 	});
 

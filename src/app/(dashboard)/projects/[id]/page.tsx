@@ -5,6 +5,7 @@ import { ProjectDetail } from "@/components/projects/project-detail";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { projectReflections, projectSubmissions, projects, students } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
 	const session = await auth.api.getSession({ headers: await headers() });
@@ -61,6 +62,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 				theoryMd={project.theoryMd ?? null}
 				learningResources={project.learningResources}
 				sourceLinks={project.sourceLinks}
+				// C11/1.14 — flaga czytana server-side (rejestr flag nie trafia do klienta).
+				tutorEnabled={isFeatureEnabled("socraticTutor")}
 			/>
 		</div>
 	);
