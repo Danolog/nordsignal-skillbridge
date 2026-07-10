@@ -27,7 +27,7 @@ import type {
 	StepResult,
 } from "@/lib/ai/pipeline/types";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
-import { aiTimeoutSignal } from "@/lib/ai/timeout";
+import { AI_LONG_CALL_TIMEOUT_MS, aiTimeoutSignal } from "@/lib/ai/timeout";
 import { withAiUsage } from "@/lib/ai/usage";
 
 const SemanticOutputSchema = z.object({
@@ -196,7 +196,10 @@ export async function runSemanticReview(args: {
 		const { text } = await withAiUsage({ scope: "pipeline.step3-semantic", tier: "standard" }, () =>
 			generateText({
 				model: getModel("standard"),
-				abortSignal: aiTimeoutSignal(),
+				// Długa generacja (uzasadnienia+cytaty per kryterium) — domyślne
+				// 45 s NIE wystarcza na realne repo (prod 2026-07-10: 100% submitów
+				// padało TimeoutError). Budżet długich generacji: 90 s.
+				abortSignal: aiTimeoutSignal(AI_LONG_CALL_TIMEOUT_MS),
 				maxOutputTokens: 5000,
 				system: SYSTEM_PROMPT,
 				prompt: userPrompt,

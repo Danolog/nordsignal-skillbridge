@@ -24,7 +24,9 @@ import { vivaProjection } from "@/lib/viva/service";
 
 // B6/1.9: bieg piaskownicy (spike: ~10 s E2E z instalacją deps) mieści się
 // z zapasem, ale 60 s robiło się ciasne przy AI + sandbox — podbite do 120.
-export const maxDuration = 120;
+// 180: krok 3 ma budżet 90 s (AI_LONG_CALL_TIMEOUT_MS — realne repo nie
+// mieściło się w 45 s), do tego krok 6-prep vivy (≤45 s) + fetch + zapisy.
+export const maxDuration = 180;
 
 /**
  * §8 #1 Phase 2 / issue #19f (refactor sub-issue): odczyt/zapis
