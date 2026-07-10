@@ -20,6 +20,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
+/** B7/1.16a: projekcja aiReviewJson.viva (jedno źródło = viva_sessions.status). */
+interface VivaProjection {
+	state: string;
+	score?: number;
+	questionCount: number;
+	completedAt?: string;
+}
+
 interface QueueItem {
 	submissionId: string;
 	projectId: string;
@@ -29,6 +37,17 @@ interface QueueItem {
 	score: number | null;
 	machineStatus: string;
 	submittedAt: string | null;
+	viva: VivaProjection | null;
+}
+
+/** Wymiana Q/A obrony z GET /api/review-queue/[id]/viva (odczyt audytowany). */
+interface VivaExchangeRow {
+	position: number;
+	question: string;
+	filePath: string | null;
+	excerpt: string | null;
+	answer: string | null;
+	verdict: { points: number; justification: string } | null;
 }
 
 const MACHINE_HINT: Record<string, { label: string; tone: "ok" | "bad" | "mid" }> = {
@@ -37,10 +56,39 @@ const MACHINE_HINT: Record<string, { label: string; tone: "ok" | "bad" | "mid" }
 	submitted: { label: "Pogranicze — decyzja człowieka", tone: "mid" },
 };
 
+/** Etykieta stanu obrony dla recenzenta (score/max przy rozstrzygniętych). */
+function vivaLabel(v: VivaProjection): { label: string; tone: "ok" | "bad" | "mid" } {
+	const max = v.questionCount * 2;
+	const score = typeof v.score === "number" ? ` (${v.score}/${max} pkt)` : "";
+	switch (v.state) {
+		case "passed":
+			return { label: `Obrona: zdana${score}`, tone: "ok" };
+		case "failed":
+			return { label: `Obrona: niezaliczona${score}`, tone: "bad" };
+		case "inconclusive":
+			return { label: "Obrona: nierozstrzygnięta (fail-closed)", tone: "mid" };
+		case "pending":
+			return { label: "Obrona: czeka na studenta", tone: "mid" };
+		case "in_progress":
+			return { label: "Obrona: w toku", tone: "mid" };
+		case "expired":
+			return { label: "Obrona: wygasła bez odpowiedzi", tone: "mid" };
+		case "superseded":
+			return { label: "Obrona: nieaktualna", tone: "mid" };
+		default:
+			return { label: `Obrona: ${v.state}`, tone: "mid" };
+	}
+}
+
 export function ReviewQueueView({ reviewerKind }: { reviewerKind: string }) {
 	const [queue, setQueue] = useState<QueueItem[] | null>(null);
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const [notes, setNotes] = useState<Record<string, string>>({});
+	// B7/1.16b: rozwinięte obrony (odczyt audytowany — pobieramy dopiero po
+	// kliknięciu i cache'ujemy, żeby nie mnożyć wpisów audytu przy re-renderach).
+	const [vivaOpen, setVivaOpen] = useState<Record<string, boolean>>({});
+	const [vivaExchange, setVivaExchange] = useState<Record<string, VivaExchangeRow[]>>({});
+	const [vivaLoadingId, setVivaLoadingId] = useState<string | null>(null);
 
 	const load = useCallback(async () => {
 		try {
@@ -61,6 +109,34 @@ export function ReviewQueueView({ reviewerKind }: { reviewerKind: string }) {
 	useEffect(() => {
 		void load();
 	}, [load]);
+
+	async function toggleViva(submissionId: string) {
+		if (vivaOpen[submissionId]) {
+			setVivaOpen((o) => ({ ...o, [submissionId]: false }));
+			return;
+		}
+		if (vivaExchange[submissionId]) {
+			setVivaOpen((o) => ({ ...o, [submissionId]: true }));
+			return;
+		}
+		setVivaLoadingId(submissionId);
+		try {
+			const res = await fetch(`/api/review-queue/${submissionId}/viva`);
+			if (!res.ok) {
+				toast.error(
+					res.status === 404 ? "Brak sesji obrony dla zgłoszenia." : "Nie udało się pobrać obrony.",
+				);
+				return;
+			}
+			const body = (await res.json()) as { exchange: VivaExchangeRow[] };
+			setVivaExchange((e) => ({ ...e, [submissionId]: body.exchange }));
+			setVivaOpen((o) => ({ ...o, [submissionId]: true }));
+		} catch {
+			toast.error("Błąd połączenia.");
+		} finally {
+			setVivaLoadingId(null);
+		}
+	}
 
 	async function decide(submissionId: string, decision: "approved" | "rejected") {
 		setBusyId(submissionId);
@@ -144,6 +220,48 @@ export function ReviewQueueView({ reviewerKind }: { reviewerKind: string }) {
 							</CardHeader>
 							<CardContent className="rq-body">
 								<div className={`rq-hint rq-hint-${hint.tone}`}>{hint.label}</div>
+								{/* B7/1.16b — stan obrony z projekcji + audytowany podgląd
+								    surowych odpowiedzi (viva_answers to klasa DENY; jedyna
+								    droga = GET /api/review-queue/[id]/viva, wpis audytu per
+								    odczyt — dlatego pobieranie dopiero na klik). */}
+								{item.viva && (
+									<div className="rq-viva">
+										{(() => {
+											const vl = vivaLabel(item.viva);
+											return <div className={`rq-hint rq-hint-${vl.tone}`}>{vl.label}</div>;
+										})()}
+										<Button
+											variant="outline"
+											size="sm"
+											disabled={vivaLoadingId === item.submissionId}
+											onClick={() => void toggleViva(item.submissionId)}
+										>
+											{vivaLoadingId === item.submissionId ? (
+												<Loader2 size={14} className="animate-spin" />
+											) : null}
+											{vivaOpen[item.submissionId]
+												? "Ukryj obronę"
+												: "Pokaż odpowiedzi obrony (odczyt audytowany)"}
+										</Button>
+										{vivaOpen[item.submissionId] &&
+											(vivaExchange[item.submissionId] ?? []).map((row) => (
+												<div key={row.position} className="rq-viva-row">
+													<p className="rq-viva-q">
+														<strong>P{row.position + 1}:</strong> {row.question}
+														{row.filePath && (
+															<span className="rq-viva-file"> ({row.filePath})</span>
+														)}
+													</p>
+													<p className="rq-viva-a">{row.answer ?? <em>— brak odpowiedzi —</em>}</p>
+													{row.verdict && (
+														<p className="rq-viva-verdict">
+															Sędzia: {row.verdict.points}/2 pkt — {row.verdict.justification}
+														</p>
+													)}
+												</div>
+											))}
+									</div>
+								)}
 								<Textarea
 									placeholder="Notatka do decyzji (opcjonalna, trafia do śladu recenzji)"
 									value={notes[item.submissionId] ?? ""}

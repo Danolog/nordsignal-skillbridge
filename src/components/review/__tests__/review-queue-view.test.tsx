@@ -90,6 +90,63 @@ describe("ReviewQueueView", () => {
 		expect(screen.getByText(/swojego kampusu/)).toBeInTheDocument();
 	});
 
+	it("B7/1.16b: projekcja viva → chip stanu obrony; klik pobiera audytowany podgląd Q/A", async () => {
+		const itemWithViva = {
+			...ITEM,
+			machineStatus: "verified",
+			viva: { state: "failed", score: 3, questionCount: 3 },
+		};
+		mockFetch.mockResolvedValueOnce(queueResponse([itemWithViva]));
+		mockFetch.mockResolvedValueOnce({
+			ok: true,
+			status: 200,
+			json: async () => ({
+				session: { id: "vs-1", status: "failed", result: null },
+				exchange: [
+					{
+						position: 0,
+						question: "Dlaczego pandas?",
+						filePath: "analiza.py",
+						excerpt: null,
+						answer: "Bo tak.",
+						verdict: { points: 1, justification: "Odpowiedź powierzchowna." },
+					},
+					{
+						position: 1,
+						question: "Jak walidowałeś dane?",
+						filePath: null,
+						excerpt: null,
+						answer: null,
+						verdict: null,
+					},
+				],
+			}),
+		});
+		render(<ReviewQueueView reviewerKind="quality_operator" />);
+
+		expect(await screen.findByText(/Obrona: niezaliczona \(3\/6 pkt\)/)).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: /Pokaż odpowiedzi obrony/ }));
+		expect(await screen.findByText(/Dlaczego pandas\?/)).toBeInTheDocument();
+		expect(screen.getByText("Bo tak.")).toBeInTheDocument();
+		expect(screen.getByText(/1\/2 pkt — Odpowiedź powierzchowna\./)).toBeInTheDocument();
+		expect(screen.getByText(/— brak odpowiedzi —/)).toBeInTheDocument();
+		expect(mockFetch).toHaveBeenCalledWith("/api/review-queue/s-1/viva");
+
+		// Zwiń/rozwiń NIE pobiera drugi raz (odczyt audytowany — cache po stronie UI).
+		fireEvent.click(screen.getByRole("button", { name: /Ukryj obronę/ }));
+		fireEvent.click(screen.getByRole("button", { name: /Pokaż odpowiedzi obrony/ }));
+		expect(await screen.findByText("Bo tak.")).toBeInTheDocument();
+		expect(mockFetch).toHaveBeenCalledTimes(2); // lista + jeden GET viva
+	});
+
+	it("B7/1.16b: wpis bez projekcji viva → sekcja obrony nie istnieje", async () => {
+		mockFetch.mockResolvedValue(queueResponse([{ ...ITEM, viva: null }]));
+		render(<ReviewQueueView reviewerKind="quality_operator" />);
+		expect(await screen.findByText("Dashboard sprzedaży w Streamlit")).toBeInTheDocument();
+		expect(screen.queryByText(/Obrona:/)).not.toBeInTheDocument();
+	});
+
 	it("409 (decyzja już zapadła) → toast błędu + refetch kolejki", async () => {
 		const { toast } = await import("sonner");
 		mockFetch.mockResolvedValueOnce(queueResponse([ITEM]));

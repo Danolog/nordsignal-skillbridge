@@ -1,6 +1,44 @@
 import { describe, expect, it } from "vitest";
 import { calculateCoverage } from "../passport-utils";
 
+// mapSubmissionsToReceipts importowane niżej (sekcja B8/1.6) — hoisting ESM
+// czyni je dostępnym w całym module.
+describe("mapSubmissionsToReceipts — plakietka obrony (B7/1.16b, ADR-013 D4)", () => {
+	const row = (aiReviewJson: unknown) => ({
+		id: "sub-1",
+		project: { title: "Projekt", level: "L2" },
+		score: 88,
+		submittedAt: new Date("2026-07-01T10:00:00Z"),
+		createdAt: new Date("2026-06-30T10:00:00Z"),
+		repoUrl: null,
+		notebookUrl: null,
+		aiReviewJson,
+	});
+
+	it("viva.state='passed' → vivaDefended true (WYŁĄCZNIE boolean — bez score/dat)", () => {
+		const [receipt] = mapSubmissionsToReceipts([
+			row({ viva: { state: "passed", score: 5, questionCount: 3 } }),
+		]);
+		expect(receipt.vivaDefended).toBe(true);
+		// Whitelist §6.1: nic poza booleanem nie wychodzi na receipt.
+		expect(receipt).not.toHaveProperty("viva");
+	});
+
+	it("superseded (human-approve) ≠ obroniona — plakietki mówią prawdę", () => {
+		const [receipt] = mapSubmissionsToReceipts([
+			row({ viva: { state: "superseded", questionCount: 3 } }),
+		]);
+		expect(receipt.vivaDefended).toBe(false);
+	});
+
+	it("brak projekcji viva (flaga off / sprzed B7) → vivaDefended false", () => {
+		const [receipt] = mapSubmissionsToReceipts([row({ review: { feedback: "ok" } })]);
+		expect(receipt.vivaDefended).toBe(false);
+		const [receiptNull] = mapSubmissionsToReceipts([row(null)]);
+		expect(receiptNull.vivaDefended).toBe(false);
+	});
+});
+
 describe("calculateCoverage", () => {
 	it("returns 0 for empty array and no gaps", () => {
 		expect(calculateCoverage([], 0)).toBe(0);

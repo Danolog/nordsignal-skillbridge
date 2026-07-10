@@ -1117,6 +1117,43 @@ export function PassportDocument({
 											) : (
 												<span style={{ color: "var(--muted)" }}>ocena automatyczna</span>
 											)}
+											{/* B7/1.16b (ADR-013): plakietka sterowana danymi —
+											    viva.state==='passed' → „praca obroniona w rozmowie z AI".
+											    Human-approve NIE dostaje tej plakietki (superseded ≠ passed)
+											    — plakietki mówią prawdę. */}
+											{p.vivaDefended && (
+												<>
+													<span>·</span>
+													<span
+														style={{
+															display: "inline-flex",
+															alignItems: "center",
+															gap: "4px",
+															color: "var(--ok)",
+															fontWeight: 600,
+														}}
+													>
+														<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+															<path
+																d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"
+																fill="none"
+																stroke="var(--ok)"
+																strokeWidth="2"
+																strokeLinejoin="round"
+															/>
+															<path
+																d="M8.5 12l2.5 2.5 4.5-5"
+																fill="none"
+																stroke="var(--ok)"
+																strokeWidth="2"
+																strokeLinecap="round"
+																strokeLinejoin="round"
+															/>
+														</svg>
+														Obroniona ustnie (rozmowa z AI)
+													</span>
+												</>
+											)}
 										</div>
 										{(p.repoUrl || p.notebookUrl) && (
 											<div

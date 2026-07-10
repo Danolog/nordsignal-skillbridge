@@ -12,6 +12,7 @@ import type { ProjectSourceLink } from "./project-source-links";
 import { ProjectSourceLinks } from "./project-source-links";
 import { SubmissionForm } from "./submission-form";
 import { TutorPanel } from "./tutor-panel";
+import { VivaPanel } from "./viva-panel";
 
 interface ProjectCompetency {
 	id: string;
@@ -55,6 +56,8 @@ interface ProjectDetailProps {
 	/** C11/1.14 — flaga socraticTutor czytana w server component (page.tsx);
 	 *  false = panel tutora nie istnieje w drzewie (deploy ≠ release). */
 	tutorEnabled: boolean;
+	/** B7/1.16b — flaga vivaDefense czytana w server component (jak wyżej). */
+	vivaEnabled: boolean;
 }
 
 export function ProjectDetail({
@@ -65,6 +68,7 @@ export function ProjectDetail({
 	learningResources,
 	sourceLinks,
 	tutorEnabled,
+	vivaEnabled,
 }: ProjectDetailProps) {
 	const [brief, setBrief] = useState<ProjectBrief | null>(
 		submission?.aiReviewJson
@@ -238,6 +242,10 @@ export function ProjectDetail({
 			{tutorEnabled && <TutorPanel projectId={project.id} />}
 
 			{showSubmitForm && <SubmissionForm projectId={project.id} />}
+
+			{/* B7/1.16b — obrona ustna: panel sam znika, gdy zgłoszenie nie ma
+			    sesji obrony (GET zwraca state null). Za flagą z server component. */}
+			{vivaEnabled && submission && <VivaPanel submissionId={submission.id} />}
 
 			{submission && submission.status !== "in_progress" && (
 				<div className={`proj-submission-status proj-status-${submission.status}`}>
