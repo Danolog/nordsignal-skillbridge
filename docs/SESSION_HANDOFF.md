@@ -340,8 +340,9 @@ Decyzje zablokowane (blindspot pass + interview, skill finding-unknowns):
    miała wyłącznie 'self'); test integracyjny constraintu na realnej bazie.
    Zero zmian zachowania (nic jeszcze nie pisze 'diagnostic').
 
-### KOLEJKA MIGRACJI PROD — PUSTA (2026-07-09 wieczorem)
-Prod = **0031** (pełna parzystość z bazą testową). Migracja 0031 wgrana przez
+### KOLEJKA MIGRACJI PROD — PUSTA (2026-07-10)
+Prod = **0032** (pełna parzystość z bazą testową; 0032 wgrana przez Darka
+2026-07-10 — szczegóły w pkt 28). Migracja 0031 wgrana przez
 Darka 2026-07-09 (backup gałęzią Neona `backup/pre-0031-2026-07-09`, dziennik
 PRZED 31/1783537805664 → PO 32/1783610643728, weryfikacja RLS t/t + polityki
 + granty OK). **FLAG_SOCRATIC_TUTOR=1 na Production+Preview ✅ (Oliver,
@@ -612,12 +613,28 @@ flagi AG — migracje już są.
      i 20-dashboard („Twoje narzędzia" nie istnieje po redesignie hub-a)
      zaktualizowane do obecnego UI — dryf speców, nie regres.
 
-28. **NASTĘPNE:** aktywacja B7 na prod (akcja Darka, bez pośpiechu —
-   release całego bloku): **migracja 0032 + FLAG_VIVA_DEFENSE**
-   (Production+Preview; uwaga na buga pętli interaktywnej vercel CLI
-   54.5.0 przy Preview — działa REST API, wzorzec z C11). Smoke po
-   deployu: GET /api/submissions/<uuid>/viva bez sesji 404→401. Potem
-   cross-cutting 1.17/1.18 z roadmapy.
+28. **AKTYWACJA B7 NA PROD ✅ WYKONANA (2026-07-10)** — **BLOK B7 LIVE**
+   (trzeci blok F1 z zapaloną flagą, po A5 i C11):
+   - **Migracja 0032 (Darek)** wg procedury: backup gałęzią Neona, dziennik
+     PRZED 32/1783610643728 → PO 33/1783620996022, RLS t/t na obu tabelach,
+     granty OK (viva_sessions: 1 wiersz app_student|SELECT; viva_answers:
+     DENY), partial unique żywej sesji. **PROD = 0032** (pełna parzystość).
+   - **FLAG_VIVA_DEFENSE=1 (Oliver):** Production przez `printf "1" |
+     vercel env add` (pipe omija pętlę interaktywną), Preview przez REST
+     API (`POST /v10/projects/{id}/env`, wzorzec C11); redeploy prod
+     (alias skill-bridge-ai-seven.vercel.app, Ready 3m).
+   - **Smoke prod czysty:** trasy viva bez sesji 404→**401** (GET/start/
+     answer — flaga żyje, bramka auth działa); review-queue/[id]/viva 404
+     (poprawnie — wymaga TAKŻE FLAG_HUMAN_REVIEW_QUEUE, B8 nieaktywny);
+     home/login 200; runtime errors: zero (jedyny wpis = znany warning
+     deprecacji SSL z pg, żyje od marca).
+   - Od teraz submit z werdyktem 'verified' na prodzie przechodzi przez
+     obronę (demotacja → pending viva); właz awaryjny:
+     tools/viva-flag-off-recompute.ts przy ew. gaszeniu flagi.
+
+29. **NASTĘPNE:** cross-cutting 1.17/1.18 z roadmapy. Warto też kliknąć
+   pełną obronę w przeglądarce na prodzie przy okazji (dowód E2E jest
+   z lokalnego serwera na żywym sędzim; prod-smoke objął bramki tras).
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
@@ -629,12 +646,13 @@ flagi AG — migracje już są.
   do kliknięcia).
 - **Blok C11** ✅ CAŁY i **LIVE NA PRODZIE** (1.13 #154 + 1.14 #155; migracja
   0031 + FLAG_SOCRATIC_TUTOR=1 Production+Preview, smoke czysty 2026-07-09).
-- **Blok B7** ✅ CAŁY KODOWO (1.15 ADR-013 · 1.16a #156 · 1.16b #157) —
-  aktywacja = migracja 0032 + FLAG_VIVA_DEFENSE (akcja Darka).
+- **Blok B7** ✅ CAŁY i **LIVE NA PRODZIE** (1.15 ADR-013 · 1.16a #156 ·
+  1.16b #157; migracja 0032 + FLAG_VIVA_DEFENSE=1 Production+Preview,
+  smoke czysty 2026-07-10).
 - Baseline main: tsc 0, Biome 0, unit 1118/1118, integration 124/124,
-  k3 zielony (18 tabel tenant), BUILD_OK; migracje: **test DB = 0032, prod =
-  0031** (0032 czeka przed zapaleniem FLAG_VIVA_DEFENSE;
-  FLAG_DIAGNOSTIC_ASSESSMENT i FLAG_SOCRATIC_TUTOR ON).
+  k3 zielony (18 tabel tenant), BUILD_OK; migracje: **test DB = 0032,
+  prod = 0032** (pełna parzystość; FLAG_DIAGNOSTIC_ASSESSMENT,
+  FLAG_SOCRATIC_TUTOR i FLAG_VIVA_DEFENSE ON).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
