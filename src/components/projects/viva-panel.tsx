@@ -118,9 +118,16 @@ export function VivaPanel({ submissionId }: { submissionId: string }) {
 		return () => clearInterval(t);
 	}, [running]);
 	const remainingMs = expiresAtMs !== null ? expiresAtMs - now : null;
+	// Guard „raz per deadline": bez niego rozjazd zegara klient–serwer (klient
+	// z przodu, serwer wciąż zwraca in_progress z tym samym expiresAt) robiłby
+	// refetch co tik licznika.
+	const expiredRefetchedFor = useRef<number | null>(null);
 	useEffect(() => {
-		if (remainingMs !== null && remainingMs <= 0) void refetch();
-	}, [remainingMs, refetch]);
+		if (remainingMs === null || remainingMs > 0) return;
+		if (expiredRefetchedFor.current === expiresAtMs) return;
+		expiredRefetchedFor.current = expiresAtMs;
+		void refetch();
+	}, [remainingMs, expiresAtMs, refetch]);
 
 	// Start / wznowienie / restart po expired — jedna trasa, serwer rozstrzyga.
 	const handleStart = useCallback(async () => {
