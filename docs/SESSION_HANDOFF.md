@@ -11,7 +11,7 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-09
+## STAN NA DZIŚ — 2026-07-10
 
 ### Gdzie żyje repo
 - **Lokalnie (2 maszyny):** macOS `~/Claude_Cowork/SkillBridge` · WSL
@@ -576,10 +576,48 @@ flagi AG — migracje już są.
      tagi untrusted to defense-in-depth, golden set to tripwire regresji.
    - **Aktywacja prod: razem z 1.16b** (migracja 0032 + FLAG_VIVA_DEFENSE).
 
-27. **NASTĘPNE:** B7/1.16b — UI obrony (baner + przepływ pytanie-po-pytaniu
-   wzorcem StepDiagnosis/TutorPanel, plakietka „Obroniona ustnie" na
-   receipcie, sekcja viva w UI kolejki /review) + E2E na żywych modelach
-   (wzorzec C11). Potem cross-cutting 1.17/1.18.
+27. **B7/1.16b ✅ zmergowane (#157, squash `edb6902`; CI zielone) — BLOK B7
+   DOMKNIĘTY KODOWO (1.15 ADR-013 + 1.16a #156 + 1.16b #157)**. UI obrony
+   ustnej + E2E na żywym sędzim:
+   - **VivaPanel** w widoku projektu (wzorce StepDiagnosis/TutorPanel):
+     baner „kredencjał PO zdanej obronie" → pytanie po pytaniu (licznik
+     czasu z leniwym expiry serwera + guard „raz per deadline" na refetchu
+     przy zerze, cap 2000 znaków, zero feedbacku w trakcie) → ekran wyniku.
+     Stany kontraktu 1:1: crisis 116 123 (odpowiedź ZOSTAJE w polu), 409 →
+     toast + prawda z GET, 429/5xx → odpowiedź wraca, expired(0 odp.) →
+     self-restart, superseded → uczciwy komunikat; passed →
+     router.refresh() (status + callout refleksji B5); brak sesji (state
+     null) = panel nie istnieje. Flaga vivaDefense server-side → prop.
+   - **Kontrakt 1.16a uzupełniony:** `serializeVivaState` zwraca
+     `sessionId` — trasa answer identyfikuje sesję w URL, a klient nie miał
+     skąd go wziąć (luka znaleziona przy budowie UI; pole addytywne).
+   - **Tutor C11 naprawiony:** 409 rozróżnione po `maxTurns` w body —
+     blokada na czas obrony to toast info + wiadomość wraca do pola
+     (wcześniej panel kłamał „limit wyczerpany").
+   - **Plakietka receiptu** (wzorzec 1.6, dane): `vivaDefended` z projekcji
+     `aiReviewJson.viva.state==='passed'` w mapSubmissionsToReceipts (jedno
+     źródło, prywatny+publiczny; WYŁĄCZNIE boolean — whitelist §6.1);
+     human-approve (superseded ≠ passed) plakietki NIE dostaje.
+   - **Kolejka /review:** chip stanu obrony z projekcji + podgląd surowych
+     Q/A/werdyktów przez GET /api/review-queue/[id]/viva pobierany DOPIERO
+     na klik i cache'owany (odczyt audytowany — UI nie mnoży wpisów).
+   - Dowody: unit 1118/1118 (+21), integration 124/124, tsc 0, Biome 0
+     błędów, BUILD_OK; **E2E `70-b7-viva.spec.ts` na żywym sędzim (Sonnet)**:
+     osadzona sesja pending → baner → start → 3 odpowiedzi → **passed 6/6**,
+     zgłoszenie 'verified', ledger viva.judge +3 ($0.0122), reload odtwarza
+     wynik; smoke OFF/ON: flaga ON → 401 na trasach bez sesji, OFF → 404;
+     @safe 13/13, 20-spec zielony przy zapalonej fladze.
+   - Zaszłości speców E2E (pierwszy pełny bieg od 1.14): kotwice
+     01-public-auth (redesign landingu #6 zmienił hero/CTA/„Panel uczelni")
+     i 20-dashboard („Twoje narzędzia" nie istnieje po redesignie hub-a)
+     zaktualizowane do obecnego UI — dryf speców, nie regres.
+
+28. **NASTĘPNE:** aktywacja B7 na prod (akcja Darka, bez pośpiechu —
+   release całego bloku): **migracja 0032 + FLAG_VIVA_DEFENSE**
+   (Production+Preview; uwaga na buga pętli interaktywnej vercel CLI
+   54.5.0 przy Preview — działa REST API, wzorzec z C11). Smoke po
+   deployu: GET /api/submissions/<uuid>/viva bez sesji 404→401. Potem
+   cross-cutting 1.17/1.18 z roadmapy.
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
@@ -591,11 +629,11 @@ flagi AG — migracje już są.
   do kliknięcia).
 - **Blok C11** ✅ CAŁY i **LIVE NA PRODZIE** (1.13 #154 + 1.14 #155; migracja
   0031 + FLAG_SOCRATIC_TUTOR=1 Production+Preview, smoke czysty 2026-07-09).
-- **Blok B7** W TOKU: 1.15 ✅ (ADR-013, sign-off Darka) · 1.16a ✅ (#156,
-  silnik + 0032 + golden set falseAccepts=[]) — zostało 1.16b (UI + E2E).
-- Baseline main: tsc 0, Biome 0, unit 1097/1097, integration 124/124,
+- **Blok B7** ✅ CAŁY KODOWO (1.15 ADR-013 · 1.16a #156 · 1.16b #157) —
+  aktywacja = migracja 0032 + FLAG_VIVA_DEFENSE (akcja Darka).
+- Baseline main: tsc 0, Biome 0, unit 1118/1118, integration 124/124,
   k3 zielony (18 tabel tenant), BUILD_OK; migracje: **test DB = 0032, prod =
-  0031** (0032 czeka przed zapaleniem FLAG_VIVA_DEFENSE — razem z 1.16b;
+  0031** (0032 czeka przed zapaleniem FLAG_VIVA_DEFENSE;
   FLAG_DIAGNOSTIC_ASSESSMENT i FLAG_SOCRATIC_TUTOR ON).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
