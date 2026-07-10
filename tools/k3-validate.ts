@@ -78,6 +78,12 @@ const TENANT_TABLES = [
 	// student_sees_own(sessions)+owner_passthrough.
 	"viva_sessions",
 	"viva_answers",
+	// 1.17 — zdarzenia placement (migracja 0033). PII deklarowane za zgodą:
+	// grant TYLKO SELECT dla app_student (zapisy owner-side przez trasy
+	// /api/placement/*), app_faculty bez grantu (agregaty E2.H owner-side);
+	// ENABLE+FORCE + student_sees_own + owner_passthrough. Kasowanie: cascade
+	// po studencie ORAZ delete-on-revoke zgody.
+	"placement_events",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.
