@@ -632,9 +632,44 @@ flagi AG — migracje już są.
      obronę (demotacja → pending viva); właz awaryjny:
      tools/viva-flag-off-recompute.ts przy ew. gaszeniu flagi.
 
-29. **NASTĘPNE:** cross-cutting 1.17/1.18 z roadmapy. Warto też kliknąć
-   pełną obronę w przeglądarce na prodzie przy okazji (dowód E2E jest
-   z lokalnego serwera na żywym sędzim; prod-smoke objął bramki tras).
+29. **PRZEJŚCIE PRZEGLĄDARKOWE CAŁOŚCI NA PRODZIE ✅ (2026-07-10, na
+   prośbę Darka)** — pełny przepływ prawdziwym UI: rejestracja
+   (`test-viva-01@skillbridge-verify.pl`) → onboarding DS z diagnozą na
+   żywym banku (6 pytań, pokrycie 14%) → projekt „Analiza jakości
+   powietrza" → brief → submit realnego repo → **werdykt maszyny 100/100**
+   → demotacja + baner obrony → **viva zdana 6/6 na żywym Sonnecie**
+   (3 pytania o FAKTYCZNE decyzje w kodzie: semantyka 400 w API GIOŚ,
+   kompozycja średniej miejskiej, przesunięte okno Wrocławia) → status
+   'verified' bez reloadu → **plakietka „Obroniona ustnie (rozmowa z AI)"
+   na receipcie paszportu** (zrzut u Darka). Repo-fixture: publiczne
+   `github.com/Danolog/analiza-jakosci-powietrza-pl` — UCZCIWA analiza
+   (żywe API GIOŚ, realne dane, 7 commitów/4 dni).
+   **Przejście wyłapało i naprawiło launch-blocker:**
+   - **#158 zmergowany+LIVE**: krok 3 potoku (semantic) miał timeout 45 s
+     (AI_CALL_TIMEOUT_MS), a realna generacja uzasadnień to 40–60 s —
+     KAŻDY submit na prodzie kończył się TimeoutError →
+     semantic_parse_failed → 0/100 (fail-closed działał, ocena niemożliwa
+     z konstrukcji). Fix: AI_LONG_CALL_TIMEOUT_MS=90 s dla kroku 3 +
+     maxDuration submitu 120→180. Diagnoza: flagi z aiReviewJson przez
+     payload RSC + lokalny repro (43,7 s sukces / 45 s abort).
+   - Fałszywy trop po drodze: GITHUB_TOKEN — niewinny (krok 1 pobierał
+     repo od początku; `vercel env ls` pokazuje createdAt, nie updatedAt —
+     stąd błędna diagnoza „edycja nie weszła"). W zamieszaniu NOWY token
+     Darka trafił do transkryptu sesji → **akcja Darka: skasować token
+     `skillbridge-prod-repo-read` na GitHubie i wystawić świeży** (podmiana
+     env: dashboard albo PATCH REST — updatedAt weryfikuje). Token jest
+     public-read-only, więc ekspozycja niska, ale zasada to zasada.
+     Rotacja de facto domyka 0.7-sekret (stary token z 2026-06-29
+     zastąpiony; po wymianie skasować oba stare).
+   - Obserwacja produktowa (bez presji): plik danych w repo studenta
+     wciąga CSV do artefaktu (55k znaków) — wydłuża krok 3; przy 90 s
+     mieści się, ale kuracja limitów per typ pliku to temat na 1.17/1.18.
+   Sprzątanie po teście (Darek, opcjonalnie): konto test-viva-01 +
+   zgłoszenie w prod DB (drugie konto testowe obok test-weryfikacja-10);
+   repo-fixture można skasować albo zostawić jako demo.
+
+30. **NASTĘPNE:** cross-cutting 1.17/1.18 z roadmapy + rotacja tokenu
+   (pkt 29). Łańcuch B4→B6→B7 ma teraz pełny dowód działania na prodzie.
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
@@ -655,7 +690,10 @@ flagi AG — migracje już są.
   FLAG_SOCRATIC_TUTOR i FLAG_VIVA_DEFENSE ON).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
-- **0.7-sekret** — rotacja `GITHUB_TOKEN` (prod).
+- **0.7-sekret / token po smoke B7** — skasować na GitHubie token
+  `skillbridge-prod-repo-read` (trafił do transkryptu 2026-07-10) ORAZ
+  stary token z 2026-06-29; wystawić świeży fine-grained public-read
+  i podmienić env (szczegóły pkt 29).
 - **0.13 CSP** — potwierdzić #121 na Preview/prod albo rollback.
 - **Baza testowa integration** — stawiana ad-hoc (Docker Postgres 5433 +
   `db:migrate:test`); brak stałego `.env.test`/compose. Rozważyć utrwalenie, żeby
