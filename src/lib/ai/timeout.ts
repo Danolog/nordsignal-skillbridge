@@ -16,6 +16,16 @@
 export const AI_CALL_TIMEOUT_MS = 45_000;
 
 /**
+ * Budżet dla DŁUGICH generacji oceniających (krok 3 potoku: ~3–4k tokenów
+ * uzasadnień z cytatami dla 4+ kryteriów ≈ 40–60 s na tierze standard).
+ * Zmierzone na prodzie 2026-07-10: realne repo L1 (≈12k znaków artefaktu)
+ * NIE mieściło się w 45 s — każdy submit kończył się TimeoutError →
+ * semantic_parse_failed → 0/100 (fail-closed zadziałał, ale ocena była
+ * niemożliwa z konstrukcji). Trasa submitu ma maxDuration=180.
+ */
+export const AI_LONG_CALL_TIMEOUT_MS = 90_000;
+
+/**
  * Świeży `AbortSignal` z timeoutem dla jednego wywołania LLM. Wołać per wywołanie
  * (także per ponowienie w generateObjectWithRetry — każda próba dostaje własny
  * limit, nie współdzielony deadline).
