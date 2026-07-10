@@ -150,6 +150,13 @@ export const students = pgTable(
 		// (ponowny POST consent) — wspólny moduł zgód przyjdzie z 1.17.
 		marketMonitoringConsent: boolean("market_monitoring_consent").notNull().default(false),
 		marketMonitoringDecidedAt: timestamp("market_monitoring_decided_at", { withTimezone: true }),
+		// 1.17 (RODO, decyzje Darka 2026-07-10): zgoda opt-in na ŚLEDZENIE
+		// PLACEMENT (baseline + zdarzenia zawodowe). Wzorzec AG.6: decidedAt
+		// NULL = nigdy nie pytany; zgoda odwoływalna tym samym endpointem.
+		// Odwołanie KASUJE zebrane zdarzenia (placement to PII — prywatność
+		// ponad ciągłość metryki; agregaty E2.H liczone są na żywo).
+		placementConsent: boolean("placement_consent").notNull().default(false),
+		placementDecidedAt: timestamp("placement_decided_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
@@ -413,6 +420,64 @@ export const marketNewGapEvents = pgTable(
 	(table) => [
 		index("idx_market_new_gap_events_student_id").on(table.studentId),
 		index("idx_market_new_gap_events_tenant_id").on(table.tenantId),
+	],
+);
+
+// ============================================================================
+// 1.17 — Instrumentacja placement rate (decyzje Darka 2026-07-10: baseline +
+// zdarzenia deklarowane; zgoda w onboardingu i profilu). Dane nieodtwarzalne
+// wstecz — zbieranie startuje z 1. kohortą. Konsument: E2.H (Employability
+// Report, agregaty anonimowe) + bramka E3 (placement ≥70%).
+//
+// RLS: pełny wzorzec 0030 (ENABLE+FORCE, student_sees_own FOR SELECT,
+// owner_passthrough), grant TYLKO SELECT dla app_student — zapisy wyłącznie
+// owner-side przez trasy /api/placement/*. app_faculty bez grantu (agregaty
+// E2.H policzy serwer owner-side, anonimowo). Kasowanie: cascade po studencie
+// (art. 17) ORAZ przy odwołaniu zgody (delete-on-revoke — patrz kolumny zgody).
+// ============================================================================
+
+export const placementEvents = pgTable(
+	"placement_events",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		/**
+		 * baseline — status na start (dokładnie 1 na studenta, egzekwowane
+		 * partial unique); internship/job/job_change/job_lost — deklarowane
+		 * zmiany. CHECK to lista miękka (nowy rodzaj = ALTER CHECK).
+		 */
+		kind: text("kind").notNull(),
+		/** Tylko baseline: studying | working_in_field | working_outside | seeking. */
+		employmentStatus: text("employment_status"),
+		/** Zdarzenia pracy: czy rola zgodna ze ścieżką kariery (deklaracja). */
+		careerAligned: boolean("career_aligned"),
+		/** Kiedy zdarzenie zaszło wg studenta (data, nie chwila zapisu). */
+		occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+		/** Krótka notatka studenta (opcjonalna; cap w trasie). */
+		note: text("note"),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_placement_events_student_id").on(table.studentId),
+		index("idx_placement_events_tenant_id").on(table.tenantId),
+		check(
+			"placement_events_kind_values",
+			sql`${table.kind} IN ('baseline','internship','job','job_change','job_lost')`,
+		),
+		check(
+			"placement_events_employment_status_values",
+			sql`${table.employmentStatus} IS NULL OR ${table.employmentStatus} IN ('studying','working_in_field','working_outside','seeking')`,
+		),
+		// Baseline dokładnie raz — kolejne "baseline" to update statusu przez
+		// zdarzenie, nie drugi punkt startu (metryka przed/po ma jeden start).
+		uniqueIndex("uq_placement_events_baseline")
+			.on(table.studentId)
+			.where(sql`${table.kind} = 'baseline'`),
 	],
 );
 

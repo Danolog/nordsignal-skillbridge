@@ -8,6 +8,7 @@
 
 | Dane | Tabela / kolumna | Okres | Od kiedy liczony | Co zostaje | Podstawa |
 |---|---|---|---|---|---|
+| Zdarzenia placement (deklarowane, za zgodą) | `placement_events` (całe wiersze) | **do odwołania zgody** (delete-on-revoke w tx zgody) | udzielenie zgody (`students.placement_decided_at`) | nic (agregaty E2.H liczone na żywo — student znika z metryki) | 1.17, decyzje Darka 2026-07-10 |
 | Surowe odpowiedzi obrony ustnej (viva) | `viva_answers.content` | **12 miesięcy** | prawomocne rozstrzygnięcie sesji (`viva_sessions.completedAt`; przy eskalacji do człowieka — decyzja z `submission_reviews`) | `viva_sessions.resultJson` (punkty + uzasadnienia sędziego, bez surowego tekstu studenta) | ADR-013 D3 (sign-off Darka 2026-07-09) |
 
 Uwagi:

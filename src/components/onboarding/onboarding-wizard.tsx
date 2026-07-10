@@ -77,6 +77,8 @@ interface OnboardingWizardProps {
 	 * false → kreator dokładnie jak dotąd (zero zmian).
 	 */
 	diagnosticEnabled?: boolean;
+	/** 1.17: flaga placementTracking (server-side) — karta zgody w Wnioskach. */
+	placementEnabled?: boolean;
 }
 
 export function OnboardingWizard({
@@ -85,6 +87,7 @@ export function OnboardingWizard({
 	initialData,
 	carryoverSelfAssessments,
 	diagnosticEnabled = false,
+	placementEnabled = false,
 }: OnboardingWizardProps) {
 	const router = useRouter();
 	const [step, setStep] = useState(initialStep);
@@ -810,6 +813,7 @@ export function OnboardingWizard({
 						onComplete={handleComplete}
 						completing={completing}
 						diagnosisResult={diagnosisOutcome?.result ?? null}
+						placementEnabled={placementEnabled}
 					/>
 				)}
 			</div>

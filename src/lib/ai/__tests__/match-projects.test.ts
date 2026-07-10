@@ -42,6 +42,8 @@ const student = {
 	syllabusText: null,
 	careerHelperCompletedAt: null,
 	marketMonitoringConsent: false,
+	placementConsent: false,
+	placementDecidedAt: null,
 	marketMonitoringDecidedAt: null,
 	createdAt: new Date(),
 	updatedAt: new Date(),

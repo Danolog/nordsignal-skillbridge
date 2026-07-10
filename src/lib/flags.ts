@@ -80,6 +80,14 @@ export const FLAGS = {
 			"(generacja pytań) + trasy /api/submissions/[id]/viva/*. Off = potok i statusy jak dotąd.",
 		defaultValue: false,
 	},
+	placementTracking: {
+		envVar: "FLAG_PLACEMENT_TRACKING",
+		description:
+			"1.17: instrumentacja placement rate — zgoda RODO (onboarding+profil), baseline statusu " +
+			"zawodowego i deklarowane zdarzenia (staż/praca). Off = feature nie istnieje (trasy 404, " +
+			"UI się nie renderuje).",
+		defaultValue: false,
+	},
 	careerModelFromDb: {
 		envVar: "FLAG_CAREER_MODEL_FROM_DB",
 		description:

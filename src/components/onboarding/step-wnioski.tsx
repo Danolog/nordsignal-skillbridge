@@ -15,6 +15,7 @@
 
 import { ArrowRight, BookOpen } from "lucide-react";
 import { useMemo } from "react";
+import { PlacementConsentCard } from "@/components/placement/consent-card";
 import { SharePill } from "@/components/skill-map/group-context";
 import { Button } from "@/components/ui/button";
 import type { AssessmentResult } from "@/lib/assessment/types";
@@ -73,6 +74,8 @@ interface StepWnioskiProps {
 	 * ten prop dokłada panel „Wynik testu" (w tym uczciwie oblane, poziom 1).
 	 */
 	diagnosisResult?: AssessmentResult | null;
+	/** 1.17: flaga placementTracking — karta zgody nad stopką (baseline 1. kohorty). */
+	placementEnabled?: boolean;
 }
 
 export function StepWnioski({
@@ -85,6 +88,7 @@ export function StepWnioski({
 	onComplete,
 	completing,
 	diagnosisResult = null,
+	placementEnabled = false,
 }: StepWnioskiProps) {
 	const view = useMemo(() => {
 		// Lustrzane filtrowanie po katalogu (jak runSubmit w wizardzie) — odporne na
@@ -348,6 +352,10 @@ export function StepWnioski({
 					</div>
 				</div>
 			</footer>
+
+			{/* 1.17 — zgoda na śledzenie placement: opt-in, pominięcie = decyzja
+			    niepodjęta (profil dalej pyta). Pod stopką celowo — nie blokuje CTA. */}
+			{placementEnabled && <PlacementConsentCard />}
 		</div>
 	);
 }
