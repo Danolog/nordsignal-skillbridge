@@ -668,8 +668,51 @@ flagi AG — migracje już są.
    zgłoszenie w prod DB (drugie konto testowe obok test-weryfikacja-10);
    repo-fixture można skasować albo zostawić jako demo.
 
-30. **NASTĘPNE:** cross-cutting 1.17/1.18 z roadmapy + rotacja tokenu
-   (pkt 29). Łańcuch B4→B6→B7 ma teraz pełny dowód działania na prodzie.
+30. **1.17 ✅ zmergowane (#159, squash `d9eb917`; CI zielone)** —
+   instrumentacja placement rate. Decyzje Darka: baseline + zdarzenia
+   deklarowane; zgoda w onboardingu (krok Wnioski — pełny baseline
+   1. kohorty) i profilu. Migracja **0033** (`placement_events`: kind CHECK,
+   partial unique baseline; kolumny zgody na students wzorcem AG.6); RLS
+   0030, grant SELECT app_student, faculty deny; **rls-matrix v0.24**
+   (sign-off Ryana). **Delete-on-revoke** w jednej tx (PII za zgodą; student
+   znika z agregatów E2.H — liczone na żywo); decyzje zgody audytowane;
+   rejestr retencji uzupełniony. Trasy POST /api/placement/{consent,events}
+   (403 bez zgody, 409 drugi baseline, 400 przyszłość) + karta zgody
+   w Wnioskach + sekcja „Śledzenie zatrudnienia" w profilu. Za flagą
+   **placementTracking**. Dowody: unit +5, integration +6 (realna baza,
+   RLS, delete-on-revoke), k3 = 19 tabel.
+
+31. **1.18 ✅ zmergowane (#160, squash `e188ab4`; CI zielone) — FAZA 1
+   KODOWO DOMKNIĘTA (wszystkie zadania 1.x z roadmapy zrealizowane)**.
+   C13 rytm nauki. Decyzje Darka: streak/zastój DETERMINISTYCZNIE z realnej
+   aktywności (nie z formularzy); check-in opcjonalny; deklaracja
+   w „Mojej drodze"; alert zastoju in-app, wyłączalny. Migracja **0034**
+   (`study_rhythms` 1/student + `study_checkins` UNIQUE(student, tydzień),
+   week_start server-side; `module_ref` = hak 1E.6); RLS 0030;
+   **rls-matrix v0.25** (sign-off Ryana); k3 = **21 tabel**. Silnik
+   `src/lib/rhythm/` (tygodnie ISO UTC; kotwica streaku bieżący-albo-
+   poprzedni tydzień; zastój ≥7 dni; alert wg EPIZODÓW notified_at vs
+   lastActivityAt — bez tabeli zdarzeń; ślady jednym UNION ALL po
+   submissions/tutor/assessment/viva/reflections/check-inach). Trasy
+   POST /api/rhythm/{,checkin,stagnation-dismiss}; UI: sekcja w Mojej
+   drodze + karta na dashboardzie. Za flagą **studyRhythm**. Dowody:
+   unit +23 (17 silnika), integration +6 (streak z realnej tury tutora,
+   epizody zastoju, RLS); **weryfikacja przeglądarkowa na lokalnym dev**:
+   login → deklaracja 8 h/pn+śr → check-in utrwalony (rehydracja) →
+   karta na dashboardzie z poprawną ścieżką „świeża aktywność".
+
+32. **NASTĘPNE:**
+   - **Aktywacja 1.17/1.18** (akcje Darka, bez pośpiechu): migracje
+     **0033+0034** na prod (jedna sesja migracyjna, wzorzec 0027–0030)
+     + `FLAG_PLACEMENT_TRACKING` i `FLAG_STUDY_RHYTHM`. UWAGA 1.17:
+     baseline 1. kohorty jest nieodtwarzalny wstecz — flagę placement
+     warto zapalić PRZED pierwszą realną kohortą.
+   - **Rotacja tokenu GitHub** (pkt 29) — wisi.
+   - **Bramka wyjścia F1:** wszystkie kryteria mają kod (sandbox 1.9 +
+     obrona 1.16 + recenzja 1.5 + zero-samooceny-DS 1.12 + model w DB 1.0
+     + placement mierzony 1.17); bloki B8/B6 czekają na aktywację env
+     (0027/0028 + flagi). Formalny przegląd bramki przy aktywacji.
+   - Dalej wg roadmapy: **Faza 1E** (pilotaż pełnej ścieżki DS, 1E.1+).
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
@@ -684,10 +727,12 @@ flagi AG — migracje już są.
 - **Blok B7** ✅ CAŁY i **LIVE NA PRODZIE** (1.15 ADR-013 · 1.16a #156 ·
   1.16b #157; migracja 0032 + FLAG_VIVA_DEFENSE=1 Production+Preview,
   smoke czysty 2026-07-10).
-- Baseline main: tsc 0, Biome 0, unit 1118/1118, integration 124/124,
-  k3 zielony (18 tabel tenant), BUILD_OK; migracje: **test DB = 0032,
-  prod = 0032** (pełna parzystość; FLAG_DIAGNOSTIC_ASSESSMENT,
-  FLAG_SOCRATIC_TUTOR i FLAG_VIVA_DEFENSE ON).
+- **Faza 1 KODOWO DOMKNIĘTA** (1.17 #159 + 1.18 #160 były ostatnimi
+  zadaniami 1.x) — aktywacja 1.17/1.18 = migracje 0033+0034 + flagi.
+- Baseline main: tsc 0, Biome 0, unit 1146/1146, integration 136/136,
+  k3 zielony (21 tabel tenant), BUILD_OK; migracje: **test DB = 0034,
+  prod = 0032** (0033+0034 czekają na sesję migracyjną Darka;
+  FLAG_DIAGNOSTIC_ASSESSMENT, FLAG_SOCRATIC_TUTOR i FLAG_VIVA_DEFENSE ON).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret / token po smoke B7** — skasować na GitHubie token
