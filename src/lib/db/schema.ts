@@ -481,6 +481,86 @@ export const placementEvents = pgTable(
 	],
 );
 
+// ============================================================================
+// 1.18 (C13) — rytm nauki i accountability (decyzje Darka 2026-07-10):
+// deklaracja godzin/tydzień + dni w „Mojej drodze"; streak i zastój liczone
+// DETERMINISTYCZNIE z realnych śladów (submity, tutor, diagnoza, viva,
+// refleksje, check-iny) — zero nowych obowiązków; ręczny check-in tygodniowy
+// OPCJONALNY; powiadomienie o zastoju in-app, wyłączalne, wykrywane leniwie
+// (bez cronów). moduleRef = hak pod moduły curriculum 1E.6 ([ZMIANA] roadmapy).
+//
+// RLS obu tabel: pełny wzorzec 0030 (ENABLE+FORCE, student_sees_own FOR
+// SELECT, owner_passthrough); grant TYLKO SELECT app_student — zapisy
+// owner-side przez trasy /api/rhythm/*; app_faculty bez grantu.
+// ============================================================================
+
+export const studyRhythms = pgTable(
+	"study_rhythms",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		// Jedna deklaracja per student (upsert) — unique zamiast indeksu zwykłego.
+		studentId: uuid("student_id")
+			.notNull()
+			.unique()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		hoursPerWeek: smallint("hours_per_week").notNull(),
+		/** Dni nauki: podzbiór ['mon'..'sun'] (walidacja w trasie; jsonb dla 1E.6). */
+		days: jsonb("days").notNull().default([]),
+		/** Aktywny projekt, z którym student wiąże rytm (opcjonalny). */
+		activeProjectId: uuid("active_project_id").references(() => projects.id, {
+			onDelete: "set null",
+		}),
+		/** Hak 1E.6: identyfikator modułu curriculum (bez FK — moduły przyjdą później). */
+		moduleRef: text("module_ref"),
+		/** Wyłączenie powiadomień o zastoju (funkcja produktu, nie zgoda RODO). */
+		stagnationOptOut: boolean("stagnation_opt_out").notNull().default(false),
+		/**
+		 * Kiedy pokazano alert zastoju (epizod). Widoczność alertu: zastój ∧
+		 * (NULL ∨ notifiedAt < lastActivityAt) — nowa aktywność otwiera nowy
+		 * epizod, dismiss zamyka bieżący. Bez osobnej tabeli zdarzeń.
+		 */
+		stagnationNotifiedAt: timestamp("stagnation_notified_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_study_rhythms_tenant_id").on(table.tenantId),
+		check("study_rhythms_hours_range", sql`${table.hoursPerWeek} BETWEEN 1 AND 80`),
+	],
+);
+
+export const studyCheckins = pgTable(
+	"study_checkins",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		/** Poniedziałek tygodnia ISO (UTC), liczony server-side — klientowi nie ufamy. */
+		weekStart: timestamp("week_start", { withTimezone: true }).notNull(),
+		/** Realnie przepracowane godziny (deklaracja; NULL = tylko notatka). */
+		hoursActual: smallint("hours_actual"),
+		note: text("note"),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_study_checkins_student_id").on(table.studentId),
+		index("idx_study_checkins_tenant_id").on(table.tenantId),
+		check(
+			"study_checkins_hours_range",
+			sql`${table.hoursActual} IS NULL OR ${table.hoursActual} BETWEEN 0 AND 120`,
+		),
+		// Jeden check-in per tydzień — ponowny zapis to update (upsert w trasie).
+		uniqueIndex("uq_study_checkins_week").on(table.studentId, table.weekStart),
+	],
+);
+
 // Project Marketplace tables
 
 export const projects = pgTable(

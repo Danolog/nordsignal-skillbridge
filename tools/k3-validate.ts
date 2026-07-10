@@ -84,6 +84,11 @@ const TENANT_TABLES = [
 	// ENABLE+FORCE + student_sees_own + owner_passthrough. Kasowanie: cascade
 	// po studencie ORAZ delete-on-revoke zgody.
 	"placement_events",
+	// 1.18 (C13) — rytm nauki (migracja 0034). Dane studenta: obie z grantem
+	// TYLKO SELECT dla app_student (zapisy owner-side przez /api/rhythm/*),
+	// app_faculty bez grantu; ENABLE+FORCE + student_sees_own + owner_passthrough.
+	"study_rhythms",
+	"study_checkins",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.

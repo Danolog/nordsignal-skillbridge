@@ -3,6 +3,7 @@
 import { ArrowRight, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { MarketGapNotifications } from "@/components/dashboard/market-gap-notifications";
+import { RhythmCard, type RhythmCardState } from "@/components/rhythm/rhythm-card";
 import type { MarketNotificationsState } from "@/lib/market-notifications";
 
 interface Competency {
@@ -44,6 +45,8 @@ interface DashboardHubProps {
 	topGap: TopGap | null;
 	/** AG.6: stan powiadomień „nowa luka" (flaga off → komponent nic nie renderuje). */
 	marketNotifications: MarketNotificationsState;
+	/** 1.18: stan karty rytmu (null = flaga off — karta nie istnieje). */
+	rhythmCard: RhythmCardState | null;
 }
 
 const GOAL_COVERAGE = 80;
@@ -146,6 +149,7 @@ export function DashboardHub(props: DashboardHubProps) {
 		marketCoverage,
 		topGap,
 		marketNotifications,
+		rhythmCard,
 	} = props;
 
 	const firstName = user.name.split(" ")[0];
@@ -192,6 +196,9 @@ export function DashboardHub(props: DashboardHubProps) {
 
 			{/* AG.6: zgoda RODO / powiadomienia „nowa luka" (flaga off → null) */}
 			<MarketGapNotifications state={marketNotifications} />
+
+			{/* 1.18: rytm nauki — streak + alert zastoju (flaga off → null) */}
+			{rhythmCard && <RhythmCard state={rhythmCard} />}
 
 			{/* Pokrycie rynku */}
 			<div className="db-card db-cov">
