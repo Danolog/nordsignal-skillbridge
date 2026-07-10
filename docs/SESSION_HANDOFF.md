@@ -701,17 +701,28 @@ flagi AG — migracje już są.
    login → deklaracja 8 h/pn+śr → check-in utrwalony (rehydracja) →
    karta na dashboardzie z poprawną ścieżką „świeża aktywność".
 
-32. **NASTĘPNE:**
-   - **Aktywacja 1.17/1.18** (akcje Darka, bez pośpiechu): migracje
-     **0033+0034** na prod (jedna sesja migracyjna, wzorzec 0027–0030)
-     + `FLAG_PLACEMENT_TRACKING` i `FLAG_STUDY_RHYTHM`. UWAGA 1.17:
-     baseline 1. kohorty jest nieodtwarzalny wstecz — flagę placement
-     warto zapalić PRZED pierwszą realną kohortą.
+32. **AKTYWACJA 1.17/1.18 NA PROD ✅ WYKONANA (2026-07-10 wieczorem)** —
+   **1.17 i 1.18 LIVE**:
+   - **Migracje 0033+0034 (Darek)**: dziennik PRZED 33/1783620996022 →
+     PO **35/1783700829623**; RLS t/t na wszystkich 3 tabelach; granty
+     dokładnie app_student|SELECT ×3; kolumny zgody na students.
+     **PROD = 0034** (pełna parzystość z bazą testową).
+   - **Flagi (Oliver):** FLAG_PLACEMENT_TRACKING + FLAG_STUDY_RHYTHM na
+     Production (printf|vercel env add) i Preview (REST API); redeploy
+     prod (Ready 2m, alias skill-bridge-ai-seven).
+   - **Smoke czysty:** 5 tras (placement/{consent,events},
+     rhythm/{,checkin,stagnation-dismiss}) bez sesji 404→**401**;
+     home/login 200; runtime errors: zero. Karta zgody w Wnioskach,
+     sekcja profilu, rytm w Mojej drodze i karta na dashboardzie — LIVE.
+   - Baseline placement 1. kohorty zabezpieczony (flaga zapalona przed
+     pierwszą kohortą — dane liczą się od teraz).
+
+33. **NASTĘPNE:**
    - **Rotacja tokenu GitHub** (pkt 29) — wisi.
-   - **Bramka wyjścia F1:** wszystkie kryteria mają kod (sandbox 1.9 +
-     obrona 1.16 + recenzja 1.5 + zero-samooceny-DS 1.12 + model w DB 1.0
-     + placement mierzony 1.17); bloki B8/B6 czekają na aktywację env
-     (0027/0028 + flagi). Formalny przegląd bramki przy aktywacji.
+   - **Bramka wyjścia F1:** wszystkie kryteria mają kod; do formalnego
+     przeglądu brakuje aktywacji B8 (0027+OPERATOR_PASSWORD+flaga) i B6
+     (0028+flaga) — migracje 0033/0034 już wgrane, 0027/0028 też (prod
+     ma pełną parzystość), więc zostały TYLKO env.
    - Dalej wg roadmapy: **Faza 1E** (pilotaż pełnej ścieżki DS, 1E.1+).
 
 ### Stan bloków Fazy 1 (2026-07-09)
@@ -727,12 +738,12 @@ flagi AG — migracje już są.
 - **Blok B7** ✅ CAŁY i **LIVE NA PRODZIE** (1.15 ADR-013 · 1.16a #156 ·
   1.16b #157; migracja 0032 + FLAG_VIVA_DEFENSE=1 Production+Preview,
   smoke czysty 2026-07-10).
-- **Faza 1 KODOWO DOMKNIĘTA** (1.17 #159 + 1.18 #160 były ostatnimi
-  zadaniami 1.x) — aktywacja 1.17/1.18 = migracje 0033+0034 + flagi.
+- **Faza 1 KODOWO DOMKNIĘTA, 1.17+1.18 LIVE NA PRODZIE** (pkt 32).
 - Baseline main: tsc 0, Biome 0, unit 1146/1146, integration 136/136,
   k3 zielony (21 tabel tenant), BUILD_OK; migracje: **test DB = 0034,
-  prod = 0032** (0033+0034 czekają na sesję migracyjną Darka;
-  FLAG_DIAGNOSTIC_ASSESSMENT, FLAG_SOCRATIC_TUTOR i FLAG_VIVA_DEFENSE ON).
+  prod = 0034** (pełna parzystość; flagi ON: FLAG_DIAGNOSTIC_ASSESSMENT,
+  FLAG_SOCRATIC_TUTOR, FLAG_VIVA_DEFENSE, FLAG_PLACEMENT_TRACKING,
+  FLAG_STUDY_RHYTHM).
 
 ### Otwarte zaległości (akcje Darka, nie kod)
 - **0.7-sekret / token po smoke B7** — skasować na GitHubie token
