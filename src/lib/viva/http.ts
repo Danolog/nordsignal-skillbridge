@@ -13,6 +13,12 @@ import { VIVA_QUESTION_COUNT, VIVA_TTL_MINUTES, type VivaQuestion } from "@/lib/
 
 export type VivaStateResponse = {
 	state: string | null;
+	/**
+	 * 1.16b: id sesji — trasa answer identyfikuje sesję w URL
+	 * (/viva/[sessionId]/answer), a klient nie ma innego źródła. Własna sesja
+	 * studenta (trasy i tak egzekwują własność w WHERE) — zero wycieku.
+	 */
+	sessionId: string | null;
 	position: number;
 	totalQuestions: number;
 	/** Bieżące pytanie (tylko pending/in_progress). BEZ excerptu — student ma pracę. */
@@ -44,6 +50,7 @@ export async function serializeVivaState(
 	if (!session) {
 		return {
 			state: null,
+			sessionId: null,
 			position: 0,
 			totalQuestions: VIVA_QUESTION_COUNT,
 			question: null,
@@ -63,6 +70,7 @@ export async function serializeVivaState(
 	} | null;
 	return {
 		state: session.status,
+		sessionId: session.id,
 		position,
 		totalQuestions: VIVA_QUESTION_COUNT,
 		question: q ? { position: q.position, question: q.question, filePath: q.filePath } : null,

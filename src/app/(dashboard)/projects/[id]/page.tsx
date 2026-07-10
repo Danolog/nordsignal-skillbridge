@@ -64,6 +64,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 				sourceLinks={project.sourceLinks}
 				// C11/1.14 — flaga czytana server-side (rejestr flag nie trafia do klienta).
 				tutorEnabled={isFeatureEnabled("socraticTutor")}
+				// B7/1.16b — jak wyżej: obrona ustna za flagą vivaDefense.
+				vivaEnabled={isFeatureEnabled("vivaDefense")}
 			/>
 		</div>
 	);

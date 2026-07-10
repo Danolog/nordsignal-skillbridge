@@ -97,7 +97,21 @@ export function TutorPanel({ projectId }: { projectId: string }) {
 
 			if (res.status === 409) {
 				setMessages((prev) => prev.slice(0, -1));
-				setLimitReached(true);
+				// B7/1.16b: 409 ma dwa źródła — limit tury (body niesie maxTurns)
+				// albo blokada na czas otwartej obrony (ADR-013 D2.2). Blokada jest
+				// przejściowa: wiadomość wraca do pola, panel NIE udaje limitu.
+				const body = (await res.json().catch(() => null)) as {
+					error?: string;
+					maxTurns?: number;
+				} | null;
+				if (body && typeof body.maxTurns === "number") {
+					setLimitReached(true);
+				} else {
+					setInput(message);
+					toast.info(
+						body?.error ?? "Trwa obrona ustna tego projektu — tutor wróci po jej zakończeniu.",
+					);
+				}
 				return;
 			}
 			if (res.status === 429) {

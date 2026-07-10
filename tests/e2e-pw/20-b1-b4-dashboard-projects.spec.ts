@@ -150,7 +150,9 @@ test.describe("@dbwrite Dashboard", () => {
 		await loginWithPassword(page, "main");
 		await page.goto("/dashboard");
 		await expect(page.getByRole("heading", { name: /Cześć,/i })).toBeVisible({ timeout: 15_000 });
-		await expect(page.getByText(/Twoje narzędzia/i)).toBeVisible();
+		// Hub po redesignu nie ma sekcji „Twoje narzędzia" (dryf speca) —
+		// stabilna kotwica: nawigacja kaflowa do Projektów.
+		await expect(page.getByRole("link", { name: /Projekty/i }).first()).toBeVisible();
 		await expect(page.locator("body")).not.toContainText(
 			/Application error|Internal Server Error/i,
 		);

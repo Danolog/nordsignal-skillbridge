@@ -4886,6 +4886,167 @@
 	cursor: not-allowed;
 }
 
+/* B7/1.16b — Obrona ustna (viva) w widoku projektu */
+.viva-panel-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+.viva-banner {
+	padding: 16px;
+	border-radius: 12px;
+	background: rgba(245, 158, 11, 0.06);
+	border: 1px solid rgba(245, 158, 11, 0.25);
+}
+.viva-banner-lead {
+	font-size: 14px;
+	color: var(--ed-ink);
+	margin-bottom: 10px;
+}
+.viva-rules {
+	margin: 0 0 14px;
+	padding-left: 18px;
+	font-size: 13px;
+	color: var(--ed-muted);
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.viva-primary-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 12px 18px;
+	background: linear-gradient(135deg, var(--ed-amber) 0%, var(--ed-amber) 100%);
+	color: white;
+	border: none;
+	border-radius: 12px;
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: opacity 0.2s ease;
+}
+.viva-primary-btn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+.viva-secondary-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 10px 14px;
+	background: white;
+	color: var(--ed-ink);
+	border: 1px solid var(--ed-border);
+	border-radius: 12px;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+.viva-question-block {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+.viva-progress-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.viva-progress-label {
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--ed-muted);
+}
+.viva-timer {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+	color: var(--ed-muted);
+	border: 1px solid var(--ed-border);
+	border-radius: 999px;
+	padding: 3px 10px;
+	background: white;
+}
+.viva-timer-low {
+	color: #dc2626;
+	border-color: rgba(239, 68, 68, 0.35);
+	background: rgba(239, 68, 68, 0.06);
+}
+.viva-question-text {
+	font-size: 15px;
+	font-weight: 500;
+	color: var(--ed-ink);
+	white-space: pre-wrap;
+}
+.viva-question-file {
+	font-size: 12.5px;
+	color: var(--ed-muted);
+	font-family: ui-monospace, monospace;
+}
+.viva-input {
+	resize: vertical;
+	min-height: 110px;
+	padding: 10px 14px;
+	border: 1px solid var(--ed-border);
+	border-radius: 12px;
+	font-size: 14px;
+	font-family: inherit;
+	background: white;
+}
+.viva-input:disabled {
+	opacity: 0.6;
+}
+.viva-answer-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.viva-answer-counter {
+	font-size: 12px;
+	color: var(--ed-muted);
+	font-variant-numeric: tabular-nums;
+}
+.viva-crisis {
+	padding: 12px 16px;
+	border-radius: 12px;
+	background: rgba(239, 68, 68, 0.08);
+	border: 1px solid rgba(239, 68, 68, 0.2);
+	color: #dc2626;
+	font-size: 14px;
+	white-space: pre-wrap;
+}
+.viva-outcome {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 14px 16px;
+	border-radius: 12px;
+	font-size: 14px;
+}
+.viva-outcome-passed {
+	background: rgba(16, 185, 129, 0.08);
+	border: 1px solid rgba(16, 185, 129, 0.25);
+	color: #047857;
+}
+.viva-outcome-failed {
+	background: rgba(239, 68, 68, 0.06);
+	border: 1px solid rgba(239, 68, 68, 0.2);
+	color: #b91c1c;
+}
+.viva-outcome-mid {
+	background: rgba(245, 158, 11, 0.08);
+	border: 1px solid rgba(245, 158, 11, 0.2);
+	color: #92400e;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
 	.proj-grid {
@@ -5527,6 +5688,45 @@
 	color: var(--ed-amber-text);
 	background: var(--ed-badge-bg);
 }
+/* B7/1.16b — sekcja obrony w karcie kolejki */
+.rq-viva {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+}
+.rq-viva-row {
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--ed-border, #e5e7eb);
+	border-radius: 10px;
+	background: rgba(0, 0, 0, 0.02);
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 13.5px;
+}
+.rq-viva-q {
+	margin: 0;
+}
+.rq-viva-file {
+	color: var(--ed-muted, #6b7280);
+	font-family: ui-monospace, monospace;
+	font-size: 12px;
+}
+.rq-viva-a {
+	margin: 0;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	padding-left: 10px;
+	border-left: 3px solid rgba(245, 158, 11, 0.5);
+}
+.rq-viva-verdict {
+	margin: 0;
+	font-size: 12.5px;
+	color: var(--ed-muted, #6b7280);
+}
+
 .rq-actions {
 	display: flex;
 	gap: 10px;

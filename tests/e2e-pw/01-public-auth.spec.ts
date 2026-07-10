@@ -11,11 +11,17 @@ import { expect, test } from "@playwright/test";
  */
 
 test.describe("@safe Strona publiczna i bramka auth", () => {
-	test("Landing /: hero + CTA Paszport, link logowania i panel wykładowcy", async ({ page }) => {
+	test("Landing /: hero + CTA rejestracji, link logowania i panel uczelni", async ({ page }) => {
 		await page.goto("/");
-		await expect(page.getByRole("heading", { level: 1 })).toContainText("rynkiem pracy");
-		await expect(page.getByRole("link", { name: /Stwórz swój Paszport/i }).first()).toBeVisible();
-		await expect(page.getByRole("link", { name: /Panel wykładowcy/i }).first()).toBeVisible();
+		// Copy z redesignu landingu (#6, commit 58261bf) — poprzednie asercje
+		// („rynkiem pracy", „Stwórz swój Paszport", „Panel wykładowcy") były
+		// dryfem speca vs strona; spec nie był odpalany od redesignu.
+		await expect(page.getByRole("heading", { level: 1 })).toContainText("których szuka rynek");
+		await expect(
+			page.getByRole("link", { name: /Sprawdź, czego Ci brakuje/i }).first(),
+		).toBeVisible();
+		await expect(page.getByRole("link", { name: /Zaloguj się/i }).first()).toBeVisible();
+		await expect(page.getByRole("link", { name: /Panel uczelni/i }).first()).toBeVisible();
 	});
 
 	test("Logowanie /login: Google + formularz e-mail/hasło obecne", async ({ page }) => {

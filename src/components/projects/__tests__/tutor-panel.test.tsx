@@ -10,8 +10,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  */
 
 const toastError = vi.fn();
+const toastInfo = vi.fn();
 vi.mock("sonner", () => ({
-	toast: { error: (...a: unknown[]) => toastError(...a), success: vi.fn() },
+	toast: {
+		error: (...a: unknown[]) => toastError(...a),
+		info: (...a: unknown[]) => toastInfo(...a),
+		success: vi.fn(),
+	},
 }));
 
 import { TutorPanel } from "../tutor-panel";
@@ -152,6 +157,30 @@ describe("TutorPanel — tura (POST)", () => {
 		expect(await screen.findByText(/Limit rozmowy z tutorem/)).toBeInTheDocument();
 		expect(screen.queryByLabelText("Wiadomość do tutora")).not.toBeInTheDocument();
 		expect(screen.queryByText("jeszcze jedno")).not.toBeInTheDocument();
+	});
+
+	it("409 bez maxTurns (blokada na czas obrony B7) → toast info, pole ZOSTAJE, wiadomość wraca", async () => {
+		const stub = stubFetch({ turns: [], turnsUsed: 0, maxTurns: 30 });
+		stub.mockResolvedValueOnce(
+			jsonResponse(409, {
+				error: "Trwa obrona ustna tego projektu — tutor wróci po jej zakończeniu.",
+			}),
+		);
+		render(<TutorPanel projectId={PROJECT_ID} />);
+		const user = userEvent.setup();
+
+		await user.type(
+			await screen.findByLabelText("Wiadomość do tutora"),
+			"pytanie w trakcie obrony",
+		);
+		await user.click(screen.getByLabelText("Wyślij wiadomość do tutora"));
+
+		await waitFor(() =>
+			expect(toastInfo).toHaveBeenCalledWith(expect.stringContaining("obrona ustna")),
+		);
+		// Blokada jest przejściowa — panel NIE udaje wyczerpanego limitu.
+		expect(screen.queryByText(/Limit rozmowy z tutorem/)).not.toBeInTheDocument();
+		expect(screen.getByLabelText("Wiadomość do tutora")).toHaveValue("pytanie w trakcie obrony");
 	});
 
 	it("429 → toast, wiadomość wraca do pola", async () => {

@@ -16,6 +16,12 @@ export interface ProjectReceipt {
 	 * automatyczna — etykieta w UI nigdy nie kłamie, ADR-008).
 	 */
 	humanReviewerType?: HumanReviewerType | null;
+	/**
+	 * B7/1.16b (ADR-013 D4): praca obroniona w rozmowie z AI. WYŁĄCZNIE boolean
+	 * (paszport publiczny nie dostaje score/dat/treści — whitelist §6.1).
+	 * Sterowane danymi: projekcja aiReviewJson.viva.state === 'passed'.
+	 */
+	vivaDefended?: boolean;
 }
 
 /** Kształt zgłoszenia z relacją project — dokładnie to, co czytają strony paszportu. */
@@ -46,6 +52,11 @@ export function mapSubmissionsToReceipts(
 		const review = (s.aiReviewJson as Record<string, unknown> | null)?.review as
 			| Record<string, unknown>
 			| undefined;
+		// B7/1.16b: projekcja stanu obrony (zapisywana w tx zmiany stanu sesji —
+		// ADR-013 D3). Re-submit resetuje klucz 'viva', więc nie ma stanu-zombie.
+		const viva = (s.aiReviewJson as Record<string, unknown> | null)?.viva as
+			| Record<string, unknown>
+			| undefined;
 		return {
 			projectTitle: s.project.title,
 			projectLevel: s.project.level,
@@ -55,6 +66,7 @@ export function mapSubmissionsToReceipts(
 			notebookUrl: s.notebookUrl,
 			feedback: typeof review?.feedback === "string" ? review.feedback : null,
 			humanReviewerType: humanReviewBySubmission?.get(s.id) ?? null,
+			vivaDefended: viva?.state === "passed",
 		};
 	});
 }
