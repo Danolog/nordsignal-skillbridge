@@ -88,6 +88,14 @@ export const FLAGS = {
 			"UI się nie renderuje).",
 		defaultValue: false,
 	},
+	studyRhythm: {
+		envVar: "FLAG_STUDY_RHYTHM",
+		description:
+			"1.18 (C13): rytm nauki — deklaracja godzin/tydzień + dni, streak z realnych śladów, " +
+			"check-iny tygodniowe (opcjonalne), alert zastoju in-app (leniwy, bez cronów). " +
+			"Off = feature nie istnieje (trasy 404, UI się nie renderuje).",
+		defaultValue: false,
+	},
 	careerModelFromDb: {
 		envVar: "FLAG_CAREER_MODEL_FROM_DB",
 		description:

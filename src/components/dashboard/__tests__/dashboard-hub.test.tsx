@@ -58,6 +58,8 @@ const defaultProps = {
 		consent: false,
 		notifications: [],
 	},
+	// 1.18: flaga off → karta rytmu nie istnieje (osobne testy w rhythm.test.tsx).
+	rhythmCard: null,
 };
 
 describe("DashboardHub", () => {

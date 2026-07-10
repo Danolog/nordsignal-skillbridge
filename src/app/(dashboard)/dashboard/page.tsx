@@ -2,11 +2,14 @@ import { and, count, desc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { DashboardHub } from "@/components/dashboard/dashboard-hub";
+import type { RhythmCardState } from "@/components/rhythm/rhythm-card";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { competencies, gaps, projectSubmissions, students } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
 import { getMarketNotificationsState } from "@/lib/market-notifications";
 import { calculateCoverage } from "@/lib/passport-utils";
+import { getRhythmState } from "@/lib/rhythm/state";
 
 export default async function DashboardPage() {
 	const session = await auth.api.getSession({ headers: await headers() });
@@ -66,6 +69,19 @@ export default async function DashboardPage() {
 		getMarketNotificationsState(student, session.user.id),
 	]);
 
+	// 1.18: karta rytmu (flaga off → null; zapytania za bramką).
+	let rhythmCard: RhythmCardState | null = null;
+	if (isFeatureEnabled("studyRhythm")) {
+		const r = await getRhythmState(student.id);
+		rhythmCard = {
+			declared: r.declaration !== null,
+			hoursPerWeek: r.declaration?.hoursPerWeek ?? null,
+			streakWeeks: r.streakWeeks,
+			lastActivityAt: r.lastActivityAt,
+			showStagnationAlert: r.showStagnationAlert,
+		};
+	}
+
 	const gapTotal = gapRows[0]?.count ?? 0;
 	const marketCoverage = calculateCoverage(
 		studentCompetencies.map((c) => ({ status: c.status })),
@@ -91,6 +107,7 @@ export default async function DashboardPage() {
 			marketCoverage={marketCoverage}
 			topGap={topGap}
 			marketNotifications={marketNotifications}
+			rhythmCard={rhythmCard}
 		/>
 	);
 }
