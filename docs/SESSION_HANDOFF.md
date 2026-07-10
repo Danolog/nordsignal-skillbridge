@@ -717,13 +717,41 @@ flagi AG — migracje już są.
    - Baseline placement 1. kohorty zabezpieczony (flaga zapalona przed
      pierwszą kohortą — dane liczą się od teraz).
 
-33. **NASTĘPNE:**
-   - **Rotacja tokenu GitHub** (pkt 29) — wisi.
-   - **Bramka wyjścia F1:** wszystkie kryteria mają kod; do formalnego
-     przeglądu brakuje aktywacji B8 (0027+OPERATOR_PASSWORD+flaga) i B6
-     (0028+flaga) — migracje 0033/0034 już wgrane, 0027/0028 też (prod
-     ma pełną parzystość), więc zostały TYLKO env.
-   - Dalej wg roadmapy: **Faza 1E** (pilotaż pełnej ścieżki DS, 1E.1+).
+33. **SIGN-OFF RYANA (CRCO) ✅ — rls-matrix v0.15→v0.25 podpisane
+   (2026-07-10, commit `939726a`)**: audyt zbiorczy agentem-Ryanem, 11
+   wpisów zweryfikowanych adwersaryjnie przeciwko migracjom 0022–0034,
+   k3-validate i trasom zapisu — **11× GO, zero KRYTYCZNYCH/WAŻNYCH**,
+   3 noty INFO (w macierzy, m.in. preferować DROP+CREATE dla
+   owner_passthrough w przyszłych migracjach). Jedyny wpis dalej bez
+   sign-offu: v0.12 (B3 project_learning_resources, zaszłość sprzed G6).
+
+34. **AKTYWACJA B8 + B6 ✅ (2026-07-10 wieczorem)** — **WSZYSTKIE BLOKI
+   FAZY 1 LIVE NA PRODZIE**:
+   - Flagi FLAG_HUMAN_REVIEW_QUEUE + FLAG_SANDBOX_RUNNER (Production+
+     Preview, wzorzec pipe/REST) + OPERATOR_PASSWORD (Darek przez
+     dashboard; pierwsza wartość <16 znaków → trasa fail-closed 500
+     „Server misconfigured" — bezpiecznik siły sekretu zadziałał zgodnie
+     z projektem; po podmianie na ≥16 znaków smoke czysty).
+   - Smoke: operator/login złe hasło → **401**; review-queue bez auth →
+     401; review-queue/[id]/viva → 401 (obie flagi rodziny B8+B7 żywe);
+     /review → redirect na login (200); runtime errors zero.
+   - B6 formalnie ON, de facto uśpiony: project_hidden_tests na prodzie
+     puste (kuracja suite'ów = wątek Sophii) — runner nie odpala, bez
+     szkód; runOk=null zachowuje statusy jak dotąd.
+   - **BRAMKA WYJŚCIA F1 — SPEŁNIONA i aktywna na prodzie:** receipt =
+     sandbox (1.9 ON) + obrona (1.16 ON, dowód E2E na prodzie) +
+     recenzja człowieka (1.5 ON); zero mapy z samooceny dla DS (1.12 ON);
+     model kariery w DB (1.0 ON); placement mierzony (1.17 ON).
+     Flagi na prodzie: 9 zapalonych (diagnoza, tutor, viva, placement,
+     rytm, kolejka, sandbox + career-model, gap-verifier-rodzina wg
+     wcześniejszych decyzji); zgaszone pozostają flagi AG (potok rynku —
+     decyzja Darka „na razie zostają zgaszone").
+   - Warto kliknąć: /review/login z hasłem operatora (kolejka może być
+     pusta — zgłoszenie test-viva-01 przeszło vivę 6/6 bez
+     needsHumanReview).
+
+35. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + **Faza 1E**
+   (pilotaż pełnej ścieżki DS, 1E.1+).
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
