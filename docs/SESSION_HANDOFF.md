@@ -829,22 +829,18 @@ flagi AG — migracje już są.
    Rotacja tokenu GitHub ✅ (Darek). Incydent CI: joby padały bez runnerów
    (limit minut Actions — prywatne repo); Darek podbił budżet, re-run
    zielony 10/10.
-   **AKTYWACJA 1E.1 — W TOKU (decyzja Darka „robimy migrację", 2026-07-11).**
-   Pre-check Olivera: dziennik LOKALNY zweryfikowany — 36 wpisów, ostatni
-   `0035_black_senator_kelly`; oczekiwany stan proda PRZED migracją:
-   35 wpisów, ostatni `0034_gorgeous_gateway`. Kolejność twarda (wykonuje
-   Darek w środowisku z prod DATABASE_URL):
-   (0) backup gałęzią Neona `prod-backup-pre-0035-<data>` →
-   (1) weryfikacja dziennika prod (odczyt):
-       `psql "$DATABASE_URL" -c "SELECT count(*) FROM drizzle.__drizzle_migrations;"`
-       — oczekiwane **35**; rozjazd = STOP i wołaj Olivera (lekcja
-       „rozjazd dziennika") →
-   (2) `CONFIRM_PROD_DB=1 pnpm db:migrate` (migracja 0035) →
-   (3) `CONFIRM_PROD_DB=1 pnpm db:ingest-curriculum` (struktura drabiny;
-       idempotentny) →
-   (4) [osobna decyzja] `FLAG_CURRICULUM_PATH=1` Production+Preview
-       + redeploy (env sensitive — wariant REST API jak w memory, gdy CLI
-       się pętli). Do zapalenia flagi prod bez zmian zachowania.
+   **MIGRACJA + INGEST 0035 NA PRODZIE — WYKONANE (Darek, 2026-07-11,
+   konsola Neona wg `docs/runbooks/aktywacja-1e1-neon-console.md`):**
+   backup `prod-backup-pre-0035-*` → dziennik przed: 35 wpisów ✓ →
+   DDL 0035 ✓ → **wpis metadanych do drizzle.__drizzle_migrations ✓**
+   (hash b09d56d4…, created_at 1783768097863 — dziennik spójny, następny
+   db:migrate NIE zrobi rozjazdu) → ingest drabiny ✓. Weryfikacja końcowa:
+   **8 modułów / 8 w ścieżce / 7 prereqów / 4 pozycje capstone /
+   6 polityk RLS / dziennik 36** — komplet zgodny z oczekiwaniami.
+   **PROD = 0035.** Flaga `FLAG_CURRICULUM_PATH` NADAL ZGASZONA —
+   zapalenie (Production+Preview + redeploy) = osobna decyzja Darka;
+   do tego czasu prod bez zmian zachowania (trasy 404, streak bez
+   źródła curriculum).
 
 40. **NASTĘPNE:** sign-off Ryana rls-matrix v0.26 + aktywacja 1E.1 (Darek,
    pkt 39) + **1E.2** (fundamenty: treść L0/F1 Sophii wg spec v0.1 —
