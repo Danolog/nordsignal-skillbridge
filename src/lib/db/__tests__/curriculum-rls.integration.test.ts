@@ -84,8 +84,8 @@ dBack("1E.1a · curriculum: RLS K-INT + odczyt K-PUB (realna baza)", () => {
 		moduleId = mod.id;
 		const [item] = await db
 			.execute(
-				sql`INSERT INTO curriculum_module_items (module_id, position, kind, title)
-			    VALUES (${moduleId}, 1, 'exercise', 'Pozycja testowa')
+				sql`INSERT INTO curriculum_module_items (module_id, slug, position, kind, title)
+			    VALUES (${moduleId}, 'pozycja-testowa', 1, 'exercise', 'Pozycja testowa')
 			    ON CONFLICT DO NOTHING RETURNING id`,
 			)
 			.then(async (r: { rows: { id: string }[] }) => {

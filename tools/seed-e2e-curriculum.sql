@@ -25,15 +25,22 @@ WHERE c.slug = 'e2e-1e1-koncept'
     WHERE qi.concept_id = c.id AND qi.stem = 'E2E: co wypisze print(2+2)?'
   );
 
-INSERT INTO curriculum_module_items (module_id, position, kind, title, config_json)
-SELECT m.id, 1, 'exercise', 'E2E: ćwiczenie testowe L0',
+-- Deterministyczne L0 dla przebiegu 1E.1: spec „dobra odpowiedź → L0 completed"
+-- wymaga, by JEDYNĄ pozycją L0 było ćwiczenie e2e (realne atomy 1E.2 to laby —
+-- niekompletowalne do 1E.6). WYŁĄCZNIE baza testowa; ingest przywraca treść.
+DELETE FROM curriculum_module_items
+WHERE module_id IN (SELECT id FROM curriculum_modules WHERE slug = 'l0-start')
+  AND slug <> 'e2e-cwiczenie';
+
+INSERT INTO curriculum_module_items (module_id, slug, position, kind, title, config_json)
+SELECT m.id, 'e2e-cwiczenie', 1, 'exercise', 'E2E: ćwiczenie testowe L0',
        jsonb_build_object('questionItemIds', jsonb_build_array(qi.id::text))
 FROM curriculum_modules m
 JOIN question_concepts c ON c.slug = 'e2e-1e1-koncept'
 JOIN question_items qi ON qi.concept_id = c.id AND qi.stem = 'E2E: co wypisze print(2+2)?'
 WHERE m.slug = 'l0-start'
-ON CONFLICT (module_id, position) DO UPDATE
-  SET kind = EXCLUDED.kind, title = EXCLUDED.title,
+ON CONFLICT (module_id, slug) DO UPDATE
+  SET kind = EXCLUDED.kind, title = EXCLUDED.title, position = EXCLUDED.position,
       config_json = EXCLUDED.config_json, updated_at = now();
 
 -- Czysty postęp konta main (powtarzalność przebiegu).

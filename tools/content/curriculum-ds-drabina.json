@@ -6,7 +6,8 @@
 			"Prerekwizyty: ŁAŃCUCH LINIOWY derywowany z kolejności modules[] (pilot; model danych dopuszcza DAG — ADR-014 D2/D3).",
 			"Pozycje atomów (theory/exercise/lab) wchodzą z treścią 1E.2 (Sophia) — tu wyłącznie struktura + capstone'y.",
 			"Mini-projekt transferowy po F3 (pkt 12b) wejdzie jako pozycja project w f3-dane-python, gdy projekt powstanie w 1E.2 (CHECK wymaga istniejącego projectId).",
-			"Git/terminal: just-in-time (decyzja Darka pkt 9) — atomy wejdą w m-eda, NIE w l0-start."
+			"Git/terminal: just-in-time (decyzja Darka pkt 9) — atomy wejdą w m-eda, NIE w l0-start.",
+			"1E.2: pozycje mają stabilny slug (klucz upsertu ingestu — ustalenie wiążące z przeglądu Ethana); position = tylko sortowanie. Capstone'y: slug 'capstone'."
 		]
 	},
 	"path": "data-science",
@@ -47,6 +48,7 @@
 			"description": "API i JSON (GUS BDL), Git/GitHub just-in-time (pkt 9), przebieg EDA; capstone: EDA na danych GUS BDL. Bez egzaminu MC — bramką jest capstone (wariant C, pkt 2).",
 			"items": [
 				{
+					"slug": "capstone",
 					"position": 100,
 					"kind": "project",
 					"title": "Capstone: Polska w liczbach — EDA na danych GUS BDL",
@@ -60,6 +62,7 @@
 			"description": "Od tabeli i SELECT po agregacje; capstone: analiza przejazdów w DuckDB.",
 			"items": [
 				{
+					"slug": "capstone",
 					"position": 100,
 					"kind": "project",
 					"title": "Capstone: analiza przejazdów NYC w SQL",
@@ -73,6 +76,7 @@
 			"description": "Baseline, walidacja, leakage, metryki; capstone: pierwszy model w scikit-learn.",
 			"items": [
 				{
+					"slug": "capstone",
 					"position": 100,
 					"kind": "project",
 					"title": "Capstone: pierwszy model predykcyjny",
@@ -86,6 +90,7 @@
 			"description": "Czym są LLM, strukturalne wyjście, ewaluacja z ground truth; capstone: ekstrakcja do JSON.",
 			"items": [
 				{
+					"slug": "capstone",
 					"position": 100,
 					"kind": "project",
 					"title": "Capstone: strukturalna ekstrakcja z LLM",

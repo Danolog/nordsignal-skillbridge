@@ -73,7 +73,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 			columns: { id: true, moduleId: true, kind: true, configJson: true },
 		});
 		if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
-		if (item.kind !== "theory" && item.kind !== "exercise") {
+		// 1E.2: lab też przyjmuje odpowiedzi (pytania retrieval L0/F1 uczą, ale
+		// NIE zaliczają — zaliczenie labu wyłącznie przez check w /complete).
+		if (item.kind !== "theory" && item.kind !== "exercise" && item.kind !== "lab") {
 			return NextResponse.json({ error: "Item does not accept answers" }, { status: 400 });
 		}
 
@@ -94,7 +96,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 		}
 		const question = await db.query.questionItems.findFirst({
 			where: eq(questionItems.id, parsed.data.questionItemId),
-			columns: { id: true, type: true, answerJson: true, explanationMd: true },
+			columns: {
+				id: true,
+				type: true,
+				answerJson: true,
+				explanationMd: true,
+				optionFeedbackJson: true,
+			},
 		});
 		if (!question) return NextResponse.json({ error: "Question not found" }, { status: 404 });
 
@@ -119,6 +127,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 			});
 			await recordAttempt(student.id, student.tenantId, item.id, tx);
 
+			// Lab: pytania nigdy nie kompletują pozycji (zaliczenie = check w
+			// /complete — ADR-014 pkt 10/11); komplet poprawnych liczy się tylko
+			// dla theory/exercise (M10).
+			if (item.kind === "lab") return { itemCompleted: false, moduleCompleted: false };
 			if (!isCorrect || !(await allQuestionsCorrect(student.id, item.id, questionIds, tx))) {
 				return { itemCompleted: false, moduleCompleted: false };
 			}
@@ -133,10 +145,23 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 		});
 
 		// Feedback natychmiast, także przy błędzie (R13/R5); klucz odpowiedzi
-		// NIGDY nie wraca w odpowiedzi API.
+		// NIGDY nie wraca w odpowiedzi API. 1E.2: feedback diagnostyczny WYBRANEJ
+		// opcji (option_feedback_json — pełna tablica nigdy nie wychodzi, bo
+		// feedback poprawnej opcji zdradzałby klucz).
+		let optionFeedbackMd: string | null = null;
+		const selected = (parsed.data.answer as { selected?: unknown }).selected;
+		if (
+			question.type === "single_choice" &&
+			Number.isInteger(selected) &&
+			Array.isArray(question.optionFeedbackJson)
+		) {
+			const fb = (question.optionFeedbackJson as { feedbackMd?: unknown }[])[selected as number];
+			if (typeof fb?.feedbackMd === "string") optionFeedbackMd = fb.feedbackMd;
+		}
 		return NextResponse.json({
 			correct: isCorrect,
 			explanationMd: question.explanationMd,
+			optionFeedbackMd,
 			itemCompleted,
 			moduleCompleted,
 		});

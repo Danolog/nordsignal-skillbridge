@@ -19,7 +19,7 @@ const ladder = JSON.parse(
 		slug: string;
 		title: string;
 		description?: string;
-		items: { position: number; kind: string; title: string; projectSlug?: string }[];
+		items: { slug: string; position: number; kind: string; title: string; projectSlug?: string }[];
 	}[];
 };
 
@@ -76,6 +76,18 @@ describe("1E.1c · kontrakt drabiny curriculum DS", () => {
 		for (const m of ladder.modules) {
 			const positions = m.items.map((i) => i.position);
 			expect(new Set(positions).size, m.slug).toBe(positions.length);
+		}
+	});
+
+	// Ustalenie wiążące 1E.2 (przegląd Ethana): tożsamość pozycji = slug,
+	// position tylko sortuje — bez sluga ingest nie ma klucza upsertu.
+	it("każda pozycja ma stabilny slug (kebab-case), unikalny w module", () => {
+		for (const m of ladder.modules) {
+			const slugs = m.items.map((i) => i.slug);
+			expect(new Set(slugs).size, m.slug).toBe(slugs.length);
+			for (const item of m.items) {
+				expect(item.slug, `${m.slug}#${item.position}`).toMatch(/^[a-z0-9-]+$/);
+			}
 		}
 	});
 
