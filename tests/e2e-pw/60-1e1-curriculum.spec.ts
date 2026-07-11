@@ -45,7 +45,8 @@ test.describe
 			expect(ladderRes.status()).toBe(200);
 			const ladder = (await ladderRes.json()) as { pathKey: string; modules: LadderModule[] };
 			expect(ladder.pathKey).toBe("data-science");
-			expect(ladder.modules).toHaveLength(8);
+			// 9 modułów od wydzielenia m-pandas z m-eda (audyt pojemności D10, 2026-07-11).
+			expect(ladder.modules).toHaveLength(9);
 			const bySlug = new Map(ladder.modules.map((m) => [m.slug, m]));
 			const l0 = bySlug.get("l0-start");
 			const f1 = bySlug.get("f1-python-1");
@@ -100,16 +101,24 @@ test.describe
 			expect(right.itemCompleted).toBe(true);
 			expect(right.moduleCompleted).toBe(true);
 
-			// 5. F1 przestaje być locked (pusty → coming_soon) i jego GET przechodzi.
+			// 5. F1 przestaje być locked — od 1E.2 ma REALNĄ treść (7 atomów +
+			//    przegląd), więc otwiera się jako available (nie coming_soon jak
+			//    w 1E.1, gdy był pusty) i jego GET przechodzi.
 			const ladder2 = (await (await request.get("/api/curriculum")).json()) as {
 				modules: LadderModule[];
 			};
-			const bySlug2 = new Map(ladder2.modules.map((m) => [m.slug, m.status]));
-			expect(bySlug2.get("l0-start")).toBe("completed");
-			expect(bySlug2.get("f1-python-1")).toBe("coming_soon");
-			expect(bySlug2.get("m-eda")).toBe("locked"); // dalszy łańcuch nietknięty
+			const bySlug2 = new Map(ladder2.modules.map((m) => [m.slug, m]));
+			expect(bySlug2.get("l0-start")?.status).toBe("completed");
+			expect(bySlug2.get("f1-python-1")?.status).toBe("available");
+			expect(bySlug2.get("f1-python-1")?.itemCount).toBe(8);
+			expect(bySlug2.get("m-eda")?.status).toBe("locked"); // dalszy łańcuch nietknięty
 
 			const f1Res = await request.get(`/api/curriculum/modules/${f1?.id}`);
 			expect(f1Res.status()).toBe(200);
+			// Treść 1E.2 serwowana sekwencyjnie: pierwszy atom F1 available, reszta locked.
+			const f1Body = (await f1Res.json()) as { items: { status: string }[] };
+			expect(f1Body.items).toHaveLength(8);
+			expect(f1Body.items[0].status).toBe("available");
+			expect(f1Body.items.slice(1).every((i) => i.status === "locked")).toBe(true);
 		});
 	});

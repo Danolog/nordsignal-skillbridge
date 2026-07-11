@@ -1,0 +1,731 @@
+{
+	"moduleSlug": "f3-dane-python",
+	"items": [
+		{
+			"slug": "f3-1",
+			"position": 10,
+			"kind": "exercise",
+			"title": "Lista rośnie: metoda .append()",
+			"contentMd": "### Cel\n\nZbudujesz listę element po elemencie metodą `.append()` — także wewnątrz\npętli — i ominiesz pułapkę „append zwraca `None`\".\n\n### Teoria\n\nW F2.2 obiecaliśmy: dodawanie elementów do listy poznasz w F3. Oto ono.\nNowa rzecz ma nową składnię — **metodę**: polecenie przypięte do konkretnej\nwartości, wywoływane PO KROPCE za jej nazwą. `len(lista)` to funkcja,\nktórej listę podajesz; `lista.append(60)` to metoda, którą lista „ma przy\nsobie\". Kropka czyta się „…, zrób swoje append z wartością 60\". Metod\nbędzie przybywać (teksty i tabele w pandas mają ich dziesiątki) — append\notwiera tę rodzinę i uczy jej składni.\n\n```python\nwydatki = [120, 80, 45]\nwydatki.append(60)          # dopisz 60 NA KONIEC listy\nprint(wydatki)              # cała lista po zmianie\nprint(len(wydatki))\n```\n\n**Przewidź:** co wypiszą oba printy?\n\n`[120, 80, 45, 60]` i `4`. Zapamiętaj trzy własności `.append(...)`:\n\n1. **Dokleja zawsze na koniec** — nowy element dostaje najwyższy indeks\n   (tu: 3).\n2. **Zmienia listę W MIEJSCU** — nie tworzy nowej; po wywołaniu ta sama\n   zmienna `wydatki` ma po prostu więcej przegródek.\n3. **Niczego nie zwraca** — a dokładniej zwraca `None` (znasz go z F2.6).\n   Stąd pułapka numer jeden tego atomu: zapis\n   `wydatki = wydatki.append(60)` wygląda rozsądnie, a NISZCZY listę —\n   do `wydatki` trafia `None`, a każda następna operacja na liście kończy\n   się błędem w stylu `AttributeError`/`TypeError`. Reguła: **append\n   wywołujesz, wyniku NIE przypisujesz.**\n\nPrawdziwa siła append ujawnia się w pętli. W F2.5 akumulatorem była liczba;\nteraz zbieraczem może być LISTA — startujesz od pustej `[]` (F2.2) i\ndokładasz obrót po obrocie:\n\n```python\nkwoty_brutto = []                     # pusty zbieracz PRZED pętlą (jak suma = 0)\nfor kwota in [100, 200, 50]:\n    kwoty_brutto.append(kwota * 1.23) # dołóż przeliczony element\nprint(kwoty_brutto)\n```\n\n**Przewidź** wynik — a potem sprawdź w notebooku F3.1:\n`[123.0, 246.0, 61.5]`. Szkielet jest identyczny ze wzorcem akumulatora\n(start przed pętlą, dokładka w ciele, odczyt po) — zmienił się tylko typ\nzbieracza i gest dokładania: zamiast `suma = suma + …` jest\n`lista.append(…)`.\n\nPo co budować listę pętlą, skoro można ją wpisać wprost? Bo dane rzadko\nprzychodzą w kształcie, którego potrzebujesz: dostajesz ceny netto,\na chcesz brutto; dostajesz kwoty, a chcesz zaokrąglone. Pętla z append to\ntaśma produkcyjna „stara lista → nowa lista po przeróbce\" — i to jest\nchleb powszedni pracy z danymi. Te dwa zbieracze — liczba (F2.5) i lista —\nzałatwią Ci większość roboty aż po M-EDA.",
+			"concepts": [
+				{
+					"slug": "append-budowanie-listy",
+					"name": "Budowanie listy: .append()",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "f3-1-p1",
+					"conceptSlug": "append-budowanie-listy",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "`oceny = [4, 5]`. Wykonujesz `oceny.append(3)`. Jak wygląda lista i pod jakim indeksem siedzi trójka?",
+					"options": [
+						"`[3, 4, 5]`, indeks 0",
+						"`[4, 5, 3]`, indeks 2",
+						"`[4, 5, 3]`, indeks 3",
+						"`[4, 5]` — append tworzy NOWĄ listę, stara bez zmian"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — nowy element ląduje na końcu i dostaje najwyższy indeks: len wzrosło do 3, ostatni indeks to 2.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — append dokleja NA KONIEC, nie na początek; kolejność wcześniejszych elementów się nie zmienia.",
+							"diagnosis": "append mylony z wstawianiem na początek"
+						},
+						{
+							"feedbackMd": "Tak — nowy element ląduje na końcu i dostaje najwyższy indeks: len wzrosło do 3, ostatni indeks to 2."
+						},
+						{
+							"feedbackMd": "Prawie — lista się zgadza, ale indeksy liczy się od zera (F2.2): trzeci element ma indeks 2.",
+							"diagnosis": "numeracja od jedynki"
+						},
+						{
+							"feedbackMd": "Nie — append zmienia listę w miejscu; żadna nowa lista nie powstaje.",
+							"diagnosis": "model „operacje zwracają kopię\""
+						}
+					]
+				},
+				{
+					"ref": "f3-1-p2",
+					"conceptSlug": "append-budowanie-listy",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Co zrobi zapis `zakupy = zakupy.append(\"ser\")`?",
+					"options": [
+						"Doda „ser\" i zapisze powiększoną listę",
+						"Doklei „ser\", ale do `zakupy` trafi `None` — lista przepada z tej nazwy",
+						"`SyntaxError` — nie wolno przypisywać metody",
+						"Nic — te dwa zapisy znaczą to samo"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — append wywołujesz, wyniku nie przypisujesz: samo `zakupy.append(\"ser\")` wystarczy.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — element faktycznie się doklei, ale append zwraca `None` i właśnie ON trafi do `zakupy`: lista ginie z tej nazwy.",
+							"diagnosis": "sedno pułapki — przypisanie wyniku append"
+						},
+						{
+							"feedbackMd": "Tak — append wywołujesz, wyniku nie przypisujesz: samo `zakupy.append(\"ser\")` wystarczy."
+						},
+						{
+							"feedbackMd": "Nie — składniowo zapis jest legalny i Python wykona go posłusznie; problem jest znaczeniowy, nie składniowy (najgroźniejsze błędy nie mają komunikatu — F2.5-P2).",
+							"diagnosis": "liczy na strażnika składni tam, gdzie go nie ma"
+						},
+						{
+							"feedbackMd": "Nie — różnica jest zasadnicza: bez przypisania lista rośnie i ŻYJE dalej pod swoją nazwą; z przypisaniem nazwa wskazuje `None`.",
+							"diagnosis": "przypisanie jako „ozdobnik\""
+						}
+					]
+				},
+				{
+					"ref": "f3-1-p3",
+					"conceptSlug": "append-budowanie-listy",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "`progi = []`, potem `for n in [1, 2, 3]:` / (wcięte) `progi.append(n * 10)`. Co jest w `progi` po pętli?",
+					"options": ["`[1, 2, 3]`", "`[30]`", "`[10, 20, 30]`", "`None`"],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak — trzy obroty, trzy dokładki, każda po przeliczeniu: 10, 20, 30, w kolejności obrotów.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — do listy trafia WYNIK wyrażenia `n * 10`, nie surowe `n` (jak w F2.3-P2: ciało najpierw liczy).",
+							"diagnosis": "ignoruje przekształcenie w ciele"
+						},
+						{
+							"feedbackMd": "Nie — append DOKŁADA, niczego nie nadpisuje: po trzech obrotach są trzy elementy, nie sam ostatni.",
+							"diagnosis": "myli dokładanie z nadpisywaniem — kalka błędu „zerowanie w ciele\" z F2.5"
+						},
+						{
+							"feedbackMd": "Tak — trzy obroty, trzy dokładki, każda po przeliczeniu: 10, 20, 30, w kolejności obrotów."
+						},
+						{
+							"feedbackMd": "Nie — `None` zwraca samo WYWOŁANIE append; lista `progi` istnieje dalej i rośnie. `None` zniszczyłoby ją dopiero przy zapisie `progi = progi.append(...)` (P2).",
+							"diagnosis": "pułapka None przypięta do złego miejsca"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Wzorzec znasz z F2.5 — zmień tylko zbieracza: start `nazwa = []` PRZED pętlą, w ciele `nazwa.append(element_po_przeróbce)`, odczyt po pętli. I mantra: append wywołuj, wyniku nie przypisuj.",
+				"**Szkielet:** W notebooku F3.1: `ceny_po_rabacie = ______` (pusty start), w ciele pętli po `[100, 40, 250]`: `ceny_po_rabacie.append(______ * 0.9)` — co przerabiasz w każdym obrocie?",
+				"**Pełne rozwiązanie z objaśnieniem:** `ceny_po_rabacie = []`, w ciele `ceny_po_rabacie.append(cena * 0.9)` (nazwa z nagłówka pętli). Wynik: `[90.0, 36.0, 225.0]` — każdy element przeszedł przez `* 0.9`, kolejność z listy źródłowej. Diagnostyka: `AttributeError: 'NoneType' object has no attribute 'append'` w drugim obrocie = gdzieś wcześniej przypisano wynik append do nazwy listy (P2); lista z jednym elementem zamiast trzech = start `[]` wisi w ciele pętli (zerowanie — F2.5-P2, ta sama choroba)."
+			],
+			"config": {
+				"estimated": "15 min"
+			},
+			"resources": [
+				{
+					"title": "Oficjalny tutorial Pythona po polsku — 5. Struktury danych: 5.1 metody list (append), 5.5 Słowniki",
+					"url": "https://docs.python.org/pl/3/tutorial/datastructures.html",
+					"type": "docs",
+					"license": "PSF (dokumentacja Pythona)",
+					"language": "PL",
+					"registrationRequired": false,
+					"verifiedAt": "2026-07-11",
+					"notes": "kanon · 2026-07-11 (HTTP 200; treść w pełni PL — zweryfikowana, nie fallback)"
+				},
+				{
+					"title": "Python od podstaw [2024] (Jak nauczyć się programowania) — rozdziały F3: listy 2:13:53, słowniki 2:38:22; list słowników/rekordów wideo NIE pokrywa (tylko teoria atomu F3.5)",
+					"url": "https://www.youtube.com/watch?v=eB3r2NQwNi4",
+					"type": "video",
+					"license": "YouTube Standard License",
+					"language": "PL",
+					"registrationRequired": false,
+					"verifiedAt": "2026-07-11",
+					"notes": "wideo/kurs (trzecia funkcja QG-5) · 2026-07-11 (timestampy z opisu wideo; seans kontrolny Sophii przed ingest)"
+				}
+			]
+		},
+		{
+			"slug": "f3-2",
+			"position": 20,
+			"kind": "exercise",
+			"title": "Decyzja w każdym obrocie: filtrowanie i zliczanie",
+			"contentMd": "### Cel\n\nPołączysz `for` z `if`: zliczysz elementy spełniające warunek, zbierzesz je\ndo nowej listy i wyśledzisz największy — trzy odmiany jednego ruchu\n„decyzja per element\".\n\n### Teoria\n\nW F2.5 obiecaliśmy moment, w którym licznik zabłyśnie: gdy trzeba\npoliczyć tylko WYBRANE elementy — bo prawdziwe pytania do danych prawie\nzawsze mają warunek („ile wydatków POWYŻEJ stu?\"). Ten moment nadszedł. Konstrukcja to `if` (F1.6)\nwstawiony W CIAŁO pętli (F2.3) — każdy element przechodzi przez bramkę:\n\n```python\nwydatki = [120, 80, 45, 200, 15]\n\nduze = 0                        # licznik — startuje przed pętlą (F2.5)\nfor wydatek in wydatki:\n    if wydatek > 100:           # bramka: decyzja dla BIEŻĄCEGO elementu\n        duze = duze + 1         # podwójne wcięcie: należy do if wewnątrz for\nprint(f\"Wydatków powyżej 100 zł: {duze}\")\n```\n\n**Przewidź:** co wypisze program?\n\n`Wydatków powyżej 100 zł: 2` (120 i 200 przechodzą bramkę; 80, 45 i 15 —\nnie). Zwróć uwagę na **podwójne wcięcie**: linia `duze = duze + 1` jest\nwcięta dwa razy, bo należy do `if`, który należy do `for`. Wcięcia czytasz\njak w F1.6, tylko piętrowo: co obrót wykonuje się `if` (pojedyncze\nwcięcie), a linia podwójnie wcięta — tylko gdy warunek dał `True`.\n\nTa sama bramka ma trzy klasyczne odmiany — różni je wyłącznie to, co\nrobisz, gdy element przejdzie:\n\n1. **Zliczanie** — `licznik = licznik + 1` (wyżej).\n2. **Filtrowanie** — `wybrane.append(wydatek)` (zbieracz-lista z F3.1):\n   po pętli masz NOWĄ listę z samymi pasującymi elementami.\n3. **Śledzenie największego** — `najwiekszy = wydatek`, gdy\n   `wydatek > najwiekszy`: pudełko przechowuje dotychczasowego lidera,\n   a bramka wpuszcza tylko nowych rekordzistów. Start: pierwszy element\n   listy (`najwiekszy = wydatki[0]` — F2.2), nie zero — zero „wygrałoby\"\n   z każdą wartością, gdyby dane były ujemne (temperatury, salda),\n   a pierwszy element niczego o danych nie zakłada.\n\nWszystkie odmiany sprawdzasz tą samą metodą, co akumulator w F2.5:\nprzejdź listę palcem, element po elemencie, i przy każdym zadaj pytanie\nbramki — True wykonuje gest, False nie robi nic. Odmiany wolno też\nłączyć: jedna pętla może naraz zliczać małe, zbierać duże i sumować —\nkażdy zbieracz ma swój start przed pętlą i swój gest w gałęzi (zrobisz\nto w labie F3.4; `else` przy bramce działa jak w F1.6 i bywa przydatny,\nale nie jest obowiązkowy).\n\nCompletion na rozgrzewkę (luka na końcu — notebook F3.2), odmiana 2:\n\n```python\nwydatki = [120, 80, 45, 200, 15]\nmale = []\nfor wydatek in wydatki:\n    if wydatek < 50:\n        ______                    # luka: dołóż pasujący element do male\nprint(male)\n```\n\nPo uzupełnieniu wynik to `[45, 15]` — nowa lista, oryginał nietknięty.",
+			"concepts": [
+				{
+					"slug": "if-w-petli-filtrowanie",
+					"name": "if w pętli: filtrowanie i zliczanie",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "f3-2-p1",
+					"conceptSlug": "if-w-petli-filtrowanie",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "`oceny = [3, 5, 2, 5, 4]`; licznik piątek: `if ocena == 5:` / (podwójnie wcięte) `piatki = piatki + 1`. Ile wyniesie `piatki` po pętli (start od 0)?",
+					"options": ["5", "2", "10", "0 — bramka blokuje wszystko"],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — bramka `== 5` otwiera się w obrocie 2. i 4.; licznik: 0 → 1 → 2.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — licznik rośnie tylko w obrotach, w których bramka przepuściła: piątki są dwie, nie pięć.",
+							"diagnosis": "zlicza obroty zamiast trafień"
+						},
+						{
+							"feedbackMd": "Tak — bramka `== 5` otwiera się w obrocie 2. i 4.; licznik: 0 → 1 → 2."
+						},
+						{
+							"feedbackMd": "Nie — `piatki + 1` zwiększa o JEDEN za trafienie; wartość oceny (5) nie jest dodawana.",
+							"diagnosis": "myli zliczanie z sumowaniem trafień"
+						},
+						{
+							"feedbackMd": "Nie — `==` porównuje (F1.5) i dla dwóch elementów daje True; licznik ruszy. Zero wyszłoby np. przy literówce w warunku.",
+							"diagnosis": "nie wykonuje porównania w głowie"
+						}
+					]
+				},
+				{
+					"ref": "f3-2-p2",
+					"conceptSlug": "if-w-petli-filtrowanie",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Odmiana filtrująca: `male.append(wydatek)` stoi wcięte POJEDYNCZO (na poziomie `if`, nie pod nim). Co się stanie?",
+					"options": [
+						"Zadziała tak samo",
+						"Append wykona się co obrót — `male` będzie kopią całej listy, bramka przestanie filtrować",
+						"`IndentationError`",
+						"`male` zostanie puste"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — linia wypadła z `if`, ale została w `for`: dokłada każdy element. Poprawka: podwójne wcięcie.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — wcięcie to znaczenie (F1.6): linia na poziomie `if` nie należy już do niego i wykona się w KAŻDYM obrocie.",
+							"diagnosis": "wcięcie jako kosmetyka — na piętrowym przykładzie"
+						},
+						{
+							"feedbackMd": "Tak — linia wypadła z `if`, ale została w `for`: dokłada każdy element. Poprawka: podwójne wcięcie."
+						},
+						{
+							"feedbackMd": "Nie — składniowo oba poziomy są legalne (Python nie wie, że CHCIAŁEŚ pod if); błąd jest znaczeniowy, bez komunikatu.",
+							"diagnosis": "liczy na strażnika tam, gdzie go nie ma — jak F3.1-P2/C"
+						},
+						{
+							"feedbackMd": "Nie — odwrotnie: append poza bramką wykonuje się ZAWSZE, więc trafi tam wszystko.",
+							"diagnosis": "kierunek skutku odwrócony"
+						}
+					]
+				},
+				{
+					"ref": "f3-2-p3",
+					"conceptSlug": "if-w-petli-filtrowanie",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Śledzenie największego w `temperatury = [12, 19, 7, 23, 18]`: start `naj = temperatury[0]`, bramka `if t > naj:` → `naj = t`. Jaka jest `naj` po pętli i czemu start nie od zera?",
+					"options": [
+						"23; start od zera też by działał",
+						"23; start od pierwszego elementu jest bezpieczny dla każdych danych, start od zera zawiódłby przy ujemnych",
+						"18 — ostatnia wygrywa",
+						"79"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — lider mienia się: 12 → 19 → 23; a start `[0]` nie zakłada niczego o wartościach.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Wynik tak, uzasadnienie nie — przy danych UJEMNYCH (np. same mrozy) zero „wygrałoby\" z każdym elementem i wynik byłby fałszywy; pierwszy element jest zawsze bezpieczny.",
+							"diagnosis": "strategia działa przypadkiem, nie z zasady"
+						},
+						{
+							"feedbackMd": "Tak — lider mienia się: 12 → 19 → 23; a start `[0]` nie zakłada niczego o wartościach."
+						},
+						{
+							"feedbackMd": "Nie — bramka `>` wpuszcza tylko NOWYCH rekordzistów; 18 < 23, więc lider zostaje.",
+							"diagnosis": "nadpisywanie co obrót zamiast warunkowego — zgubiona bramka"
+						},
+						{
+							"feedbackMd": "Nie — to suma; śledzenie największego niczego nie dodaje, tylko PODMIENIA lidera, gdy pojawi się większy.",
+							"diagnosis": "wzorzec sumy wciśnięty w zadanie o maksimum"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Luka to gest odmiany 2: „dołóż BIEŻĄCY element do zbieracza-listy\" — poznałeś(-aś) go w F3.1. Pamiętaj o podwójnym wcięciu: gest należy do `if`, który należy do `for`.",
+				"**Szkielet:** `______.append(______)` — dokąd dokładasz i co (nazwa zbieracza sprzed pętli; nazwa z nagłówka pętli)?",
+				"**Pełne rozwiązanie z objaśnieniem:** `male.append(wydatek)` — podwójnie wcięte. Przebieg bramki `< 50`: 120 nie, 80 nie, 45 TAK, 200 nie, 15 TAK → `[45, 15]`. Jeśli `male` wyszło jako kopia całej listy — wcięcie pojedyncze (P2); jeśli puste — sprawdź kierunek znaku w bramce (`<` vs `>`, F1.5); jeśli `AttributeError` o NoneType — gdzieś przypisano wynik append (F3.1-P2)."
+			],
+			"config": {
+				"estimated": "15 min"
+			}
+		},
+		{
+			"slug": "f3-3",
+			"position": 30,
+			"kind": "exercise",
+			"title": "Słownik: wartość pod kluczem, nie pod numerem",
+			"contentMd": "### Cel\n\nZapiszesz powiązane dane w słowniku, odczytasz wartość po kluczu,\ndopiszesz nową parę i obsłużysz `KeyError` — czwarty błąd-drogowskaz\nw Twojej kolekcji.\n\n### Teoria\n\nLista numeruje przegródki: `wydatek[0]`, `wydatek[1]`… Ale opis JEDNEJ\nrzeczy — powiedzmy wydatku — to nie seria, tylko zestaw NAZWANYCH cech:\nnazwa, kategoria, kwota. Trzymanie ich w liście (`w[0]` to nazwa czy\nkategoria?) prosi się o pomyłkę. Do nazwanych cech służy **słownik**\n(ang. *dictionary*, stąd `dict`): przegródki podpisane KLUCZAMI zamiast\nnumerami.\n\n```python\nwydatek = {\"nazwa\": \"bilet\", \"kategoria\": \"transport\", \"kwota\": 4.40}\nprint(wydatek[\"nazwa\"])          # odczyt: klucz w nawiasach kwadratowych\nprint(wydatek[\"kwota\"] * 2)      # wartość spod klucza to zwykła wartość\n```\n\n**Przewidź:** co wypiszą oba printy?\n\n`bilet` i `8.8`. Rozbiór składni: całość w nawiasach KLAMROWYCH `{}`\n(uwaga — w f-stringu klamry robiły co innego; kontekst je rozróżnia),\nkażda para to `klucz: wartość`, pary rozdziela przecinek. Klucze to\nnajczęściej teksty w cudzysłowie; wartości — dowolne typy z F1.1.\nOdczyt wygląda jak w liście, tylko w kwadratowych nawiasach stoi KLUCZ,\nnie numer.\n\nKiedy lista, a kiedy słownik? Prosta reguła: **seria takich samych\nrzeczy → lista; nazwane cechy jednej rzeczy → słownik.** Pięć kwot\nz tygodnia to lista; opis jednego wydatku (nazwa, kategoria, kwota) —\nsłownik. Kolejność par w słowniku nie gra roli przy odczycie — sięgasz\npo kluczu, nie po pozycji, więc „gdzie w słowniku leży kwota\" to pytanie\nbez znaczenia. Oba kształty złożymy zresztą za chwilę w jedną całość\n(F3.5).\n\nSłownik można zmieniać — i tu miła niespodzianka na tle listy (F2.2\nzabraniała tworzyć przegródki nadpisem): **przypisanie pod nowy klucz\nDOPISUJE parę**, a pod istniejący — podmienia wartość:\n\n```python\nwydatek[\"oplacone\"] = True     # nowa para dopisana\nwydatek[\"kwota\"] = 4.90        # istniejąca wartość podmieniona\n```\n\nZa tę swobodę płacisz czujnością przy odczycie: **klucz, którego nie ma,\nto `KeyError`** — np. `wydatek[\"cena\"]` (jest „kwota\", nie „cena\")\nzatrzyma program komunikatem `KeyError: 'cena'`. Komunikat pokazuje\ndosłownie klucz, o który pytałeś(-aś) — literówka widoczna gołym okiem\n(metoda z L0.3). Czy klucz istnieje, sprawdzisz słowem `in`:\n`\"cena\" in wydatek` to zwykłe porównanie w duchu F1.5 — daje `True`/\n`False`, więc działa też jako bramka w `if`. Przyda się przy kluczach\nopcjonalnych: nie każdy wydatek musi mieć np. pole `\"rabat\"`, a bramka\n`if \"rabat\" in wydatek:` pozwala sięgać po nie tylko tam, gdzie istnieje.\n\nLuki w środku (notebook F3.3 — opisz swój obiad):\n\n```python\nobiad = {\"danie\": ______, \"cena\": ______}   # luki: tekst i liczba — które gdzie?\nprint(f\"{obiad[______]} za {obiad['cena']} zł\")   # luka: klucz dania\n```",
+			"concepts": [
+				{
+					"slug": "slownik-klucz-wartosc",
+					"name": "Słownik: wartość pod kluczem",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "f3-3-p1",
+					"conceptSlug": "slownik-klucz-wartosc",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "`kot = {\"imie\": \"Mruczek\", \"wiek\": 3}`. Co wypisze `print(kot[\"wiek\"])`?",
+					"options": ["`\"wiek\"`", "3", "1 — bo „wiek\" jest drugą parą", "`KeyError`"],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — pod kluczem „wiek\" siedzi 3; odczyt po kluczu zwraca wartość.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — w nawiasach podajesz klucz, a dostajesz WARTOŚĆ spod niego; klucz to podpis przegródki, nie jej zawartość.",
+							"diagnosis": "klucz vs wartość — kalka indeks vs wartość z F2.2"
+						},
+						{
+							"feedbackMd": "Tak — pod kluczem „wiek\" siedzi 3; odczyt po kluczu zwraca wartość."
+						},
+						{
+							"feedbackMd": "Nie — słownik nie używa numerów; pary wybiera się wyłącznie po kluczu.",
+							"diagnosis": "przenosi indeksy z listy na słownik"
+						},
+						{
+							"feedbackMd": "Nie — klucz „wiek\" istnieje; KeyError pojawia się przy kluczu, którego NIE ma (np. `kot[\"rasa\"]`).",
+							"diagnosis": "pułapka zapamiętana, warunek nie"
+						}
+					]
+				},
+				{
+					"ref": "f3-3-p2",
+					"conceptSlug": "slownik-klucz-wartosc",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "`ceny = {\"kawa\": 12}`. Wykonujesz `ceny[\"herbata\"] = 9`. Co się stanie?",
+					"options": [
+						"`KeyError` — „herbata\" nie istnieje",
+						"Podmieni cenę kawy na 9",
+						"Dopisze parę: `{\"kawa\": 12, \"herbata\": 9}`",
+						"`SyntaxError`"
+					],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak — przypisanie pod nowy klucz DOPISUJE; pod istniejący — podmienia. To różnica względem listy, gdzie nowych przegródek nadpisem nie utworzysz.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — KeyError grozi przy ODCZYCIE brakującego klucza; ZAPIS pod nowy klucz jest legalny i tworzy parę.",
+							"diagnosis": "reguła odczytu rozciągnięta na zapis — kluczowe rozróżnienie atomu"
+						},
+						{
+							"feedbackMd": "Nie — zapis dotyczy klucza „herbata\"; „kawa\" zostaje nietknięta.",
+							"diagnosis": "„ostatni zapis nadpisuje wszystko\""
+						},
+						{
+							"feedbackMd": "Tak — przypisanie pod nowy klucz DOPISUJE; pod istniejący — podmienia. To różnica względem listy, gdzie nowych przegródek nadpisem nie utworzysz."
+						},
+						{
+							"feedbackMd": "Nie — składnia jest identyczna jak przy podmianie wartości; Python rozstrzyga po tym, czy klucz już istnieje.",
+							"diagnosis": "oczekuje osobnej składni na „dodaj\""
+						}
+					]
+				},
+				{
+					"ref": "f3-3-p3",
+					"conceptSlug": "slownik-klucz-wartosc",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "`produkt = {\"nazwa\": \"sok\", \"cena\": 6.50}`. Program wykonuje `print(produkt[\"Nazwa\"])`. Co się stanie?",
+					"options": [
+						"Wypisze „sok\" — Python domyśli się, o co chodzi",
+						"Wypisze `None`",
+						"Zatrzyma program z `KeyError: 'Nazwa'`",
+						"Dopisze pustą parę „Nazwa\""
+					],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak — komunikat pokazuje dosłownie klucz z Twojego odczytu: wielka litera zdradza literówkę od razu.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — klucz musi się zgadzać CO DO ZNAKU; „Nazwa\" i „nazwa\" to różne teksty (F1.5: wielkość liter ma znaczenie).",
+							"diagnosis": "oczekuje tolerancji wielkości liter"
+						},
+						{
+							"feedbackMd": "Nie — słownik nie oddaje „niczego\" po cichu: brakujący klucz to głośny błąd, nie None.",
+							"diagnosis": "przenosi „ciche\" zachowanie funkcji bez return"
+						},
+						{
+							"feedbackMd": "Tak — komunikat pokazuje dosłownie klucz z Twojego odczytu: wielka litera zdradza literówkę od razu."
+						},
+						{
+							"feedbackMd": "Nie — dopisanie robi ZAPIS (`produkt[\"Nazwa\"] = …`); sam odczyt niczego nie tworzy — jak w liście (F2.2-P3).",
+							"diagnosis": "myli odczyt z zapisem — lustrzane odbicie P2/A"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Para to `klucz: wartość` — klucz opisuje (tekst w cudzysłowie), wartość jest opisywana. „Danie\" opisuje się tekstem, „cena\" liczbą. Przy odczycie w kwadratowych nawiasach stoi KLUCZ — dokładnie ten, który wpisałeś(-aś) przy tworzeniu, co do znaku.",
+				"**Szkielet:** `{\"danie\": \"pierogi\", \"cena\": ______}` — cena to liczba (bez cudzysłowu — F1.1); w print: `obiad[______]` — klucz jest tekstem, więc w cudzysłowie: `obiad[\"danie\"]`.",
+				"**Pełne rozwiązanie z objaśnieniem:** `obiad = {\"danie\": \"pierogi\", \"cena\": 24.50}` i `print(f\"{obiad['danie']} za {obiad['cena']} zł\")` → `pierogi za 24.5 zł`. Dwa niuanse: wewnątrz f-stringa klucz ujmij w POJEDYNCZE cudzysłowy (`'danie'`), żeby nie zderzył się z podwójnymi obejmującymi cały tekst; `24.50` wypisuje się jako `24.5` — Python ucina nieznaczące zero (to nadal ta sama wartość; `round`/formatowanie groszy dopracujesz w mini-projekcie). `KeyError: 'Danie'`? Porównaj klucz z odczytu z kluczem z definicji znak po znaku."
+			],
+			"config": {
+				"estimated": "15 min"
+			}
+		},
+		{
+			"slug": "f3-4",
+			"position": 40,
+			"kind": "lab",
+			"title": "LAB Sito wydatków (filtr + zbieracze w jednym programie)",
+			"contentMd": "### Cel\n\nJednym przejściem pętli rozdzielisz wydatki na duże i małe ORAZ policzysz\nsumę dużych — trzy zbieracze pracujące równolegle w jednej pętli.\n\n### Zadanie (notebook F3.4 — kopia na Dysk, uzupełnij luki, uruchom)\n\n```python\nwydatki = [120, 80, 45, 200, 15, 95]\nprog = 100\n\nduze = []                      # zbieracz-lista na wydatki >= prog\nsuma_duzych = 0                # zbieracz-liczba\nmale_licznik = 0               # zbieracz-licznik\n\nfor wydatek in wydatki:\n    if wydatek >= prog:\n        duze.append(______)            # luka 1: co dokładasz?\n        suma_duzych = ______           # luka 2: wzorzec z F2.5\n    else:\n        male_licznik = ______          # luka 3: zliczanie (F3.2)\n\nprint(f\"Duże wydatki: {duze}\")\nprint(f\"Suma dużych: {suma_duzych} zł\")\nprint(f\"Małych wydatków: {male_licznik}\")\n```\n\nWymagania: trzy zbieracze startują PRZED pętlą (już w szkielecie); gałąź\n`if` karmi dwa pierwsze, gałąź `else` — trzeci; żadnych ręcznie wpisanych\nwyników. Po uruchomieniu zmień `prog` na 50 i uruchom ponownie — wyniki\nmają się przeliczyć same.\n\n**Zaliczenie:** komórka-pieczątka: sprawdza relacje dla BIEŻĄCYCH danych —\n`duze` to lista elementów `wydatki` spełniających `>= prog`, `suma_duzych`\nrówna się sumie `duze`, `male_licznik` równa się liczbie pozostałych —\ni liczy token. Relacje liczone niezależnie przez pieczątkę (własna pętla),\nwięc zgodzą się tylko, gdy Twoje zbieracze naprawdę policzyły; ręczne\nstałe przeszłyby dla jednego ustawienia `prog` — drabinka każe sprawdzić\ndwa, ale instruktażowo (token może paść po pierwszym zielonym przebiegu;\nświadome obejście = limity klasy L0).",
+			"concepts": [
+				{
+					"slug": "append-budowanie-listy",
+					"name": "Budowanie listy: .append()"
+				},
+				{
+					"slug": "if-w-petli-filtrowanie",
+					"name": "if w pętli: filtrowanie i zliczanie"
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Każda luka to jeden znany gest: luka 1 — „dołóż bieżący element\" (F3.1); luka 2 — „stara suma + bieżący element\" (F2.5); luka 3 — „licznik + 1\" (F3.2). Gałąź decyduje, KTÓRE gesty wykonują się dla danego elementu.",
+				"**Szkielet:** luka 1: nazwa z nagłówka pętli; luka 2: `suma_duzych + ______`; luka 3: `male_licznik + ______` (o ile rośnie licznik za jedno trafienie?).",
+				"**Pełne rozwiązanie z objaśnieniem:** luka 1: `wydatek`; luka 2: `suma_duzych + wydatek`; luka 3: `male_licznik + 1`. Dla progu 100: `[120, 200]`, `320 zł`, `4`. Dla progu 50: `[120, 80, 200, 95]`, `495 zł`, `2`. Trzy zbieracze w jednej pętli to norma, nie sztuczka — każdy ma własny start przed pętlą i własny gest w ciele. Typowe potknięcia: suma w złej gałęzi (sumują się małe zamiast dużych — porównaj wcięcia z gałęziami); licznik `+ wydatek` zamiast `+ 1` (F3.2-P1/C: zliczanie ≠ sumowanie)."
+			],
+			"config": {
+				"estimated": "20 min",
+				"checks": [
+					{
+						"type": "token",
+						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+					}
+				]
+			}
+		},
+		{
+			"slug": "f3-5",
+			"position": 50,
+			"kind": "exercise",
+			"title": "Lista słowników: Twoja pierwsza tabela danych",
+			"contentMd": "### Cel\n\nPołączysz listę ze słownikami w „tabelę\": przejdziesz pętlą po rekordach,\nsięgniesz po pola po kluczu i przefiltrujesz rekordy po wartości pola.\nTo dokładnie kształt danych, który spotkasz w API i w pandas (M-EDA).\n\n### Teoria\n\nSłownik (F3.3) opisuje JEDNĄ rzecz. Danych jest zwykle wiele — a wiele\nrzeczy trzymamy w liście (F2.2). Złożenie obu to **lista słowników**:\nkażdy element listy jest słownikiem o TYCH SAMYCH kluczach. Czytaj to jak\ntabelę: element listy = wiersz (fachowo: **rekord**), klucz = nazwa\nkolumny.\n\n```python\nwydatki = [\n    {\"nazwa\": \"bilet\",  \"kategoria\": \"transport\", \"kwota\": 4.40},\n    {\"nazwa\": \"obiad\",  \"kategoria\": \"jedzenie\",  \"kwota\": 24.50},\n    {\"nazwa\": \"kawa\",   \"kategoria\": \"jedzenie\",  \"kwota\": 12.00},\n]\nprint(len(wydatki))                # ile rekordów?\nprint(wydatki[0][\"nazwa\"])         # rekord 0, pole \"nazwa\"\n```\n\n**Przewidź:** co wypiszą oba printy?\n\n`3` i `bilet`. Zapis `wydatki[0][\"nazwa\"]` czytaj spokojnie, od lewej,\ndwoma krokami:\n`wydatki[0]` wyjmuje z listy PIERWSZY słownik (indeks — F2.2), a\n`[\"nazwa\"]` sięga w nim po wartość spod klucza (F3.3). Nic nowego — dwa\nznane gesty sklejone w łańcuszek.\n\nSkąd ten kształt w prawdziwym życiu? Dane pobierane z internetu (poznasz\nto przy capstonie M-EDA) przychodzą DOKŁADNIE tak: lista rekordów\no nazwanych polach. Także tabele w pandas, których użyjesz do analiz, pod\nspodem opisują to samo — wiersze i nazwane kolumny. Ucząc się listy\nsłowników, uczysz się uniwersalnego kształtu danych, tylko bez opakowań.\n\nJedna dyscyplina przy budowie tabeli: **te same klucze w każdym\nrekordzie**, co do znaku. Literówka klucza w jednym rekordzie\n(`\"kwot\"` zamiast `\"kwota\"`) nie zaboli przy tworzeniu — zaboli\n`KeyError`-em dopiero w pętli, przy tym jednym obrocie. Dlatego kolejne\nrekordy najbezpieczniej pisać, kopiując pierwszy i podmieniając wartości.\n\nPętla po tabeli to pętla po liście — zmienna pętli dostaje w każdym\nobrocie CAŁY rekord (słownik), a w ciele sięgasz po pola:\n\n```python\nfor wydatek in wydatki:\n    print(f\"{wydatek['nazwa']}: {wydatek['kwota']} zł\")\n```\n\nTrzy linie wydruku, po jednej na rekord. A filtrowanie? Bramka z F3.2,\ntylko warunek pyta o POLE rekordu — np. zbierz wydatki na jedzenie:\n`if wydatek[\"kategoria\"] == \"jedzenie\":` i w środku\n`jedzenie.append(wydatek)` (do zbieracza trafiają całe rekordy).\nWszystkie wzorce z F2.5–F3.2 — suma, licznik, filtr, największy —\ndziałają na tabeli identycznie; jedyna zmiana to `wydatek[\"kwota\"]`\nw miejscu gołego `wydatek`.\n\nBackward completion (notebook F3.5 — ciało gotowe, dopisz nagłówek pętli\ni bramkę: policz sumę wydatków na transport):\n\n```python\nsuma_transport = 0\n# dopisz tu nagłówek pętli po wydatki\n# dopisz tu bramkę: kategoria równa \"transport\"\n        suma_transport = suma_transport + wydatek[\"kwota\"]\nprint(f\"Transport: {suma_transport} zł\")\n```\n\n(Struktura zdradza wcięcia: gotowa linia jest wcięta PODWÓJNIE — Twoje\ndwie linie to piętro `for` i piętro `if`.)",
+			"concepts": [
+				{
+					"slug": "lista-slownikow-rekordy",
+					"name": "Lista słowników: tabela rekordów",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "f3-5-p1",
+					"conceptSlug": "lista-slownikow-rekordy",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "`osoby = [{\"imie\": \"Jan\", \"wiek\": 30}, {\"imie\": \"Ala\", \"wiek\": 25}]`. Co wypisze `print(osoby[1][\"imie\"])`?",
+					"options": ["Jan", "Ala", "`{\"imie\": \"Ala\", \"wiek\": 25}`", "`KeyError`"],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — krok 1: `osoby[1]` = drugi słownik; krok 2: `[\"imie\"]` = wartość spod klucza.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — `osoby[1]` to DRUGI rekord (indeksy od zera — F2.2); Jan siedzi w `osoby[0]`.",
+							"diagnosis": "numeracja od jedynki, na tabeli"
+						},
+						{
+							"feedbackMd": "Tak — krok 1: `osoby[1]` = drugi słownik; krok 2: `[\"imie\"]` = wartość spod klucza."
+						},
+						{
+							"feedbackMd": "Prawie — to wynik SAMEGO `osoby[1]`; ale łańcuszek idzie dalej i `[\"imie\"]` wyjmuje już tylko jedno pole.",
+							"diagnosis": "zatrzymuje się po pierwszym kroku łańcuszka"
+						},
+						{
+							"feedbackMd": "Nie — klucz „imie\" istnieje w rekordzie; błąd byłby przy literówce klucza, np. `[\"Imie\"]` (F3.3-P3).",
+							"diagnosis": "błąd-dyżurny bez sprawdzenia klucza"
+						}
+					]
+				},
+				{
+					"ref": "f3-5-p2",
+					"conceptSlug": "lista-slownikow-rekordy",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "W pętli `for osoba in osoby:` chcesz wypisać wiek każdej osoby. Który zapis w ciele jest poprawny?",
+					"options": [
+						"`print(osoba[1])`",
+						"`print(osoby[\"wiek\"])`",
+						"`print(osoba[\"wiek\"])`",
+						"`print(wiek)`"
+					],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak — zmienna pętli trzyma bieżący rekord; klucz wyjmuje z niego pole.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — `osoba` to SŁOWNIK, nie lista: w środku nie ma numerów, są klucze.",
+							"diagnosis": "indeks liczbowy na słowniku — najczęstsza kalka z listy"
+						},
+						{
+							"feedbackMd": "Nie — `osoby` to LISTA (cała tabela); po kluczu sięgasz w pojedynczym rekordzie, czyli w zmiennej pętli.",
+							"diagnosis": "myli tabelę z rekordem — liczba mnoga vs pojedyncza"
+						},
+						{
+							"feedbackMd": "Tak — zmienna pętli trzyma bieżący rekord; klucz wyjmuje z niego pole."
+						},
+						{
+							"feedbackMd": "Nie — `wiek` nie jest samodzielną zmienną, tylko KLUCZEM w rekordzie; goła nazwa da `NameError`.",
+							"diagnosis": "klucz traktowany jak zmienna"
+						}
+					]
+				},
+				{
+					"ref": "f3-5-p3",
+					"conceptSlug": "lista-slownikow-rekordy",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Filtr rekordów: `if wydatek[\"kwota\"] > 20:` / `drogie.append(wydatek)`. Co ląduje w `drogie`?",
+					"options": [
+						"Same kwoty (liczby)",
+						"Całe rekordy (słowniki) spełniające warunek",
+						"Wartości `True`/`False`",
+						"Nazwy wydatków"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — bramka pyta o pole, ale do zbieracza wpada cały wiersz tabeli: `drogie` to mniejsza tabela o tych samych kolumnach.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — append dokłada to, co mu podasz, a podano CAŁY rekord `wydatek`; kwoty zbierałby zapis `append(wydatek[\"kwota\"])`.",
+							"diagnosis": "nie odróżnia rekordu od pola w geście zbierania"
+						},
+						{
+							"feedbackMd": "Tak — bramka pyta o pole, ale do zbieracza wpada cały wiersz tabeli: `drogie` to mniejsza tabela o tych samych kolumnach."
+						},
+						{
+							"feedbackMd": "Nie — wynik porównania steruje bramką (F1.6) i nigdzie się nie zapisuje; zbieracz dostaje rekordy.",
+							"diagnosis": "miesza warunek z zawartością"
+						},
+						{
+							"feedbackMd": "Nie — po nazwę trzeba by sięgnąć jawnie (`wydatek[\"nazwa\"]`); append nie wybiera pola za Ciebie.",
+							"diagnosis": "oczekuje domyślnego „reprezentanta\" rekordu"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Piszesz dwa nagłówki-piętra, oba z dwukropkiem: pętla po tabeli (F2.3 — po czym iterujesz i jak nazwiesz rekord? ciało zdradza: `wydatek`) i bramka o pole `kategoria` (F3.2 + odczyt po kluczu z F3.3). Twoje linie stoją: pierwsza bez wcięcia, druga z pojedynczym wcięciem.",
+				"**Szkielet:**\n```python\nfor wydatek in ______:\n    if wydatek[______] == ______:\n        suma_transport = suma_transport + wydatek[\"kwota\"]\n```",
+				"**Pełne rozwiązanie z objaśnieniem:** `for wydatek in wydatki:` oraz `if wydatek[\"kategoria\"] == \"transport\":`. Dla tabeli z teorii suma to `4.4` (jeden rekord transportu). Kontrola pięter: `for` bez wcięcia, `if` wcięty raz, sumowanie — dwa razy (należy do bramki). `KeyError: 'Kategoria'` → literówka klucza (F3.3-P3); suma 40.9 (wszystko) → bramka wypadła z pętli albo sumowanie z bramki (wcięcia — F3.2-P2)."
+			],
+			"config": {
+				"estimated": "15 min"
+			}
+		},
+		{
+			"slug": "f3-6",
+			"position": 60,
+			"kind": "exercise",
+			"title": "Gotowe agregaty: sum, min, max",
+			"contentMd": "### Cel\n\nPoliczysz sumę, minimum i maksimum płaskiej listy liczb jedną funkcją —\ni rozstrzygniesz, kiedy sięgnąć po gotowca, a kiedy wrócić do własnej\npętli z F2.5/F3.2.\n\n### Teoria\n\nUczciwa wiadomość na koniec fundamentów: sumę listy liczb Python policzy\nza Ciebie. **`sum(lista)`**, **`min(lista)`**, **`max(lista)`** to gotowe\nfunkcje wbudowane — czwarta z tej rodziny, `len`, służy Ci od F2.2.\nWszystkie robią to samo co Twoje pętle z F2.5/F3.2, tylko w jednym\nsłowie — a kod, który czyta się jak zdanie („suma kwot\"), to kod,\nw którym trudniej o błąd:\n\n```python\nkwoty = [120, 80, 45, 200, 15]\nprint(sum(kwoty))     # suma wszystkich\nprint(max(kwoty))     # największa\nprint(min(kwoty))     # najmniejsza\nprint(round(sum(kwoty) / len(kwoty), 2))   # średnia — złożenie gotowców\n```\n\n**Przewidź:** cztery wyniki?\n\n`460`, `200`, `15`, `92.0`. Przyjrzyj się linii ze średnią: to cztery\nznane klocki w jednym wyrażeniu — `sum` i `len` policzone osobno,\ndzielenie między nimi (F1.2), całość opakowana w `round` (F2.1). Gotowce\nkomponują się jak każde funkcje: wynik jednego może być argumentem\ndrugiego, a całe wyrażenie zmieści się też w klamrze f-stringa.\n\nCzemu więc męczyliśmy się z akumulatorem i śledzeniem największego? Bo gotowce mają granicę: działają na GOTOWEJ,\npłaskiej liście liczb. Gdy warunek wybiera elementy (tylko „jedzenie\"),\ngdy elementy to rekordy (`wydatek[\"kwota\"]`), gdy w jednym przejściu\nliczysz trzy rzeczy naraz (F3.4) — wracasz do pętli. W praktyce\nnajczęstszy jest duet: pętlą z bramką ZBUDUJ listę kwot, które Cię\ninteresują (F3.1+F3.2), a potem oddaj ją gotowcowi:\n\n```python\njedzenie_kwoty = []\nfor wydatek in wydatki:                       # tabela z F3.5\n    if wydatek[\"kategoria\"] == \"jedzenie\":\n        jedzenie_kwoty.append(wydatek[\"kwota\"])\nprint(sum(jedzenie_kwoty))                    # gotowiec na przefiltrowanym\n```\n\nDwie pułapki gotowców: `sum`/`min`/`max` na liście z tekstem w środku to\n`TypeError` (F1.1 — na tekstach się nie liczy), a `min`/`max` na liście\nPUSTEJ to `ValueError` — gotowiec nie wie, co jest „najmniejsze wśród\nniczego\". `sum([])` zwraca grzecznie `0` (jak start akumulatora). Pusta\nlista to przy filtrach normalny stan danych (bramka mogła nic nie\nprzepuścić — F2.3), więc przed `min`/`max` na wyniku filtra warto\nsprawdzić `len`.\n\nŚciąga decyzyjna na całą dalszą drogę: **płaska lista liczb → gotowiec;\nwarunek, rekordy albo kilka wyników z jednego przejścia → pętla** —\nnajczęściej w duecie: pętla buduje płaską listę, gotowiec ją zwija.\nTę ściągę zabierz ze sobą do mini-projektu — przyda się przy każdej\nfunkcji. Zadanie w notebooku F3.6: policz `min`, `max` i średnią swoich\npięciu ostatnich wydatków — trzy linijki, zero pętli.",
+			"concepts": [
+				{
+					"slug": "agregaty-sum-min-max",
+					"name": "Gotowe agregaty: sum, min, max"
+				}
+			],
+			"questions": [
+				{
+					"ref": "f3-6-p1",
+					"conceptSlug": "agregaty-sum-min-max",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "`oceny = [3, 5, 2, 4]`. Co wypisze `print(sum(oceny))`?",
+					"options": ["4", "14", "5", "`[3, 5, 2, 4]`"],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — 3 + 5 + 2 + 4; jedna funkcja zamiast pętli z akumulatorem — na płaskiej liście liczb wolno iść na skróty.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — 4 to LICZBA elementów (len); sum dodaje wartości.",
+							"diagnosis": "sum mylone z len"
+						},
+						{
+							"feedbackMd": "Tak — 3 + 5 + 2 + 4; jedna funkcja zamiast pętli z akumulatorem — na płaskiej liście liczb wolno iść na skróty."
+						},
+						{
+							"feedbackMd": "Nie — 5 to max; sum dodaje wszystkie.",
+							"diagnosis": "agregaty pomieszane"
+						},
+						{
+							"feedbackMd": "Nie — sum zwraca JEDNĄ liczbę, nie listę; agregacja zwija wiele wartości w jedną.",
+							"diagnosis": "nie odróżnia agregacji od przekształcenia listy"
+						}
+					]
+				},
+				{
+					"ref": "f3-6-p2",
+					"conceptSlug": "agregaty-sum-min-max",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Chcesz sumę kwot TYLKO z kategorii „transport\" w tabeli rekordów. Czy `sum(wydatki)` to zrobi?",
+					"options": [
+						"Tak — sum sam znajdzie kwoty",
+						"Tak, po dopisaniu warunku w nawiasie sum",
+						"Nie — najpierw pętlą z bramką zbuduj listę kwot transportu (append), potem sum na tej liście",
+						"Nie — trzeba zrezygnować z sum i wszystko liczyć pętlą"
+					],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak — duet z teorii: filtr buduje płaską listę, gotowiec ją zwija.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — sum nie wie, co to „kwota\" ani „transport\": dodaje elementy listy wprost, a elementy są słownikami — będzie `TypeError`.",
+							"diagnosis": "gotowiec jako magia rozumiejąca dane"
+						},
+						{
+							"feedbackMd": "Nie — sum nie przyjmuje warunków; filtrowanie to praca bramki w pętli (F3.2), nie argument gotowca.",
+							"diagnosis": "zgaduje nieistniejącą składnię"
+						},
+						{
+							"feedbackMd": "Tak — duet z teorii: filtr buduje płaską listę, gotowiec ją zwija."
+						},
+						{
+							"feedbackMd": "Prawie — pętla faktycznie da radę sama (F3.5), ale duet filtr+sum jest równie poprawny i krótszy; gotowiec odpada tylko tam, gdzie lista nie jest płaską listą liczb.",
+							"diagnosis": "odrzuca gotowce w ogóle — druga skrajność"
+						}
+					]
+				},
+				{
+					"ref": "f3-6-p3",
+					"conceptSlug": "agregaty-sum-min-max",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "`puste = []`. Co zrobią `sum(puste)` i `max(puste)`?",
+					"options": [
+						"Oba zwrócą 0",
+						"Oba zatrzymają program",
+						"`sum(puste)` → 0; `max(puste)` → `ValueError`",
+						"`sum` → 0, `max` → `None`"
+					],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak — suma niczego to zero, ale maksimum niczego nie istnieje. Przy danych z filtra warto pamiętać: pusta lista po bramce jest legalna (F2.3 — zero obrotów), a max na niej już nie.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — sum owszem (0 to naturalny start sumowania), ale max nie ma „największego wśród niczego\": `ValueError`.",
+							"diagnosis": "uogólnia łagodność sum na max"
+						},
+						{
+							"feedbackMd": "Nie — sum([]) grzecznie zwraca 0; to max/min wymagają choć jednego elementu.",
+							"diagnosis": "uogólnia w drugą stronę"
+						},
+						{
+							"feedbackMd": "Tak — suma niczego to zero, ale maksimum niczego nie istnieje. Przy danych z filtra warto pamiętać: pusta lista po bramce jest legalna (F2.3 — zero obrotów), a max na niej już nie."
+						},
+						{
+							"feedbackMd": "Nie — max nie oddaje None po cichu: zatrzymuje się głośnym ValueError (jak konwersje w F2.1).",
+							"diagnosis": "„ciche None\" wstawione w złe miejsce"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Trzy linijki, każda to print z jednym gotowcem na TWOJEJ liście pięciu kwot; średnia to sum podzielone przez len (duet z WE), opakowane w round do dwóch miejsc (F2.1).",
+				"**Szkielet:** `moje = [__, __, __, __, __]`, potem `print(min(moje))`, `print(max(moje))`, `print(round(______ / ______, 2))`.",
+				"**Pełne rozwiązanie z objaśnieniem:** np. `moje = [12.50, 45.00, 8.20, 120.00, 33.40]` → `min` 8.2, `max` 120.0, średnia `round(sum(moje) / len(moje), 2)` → `43.82`. `TypeError` przy sum → w liście został tekst (sprawdź cudzysłowy); `ValueError` przy max → lista pusta (nie uzupełniona)."
+			],
+			"config": {
+				"estimated": "10 min"
+			}
+		},
+		{
+			"slug": "f3-7",
+			"position": 70,
+			"kind": "lab",
+			"title": "MINI-PROJEKT: Tygodniowy raport wydatków",
+			"contentMd": "### Cel\n\nPierwsza samodzielna praca od zera do raportu: dostajesz opis danych\ni wymagania, projektujesz strukturę, piszesz funkcje, wypisujesz raport.\nMiara transferu fundamentów (M17) — dokładnie to, co przy capstone M-EDA,\nw skali jednego wieczoru.\n\n### Specyfikacja (notebook F3.7 — pusta komórka + pieczątka)\n\nZbuduj **raport swoich wydatków z tygodnia**:\n\n1. **Dane** — lista `wydatki` z co najmniej **8 rekordami**; rekord to\n   słownik z kluczami `\"nazwa\"` (tekst), `\"kategoria\"` (tekst; użyj\n   co najmniej 3 różnych kategorii) i `\"kwota\"` (liczba). Dane wpisujesz\n   w kod (bez input — raport ma być powtarzalny).\n2. **Funkcja `suma_wszystkich(wydatki)`** — zwraca sumę pól `\"kwota\"`\n   (pętla z akumulatorem albo append+sum — Twój wybór).\n3. **Funkcja `suma_kategorii(wydatki, kategoria)`** — dwa parametry\n   (F2.6): zwraca sumę kwot rekordów o podanej kategorii (bramka po polu\n   — F3.5).\n4. **Funkcja `najdrozszy(wydatki)`** — zwraca REKORD (cały słownik)\n   o największej kwocie (śledzenie lidera — F3.2-P3; start od\n   `wydatki[0]`).\n5. **Raport** — wypisany f-stringami, kwoty przez `round(..., 2)`:\n   suma tygodnia, suma dla każdej z Twoich kategorii (wywołania\n   `suma_kategorii`), nazwa i kwota najdroższego wydatku, liczba pozycji\n   (`len`).\n\n**Kamienie milowe (weryfikacja AUTOMATYCZNA — pkt 11; 3 kamienie,\nhak `configJson.checks` do 1E.6):**\n\n- **K1 „Dane gotowe\":** pieczątka sprawdza — `wydatki` to lista ≥8\n  słowników, każdy ma komplet trzech kluczy, `\"kwota\"` liczbowa,\n  ≥3 różne kategorie.\n- **K2 „Funkcje liczą\":** pieczątka wywołuje wszystkie trzy funkcje na\n  WŁASNEJ próbnej tabeli (mechanizm z F2.7) i porównuje wyniki\n  z niezależnie policzonymi; `najdrozszy` musi zwrócić rekord, nie kwotę.\n- **K3 „Raport spójny\":** pieczątka sprawdza spójność wartości —\n  `suma_wszystkich(wydatki)` równa sumie wyników `suma_kategorii` po\n  każdej kategorii, przy czym **listę kategorii pieczątka wyprowadza\n  sama z DANYCH studenta** (nie z raportu, którego nie widzi) — i liczy\n  token końcowy. Jawny limit: samego WYDRUKU raportu pieczątka nie widzi\n  (klasa L0) — literówki kategorii w printach NIE wykryje; wydruk\n  weryfikuje treściowo drabinka, a rubryka nie istnieje — mini-projekt\n  świadomie bez oceny człowieka (pkt 12b: lekki, automatyczny).\n\nKażdy kamień = zdarzenie postępu (ślad aktywności dla streaka — D3).",
+			"concepts": [
+				{
+					"slug": "lista-slownikow-rekordy",
+					"name": "Lista słowników: tabela rekordów"
+				},
+				{
+					"slug": "if-w-petli-filtrowanie",
+					"name": "if w pętli: filtrowanie i zliczanie"
+				},
+				{
+					"slug": "slownik-klucz-wartosc",
+					"name": "Słownik: wartość pod kluczem"
+				},
+				{
+					"slug": "agregaty-sum-min-max",
+					"name": "Gotowe agregaty: sum, min, max"
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** To lab F3.4 + tabela F3.5 + funkcje F2.6, poskładane wg planu: najpierw dane (K1) i przetestuj SAMO `suma_wszystkich` printem; potem `suma_kategorii` (to samo + bramka + drugi parametr w warunku); potem `najdrozszy` (lider z F3.2-P3, tylko porównujesz `wydatek[\"kwota\"] > lider[\"kwota\"]`); raport na końcu. Krótkie pętle napisz–uruchom–sprawdź (L0.4) — nie pisz wszystkiego na raz.",
+				"**Szkielet (sięgnij dopiero, gdy hint 1 nie wystarczy):**\n```python\nwydatki = [\n    {\"nazwa\": ______, \"kategoria\": ______, \"kwota\": ______},\n    # … ≥8 rekordów, ≥3 kategorie\n]\n\ndef suma_wszystkich(wydatki):\n    suma = 0\n    for wydatek in wydatki:\n        suma = suma + ______\n    return suma\n\ndef suma_kategorii(wydatki, kategoria):\n    suma = 0\n    for wydatek in wydatki:\n        if wydatek[______] == ______:\n            suma = suma + wydatek[\"kwota\"]\n    return suma\n\ndef najdrozszy(wydatki):\n    lider = ______\n    for wydatek in wydatki:\n        if wydatek[\"kwota\"] > ______:\n            lider = wydatek\n    return lider\n\n# raport: print-y f-stringami, kwoty w round(..., 2)\n```",
+				"**Pełne rozwiązanie z objaśnieniem:** luki kolejno: `wydatek[\"kwota\"]`; `\"kategoria\"` i `kategoria` (klucz w cudzysłowie to POLE rekordu, goły `kategoria` to PARAMETR funkcji — obok siebie w jednej linii, i właśnie o to chodzi); `wydatki[0]` oraz `lider[\"kwota\"]`. Raport przykładowy:\n```python\nprint(f\"Suma tygodnia: {round(suma_wszystkich(wydatki), 2)} zł\")\nprint(f\"Jedzenie: {round(suma_kategorii(wydatki, 'jedzenie'), 2)} zł\")\ntop = najdrozszy(wydatki)\nprint(f\"Najdroższy: {top['nazwa']} — {round(top['kwota'], 2)} zł\")\nprint(f\"Pozycji: {len(wydatki)}\")\n```\nDiagnostyka końcowa: K2 czerwone przy zielonym Twoim teście → funkcja czyta globalną `wydatki` zamiast SWOJEGO parametru (pętla po parametrze! — lekcja z F2.7); `najdrozszy` zwraca liczbę → return `lider`, nie `lider[\"kwota\"]`; K3 czerwone → `suma_kategorii` liczy na Twoich danych inaczej niż powinna (np. bramka porównuje inny klucz niż `\"kategoria\"`). Uwaga: literówki kategorii W RAPORCIE (np. `'jedzenei'` w princie — kwota wyjdzie zaniżona) pieczątka NIE wykryje — porównaj nazwy kategorii w printach z danymi sam(a), zanim uznasz raport za skończony."
+			],
+			"config": {
+				"estimated": "45–60 min",
+				"checks": [
+					{
+						"type": "milestone",
+						"id": "K1",
+						"note": "walidacja struktury danych (lista słowników)"
+					},
+					{
+						"type": "milestone",
+						"id": "K2",
+						"note": "pieczątka wywołuje trzy funkcje studenta na próbnej tabeli (tolerancja abs(x-y)<0.01)"
+					},
+					{
+						"type": "milestone",
+						"id": "K3",
+						"note": "spójność sum: całość = suma po kategoriach wyprowadzonych z danych studenta"
+					}
+				]
+			}
+		},
+		{
+			"slug": "f3-przeglad",
+			"position": 90,
+			"kind": "exercise",
+			"title": "Przegląd przed egzaminem",
+			"contentMd": "Zestaw powtórkowy przed egzaminem modułu (D6.3 — spacing): pytania z wcześniejszych atomów, także z poprzednich modułów. Zaliczenie pozycji: wszystkie odpowiedzi poprawne (nielimitowane próby, feedback natychmiast).",
+			"questionRefs": [
+				"f2-3-p1",
+				"f2-5-p1",
+				"f2-5-p2",
+				"f2-6-p2",
+				"f3-1-p3",
+				"f3-2-p1",
+				"f3-3-p2",
+				"f3-5-p1",
+				"f3-5-p3",
+				"f3-6-p2"
+			]
+		}
+	]
+}

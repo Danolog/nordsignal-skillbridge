@@ -1,0 +1,558 @@
+{
+	"moduleSlug": "l0-start",
+	"items": [
+		{
+			"slug": "l0-1",
+			"position": 10,
+			"kind": "lab",
+			"title": "Komputer wykonał mój kod",
+			"contentMd": "### Cel\n\nUruchomisz prawdziwy kod i zobaczysz jego wynik — w przeglądarce, bez\ninstalowania czegokolwiek. To pierwszy krok każdej dalszej pracy na tej ścieżce.\n\n### Teoria\n\nProgramowanie to pisanie **instrukcji, które komputer wykonuje**. Instrukcje\nzapisuje się w języku programowania — na tej ścieżce będzie to **Python**,\njęzyk, w którym będziesz analizować dane do końca tej ścieżki. Żeby uruchomić\npierwszy kod, nie musisz nic instalować.\n\nSkorzystamy z **Google Colab** (skrót od *Colaboratory* — czytaj: „kolab\") —\ndarmowej strony Google. Działa to tak: Ty klikasz w przeglądarce, Twój kod\njedzie do wykonania na komputer Google, a wynik wraca i pojawia się na Twoim\nekranie. Wystarczy konto Google — to samo, którego używasz do Gmaila.\n\nDokument, który otworzysz w Colab, to **notebook** (po polsku w interfejsie:\n*notatnik*). Notebook składa się z **komórek**. Komórka to prostokątne pole:\nmoże zawierać zwykły tekst z objaśnieniami albo kod. Komórkę z kodem uruchamiasz\njednym kliknięciem — i pod nią pojawia się wynik.\n\nZobacz, jak wygląda komórka, którą za chwilę uruchomisz:\n\n```python\nprint(\"Witaj w SkillBridge!\")   # print(...) = „wypisz na ekran\"\n                                # tekst w cudzysłowie = dokładnie to, co ma być wypisane\n```\n\n`print` to gotowe polecenie Pythona: „wypisz na ekran to, co podam w nawiasie\".\nTekst do wypisania stoi w cudzysłowie.\n\n**Przewidź, zanim uruchomisz:** co pojawi się pod komórką po kliknięciu ▶?\n\nPojawi się dokładnie to:\n\n```\nWitaj w SkillBridge!\n```\n\nBez cudzysłowów — cudzysłów mówi Pythonowi, gdzie tekst się zaczyna i kończy,\nale sam nie jest częścią wyniku.\n\nDwie rzeczy, które zobaczysz przy pierwszym uruchomieniu i które są **normalne**:\n\n1. Colab przez kilkanaście–kilkadziesiąt sekund „łączy się\" z komputerem Google\n   (komunikat w prawym górnym rogu). Przy przycisku komórki kręci się wtedy\n   kółko, a w nawiasie obok widać `[*]`. Gdy skończy, `[*]` zmienia się\n   w liczbę, np. `[1]` — to licznik uruchomień.\n2. Przy notebooku otwartym z cudzego linku Colab wyświetla ostrzeżenie, że\n   notatnik nie pochodzi od Google, i pyta, czy uruchomić mimo to. Ten notebook\n   przygotowaliśmy my — zawiera tylko kod, który widzisz — więc potwierdź\n   uruchomienie.\n\nI jeszcze jedno na spokój: komórkę można uruchamiać **wiele razy** — licznik\nw nawiasie po prostu rośnie (`[2]`, `[3]`…), a wynik pod komórką jest za każdym\nrazem liczony na nowo. Niczego tym nie zepsujesz. Eksperymentowanie\nz przyciskiem ▶ jest tu najtańszą rzeczą na świecie.\n\n### Checklist wykonania (to zalicza atom)\n\n1. Upewnij się, że jesteś w przeglądarce zalogowany(-a) na konto Google\n   (prawy górny róg dowolnej strony Google — kółko z Twoim awatarem).\n2. Otwórz notebook **L0.1** linkiem z tej pozycji w SkillBridge — otworzy się\n   Google Colab.\n3. Najedź kursorem na pierwszą komórkę kodu i kliknij przycisk **▶** po jej\n   lewej stronie (albo kliknij w komórkę i wciśnij **Ctrl+Enter**).\n4. Jeśli pojawi się ostrzeżenie o notatniku spoza Google — kliknij\n   **„Uruchom mimo to\"** (punkt 2 teorii).\n5. Poczekaj, aż `[*]` zmieni się w liczbę, i przeczytaj wynik pod komórką.\n6. Uruchom tak samo **komórkę-pieczątkę** na końcu notebooka: wpisz w niej kod\n   atomu widoczny w SkillBridge przy tej pozycji, a wypisany token wklej\n   z powrotem w SkillBridge.\n\n**Zaliczenie:** poprawny token (deterministyczny check — mechanizm w zasadach\nmodułu wyżej).",
+			"concepts": [
+				{
+					"slug": "colab-uruchomienie-komorki",
+					"name": "Colab: uruchamiam kod w przeglądarce",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "l0-1-p1",
+					"conceptSlug": "colab-uruchomienie-komorki",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Co musisz zainstalować na swoim komputerze, żeby uruchomić kod w Google Colab?",
+					"options": [
+						"Pythona",
+						"Program Google Colab",
+						"Nic — wystarczy przeglądarka i konto Google",
+						"Specjalny edytor do pisania kodu"
+					],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak. Kod wykonuje się na komputerach Google, a Ty widzisz wynik w przeglądarce.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — i to jest właśnie siła Colab: Python jest już zainstalowany na komputerach Google, na których wykonuje się Twój kod. U siebie potrzebujesz tylko przeglądarki.",
+							"diagnosis": "myli Colab z pracą lokalną"
+						},
+						{
+							"feedbackMd": "Nie — Colab nie jest programem do zainstalowania, tylko stroną internetową: otwierasz ją w przeglądarce jak Gmaila.",
+							"diagnosis": "myli usługę w przeglądarce z aplikacją"
+						},
+						{
+							"feedbackMd": "Tak. Kod wykonuje się na komputerach Google, a Ty widzisz wynik w przeglądarce."
+						},
+						{
+							"feedbackMd": "Nie — edytorem jest sam notebook: piszesz i uruchamiasz kod bezpośrednio w komórkach na stronie.",
+							"diagnosis": "przenosi wyobrażenie „programista = osobny program-edytor\""
+						}
+					]
+				},
+				{
+					"ref": "l0-1-p2",
+					"conceptSlug": "colab-uruchomienie-komorki",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Po czym poznasz, że komórka została wykonana?",
+					"options": [
+						"Przycisk ▶ znika z komórki",
+						"Pod komórką pojawia się wynik, a `[*]` zmienia się w liczbę, np. `[1]`",
+						"Strona przeładowuje się i pokazuje nową kartę z wynikiem",
+						"Przychodzi e-mail z wynikiem"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak. Liczba to licznik uruchomień, a wynik stoi bezpośrednio pod komórką.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — przycisk zostaje, żeby można było uruchomić komórkę ponownie.",
+							"diagnosis": "oczekuje zmiany „przycisku jednorazowego\""
+						},
+						{
+							"feedbackMd": "Tak. Liczba to licznik uruchomień, a wynik stoi bezpośrednio pod komórką."
+						},
+						{
+							"feedbackMd": "Nie — wszystko dzieje się w tym samym miejscu: wynik pojawia się pod komórką, bez przeładowania.",
+							"diagnosis": "model „formularza WWW\", nie notebooka"
+						},
+						{
+							"feedbackMd": "Nie — wynik widzisz od razu pod komórką; Colab niczego nie wysyła.",
+							"diagnosis": "model „zadania wysyłanego do sprawdzenia\""
+						}
+					]
+				},
+				{
+					"ref": "l0-1-p3",
+					"conceptSlug": "colab-uruchomienie-komorki",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Komórka zawiera `print(\"Do dzieła\")`. Co dokładnie pojawi się pod nią po uruchomieniu?",
+					"options": [
+						"Do dzieła",
+						"\"Do dzieła\"",
+						"print(\"Do dzieła\")",
+						"Nic — kod tylko się sprawdza"
+					],
+					"answer": {
+						"correct": 0
+					},
+					"explanationMd": "Tak. Cudzysłów wyznacza początek i koniec tekstu, ale sam nie jest wypisywany.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Tak. Cudzysłów wyznacza początek i koniec tekstu, ale sam nie jest wypisywany."
+						},
+						{
+							"feedbackMd": "Prawie — ale cudzysłów tylko mówi Pythonowi, gdzie tekst się zaczyna i kończy; w wyniku go nie ma.",
+							"diagnosis": "traktuje cudzysłów jako część tekstu"
+						},
+						{
+							"feedbackMd": "Nie — to jest instrukcja, którą Python wykonuje, a nie tekst do pokazania. Pod komórką ląduje wynik wykonania, czyli samo „Do dzieła\".",
+							"diagnosis": "nie odróżnia jeszcze instrukcji od jej wyniku"
+						},
+						{
+							"feedbackMd": "Nie — `print` właśnie po to jest, żeby coś wypisać. Jeśli pod komórką nic nie ma, komórka nie została uruchomiona.",
+							"diagnosis": "model „kompilacji bez efektu\""
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Przycisk ▶ pokazuje się dopiero, gdy najedziesz kursorem na komórkę z kodem (komórki z samym tekstem go nie mają). Sprawdź też prawy górny róg: musisz być zalogowany(-a) na konto Google, inaczej Colab poprosi o logowanie zamiast uruchomić kod.",
+				"**Szkielet:** Kolejność: (1) otwórz link z SkillBridge → (2) zaloguj się, jeśli Colab o to poprosi → (3) najedź na PIERWSZĄ komórkę z kodem (szare pole z `print(...)`) → (4) klik ▶ → (5) przy ostrzeżeniu o notatniku spoza Google potwierdź uruchomienie → (6) czekaj, aż `[*]` zmieni się w `[1]`.",
+				"**Pełne rozwiązanie z objaśnieniem:** Najczęstsze trzy blokady: (a) brak zalogowania — Colab pokazuje stronę logowania Google: zaloguj się i wróć do linku; (b) ostrzeżenie „notatnik nie pochodzi od Google\" — to standardowe ostrzeżenie przy KAŻDYM cudzym notebooku, nasz zawiera wyłącznie widoczny kod: kliknij „Uruchom mimo to\"; (c) `[*]` kręci się długo — pierwsze połączenie z komputerem Google trwa zwykle do minuty, czasem dłużej: nie klikaj wielokrotnie, poczekaj na `[1]`. Jeśli po minucie nadal nic — otwórz stronę „Pierwsza pomoc L0\" (niżej) albo użyj przycisku „utknąłem\"."
+			],
+			"config": {
+				"estimated": "10–15 min",
+				"uiVerifiedAt": "2026-07-11",
+				"checks": [
+					{
+						"type": "token",
+						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+					}
+				]
+			},
+			"resources": [
+				{
+					"title": "Witamy w Colab — oficjalny notebook wprowadzający",
+					"url": "https://colab.research.google.com/notebooks/intro.ipynb",
+					"type": "docs",
+					"license": "własnościowa (Google), darmowe użycie",
+					"language": "EN",
+					"registrationRequired": true,
+					"verifiedAt": "2026-07-11",
+					"notes": "praktyka-docs (pogłębienie)"
+				},
+				{
+					"title": "Pomoc Dysku Google (odnajdywanie plików, folder Colab Notebooks)",
+					"url": "https://support.google.com/drive/",
+					"type": "docs",
+					"license": "własnościowa (Google)",
+					"language": "PL",
+					"registrationRequired": false,
+					"verifiedAt": "2026-07-11",
+					"notes": "docs pomocnicze"
+				},
+				{
+					"title": "Google Colab + Python dla początkujących — Wprowadzenie (Analiza danych z Arkadiuszem, ~22 min, 2024)",
+					"url": "https://www.youtube.com/watch?v=wlRT_MZOvBE",
+					"type": "video",
+					"license": "YouTube Standard License",
+					"language": "PL",
+					"registrationRequired": false,
+					"verifiedAt": "2026-07-11",
+					"notes": "wideo/kurs (trzecia funkcja QG-5) · 2026-07-11 (metadane; seans kontrolny Sophii przed ingest — patrz notatki)"
+				}
+			]
+		},
+		{
+			"slug": "l0-2",
+			"position": 20,
+			"kind": "lab",
+			"title": "Komórki: tekst, kod i Twoja własna kopia",
+			"contentMd": "### Cel\n\nRozróżnisz komórki tekstowe i komórki kodu, zmienisz kod w komórce i uruchomisz\nją ponownie — na własnej kopii notebooka, zapisanej na Twoim Dysku Google.\n\n### Teoria\n\nNotebook składa się z komórek dwóch rodzajów:\n\n- **Komórka tekstowa** — objaśnienia, nagłówki, notatki. Wygląda jak zwykły\n  dokument, nie ma przycisku ▶ i **nie wykonuje się** — jest tylko do czytania.\n- **Komórka kodu** — szare pole z kodem i przyciskiem ▶. Tylko ona „coś robi\".\n\nPo co ten podział? Notebooki, na których będziesz pracować przez całą ścieżkę,\nprzeplatają objaśnienia z kodem: komórka tekstowa mówi, CO zaraz zrobimy i po\nco, komórka kodu — robi to. Czytaj je więc po kolei, jak rozdziały, a nie\nprzeskakuj od razu do kodu.\n\nW atomie L0.1 kod tylko uruchamiałeś(-aś). Teraz go **zmienisz**. Komórkę kodu\nedytuje się jak tekst w dokumencie: klikasz w nią i piszesz — a gdy coś\nprzypadkiem zepsujesz, cofnięcie działa jak wszędzie: **Ctrl+Z** wewnątrz\nkomórki przywraca poprzedni stan. Ważna zasada:\n\n> **Zmiana kodu nie zmienia wyniku sama z siebie.** Wynik pod komórką pochodzi\n> z jej OSTATNIEGO uruchomienia. Po każdej zmianie kodu uruchom komórkę\n> ponownie — inaczej patrzysz na stary wynik.\n\nZobacz komórkę, którą za chwilę zmienisz:\n\n```python\nimie = \"Alex\"            # zapamiętaj tekst \"Alex\" pod nazwą: imie\nprint(\"Cześć, \" + imie)  # wypisz \"Cześć, \" sklejone z tym, co kryje się pod: imie\n```\n\nNowość: `imie = \"Alex\"` **zapamiętuje wartość pod nazwą** — o tym, jak to\ndziała, więcej w następnym atomie; tu wystarczy intuicja „pudełko z etykietą\".\nZnak `+` skleja dwa teksty w jeden.\n\n**Przewidź:** co wypisze ta komórka? A co wypisze, gdy w pierwszej linii\nwpiszesz swoje imię zamiast `Alex` i uruchomisz ją ponownie?\n\nZa pierwszym razem: `Cześć, Alex`. Po Twojej zmianie i PONOWNYM uruchomieniu —\nTwoje imię. Bez ponownego uruchomienia — nadal `Cześć, Alex`, choć kod już\nwygląda inaczej.\n\nOstatnia rzecz: notebook otwarty z naszego linku jest **tylko do odczytu** —\nmożesz uruchamiać komórki, ale zmiany nie zapiszą się na stałe. Żeby mieć\nwłasną, zapisywaną wersję, zrób kopię: menu **Plik → Zapisz kopię na Dysku**.\nColab otworzy nową kartę z Twoją kopią (jej nazwa zaczyna się od „Kopia…\"),\nktóra od tej pory **zapisuje się automatycznie** na Twoim Dysku Google,\nw folderze „Colab Notebooks\". Od tego miejsca pracujesz zawsze na swojej kopii.\n\n### Checklist wykonania (to zalicza atom)\n\n1. Otwórz notebook **L0.2** linkiem z SkillBridge.\n2. Zrób własną kopię: **Plik → Zapisz kopię na Dysku**; dalej pracuj w karcie\n   z kopią.\n3. Kliknij w komórkę z `imie = \"Alex\"` i zamień `Alex` na swoje imię\n   (cudzysłowy zostają!).\n4. Uruchom tę komórkę ponownie (▶ lub Ctrl+Enter) i sprawdź, że wynik się\n   zmienił.\n5. Uruchom komórkę-pieczątkę (kod atomu z SkillBridge) i wklej token\n   w SkillBridge.\n\n**Zaliczenie:** poprawny token; komórka-pieczątka wypisuje go dopiero, gdy\nwartość `imie` różni się od domyślnej (deterministyczny check zmiany + wykonania).",
+			"concepts": [
+				{
+					"slug": "notebook-komorki-kod-tekst",
+					"name": "Notebook: komórki kodu i tekstu, własna kopia"
+				}
+			],
+			"questions": [
+				{
+					"ref": "l0-2-p1",
+					"conceptSlug": "notebook-komorki-kod-tekst",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Czym komórka tekstowa różni się od komórki kodu?",
+					"options": [
+						"Tekstowa wykonuje się wolniej",
+						"Tekstowa to objaśnienia i nie wykonuje się; komórka kodu zawiera instrukcje i ma przycisk ▶",
+						"Niczym — to dwa widoki tej samej komórki",
+						"W tekstowej nie można nic zmienić"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak. „Coś robi\" tylko komórka kodu.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — tekstowa nie wykonuje się wcale: to objaśnienie do czytania, nie instrukcje dla komputera.",
+							"diagnosis": "sądzi, że wszystko w notebooku się „wykonuje\""
+						},
+						{
+							"feedbackMd": "Tak. „Coś robi\" tylko komórka kodu."
+						},
+						{
+							"feedbackMd": "Nie — to osobne komórki różnych rodzajów; tekstowa nie ma przycisku ▶ i nie da się jej „uruchomić\".",
+							"diagnosis": "nie rozdziela jeszcze warstwy objaśnień od warstwy kodu"
+						},
+						{
+							"feedbackMd": "Nie — obie rodzaje komórek można edytować (we własnej kopii); różnica jest w tym, że tylko komórka kodu się wykonuje.",
+							"diagnosis": "myli „tylko do odczytu\" cudzego notebooka z rodzajem komórki"
+						}
+					]
+				},
+				{
+					"ref": "l0-2-p2",
+					"conceptSlug": "notebook-komorki-kod-tekst",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Zmieniłeś(-aś) kod w komórce, ale wynik pod nią się nie zmienił. Najbardziej prawdopodobny powód?",
+					"options": [
+						"Colab się zepsuł",
+						"Komórka nie została uruchomiona ponownie po zmianie",
+						"Trzeba było dopisać kod w nowej komórce, nie zmieniać starej",
+						"Zmiany w kodzie widać dopiero po zapisaniu pliku"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak. Wynik pochodzi z ostatniego uruchomienia — po każdej zmianie kodu uruchom komórkę jeszcze raz.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Mało prawdopodobne — zanim to założysz, sprawdź prostsze wyjaśnienie: czy komórka została uruchomiona PO zmianie?",
+							"diagnosis": "atrybucja do narzędzia zamiast do przebiegu"
+						},
+						{
+							"feedbackMd": "Tak. Wynik pochodzi z ostatniego uruchomienia — po każdej zmianie kodu uruchom komórkę jeszcze raz."
+						},
+						{
+							"feedbackMd": "Nie — zmienianie istniejących komórek jest normalne; wystarczy po zmianie uruchomić komórkę ponownie.",
+							"diagnosis": "model „kod się nie edytuje, tylko dopisuje\""
+						},
+						{
+							"feedbackMd": "Nie — w Colab kopia zapisuje się sama, a wynik zależy wyłącznie od tego, czy komórka została uruchomiona po zmianie.",
+							"diagnosis": "przenosi model „zapisz plik, żeby zadziałało\""
+						}
+					]
+				},
+				{
+					"ref": "l0-2-p3",
+					"conceptSlug": "notebook-komorki-kod-tekst",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Po co robisz kopię notebooka na swoim Dysku, skoro cudzy notebook też da się uruchamiać?",
+					"options": [
+						"Bez kopii kod się nie wykona",
+						"Kopia działa szybciej",
+						"Cudzy notebook jest tylko do odczytu — zmiany zapisują się dopiero w Twojej kopii na Twoim Dysku",
+						"Google usuwa cudze notebooki po zamknięciu karty"
+					],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak. Kopia z „Plik → Zapisz kopię na Dysku\" zapisuje się automatycznie w folderze „Colab Notebooks\".",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — uruchamiać można i cudzy notebook; kopia jest po to, żeby Twoje ZMIANY miały się gdzie zapisać.",
+							"diagnosis": "myli prawo uruchamiania z prawem zapisu"
+						},
+						{
+							"feedbackMd": "Nie — szybkość jest taka sama; różnica dotyczy zapisywania zmian.",
+							"diagnosis": "zgaduje „lepszość\" kopii po niewłaściwej osi"
+						},
+						{
+							"feedbackMd": "Tak. Kopia z „Plik → Zapisz kopię na Dysku\" zapisuje się automatycznie w folderze „Colab Notebooks\"."
+						},
+						{
+							"feedbackMd": "Nie — notebook autora zostaje u autora; znika tylko Twoja niezapisana praca, jeśli nie zrobisz kopii.",
+							"diagnosis": "słuszna intuicja „coś przepadnie\", błędnie umiejscowiona"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Pracujesz w DWÓCH krokach: najpierw kopia na Dysk (żeby zmiany się zapisywały), potem edycja + PONOWNE uruchomienie komórki (żeby zmianę było widać w wyniku). Jeśli wynik się nie zmienia — prawie na pewno brakuje ponownego uruchomienia.",
+				"**Szkielet:** (1) menu **Plik** (lewy górny róg) → **Zapisz kopię na Dysku** → (2) przełącz się na nową kartę „Kopia notatnika…\" → (3) klik w linię `imie = \"Alex\"` → zamień tylko tekst między cudzysłowami → (4) ▶ na TEJ komórce → (5) sprawdź wynik → (6) ▶ na komórce-pieczątce.",
+				"**Pełne rozwiązanie z objaśnieniem:** Po kroku 1 nazwa pliku (lewy górny róg) zaczyna się od „Kopia\" — jeśli nie zaczyna, nadal jesteś w oryginale (tylko do odczytu) i zmiany przepadną. W linii `imie = \"Alex\"` zamień wyłącznie `Alex`, zostawiając cudzysłowy: `imie = \"Kasia\"`. Skasowanie cudzysłowu to najczęstszy błąd — Python zgłosi wtedy `SyntaxError`; poprawka: przywróć cudzysłów z obu stron. Po zmianie kliknij ▶ na tej samej komórce — dopiero to uruchamia nowy kod — a potem ▶ na komórce-pieczątce, wpisz kod atomu z SkillBridge i przenieś token."
+			],
+			"config": {
+				"estimated": "15 min",
+				"uiVerifiedAt": "2026-07-11",
+				"checks": [
+					{
+						"type": "token",
+						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+					}
+				]
+			}
+		},
+		{
+			"slug": "l0-3",
+			"position": 30,
+			"kind": "lab",
+			"title": "Sesja ma pamięć: zmienne, kolejność, restart",
+			"contentMd": "### Cel\n\nZobaczysz, że notebook „pamięta\" wartości między komórkami, świadomie\nwywołasz i naprawisz najczęstszy błąd początkujących (`NameError`) oraz\nzrestartujesz sesję i przywrócisz notebook do działania.\n\n### Teoria\n\nW atomie L0.2 linia `imie = \"Alex\"` zapamiętała tekst pod nazwą. Taka nazwa\nz przypisaną wartością to **zmienna** — pudełko z etykietą: `imie` to etykieta,\n`\"Alex\"` to zawartość.\n\nNajważniejsza właściwość notebooka: **komórki współdzielą jedną pamięć**.\nZmienna utworzona w jednej komórce jest dostępna w każdej następnej, którą\nuruchomisz. Ta wspólna pamięć to **sesja** (Colab mówi też: *środowisko\nwykonawcze*, ang. *runtime*) — połączenie z komputerem Google, który trzyma\nTwoje zmienne.\n\nZ tego wynika zasada: **liczy się kolejność URUCHAMIANIA, nie kolejność na\nstronie**. Zobacz dwie komórki:\n\n```python\n# komórka 1\nkawa = 12        # zapamiętaj liczbę 12 pod nazwą: kawa\n```\n\n```python\n# komórka 2\nprint(kawa * 30) # wypisz: zawartość pudełka kawa razy 30\n```\n\n**Przewidź:** co wypisze komórka 2 uruchomiona PO komórce 1? A co się stanie,\ngdy w świeżo otwartym notebooku uruchomisz komórkę 2 jako PIERWSZĄ?\n\nPo kolei: `360`. Komórka 2 jako pierwsza — błąd:\n\n```\nNameError: name 'kawa' is not defined\n```\n\nPython mówi: „nie znam nazwy `kawa`\" — bo komórka, która ją tworzy, jeszcze się\nnie wykonała. **Błąd to komunikat, nie katastrofa** — i warto od razu nauczyć\nsię go czytać, bo czerwone komunikaty będą Ci towarzyszyć całą ścieżkę (każdemu\nprogramującemu towarzyszą codziennie). Instrukcja czytania jest krótka:\npatrz na **ostatnią linię** komunikatu. Przed dwukropkiem stoi rodzaj problemu\n(`NameError` — „nie znam nazwy\"), po dwukropku — konkret (której nazwy).\nWyżej Python pokazuje jeszcze, w której linii kodu się zatrzymał. Nic poza tym\nnie musisz z komunikatu rozumieć. Tu diagnoza brzmi: brakuje nazwy `kawa`,\nwięc lekarstwem jest uruchomienie najpierw komórki 1, która tę nazwę tworzy.\n\nDrugie źródło tego samego błędu: **sesja wygasa**. Po dłuższej bezczynności\nColab rozłącza połączenie — kod w komórkach zostaje (to część pliku), ale\n**wartości zmiennych znikają** (były w pamięci sesji). Notebook wygląda\nnormalnie, lecz zachowuje się „jak nowy\". Sesję można też wyczyścić samodzielnie:\nmenu **Środowisko wykonawcze → Uruchom ponownie sesję**. Lekarstwo po każdym\nrestarcie jest jedno: uruchom komórki od początku — ręcznie po kolei albo\n**Środowisko wykonawcze → Uruchom wszystkie**. Ta druga opcja wykonuje komórki\ndokładnie w kolejności, w jakiej stoją na stronie — dlatego notebooki pisze\nsię tak, żeby komórka tworząca zmienną stała wyżej niż komórki, które jej\nużywają.\n\n### Checklist wykonania (to zalicza atom)\n\n1. Otwórz notebook **L0.3** i od razu zrób kopię na Dysk (jak w L0.2).\n2. Uruchom komórki 1 i 2 po kolei — sprawdź wynik `360`.\n3. Zrestartuj sesję: **Środowisko wykonawcze → Uruchom ponownie sesję**\n   (potwierdź w okienku).\n4. Uruchom teraz SAMĄ komórkę 2 — zobacz `NameError` na własne oczy. To\n   zaplanowane: masz zobaczyć, jak wygląda, żeby Cię nigdy nie zaskoczył.\n5. Napraw: **Środowisko wykonawcze → Uruchom wszystkie** — sprawdź, że `360`\n   wróciło.\n6. Uruchom komórkę-pieczątkę i przenieś token do SkillBridge.\n\n**Zaliczenie:** poprawny token (komórka-pieczątka liczy go z kodu atomu\ni wartości zmiennych obecnych w bieżącej sesji — dowód, że komórki notebooka\nzostały wykonane). Jawne ustępstwo: sam fakt restartu jest z poziomu Pythona\nnieweryfikowalny — kroki 3–5 są instruktażowe; token potwierdza wykonanie\nkomórek, nie przebieg restartu (odnotowane w notatkach dla Olivera).",
+			"concepts": [
+				{
+					"slug": "sesja-stan-zmiennych",
+					"name": "Sesja: pamięć zmiennych, kolejność, restart",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "l0-3-p1",
+					"conceptSlug": "sesja-stan-zmiennych",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Po restarcie sesji („Uruchom ponownie sesję\") co znika, a co zostaje?",
+					"options": [
+						"Znika wszystko, łącznie z kodem w komórkach",
+						"Znikają wartości zmiennych; kod w komórkach zostaje",
+						"Nic nie znika — restart tylko odświeża stronę",
+						"Znika notebook z Dysku"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak. Dlatego po restarcie uruchamia się komórki od początku — plik jest cały, pamięć pusta.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — kod to część pliku notebooka i zostaje nietknięty; znika tylko pamięć sesji.",
+							"diagnosis": "nie rozdziela pliku od pamięci sesji — w drugą stronę"
+						},
+						{
+							"feedbackMd": "Tak. Dlatego po restarcie uruchamia się komórki od początku — plik jest cały, pamięć pusta."
+						},
+						{
+							"feedbackMd": "Nie — restart czyści pamięć sesji: każda zmienna przestaje istnieć, dopóki jej komórka nie wykona się ponownie.",
+							"diagnosis": "myli restart sesji z odświeżeniem karty"
+						},
+						{
+							"feedbackMd": "Nie — plik na Twoim Dysku jest bezpieczny; restart dotyczy wyłącznie połączenia z komputerem Google i jego pamięci.",
+							"diagnosis": "strach „stracę pracę\" przypięty do złego mechanizmu"
+						}
+					]
+				},
+				{
+					"ref": "l0-3-p2",
+					"conceptSlug": "sesja-stan-zmiennych",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Komórka `print(kawa * 30)` zgłasza `NameError: name 'kawa' is not defined`. Najbardziej prawdopodobna przyczyna?",
+					"options": [
+						"Literówka w słowie `print`",
+						"Python nie umie mnożyć",
+						"Komórka tworząca zmienną `kawa` nie została uruchomiona w tej sesji",
+						"Trzeba zrobić kopię notebooka na Dysk"
+					],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak — np. po restarcie albo przy uruchomieniu komórek w złej kolejności. Lek: uruchom komórki od początku.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — komunikat wskazuje nazwę `kawa`, nie `print`; Python mówi dokładnie, której nazwy nie zna.",
+							"diagnosis": "nie czyta jeszcze treści komunikatu błędu"
+						},
+						{
+							"feedbackMd": "Nie — do mnożenia w ogóle nie doszło: Python zatrzymał się wcześniej, bo nie wie, co kryje się pod nazwą `kawa`.",
+							"diagnosis": "szuka winy w operacji zamiast w brakującej definicji"
+						},
+						{
+							"feedbackMd": "Tak — np. po restarcie albo przy uruchomieniu komórek w złej kolejności. Lek: uruchom komórki od początku."
+						},
+						{
+							"feedbackMd": "Nie — kopia dotyczy zapisywania zmian; `NameError` dotyczy pamięci sesji i kolejności uruchamiania.",
+							"diagnosis": "skleja dwa świeżo poznane mechanizmy w jeden"
+						}
+					]
+				},
+				{
+					"ref": "l0-3-p3",
+					"conceptSlug": "sesja-stan-zmiennych",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Wieczorem wszystko działało; rano ta sama komórka daje `NameError`, choć kodu nikt nie zmieniał. Co się stało i co robisz?",
+					"options": [
+						"Notebook się uszkodził — zaczynam od nowa w nowym pliku",
+						"Sesja wygasła przez bezczynność — uruchamiam komórki od początku („Uruchom wszystkie\")",
+						"Google cofnęło moje zmiany do wersji z linku",
+						"Rano trzeba najpierw odpowiedzieć na pytania atomu, żeby kod działał"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak. Kod został, zmienne zniknęły — to ten sam stan co po ręcznym restarcie.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — plik jest cały. Przez noc wygasła sesja i pamięć zmiennych jest pusta; wystarczy „Uruchom wszystkie\".",
+							"diagnosis": "brak pojęcia wygasającej sesji → drastyczne obejścia"
+						},
+						{
+							"feedbackMd": "Tak. Kod został, zmienne zniknęły — to ten sam stan co po ręcznym restarcie."
+						},
+						{
+							"feedbackMd": "Nie — Twoja kopia na Dysku zapisuje się automatycznie i nikt jej nie cofa; zniknęła tylko pamięć sesji.",
+							"diagnosis": "winą obarcza zapis pliku zamiast sesji"
+						},
+						{
+							"feedbackMd": "Nie — pytania w SkillBridge i pamięć sesji Colab to zupełnie osobne światy.",
+							"diagnosis": "kontrola — myli mechanikę platformy z mechaniką narzędzia"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** W tym atomie błąd w kroku 4 jest CELEM, nie problemem — masz go zobaczyć. Pilnuj rozróżnienia: plik (kod, zostaje) vs sesja (zmienne, znikają). Menu od restartu i od „Uruchom wszystkie\" to to samo menu: **Środowisko wykonawcze** na górnym pasku.",
+				"**Szkielet:** (1) kopia na Dysk → (2) ▶ komórka 1, ▶ komórka 2 → widzisz `360` → (3) **Środowisko wykonawcze → Uruchom ponownie sesję** → potwierdź → (4) ▶ TYLKO komórka 2 → czerwony `NameError` (tak ma być) → (5) **Środowisko wykonawcze → Uruchom wszystkie** → `360` wraca → (6) ▶ komórka-pieczątka.",
+				"**Pełne rozwiązanie z objaśnieniem:** Jeśli w kroku 4 zamiast `NameError` widzisz `360` — sesja nie została zrestartowana (np. kliknięcie „Anuluj\" w okienku potwierdzenia); wróć do kroku 3. Jeśli po „Uruchom wszystkie\" `NameError` nie znika — sprawdź, czy jesteś w SWOJEJ kopii i czy komórka 1 nadal zawiera `kawa = 12` (przypadkowe skasowanie linii = ta sama choroba: nazwa nie istnieje). Gdy Colab w ogóle nie chce się połączyć (pasek „Łączę…\" bez końca) — patrz „Pierwsza pomoc L0\", pozycja 3, albo przycisk „utknąłem\"."
+			],
+			"config": {
+				"estimated": "15–20 min",
+				"uiVerifiedAt": "2026-07-11",
+				"checks": [
+					{
+						"type": "token",
+						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+					}
+				]
+			}
+		},
+		{
+			"slug": "l0-4",
+			"position": 40,
+			"kind": "lab",
+			"title": "Twój pierwszy własny skrypt",
+			"contentMd": "### Cel\n\nNapiszesz od zera i uruchomisz własny, kilkulinijkowy skrypt, który coś\npoliczy i wypisze wynik. Uruchomiony skrypt to Twój dowód zaliczenia całego\nmodułu L0.\n\n### Teoria\n\nWszystkie klocki już znasz z L0.1–L0.3 — teraz złożysz z nich pierwszą całość.\n\n**Skrypt** to przepis: lista instrukcji, którą Python wykonuje **od góry do\ndołu, linia po linii**. W jednej komórce może być wiele linii — to wciąż jeden\nskrypt. Dobry nawyk od pierwszego dnia: nie pisz wszystkiego na raz. Dopisz\nlinię, uruchom komórkę, sprawdź wynik, dopisz następną. Krótkie pętle\n„napisz–uruchom–sprawdź\" to normalny tryb pracy z kodem — a ewentualny błąd\nzawsze dotyczy wtedy ostatniej dopisanej linii, więc wiadomo, gdzie szukać.\nTwoje klocki:\n\n- **zmienna** — zapamiętuje wartość pod nazwą (`kawa = 12`),\n- **działanie** — `+`, `-`, `*` (mnożenie to gwiazdka, nie ×),\n- **`print(...)`** — wypisuje wynik na ekran.\n\nSkoro piszesz sam(a), to Ty wymyślasz **nazwy zmiennych**. Zasady są trzy:\nnazwa bez spacji (zamiast spacji podkreślnik: `cena_biletu`), Python rozróżnia\nwielkość liter (`Dni` i `dni` to DWIE różne nazwy — najbezpieczniej pisz\nwszystko małymi), a najlepsza nazwa to taka, która mówi, co jest w pudełku\n(`cena`, nie `x` — za dwa tygodnie podziękujesz sobie za czytelność). Polskich\nznaków (ą, ż) unikaj — formalnie działają, ale przysporzą kłopotów przy pracy\nz cudzym kodem.\n\nJedna nowa rzecz, o którą potyka się każdy początkujący: **liczba a tekst**.\n`12` (bez cudzysłowu) to liczba — można na niej liczyć. `\"12\"` (w cudzysłowie)\nto tekst, który tylko WYGLĄDA jak liczba. Zasada na teraz: **to, na czym\nliczysz, piszesz bez cudzysłowu; cudzysłów jest dla tekstu do wypisania.**\n\nPrzykład w całości — miesięczny koszt nawyku kawowego:\n\n```python\ncena = 12               # liczba (bez cudzysłowu) — cena jednej kawy w zł\ndni = 30                # liczba dni w miesiącu\nkoszt = cena * dni      # policz i zapamiętaj wynik pod nazwą: koszt\nprint(\"Kawa miesięcznie, zł:\")   # tekst w cudzysłowie — etykieta wyniku\nprint(koszt)            # liczba spod nazwy koszt — bez cudzysłowu!\n```\n\n**Przewidź:** co dokładnie wypiszą dwie ostatnie linie? I pytanie-pułapka: co\nwypisałaby linia `print(\"koszt\")` — z cudzysłowem?\n\nWynik: `Kawa miesięcznie, zł:` i pod spodem `360`. A `print(\"koszt\")` wypisze\ndosłownie słowo `koszt` — cudzysłów mówi „to tekst\", więc Python nie zagląda\ndo pudełka o tej nazwie.\n\nZanim napiszesz własny skrypt, rozgrzewka na uzupełnianie (w notebooku L0.4,\nkomórka „Rozgrzewka\" — uzupełnij dwie luki i uruchom):\n\n```python\nbilet = 4          # cena biletu w zł\nprzejazdy = ___    # ile razy jeździsz w tygodniu — wpisz liczbę\nprint(bilet * ___) # policz koszt tygodnia — jakiej nazwy tu użyć?\n```\n\n### Checklist wykonania (to zalicza atom i moduł L0)\n\n1. Otwórz notebook **L0.4**, zrób kopię na Dysk.\n2. Uruchom komórkę z przykładem „kawa\" i sprawdź przewidywania z teorii.\n3. Uzupełnij i uruchom komórkę „Rozgrzewka\" (dwie luki).\n4. W pustej komórce „Twój skrypt\" napisz własny skrypt wg specyfikacji:\n   **co najmniej dwie zmienne liczbowe, jedno działanie na nich i jeden\n   `print` z wynikiem** — policz coś swojego (wydatki, kilometry, strony\n   książki — temat dowolny).\n5. Uruchom swój skrypt; jeśli czerwony błąd — czytaj komunikat i drabinkę\n   hintów (błąd ≠ porażka, to feedback).\n6. Uruchom komórkę-pieczątkę i przenieś token do SkillBridge.\n\n**Zaliczenie:** poprawny token — komórka-pieczątka sprawdza deterministycznie,\nże w pamięci sesji istnieją ≥2 zmienne liczbowe **o nazwach spoza przykładów\nnotebooka** (wykluczone: `cena`, `dni`, `koszt`, `bilet`, `przejazdy`) oraz\nwynik działania na nich — czyli że własny skrypt z kroku 4 faktycznie SIĘ\nWYKONAŁ w tej sesji — i dopiero wtedy liczy token z kodu atomu. To jest\n„pierwszy uruchomiony skrypt jako dowód\" z ADR-014. (Check pozostaje obchodzilny\nświadomym oszustwem — wystarczający na pilot; szczegóły w notatkach niżej.)",
+			"concepts": [
+				{
+					"slug": "skrypt-sekwencja-instrukcji",
+					"name": "Skrypt: sekwencja instrukcji od zera",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "l0-4-p1",
+					"conceptSlug": "skrypt-sekwencja-instrukcji",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Skrypt: `a = 5`, potem `b = 3`, potem `print(a * b)`. Co pojawi się pod komórką?",
+					"options": ["15", "a * b", "53", "8"],
+					"answer": {
+						"correct": 0
+					},
+					"explanationMd": "Tak: Python wykonał linie od góry do dołu, `a * b` to 5 razy 3, a `print` wypisał wynik.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Tak: Python wykonał linie od góry do dołu, `a * b` to 5 razy 3, a `print` wypisał wynik."
+						},
+						{
+							"feedbackMd": "Nie — bez cudzysłowu `a * b` to działanie do WYKONANIA, nie tekst; wypisany zostaje jego wynik.",
+							"diagnosis": "nie odróżnia zapisu działania od jego wyniku"
+						},
+						{
+							"feedbackMd": "Nie — gwiazdka to mnożenie liczb: 5 · 3 = 15. „Sklejenie\" 5 i 3 w 53 to intuicja z tekstów, nie z liczb.",
+							"diagnosis": "model sklejania zamiast arytmetyki"
+						},
+						{
+							"feedbackMd": "Nie — 8 to wynik DODAWANIA (5 + 3); gwiazdka `*` oznacza mnożenie.",
+							"diagnosis": "myli symbole operatorów"
+						}
+					]
+				},
+				{
+					"ref": "l0-4-p2",
+					"conceptSlug": "skrypt-sekwencja-instrukcji",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Chcesz wypisać WYNIK obliczeń zapamiętany pod nazwą `koszt`. Która linia jest poprawna?",
+					"options": ["print(\"koszt\")", "print(koszt)", "print = koszt", "koszt"],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — bez cudzysłowu Python sięga do pudełka o nazwie `koszt` i wypisuje jego zawartość.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — cudzysłów robi z tego zwykły tekst: wypisze się słowo „koszt\", a nie wartość spod tej nazwy.",
+							"diagnosis": "cudzysłów „na wszelki wypadek\" wokół nazwy zmiennej — błąd nr 1 początkujących"
+						},
+						{
+							"feedbackMd": "Tak — bez cudzysłowu Python sięga do pudełka o nazwie `koszt` i wypisuje jego zawartość."
+						},
+						{
+							"feedbackMd": "Nie — znak `=` przypisuje wartość do nazwy, niczego nie wypisuje; do wypisywania służy `print(...)` z nawiasami.",
+							"diagnosis": "myli przypisanie z wywołaniem polecenia"
+						},
+						{
+							"feedbackMd": "Prawie — w notebooku ostatnia goła nazwa w komórce faktycznie pokaże wartość, ale to cecha notebooka, nie skryptu; niezawodny i uniwersalny sposób to `print(koszt)`.",
+							"diagnosis": "skrót notebookowy mylony z regułą języka"
+						}
+					]
+				},
+				{
+					"ref": "l0-4-p3",
+					"conceptSlug": "skrypt-sekwencja-instrukcji",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "W nowej, świeżo uruchomionej sesji wykonujesz skrypt o trzech liniach: (1) `oplata = 12`, (2) `print(suma)`, (3) `suma = oplata * 30`. Co się stanie?",
+					"options": [
+						"Wypisze 360 — Python najpierw przeczyta cały skrypt",
+						"Wypisze 360, ale z ostrzeżeniem",
+						"`NameError` w linii 2 — `suma` jest tworzona dopiero w linii 3, czyli za późno",
+						"Wypisze słowo „suma\""
+					],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak. Kolejność linii w skrypcie działa jak kolejność uruchamiania komórek w L0.3: najpierw stwórz, potem użyj. Poprawka: przenieś linię 3 przed linię 2.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — Python nie czyta „na zapas\": wykonuje linie ściśle od góry do dołu i w linii 2 nazwa `suma` jeszcze nie istnieje.",
+							"diagnosis": "model „komputer rozumie intencję całości\""
+						},
+						{
+							"feedbackMd": "Nie — to nie ostrzeżenie, tylko zatrzymanie: `NameError` przerywa wykonanie w linii 2 i do linii 3 w ogóle nie dochodzi.",
+							"diagnosis": "traktuje błąd jako kosmetykę"
+						},
+						{
+							"feedbackMd": "Tak. Kolejność linii w skrypcie działa jak kolejność uruchamiania komórek w L0.3: najpierw stwórz, potem użyj. Poprawka: przenieś linię 3 przed linię 2."
+						},
+						{
+							"feedbackMd": "Nie — `suma` stoi tu bez cudzysłowu, więc Python szuka wartości pod tą nazwą (i jej nie znajduje); słowo wypisałby zapis `print(\"suma\")`.",
+							"diagnosis": "odwrócone rozumienie reguły cudzysłowu"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Twój skrypt to dokładnie wzorzec z przykładu „kawa\", tylko z Twoim tematem: dwie linie „zapamiętaj liczbę\", jedna linia „policz\", jedna linia „wypisz\". Liczby bez cudzysłowów; kolejność: najpierw zmienne, na końcu `print`.",
+				"**Szkielet:** Uzupełnij pod siebie:\n```python\n___ = ___          # pierwsza wielkość (nazwa = liczba)\n___ = ___          # druga wielkość\nwynik = ___ * ___  # działanie na obu nazwach (* + albo -)\nprint(wynik)\n```",
+				"**Pełne rozwiązanie z objaśnieniem:**\n```python\nstrony = 20                # tyle stron czytam jednego wieczora\nwieczory = 14              # przez dwa tygodnie\nwynik = strony * wieczory  # 20 · 14 = razem stron\nprint(\"Przeczytam stron:\")\nprint(wynik)               # bez cudzysłowu — chcę wartość, nie słowo \"wynik\"\n```\nTypowe czerwone komunikaty przy własnym skrypcie: `SyntaxError` — najczęściej niedomknięty cudzysłów lub nawias w linii z `print`; `NameError: name '…' is not defined` — nazwa w `print`/działaniu różni się od nazwy przy `=` (Python rozróżnia wielkość liter: `Dni` ≠ `dni`) albo linia definiująca nie została wykonana. Przeczytaj, KTÓRĄ nazwę wskazuje komunikat, popraw i uruchom ponownie — a jeśli trzeci raz to samo, przycisk „utknąłem\" jest dokładnie na tę okazję."
+			],
+			"config": {
+				"estimated": "15–20 min",
+				"uiVerifiedAt": "2026-07-11",
+				"checks": [
+					{
+						"type": "token",
+						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+					}
+				]
+			}
+		}
+	]
+}

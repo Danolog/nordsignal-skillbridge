@@ -176,3 +176,18 @@ realnej wartości „Data Scientist" + strażnik mapy przeciw modelowi kariery.
 6. **Checklist aktywacyjny flagi dla realnych studentów:** flaga może być ON
    (jest — trasy bezpieczne), ale ONBOARDING studentów na ścieżkę wymaga
    zaingestowanej treści 1E.2 (do tego czasu drabina = L0 `coming_soon`).
+
+## Realizacja 1E.2 (2026-07-11) — treść fundamentów + mechanika slug/guard
+
+Decyzje przy planie 1E.2 (Darek): **recompute = downgrade completed→in_progress**
+(tylko `verified_by_method IS NULL`); **mini-projekt F3.7 = kind lab + checks**
+(bez pipeline'u marketplace). Wykonanie: PR-1 (#164 — migracja 0036: slug
+pozycji + option_feedback_json; ingest slug-upsert + guard
+CONFIRM_CONTENT_MIGRATION + recompute + walidacje; answer dla lab; testy
+complete-route z ustalenia #4; rls-matrix v0.27) i PR-2 (packer
+`pnpm content:pack-curriculum` + 4 JSON-y treści L0/F1/F2/F3: 28 pozycji,
+57 pytań, 19 konceptów foundations; kontrakt-test z testem determinizmu;
+weryfikacja wierności 4 agentami — 57/57 kluczy odpowiedzi, 171/171 diagnoz,
+contentMd verbatim; E2E zaktualizowane o 9 modułów i F1 available).
+Odchylenia formatu → spec v0.2 (`docs/design/curriculum-atomy-format-spec-v0.1.md`).
+Wszystkie ustalenia wiążące 1–4 z sekcji wyżej: WYKONANE (5–6 pozostają notami).

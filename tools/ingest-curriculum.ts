@@ -52,6 +52,19 @@ import {
 } from "./content-curriculum-atoms";
 import { itemContentHash } from "./ingest-question-bank";
 
+/** Kanoniczny JSON (klucze sortowane rekurencyjnie) — porównania niezależne
+ * od kolejności kluczy JSONB Postgresa (jsonb sortuje klucze po swojemu). */
+function canonicalJson(value: unknown): string {
+	if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+	if (typeof value === "object" && value !== null) {
+		const entries = Object.entries(value as Record<string, unknown>)
+			.sort(([a], [b]) => a.localeCompare(b))
+			.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`);
+		return `{${entries.join(",")}}`;
+	}
+	return JSON.stringify(value);
+}
+
 config({ path: ".env.local" });
 config({ path: ".env" });
 
@@ -190,9 +203,9 @@ async function syncQuestionBank(
 			if (match) {
 				idByRef.set(q.ref, match.id);
 				kept++;
-				const newFeedback = q.optionFeedback ? JSON.stringify(q.optionFeedback) : null;
+				const newFeedback = q.optionFeedback ? canonicalJson(q.optionFeedback) : null;
 				const oldFeedback = match.option_feedback_json
-					? JSON.stringify(match.option_feedback_json)
+					? canonicalJson(match.option_feedback_json)
 					: null;
 				if (match.explanation_md !== q.explanationMd || oldFeedback !== newFeedback) {
 					await client.query(
