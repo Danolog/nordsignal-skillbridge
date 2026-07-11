@@ -816,10 +816,28 @@ flagi AG — migracje już są.
    sesja równoległa) jest na dysku UNTRACKED — wejdzie własnym PR-em 1E.2;
    w tym repo stage'ować jawnie po ścieżkach, nie `git add -A`.
 
-39. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + sign-off Ryana
-   rls-matrix v0.26 + **PR-2 (1E.1c-f)**: ingest drabiny 8 modułów,
-   API prereq (403 na zablokowany moduł), zapis postępu, streak za flagą
-   + spec formatu JSON atomów dla Sophii.
+39. **1E.1 DOMKNIĘTE KODOWO — PR-2 ZMERGOWANY (#162, 2026-07-11):**
+   1E.1c-f: struktura drabiny (`tools/content/curriculum-ds-drabina.json`,
+   8 modułów / 4 capstone'y, łańcuch prereq z kolejności) + idempotentny
+   `pnpm db:ingest-curriculum` (assertTestDb, ADR-010) + kontrakt-test;
+   API: GET /api/curriculum (drabina ze statusami), GET modules/[id]
+   (**twarde 403 na zablokowany moduł — dowód roadmapy zielony w CI**),
+   POST items/[id]/answer (grader A5, append-only z hint_depth, feedback
+   R13), POST items/[id]/complete (projekt wg wariantu C; lab=501 do 1E.6);
+   streak z curriculum_item_answers WYŁĄCZNIE za flagą. Spec treści atomów
+   dla Sophii: `docs/design/curriculum-atomy-format-spec-v0.1.md`.
+   Rotacja tokenu GitHub ✅ (Darek). Incydent CI: joby padały bez runnerów
+   (limit minut Actions — prywatne repo); Darek podbił budżet, re-run
+   zielony 10/10.
+   **AKTYWACJA 1E.1 (akcje Darka, kolejność twarda):** (1) migracja 0035
+   na prod (backup gałęzią Neona, dziennik: prod=0034→0035) →
+   (2) `CONFIRM_PROD_DB=1 pnpm db:ingest-curriculum` →
+   (3) `FLAG_CURRICULUM_PATH=1` + redeploy. Do tego czasu prod bez zmian.
+
+40. **NASTĘPNE:** sign-off Ryana rls-matrix v0.26 + aktywacja 1E.1 (Darek,
+   pkt 39) + **1E.2** (fundamenty: treść L0/F1 Sophii wg spec v0.1 —
+   `sophia-1e2-l0-atomy.md` już rośnie — + rozszerzenie ingestu o atomy
+   i bank pytań foundations) lub **1E.R** (remediacja pilot-path ~36,5 h).
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
