@@ -762,9 +762,32 @@ flagi AG — migracje już są.
    nie badanie). Plan spike'a 1E.0 gotowy (fazy A–E, wyjście = ADR-014);
    Faza A/2 przeformułowana na weryfikację pre-briefu.
 
-36. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + **wykonanie spike'a 1E.0**
-   (fazy A–E → ADR-014, sign-off Darek+Sophia), potem 1E.1+
-   (pilotaż pełnej ścieżki DS).
+36. **SPIKE 1E.0 WYKONANY (2026-07-11, jedna sesja):** fazy A–E domknięte.
+   - **Faza A** (4 agentów researchu): 71 unikalnych ustaleń z rangami
+     (P*/M*/G*/C*/R*) → `docs/curation/research-kognitywistyka-1e0.md`
+     (tabela syntezy + indeks D→ID + errata po przeglądzie). Weryfikacja
+     adwersaryjna pre-briefu: 0 obalonych, 2 korekty (Guo — trafność
+     zewnętrzna; Cepeda 2008 — zakres 5–40%).
+   - **Faza B** (2 agentów audytu): **0/10 projektów przechodzi test
+     literalnego zera**; 54/54 linki żywe, 3 niedopasowane (1 → PŁATNY
+     produkt wbrew „bez karty"); wycena remediacji ~86,5 h →
+     `docs/curation/audyt-ds-partia-1-luki.md`. Werdykt D4: reuse-as-capstone.
+   - **Faza C→D→E:** ADR-014 v0.1 → przegląd 4 soczewkami (**59 znalezisk:
+     1 WETO warunkowe content-ops, 7 krytycznych, 22 ważne, 20 drobnych,
+     10 do listy**) → **v0.2** z wcielonym pakietem cięć A–E (weto zdjęte):
+     3 pytania/atom bez wariantów, moduł 5–6 atomów + egzamin 15–20 pytań
+     z licznikiem błędów, typ pozycji `lab`, L0 lean, wariant B reaktywnie,
+     remediacja sekwencjonowana (pilot-path ~18,5 h), model danych domknięty
+     (curriculum_item_answers append-only, module_progress, M:N ścieżek).
+     → `docs/decisions/014-curriculum-sciezka-edukacyjna.md`.
+   - **CZEKA NA SIGN-OFF Darka+Sophii: lista decyzyjna 13 punktów** (m.in.
+     próg mastery, wariant C zaliczenia projektu, zakres remediacji,
+     transfer w fundamentach). ⚠ pkt 7 listy: deadline „19.03.2026"
+     w CLAUDE.md już minął — potwierdzić edycję 2027.
+
+37. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + **sign-off ADR-014
+   (Darek+Sophia, lista 13 punktów)** → atomizacja i start 1E.1
+   (model danych curriculum + migracje).
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
