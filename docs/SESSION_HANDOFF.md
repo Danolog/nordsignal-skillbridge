@@ -802,9 +802,24 @@ flagi AG — migracje już są.
    ⚠ UNION streaka za flagą (deploy bezpieczny przed migracją prod);
    aktywacja = migracja + ingest (Darek) + flaga ON.
 
-38. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + **implementacja 1E.1
-   (PR-1: 1E.1a+b+g)**; równolegle Sophia może startować treść L0/F1
-   wg parametrów D1 ADR-014 (spec formatu JSON atomów wydam przy PR-2).
+38. **1E.1 PR-1 ZMERGOWANY (#161, 2026-07-11):** 1E.1a+b+g — 9 tabel
+   curriculum (migracja **0035**: 6× K-PUB definicje + 3× K-INT z pełnym
+   RLS 0030 DROP+CREATE; curriculum_item_answers APPEND-ONLY), flaga
+   `curriculumPath` (OFF), dług QG-5 na project_learning_resources
+   (4 kolumny nullable). k3-validate: 3× TENANT + 6× K_PUB.
+   **rls-matrix v0.26 — CZEKA na sign-off Ryana.** CI pełne zielone
+   (integration: migracja+seed+k3+test RLS student A/B + deny zapisu).
+   Migracje: lokalna-test/CI na **0035**; **prod na 0034** (0035 przy
+   aktywacji 1E.1, razem z ingestem — po PR-2). Flaga OFF = zero zmian
+   zachowania na prodzie po auto-deployu.
+   Uwaga procesowa: treść Sophii (`docs/curation/sophia-1e2-l0-atomy.md`,
+   sesja równoległa) jest na dysku UNTRACKED — wejdzie własnym PR-em 1E.2;
+   w tym repo stage'ować jawnie po ścieżkach, nie `git add -A`.
+
+39. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + sign-off Ryana
+   rls-matrix v0.26 + **PR-2 (1E.1c-f)**: ingest drabiny 8 modułów,
+   API prereq (403 na zablokowany moduł), zapis postępu, streak za flagą
+   + spec formatu JSON atomów dla Sophii.
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
