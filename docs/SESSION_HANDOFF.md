@@ -844,10 +844,32 @@ flagi AG — migracje już są.
    (trasa żywa, wymaga sesji; przed redeployem 404 = flaga OFF
    w runtime), `/api/rhythm` → 405 (baseline nietknięty).
 
-40. **NASTĘPNE:** sign-off Ryana rls-matrix v0.26 + aktywacja 1E.1 (Darek,
-   pkt 39) + **1E.2** (fundamenty: treść L0/F1 Sophii wg spec v0.1 —
+40. **WERYFIKACJA ZESPOŁOWA 1E.1 (2026-07-11) — komplet 3 poziomów:**
+   - **Ryan (CRCO):** rls-matrix v0.26 → **GO** (0 kryt/ważnych, 3 noty
+     INFO w dokumencie; nota DROP+CREATE z v0.25 wdrożona).
+   - **Ethan (CTO), przegląd techniczny #161/#162** (na wniosek Darka):
+     1 KRYTYCZNE (careerGoal→path_key — drabina była PUSTA dla realnych
+     studentów; test maskował syntetyczną wartością) + 5 WAŻNYCH + 4 DROBNE.
+     **Fix zmergowany #163** (mapa CAREER_GOAL_TO_PATH_KEY + strażnik unit
+     vs career-model.json, transakcja answer-flow, status `coming_soon`
+     dla pustych modułów) — auto-deploy na prod. Ustalenia WIĄŻĄCE dla 1E.2
+     dopisane do `.agents/plans/12-curriculum-1e1-atomizacja.md`
+     (slug pozycji jako klucz upsertu, recompute module_progress,
+     walidacje ingestu, testy complete-route, hintDepth deklaratywny,
+     checklist: onboarding studentów dopiero po treści 1E.2).
+   - **Quinn (QA), E2E — ZIELONY:** `tests/e2e-pw/60-1e1-curriculum.spec.ts`
+     (@dbwrite, wariant APIRequestContext — chromium Playwrighta nie wspiera
+     ubuntu26.04/WSL; realny sign-in Better Auth) + dosiew
+     `tools/seed-e2e-curriculum.sql`. Pełna pętla na bazie :5433
+     (db:seed → seed:e2e → ingest → dosiew): drabina 8 modułów po REALNYM
+     „Data Scientist", 403 na locked, guard pytania spoza pozycji (400),
+     zła odpowiedź → feedback bez zaliczenia, dobra → L0 completed →
+     F1 coming_soon + GET 200. Lokalna integracja: 146/146.
+
+41. **NASTĘPNE: 1E.2** (fundamenty: treść L0/F1 Sophii wg spec v0.1 —
    `sophia-1e2-l0-atomy.md` już rośnie — + rozszerzenie ingestu o atomy
-   i bank pytań foundations) lub **1E.R** (remediacja pilot-path ~36,5 h).
+   i bank pytań foundations, z ustaleniami z pkt 40) lub **1E.R**
+   (remediacja pilot-path ~36,5 h).
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
