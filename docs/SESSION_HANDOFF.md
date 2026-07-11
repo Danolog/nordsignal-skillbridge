@@ -866,14 +866,66 @@ flagi AG — migracje już są.
      zła odpowiedź → feedback bez zaliczenia, dobra → L0 completed →
      F1 coming_soon + GET 200. Lokalna integracja: 146/146.
 
-41. **NASTĘPNE [decyzja Darka 2026-07-11]: CZEKAMY na treść modułów Sophii**
-   (`sophia-1e2-l0-atomy.md`, sesja równoległa, wg spec
-   `docs/design/curriculum-atomy-format-spec-v0.1.md`). Gdy treść gotowa →
-   **1E.2**: rozszerzenie ingestu o atomy + bank pytań foundations,
-   Z USTALENIAMI WIĄŻĄCYMI z pkt 40 (slug pozycji jako klucz upsertu,
-   recompute module_progress, walidacje questionItemIds/retired, testy
-   complete-route). 1E.R (remediacja pilot-path ~36,5 h) może iść
-   równolegle, gdy Sophia będzie miała przestrzeń.
+41. ~~NASTĘPNE: czekamy na treść Sophii~~ → treść L0+F1+F2+F3 ZATWIERDZONA
+   i na main (cb70a19) → **1E.2 WYKONANE** (pkt 42).
+
+42. **1E.2 WYKONANE KODOWO (2026-07-11) — dwa PR-y stacked CZEKAJĄ NA
+   MIGRACJĘ 0036 + MERGE (Darek):**
+   - **Decyzje Darka przy planie 1E.2:** recompute module_progress =
+     **downgrade completed→in_progress** przy dogrywce pozycji (tylko
+     `verified_by_method IS NULL`); **mini-projekt F3.7 = kind lab** +
+     3 kamienie w `configJson.checks` (bez pipeline'u marketplace).
+   - **PR-1 #164 (mechanika, CI CAŁE ZIELONE):** migracja **0036**
+     (`curriculum_module_items.slug` — tożsamość pozycji/klucz upsertu,
+     backfill 'capstone'/'item-N', UNIQUE(module_id,slug);
+     `question_items.option_feedback_json` — feedback per opcja, edytowalny
+     w miejscu, poza hashem); ingest: upsert po slugu (reorder przez
+     przestrzeń ujemną), treść atomów z `tools/content/curriculum-atoms/`,
+     bank foundations po hashu (retire+new), strażnik
+     **CONFIRM_CONTENT_MIGRATION=1** (zmiana kind/questionItemIds pod
+     postępem), recompute + defensywny strażnik active-questionItemIds;
+     answer-route przyjmuje lab (retrieval uczy, nie zalicza) i zwraca
+     optionFeedbackMd TYLKO wybranej opcji; testy complete-route wariant C
+     (409/sukces/lab 501/OFF 404 — ustalenie #4) + testy ingestu (guard
+     z rollbackiem, recompute, wstawka w środek); **rls-matrix v0.27**
+     (kolumny addytywne, zero zmian polityk — DO SIGN-OFFU Ryana).
+   - **PR-2 #165 (treść, stacked na #164):** packer
+     `pnpm content:pack-curriculum` (markdown Sophii → JSON, deterministyczny,
+     płotki kodu w hintach z dedentem — wcięcia zachowane) + 4 pliki treści:
+     **28 pozycji / 57 pytań / 19 konceptów foundations** (L0 4 laby;
+     F1/F2 po 7 atomów + przegląd-reuse; F3 6 atomów + lab + mini-projekt
+     + przegląd); kontrakt-test 10 asercji z testem DETERMINIZMU;
+     spec → **v0.2** (odchylenia: hinty per atom, optionFeedback, slug,
+     difficulty=1, przegląd questionRefs, zasoby przy 1. atomie, egzaminy
+     1E.3 w TYCH SAMYCH plikach treści). E2E 60-1e1 zaktualizowane
+     (9 modułów po m-pandas; po L0 → F1 available z 8 pozycjami).
+   - **Dowody:** ingest 2× na :5433 idempotentny (32 pozycje; „0 aktualizacji
+     feedbacku" po fixie porównania kanonicznego JSONB); recompute zadziałał
+     na realnym postępie (1 downgrade); weryfikacja wierności 4 agentami
+     adwersaryjnymi: 57/57 kluczy odpowiedzi, 171/171 diagnoz, contentMd
+     verbatim 28/28 (jedyne WAŻNE — spłaszczone płotki w hintach — naprawione);
+     unit 1166/1166, integration 158/158, build OK, **E2E pełna pętla zielona**
+     (realny sign-in, 403 locked, zła/dobra odpowiedź, L0 completed →
+     F1 available). Lokalna kolejność pętli e2e: projekty DS → ingest →
+     dosiew (suita integracyjna przejmuje ścieżkę data-science i kasuje
+     ds-projekty w cleanupie — ingest zawsze po niej).
+   - **AKCJE DARKA (runbook `docs/runbooks/aktywacja-1e2-neon-console.md`):**
+     (1) migracja 0036 w konsoli Neona (backup → DDL → wpis dziennika
+     hash ad283a1b…, when 1783778817693 → dziennik 37) **PRZED merge #164**
+     (trasa answer czyta nową kolumnę przy zapalonej fladze!); (2) merge
+     #164 → #165; (3) ingest treści z terminala
+     (`CONFIRM_PROD_DB=1 pnpm db:ingest-curriculum` na prod DIRECT);
+     (4) sign-off Ryana rls-matrix v0.27 przy okazji.
+   - **Uwaga produktowa:** po ingest treść jest na prodzie, ale laby
+     (całe L0!) są niekompletowalne do **1E.6** (checki automatyczne) —
+     onboarding realnych studentów dopiero po 1E.6; do tego czasu drabina
+     służy podglądowi treści i atomom exercise F1+ (za L0 nie przejdą).
+     TODO treściowe Sophii sprzed ingestu (notebooki Colab, seanse wideo,
+     screenshoty UI) — wciąż otwarte, nie blokowały pakowania.
+   - **Równolegle (sesje Sophii, untracked, poza 1E.2):**
+     `sophia-1e2-mpd-atomy.md` (M-PD, DRAFT przed QG) i
+     `sophia-1e2-meda-atomy.md` — wejdą własnym torem po zatwierdzeniu;
+     drabina na main ma już 9 modułów (m-pandas wydzielony, commit 2a6b0c5).
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
