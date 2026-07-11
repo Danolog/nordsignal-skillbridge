@@ -866,10 +866,14 @@ flagi AG — migracje już są.
      zła odpowiedź → feedback bez zaliczenia, dobra → L0 completed →
      F1 coming_soon + GET 200. Lokalna integracja: 146/146.
 
-41. **NASTĘPNE: 1E.2** (fundamenty: treść L0/F1 Sophii wg spec v0.1 —
-   `sophia-1e2-l0-atomy.md` już rośnie — + rozszerzenie ingestu o atomy
-   i bank pytań foundations, z ustaleniami z pkt 40) lub **1E.R**
-   (remediacja pilot-path ~36,5 h).
+41. **NASTĘPNE [decyzja Darka 2026-07-11]: CZEKAMY na treść modułów Sophii**
+   (`sophia-1e2-l0-atomy.md`, sesja równoległa, wg spec
+   `docs/design/curriculum-atomy-format-spec-v0.1.md`). Gdy treść gotowa →
+   **1E.2**: rozszerzenie ingestu o atomy + bank pytań foundations,
+   Z USTALENIAMI WIĄŻĄCYMI z pkt 40 (slug pozycji jako klucz upsertu,
+   recompute module_progress, walidacje questionItemIds/retired, testy
+   complete-route). 1E.R (remediacja pilot-path ~36,5 h) może iść
+   równolegle, gdy Sophia będzie miała przestrzeń.
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
