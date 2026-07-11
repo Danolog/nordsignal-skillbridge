@@ -1,11 +1,12 @@
 # ADR-014 — 1E.0: curriculum — pełna ścieżka edukacyjna (pilotaż Data Science)
 
-**Status:** zaakceptowany przez Darka (2026-07-11 — komplet 13 punktów listy
-rozstrzygnięty: pkt 1–4, 6, 8–10 wg rekomendacji; pkt 5, 7, 11, 13 ze zmianami
-Darka — implementacja docelowa bez rozdzielania pilot/po-pilocie, 4 capstone'y,
-weryfikacja automatyczna, pełne drabinki hintów; pkt 12 = wariant b) ·
-**Czeka na sign-off Sophii** (wykonalność wolumenu ~200–285 h) · **Data:**
-2026-07-11 · **Autor spike'u:** Oliver (time-box 1E.0)
+**Status:** ZAAKCEPTOWANY · **Sign-off:** Darek 2026-07-11 (komplet 13 punktów:
+pkt 1–4, 6, 8–10 wg rekomendacji; pkt 5, 7, 11, 13 ze zmianami — implementacja
+docelowa bez rozdzielania pilot/po-pilocie, 4 capstone'y, weryfikacja
+automatyczna, pełne drabinki hintów; pkt 12 = wariant b) + **Sophia 2026-07-11
+(wolumen ~200–285 h zatwierdzony)** · **Data:** 2026-07-11 · **Autor spike'u:**
+Oliver (time-box 1E.0) · **Odblokowuje:** 1E.1+ (atomizacja:
+`.agents/plans/12-curriculum-1e1-atomizacja.md`)
 **Przebieg:** pre-brief sesji nauki (3 agentów) → Faza A (4 agentów researchu,
 71 unikalnych ustaleń z rangami + errata) ∥ Faza B (2 agentów audytu, 10/10 projektów,
 54 URL-e) → v0.1 → **krytyczny przegląd 4 soczewkami: 59 znalezisk (1 WETO warunkowe

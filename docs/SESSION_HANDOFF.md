@@ -794,9 +794,17 @@ flagi AG — migracje już są.
      (2026-07-11) deadline usunięty z dokumentów (CLAUDE.md, PRD, ADR-014);
      tempo dyktuje przepustowość Sophii, nie data.
 
-37. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + **sign-off ADR-014
-   (Darek+Sophia, lista 13 punktów)** → atomizacja i start 1E.1
-   (model danych curriculum + migracje).
+37. **ADR-014 ZAAKCEPTOWANY W KOMPLECIE (2026-07-11):** Darek 13/13 +
+   **Sophia (wolumen ~200–285 h zatwierdzony)**. **1E.1 ZATOMIZOWANE** →
+   `.agents/plans/12-curriculum-1e1-atomizacja.md`: 7 atomów (1E.1a–g),
+   2 PR-y (PR-1: schemat 9 tabel + flaga + RLS + dług QG-5; PR-2: ingest
+   drabiny 8 modułów + API prereq + zapis postępu + streak za flagą).
+   ⚠ UNION streaka za flagą (deploy bezpieczny przed migracją prod);
+   aktywacja = migracja + ingest (Darek) + flaga ON.
+
+38. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + **implementacja 1E.1
+   (PR-1: 1E.1a+b+g)**; równolegle Sophia może startować treść L0/F1
+   wg parametrów D1 ADR-014 (spec formatu JSON atomów wydam przy PR-2).
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
