@@ -829,10 +829,22 @@ flagi AG — migracje już są.
    Rotacja tokenu GitHub ✅ (Darek). Incydent CI: joby padały bez runnerów
    (limit minut Actions — prywatne repo); Darek podbił budżet, re-run
    zielony 10/10.
-   **AKTYWACJA 1E.1 (akcje Darka, kolejność twarda):** (1) migracja 0035
-   na prod (backup gałęzią Neona, dziennik: prod=0034→0035) →
-   (2) `CONFIRM_PROD_DB=1 pnpm db:ingest-curriculum` →
-   (3) `FLAG_CURRICULUM_PATH=1` + redeploy. Do tego czasu prod bez zmian.
+   **AKTYWACJA 1E.1 — W TOKU (decyzja Darka „robimy migrację", 2026-07-11).**
+   Pre-check Olivera: dziennik LOKALNY zweryfikowany — 36 wpisów, ostatni
+   `0035_black_senator_kelly`; oczekiwany stan proda PRZED migracją:
+   35 wpisów, ostatni `0034_gorgeous_gateway`. Kolejność twarda (wykonuje
+   Darek w środowisku z prod DATABASE_URL):
+   (0) backup gałęzią Neona `prod-backup-pre-0035-<data>` →
+   (1) weryfikacja dziennika prod (odczyt):
+       `psql "$DATABASE_URL" -c "SELECT count(*) FROM drizzle.__drizzle_migrations;"`
+       — oczekiwane **35**; rozjazd = STOP i wołaj Olivera (lekcja
+       „rozjazd dziennika") →
+   (2) `CONFIRM_PROD_DB=1 pnpm db:migrate` (migracja 0035) →
+   (3) `CONFIRM_PROD_DB=1 pnpm db:ingest-curriculum` (struktura drabiny;
+       idempotentny) →
+   (4) [osobna decyzja] `FLAG_CURRICULUM_PATH=1` Production+Preview
+       + redeploy (env sensitive — wariant REST API jak w memory, gdy CLI
+       się pętli). Do zapalenia flagi prod bez zmian zachowania.
 
 40. **NASTĘPNE:** sign-off Ryana rls-matrix v0.26 + aktywacja 1E.1 (Darek,
    pkt 39) + **1E.2** (fundamenty: treść L0/F1 Sophii wg spec v0.1 —
