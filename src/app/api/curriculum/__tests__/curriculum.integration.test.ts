@@ -25,7 +25,10 @@ vi.mock("@/lib/auth/server", () => ({
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 
 const USER = "u-1e1d-student";
-const PATH_KEY = "ds-test-1e1d"; // dedykowana ścieżka testowa (bez kolizji z ingestem)
+// REALNA ścieżka + REALNY careerGoal (lekcja z przeglądu Ethana: test z tą samą
+// syntetyczną wartością po obu stronach zamaskował rozjazd careerGoal→path_key).
+const PATH_KEY = "data-science";
+const CAREER_GOAL = "Data Scientist";
 
 function answerRequest(body: unknown): Request {
 	return new Request("http://test.local/api/curriculum/items/x/answer", {
@@ -80,7 +83,7 @@ dBack("1E.1d/e/f · curriculum: prereq 403, zapis postępu, streak (realna baza)
 		const [student] = await db
 			.execute(
 				sql`INSERT INTO students (user_id, tenant_id, university, field_of_study, semester, career_goal)
-			    VALUES (${USER}, ${tenantId}, 'Test U', 'Informatyka', 3, ${PATH_KEY})
+			    VALUES (${USER}, ${tenantId}, 'Test U', 'Informatyka', 3, ${CAREER_GOAL})
 			    ON CONFLICT (user_id) DO UPDATE SET career_goal = EXCLUDED.career_goal
 			    RETURNING id`,
 			)
@@ -98,6 +101,7 @@ dBack("1E.1d/e/f · curriculum: prereq 403, zapis postępu, streak (realna baza)
 		for (const [slug, title] of [
 			["t-1e1d-a", "Moduł A"],
 			["t-1e1d-b", "Moduł B"],
+			["t-1e1d-c", "Moduł C (pusty — coming_soon)"],
 		]) {
 			await db.execute(
 				sql`INSERT INTO curriculum_modules (slug, title) VALUES (${slug}, ${title})
@@ -106,16 +110,19 @@ dBack("1E.1d/e/f · curriculum: prereq 403, zapis postępu, streak (realna baza)
 		}
 		const modules = await db
 			.execute(
-				sql`SELECT id, slug FROM curriculum_modules WHERE slug IN ('t-1e1d-a','t-1e1d-b') ORDER BY slug`,
+				sql`SELECT id, slug FROM curriculum_modules WHERE slug IN ('t-1e1d-a','t-1e1d-b','t-1e1d-c') ORDER BY slug`,
 			)
 			.then((r: { rows: { id: string; slug: string }[] }) => r.rows);
 		moduleA = modules.find((m: { slug: string }) => m.slug === "t-1e1d-a")?.id ?? "";
 		moduleB = modules.find((m: { slug: string }) => m.slug === "t-1e1d-b")?.id ?? "";
+		const moduleC = modules.find((m: { slug: string }) => m.slug === "t-1e1d-c")?.id ?? "";
 
+		// Test przejmuje ścieżkę 'data-science' w bazie TESTOWEJ (delete+reinsert
+		// jak ingest); C bez prereqów i bez pozycji = odblokowany-ale-pusty.
 		await db.execute(sql`DELETE FROM curriculum_path_modules WHERE path_key = ${PATH_KEY}`);
 		await db.execute(
 			sql`INSERT INTO curriculum_path_modules (path_key, module_id, position)
-		    VALUES (${PATH_KEY}, ${moduleA}, 1), (${PATH_KEY}, ${moduleB}, 2)`,
+		    VALUES (${PATH_KEY}, ${moduleA}, 1), (${PATH_KEY}, ${moduleB}, 2), (${PATH_KEY}, ${moduleC}, 3)`,
 		);
 		await db.execute(
 			sql`INSERT INTO curriculum_module_prereqs (module_id, requires_module_id)
@@ -182,6 +189,8 @@ dBack("1E.1d/e/f · curriculum: prereq 403, zapis postępu, streak (realna baza)
 		);
 		expect(bySlug.get("t-1e1d-a")).toBe("available");
 		expect(bySlug.get("t-1e1d-b")).toBe("locked");
+		// Bezpiecznik z przeglądu: odblokowany moduł BEZ pozycji nie udaje available.
+		expect(bySlug.get("t-1e1d-c")).toBe("coming_soon");
 	});
 
 	it("DOWÓD ROADMAPY: student bez zaliczonego A nie otworzy B — 403 na odczyt I zapis", async () => {

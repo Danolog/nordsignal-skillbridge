@@ -104,28 +104,33 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 			parsed.data.answer,
 		);
 
-		// Append-only + ślad próby (kolejność: najpierw fakt, potem stan).
-		await db.insert(curriculumItemAnswers).values({
-			studentId: student.id,
-			tenantId: student.tenantId,
-			itemId: item.id,
-			questionItemId: question.id,
-			isCorrect,
-			hintDepth: parsed.data.hintDepth ?? 0,
-		});
-		await recordAttempt(student.id, student.tenantId, item.id);
+		// Cały zapis ATOMOWO (fix WAŻNEGO z przeglądu): odpowiedź append-only +
+		// ślad próby + ewentualne kompletowanie pozycji/modułu w jednej
+		// transakcji — częściowy fail nie zostawi „poprawnej odpowiedzi bez
+		// postępu" (a przy okazji mniej round-tripów).
+		const { itemCompleted, moduleCompleted } = await db.transaction(async (tx) => {
+			await tx.insert(curriculumItemAnswers).values({
+				studentId: student.id,
+				tenantId: student.tenantId,
+				itemId: item.id,
+				questionItemId: question.id,
+				isCorrect,
+				hintDepth: parsed.data.hintDepth ?? 0,
+			});
+			await recordAttempt(student.id, student.tenantId, item.id, tx);
 
-		let itemCompleted = false;
-		let moduleCompleted = false;
-		if (isCorrect && (await allQuestionsCorrect(student.id, item.id, questionIds))) {
-			itemCompleted = true;
-			({ moduleCompleted } = await completeItem(
+			if (!isCorrect || !(await allQuestionsCorrect(student.id, item.id, questionIds, tx))) {
+				return { itemCompleted: false, moduleCompleted: false };
+			}
+			const { moduleCompleted: done } = await completeItem(
 				student.id,
 				student.tenantId,
 				item.id,
 				item.moduleId,
-			));
-		}
+				tx,
+			);
+			return { itemCompleted: true, moduleCompleted: done };
+		});
 
 		// Feedback natychmiast, także przy błędzie (R13/R5); klucz odpowiedzi
 		// NIGDY nie wraca w odpowiedzi API.

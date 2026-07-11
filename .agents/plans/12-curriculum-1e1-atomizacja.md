@@ -143,3 +143,36 @@ Addytywne, nullable: `license`, `language`, `registration_required`,
 
 `tsc` 0 · Biome 0 · unit + integration zielone · build OK · kontrakt-testy
 zielone · rls-matrix zaktualizowana (PR-1) · dowody per atom jak wyżej.
+
+---
+
+## Post-merge: przegląd techniczny Ethana (2026-07-11) — ustalenia wiążące
+
+Przegląd obu PR-ów (#161/#162): 1 KRYTYCZNE + 5 WAŻNYCH + 4 DROBNE.
+Naprawione follow-upem PR-3 (`fix/1e1-path-key-tx`): mapowanie
+careerGoal→path_key (KRYT — drabina była pusta dla realnych studentów; test
+maskował rozjazd syntetyczną wartością), transakcja wokół answer-flow,
+status `coming_soon` dla odblokowanych modułów bez pozycji, testy na
+realnej wartości „Data Scientist" + strażnik mapy przeciw modelowi kariery.
+
+**WIĄŻĄCE dla 1E.2 (nie zostawiać przypadkowi):**
+1. **Tożsamość pozycji = stabilny slug, nie (module_id, position):** ingest
+   treści 1E.2 wprowadza `slug` pozycji w JSON + UNIQUE(module_id, slug) jako
+   klucz upsertu (position = tylko sortowanie); guard w ingeście: zmiana
+   kind/config_json.questionItemIds pozycji z istniejącym postępem wymaga
+   CONFIRM_CONTENT_MIGRATION=1. Inaczej wstawienie atomu w środek modułu
+   podmienia treść pod postępem studentów.
+2. **Recompute module_progress przy dogrywaniu pozycji:** ingest 1E.2 musi
+   świadomie rozstrzygać moduły ze statusem completed, które dostają nowe
+   pozycje (downgrade completed→in_progress z komunikatem ALBO jawny content
+   freeze) — decyzja przy planie 1E.2.
+3. **Walidacja treści w ingeście 1E.2:** questionItemIds istnieją w banku
+   i status='active' (koncepty retired = strażnik); dowód idempotencji
+   ingestu na :5433.
+4. **Testy complete-route** (wariant C: 409/sukces/lab 501/OFF 404) —
+   razem z 1E.2.
+5. **hintDepth jest dziś deklaratywny od klienta** — analityka D11 nie
+   traktuje go jako twardego sygnału do czasu serwerowej drabinki hintów.
+6. **Checklist aktywacyjny flagi dla realnych studentów:** flaga może być ON
+   (jest — trasy bezpieczne), ale ONBOARDING studentów na ścieżkę wymaga
+   zaingestowanej treści 1E.2 (do tego czasu drabina = L0 `coming_soon`).
