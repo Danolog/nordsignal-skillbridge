@@ -1,0 +1,91 @@
+{
+	"_meta": {
+		"version": "2026-07-11",
+		"source": "ADR-014 D10 (sign-off Darek+Sophia 2026-07-11) — drabina pilotażu DS: 8 modułów, 4 capstone'y",
+		"notes": [
+			"Prerekwizyty: ŁAŃCUCH LINIOWY derywowany z kolejności modules[] (pilot; model danych dopuszcza DAG — ADR-014 D2/D3).",
+			"Pozycje atomów (theory/exercise/lab) wchodzą z treścią 1E.2 (Sophia) — tu wyłącznie struktura + capstone'y.",
+			"Mini-projekt transferowy po F3 (pkt 12b) wejdzie jako pozycja project w f3-dane-python, gdy projekt powstanie w 1E.2 (CHECK wymaga istniejącego projectId).",
+			"Git/terminal: just-in-time (decyzja Darka pkt 9) — atomy wejdą w m-eda, NIE w l0-start."
+		]
+	},
+	"path": "data-science",
+	"modules": [
+		{
+			"slug": "l0-start",
+			"title": "Start: środowisko pracy",
+			"description": "Colab i notebook od zera — pierwsza uruchomiona komórka w ≤15 min od wejścia (ADR-014 D10). Wariant LEAN: 4 atomy-checklisty, zaliczenie przez wykonanie (pkt 10), bez egzaminu. Bez Gita i terminala (just-in-time — pkt 9).",
+			"items": []
+		},
+		{
+			"slug": "f1-python-1",
+			"title": "Python I: zmienne, typy, warunki",
+			"description": "Fundamenty od literalnego zera (persona ADR-014): atom = teoria 300–600 słów + worked example + 3 pytania.",
+			"items": []
+		},
+		{
+			"slug": "f2-python-2",
+			"title": "Python II: pętle, funkcje, struktury danych",
+			"description": "Ciąg dalszy fundamentów; fading wsparcia wzdłuż modułu (D5).",
+			"items": []
+		},
+		{
+			"slug": "f3-dane-python",
+			"title": "Dane w Pythonie: pandas i pliki",
+			"description": "Wejście w dane; zwieńczenie: MINI-PROJEKT transferowy (pkt 12b — pozycja dojdzie z treścią 1E.2).",
+			"items": []
+		},
+		{
+			"slug": "m-eda",
+			"title": "EDA: eksploracja danych",
+			"description": "Koncepty EDA + Git/terminal just-in-time; capstone: EDA na danych GUS BDL.",
+			"items": [
+				{
+					"position": 100,
+					"kind": "project",
+					"title": "Capstone: Polska w liczbach — EDA na danych GUS BDL",
+					"projectSlug": "ds-eda-polska-w-liczbach-bdl"
+				}
+			]
+		},
+		{
+			"slug": "m-sql",
+			"title": "SQL: analiza danych w bazie",
+			"description": "Od tabeli i SELECT po agregacje; capstone: analiza przejazdów w DuckDB.",
+			"items": [
+				{
+					"position": 100,
+					"kind": "project",
+					"title": "Capstone: analiza przejazdów NYC w SQL",
+					"projectSlug": "ds-sql-analiza-przejazdow"
+				}
+			]
+		},
+		{
+			"slug": "m-ml",
+			"title": "Pierwszy model predykcyjny",
+			"description": "Baseline, walidacja, leakage, metryki; capstone: pierwszy model w scikit-learn.",
+			"items": [
+				{
+					"position": 100,
+					"kind": "project",
+					"title": "Capstone: pierwszy model predykcyjny",
+					"projectSlug": "ds-pierwszy-model-predykcyjny"
+				}
+			]
+		},
+		{
+			"slug": "m-llm",
+			"title": "LLM: ekstrakcja strukturalna",
+			"description": "Czym są LLM, strukturalne wyjście, ewaluacja z ground truth; capstone: ekstrakcja do JSON.",
+			"items": [
+				{
+					"position": 100,
+					"kind": "project",
+					"title": "Capstone: strukturalna ekstrakcja z LLM",
+					"projectSlug": "ds-llm-strukturalna-ekstrakcja"
+				}
+			]
+		}
+	]
+}
