@@ -21,6 +21,16 @@ const dBack = isLocalTestDb ? describe : describe.skip;
 const USER_A = "u-1e1-wlasciciel";
 const USER_B = "u-1e1-obcy";
 
+// Drizzle opakowuje błąd Postgresa („Failed query: …"), a `permission denied`
+// ląduje w łańcuchu error.cause — sprawdzamy cały łańcuch, nie sam message
+// (mocniejsze niż gołe .rejects.toThrow(): FK/CHECK violation NIE przejdzie).
+function isPermissionDenied(err: unknown): boolean {
+	for (let e = err; e; e = (e as { cause?: unknown }).cause) {
+		if (/permission denied/i.test(String((e as Error).message ?? e))) return true;
+	}
+	return false;
+}
+
 dBack("1E.1a · curriculum: RLS K-INT + odczyt K-PUB (realna baza)", () => {
 	// biome-ignore lint/suspicious/noExplicitAny: moduły ładowane dynamicznie po env.
 	let db: any;
@@ -154,7 +164,7 @@ dBack("1E.1a · curriculum: RLS K-INT + odczyt K-PUB (realna baza)", () => {
 					    VALUES (${studentIds[USER_B]}, ${tenantId}, ${itemId}, ${questionItemId}, true, 0)`,
 					),
 			),
-		).rejects.toThrow(/permission denied/i);
+		).rejects.toSatisfy(isPermissionDenied);
 	});
 
 	it("K-PUB: definicje treści czytelne dla studenta, ale niezapisywalne", async () => {
@@ -175,6 +185,6 @@ dBack("1E.1a · curriculum: RLS K-INT + odczyt K-PUB (realna baza)", () => {
 				async (tx: any) =>
 					tx.execute(sql`INSERT INTO curriculum_modules (slug, title) VALUES ('t-1e1-wlam', 'x')`),
 			),
-		).rejects.toThrow(/permission denied/i);
+		).rejects.toSatisfy(isPermissionDenied);
 	});
 });
