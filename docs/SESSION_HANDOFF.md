@@ -782,7 +782,9 @@ flagi AG — migracje już są.
      → `docs/decisions/014-curriculum-sciezka-edukacyjna.md`.
    - **CZEKA NA SIGN-OFF Darka+Sophii: lista decyzyjna 13 punktów** (m.in.
      próg mastery, wariant C zaliczenia projektu, zakres remediacji,
-     transfer w fundamentach). **Konkurs EduTech Masters WYGRANY** —
+     transfer w fundamentach). Decyzje Darka (2026-07-11): pkt 1, 2, 4
+     zatwierdzone wg rekomendacji; pkt 7 ze zmianą — 4 capstone'y (8 modułów,
+     ~190–240 h treści). **Konkurs EduTech Masters WYGRANY** —
      decyzją Darka (2026-07-11) deadline usunięty z dokumentów (CLAUDE.md,
      ADR-014); tempo dyktuje przepustowość Sophii, nie data.
 

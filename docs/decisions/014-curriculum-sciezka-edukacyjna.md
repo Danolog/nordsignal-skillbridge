@@ -81,11 +81,12 @@ Stawka atomu PO cięciach: **2,5–3,5 h** (teoria konforemna z regułami D6 + W
 wykonywalny i zweryfikowany + 3 pytania MC z dystraktorami diagnostycznymi
 i feedbackiem per opcja + hinty + przejście QG z poprawkami; rozbicie — raport
 soczewki 4). **Moduł = 5–6 atomów (~13–21 h) + egzamin jawnie wyceniony
-(15–20 pytań × 2 warianty ≈ 5–6 h) ≈ 20–27 h/moduł.** Pilot z D10 (L0 lean ~10 h
-+ 5 modułów × 20–27 h + remediacja pilot-path ~18,5 h + aktualizacja standardu
-QG-5 ~6 h) = **ścieżka krytyczna treści ≈ 135–170 h**; przy realnym tempie
-kuratorki 12–15 h/tydz. → treść gotowa X–XI 2026, pilot (≤12 tyg.) kończy się
-I–II 2027. Moduły 1–3 planowo wolniejsze dla studenta — front-loaded time to cecha
+(15–20 pytań × 2 warianty ≈ 5–6 h) ≈ 20–27 h/moduł.** Pilot z D10 [zakres
+zatwierdzony przez Darka 2026-07-11: 4 capstone'y] (L0 lean ~10 h + 7 modułów
+× 20–27 h + remediacja pilot-path ~36,5 h + aktualizacja standardu QG-5 ~6 h)
+= **ścieżka krytyczna treści ≈ 190–240 h**; przy realnym tempie kuratorki
+12–15 h/tydz. → treść gotowa orientacyjnie XII 2026 – II 2027, pilot (≤12 tyg.)
+wiosną 2027 (kalendarz = prognoza wykonalności, bez deadline'u zewnętrznego). Moduły 1–3 planowo wolniejsze dla studenta — front-loaded time to cecha
 mastery, nie bug (M6). Weto soczewki content-ops zdjęte pod warunkiem utrzymania
 tych parametrów; mechanizmy rangi SILNY (retrieval po atomie, WE przed retrieval,
 spacing spiralny) — nietknięte.
@@ -302,14 +303,15 @@ oznaczone PRECEDENS-INŻ.
 Mapa: `docs/curation/audyt-ds-partia-1-luki.md`. Wycena całości ~86,5 h; kluczowe
 blokery i priorytety — w mapie.
 
-- **Rekomendacja (pakiet E content-ops): remediacja SEKWENCJONOWANA.** Na ścieżce
-  krytycznej pilotażu tylko projekty osiągalne przez pilotów: `ds-eda` (~10 h)
-  + `ds-sql` (~8,5 h) ≈ **18,5 h przed startem** (L0 lean pokrywa wspólną materię
-  środowiskową); pozostałe 8 projektów (~59 h) równolegle/po starcie — liniowa
-  drabina pilotażu kończy się na M-SQL, pilot fizycznie ich nie dotknie.
-  To REINTERPRETACJA zakresu decyzji „remediacja przed pilotażem" (nie jej
-  uchylenie) — wymaga zgody Darka (pkt 4 listy). Alternatywa: pełne ~86,5 h przed
-  startem (koszt: kalendarz — patrz D1).
+- **Remediacja SEKWENCJONOWANA [ZATWIERDZONE — Darek 2026-07-11].** Na ścieżce
+  krytycznej pilotażu projekty osiągalne przez pilotów (po decyzji o 4 capstone'ach):
+  `ds-eda` (~10 h) + `ds-sql` (~8,5 h) + `ds-pierwszy-model-predykcyjny` (~9 h)
+  + `ds-llm-strukturalna-ekstrakcja` (~9 h) ≈ **36,5 h przed startem** (L0 lean
+  pokrywa wspólną materię środowiskową); pozostałe 6 projektów (~50 h) równolegle/
+  po starcie — liniowa drabina pilotażu kończy się na M-LLM, pilot fizycznie ich
+  nie dotknie. Dodatkowy argument za sekwencjonowaniem (po zniknięciu deadline'u):
+  tamte projekty i tak będą później obudowywane modułami — rampy naprawione dziś
+  mogłyby wymagać drugiej ręki, a dane z pilotażu (D11) nauczą nas pisać je lepiej.
 - Kolejność: L0 lean najpierw (bloker #1) → link Azure Sandbox + sprzeczność
   ds-chmura (przy partii po-pilotażowej, bo poza drabiną pilotażu — ale link do
   PŁATNEGO produktu naprawić od razu, koszt minuty) → dataset+Biome→ruff w ds-mlops
@@ -366,10 +368,15 @@ Kontrakt dla 1E.7 (bez schodzenia głębiej):
 
 ### D10 · Zakres pilotażu i cięcia
 
-- **Tylko DS, drabina LINIOWA:** **L0 Start (lean)** → **F1 Python I** → **F2
-  Python II** → **F3 Dane w Pythonie** → **M-EDA** (capstone: `ds-eda-polska-w-
-  liczbach-bdl` po remediacji) → **M-SQL** (capstone: `ds-sql-analiza-przejazdow`).
-  6 modułów, 2 capstone'y; finalny podział = Sophia w 1E.2/1E.5.
+- **Tylko DS, drabina LINIOWA [ZAKRES ZATWIERDZONY ZE ZMIANĄ — Darek 2026-07-11:
+  4 capstone'y]:** **L0 Start (lean)** → **F1 Python I** → **F2 Python II** →
+  **F3 Dane w Pythonie** → **M-EDA** (capstone: `ds-eda-polska-w-liczbach-bdl`)
+  → **M-SQL** (capstone: `ds-sql-analiza-przejazdow`) → **M-ML** (capstone:
+  `ds-pierwszy-model-predykcyjny`) → **M-LLM** (capstone:
+  `ds-llm-strukturalna-ekstrakcja`). **8 modułów, 4 capstone'y** — dodane dwa
+  pozostałe projekty poziomu L1 (kolejne w naturalnej drabinie partii; projekty
+  L2+ jak Databricks/chmura wymagają kont zewnętrznych — poza pilotem);
+  finalny podział atomów = Sophia w 1E.2/1E.5.
 - **Wymóg audytu pojemności (kontrakt-test na treści, przez
   `curriculum_item_concepts`):** lista konceptów wymaganych przez rubrykę capstone'u
   MINUS koncepty pokryte atomami drabiny **= 0** — bez tego M-SQL nie pomieści drogi
@@ -451,22 +458,20 @@ Deterministyczne, z `curriculum_item_answers` + progress (0 LLM):
 
 ## Do decyzji Darka i Sophii (lista finalna v0.2)
 
-1. **Próg mastery egzaminu** — rekomendacja: **licznik błędów na egzaminie 15–20
-   pytań (≤1/15 lub ≤2/20 ≈ 90%), parametr per moduł; pytania egzaminacyjne
-   kalibrowane osobno (wyższy success rate niż atomowe)**. Wejście liczbowe:
-   przy p=0,85 i sztywnym 90%/12 aż ~56% oblewa 1. podejście. Alternatywa 80–85%:
-   szybsze przejścia, gorsza retencja (M8), dług kaskadowy.
-2. **Zaliczenie pozycji projektowej** — rekomendacja (ZMIANA vs v0.1): **wariant C —
-   `submitted` odblokowuje następny moduł, `verified` = warunek receiptu
-   w Passporcie** (dwie waluty G9; usuwa martwą ciszę vivy w szczycie motywacji).
-   Alternatywy: 'verified'-blokujące (maksymalna wiarygodność progresji, koszt:
-   zamrożona drabina + churn), 'submitted'-wszystko (osłabia Passport).
+1. **Próg mastery egzaminu** — **✅ ZATWIERDZONE (Darek, 2026-07-11) wg
+   rekomendacji:** licznik błędów na egzaminie 15–20 pytań (≤1/15 lub ≤2/20 ≈ 90%),
+   parametr per moduł; pytania egzaminacyjne kalibrowane osobno (wyższy success
+   rate niż atomowe). Wejście liczbowe: przy p=0,85 i sztywnym 90%/12 aż ~56%
+   oblewałoby 1. podejście.
+2. **Zaliczenie pozycji projektowej** — **✅ ZATWIERDZONE (Darek, 2026-07-11) wg
+   rekomendacji: wariant C** — `submitted` odblokowuje następny moduł, `verified`
+   = warunek receiptu w Passporcie (dwie waluty G9; usuwa martwą ciszę vivy
+   w szczycie motywacji).
 3. **UX drabiny** — rekomendacja: widoczna-ale-zablokowana + test-out (D3).
-4. **Zakres remediacji przed startem** — rekomendacja: **sekwencjonowana**
-   (pilot-path ~18,5 h przed startem: ds-eda + ds-sql; pozostałe ~59 h po starcie —
-   pilot ich nie dotyka). To reinterpretacja Twojej decyzji „remediacja przed
-   pilotażem" — wymaga jawnej zgody. Alternatywa: pełne ~86,5 h przed startem
-   (kalendarz: start pilotażu później o ~4–6 tygodni).
+4. **Zakres remediacji przed startem** — **✅ ZATWIERDZONE (Darek, 2026-07-11) wg
+   rekomendacji: sekwencjonowana.** Po decyzji o 4 capstone'ach: pilot-path
+   ~36,5 h przed startem (ds-eda, ds-sql, ds-pierwszy-model, ds-llm); pozostałe
+   6 projektów (~50 h) po starcie.
 5. **Warstwy pomocy w pilocie** — rekomendacja: (a) statyczna + (b) kontekst tutora
    + (c) „utknąłem" z polem błędu i odrębną pulą limitów dla projektów/labów;
    strony „pierwszej pomocy środowiskowej" per moduł. Adaptacyjny fading po pilocie.
@@ -474,11 +479,12 @@ Deterministyczne, z `curriculum_item_answers` + progress (0 LLM):
    **3 pytania MC/atom (bez wariantów)**; moduł **5–6 atomów + egzamin**; sesja
    2–4 atomy; sukces 1. próby 80–90% na atomach, wyżej na egzaminie; stawka
    kuratorska 2,5–3,5 h/atom, moduł 20–27 h.
-7. **Zakres i kalendarz pilotażu** — rekomendacja: 6 modułów (L0 lean, F1–F3,
-   M-EDA, M-SQL), 2 capstone'y, ścieżka krytyczna treści ~135–170 h →
-   orientacyjnie treść X–XI 2026, pilot I–II 2027. Konkurs wygrany, deadline
-   usunięty — tempo dyktuje przepustowość Sophii; kalendarz to prognoza
-   wykonalności, nie przymus.
+7. **Zakres i kalendarz pilotażu** — **✅ ZATWIERDZONE ZE ZMIANĄ (Darek,
+   2026-07-11): 4 capstone'y** — 8 modułów (L0 lean, F1–F3, M-EDA, M-SQL, M-ML,
+   M-LLM), ścieżka krytyczna treści ~190–240 h → orientacyjnie treść XII 2026 –
+   II 2027, pilot wiosną 2027. Konkurs wygrany, deadline usunięty — tempo dyktuje
+   przepustowość Sophii; kalendarz to prognoza wykonalności, nie przymus.
+   Wykonalność wolumenu ~190–240 h = główny punkt sign-offu Sophii.
 8. **Pretest „zgadnij zanim przeczytasz"** — rekomendacja: parametr eksperymentu,
    domyślnie OFF (R12 vs C14/G10).
 9. **Umiejscowienie terminala i Gita** — L0 (spójny fundament od razu) vs
