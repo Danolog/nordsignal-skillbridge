@@ -629,6 +629,12 @@ export const projectLearningResources = pgTable(
 		type: text("type").notNull(),
 		// Kolejność wyświetlania; 0 = brak preferencji.
 		position: integer("position").notNull().default(0),
+		// 1E.1g (ADR-014 D4, migracja 0035) — dług QG-5 §3/§4/§7 partii 1:
+		// wszystkie nullable/z defaultem (addytywne); wypełnia remediacja 1E.R/1E.5.
+		license: text("license"),
+		language: text("language"),
+		registrationRequired: boolean("registration_required").notNull().default(false),
+		verifiedAt: timestamp("verified_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 	},
 	(table) => [
@@ -1534,4 +1540,306 @@ export const projectReflectionsRelations = relations(projectReflections, ({ one 
 export const tutorTurnsRelations = relations(tutorTurns, ({ one }) => ({
 	student: one(students, { fields: [tutorTurns.studentId], references: [students.id] }),
 	project: one(projects, { fields: [tutorTurns.projectId], references: [projects.id] }),
+}));
+
+// ============================================================================
+// 1E.1 (ADR-014 D2, migracja 0035) — CURRICULUM: drabina modułów ścieżki
+// edukacyjnej. Definicje treści (K-PUB — globalny katalog jak projects:
+// brak tenant_id, brak RLS, GRANT SELECT dla app_student+app_faculty, zapis
+// wyłącznie ingest/system per ADR-010): curriculum_modules,
+// curriculum_path_modules (M:N moduł↔ścieżka — fundamenty współdzielone
+// między ścieżkami, decyzja ADR-014 D2), curriculum_module_prereqs (model
+// dopuszcza DAG, pilot wysyła łańcuch), curriculum_module_items,
+// curriculum_item_concepts (jeden kręgosłup konceptów — mapowanie na bank
+// A5), curriculum_item_resources (licencja/język/rejestracja/verified_at
+// od dnia 1 — dług QG-5 spłacony w nowej encji).
+//
+// Dane studenta (K-INT, tenant, pełny wzorzec RLS 0030 — sekcja ręczna
+// w 0035): curriculum_item_progress (stan pozycji), curriculum_item_answers
+// (APPEND-ONLY — nośnik instrumentacji D11, cech FSRS 1E.4 i śladu streaka
+// 1.18; ocena deterministyczna przy zapisie, 0 LLM), curriculum_module_progress
+// (blokada prereq D3 + verified_by_method dla placementu/test-outu).
+//
+// Stan powtórek FSRS = OSOBNA tabela w 1E.4 (ADR-014 D2 świadomie jej nie
+// projektuje); kind='review' to rezerwacja typu POZYCJI treści.
+// Całość za flagą FLAG_CURRICULUM_PATH — OFF = zero zmian zachowania.
+// ============================================================================
+
+export const curriculumModules = pgTable(
+	"curriculum_modules",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		slug: text("slug").notNull().unique(),
+		title: text("title").notNull(),
+		description: text("description"),
+		// Parametry egzaminu per moduł (D3: liczba pytań, licznik błędów) —
+		// konsument w 1E.3; NULL do tego czasu.
+		examConfigJson: jsonb("exam_config_json"),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	() => [],
+);
+
+export const curriculumPathModules = pgTable(
+	"curriculum_path_modules",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		// Klucz ścieżki kariery (pilot: 'data-science') — lista otwarta,
+		// spójna z modelem kariery; celowo bez CHECK.
+		pathKey: text("path_key").notNull(),
+		moduleId: uuid("module_id")
+			.notNull()
+			.references(() => curriculumModules.id, { onDelete: "cascade" }),
+		position: integer("position").notNull(),
+	},
+	(table) => [
+		index("idx_curriculum_path_modules_module_id").on(table.moduleId),
+		uniqueIndex("uq_curriculum_path_modules_path_module").on(table.pathKey, table.moduleId),
+		uniqueIndex("uq_curriculum_path_modules_path_position").on(table.pathKey, table.position),
+	],
+);
+
+export const curriculumModulePrereqs = pgTable(
+	"curriculum_module_prereqs",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		moduleId: uuid("module_id")
+			.notNull()
+			.references(() => curriculumModules.id, { onDelete: "cascade" }),
+		requiresModuleId: uuid("requires_module_id")
+			.notNull()
+			.references(() => curriculumModules.id, { onDelete: "cascade" }),
+	},
+	(table) => [
+		index("idx_curriculum_module_prereqs_module_id").on(table.moduleId),
+		uniqueIndex("uq_curriculum_module_prereqs_pair").on(table.moduleId, table.requiresModuleId),
+		check("curriculum_module_prereqs_no_self", sql`${table.moduleId} <> ${table.requiresModuleId}`),
+	],
+);
+
+export const curriculumModuleItems = pgTable(
+	"curriculum_module_items",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		moduleId: uuid("module_id")
+			.notNull()
+			.references(() => curriculumModules.id, { onDelete: "cascade" }),
+		position: integer("position").notNull(),
+		// kind: CHECK lista miękka (konwencja repo jak assessment_sessions.kind)
+		// — 'review' ZAREZERWOWANE pod FSRS 1E.4, bez konsumenta do tego czasu.
+		kind: text("kind").notNull(),
+		title: text("title").notNull(),
+		// Teoria atomu (markdown, 300–600 słów wg ADR-014 D1); NULL dla pozycji
+		// project (briefing żyje w projects.theoryMd — reuse-as-capstone D4).
+		contentMd: text("content_md"),
+		projectId: uuid("project_id").references(() => projects.id),
+		// Parametry pozycji (D1/D3): liczba pytań, kamienie milowe projektu
+		// (checks — implementacja automatów w 1E.6), konfiguracja labu.
+		configJson: jsonb("config_json"),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_curriculum_module_items_module_id").on(table.moduleId),
+		uniqueIndex("uq_curriculum_module_items_module_position").on(table.moduleId, table.position),
+		check(
+			"curriculum_module_items_kind_values",
+			sql`${table.kind} IN ('theory','exercise','lab','project','exam','review')`,
+		),
+		check(
+			"curriculum_module_items_project_ref",
+			sql`${table.kind} <> 'project' OR ${table.projectId} IS NOT NULL`,
+		),
+	],
+);
+
+export const curriculumItemConcepts = pgTable(
+	"curriculum_item_concepts",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		itemId: uuid("item_id")
+			.notNull()
+			.references(() => curriculumModuleItems.id, { onDelete: "cascade" }),
+		conceptId: uuid("concept_id")
+			.notNull()
+			.references(() => questionConcepts.id),
+	},
+	(table) => [
+		index("idx_curriculum_item_concepts_item_id").on(table.itemId),
+		index("idx_curriculum_item_concepts_concept_id").on(table.conceptId),
+		uniqueIndex("uq_curriculum_item_concepts_pair").on(table.itemId, table.conceptId),
+	],
+);
+
+export const curriculumItemResources = pgTable(
+	"curriculum_item_resources",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		itemId: uuid("item_id")
+			.notNull()
+			.references(() => curriculumModuleItems.id, { onDelete: "cascade" }),
+		title: text("title").notNull(),
+		url: text("url").notNull(),
+		type: text("type").notNull(),
+		// QG-5 §3/§4/§7 od dnia 1 (ADR-014 D2/D4): licencja ustalona przy
+		// kuracji, język (bariera EN — audyt 1E.0), jawna rejestracja,
+		// data ostatniej weryfikacji linku (linia utrzymaniowa).
+		license: text("license"),
+		language: text("language"),
+		registrationRequired: boolean("registration_required").notNull().default(false),
+		verifiedAt: timestamp("verified_at", { withTimezone: true }),
+		position: integer("position").notNull().default(0),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_curriculum_item_resources_item_id").on(table.itemId),
+		check(
+			"curriculum_item_resources_type_values",
+			sql`${table.type} IN ('video','docs','course','book')`,
+		),
+	],
+);
+
+export const curriculumItemProgress = pgTable(
+	"curriculum_item_progress",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		itemId: uuid("item_id")
+			.notNull()
+			.references(() => curriculumModuleItems.id, { onDelete: "cascade" }),
+		status: text("status").notNull().default("locked"),
+		attempts: integer("attempts").notNull().default(0),
+		lastAnswerAt: timestamp("last_answer_at", { withTimezone: true }),
+		completedAt: timestamp("completed_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_curriculum_item_progress_student_id").on(table.studentId),
+		index("idx_curriculum_item_progress_tenant_id").on(table.tenantId),
+		index("idx_curriculum_item_progress_item_id").on(table.itemId),
+		uniqueIndex("uq_curriculum_item_progress_student_item").on(table.studentId, table.itemId),
+		check(
+			"curriculum_item_progress_status_values",
+			sql`${table.status} IN ('locked','available','in_progress','completed','skipped_by_placement')`,
+		),
+	],
+);
+
+export const curriculumItemAnswers = pgTable(
+	"curriculum_item_answers",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		itemId: uuid("item_id")
+			.notNull()
+			.references(() => curriculumModuleItems.id, { onDelete: "cascade" }),
+		questionItemId: uuid("question_item_id")
+			.notNull()
+			.references(() => questionItems.id),
+		// Ocenione deterministycznie przy zapisie (wzorzec grade.ts A5) — 0 LLM.
+		isCorrect: boolean("is_correct").notNull(),
+		// Głębokość drabinki hintów w momencie odpowiedzi (0 = bez hintu,
+		// 3 = pełne rozwiązanie) — sygnał D11 i adaptacyjnego fadingu D5.
+		hintDepth: smallint("hint_depth").notNull().default(0),
+		answeredAt: timestamp("answered_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_curriculum_item_answers_student_answered").on(table.studentId, table.answeredAt),
+		index("idx_curriculum_item_answers_tenant_id").on(table.tenantId),
+		index("idx_curriculum_item_answers_item_id").on(table.itemId),
+		check("curriculum_item_answers_hint_depth_range", sql`${table.hintDepth} BETWEEN 0 AND 3`),
+	],
+);
+
+export const curriculumModuleProgress = pgTable(
+	"curriculum_module_progress",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		moduleId: uuid("module_id")
+			.notNull()
+			.references(() => curriculumModules.id, { onDelete: "cascade" }),
+		status: text("status").notNull().default("locked"),
+		// NULL = zaliczony pełnym przejściem; wypełniane przez egzamin (1E.3),
+		// placement (1E.7 — 'diagnostic') i test-out (D8).
+		verifiedByMethod: text("verified_by_method"),
+		completedAt: timestamp("completed_at", { withTimezone: true }),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_curriculum_module_progress_student_id").on(table.studentId),
+		index("idx_curriculum_module_progress_tenant_id").on(table.tenantId),
+		uniqueIndex("uq_curriculum_module_progress_student_module").on(table.studentId, table.moduleId),
+		check(
+			"curriculum_module_progress_status_values",
+			sql`${table.status} IN ('locked','available','in_progress','completed')`,
+		),
+		check(
+			"curriculum_module_progress_method_values",
+			sql`${table.verifiedByMethod} IS NULL OR ${table.verifiedByMethod} IN ('exam','diagnostic','test_out')`,
+		),
+	],
+);
+
+// 1E.1 — Curriculum relations
+export const curriculumModulesRelations = relations(curriculumModules, ({ many }) => ({
+	items: many(curriculumModuleItems),
+	pathModules: many(curriculumPathModules),
+}));
+
+export const curriculumPathModulesRelations = relations(curriculumPathModules, ({ one }) => ({
+	module: one(curriculumModules, {
+		fields: [curriculumPathModules.moduleId],
+		references: [curriculumModules.id],
+	}),
+}));
+
+export const curriculumModuleItemsRelations = relations(curriculumModuleItems, ({ one, many }) => ({
+	module: one(curriculumModules, {
+		fields: [curriculumModuleItems.moduleId],
+		references: [curriculumModules.id],
+	}),
+	project: one(projects, {
+		fields: [curriculumModuleItems.projectId],
+		references: [projects.id],
+	}),
+	concepts: many(curriculumItemConcepts),
+	resources: many(curriculumItemResources),
+}));
+
+export const curriculumItemConceptsRelations = relations(curriculumItemConcepts, ({ one }) => ({
+	item: one(curriculumModuleItems, {
+		fields: [curriculumItemConcepts.itemId],
+		references: [curriculumModuleItems.id],
+	}),
+	concept: one(questionConcepts, {
+		fields: [curriculumItemConcepts.conceptId],
+		references: [questionConcepts.id],
+	}),
+}));
+
+export const curriculumItemResourcesRelations = relations(curriculumItemResources, ({ one }) => ({
+	item: one(curriculumModuleItems, {
+		fields: [curriculumItemResources.itemId],
+		references: [curriculumModuleItems.id],
+	}),
 }));
