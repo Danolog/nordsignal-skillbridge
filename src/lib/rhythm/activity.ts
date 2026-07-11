@@ -16,6 +16,7 @@
 
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { isFeatureEnabled } from "@/lib/flags";
 
 export const ACTIVITY_WINDOW_WEEKS = 26;
 
@@ -31,6 +32,15 @@ export async function getActivityTrace(studentId: string): Promise<ActivityTrace
 	// Płaskie wiersze zamiast array_agg — node-postgres nie parsuje tablic
 	// timestamptz (wracałyby stringiem "{...}"). LIMIT to bezpiecznik kosztu;
 	// pierwszy wiersz (ORDER BY DESC) = najświeższy ślad kiedykolwiek.
+	// 1E.1f — ślad curriculum WYŁĄCZNIE za zapaloną flagą: przy OFF zapytanie
+	// nie dotyka tabeli (bezpieczny deploy na prod PRZED migracją 0035 —
+	// lekcja „migracja przed deploy"); przy ON odpowiedź na pytanie atomu
+	// liczy się do streaka jak każda realna praca.
+	const curriculumTrace = isFeatureEnabled("curriculumPath")
+		? sql`
+			UNION ALL
+			SELECT answered_at FROM curriculum_item_answers WHERE student_id = ${studentId}`
+		: sql``;
 	const result = await db.execute(sql`
 		WITH traces AS (
 			SELECT updated_at AS ts FROM project_submissions WHERE student_id = ${studentId}
@@ -43,7 +53,7 @@ export async function getActivityTrace(studentId: string): Promise<ActivityTrace
 			UNION ALL
 			SELECT updated_at FROM project_reflections WHERE student_id = ${studentId}
 			UNION ALL
-			SELECT created_at FROM study_checkins WHERE student_id = ${studentId}
+			SELECT created_at FROM study_checkins WHERE student_id = ${studentId}${curriculumTrace}
 		)
 		SELECT ts FROM traces WHERE ts IS NOT NULL ORDER BY ts DESC LIMIT 2000
 	`);
