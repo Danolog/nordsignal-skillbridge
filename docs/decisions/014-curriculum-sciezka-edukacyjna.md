@@ -382,10 +382,11 @@ Kontrakt dla 1E.7 (bez schodzenia głębiej):
   o notebooku". Prerekwizyty kont (Google) jawnie w onboardingu ścieżki.
 - **Pilot ≤12 tygodni** — jako rama MIERZALNOŚCI (M7 — moderator opisowy, nie dowód
   „krótsze uczy lepiej"); target = studenci bez doświadczenia (M4); próg zdrowego
-  użycia ~30 min/tydz. jako referencja (M11). Kalendarz: treść X–XI 2026 → pilot
-  I–II 2027. **UWAGA formalna: deadline „19.03.2026" w CLAUDE.md/roadmapie już
-  minął (dziś 2026-07-11) — rachunek zakłada edycję 19.03.2027; POTWIERDZIĆ
-  (pkt 7 listy).**
+  użycia ~30 min/tydz. jako referencja (M11). Kalendarz orientacyjny przy tempie
+  kuratorki 12–15 h/tydz.: treść X–XI 2026 → pilot I–II 2027. **Konkurs EduTech
+  Masters WYGRANY (decyzja Darka 2026-07-11: deadline usunięty z dokumentów)** —
+  tempo dyktuje wyłącznie przepustowość Sophii i jakość, nie data zewnętrzna;
+  rachunek wolumenu z D1 pozostaje wiążący jako miara wykonalności.
 - **Cięcia:** bez UI autorskiego; FSRS = rezerwacja (algorytm 1E.4); bez multi-tenant
   wariantów; fading sztywny; pretest OFF; skill-map bez zmian; komunikacja liczb
   efektów zakazana do własnych danych (M2, P7).
@@ -444,7 +445,7 @@ Deterministyczne, z `curriculum_item_answers` + progress (0 LLM):
 | UI autorskie treści (CMS) | ODRZUCONE dla pilotażu — JSON + ingest + kontrakt-test |
 | LLM w pętli nauki | ODRZUCONE — static-first; wyjątki jawne: eskalacja tutora (runtime) + mostki 1E.5 (build-time, cache, ledger) |
 | Wariant B wyjaśnień dla wszystkich atomów z góry | ODRZUCONE po wecie — tylko koncepty z alarmem D11, reaktywnie (D5) |
-| Pełna remediacja ~86,5 h przed startem pilotażu | DO DECYZJI (pkt 4) — rekomendacja: sekwencjonowana (pilot-path ~18,5 h przed, reszta po); pełna = pilot po deadline |
+| Pełna remediacja ~86,5 h przed startem pilotażu | DO DECYZJI (pkt 4) — rekomendacja: sekwencjonowana (pilot-path ~18,5 h przed, reszta po); pełna = start pilotażu przesuwa się o ~4–6 tygodni |
 | Ukryta drabina | ODRZUCONE — widoczna-ale-zablokowana + test-out (D3) |
 | „Naukowe 25 minut" jako interwał sesji | ODRZUCONE — P5/P6 mity; sesja = 2–4 atomy, parametry strojone (D1) |
 
@@ -465,7 +466,7 @@ Deterministyczne, z `curriculum_item_answers` + progress (0 LLM):
    (pilot-path ~18,5 h przed startem: ds-eda + ds-sql; pozostałe ~59 h po starcie —
    pilot ich nie dotyka). To reinterpretacja Twojej decyzji „remediacja przed
    pilotażem" — wymaga jawnej zgody. Alternatywa: pełne ~86,5 h przed startem
-   (kalendarz: pilot kończy się po deadline).
+   (kalendarz: start pilotażu później o ~4–6 tygodni).
 5. **Warstwy pomocy w pilocie** — rekomendacja: (a) statyczna + (b) kontekst tutora
    + (c) „utknąłem" z polem błędu i odrębną pulą limitów dla projektów/labów;
    strony „pierwszej pomocy środowiskowej" per moduł. Adaptacyjny fading po pilocie.
@@ -474,9 +475,10 @@ Deterministyczne, z `curriculum_item_answers` + progress (0 LLM):
    2–4 atomy; sukces 1. próby 80–90% na atomach, wyżej na egzaminie; stawka
    kuratorska 2,5–3,5 h/atom, moduł 20–27 h.
 7. **Zakres i kalendarz pilotażu** — rekomendacja: 6 modułów (L0 lean, F1–F3,
-   M-EDA, M-SQL), 2 capstone'y, ścieżka krytyczna treści ~135–170 h → treść
-   X–XI 2026, pilot I–II 2027. **Wymaga potwierdzenia deadline'u konkursu**
-   (19.03.2026 w dokumentach już minął — edycja 19.03.2027?).
+   M-EDA, M-SQL), 2 capstone'y, ścieżka krytyczna treści ~135–170 h →
+   orientacyjnie treść X–XI 2026, pilot I–II 2027. Konkurs wygrany, deadline
+   usunięty — tempo dyktuje przepustowość Sophii; kalendarz to prognoza
+   wykonalności, nie przymus.
 8. **Pretest „zgadnij zanim przeczytasz"** — rekomendacja: parametr eksperymentu,
    domyślnie OFF (R12 vs C14/G10).
 9. **Umiejscowienie terminala i Gita** — L0 (spójny fundament od razu) vs

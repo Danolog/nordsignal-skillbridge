@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-SkillBridge AI is a Polish edtech platform that maps students' competencies (from their university syllabus) to job market requirements, detects competency gaps, and connects students with graduated real-world projects. AI serves as matchmaker, brief writer, and reviewer — students earn Verified Project Receipts in their Competency Passport. Built for the EduTech Masters competition by Grupa Merito (deadline: 19 March 2026). Students get a shareable Competency Passport; faculty get an aggregated dashboard showing program vs. market alignment.
+SkillBridge AI is a Polish edtech platform that maps students' competencies (from their university syllabus) to job market requirements, detects competency gaps, and connects students with graduated real-world projects. AI serves as matchmaker, brief writer, and reviewer — students earn Verified Project Receipts in their Competency Passport. Originally built for the EduTech Masters competition by Grupa Merito — **won (2026)**; the project continues as an ongoing product with no competition deadline. Students get a shareable Competency Passport; faculty get an aggregated dashboard showing program vs. market alignment.
 
 ---
 

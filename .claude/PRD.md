@@ -398,7 +398,11 @@ SkillBridge AI daje każdemu studentowi spersonalizowaną, opartą na danych odp
 
 ### Hard deadlines
 
-- **Konkurs EduTech Masters**: **19 marca 2026** — 12 dni od dziś (7 marca).
+- ~~**Konkurs EduTech Masters**: **19 marca 2026** — 12 dni od dziś (7 marca).~~
+  **ROZSTRZYGNIĘTE (2026-07-11): konkurs odbył się i został WYGRANY.** Deadline
+  nieaktualny — projekt rozwijany dalej jako produkt, tempo dyktują przepustowość
+  zespołu i jakość (decyzja Darka). Pozostałe wzmianki o deadlinie w tym PRD to
+  kontekst historyczny fazy MVP.
 
 ### Zespół
 

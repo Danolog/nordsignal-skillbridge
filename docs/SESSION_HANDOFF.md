@@ -782,8 +782,9 @@ flagi AG — migracje już są.
      → `docs/decisions/014-curriculum-sciezka-edukacyjna.md`.
    - **CZEKA NA SIGN-OFF Darka+Sophii: lista decyzyjna 13 punktów** (m.in.
      próg mastery, wariant C zaliczenia projektu, zakres remediacji,
-     transfer w fundamentach). ⚠ pkt 7 listy: deadline „19.03.2026"
-     w CLAUDE.md już minął — potwierdzić edycję 2027.
+     transfer w fundamentach). **Konkurs EduTech Masters WYGRANY** —
+     decyzją Darka (2026-07-11) deadline usunięty z dokumentów (CLAUDE.md,
+     ADR-014); tempo dyktuje przepustowość Sophii, nie data.
 
 37. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + **sign-off ADR-014
    (Darek+Sophia, lista 13 punktów)** → atomizacja i start 1E.1
