@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { getLadder } from "@/lib/curriculum/ladder";
+import { pathKeyForCareerGoal } from "@/lib/curriculum/path-key";
 import { db } from "@/lib/db";
 import { students } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
@@ -28,8 +29,15 @@ export async function GET() {
 		});
 		if (!student) return NextResponse.json({ error: "Student not found" }, { status: 404 });
 
-		const modules = await getLadder(student.id, student.careerGoal);
-		return NextResponse.json({ pathKey: student.careerGoal, modules });
+		// careerGoal to display-string modelu kariery — mapowanie na slug ścieżki
+		// jest JAWNE (fix KRYTYCZNEGO z przeglądu: lookup po "Data Scientist"
+		// zwracał pustą drabinę). null = curriculum nie obejmuje jeszcze tej ścieżki.
+		const pathKey = pathKeyForCareerGoal(student.careerGoal);
+		if (!pathKey) {
+			return NextResponse.json({ pathKey: null, modules: [] });
+		}
+		const modules = await getLadder(student.id, pathKey);
+		return NextResponse.json({ pathKey, modules });
 	} catch (error) {
 		logError("curriculum.ladder.failed", error);
 		return NextResponse.json({ error: "Internal error" }, { status: 500 });

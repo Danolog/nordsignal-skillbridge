@@ -25,7 +25,7 @@ import {
 	curriculumPathModules,
 } from "@/lib/db/schema";
 
-export type ModuleStatus = "locked" | "available" | "in_progress" | "completed";
+export type ModuleStatus = "locked" | "available" | "in_progress" | "completed" | "coming_soon";
 
 export type LadderModule = {
 	id: string;
@@ -107,13 +107,23 @@ export async function getLadder(studentId: string, pathKey: string): Promise<Lad
 
 	return pathModules.map((m) => {
 		const row = progressByModule.get(m.id);
+		const itemCount = itemCountByModule.get(m.id) ?? 0;
 		let status: ModuleStatus;
 		if (row?.status === "completed") {
 			status = "completed";
 		} else {
 			const required = prereqsByModule.get(m.id) ?? [];
 			const unlocked = required.every((req) => completedModules.has(req));
-			status = unlocked ? (row?.status === "in_progress" ? "in_progress" : "available") : "locked";
+			// Bezpiecznik z przeglądu: moduł bez pozycji NIE jest „available" —
+			// jest niekompletowalny (treść w drodze, 1E.2). UI nie zbuduje się
+			// na fałszywym „dostępny", a drabina mówi prawdę.
+			status = unlocked
+				? itemCount === 0
+					? "coming_soon"
+					: row?.status === "in_progress"
+						? "in_progress"
+						: "available"
+				: "locked";
 		}
 		return {
 			id: m.id,
@@ -123,7 +133,7 @@ export async function getLadder(studentId: string, pathKey: string): Promise<Lad
 			position: m.position,
 			status,
 			verifiedByMethod: row?.verifiedByMethod ?? null,
-			itemCount: itemCountByModule.get(m.id) ?? 0,
+			itemCount,
 		};
 	});
 }

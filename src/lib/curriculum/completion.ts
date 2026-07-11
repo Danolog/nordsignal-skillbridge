@@ -16,14 +16,22 @@ import {
 	curriculumModuleProgress,
 } from "@/lib/db/schema";
 
+/**
+ * Executor zapisu: `db` albo transakcja (`db.transaction` — fix WAŻNEGO
+ * z przeglądu: answer-flow atomowy, bez stanu „poprawna odpowiedź bez postępu"
+ * przy częściowym failu). Typ strukturalny — tx drizzle spełnia go wprost.
+ */
+export type CurriculumDbc = Pick<typeof db, "insert" | "select" | "execute">;
+
 /** Upsert pozycji na completed + kaskada zaliczenia modułu. */
 export async function completeItem(
 	studentId: string,
 	tenantId: string,
 	itemId: string,
 	moduleId: string,
+	dbc: CurriculumDbc = db,
 ): Promise<{ moduleCompleted: boolean }> {
-	await db
+	await dbc
 		.insert(curriculumItemProgress)
 		.values({ studentId, tenantId, itemId, status: "completed", completedAt: new Date() })
 		.onConflictDoUpdate({
@@ -36,11 +44,11 @@ export async function completeItem(
 		});
 
 	// Moduł completed ⇔ zero pozycji bez statusu completed/skipped.
-	const moduleItems = await db
+	const moduleItems = await dbc
 		.select({ id: curriculumModuleItems.id })
 		.from(curriculumModuleItems)
 		.where(eq(curriculumModuleItems.moduleId, moduleId));
-	const doneRows = await db
+	const doneRows = await dbc
 		.select({ itemId: curriculumItemProgress.itemId })
 		.from(curriculumItemProgress)
 		.where(
@@ -56,7 +64,7 @@ export async function completeItem(
 	const moduleCompleted = doneRows.length === moduleItems.length && moduleItems.length > 0;
 
 	if (moduleCompleted) {
-		await db
+		await dbc
 			.insert(curriculumModuleProgress)
 			.values({ studentId, tenantId, moduleId, status: "completed", completedAt: new Date() })
 			.onConflictDoUpdate({
@@ -72,8 +80,9 @@ export async function recordAttempt(
 	studentId: string,
 	tenantId: string,
 	itemId: string,
+	dbc: CurriculumDbc = db,
 ): Promise<void> {
-	await db
+	await dbc
 		.insert(curriculumItemProgress)
 		.values({
 			studentId,
@@ -101,9 +110,10 @@ export async function allQuestionsCorrect(
 	studentId: string,
 	itemId: string,
 	questionItemIds: string[],
+	dbc: CurriculumDbc = db,
 ): Promise<boolean> {
 	if (questionItemIds.length === 0) return false;
-	const rows = await db.execute(sql`
+	const rows = await dbc.execute(sql`
 		SELECT DISTINCT question_item_id FROM curriculum_item_answers
 		WHERE student_id = ${studentId} AND item_id = ${itemId}
 		  AND is_correct = true
