@@ -102,6 +102,14 @@ export const FLAGS = {
 			"1.0: model kariery czytany z career_model_versions (DB) zamiast statycznego JSON w repo.",
 		defaultValue: false,
 	},
+	curriculumPath: {
+		envVar: "FLAG_CURRICULUM_PATH",
+		description:
+			"1E (ADR-014): ścieżka curriculum — drabina modułów z prerekwizytami blokującymi " +
+			"(pilotaż DS). Off = feature nie istnieje (trasy 404, UI się nie renderuje, " +
+			"streak bez źródła curriculum — marketplace bez zmian).",
+		defaultValue: false,
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).

@@ -89,6 +89,14 @@ const TENANT_TABLES = [
 	// app_faculty bez grantu; ENABLE+FORCE + student_sees_own + owner_passthrough.
 	"study_rhythms",
 	"study_checkins",
+	// 1E.1 (ADR-014 D2) — curriculum, dane studenta (migracja 0035). Wszystkie
+	// trzy: grant TYLKO SELECT dla app_student (zapisy owner-side przez trasy
+	// /api/curriculum/* — 1E.1d/e), app_faculty bez grantu; ENABLE+FORCE +
+	// student_sees_own + owner_passthrough. curriculum_item_answers jest
+	// APPEND-ONLY (instrumentacja D11, cechy FSRS, ślad streaka 1.18).
+	"curriculum_item_progress",
+	"curriculum_item_answers",
+	"curriculum_module_progress",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.
@@ -118,6 +126,19 @@ const K_PUB_TABLES = [
 	// (tools/ingest-career-model.ts, owner), GRANT SELECT app_student/app_faculty.
 	// Uzasadnienie: rls-matrix §4.
 	"career_model_versions",
+	// 1E.1 (ADR-014 D2) — definicje treści curriculum (migracja 0035, K-PUB).
+	// Globalny katalog jak projects/project_learning_resources: drabina modułów,
+	// relacja M:N ścieżka↔moduł, prerekwizyty, pozycje, mapowanie na koncepty
+	// banku A5, zasoby (z licencją/językiem/verified_at od dnia 1 — QG-5).
+	// Brak właściciela tenant-owego; zapis WYŁĄCZNIE ingest/system per ADR-010
+	// (tools/ingest-curriculum — 1E.1c), GRANT SELECT app_student/app_faculty.
+	// Uzasadnienie: rls-matrix §4.
+	"curriculum_modules",
+	"curriculum_path_modules",
+	"curriculum_module_prereqs",
+	"curriculum_module_items",
+	"curriculum_item_concepts",
+	"curriculum_item_resources",
 	// tenants — rejestr uczelni (slug/name). To rejestr najemców, nie dane
 	// studenta; sam nie ma właściciela tenant-owego, więc brak RLS tenant-owej
 	// jest poprawnym stanem (analogicznie do katalogu projects). Zapis tylko
