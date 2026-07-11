@@ -31,14 +31,20 @@
 		},
 		{
 			"slug": "f3-dane-python",
-			"title": "Dane w Pythonie: pandas i pliki",
-			"description": "Wejście w dane; zwieńczenie: MINI-PROJEKT transferowy (pkt 12b — pozycja dojdzie z treścią 1E.2).",
+			"title": "Dane w Pythonie: kolekcje i rekordy",
+			"description": "Czysty Python na danych: append, filtrowanie, słowniki, lista słowników (pomost do JSON/pandas), agregaty; zwieńczenie: MINI-PROJEKT transferowy (pkt 12b — pozycja dojdzie z treścią 1E.2). Pandas przeniesione do m-pandas (audyt pojemności D10, 2026-07-11).",
+			"items": []
+		},
+		{
+			"slug": "m-pandas",
+			"title": "Pandas: dane w tabelach",
+			"description": "DataFrame, selekcja, braki danych, grupowanie, wykresy + import/pakiety/terminal w Colab. Moduł wydzielony z M-EDA decyzją treściową Sophii (audyt pojemności D10, 2026-07-11 — bilans rubryki capstone'u nie mieścił się w 5–6 atomach; docs/curation/sophia-1e2-audyt-pojemnosci-m-eda.md).",
 			"items": []
 		},
 		{
 			"slug": "m-eda",
-			"title": "EDA: eksploracja danych",
-			"description": "Koncepty EDA + Git/terminal just-in-time; capstone: EDA na danych GUS BDL.",
+			"title": "EDA: od API do repozytorium",
+			"description": "API i JSON (GUS BDL), Git/GitHub just-in-time (pkt 9), przebieg EDA; capstone: EDA na danych GUS BDL. Bez egzaminu MC — bramką jest capstone (wariant C, pkt 2).",
 			"items": [
 				{
 					"position": 100,

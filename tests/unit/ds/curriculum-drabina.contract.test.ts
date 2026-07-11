@@ -31,6 +31,9 @@ const projectSlugs = new Set(dsProjects.map((p) => p.slug));
 const ITEM_KINDS = ["theory", "exercise", "lab", "project", "exam", "review"];
 
 describe("1E.1c · kontrakt drabiny curriculum DS", () => {
+	// m-pandas wydzielony z m-eda: audyt pojemności D10 (delegacja „moduł dzielony
+	// — decyzja treściowa Sophii"), docs/curation/sophia-1e2-audyt-pojemnosci-m-eda.md;
+	// liczba capstone'ów bez zmian (4 — decyzja Darka pkt 7).
 	it("ścieżka i skład drabiny zgodne z ADR-014 D10 (decyzja Darka: 4 capstone'y)", () => {
 		expect(ladder.path).toBe("data-science");
 		expect(ladder.modules.map((m) => m.slug)).toEqual([
@@ -38,6 +41,7 @@ describe("1E.1c · kontrakt drabiny curriculum DS", () => {
 			"f1-python-1",
 			"f2-python-2",
 			"f3-dane-python",
+			"m-pandas",
 			"m-eda",
 			"m-sql",
 			"m-ml",
