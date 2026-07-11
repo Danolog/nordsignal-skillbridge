@@ -11,7 +11,7 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-10
+## STAN NA DZIŚ — 2026-07-11
 
 ### Gdzie żyje repo
 - **Lokalnie (2 maszyny):** macOS `~/Claude_Cowork/SkillBridge` · WSL
@@ -750,8 +750,21 @@ flagi AG — migracje już są.
      pusta — zgłoszenie test-viva-01 przeszło vivę 6/6 bez
      needsHumanReview).
 
-35. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + **Faza 1E**
-   (pilotaż pełnej ścieżki DS, 1E.1+).
+35. **Faza 1E — przygotowanie 1E.0 (2026-07-11):** research sesji nauki
+   ODROBIONY przed spikiem (3 agentów: dowody naukowe z rangami / MIT /
+   Harvard+Stanford) → `docs/curation/pre-brief-1e0-sesje-nauki.md`
+   (raporty + synteza + rekomendacja). **Decyzje Darka WIĄŻĄCE dla 1E.0**
+   (wpisane do planu spike'a): sesja 15–30 min = 2–4 ATOMY (atom = teoria
+   ~5–8 min + retrieval 1–5 pytań bezpośrednio po); mikro-ćwiczenia
+   niskostawkowe (nielimitowane próby, deterministyczny feedback, 0 LLM);
+   spacing przez rytm 1.18; adaptacja do „literalnego zera"; zakaz
+   komunikowania „25 min" jako naukowo optymalnych (heurystyka Pomodoro,
+   nie badanie). Plan spike'a 1E.0 gotowy (fazy A–E, wyjście = ADR-014);
+   Faza A/2 przeformułowana na weryfikację pre-briefu.
+
+36. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + **wykonanie spike'a 1E.0**
+   (fazy A–E → ADR-014, sign-off Darek+Sophia), potem 1E.1+
+   (pilotaż pełnej ścieżki DS).
 
 ### Stan bloków Fazy 1 (2026-07-09)
 - **Blok AG** ✅ CAŁY (kod + bramka 6/6 + migracje prod) — aktywacja = env.
