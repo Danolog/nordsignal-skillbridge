@@ -837,10 +837,12 @@ flagi AG — migracje już są.
    db:migrate NIE zrobi rozjazdu) → ingest drabiny ✓. Weryfikacja końcowa:
    **8 modułów / 8 w ścieżce / 7 prereqów / 4 pozycje capstone /
    6 polityk RLS / dziennik 36** — komplet zgodny z oczekiwaniami.
-   **PROD = 0035.** Flaga `FLAG_CURRICULUM_PATH` NADAL ZGASZONA —
-   zapalenie (Production+Preview + redeploy) = osobna decyzja Darka;
-   do tego czasu prod bez zmian zachowania (trasy 404, streak bez
-   źródła curriculum).
+   **PROD = 0035. 1E.1 LIVE NA PRODZIE (2026-07-11):** flaga
+   `FLAG_CURRICULUM_PATH=1` ustawiona przez Darka na Vercelu; Oliver:
+   redeploy prod (`vercel redeploy --scope`, env nie działa wstecz na
+   istniejący deployment) + smoke czysty — `/api/curriculum` → **401**
+   (trasa żywa, wymaga sesji; przed redeployem 404 = flaga OFF
+   w runtime), `/api/rhythm` → 405 (baseline nietknięty).
 
 40. **NASTĘPNE:** sign-off Ryana rls-matrix v0.26 + aktywacja 1E.1 (Darek,
    pkt 39) + **1E.2** (fundamenty: treść L0/F1 Sophii wg spec v0.1 —
