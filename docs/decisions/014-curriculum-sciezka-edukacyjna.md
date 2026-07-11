@@ -1,8 +1,11 @@
 # ADR-014 — 1E.0: curriculum — pełna ścieżka edukacyjna (pilotaż Data Science)
 
-**Status:** proponowany (v0.2 — do sign-offu) · **Data:** 2026-07-11 · **Decyzja:**
-Darek + Sophia (sign-off dydaktyczny, nie techniczny — lista decyzyjna na końcu) ·
-**Autor spike'u:** Oliver (time-box 1E.0)
+**Status:** zaakceptowany przez Darka (2026-07-11 — komplet 13 punktów listy
+rozstrzygnięty: pkt 1–4, 6, 8–10 wg rekomendacji; pkt 5, 7, 11, 13 ze zmianami
+Darka — implementacja docelowa bez rozdzielania pilot/po-pilocie, 4 capstone'y,
+weryfikacja automatyczna, pełne drabinki hintów; pkt 12 = wariant b) ·
+**Czeka na sign-off Sophii** (wykonalność wolumenu ~200–285 h) · **Data:**
+2026-07-11 · **Autor spike'u:** Oliver (time-box 1E.0)
 **Przebieg:** pre-brief sesji nauki (3 agentów) → Faza A (4 agentów researchu,
 71 unikalnych ustaleń z rangami + errata) ∥ Faza B (2 agentów audytu, 10/10 projektów,
 54 URL-e) → v0.1 → **krytyczny przegląd 4 soczewkami: 59 znalezisk (1 WETO warunkowe
@@ -80,13 +83,17 @@ Duolingo/Brilliant (G1, G10). Parametry skorygowane przeglądem content-ops
 Stawka atomu PO cięciach: **2,5–3,5 h** (teoria konforemna z regułami D6 + WE
 wykonywalny i zweryfikowany + 3 pytania MC z dystraktorami diagnostycznymi
 i feedbackiem per opcja + hinty + przejście QG z poprawkami; rozbicie — raport
-soczewki 4). **Moduł = 5–6 atomów (~13–21 h) + egzamin jawnie wyceniony
-(15–20 pytań × 2 warianty ≈ 5–6 h) ≈ 20–27 h/moduł.** Pilot z D10 [zakres
-zatwierdzony przez Darka 2026-07-11: 4 capstone'y] (L0 lean ~10 h + 7 modułów
-× 20–27 h + remediacja pilot-path ~36,5 h + aktualizacja standardu QG-5 ~6 h)
-= **ścieżka krytyczna treści ≈ 190–240 h**; przy realnym tempie kuratorki
-12–15 h/tydz. → treść gotowa orientacyjnie XII 2026 – II 2027, pilot (≤12 tyg.)
-wiosną 2027 (kalendarz = prognoza wykonalności, bez deadline'u zewnętrznego). Moduły 1–3 planowo wolniejsze dla studenta — front-loaded time to cecha
+soczewki 4). Po decyzji Darka pkt 13 (pełna drabinka hintów wszędzie, +0,3–0,6 h):
+**stawka atomu 2,8–4,1 h; moduł = 5–6 atomów (~14–25 h) + egzamin jawnie wyceniony
+(15–20 pytań × 2 warianty ≈ 5–6 h) ≈ 19–31 h/moduł.** Pilot z D10 [decyzje Darka
+2026-07-11: 4 capstone'y, mini-projekt po F3] (L0 lean ~10 h + 7 modułów × 19–31 h
++ mini-projekt transferowy ~10–15 h + remediacja pilot-path ~36,5 h + aktualizacja
+standardu QG-5 ~6 h) = **ścieżka krytyczna treści ≈ 200–285 h ≈ 14–24 tygodnie
+pracy kuratorskiej** (12–15 h/tydz.) → orientacyjnie treść I kw. 2027, pilot
+wiosna/lato 2027 (kalendarz = prognoza wykonalności, bez deadline'u zewnętrznego).
+Pakiet cięć A–E z przeglądu content-ops POZOSTAJE w mocy (warunek zdjęcia weta);
+opcja F (płytsze drabinki) odrzucona decyzją Darka — koszt jawnie doliczony wyżej.
+**Wykonalność ~200–285 h = główny punkt sign-offu Sophii.** Moduły 1–3 planowo wolniejsze dla studenta — front-loaded time to cecha
 mastery, nie bug (M6). Weto soczewki content-ops zdjęte pod warunkiem utrzymania
 tych parametrów; mechanizmy rangi SILNY (retrieval po atomie, WE przed retrieval,
 spacing spiralny) — nietknięte.
@@ -162,9 +169,9 @@ wprost — M16, G7) przy każdym zablokowanym module. Wariant „ukryta" odrzuco
 |---|---|---|
 | `theory` | przeczytana + pytanie kontrolne retrieval poprawnie (nie sam scroll; ponowna lektura dostępna, ale nie zalicza — R4) | R1, R4 |
 | `exercise` | wszystkie pytania poprawnie; nielimitowane próby, natychmiastowy feedback, licznik zamiast % (M10); błąd → wyjaśnienie → retry (R13) | M10, R2, R5, R13 |
-| `lab` | wykonanie + artefakt (samodeklaracja z linkiem w pilocie; rygor → pkt 11 listy) | znalezisko przeglądu; trenuje czynność, którą rubryka capstone'u ocenia |
-| `project` | **3–5 kamieni milowych** (checklist samodeklaracji: dane pobrane / notebook liczy / repo wypchnięte / submit) — każdy kamień = zdarzenie postępu i ślad aktywności (bez tego capstone to 10–30 wieczorów bez żadnego „completed"); finał: submit do istniejącego pipeline'u. **Rekomendacja: wariant C** — `submitted` ODBLOKOWUJE następny moduł, `verified` (viva/człowiek) pozostaje warunkiem receiptu w Passporcie (dwie waluty G9: postęp nauki ≠ dowód kompetencji). Usuwa „martwą ciszę vivy" (drabina zamrożona + streak umiera w szczycie motywacji). Alternatywa 'verified'-blokujące → pkt 2 listy. Niezależnie od wyboru: **SLA vivy jawne dla studenta; na czas oczekiwania alert zastoju 1.18 wyłączony + dzień łaski streaka** (D9) | G9, ADR-013; znaleziska przeglądu |
-| `exam` | mastery gate 1E.3: **15–20 pytań, próg jako LICZNIK dopuszczalnych błędów** (≈90%: ≤1 błąd przy 15 / ≤2 przy 20 — spójnie z M10; wariant „12 pytań/90%" odrzucony: progu 90% nie da się przy 12 osiągnąć dokładnie, a 1 lapsus oblewa). Parametr per moduł w examConfigJson. **Pytania egzaminacyjne kalibrowane OSOBNO (wyższy docelowy success rate niż atomowe)** — bez tego próg 90% i kalibracja atomów 80–90% są matematycznie sprzeczne (przy p=0,85 ~56% oblewa 1. podejście; liczby → wejście do pkt 1 listy). **≥1 pozycja produkcyjna** (completion-code z deterministycznym sprawdzeniem) w egzaminach fundamentów — konsumuje M17 (mastery pytań zamkniętych nie transferuje do kodu; M5: transfer ≈ 0); głębszy wariant → pkt 12 listy. Oblany → retry z INNYM wariantem (cap 2); **po 2. oblaniu — obowiązkowe correctives** (M13, M14): paczka ≤3 atomów wskazanych per błędne pytanie (przez `curriculum_item_concepts`), mikrocopy „zabrakło Ci 1 pytania — 2 koncepty do odświeżenia, ~15 min" (nie lista braków); podejście do egzaminu (zdane czy nie) = ślad aktywności dla streaka. Stan egzaminu zapisywany (pauza/wznowienie — wzorzec `assessment_sessions`); ostrzeżenie „zarezerwuj ~25 min" przed startem | M3, M8, M9, M10, M13, M14, M17, R16 |
+| `lab` | wykonanie zweryfikowane **AUTOMATYCZNIE** [decyzja Darka 2026-07-11, pkt 11: implementacja docelowa od razu] — deterministyczny check wyniku/artefaktu; tam, gdzie trzeba uruchomić kod studenta, reuse infrastruktury sandboxa 1.9; definicja checków per lab w 1E.1/1E.6 | znalezisko przeglądu; trenuje czynność, którą rubryka capstone'u ocenia |
+| `project` | **3–5 kamieni milowych weryfikowanych AUTOMATYCZNIE** [decyzja Darka 2026-07-11, pkt 11] (deterministyczne checki: dane pobrane / notebook uruchamia się / repo wypchnięte / submit — definicja per projekt w 1E.1/1E.6, reuse sandboxa 1.9) — każdy kamień = zdarzenie postępu i ślad aktywności (bez tego capstone to 10–30 wieczorów bez żadnego „completed"); finał: submit do istniejącego pipeline'u. **Rekomendacja: wariant C** — `submitted` ODBLOKOWUJE następny moduł, `verified` (viva/człowiek) pozostaje warunkiem receiptu w Passporcie (dwie waluty G9: postęp nauki ≠ dowód kompetencji). Usuwa „martwą ciszę vivy" (drabina zamrożona + streak umiera w szczycie motywacji). Alternatywa 'verified'-blokujące → pkt 2 listy. Niezależnie od wyboru: **SLA vivy jawne dla studenta; na czas oczekiwania alert zastoju 1.18 wyłączony + dzień łaski streaka** (D9) | G9, ADR-013; znaleziska przeglądu |
+| `exam` | mastery gate 1E.3: **15–20 pytań, próg jako LICZNIK dopuszczalnych błędów** (≈90%: ≤1 błąd przy 15 / ≤2 przy 20 — spójnie z M10; wariant „12 pytań/90%" odrzucony: progu 90% nie da się przy 12 osiągnąć dokładnie, a 1 lapsus oblewa). Parametr per moduł w examConfigJson. **Pytania egzaminacyjne kalibrowane OSOBNO (wyższy docelowy success rate niż atomowe)** — bez tego próg 90% i kalibracja atomów 80–90% są matematycznie sprzeczne (przy p=0,85 ~56% oblewa 1. podejście; liczby → wejście do pkt 1 listy). **Transfer w fundamentach [decyzja Darka 2026-07-11, pkt 12 = wariant (b)]: MINI-PROJEKT po F3** (lekki, weryfikowany automatycznie — pierwsza samodzielna praca przed pełnym capstone'em) = miara transferu fundamentów, konsumuje M17/M5 (mastery pytań zamkniętych nie transferuje do kodu); egzaminy F1–F3 pozostają MC, wykonanie trenują laby. Oblany → retry z INNYM wariantem (cap 2); **po 2. oblaniu — obowiązkowe correctives** (M13, M14): paczka ≤3 atomów wskazanych per błędne pytanie (przez `curriculum_item_concepts`), mikrocopy „zabrakło Ci 1 pytania — 2 koncepty do odświeżenia, ~15 min" (nie lista braków); podejście do egzaminu (zdane czy nie) = ślad aktywności dla streaka. Stan egzaminu zapisywany (pauza/wznowienie — wzorzec `assessment_sessions`); ostrzeżenie „zarezerwuj ~25 min" przed startem | M3, M8, M9, M10, M13, M14, M17, R16 |
 
 Uzasadnienie progu ~90% (bez inflacji retorycznej — korekta przeglądu): **zbieżność
 kierunkowa trzech słabych/mieszanych źródeł, z których dwa czerpią z częściowo
@@ -213,17 +220,22 @@ Warstwowo, **static-first** (decyzja Darka):
 
 - **(a) Warstwa statyczna (0 LLM, pre-authored):**
   - Worked example w KAŻDYM atomie nowego konceptu, PRZED retrieval (C1, C2).
-  - **Drabinka hintów**: pełna 3-stopniowa (koncepcyjny → szkielet → pełne
-    rozwiązanie z objaśnieniem — C5) w atomach FAZY SAMODZIELNEJ fadingu;
-    w atomach z pełnym WE wystarczy hint koncepcyjny + odesłanie do WE
-    (rekomendacja content-ops; głębokość → pkt 13 listy). Dno drabinki nie blokuje
-    zaliczenia (R13).
+  - **Drabinka hintów: pełna 3-stopniowa WSZĘDZIE** (koncepcyjny → szkielet →
+    pełne rozwiązanie z objaśnieniem — C5) [decyzja Darka 2026-07-11, pkt 13:
+    maksymalna siatka bezpieczeństwa; koszt +0,3–0,6 h/atom doliczony w D1].
+    Dno drabinki nie blokuje zaliczenia (R13).
   - **Completion problems** między WE a zadaniem samodzielnym (C3 — ranga
     po erracie: SILNY-kierunkowo w domenie programowania; warianty maskowaniem
     linii wzorca).
   - **Harmonogram fading w module** (C5, backward fading): pełne WE → backward
-    completion → luki w środku → `lab`/zadanie samodzielne. W pilocie fading
-    SZTYWNY; wariant adaptacyjny (C6 — po erracie ranga MIESZANY) po pilocie.
+    completion → luki w środku → `lab`/zadanie samodzielne. **Fading ADAPTACYJNY
+    od razu** [decyzja Darka 2026-07-11, pkt 5: implementacja docelowa, bez
+    rozdzielania pilot/po-pilocie] (C6 — po erracie ranga MIESZANY; reguły
+    DETERMINISTYCZNE z `curriculum_item_answers`, 0 LLM: 2 bezbłędne retrieval
+    bez hintów ⇒ następny atom z mniejszym wsparciem; 2 błędy na kroku / dno
+    drabinki / eskalacja ⇒ szczebel wstecz); warianty completion generowane
+    mechanicznie z wzorcowego rozwiązania (maskowanie linii — koszt kuratorski
+    ograniczony).
   - **Strona „pierwsza pomoc środowiskowa" per moduł** (statyczna, utrzymywana jak
     treść): topowe błędy Colab/Git/kont z audytu — bo błędy środowiska to blokady,
     których hint per-koncept nie przewidzi.
@@ -370,7 +382,9 @@ Kontrakt dla 1E.7 (bez schodzenia głębiej):
 
 - **Tylko DS, drabina LINIOWA [ZAKRES ZATWIERDZONY ZE ZMIANĄ — Darek 2026-07-11:
   4 capstone'y]:** **L0 Start (lean)** → **F1 Python I** → **F2 Python II** →
-  **F3 Dane w Pythonie** → **M-EDA** (capstone: `ds-eda-polska-w-liczbach-bdl`)
+  **F3 Dane w Pythonie** (zwieńczony **MINI-PROJEKTEM transferowym** — pkt 12b:
+  lekki projekt weryfikowany automatycznie, pierwsza samodzielna praca przed
+  pełnym capstone'em) → **M-EDA** (capstone: `ds-eda-polska-w-liczbach-bdl`)
   → **M-SQL** (capstone: `ds-sql-analiza-przejazdow`) → **M-ML** (capstone:
   `ds-pierwszy-model-predykcyjny`) → **M-LLM** (capstone:
   `ds-llm-strukturalna-ekstrakcja`). **8 modułów, 4 capstone'y** — dodane dwa
@@ -395,8 +409,12 @@ Kontrakt dla 1E.7 (bez schodzenia głębiej):
   tempo dyktuje wyłącznie przepustowość Sophii i jakość, nie data zewnętrzna;
   rachunek wolumenu z D1 pozostaje wiążący jako miara wykonalności.
 - **Cięcia:** bez UI autorskiego; FSRS = rezerwacja (algorytm 1E.4); bez multi-tenant
-  wariantów; fading sztywny; pretest OFF; skill-map bez zmian; komunikacja liczb
-  efektów zakazana do własnych danych (M2, P7).
+  wariantów; pretest jako przełącznik eksperymentu, domyślnie OFF (pkt 8 ✅);
+  skill-map bez zmian; komunikacja liczb efektów zakazana do własnych danych
+  (M2, P7). **Fading adaptacyjny i weryfikacja automatyczna kamieni/labów
+  W ZAKRESIE od razu** [decyzje Darka pkt 5/11: implementacja docelowa, bez
+  rozdzielania pilot/po-pilocie] — koszt inżynieryjny (checki, reguły fadingu,
+  reuse sandboxa 1.9) wyceniany przy atomizacji 1E.1/1E.6.
 - **Po pilocie, przed E2.C (warunek skali — z przeglądu):** tooling treści
   (generator wariantów pytań z human review, automat maskowania linii WE→completion,
   automat link-check) + współdzielenie modułów fundamentów przez
@@ -467,44 +485,49 @@ Deterministyczne, z `curriculum_item_answers` + progress (0 LLM):
    rekomendacji: wariant C** — `submitted` odblokowuje następny moduł, `verified`
    = warunek receiptu w Passporcie (dwie waluty G9; usuwa martwą ciszę vivy
    w szczycie motywacji).
-3. **UX drabiny** — rekomendacja: widoczna-ale-zablokowana + test-out (D3).
+3. **UX drabiny** — **✅ ZATWIERDZONE (Darek, 2026-07-11) wg rekomendacji:**
+   widoczna-ale-zablokowana + test-out (D3).
 4. **Zakres remediacji przed startem** — **✅ ZATWIERDZONE (Darek, 2026-07-11) wg
    rekomendacji: sekwencjonowana.** Po decyzji o 4 capstone'ach: pilot-path
    ~36,5 h przed startem (ds-eda, ds-sql, ds-pierwszy-model, ds-llm); pozostałe
    6 projektów (~50 h) po starcie.
-5. **Warstwy pomocy w pilocie** — rekomendacja: (a) statyczna + (b) kontekst tutora
-   + (c) „utknąłem" z polem błędu i odrębną pulą limitów dla projektów/labów;
-   strony „pierwszej pomocy środowiskowej" per moduł. Adaptacyjny fading po pilocie.
-6. **Parametry rozmiaru kroku (startowe, strojone D11)** — teoria 300–600 słów;
-   **3 pytania MC/atom (bez wariantów)**; moduł **5–6 atomów + egzamin**; sesja
-   2–4 atomy; sukces 1. próby 80–90% na atomach, wyżej na egzaminie; stawka
-   kuratorska 2,5–3,5 h/atom, moduł 20–27 h.
+5. **Warstwy pomocy** — **✅ ZATWIERDZONE ZE ZMIANĄ (Darek, 2026-07-11): BEZ
+   rozdzielania pilot/po-pilocie — implementacja od razu docelowa.** Zestaw:
+   (a) statyczna + (b) kontekst tutora + (c) „utknąłem" z polem błędu i odrębną
+   pulą limitów dla projektów/labów; strony „pierwszej pomocy środowiskowej";
+   **fading adaptacyjny od razu** (reguły deterministyczne — D5).
+6. **Parametry rozmiaru kroku (startowe, strojone D11)** — **✅ ZATWIERDZONE
+   (Darek, 2026-07-11) wg rekomendacji:** teoria 300–600 słów; 3 pytania MC/atom
+   (bez wariantów); moduł 5–6 atomów + egzamin; sesja 2–4 atomy; sukces 1. próby
+   80–90% na atomach, wyżej na egzaminie. Stawka kuratorska po pkt 13:
+   2,8–4,1 h/atom, moduł 19–31 h (D1). Wykonalność = sign-off Sophii.
 7. **Zakres i kalendarz pilotażu** — **✅ ZATWIERDZONE ZE ZMIANĄ (Darek,
-   2026-07-11): 4 capstone'y** — 8 modułów (L0 lean, F1–F3, M-EDA, M-SQL, M-ML,
-   M-LLM), ścieżka krytyczna treści ~190–240 h → orientacyjnie treść XII 2026 –
-   II 2027, pilot wiosną 2027. Konkurs wygrany, deadline usunięty — tempo dyktuje
-   przepustowość Sophii; kalendarz to prognoza wykonalności, nie przymus.
-   Wykonalność wolumenu ~190–240 h = główny punkt sign-offu Sophii.
-8. **Pretest „zgadnij zanim przeczytasz"** — rekomendacja: parametr eksperymentu,
-   domyślnie OFF (R12 vs C14/G10).
-9. **Umiejscowienie terminala i Gita** — L0 (spójny fundament od razu) vs
-   **just-in-time przed M-EDA (rekomendacja)**: Git uczony w tygodniu 1 jest
-   pierwszy raz używany ~tydzień 5–7 (wbrew własnym ustaleniom o zapominaniu),
-   a pilot na Colab + przeglądarkowym DuckDB może terminala nie potrzebować wcale.
-10. **Forma zaliczenia L0** — rekomendacja: **przez wykonanie** (uruchomiony skrypt
-    jako dowód, bez egzaminu MC — „12 pytań o terminalu" to teatr pomiaru).
-    Alternatywa: egzamin MC jak w innych modułach (spójność mechaniki).
-11. **Typ `lab` + rygor kamieni milowych projektu** — rekomendacja: samodeklaracja
-    z linkiem-artefaktem w pilocie; alternatywy: sam checkbox (zero tarcia, zero
-    dowodu) / check automatyczny (koszt infrastruktury).
-12. **Transfer w fundamentach (luka M17)** — rekomendacja: **(a) ≥1 pozycja
-    produkcyjna completion-code z deterministycznym sprawdzeniem w egzaminach
-    F1–F3** (tania, spójna z 0-LLM). Alternatywy: (b) mini-capstone po F3
-    (koszt treści), (c) świadomie tylko wiedza zamknięta do M-EDA (jawna luka
-    pomiaru transferu).
-13. **Głębokość drabinki hintów** — rekomendacja: pełna 3-stopniowa tylko w fazie
-    samodzielnej fadingu; w atomach z pełnym WE hint koncepcyjny + odesłanie do WE.
-    Alternatywa: 3 stopnie wszędzie (koszt autorski +0,3–0,6 h/atom).
+   2026-07-11): 4 capstone'y** — 8 modułów (L0 lean, F1–F3 + mini-projekt po F3,
+   M-EDA, M-SQL, M-ML, M-LLM), ścieżka krytyczna treści **~200–285 h** (po
+   wszystkich decyzjach: 4 capstone'y + pełne drabinki + mini-projekt) →
+   orientacyjnie treść I kw. 2027, pilot wiosna/lato 2027. Konkurs wygrany,
+   deadline usunięty — tempo dyktuje przepustowość Sophii; kalendarz to prognoza
+   wykonalności, nie przymus. **Wykonalność ~200–285 h = główny punkt sign-offu
+   Sophii.**
+8. **Pretest „zgadnij zanim przeczytasz"** — **✅ ZATWIERDZONE (Darek, 2026-07-11)
+   wg rekomendacji:** parametr eksperymentu, domyślnie OFF (R12 vs C14/G10).
+9. **Umiejscowienie terminala i Gita** — **✅ ZATWIERDZONE (Darek, 2026-07-11):
+   wariant (b) just-in-time** — L0 uczy tylko Colab/notebook; Git/terminal wchodzą
+   atomami tuż przed pierwszym capstone'em (M-EDA), gdzie są realnie potrzebne.
+10. **Forma zaliczenia L0** — **✅ ZATWIERDZONE (Darek, 2026-07-11) wg
+    rekomendacji: przez wykonanie** (uruchomiony skrypt jako dowód, bez egzaminu MC).
+11. **Typ `lab` + rygor kamieni milowych** — **✅ ZATWIERDZONE ZE ZMIANĄ (Darek,
+    2026-07-11): WERYFIKACJA AUTOMATYCZNA, bez rozdzielania pilot/po-pilocie —
+    implementacja od razu docelowa.** Deterministyczne checki labów i kamieni
+    (reuse sandboxa 1.9 tam, gdzie trzeba uruchomić kod); definicja checków
+    per lab/projekt przy atomizacji 1E.1/1E.6 (koszt inżynieryjny tam wyceniony).
+12. **Transfer w fundamentach (luka M17)** — **✅ ZATWIERDZONE (Darek, 2026-07-11):
+    wariant (b) — MINI-PROJEKT po F3** (lekki, weryfikowany automatycznie;
+    ~10–15 h treści doliczone w D1); egzaminy F1–F3 pozostają MC, wykonanie
+    trenują laby.
+13. **Głębokość drabinki hintów** — **✅ ZATWIERDZONE (Darek, 2026-07-11):
+    3 stopnie WSZĘDZIE — maksymalna siatka bezpieczeństwa** (koszt +0,3–0,6 h/atom
+    doliczony w D1; opcja F przeglądu content-ops odrzucona).
 
 ## Weryfikacja (kryteria „zrobione" spike'a — z planu 1E.0)
 

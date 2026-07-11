@@ -782,11 +782,17 @@ flagi AG — migracje już są.
      → `docs/decisions/014-curriculum-sciezka-edukacyjna.md`.
    - **CZEKA NA SIGN-OFF Darka+Sophii: lista decyzyjna 13 punktów** (m.in.
      próg mastery, wariant C zaliczenia projektu, zakres remediacji,
-     transfer w fundamentach). Decyzje Darka (2026-07-11): pkt 1, 2, 4
-     zatwierdzone wg rekomendacji; pkt 7 ze zmianą — 4 capstone'y (8 modułów,
-     ~190–240 h treści). **Konkurs EduTech Masters WYGRANY** —
-     decyzją Darka (2026-07-11) deadline usunięty z dokumentów (CLAUDE.md,
-     ADR-014); tempo dyktuje przepustowość Sophii, nie data.
+     transfer w fundamentach). **Decyzje Darka (2026-07-11): KOMPLET 13/13
+     rozstrzygnięty** — pkt 1–4, 6, 8–10 wg rekomendacji; ze zmianami: pkt 5
+     (fading adaptacyjny OD RAZU — bez rozdzielania pilot/po-pilocie), pkt 7
+     (4 capstone'y — 8 modułów: L0, F1–F3+mini-projekt, M-EDA, M-SQL, M-ML,
+     M-LLM), pkt 11 (weryfikacja AUTOMATYCZNA labów/kamieni — implementacja
+     docelowa, reuse sandboxa 1.9), pkt 12 (wariant b: mini-projekt po F3),
+     pkt 13 (drabinki hintów 3-stopniowe WSZĘDZIE). Ścieżka krytyczna treści
+     ~200–285 h. **ADR czeka już TYLKO na sign-off Sophii** (wykonalność
+     wolumenu). **Konkurs EduTech Masters WYGRANY** — decyzją Darka
+     (2026-07-11) deadline usunięty z dokumentów (CLAUDE.md, PRD, ADR-014);
+     tempo dyktuje przepustowość Sophii, nie data.
 
 37. **NASTĘPNE:** rotacja tokenu GitHub (pkt 29) + **sign-off ADR-014
    (Darek+Sophia, lista 13 punktów)** → atomizacja i start 1E.1
