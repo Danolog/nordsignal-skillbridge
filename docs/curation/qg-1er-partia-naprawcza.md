@@ -124,8 +124,15 @@ analityczne.
 **Zgłosili: Ryan (W4) + Ethan (W2) — niezależnie.** `ds-chmura-wdrozenie-modelu` ma
 `Azure`, `GCP` i `AWS` jako kompetencje **`required`** (= „co projekt domyka"), choć
 student **żadnej z tych chmur nie dotyka** — pisze mapę wdrożenia, bo ścieżka jest
-świadomie bezkartowa. **Paszport wystawi Verified Project Receipt na trzy chmury za
-esej porównawczy.**
+świadomie bezkartowa. Matchmaker rekomenduje więc ten projekt studentowi z luką
+„Azure", której projekt nie zamknie.
+
+> **Sprostowanie (2026-07-13).** Pierwotne zdanie tej sekcji — „paszport wystawi
+> Verified Project Receipt na trzy chmury za esej porównawczy" — było **nieprawdziwe**:
+> mostek „zaliczony projekt → kompetencja w paszporcie" dziś nie istnieje (zaliczenie
+> projektu nie zapisuje żadnej kompetencji; sekcja „Opanowane" paszportu pochodzi
+> wyłącznie z samooceny studenta). Ryzyko jest realne, ale **przyszłe** — zaktywuje
+> się z chwilą zbudowania mostka (plan napraw, blok C).
 
 To dotyka rdzenia obietnicy produktu (receipt jest oświadczeniem wobec pracodawcy),
 dotyczy treści **już żyjącej na prodzie** i nie wstrzymuje 1E.R — ale wymaga decyzji
@@ -134,6 +141,11 @@ dotyczy treści **już żyjącej na prodzie** i nie wstrzymuje 1E.R — ale wyma
   nazwać w receipt;
 - (b) wrócić do hands-on (tracimy card-free — czyli cofamy naprawę 1E.R);
 - (c) zejść do 21/24 pokrycia liści i zaktualizować test kontraktowy.
+
+**Decyzja właściciela (2026-07-13): wariant (b) w wersji rozszerzonej** — chmury mają
+być pokryte hands-on, nawet za cenę karty płatniczej (Azure 35%, AWS 30%, GCP 19%
+ofert). Realizacja: trzy projekty `ds-endpoint-*` + `ds-chmura` przełożony na
+bezkartowe `CI/CD`+`MLOps` (plan napraw, blok B).
 
 ### QG-6 — ekspert domenowy
 Bramka wymaga praktyka **spoza zespołu autorskiego**. Nie zastąpi go agent. Bez niej
