@@ -27,6 +27,7 @@ import {
 	submissionStatusEnum,
 	user,
 	verification,
+	verifiedCompetencies,
 } from "../schema";
 
 describe("DB Schema — Better Auth tables", () => {
@@ -93,6 +94,17 @@ describe("DB Schema — Domain tables", () => {
 	it("passports table exists with correct SQL name", () => {
 		expect(passports).toBeDefined();
 		expect(getTableName(passports)).toBe("passports");
+	});
+
+	// Blok C (C1, migracja 0037) — kredencjały „kompetencja zweryfikowana projektem".
+	it("verifiedCompetencies table exists with correct SQL name and columns", () => {
+		expect(verifiedCompetencies).toBeDefined();
+		expect(getTableName(verifiedCompetencies)).toBe("verified_competencies");
+		expect(verifiedCompetencies.studentId).toBeDefined();
+		expect(verifiedCompetencies.tenantId).toBeDefined();
+		expect(verifiedCompetencies.submissionId).toBeDefined();
+		expect(verifiedCompetencies.competencyName).toBeDefined();
+		expect(verifiedCompetencies.verifiedAt).toBeDefined();
 	});
 
 	it("jobMarketData table exists with correct SQL name", () => {

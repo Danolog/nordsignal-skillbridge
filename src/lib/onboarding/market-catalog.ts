@@ -226,6 +226,67 @@ export function computeMarketCoverage(
 	return Math.round((covered / catalogSize) * 100);
 }
 
+// ── Pokrycie WAŻONE POPYTEM (Blok C planu napraw, decyzja D3) ─────────────────
+//
+// Zbiorcze „Pokrycie" liczone średnią ważoną popytem zamiast liczenia sztuk:
+// Python (55% ofert) przestaje ważyć tyle samo co NumPy (2%). JEDEN wzór, DWA
+// wejścia — parytet front↔paszport staje się parytetem WZORU (obie strony wołają
+// tę funkcję), nie równością wartości:
+//   • paszport („pokrycie potwierdzone"): wejście = nazwy z verified_competencies,
+//     waga 1.0 (projekt daje binarne „zdobyte");
+//   • front/pulpit („pokrycie deklarowane"): wejście = deklaracje z wagą
+//     coverageWeight (0.5/1.0).
+// Kompetencja spoza katalogu roli nie podnosi pokrycia i nie wchodzi do
+// mianownika (mianownik = CAŁY katalog roli). Duplikaty nazw liczone raz
+// (wygrywa najwyższa waga — dwie submisje mogą potwierdzić tę samą nazwę).
+
+/** Normalizacja nazwy do złączenia — trim + lower (jedno źródło; używa też competency-groups). */
+export function normCompetencyName(s: string): string {
+	return s.trim().toLowerCase();
+}
+
+/** Pozycja posiadana na wejściu pokrycia ważonego (deklaracja albo kredencjał). */
+export interface DemandCoveragePossessed {
+	name: string;
+	/** Waga pokrycia: 1.0 (acquired / kredencjał) albo 0.5 (in_progress). Domyślnie 1. */
+	weight?: number;
+}
+
+/**
+ * % pokrycia ważonego popytem (D3): Σ popytu pozycji posiadanych (× waga) ÷
+ * Σ popytu całego katalogu roli, zaokrąglone do liczby całkowitej 0–100.
+ */
+export function computeDemandCoverage(
+	catalog: Pick<MarketCatalogItem, "competencyName" | "demandPercentage">[],
+	possessed: DemandCoveragePossessed[],
+): number {
+	const totalDemand = catalog.reduce((sum, item) => sum + item.demandPercentage, 0);
+	if (totalDemand <= 0) return 0;
+
+	const demandByName = new Map<string, number>();
+	for (const item of catalog) {
+		const key = normCompetencyName(item.competencyName);
+		// Duplikat w katalogu (nie powinien wystąpić) — pierwsze wystąpienie wygrywa,
+		// ale mianownik już policzył oba; trzymamy max, żeby nie zaniżać licznika.
+		demandByName.set(key, Math.max(demandByName.get(key) ?? 0, item.demandPercentage));
+	}
+
+	// Duplikaty nazw po stronie posiadanych: liczone raz, wygrywa najwyższa waga.
+	const weightByName = new Map<string, number>();
+	for (const p of possessed) {
+		const key = normCompetencyName(p.name);
+		if (!demandByName.has(key)) continue; // spoza katalogu roli — nie podnosi pokrycia
+		const weight = Math.min(Math.max(p.weight ?? 1, 0), 1);
+		weightByName.set(key, Math.max(weightByName.get(key) ?? 0, weight));
+	}
+
+	let covered = 0;
+	for (const [key, weight] of weightByName) {
+		covered += (demandByName.get(key) ?? 0) * weight;
+	}
+	return Math.round((covered / totalDemand) * 100);
+}
+
 // ── Priorytet luki — REGUŁA WZGLĘDNA w ścieżce (Sophia/Darek 2026-06-27) ──────
 //
 // Zastępuje progi BEZWZGLĘDNE 60/40, które w rozdrobnionych rolach (cyber: max popytu ~12%)

@@ -107,6 +107,23 @@ describe("PassportPublic", () => {
 		expect(screen.getAllByText(/W trakcie nauki/).length).toBeGreaterThan(0);
 	});
 
+	// Blok C (C4): przy fladze passportVerifiedOnly dane zawierają wyłącznie
+	// kredencjały (status 'acquired') — sekcja LISTY „W trakcie nauki" znika
+	// sama (warunek learning.length > 0); zostaje wyłącznie kafelek statystyk.
+	it("C4: dane bez in_progress (kredencjały) → sekcja listy „W trakcie nauki” nie renderuje się", () => {
+		const verifiedOnlyData = {
+			...mockData,
+			competencies: mockData.competencies.filter((c) => c.status === "acquired"),
+		};
+		const inProgressRender = render(<PassportPublic data={mockData} />);
+		const withLearning = screen.getAllByText(/W trakcie nauki/).length;
+		inProgressRender.unmount();
+		render(<PassportPublic data={verifiedOnlyData} />);
+		const withoutLearning = screen.getAllByText(/W trakcie nauki/).length;
+		expect(withoutLearning).toBeLessThan(withLearning);
+		expect(withoutLearning).toBe(1); // sam kafelek statystyk (licznik 0)
+	});
+
 	it("does not list missing competencies", () => {
 		render(<PassportPublic data={mockData} />);
 		expect(screen.queryByText("Docker")).not.toBeInTheDocument();

@@ -18,6 +18,7 @@ import {
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
+import { recomputeConfirmedCoverage } from "@/lib/passport-verified";
 import { reconcileVerifiedCompetencies } from "@/lib/projects/reconcile-verified";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 import type { HiddenTestSuite, SandboxFile } from "@/lib/sandbox/run-hidden-tests";
@@ -280,6 +281,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 		await db.transaction((tx) => reconcileVerifiedCompetencies(tx, submission.id));
 	} catch (err) {
 		logError("submit.reconcileVerified", err, { submissionId: submission.id });
+	}
+
+	// Blok C (C3): przy fladze ON cache pokrycia = „potwierdzone" — przeliczenie
+	// PO commicie reconcile (osobne połączenie nie widziałoby wierszy sprzed
+	// commitu). Funkcja jest wewnętrznie best-effort (logError, nie rzuca).
+	if (isFeatureEnabled("passportVerifiedOnly")) {
+		await recomputeConfirmedCoverage(studentMeta.id);
 	}
 
 	// Audit log idzie przez owner db — audit_log ma deny-all RLS dla

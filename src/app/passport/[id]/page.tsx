@@ -13,11 +13,18 @@ import {
 	submissionReviews,
 	user,
 } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
+import { computeDemandCoverage } from "@/lib/onboarding/market-catalog";
+import { loadMarketCatalog } from "@/lib/onboarding/market-gaps";
 import {
 	buildHumanReviewMap,
 	calculateCoverage,
 	mapSubmissionsToReceipts,
 } from "@/lib/passport-utils";
+import {
+	buildVerifiedPassportCompetencies,
+	loadVerifiedCompetencyNames,
+} from "@/lib/passport-verified";
 
 export async function generateMetadata({
 	params,
@@ -101,6 +108,32 @@ export default async function PublicPassportPage({ params }: { params: Promise<{
 		buildHumanReviewMap(humanReviews),
 	);
 
+	// Blok C (C3/C4, decyzje D1/D3): przy fladze ON publiczny dokument pokazuje
+	// WYŁĄCZNIE kompetencje zweryfikowane projektami + pokrycie ważone popytem
+	// (@ waga 1.0). To dokument-kredencjał czytany przez rekrutera — deklaracje
+	// z samooceny do niego nie wchodzą. OFF = zachowanie jak dotąd.
+	const verifiedOnly = isFeatureEnabled("passportVerifiedOnly");
+	let coverage: number;
+	let passportCompetencies: PassportData["competencies"];
+	if (verifiedOnly) {
+		const [verifiedNames, catalog] = await Promise.all([
+			loadVerifiedCompetencyNames(db, student.id),
+			loadMarketCatalog(student.careerGoal),
+		]);
+		coverage = computeDemandCoverage(
+			catalog,
+			verifiedNames.map((name) => ({ name })),
+		);
+		passportCompetencies = buildVerifiedPassportCompetencies(verifiedNames, catalog);
+	} else {
+		coverage = calculateCoverage(studentCompetencies, studentGaps.length);
+		passportCompetencies = studentCompetencies.map((c) => ({
+			name: c.name,
+			status: c.status,
+			marketPercentage: c.marketPercentage,
+		}));
+	}
+
 	const data: PassportData = {
 		id: passport.id,
 		student: {
@@ -110,12 +143,8 @@ export default async function PublicPassportPage({ params }: { params: Promise<{
 			semester: student.semester,
 			careerGoal: student.careerGoal,
 		},
-		marketCoveragePercent: calculateCoverage(studentCompetencies, studentGaps.length),
-		competencies: studentCompetencies.map((c) => ({
-			name: c.name,
-			status: c.status,
-			marketPercentage: c.marketPercentage,
-		})),
+		marketCoveragePercent: coverage,
+		competencies: passportCompetencies,
 		gapCount: studentGaps.length,
 		generatedAt: passport.updatedAt.toISOString(),
 		projectReceipts,

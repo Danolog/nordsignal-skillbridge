@@ -2,6 +2,13 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { competencies, gaps, passports, students, user } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
+import { computeDemandCoverage } from "@/lib/onboarding/market-catalog";
+import { loadMarketCatalog } from "@/lib/onboarding/market-gaps";
+import {
+	buildVerifiedPassportCompetencies,
+	loadVerifiedCompetencyNames,
+} from "@/lib/passport-verified";
 
 /**
  * §8 #1 Phase 2 / issue #19g: CELOWY WYJĄTEK od refactoringu na
@@ -51,6 +58,29 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 		}),
 	]);
 
+	// Blok C (C3/C4): trasa tokenowa to API-bliźniak publicznej strony paszportu
+	// — przy fladze ON serwuje kredencjały + pokrycie ważone popytem (liczone na
+	// żywo, spójnie ze stroną; cache bywa świeższy/starszy o jedną tranzycję).
+	const verifiedOnly = isFeatureEnabled("passportVerifiedOnly");
+	let coveragePercent = passport.marketCoveragePercent;
+	let responseCompetencies: { name: string; status: string; marketPercentage: number | null }[] =
+		studentCompetencies.map((c) => ({
+			name: c.name,
+			status: c.status,
+			marketPercentage: c.marketPercentage,
+		}));
+	if (verifiedOnly) {
+		const [verifiedNames, catalog] = await Promise.all([
+			loadVerifiedCompetencyNames(db, student.id),
+			loadMarketCatalog(student.careerGoal),
+		]);
+		coveragePercent = computeDemandCoverage(
+			catalog,
+			verifiedNames.map((name) => ({ name })),
+		);
+		responseCompetencies = buildVerifiedPassportCompetencies(verifiedNames, catalog);
+	}
+
 	return NextResponse.json(
 		{
 			id: passport.id,
@@ -61,12 +91,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 				semester: student.semester,
 				careerGoal: student.careerGoal,
 			},
-			marketCoveragePercent: passport.marketCoveragePercent,
-			competencies: studentCompetencies.map((c) => ({
-				name: c.name,
-				status: c.status,
-				marketPercentage: c.marketPercentage,
-			})),
+			marketCoveragePercent: coveragePercent,
+			competencies: responseCompetencies,
 			gapCount: studentGaps.length,
 			generatedAt: passport.updatedAt.toISOString(),
 		},

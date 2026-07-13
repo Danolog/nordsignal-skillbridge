@@ -27,6 +27,7 @@ import { db } from "@/lib/db";
 import { projectSubmissions, submissionReviews, vivaSessions } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
+import { recomputeConfirmedCoverage } from "@/lib/passport-verified";
 import { reconcileVerifiedCompetencies } from "@/lib/projects/reconcile-verified";
 import { checkReviewerAuth } from "@/lib/reviewer-auth";
 import { vivaProjection } from "@/lib/viva/service";
@@ -74,6 +75,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 			const [submission] = await tx
 				.select({
 					id: projectSubmissions.id,
+					studentId: projectSubmissions.studentId,
 					tenantId: projectSubmissions.tenantId,
 					status: projectSubmissions.status,
 					needsHumanReview: projectSubmissions.needsHumanReview,
@@ -148,11 +150,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 				previousStatus: submission.status,
 				newStatus,
 				tenantId: submission.tenantId,
+				studentId: submission.studentId,
 			};
 		});
 
 		if (result.outcome === "not_found") {
 			return NextResponse.json({ error: "Zgłoszenie nie istnieje" }, { status: 404 });
+		}
+
+		// Blok C (C3): cache pokrycia potwierdzonego PO commicie decyzji (osobne
+		// połączenie nie widziałoby wierszy z tx). Best-effort wewnątrz funkcji.
+		if (isFeatureEnabled("passportVerifiedOnly")) {
+			await recomputeConfirmedCoverage(result.studentId);
 		}
 
 		await recordAudit({
