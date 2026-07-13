@@ -9,6 +9,46 @@ audyt QG-4 (portfolio-grade).
 
 ---
 
+## WERDYKT PO NAPRAWACH: **GO** — partia NA PRODUKCJI (2026-07-13, wieczór)
+
+Blokery K1–K5 naprawione w PR **#172** (wyłącznie `description`/`theory_md`/
+`source_links`; rubryki, kompetencje, estymaty i materiały bit-w-bit nietknięte —
+zweryfikowane maszynowo). Warunek Ethana spełniony (łatki K3/K4 w tym samym PR).
+**Re-review Ryana (diff projektu LLM, zgodnie z jego zastrzeżeniem): GO Z NOTAMI**
+— K1 i K2 zamknięte, etykieta linku warunków Gemini potwierdzona na żywej stronie,
+zero nowych ryzyk. Noty Ryana (nieblokujące, do najbliższej iteracji treści):
+(1) dodać link do polityki danych Groq albo zawęzić rekomendację fallbacku;
+(2) w syntetycznych przykładach jawnie nakazać fikcyjne nazwiska i domeny
+`example.com`.
+
+### Rekord wykonania (audit log wg ADR-010 §10; polecenie Darka, wykonał Oliver)
+
+- **Migracja 0037** (verified_competencies, Blok C — przy okazji tej samej sesji
+  czerwonej linii): backup `prod-backup-pre-0037-20260713-2130`
+  (`ep-jolly-wind-aljy93t8`, 2026-07-13T19:27Z) → journal-check spójny (37→38)
+  → `db:migrate` DIRECT OK → weryfikacja: RLS ENABLE+FORCE, polityki
+  `student_sees_own`(SELECT/app_student) + `owner_passthrough`(neondb_owner),
+  grant tylko SELECT app_student, backfill 2 kredencjały z 1 submisji `verified`.
+- **Ingest 1E.R**: backup `prod-backup-pre-ingest-1er-20260713`
+  (`ep-hidden-hat-alxesr4j`, 2026-07-13T19:36Z) → bieg 1: wstawiono 0,
+  **zaktualizowano 5**, błędów 0 (kompetencji 23, materiałów 21, linków 18) →
+  bieg 2 identyczny (idempotencja) → weryfikacja treści na prodzie: teorie
+  792/793/787 słów (próg 600–800), markery K1/K2/K3 w description LLM, K4 w teorii
+  ML, K5 (borough) w description SQL, LLM source_links = 4, pokrycie liści DS
+  (required) = 23, projektów `ds-*` = 10 → smoke: `/` 200, `/login` 200,
+  `/api/curriculum` 401.
+- **Retencja backupów:** oba branche Neona trzymać min. kilka dni, potem
+  `neonctl branches delete`.
+
+Otwarte pozostają: **D1/Blok B** (chmury hands-on — decyzja zapadła, realizacja
+w partii 2), **QG-6** (żywy ekspert przed pierwszym receiptem — akcja Darka do
+pilotażu), dług **1E.R2** i dług platformowy P1–P4 (P1/P2/P3 spłacone w PR #176,
+P4 czeka na Blok B4).
+
+Poniżej oryginalny werdykt NO-GO z 2026-07-13 (historia bramki).
+
+---
+
 ## WERDYKT: **NO-GO** — 5 blokerów, wszystkie naprawialne w `theory_md`/`source_links`
 
 Partia **nie idzie na produkcję** w obecnym kształcie. Blokery nie są kosmetyczne:
