@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { competencies, gaps, projectSubmissions, students } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
 import { getMarketNotificationsState } from "@/lib/market-notifications";
+import { computeDemandCoverage } from "@/lib/onboarding/market-catalog";
+import { loadMarketCatalog } from "@/lib/onboarding/market-gaps";
 import { calculateCoverage } from "@/lib/passport-utils";
 import { getRhythmState } from "@/lib/rhythm/state";
 
@@ -83,10 +85,27 @@ export default async function DashboardPage() {
 	}
 
 	const gapTotal = gapRows[0]?.count ?? 0;
-	const marketCoverage = calculateCoverage(
-		studentCompetencies.map((c) => ({ status: c.status })),
-		gapTotal,
-	);
+	// Blok C (C3, decyzja D3): przy fladze ON zbiorcze pokrycie na pulpicie to
+	// „pokrycie deklarowane" WAŻONE POPYTEM — ten sam wzór co paszport
+	// (computeDemandCoverage), inne wejście: deklaracje z wagą statusu
+	// (acquired=1.0, in_progress=0.5 — jak calculateCoverage). Pulpit pozostaje
+	// narzędziem nauki (D1): Kanban niżej dalej czyta deklaracje.
+	// OFF = licznik sztukowy jak dotąd.
+	let marketCoverage: number;
+	if (isFeatureEnabled("passportVerifiedOnly")) {
+		const catalog = await loadMarketCatalog(student.careerGoal);
+		marketCoverage = computeDemandCoverage(
+			catalog,
+			studentCompetencies
+				.filter((c) => c.status !== "missing")
+				.map((c) => ({ name: c.name, weight: c.status === "acquired" ? 1 : 0.5 })),
+		);
+	} else {
+		marketCoverage = calculateCoverage(
+			studentCompetencies.map((c) => ({ status: c.status })),
+			gapTotal,
+		);
+	}
 	// „Następny krok" = najważniejsza luka: krytyczne najpierw, w obrębie priorytetu
 	// najwyższy popyt rynku (topGaps już posortowane po popycie).
 	const topGap = topGaps.find((g) => g.priority === "critical") ?? topGaps[0] ?? null;

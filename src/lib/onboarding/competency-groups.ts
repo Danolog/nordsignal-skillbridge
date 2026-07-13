@@ -20,16 +20,12 @@
 
 import { getCareerModel, getCareerModelGeneration } from "@/lib/career-model/loader";
 import type { LeafKind } from "@/lib/db/data/anchor-config";
-import type {
-	GroupCatalog,
-	GroupCatalogItem,
-	MarketCatalogItem,
+import {
+	type GroupCatalog,
+	type GroupCatalogItem,
+	type MarketCatalogItem,
+	normCompetencyName as norm,
 } from "@/lib/onboarding/market-catalog";
-
-/** Normalizacja nazwy do złączenia — trim + lower (odporne na różnice wielkości liter). */
-function norm(s: string): string {
-	return s.trim().toLowerCase();
-}
 
 /** Bezpieczne rzutowanie napisu z JSON na LeafKind (5 dozwolonych wartości). */
 const LEAF_KINDS: ReadonlySet<string> = new Set(["tool", "concept", "cert", "meta", "soft"]);

@@ -12,6 +12,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	annotateWithSyllabus,
+	computeDemandCoverage,
 	computeMarketCoverage,
 	coverageWeight,
 	DESCRIPTION_LEVEL_1,
@@ -236,5 +237,94 @@ describe("ratingOptionsForKind — 4 szczeble skali (panel B4, nie znam osobnym 
 			"znam",
 			"dobrze znam",
 		]);
+	});
+});
+
+describe("computeDemandCoverage — pokrycie WAŻONE POPYTEM (Blok C, D3)", () => {
+	const catalog = [
+		{ competencyName: "Python", demandPercentage: 55 },
+		{ competencyName: "SQL", demandPercentage: 40 },
+		{ competencyName: "NumPy", demandPercentage: 2 },
+		{ competencyName: "Git", demandPercentage: 3 },
+	];
+
+	it("pusty katalog → 0 (bez dzielenia przez zero)", () => {
+		expect(computeDemandCoverage([], [{ name: "Python" }])).toBe(0);
+	});
+
+	it("brak posiadanych → 0", () => {
+		expect(computeDemandCoverage(catalog, [])).toBe(0);
+	});
+
+	it("komplet katalogu @1.0 → 100", () => {
+		expect(
+			computeDemandCoverage(
+				catalog,
+				catalog.map((c) => ({ name: c.competencyName })),
+			),
+		).toBe(100);
+	});
+
+	it("waży popytem, nie sztukami: Python (55%) ≫ NumPy (2%)", () => {
+		const python = computeDemandCoverage(catalog, [{ name: "Python" }]);
+		const numpy = computeDemandCoverage(catalog, [{ name: "NumPy" }]);
+		expect(python).toBe(55); // 55/100
+		expect(numpy).toBe(2); // 2/100
+		expect(python).toBeGreaterThan(numpy);
+	});
+
+	it("kompetencja spoza katalogu roli nie podnosi pokrycia i nie wchodzi do mianownika", () => {
+		expect(computeDemandCoverage(catalog, [{ name: "Haskell" }])).toBe(0);
+		expect(computeDemandCoverage(catalog, [{ name: "Python" }, { name: "Haskell" }])).toBe(55);
+	});
+
+	it("dopasowanie nazw przez normalizację (trim + lower)", () => {
+		expect(computeDemandCoverage(catalog, [{ name: "  python " }])).toBe(55);
+	});
+
+	it("duplikaty nazw liczone raz — wygrywa najwyższa waga", () => {
+		expect(
+			computeDemandCoverage(catalog, [
+				{ name: "Python", weight: 0.5 },
+				{ name: "python", weight: 1 },
+			]),
+		).toBe(55);
+	});
+
+	it("waga 0.5 (in_progress) daje połowę popytu pozycji", () => {
+		expect(computeDemandCoverage(catalog, [{ name: "SQL", weight: 0.5 }])).toBe(20);
+	});
+
+	it("własność: monotoniczność — dodanie pozycji z katalogu nigdy nie obniża wyniku", () => {
+		for (let t2 = 0; t2 < 100; t2++) {
+			const size = 1 + Math.floor(Math.random() * 10);
+			const cat = Array.from({ length: size }, (_, i) => ({
+				competencyName: `k${i}`,
+				demandPercentage: 1 + Math.floor(Math.random() * 60),
+			}));
+			const picked = cat.filter(() => Math.random() < 0.5).map((c) => ({ name: c.competencyName }));
+			const before = computeDemandCoverage(cat, picked);
+			const rest = cat.find((c) => !picked.some((p) => p.name === c.competencyName));
+			if (!rest) continue;
+			const after = computeDemandCoverage(cat, [...picked, { name: rest.competencyName }]);
+			expect(after).toBeGreaterThanOrEqual(before);
+		}
+	});
+
+	it("własność: wynik zawsze w przedziale 0–100 (wagi domykane do [0,1])", () => {
+		for (let t2 = 0; t2 < 100; t2++) {
+			const size = 1 + Math.floor(Math.random() * 8);
+			const cat = Array.from({ length: size }, (_, i) => ({
+				competencyName: `k${i}`,
+				demandPercentage: Math.floor(Math.random() * 70),
+			}));
+			const possessed = cat.map((c) => ({
+				name: c.competencyName,
+				weight: Math.random() * 2, // celowo także >1 — funkcja domyka
+			}));
+			const v = computeDemandCoverage(cat, possessed);
+			expect(v).toBeGreaterThanOrEqual(0);
+			expect(v).toBeLessThanOrEqual(100);
+		}
 	});
 });

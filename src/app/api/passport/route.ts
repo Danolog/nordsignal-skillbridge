@@ -5,8 +5,15 @@ import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { competencies, gaps, passports, students } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
+import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
+import { computeDemandCoverage } from "@/lib/onboarding/market-catalog";
+import { loadMarketCatalog } from "@/lib/onboarding/market-gaps";
 import { calculateCoverage } from "@/lib/passport-utils";
+import {
+	buildVerifiedPassportCompetencies,
+	loadVerifiedCompetencyNames,
+} from "@/lib/passport-verified";
 
 /**
  * §8 #1 Phase 2 / issue #19g (refactor sub-issue): odczyt i upsert paszportu
@@ -27,6 +34,13 @@ export async function GET() {
 		return NextResponse.json({ error: "Student not found" }, { status: 404 });
 	}
 
+	// Blok C (C3/C4, decyzje D1/D3): przy fladze ON lista kompetencji pochodzi
+	// z kredencjałów (verified_competencies), a pokrycie to średnia ważona
+	// popytem @ waga 1.0. Katalog roli ładowany owner-side PRZED tx (K-PUB).
+	// OFF = zachowanie bajt-w-bajt jak dotąd.
+	const verifiedOnly = isFeatureEnabled("passportVerifiedOnly");
+	const catalog = verifiedOnly ? await loadMarketCatalog(studentMeta.careerGoal) : null;
+
 	// 0.15/B6: GET robi też INSERT/UPDATE paszportu — awaria dawała gołe 500 bez logError.
 	try {
 		const result = await withTenantContext(
@@ -43,7 +57,16 @@ export async function GET() {
 					where: eq(passports.studentId, studentMeta.id),
 				});
 
-				const coverage = calculateCoverage(studentCompetencies, studentGaps.length);
+				// Kredencjały czytane w tx studenta (grant SELECT — RLS 0037).
+				const verifiedNames =
+					verifiedOnly && catalog ? await loadVerifiedCompetencyNames(tx, studentMeta.id) : null;
+				const coverage =
+					verifiedNames && catalog
+						? computeDemandCoverage(
+								catalog,
+								verifiedNames.map((name) => ({ name })),
+							)
+						: calculateCoverage(studentCompetencies, studentGaps.length);
 
 				// Create or update passport
 				if (!passport) {
@@ -65,7 +88,7 @@ export async function GET() {
 					passport = updated;
 				}
 
-				return { passport, studentCompetencies, coverage };
+				return { passport, studentCompetencies, coverage, verifiedNames };
 			},
 		);
 
@@ -79,11 +102,14 @@ export async function GET() {
 				careerGoal: studentMeta.careerGoal,
 			},
 			marketCoveragePercent: result.coverage,
-			competencies: result.studentCompetencies.map((c) => ({
-				name: c.name,
-				status: c.status,
-				marketPercentage: c.marketPercentage,
-			})),
+			competencies:
+				result.verifiedNames && catalog
+					? buildVerifiedPassportCompetencies(result.verifiedNames, catalog)
+					: result.studentCompetencies.map((c) => ({
+							name: c.name,
+							status: c.status,
+							marketPercentage: c.marketPercentage,
+						})),
 			generatedAt: result.passport.updatedAt.toISOString(),
 		});
 	} catch (err) {

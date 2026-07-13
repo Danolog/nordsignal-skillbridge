@@ -19,6 +19,7 @@ import { eq } from "drizzle-orm";
 import { ensureCareerModelLoaded } from "@/lib/career-model/loader";
 import { db } from "@/lib/db";
 import { competencies, gaps, jobMarketData, passports } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 import { enrichWithKind } from "@/lib/onboarding/competency-groups";
 import {
@@ -112,6 +113,11 @@ export async function persistMarketGaps(
 			// Pokrycie z tego samego źródła co reszta (calculateCoverage): statusy zapisanych
 			// kompetencji (acquired/in_progress) + liczba luk jako mianownik. Odczyt przez tx —
 			// widzi luki właśnie zapisane w tej transakcji, spójnie z upsertem paszportu niżej.
+			// Blok C (C3): przy fladze passportVerifiedOnly cache paszportu ma semantykę
+			// „potwierdzone" i pisze go wyłącznie recomputeConfirmedCoverage (po reconcile)
+			// — deklaracje przestają go nadpisywać; wiersz paszportu nadal powstaje
+			// (świeży student = 0% potwierdzonych, uczciwa prawda).
+			const verifiedOnly = isFeatureEnabled("passportVerifiedOnly");
 			const freshComps = await tx.query.competencies.findMany({
 				where: eq(competencies.studentId, studentId),
 				columns: { status: true },
@@ -123,12 +129,18 @@ export async function persistMarketGaps(
 				columns: { id: true },
 			});
 			if (existingPassport) {
-				await tx
-					.update(passports)
-					.set({ marketCoveragePercent: coverage, updatedAt: new Date() })
-					.where(eq(passports.studentId, studentId));
+				if (!verifiedOnly) {
+					await tx
+						.update(passports)
+						.set({ marketCoveragePercent: coverage, updatedAt: new Date() })
+						.where(eq(passports.studentId, studentId));
+				}
 			} else {
-				await tx.insert(passports).values({ studentId, tenantId, marketCoveragePercent: coverage });
+				await tx.insert(passports).values({
+					studentId,
+					tenantId,
+					marketCoveragePercent: verifiedOnly ? 0 : coverage,
+				});
 			}
 		});
 	} catch (err) {

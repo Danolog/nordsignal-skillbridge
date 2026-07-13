@@ -13,7 +13,12 @@
 
 import { describe, expect, it } from "vitest";
 import { db } from "@/lib/db"; // tylko typowo — calculateCoverage jest czysta
-import { computeMarketCoverage, type PossessionLevel } from "@/lib/onboarding/market-catalog";
+import {
+	computeDemandCoverage,
+	computeMarketCoverage,
+	coverageWeight,
+	type PossessionLevel,
+} from "@/lib/onboarding/market-catalog";
 import { calculateCoverage } from "@/lib/passport-utils";
 import { levelToStatus } from "@/lib/self-assessment";
 
@@ -54,6 +59,60 @@ describe("Parytet pokrycia front↔paszport (computeMarketCoverage == calculateC
 				() => levelsPool[Math.floor(Math.random() * 3)],
 			);
 			expect(computeMarketCoverage(size, levels)).toBe(passportCoverage(size, levels));
+		}
+	});
+});
+
+/**
+ * Blok C planu napraw (C3, decyzja D3): paszport przestaje derywować z deklaracji,
+ * więc parytet front↔paszport zmienia SENS — to odtąd parytet WZORU (obie strony
+ * wołają computeDemandCoverage), nie równość wartości. Stare describe wyżej zostaje
+ * jako strażnik zachowania przy fladze OFF (domyślnej).
+ */
+describe("Parytet WZORU (Blok C): front i paszport wołają computeDemandCoverage", () => {
+	const catalog = [
+		{ competencyName: "Python", demandPercentage: 55 },
+		{ competencyName: "SQL", demandPercentage: 40 },
+		{ competencyName: "Statystyka", demandPercentage: 25 },
+		{ competencyName: "NumPy", demandPercentage: 2 },
+	];
+
+	it("te same posiadane @ tej samej wadze → identyczna liczba po obu stronach (ten sam wzór)", () => {
+		const names = ["Python", "Statystyka"];
+		// PASZPORT: kredencjały z verified_competencies, waga 1.0.
+		const passport = computeDemandCoverage(
+			catalog,
+			names.map((name) => ({ name })),
+		);
+		// FRONT: deklaracje na poziomie 3/4 → coverageWeight = 1.0.
+		const front = computeDemandCoverage(
+			catalog,
+			names.map((name) => ({ name, weight: coverageWeight(3) })),
+		);
+		expect(front).toBe(passport);
+	});
+
+	it("rozjazd WARTOŚCI jest legalny: deklaracja 'uczę się' (0.5) < kredencjał (1.0)", () => {
+		const declared = computeDemandCoverage(catalog, [
+			{ name: "Python", weight: coverageWeight(2) },
+		]);
+		const confirmed = computeDemandCoverage(catalog, [{ name: "Python" }]);
+		expect(declared).toBeLessThan(confirmed);
+		expect(confirmed).toBe(Math.round((55 / 122) * 100)); // Σ popytu katalogu = 122
+	});
+
+	it("własność: dla dowolnego wyboru wynik frontu z wagami 1.0 == wynik paszportu", () => {
+		for (let t2 = 0; t2 < 100; t2++) {
+			const picked = catalog.filter(() => Math.random() < 0.5).map((c) => c.competencyName);
+			const passport = computeDemandCoverage(
+				catalog,
+				picked.map((name) => ({ name })),
+			);
+			const front = computeDemandCoverage(
+				catalog,
+				picked.map((name) => ({ name, weight: 1 })),
+			);
+			expect(front).toBe(passport);
 		}
 	});
 });

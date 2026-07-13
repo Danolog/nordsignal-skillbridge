@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { projectSubmissions, vivaAnswers, vivaSessions } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
+import { recomputeConfirmedCoverage } from "@/lib/passport-verified";
 import { reconcileVerifiedCompetencies } from "@/lib/projects/reconcile-verified";
 import { vivaProjection } from "@/lib/viva/service";
 import type { VivaResult, VivaSessionStatus } from "@/lib/viva/types";
@@ -152,6 +154,11 @@ export async function closeSessionWithOutcome(args: {
 		// reconcile poprawnie nic nie wstawi (i nic nie skasuje, bo submitted).
 		await reconcileVerifiedCompetencies(tx, args.session.submissionId);
 	});
+	// Blok C (C3): cache pokrycia potwierdzonego PO commicie (osobne połączenie
+	// nie widziałoby wierszy z tx). Best-effort wewnątrz funkcji (logError).
+	if (isFeatureEnabled("passportVerifiedOnly")) {
+		await recomputeConfirmedCoverage(args.session.studentId);
+	}
 }
 
 /**

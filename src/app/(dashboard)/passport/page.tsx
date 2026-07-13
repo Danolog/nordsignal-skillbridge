@@ -12,11 +12,18 @@ import {
 	students,
 	submissionReviews,
 } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
+import { computeDemandCoverage } from "@/lib/onboarding/market-catalog";
+import { loadMarketCatalog } from "@/lib/onboarding/market-gaps";
 import {
 	buildHumanReviewMap,
 	calculateCoverage,
 	mapSubmissionsToReceipts,
 } from "@/lib/passport-utils";
+import {
+	buildVerifiedPassportCompetencies,
+	loadVerifiedCompetencyNames,
+} from "@/lib/passport-verified";
 
 export default async function PassportPage() {
 	const session = await auth.api.getSession({ headers: await headers() });
@@ -36,7 +43,32 @@ export default async function PassportPage() {
 		}),
 	]);
 
-	const coverage = calculateCoverage(studentCompetencies, studentGaps.length);
+	// Blok C (C3/C4, decyzje D1/D3): przy fladze ON dokument-kredencjał pochodzi
+	// WYŁĄCZNIE ze zweryfikowanych projektów — lista = verified_competencies
+	// (status zawsze 'acquired'), pokrycie = średnia ważona popytem @ waga 1.0.
+	// Deklaracje/diagnoza zostają w aplikacji (Kanban, analiza luk) — D1.
+	// OFF = zachowanie jak dotąd (deklaracje + calculateCoverage).
+	const verifiedOnly = isFeatureEnabled("passportVerifiedOnly");
+	let coverage: number;
+	let passportCompetencies: PassportData["competencies"];
+	if (verifiedOnly) {
+		const [verifiedNames, catalog] = await Promise.all([
+			loadVerifiedCompetencyNames(db, student.id),
+			loadMarketCatalog(student.careerGoal),
+		]);
+		coverage = computeDemandCoverage(
+			catalog,
+			verifiedNames.map((name) => ({ name })),
+		);
+		passportCompetencies = buildVerifiedPassportCompetencies(verifiedNames, catalog);
+	} else {
+		coverage = calculateCoverage(studentCompetencies, studentGaps.length);
+		passportCompetencies = studentCompetencies.map((c) => ({
+			name: c.name,
+			status: c.status,
+			marketPercentage: c.marketPercentage,
+		}));
+	}
 
 	// Create or update passport
 	let passport = await db.query.passports.findFirst({
@@ -98,11 +130,7 @@ export default async function PassportPage() {
 			careerGoal: student.careerGoal,
 		},
 		marketCoveragePercent: coverage,
-		competencies: studentCompetencies.map((c) => ({
-			name: c.name,
-			status: c.status,
-			marketPercentage: c.marketPercentage,
-		})),
+		competencies: passportCompetencies,
 		gapCount: studentGaps.length,
 		generatedAt: passport.updatedAt.toISOString(),
 		projectReceipts,
