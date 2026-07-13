@@ -207,6 +207,9 @@ d("1E.2 · ingest curriculum: atomy + bank + strażnik + recompute (realna baza)
 		const stats = await runCurriculumIngest(DATABASE_URL, ladder, contentsV1());
 		expect(stats.bank).toContain("+0 nowe");
 		expect(stats.bank).toContain("0 retired");
+		// Idempotencja obejmuje feedback: porównanie kanoniczne (JSONB przestawia
+		// klucze) — drugi bieg nie może "aktualizować" niczego.
+		expect(stats.bank).toContain("w tym 0 aktualizacji feedbacku");
 		const after = await activeQuestionIds();
 		expect(after.map((r) => r.id)).toEqual(before.map((r) => r.id));
 	});
