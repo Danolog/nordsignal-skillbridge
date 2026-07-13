@@ -24,7 +24,16 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 		with: {
 			competencies: true,
 			learningResources: {
-				columns: { title: true, url: true, type: true },
+				// Blok E (E4): metadane compliance (QG-5 §4) muszą docierać do studenta —
+				// plakietki „wymaga konta" / licencja / data weryfikacji w SourceLinkRow.
+				columns: {
+					title: true,
+					url: true,
+					type: true,
+					license: true,
+					registrationRequired: true,
+					verifiedAt: true,
+				},
 				orderBy: (r, { asc }) => [asc(r.position)],
 			},
 			// #7 — linki źródła danych (2–3), posortowane po position. K-PUB (bez RLS) — czytamy przez db.

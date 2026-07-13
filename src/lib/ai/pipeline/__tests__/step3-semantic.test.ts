@@ -17,6 +17,7 @@ const hard: HardTestResults = {
 	syntaxOk: true,
 	inputFilePresent: true,
 	runOk: null,
+	endpointChecks: null,
 	messages: [],
 };
 
@@ -50,6 +51,14 @@ const args = {
 	rubric,
 	hardResults: hard,
 	inputMeta: { truncated: false, omittedFiles: [] },
+	// Blok E (E1): historia commitów w kroku 3 — pobrana raz w index.ts.
+	commits: [
+		{
+			sha: "1",
+			commit: { author: { date: "2026-06-01T12:00:00Z", name: "Ala" }, message: "feat: analiza" },
+			author: { login: "ala" },
+		},
+	],
 };
 
 beforeEach(() => {
@@ -107,5 +116,35 @@ describe("step3 — ocena semantyczna (mock modelu)", () => {
 		const call = mockGenerateText.mock.calls[0][0] as { prompt: string };
 		expect(call.prompt).toContain('<user_input untrusted="true">');
 		expect(call.prompt).toContain("<STUDENT_ARTIFACT>");
+	});
+
+	// Blok E (E1): historia commitów jako dowód kryterium „sensowna historia
+	// commitów" — WEWNĄTRZ bloku untrusted (wiadomości pisze student).
+	it("COMMIT_HISTORY w prompcie: linie commitów w części untrusted; null → nota not_assessable", async () => {
+		mockGenerateText.mockResolvedValue({ text: JSON.stringify(validOutput) } as TextReturn);
+		await runSemanticReview(args);
+		const call = mockGenerateText.mock.calls[0][0] as { prompt: string };
+		const untrusted = call.prompt.slice(call.prompt.indexOf('<user_input untrusted="true">'));
+		expect(untrusted).toContain("<COMMIT_HISTORY>");
+		expect(untrusted).toContain("2026-06-01T12:00:00Z · ala · feat: analiza");
+
+		mockGenerateText.mockResolvedValue({ text: JSON.stringify(validOutput) } as TextReturn);
+		await runSemanticReview({ ...args, commits: null });
+		const call2 = mockGenerateText.mock.calls[1][0] as { prompt: string };
+		expect(call2.prompt).toContain("historia commitów niedostępna");
+	});
+
+	// Blok E (E2): wynik odwiedzin endpointu trafia do HARD_TEST_RESULTS.
+	it("endpointChecks przechodzą do bloku HARD_TEST_RESULTS", async () => {
+		mockGenerateText.mockResolvedValue({ text: JSON.stringify(validOutput) } as TextReturn);
+		await runSemanticReview({
+			...args,
+			hardResults: {
+				...hard,
+				endpointChecks: [{ url: "https://demo.streamlit.app", ok: true, status: 200 }],
+			},
+		});
+		const call = mockGenerateText.mock.calls[0][0] as { prompt: string };
+		expect(call.prompt).toContain('"endpointChecks":[{"url":"https://demo.streamlit.app"');
 	});
 });

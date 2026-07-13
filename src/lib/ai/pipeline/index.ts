@@ -10,7 +10,8 @@
  * Werdykt maszyny obowiązuje sam dla oceny formującej (ADR-008).
  */
 
-import { repoCoordsFromUrl } from "@/lib/ai/pipeline/github";
+import { checkEndpoints } from "@/lib/ai/pipeline/endpoint-check";
+import { fetchCommits, repoCoordsFromUrl } from "@/lib/ai/pipeline/github";
 import { fetchContent } from "@/lib/ai/pipeline/step1-fetch-content";
 import { runHardChecks } from "@/lib/ai/pipeline/step2-hard-checks";
 import { runSemanticReview } from "@/lib/ai/pipeline/step3-semantic";
@@ -198,6 +199,22 @@ export async function runReviewPipeline(args: {
 		}
 	}
 
+	// KROK 2c (Blok E/E2) — odwiedziny endpointów z README (HEAD/GET, timeout,
+	// guard SSRF). Tylko gdy treść realnie pobrana. Wynik idzie do kroku 3 jako
+	// dowód dla kryterium „publiczny, klikalny endpoint" (25% wagi jedynego L2).
+	if (content.ok && content.data.readme) {
+		hard.data.endpointChecks = await checkEndpoints(content.data.readme);
+	}
+
+	// Commity pobierane RAZ (Blok E/E1) — wspólne dla kroku 3 (dowód kryterium
+	// „sensowna historia commitów", 20% wagi w 4 projektach) i kroku 4 (cheat-risk).
+	// 0.7 (confused-deputy): coords TYLKO gdy krok 1 pobrał treść (content.ok). Gdy krok 1
+	// odrzucił repo (prywatne/niedostępne/puste), nie sięgamy po commity — inaczej dla
+	// prywatnego repo z dostępem tokenu wyciekłyby zagregowane metadane (commitCount/
+	// authorCount/timespan) do cheatSignals, mimo że treść słusznie odrzuciliśmy.
+	const coords = parsedRepo && content.ok ? repoCoordsFromUrl(parsedRepo.url) : null;
+	const commits = coords ? await fetchCommits(coords) : null;
+
 	// KROK 3 (+4 AI) — ocena semantyczna + feedback + sygnały AI (jedno wywołanie).
 	const semantic = await runSemanticReview({
 		deliverableType,
@@ -206,16 +223,12 @@ export async function runReviewPipeline(args: {
 		rubric,
 		hardResults: hard.data,
 		inputMeta: content.data.inputMeta,
+		commits,
 	});
 	allFlags.push(...semantic.flags);
 
-	// KROK 4 — cheat-risk z faktów (commity) + agregacja deterministyczna.
-	// 0.7 (confused-deputy): coords TYLKO gdy krok 1 pobrał treść (content.ok). Gdy krok 1
-	// odrzucił repo (prywatne/niedostępne/puste), nie sięgamy po commity — inaczej dla
-	// prywatnego repo z dostępem tokenu wyciekłyby zagregowane metadane (commitCount/
-	// authorCount/timespan) do cheatSignals, mimo że treść słusznie odrzuciliśmy.
-	const coords = parsedRepo && content.ok ? repoCoordsFromUrl(parsedRepo.url) : null;
-	const cheat = await runCheatSignals(coords, semantic.data.cheatSignals);
+	// KROK 4 — cheat-risk z faktów (commity z jednego pobrania wyżej) + agregacja.
+	const cheat = await runCheatSignals(commits, semantic.data.cheatSignals);
 	allFlags.push(...cheat.flags);
 
 	// KROK 5 — suma + routing (deterministycznie w kodzie).

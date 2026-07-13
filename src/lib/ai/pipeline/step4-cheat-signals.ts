@@ -8,7 +8,7 @@
  * NIE zgaduje go model (wprost §III wymagań).
  */
 
-import { fetchCommits, type RepoCoords } from "@/lib/ai/pipeline/github";
+import type { CommitListEntry } from "@/lib/ai/pipeline/github";
 import type {
 	AiCheatSignals,
 	CheatSignals,
@@ -86,12 +86,13 @@ export function computeAggregatedRisk(signals: {
 }
 
 /**
- * Krok 4 — pobiera commity (GitHub API) i składa pełny obiekt sygnałów.
- * `coords` null (brak repo) → część automatyczna pomijana (null), ryzyko liczone
- * tylko z sygnałów AI. Łagodna degradacja, bez wyjątków.
+ * Krok 4 — składa pełny obiekt sygnałów z listy commitów pobranej w index.ts
+ * (Blok E/E1: jedno pobranie wspólne z krokiem 3 — koniec podwójnego fetchu).
+ * `commits` null (brak repo / API padło) → część automatyczna pomijana (null),
+ * ryzyko liczone tylko z sygnałów AI. Łagodna degradacja, bez wyjątków.
  */
 export async function runCheatSignals(
-	coords: RepoCoords | null,
+	commits: CommitListEntry[] | null,
 	aiSignals: AiCheatSignals,
 ): Promise<StepResult<CheatSignals>> {
 	const flags: PipelineFlag[] = [];
@@ -103,22 +104,19 @@ export async function runCheatSignals(
 	let bulkInitialCommit: boolean | null = null;
 	let shortTimespan: boolean | null = null;
 
-	if (coords) {
-		const commits = await fetchCommits(coords);
-		if (commits && commits.length > 0) {
-			const facts = deriveCommitFacts(
-				commits.map((c) => c.commit?.author?.date),
-				commits.map((c) => c.author?.login ?? c.commit?.author?.email),
-			);
-			commitCount = facts.commitCount;
-			authorCount = facts.authorCount;
-			timespanMinutes = facts.timespanMinutes;
-			singleCommit = facts.singleCommit;
-			shortTimespan = facts.shortTimespan;
-			// „bulk initial" w Fazie 1 aproksymujemy jako pojedynczy commit
-			// (statystyki diff per-commit to osobne zapytania — dokładamy później).
-			bulkInitialCommit = facts.singleCommit;
-		}
+	if (commits && commits.length > 0) {
+		const facts = deriveCommitFacts(
+			commits.map((c) => c.commit?.author?.date),
+			commits.map((c) => c.author?.login ?? c.commit?.author?.email),
+		);
+		commitCount = facts.commitCount;
+		authorCount = facts.authorCount;
+		timespanMinutes = facts.timespanMinutes;
+		singleCommit = facts.singleCommit;
+		shortTimespan = facts.shortTimespan;
+		// „bulk initial" w Fazie 1 aproksymujemy jako pojedynczy commit
+		// (statystyki diff per-commit to osobne zapytania — dokładamy później).
+		bulkInitialCommit = facts.singleCommit;
 	}
 
 	const aggregatedRisk = computeAggregatedRisk({
