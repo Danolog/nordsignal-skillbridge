@@ -97,6 +97,12 @@ const TENANT_TABLES = [
 	"curriculum_item_progress",
 	"curriculum_item_answers",
 	"curriculum_module_progress",
+	// Blok C planu napraw — kredencjały „kompetencja zweryfikowana projektem"
+	// (migracja 0037). Snapshot z project_competencies(role='required') przy
+	// submisji 'verified'. Grant TYLKO SELECT dla app_student (zapisy wyłącznie
+	// owner-side przez reconcileVerifiedCompetencies), app_faculty bez grantu;
+	// ENABLE+FORCE + student_sees_own + owner_passthrough.
+	"verified_competencies",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.

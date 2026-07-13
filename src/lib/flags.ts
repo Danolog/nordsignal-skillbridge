@@ -110,6 +110,15 @@ export const FLAGS = {
 			"streak bez źródła curriculum — marketplace bez zmian).",
 		defaultValue: false,
 	},
+	passportVerifiedOnly: {
+		envVar: "FLAG_PASSPORT_VERIFIED_ONLY",
+		description:
+			"Blok C planu napraw (decyzja D1): paszport pokazuje WYŁĄCZNIE kompetencje " +
+			"zweryfikowane projektami (verified_competencies) + pokrycie ważone popytem (D3); " +
+			"sekcja „W trakcie nauki” znika z dokumentu. Bramkuje TYLKO odczyt — zapisy " +
+			"reconcile idą na ciemno od merge'a C2. Off = paszport z deklaracji, jak dziś.",
+		defaultValue: false,
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).
