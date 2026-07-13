@@ -23,8 +23,23 @@ import type {
 	StepResult,
 } from "@/lib/ai/pipeline/types";
 
-/** Wymagane sekcje README (kontrakt wejścia §I.3). */
-const README_SECTIONS = ["cel", "uruchomienie", "wnioski"] as const;
+/**
+ * Wymagane sekcje README (kontrakt wejścia §I.3) — po Bloku E (E3) każda
+ * sekcja to klasa synonimów, nie jedno słowo. Powód: żadna treść projektów
+ * nie każe studentowi pisać dosłownie „cel/uruchomienie/wnioski", a rubryka
+ * L2 dyktuje README „dla rekrutera" (problem → dane → wynik → jak odtworzyć) —
+ * student idący za briefem dostawał `hard_check_failed` mimo dobrego README.
+ * Kontrakt: README musi ADRESOWAĆ trzy funkcje (po co / jak uruchomić /
+ * co wyszło), nie zawierać trzech konkretnych słów.
+ */
+const README_SECTIONS = [
+	{ key: "cel", pattern: /\bcel|\bproblem|\bpo co\b|opis projektu|## o projekcie/ },
+	{
+		key: "uruchomienie",
+		pattern: /uruchom|instalacj|odtworz|setup|installation|getting started|how to run|jak zacz/,
+	},
+	{ key: "wnioski", pattern: /wnios|wynik|podsumowanie|rezultat|conclusion|results/ },
+] as const;
 const README_MIN_CHARS = 120;
 
 const CODE_EXTENSIONS = new Set([
@@ -52,10 +67,10 @@ function extOf(path: string): string {
 	return dot <= 0 ? "" : base.slice(dot + 1).toLowerCase();
 }
 
-/** README ma wszystkie trzy sekcje (po nagłówkach lub frazach) i minimalną długość. */
+/** README adresuje trzy funkcje (cel/uruchomienie/wnioski — klasy synonimów) i ma minimalną długość. */
 export function checkReadmeStructure(readme: string): { ok: boolean; missing: string[] } {
 	const lower = readme.toLowerCase();
-	const missing = README_SECTIONS.filter((s) => !lower.includes(s));
+	const missing = README_SECTIONS.filter((s) => !s.pattern.test(lower)).map((s) => s.key);
 	const longEnough = readme.trim().length >= README_MIN_CHARS;
 	return {
 		ok: missing.length === 0 && longEnough,
@@ -188,6 +203,7 @@ export function runHardChecks(
 			syntaxOk,
 			inputFilePresent,
 			runOk: null, // Faza 1: nie uruchamiamy kodu
+			endpointChecks: null, // Blok E (E2): wypełnia krok 2c w index.ts (sieć poza tym krokiem)
 			messages,
 		},
 		flags,

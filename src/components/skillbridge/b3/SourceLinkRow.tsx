@@ -27,6 +27,14 @@ export interface LearningResource {
 	// ale typ Drizzle to `string`. Akceptujemy string (bez castu na granicy); typ spoza
 	// listy degraduje do „Materiał" w TYPE_META (backend CHECK to wyłapuje wcześniej).
 	type: string;
+	// Blok E (E4) — metadane compliance (QG-5 §4): treść je ma od 1E.R, produkt
+	// dotąd ich nie pokazywał (ostrzeżenia wszyte w tytuł ucinał `truncate`).
+	// Opcjonalne: starsi wołający (testy, seed) nie muszą ich podawać.
+	// Plakietka „wymaga karty" dojdzie z projektami chmurowymi Bloku B
+	// (dziś nie ma kolumny cardRequired).
+	license?: string | null;
+	registrationRequired?: boolean;
+	verifiedAt?: Date | string | null;
 }
 
 // Mapowanie typu → ikona + polska etykieta. Typ spoza listy (gdyby backend rozszerzył
@@ -54,10 +62,19 @@ interface SourceLinkRowProps {
 	resource: LearningResource;
 }
 
+/** Data weryfikacji łącza jako YYYY-MM-DD (bez crasha na złej wartości). */
+function formatVerifiedAt(value: Date | string | null | undefined): string | null {
+	if (!value) return null;
+	const d = value instanceof Date ? value : new Date(value);
+	if (Number.isNaN(d.getTime())) return null;
+	return d.toISOString().slice(0, 10);
+}
+
 export function SourceLinkRow({ resource }: SourceLinkRowProps) {
 	const meta = (TYPE_META as Record<string, TypeMeta>)[resource.type] ?? FALLBACK_META;
 	const { Icon } = meta;
 	const host = hostFromUrl(resource.url);
+	const verifiedAt = formatVerifiedAt(resource.verifiedAt);
 
 	return (
 		<a
@@ -75,7 +92,18 @@ export function SourceLinkRow({ resource }: SourceLinkRowProps) {
 
 			<span className="min-w-0 flex-1">
 				<span className="block truncate text-sm font-medium text-foreground">{resource.title}</span>
-				{host && <span className="block truncate text-xs text-muted-foreground">{host}</span>}
+				{/* Blok E (E4): metadane compliance widoczne, nie ucinane — plakietka
+				    „wymaga konta" jako pełny element (nie fragment tytułu pod truncate). */}
+				<span className="flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+					{host && <span className="truncate">{host}</span>}
+					{resource.registrationRequired && (
+						<span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+							wymaga konta
+						</span>
+					)}
+					{resource.license && <span className="shrink-0">licencja: {resource.license}</span>}
+					{verifiedAt && <span className="shrink-0">sprawdzono {verifiedAt}</span>}
+				</span>
 			</span>
 
 			<ExternalLink

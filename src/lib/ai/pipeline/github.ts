@@ -118,6 +118,8 @@ export type CommitListEntry = {
 	sha: string;
 	commit?: {
 		author?: { name?: string; email?: string; date?: string };
+		/** Blok E (E1): pełny komunikat commita — pierwsza linia idzie do kroku 3. */
+		message?: string;
 	};
 	author?: { login?: string } | null;
 };

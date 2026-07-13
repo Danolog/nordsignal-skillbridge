@@ -1,10 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-vi.mock("../github", () => ({
-	fetchCommits: vi.fn(),
-}));
-
-import { fetchCommits } from "../github";
 import {
 	computeAggregatedRisk,
 	deriveCommitFacts,
@@ -13,16 +8,12 @@ import {
 } from "../step4-cheat-signals";
 import type { AiCheatSignals } from "../types";
 
-const mockFetchCommits = vi.mocked(fetchCommits);
-
 const noAiSignals: AiCheatSignals = {
 	styleInconsistency: { flag: false, evidence: "" },
 	deadCode: { flag: false, evidence: "" },
 	readmeMismatch: { flag: false, evidence: "" },
 	notes: "",
 };
-
-beforeEach(() => vi.clearAllMocks());
 
 describe("step4 — fakty z commitów (czysta funkcja)", () => {
 	it("pojedynczy commit → singleCommit, brak rozpiętości", () => {
@@ -78,32 +69,33 @@ describe("step4 — agregacja ryzyka (deterministyczna, w KODZIE)", () => {
 	});
 });
 
-describe("step4 — runCheatSignals (mock GitHub API)", () => {
+// Blok E (E1): krok 4 dostaje listę commitów pobraną RAZ w index.ts (wspólną
+// z krokiem 3) — koniec mockowania fetchCommits na tym poziomie.
+describe("step4 — runCheatSignals (commity z index.ts)", () => {
 	it("składa fakty z commitów i zapala flagę przy wysokim ryzyku", async () => {
-		mockFetchCommits.mockResolvedValue([
+		const commits = [
 			{ sha: "1", commit: { author: { date: "2026-06-01T12:00:00Z", email: "a@x" } } },
-		]);
+		];
 		const aiHigh: AiCheatSignals = {
 			...noAiSignals,
 			styleInconsistency: { flag: true, evidence: "różne konwencje" },
 		};
-		const r = await runCheatSignals({ owner: "u", repo: "r" }, aiHigh);
+		const r = await runCheatSignals(commits, aiHigh);
 		expect(r.data.commitCount).toBe(1);
 		expect(r.data.singleCommit).toBe(true);
 		expect(r.data.aggregatedRisk).toBeGreaterThanOrEqual(HIGH_RISK_THRESHOLD);
 		expect(r.flags.some((f) => f.code === "high_cheat_risk")).toBe(true);
 	});
 
-	it("brak repo (coords null) → część automatyczna null, ryzyko tylko z AI", async () => {
+	it("brak repo / API niedostępne (commits null) → część automatyczna null, ryzyko tylko z AI", async () => {
 		const r = await runCheatSignals(null, noAiSignals);
-		expect(mockFetchCommits).not.toHaveBeenCalled();
+		expect(r.ok).toBe(true);
 		expect(r.data.commitCount).toBeNull();
 		expect(r.data.aggregatedRisk).toBe(0);
 	});
 
-	it("GitHub API niedostępne (null) → łagodna degradacja, bez wyjątku", async () => {
-		mockFetchCommits.mockResolvedValue(null);
-		const r = await runCheatSignals({ owner: "u", repo: "r" }, noAiSignals);
+	it("repozytorium bez commitów (pusta lista) → jak brak danych, bez wyjątku", async () => {
+		const r = await runCheatSignals([], noAiSignals);
 		expect(r.ok).toBe(true);
 		expect(r.data.commitCount).toBeNull();
 	});

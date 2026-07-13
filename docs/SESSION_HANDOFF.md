@@ -11,7 +11,58 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-13 (wieczór)
+## STAN NA DZIŚ — 2026-07-13 (późny wieczór) — PLAN NAPRAW W IMPLEMENTACJI
+
+### Plan napraw (1E.R / chmury / paszport / QG-6) — 6 PR-ów czeka na przegląd
+Plan (wiążący, decyzje Darka D1–D4) żyje POZA repo:
+`~/.claude/plans/napisz-plan-tych-wszystkich-eager-pine.md`. Wykonanie tej sesji:
+- **Blok A ✅ PR #172** — blokery K1–K5 bramki QG 1E.R naprawione w
+  `ds-projects-partia-1r.json` (tylko description/theory_md/source_links; rubryki
+  bit-w-bit nietknięte; progi 600–800 słów trzymane; ingest testowy ×2 zielony;
+  recenzja adwersaryjna agenta: GO). **Ryan: wystarczy diff projektu LLM** (3. hunk).
+  Po merge → ingest 1E.R na prod = [CZERWONA LINIA] ADR-010.
+- **PR #171 uzupełniony** — sprostowanie D1 (zdanie o „Verified Receipt na trzy
+  chmury" było nieprawdziwe: mostek projekt→paszport nie istniał; ryzyko przyszłe)
+  + notka QG-6 (1E.R nie jest blokowana — brak L3).
+- **Blok B1+D ✅ PR #173** — runbook v1.1: QG-5 §5 wyjątek karty (wyłącznie
+  weryfikacja tożsamości; Azure 35%/AWS 30%/GCP 19%), QG-6 (agent-recenzent OK
+  przed pilotażem, żywy ekspert przed pierwszym receiptem), QG-4 §7 (instrukcje
+  różnicujące per student MUSZĄ żyć w description — generate-brief nie widzi theory_md).
+- **Blok C ✅ kodowo — łańcuch stacked PR: #174 → #175 → #177** (merge W TEJ
+  kolejności, bez --delete-branch przed retargetem):
+  - #174 C1: tabela `verified_competencies` (migracja **0037** + RLS wzorzec 0034
+    + backfill w migracji) + flaga `FLAG_PASSPORT_VERIFIED_ONLY` + **rls-matrix
+    v0.28 → DO SIGN-OFFU RYANA**;
+  - #175 C2: `reconcileVerifiedCompetencies` wpięta w submit/resubmit, vivę,
+    decyzję człowieka (+ tenant-sync w onboardingu); test integracyjny 8/8;
+  - #177 C3/C4: odczyt paszportu za flagą (5 czytelników — plan mówił o 4, doszła
+    trasa tokenowa `api/passport/[id]`), `computeDemandCoverage` (D3, parytet
+    WZORU), cache pisany przez `recomputeConfirmedCoverage` PO commicie tranzycji.
+  - **Flip (krok C5): migracja 0037 na prod → merge łańcucha → weryfikacja →
+    FLAG_PASSPORT_VERIFIED_ONLY=1 na Vercel → sprzątanie** (calculateCoverage,
+    licznik onboardingu client-side, kafelek „W trakcie: 0").
+- **Blok E ✅ PR #176** — pipeline oceny: commity do kroku 3 (<COMMIT_HISTORY>
+  w bloku untrusted; kryterium 20% wagi zaliczalne), endpoint-check z guardem
+  SSRF (25% wagi L2), kontrakt README na klasach synonimów, plakietki compliance
+  (license/registrationRequired/verifiedAt) w SourceLinkRow.
+- **Blok B2/B3/B4 ⏳ NIEZACZĘTY** — trzy projekty `ds-endpoint-azure/gcp/aws`
+  (partia 2, autoring z pełnym QG-1…7 — w tym benchmark ofert z URL-ami), potem
+  B3 (`ds-chmura`: zdjąć chmury z required, dać CI/CD+MLOps) i B4 (test
+  kontraktowy na glob + seed-parytet). UWAGA do B4: partia 1r NADPISUJE 5 slugów
+  partii 1 (celowo) — „unikalność slugów między plikami" wymaga semantyki
+  katalogu efektywnego (last-wins po slugu), nie prostej asercji.
+- **Bloki D3 (żywy ekspert) i F (1E.R2 z Sophią)** — do pilotażu, akcje poza agentami.
+
+### Infrastruktura tej sesji
+- **Baza testowa :5433 DZIAŁA** — postawiony kontener `skillbridge-postgres-test`
+  (postgres:16, user/pass postgres, db `skillbridge_test`), zmigrowany do 0037.
+  Handoffowa notka „:5433 nie działa" NIEAKTUALNA. `pnpm db:seed` na tej bazie
+  pada na FK `curriculum_module_items→projects` (pozostałość testów curriculum) —
+  testy integracyjne radzą sobie bez seedu (fixtures własne).
+- Baseline main bez zmian: build OK, tsc 0, **Biome: 3 warningi (baseline!)**,
+  unit 1166/1166 (na gałęziach planu odpowiednio 1175/1185 z nowymi testami).
+
+## STAN POPRZEDNI — 2026-07-13 (wieczór)
 
 ### Gdzie żyje repo
 - **iMac: `~/Claude_Projekty/SkillBridge`** — **POZA iCloud, i tak ma zostać.**
