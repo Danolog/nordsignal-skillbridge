@@ -96,6 +96,14 @@ export type HardTestResults = {
 	 * rozróżnienie w flagach run_unavailable i aiReviewJson.sandboxRun).
 	 */
 	runOk: boolean | null;
+	/**
+	 * Blok E planu napraw (E2): wynik odwiedzin URL-i endpointów z README
+	 * (HEAD/GET z timeoutem, guard SSRF). null = nie sprawdzano (brak URL-i
+	 * w README / treść niepobrana). Bez tego kryterium „publiczny, klikalny
+	 * endpoint" (25% wagi L2) było niemożliwe do zaliczenia — reviewer widział
+	 * tylko string URL-a.
+	 */
+	endpointChecks: Array<{ url: string; ok: boolean; status: number | null }> | null;
 	messages: string[];
 };
 

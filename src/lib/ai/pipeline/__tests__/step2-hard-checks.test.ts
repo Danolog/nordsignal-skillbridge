@@ -30,6 +30,16 @@ describe("step2 — twarde sprawdzenia (bez uruchamiania)", () => {
 		expect(missing.missing).toContain("uruchomienie");
 	});
 
+	// Blok E (E3): sekcje to klasy synonimów — README „dla rekrutera" (układ z
+	// rubryki L2: problem → jak odtworzyć → wyniki) przechodzi bez dosłownych
+	// słów cel/uruchomienie/wnioski.
+	it("README: synonimy adresują kontrakt (problem/odtworzyć/wyniki = cel/uruchomienie/wnioski)", () => {
+		const rekruterskie = `# Analiza rotacji klientów\n## Problem biznesowy\n${"x".repeat(60)}\n## Jak odtworzyć\npip install -r requirements.txt\n## Wyniki\nF1 = 0.81`;
+		expect(checkReadmeStructure(rekruterskie).ok).toBe(true);
+		const angielskie = `# Churn\n## About\ngoal: churn problem\n## Getting started\nmake run\n## Results\nAUC 0.9 ${"x".repeat(60)}`;
+		expect(checkReadmeStructure(angielskie).ok).toBe(true);
+	});
+
 	it("brackets: wykrywa zbalansowane i niezbalansowane (poza stringami)", () => {
 		expect(checkBracketsBalanced("def f(): return [1, {'a': 2}]")).toBe(true);
 		expect(checkBracketsBalanced("def f(: return")).toBe(false);
