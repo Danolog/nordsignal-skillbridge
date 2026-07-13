@@ -1,0 +1,757 @@
+{
+	"moduleSlug": "m-llm",
+	"items": [
+		{
+			"slug": "llm-1",
+			"position": 10,
+			"kind": "exercise",
+			"title": "LLM: maszyna przewidująca tekst (i jak z nią rozmawiać)",
+			"contentMd": "### Cel\n\nZrozumiesz, czym LLM jest (przewidywaniem kolejnych tokenów), czym NIE\njest (bazą prawdy) i jak parametr temperatury oraz niedeterminizm\nwpływają na pracę z danymi — zanim wywołasz model choć raz.\n\n### Teoria\n\n**LLM** (duży model językowy) to sieć wytrenowana na ogromnych tekstach\ndo jednej rzeczy: **przewidywania kolejnego fragmentu tekstu** (tokenu).\nZ tej prostej reguły wyrastają zaskakujące zdolności — streszczanie,\ntłumaczenie, wyciąganie informacji — ale reguła pozostaje regułą: model\ngeneruje NAJBARDZIEJ PRAWDOPODOBNĄ kontynuację, nie „prawdę\". Briefing\nTwojego capstone'u nazywa LLM **parserem semantycznym**: narzędziem do\nzamiany tekstu swobodnego w dane — i w tej roli będziesz go używać.\n\nRozmowa z modelem wygląda znajomo po EDA.1 — wysyłasz zapytanie,\ndostajesz odpowiedź — tyle że zamiast parametrów wysyłasz **prompt**\n(tekst-polecenie), a odpowiedzią jest tekst:\n\n```python\nfrom google import genai\nfrom google.genai import types\n\nclient = genai.Client(api_key=MOJ_KLUCZ)          # klucz = hasło do usługi (LLM.6!)\nodpowiedz = client.models.generate_content(\n    model=\"gemini-2.5-flash\",                     # który model\n    contents=prompt,                              # Twoje polecenie\n    config=types.GenerateContentConfig(temperature=0),   # losowość: minimum (niżej!)\n)\nprint(odpowiedz.text)                             # odpowiedź to TEKST\n```\n\n**Przewidź:** wyślesz ten sam prompt dwa razy. Czy dostaniesz dwie\nidentyczne odpowiedzi?\n\nNiekoniecznie — i to jest najważniejsza różnica względem WSZYSTKIEGO,\nczego dotąd używałeś(-aś). `sum()` liczy zawsze tak samo; LLM\n**losuje** spośród prawdopodobnych kontynuacji. Skalę tej losowości\nkontroluje **temperatura**: wysoka = kreatywna różnorodność (dobra do\nburzy mózgów), niska/zerowa = maksymalna powtarzalność. Do ekstrakcji\ndanych ustawiasz **temperaturę 0** — to odpowiednik `random_state`\nz ML.1: nie poprawia jakości, zmniejsza losowość (pełnej gwarancji\npowtarzalności, jak przy ziarnie, nie ma — i rubryka każe ten parametr\nRAPORTOWAĆ właśnie dlatego).\n\nSkąd model „wie\" różne rzeczy? Z treningu — i ta wiedza jest ZAMROŻONA:\nmodel nie zna Twoich ogłoszeń, dzisiejszych cen ani niczego, co\nwydarzyło się po jego treningu. Dlatego ekstrakcja działa odwrotnie niż\npytanie „z głowy\": cały tekst źródłowy wkładasz DO promptu, a model ma\nczytać z niego — nie ze swojej pamięci. To rozróżnienie wróci\nw regule null (LLM.2): „z wiedzy ogólnej\" model potrafi uzupełnić\ntypowe widełki płacowe, których w TWOIM ogłoszeniu nie ma.\n\nDruga różnica: model NIE wie, kiedy nie wie. Zapytany o informację,\nktórej nie ma, potrafi płynnie ją ZMYŚLIĆ — to **halucynacja** (zmierzysz\nje w LLM.5). Dlatego w pracy z danymi model dostaje od Ciebie ścisłą\nspecyfikację (LLM.2), a jego odpowiedzi są ZAWSZE walidowane (LLM.3)\ni mierzone (LLM.5) — nigdy przyjmowane na wiarę. LLM w pipeline to\npracownik zdolny, szybki i skłonny do konfabulacji: dostaje precyzyjne\ninstrukcje i kontrolę jakości.",
+			"concepts": [
+				{
+					"slug": "llm-niedeterminizm-temperatura",
+					"name": "LLM: niedeterminizm i temperatura",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "llm-1-p1",
+					"conceptSlug": "llm-niedeterminizm-temperatura",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Ten sam prompt wysłany dwa razy dał różne odpowiedzi. To…",
+					"options": [
+						"Awaria API — zgłoś błąd",
+						"Normalne — LLM losuje spośród prawdopodobnych kontynuacji; losowość zmniejsza temperatura 0",
+						"Dowód, że model się uczy między wywołaniami",
+						"Skutek złego klucza API"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — dlatego do ekstrakcji danych zjeżdżasz z temperaturą do zera i raportujesz ją w repo.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — to natura modelu: generuje z prawdopodobieństw, więc odpowiedzi mogą się różnić.",
+							"diagnosis": "wini narzędzie — kalka L0.2-P2/A, tym razem o cesze, nie usterce"
+						},
+						{
+							"feedbackMd": "Tak — dlatego do ekstrakcji danych zjeżdżasz z temperaturą do zera i raportujesz ją w repo."
+						},
+						{
+							"feedbackMd": "Nie — model między Twoimi wywołaniami się NIE zmienia; różnice to losowanie, nie nauka.",
+							"diagnosis": "antropomorfizacja — model „żyje\""
+						},
+						{
+							"feedbackMd": "Nie — klucz uwierzytelnia, nie wpływa na treść odpowiedzi.",
+							"diagnosis": "miesza warstwę dostępu z warstwą generacji"
+						}
+					]
+				},
+				{
+					"ref": "llm-1-p2",
+					"conceptSlug": "llm-niedeterminizm-temperatura",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Czym temperatura 0 różni się od `random_state` z ML.1?",
+					"options": [
+						"Niczym — to synonimy",
+						"Cel ten sam (powtarzalność), gwarancja słabsza: temperatura 0 minimalizuje losowość, ale nie mrozi jej całkowicie — dlatego się ją raportuje",
+						"Temperatura poprawia trafność ekstrakcji",
+						"random_state jest dla LLM, temperatura dla sklearn"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — rubryka: „ustawiony seed/temperatura\" właśnie z tego powodu.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Blisko intencji, ale nie mechaniki: ziarno daje PEŁNĄ powtarzalność, temperatura 0 tylko ją maksymalizuje — bez twardej gwarancji.",
+							"diagnosis": "przenosi gwarancję ziarna 1:1"
+						},
+						{
+							"feedbackMd": "Tak — rubryka: „ustawiony seed/temperatura\" właśnie z tego powodu."
+						},
+						{
+							"feedbackMd": "Nie — jak ziarno: kontroluje losowość, nie jakość (ML.1-P2 w nowym kostiumie).",
+							"diagnosis": "powtarzalność mylona z jakością"
+						},
+						{
+							"feedbackMd": "Nie — dokładnie odwrotnie.",
+							"diagnosis": "zamienione etykiety"
+						}
+					]
+				},
+				{
+					"ref": "llm-1-p3",
+					"conceptSlug": "llm-niedeterminizm-temperatura",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Model zapytany o widełki płacowe ogłoszenia, w którym ich NIE MA, odpowiedział „8000–12000 zł\". Co się stało i czemu to groźne?",
+					"options": [
+						"Model znalazł widełki w internecie",
+						"Halucynacja: model zmyślił płynną, wiarygodnie brzmiącą wartość — groźna, bo wygląda jak prawdziwa dana i wejdzie do analizy",
+						"Błąd w Twoim koncie API",
+						"Nic groźnego — liczby wyglądają sensownie"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — dlatego prompt dostanie regułę null (LLM.2), a pipeline — wskaźnik halucynacji (LLM.5).",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — model nie przeszukuje Twojego ogłoszenia ani internetu w locie: wygenerował prawdopodobną kontynuację.",
+							"diagnosis": "model jako wyszukiwarka"
+						},
+						{
+							"feedbackMd": "Tak — dlatego prompt dostanie regułę null (LLM.2), a pipeline — wskaźnik halucynacji (LLM.5)."
+						},
+						{
+							"feedbackMd": "Nie — to zachowanie modelu, nie infrastruktury.",
+							"diagnosis": "warstwa dostępu vs generacji — jak P1/D"
+						},
+						{
+							"feedbackMd": "Nie — „wygląda sensownie\" to definicja NIEBEZPIECZEŃSTWA halucynacji: fałsz nieodróżnialny na oko od danych (najgroźniejsze błędy nie mają komunikatów — F2.5-P2).",
+							"diagnosis": "ocena po powierzchni"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Trzy zdania-kotwice atomu: (1) LLM przewiduje tekst, nie zna prawdy; (2) losowość kontroluje temperatura — do danych: 0, i raportuj; (3) odpowiedzi się waliduje i mierzy, nigdy nie przyjmuje na wiarę.",
+				"**Szkielet:** W notebooku LLM.1 dostajesz DWIE zapisane odpowiedzi modelu na ten sam prompt (temperatura wysoka) — porównaj je i podkreśl różnice; potem dwie przy temperaturze 0 — co się zmieniło?",
+				"**Pełne rozwiązanie z objaśnieniem:** przy wysokiej temperaturze różnią się sformułowania i czasem TREŚĆ (w przykładzie: raz „brak widełek\", raz zmyślone „8000\" — halucynacja na żywo); przy 0 odpowiedzi są (niemal) identyczne. Wniosek do zapamiętania: parametry generacji to część METODY — jak ziarno w ML — i należą do raportu."
+			],
+			"config": {
+				"estimated": "15 min"
+			},
+			"resources": [
+				{
+					"title": "Gemini API — dokumentacja (z projektu; ścieżka główna capstone'u). UWAGA przy briefingu: quickstart Google pokazuje już NOWSZE API (`client.interactions.create`) — nie linkować go jako ten sam kod; `generate_content` z atomów pozostaje wspierane",
+					"url": "https://ai.google.dev/gemini-api/docs",
+					"type": "docs",
+					"license": "własnościowa (Google)",
+					"language": "EN/PL",
+					"registrationRequired": true,
+					"verifiedAt": "2026-07-11",
+					"notes": "praktyka-docs (EN z fragmentami PL) · 2026-07-11 (HTTP 200; gemini-2.5-flash: Stable, free tier „Free of charge\")"
+				},
+				{
+					"title": "Hugging Face LLM Course — rozdz. 1 (z projektu)",
+					"url": "https://huggingface.co/learn/llm-course/chapter1/1",
+					"type": "course",
+					"license": "Apache 2.0 (materiały HF)",
+					"language": "EN",
+					"registrationRequired": false,
+					"verifiedAt": "2026-07-11",
+					"notes": "kurs (EN — poza ścieżką krytyczną) · 2026-07-11 (HTTP 200, bez rejestracji)"
+				},
+				{
+					"title": "Jak działa ChatGPT? … duży model językowy (LLM) w 30 minut (Robert Sikora, ~30 min, 2024)",
+					"url": "https://www.youtube.com/watch?v=PO0hL_6clPo",
+					"type": "video",
+					"license": "YouTube Standard License",
+					"language": "PL",
+					"registrationRequired": false,
+					"verifiedAt": "2026-07-11",
+					"notes": "wideo/kurs (trzecia funkcja QG-5) · 2026-07-11 (metadane; „czym jest LLM\" dla laika; halucynacje pokrywa teoria atomów; seans kontrolny przed ingest)"
+				},
+				{
+					"title": "AI LLM — co to jest i jak działa? (Marszałkowski projektuje, ~11 min, 2024) — szybki wstęp",
+					"url": "https://www.youtube.com/watch?v=8uO_oBQ2j54",
+					"type": "video",
+					"license": "YouTube Standard License",
+					"language": "PL",
+					"registrationRequired": false,
+					"verifiedAt": "2026-07-11",
+					"notes": "wideo pomocnicze · 2026-07-11 (metadane)"
+				}
+			]
+		},
+		{
+			"slug": "llm-2",
+			"position": 20,
+			"kind": "exercise",
+			"title": "Prompt jako specyfikacja: schemat, reguła null, przykład",
+			"contentMd": "### Cel\n\nNapiszesz prompt ekstrakcyjny jak specyfikację: dokładny schemat JSON,\nreguła „null zamiast zmyślania\" i przykład few-shot — trzy elementy,\nz których rubryka rozlicza co czwarty punkt.\n\n### Teoria\n\nPrompt do ekstrakcji to nie prośba — to **specyfikacja**, jak brief dla\nwykonawcy. Rubryka wymienia jej trzy obowiązkowe elementy:\n\n```text\nWyciągnij z ogłoszenia o pracę dane do JSON o DOKŁADNIE tym schemacie:\n{\"stanowisko\": tekst, \"miasto\": tekst lub null, \"widelki_min\": liczba lub null}\n\nZasady:\n- Jeśli informacji NIE MA w tekście, wpisz null. Nie zgaduj, nie uzupełniaj z wiedzy ogólnej.\n- Zwróć wyłącznie JSON, bez żadnego tekstu wokół.\n\nPrzykład:\nOgłoszenie: \"Szukamy testera do zespołu w Krakowie.\"\nOdpowiedź: {\"stanowisko\": \"tester\", \"miasto\": \"Kraków\", \"widelki_min\": null}\n\nOgłoszenie: {tresc_ogloszenia}\nOdpowiedź:\n```\n\n**Przewidź:** po co w przykładzie ogłoszenie BEZ widełek, a nie\n„pełne\", z kompletem danych?\n\nBo przykład (few-shot) uczy model przez pokaz — a najbardziej trzeba mu\npokazać zachowanie TRUDNE: brak danych → `null`. Przykład z kompletem\npól uczyłby tylko tego, co model i tak umie. Rozbiór trzech elementów:\n\n- **Schemat z nazwami i typami pól** — model ma wiedzieć DOKŁADNIE,\n  jakie klucze i jakie wartości zwrócić; „wyciągnij najważniejsze\n  informacje\" to zaproszenie do twórczości, nie specyfikacja.\n- **Reguła null** — bez niej model przy braku danych halucynuje\n  (LLM.1-P3); z nią ma legalne wyjście awaryjne. To najtańsza\n  pojedyncza obrona przed halucynacją.\n- **Few-shot** (co najmniej jeden przykład) — pokaz działa lepiej niż\n  opis; przykład powinien demonstrować regułę null w akcji.\n\nKolejność części promptu też robi robotę: najpierw CO (schemat), potem\nJAK (zasady), potem POKAZ (przykład), na końcu wejście — model czyta\nsekwencyjnie i najlepiej trzyma instrukcje podane przed zadaniem.\nZdanie „zwróć wyłącznie JSON, bez tekstu wokół\" nie jest ozdobą: modele\nlubią formatować odpowiedzi „dla człowieka\" (proza, płotki markdown),\na Twój parser z LLM.3 chce czystego JSON-a. I pisz śmiało PO POLSKU —\nwspółczesne modele są wielojęzyczne, a polskie ogłoszenia najlepiej\nopisuje polska specyfikacja z polskimi nazwami pól.\n\nCzwarty wymóg rubryki jest organizacyjny: **prompty wersjonujesz\nw repozytorium** (osobny plik, np. `prompts/ekstrakcja_v1.txt`) —\nprompt to kod: zmieniasz go, wyniki się zmieniają, więc historia zmian\n(EDA.2!) należy mu się tak samo. Praktyka wygląda jak pętla\npopraw-zmierz: v1 → ewaluacja (LLM.5) → widzisz, które pole kuleje →\nv2 z poprawką → ewaluacja ponownie — i to właśnie ta historia wersji\nZ WYNIKAMI czyni Twój raport wiarygodnym. Ostatnia linia WE —\n`{tresc_ogloszenia}` — to miejsce wstawienia właściwego tekstu: robisz\nto f-stringiem (F1.3), jedno ogłoszenie na wywołanie, pętlą po zbiorze\n(F2.3).",
+			"concepts": [
+				{
+					"slug": "prompt-specyfikacja",
+					"name": "Prompt jako specyfikacja",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "llm-2-p1",
+					"conceptSlug": "prompt-specyfikacja",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Czemu „wyciągnij najważniejsze informacje z ogłoszenia\" to zły prompt ekstrakcyjny?",
+					"options": [
+						"Za krótki — dobre prompty są długie",
+						"Nie definiuje schematu (pól i typów), więc każda odpowiedź może mieć inny kształt — pipeline nie ma czego walidować",
+						"Modele nie rozumieją polskiego",
+						"Brakuje słowa „proszę\""
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — specyfikacja zamiast prośby; kształt wyjścia to fundament ekstrakcji.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — miarą nie jest długość, lecz PRECYZJA: brak schematu, reguły null i przykładu.",
+							"diagnosis": "kryterium ilościowe zamiast jakościowego"
+						},
+						{
+							"feedbackMd": "Tak — specyfikacja zamiast prośby; kształt wyjścia to fundament ekstrakcji."
+						},
+						{
+							"feedbackMd": "Nie — rozumieją; problem leży w nieokreśloności zadania, nie języku.",
+							"diagnosis": "fałszywa bariera"
+						},
+						{
+							"feedbackMd": "Nie — uprzejmość nie jest parametrem jakości ekstrakcji.",
+							"diagnosis": "antropomorfizacja"
+						}
+					]
+				},
+				{
+					"ref": "llm-2-p2",
+					"conceptSlug": "prompt-specyfikacja",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Które zachowanie wymusza reguła „jeśli informacji nie ma, wpisz null\"?",
+					"options": [
+						"Model odpowie szybciej",
+						"Przy braku danych model ma legalne wyjście (null) zamiast zmyślania — najtańsza obrona przed halucynacją",
+						"Model przestanie w ogóle zwracać null",
+						"JSON będzie krótszy"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — a w LLM.5 policzysz, jak często mimo to zmyśla (wskaźnik halucynacji).",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — reguła dotyczy TREŚCI odpowiedzi, nie tempa.",
+							"diagnosis": "„techniczna korzyść\""
+						},
+						{
+							"feedbackMd": "Tak — a w LLM.5 policzysz, jak często mimo to zmyśla (wskaźnik halucynacji)."
+						},
+						{
+							"feedbackMd": "Nie — odwrotnie: reguła null CZYNI null poprawną odpowiedzią.",
+							"diagnosis": "odwrócony sens reguły"
+						},
+						{
+							"feedbackMd": "Nie — null zajmuje tyle co wartość; chodzi o prawdziwość, nie rozmiar.",
+							"diagnosis": "jak A"
+						}
+					]
+				},
+				{
+					"ref": "llm-2-p3",
+					"conceptSlug": "prompt-specyfikacja",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Po co wersjonować prompty w repo, skoro to „tylko tekst\"?",
+					"options": [
+						"Bo GitHub wymaga plików tekstowych",
+						"Bo prompt steruje wynikami jak kod: inna wersja promptu = inne dane na wyjściu — bez historii nie odtworzysz, skąd wzięła się tabela ewaluacji",
+						"Żeby prompt był tajny",
+						"Nie trzeba — wystarczy pamiętać"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — prompt to kod; rubryka rozlicza wersjonowanie wprost.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — GitHub przyjmie wszystko; to potrzeba metodyczna.",
+							"diagnosis": "przymus narzędzia"
+						},
+						{
+							"feedbackMd": "Tak — prompt to kod; rubryka rozlicza wersjonowanie wprost."
+						},
+						{
+							"feedbackMd": "Nie — repo capstone'u jest publiczne; tajny jest KLUCZ (LLM.6), nie prompt.",
+							"diagnosis": "myli sekret ze specyfikacją"
+						},
+						{
+							"feedbackMd": "Nie — „pamiętanie\" nie jest reprodukowalnością (EDA.2): recenzent i Ty-za-miesiąc musicie widzieć dokładną wersję.",
+							"diagnosis": "repro na słowo honoru"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Checklist promptu ekstrakcyjnego: (1) schemat — nazwy i typy pól, dosłownie; (2) reguła null — jednym zdaniem, z zakazem zgadywania; (3) przykład pokazujący null w akcji; (4) „zwróć wyłącznie JSON\". Plik do repo, wersjonowany.",
+				"**Szkielet:** W notebooku LLM.2: dostajesz prompt z DWIEMA usterkami (brak reguły null; przykład z kompletem pól zamiast z brakiem) — znajdź je i popraw wg checklisty.",
+				"**Pełne rozwiązanie z objaśnieniem:** usterka 1: dopisz regułę null z zakazem uzupełniania „z wiedzy ogólnej\" (model zna typowe widełki rynkowe — i właśnie dlatego je zmyśla!); usterka 2: podmień przykład na ogłoszenie bez którejś informacji, z null w odpowiedzi. Test jakości poprawki: czy z samego promptu da się jednoznacznie odtworzyć, co model MA zwrócić dla ogłoszenia „Szukamy analityka\"? (stanowisko: „analityk\", miasto: null, widelki_min: null)."
+			],
+			"config": {
+				"estimated": "15–20 min"
+			}
+		},
+		{
+			"slug": "llm-3",
+			"position": 30,
+			"kind": "exercise",
+			"title": "Od odpowiedzi do danych: parsuj, waliduj, obsłuż porażkę",
+			"contentMd": "### Cel\n\nSparsujesz tekst odpowiedzi do słownika (`json.loads`), zwalidujesz\npola i — nową składnią `try/except` — obsłużysz odpowiedź w złym\nformacie tak, żeby jedna zepsuta nie zatrzymała całego pipeline'u.\n\n### Teoria\n\nModel zwraca TEKST (LLM.1) — nawet gdy ten tekst wygląda jak JSON.\nŻeby na nim liczyć, zamieniasz go w prawdziwy słownik (F3.3) modułem\n`json`:\n\n```python\nimport json\n\nodpowiedz = '{\"stanowisko\": \"Analityk danych\", \"miasto\": \"Radom\", \"widelki_min\": 8000}'\nrekord = json.loads(odpowiedz)        # tekst → słownik (loads = \"load string\")\nprint(rekord[\"stanowisko\"])           # dalej: znany świat F3.3\n```\n\n**Przewidź:** co wypisze print? I co by się stało, gdyby model\nodpowiedział `Oto wynik: {\"stanowisko\": \"Analityk\"` — uciętym,\nobudowanym prozą tekstem?\n\n`Analityk danych` — a w drugim przypadku `json.loads` zatrzyma się\nbłędem **`JSONDecodeError`** (spotkałeś go w pierwszej pomocy M-EDA —\nteraz rozumiesz mechanizm: tekst nie jest poprawnym JSON-em). I tu\nzaczyna się inżynieria: przy 30 ogłoszeniach JEDNA zepsuta odpowiedź\nnie może wywracać całej pętli. Poznaj **`try/except`** — nową składnię\n(ostatnią na tej ścieżce!):\n\n```python\ntry:                                   # SPRÓBUJ wykonać blok...\n    rekord = json.loads(odpowiedz)\nexcept json.JSONDecodeError:           # ...a JEŚLI poleci ten błąd — zrób to:\n    rekord = None                      # oznacz porażkę, pętla idzie dalej\n```\n\nCzytaj: „spróbuj sparsować; jeśli się nie da — zapisz `None` i żyj\ndalej\". Mechanika bloków znana z `if`/`for`: dwukropki, wcięcia. Zasada\nhigieny: łap KONKRETNY błąd (`json.JSONDecodeError`), nie „wszystko\" —\ninne błędy mają dalej głośno krzyczeć (L0.3: błąd to informacja).\n\nCo dalej z `None`? To świadoma decyzja pipeline'u, nie śmieć: rekordy-\nporażki LICZYSZ w odsetku zgodności (rubryka!), a WYKLUCZASZ z pomiaru\ntrafności (LLM.5/LLM.7) — porażka parsowania i porażka ekstrakcji to\ndwie różne miary. Skąd w ogóle złamane odpowiedzi przy dobrym prompcie?\nModele formatują „dla człowieka\" (proza wokół JSON-a, płotek markdown —\nzdejmiesz go metodami tekstu w LLM.4), a resztka niedeterminizmu\n(LLM.1) zostaje nawet przy temperaturze 0 — parser z ochroną to pas\nbezpieczeństwa, który zakładasz zawsze, nie tylko gdy pada deszcz.\n\nParsowanie to połowa pracy; druga to **walidacja** — czy słownik ma\nkomplet pól ze schematu (głębsza walidacja typów wartości — np. czy\n`widelki_min` to na pewno liczba — wchodzi w capstonie, briefing\nprowadzi). Zanim spojrzysz na kod: poznasz w nim dwa ZAPISY SKRÓCONE,\nktórych drabina dotąd nie używała. **`all(pytanie for element in\nlista)`** to skrócona pętla-pytanie — czyta się jak zdanie: „czy dla\nKAŻDEGO elementu listy odpowiedź brzmi tak?\"; samo **`all`** to kuzyn\n`sum` z F3.6, tylko dla True/False: zwraca True, gdy wszystkie\nodpowiedzi na tak. Pełna pętla z bramką (F3.2) zrobiłaby to samo\nw czterech liniach — skrót jest po to, że warunek mieści się w jednym\nspojrzeniu:\n\n```python\nPOLA = [\"stanowisko\", \"miasto\", \"widelki_min\"]\npoprawny = rekord is not None and all(______ in rekord for pole in POLA)   # luka!\n```\n\nRubryka każe raportować **odsetek odpowiedzi zgodnych ze schematem** —\nlicznik poprawnych przez liczbę wszystkich odpowiedzi (wzorzec\nzliczania z F3.2, nic zupełnie nowego). Częsty\nprzypadek z życia: model opakowuje JSON w płotek markdown\n(` ```json … ``` `) — zdejmiesz go metodami tekstu przed parsowaniem\n(gotowy przepis w notebooku; to kosmetyka, nie nowa idea).",
+			"concepts": [
+				{
+					"slug": "json-parsowanie-walidacja",
+					"name": "JSON: parsowanie i walidacja odpowiedzi",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "llm-3-p1",
+					"conceptSlug": "json-parsowanie-walidacja",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Czym różni się tekst `'{\"a\": 1}'` od wyniku `json.loads` na nim?",
+					"options": [
+						"Niczym — to już słownik",
+						"Tekst to znaki; `json.loads` robi z nich słownik, w którym działa `rekord[\"a\"]`",
+						"json.loads tylko sprawdza poprawność",
+						"Tekst jest szybszy w użyciu"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — parsowanie = przejście ze świata znaków do świata struktur (F3.3).",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — z cudzysłowami wokół całości to NAPIS (F1.1); po kluczu sięgniesz dopiero w sparsowanym słowniku.",
+							"diagnosis": "myli zapis z wartością — F1.1 na nowym poziomie"
+						},
+						{
+							"feedbackMd": "Tak — parsowanie = przejście ze świata znaków do świata struktur (F3.3)."
+						},
+						{
+							"feedbackMd": "Nie — sprawdza I BUDUJE strukturę; wynik to pełnoprawny słownik.",
+							"diagnosis": "parser jako walidator-tylko"
+						},
+						{
+							"feedbackMd": "Nie — na tekście nie policzysz ani nie zagregujesz; cała ekstrakcja istnieje po to, by mieć struktury.",
+							"diagnosis": "gubi cel modułu"
+						}
+					]
+				},
+				{
+					"ref": "llm-3-p2",
+					"conceptSlug": "json-parsowanie-walidacja",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Po co `try/except` wokół parsowania w pętli po 30 ogłoszeniach?",
+					"options": [
+						"Przyspiesza parsowanie",
+						"Jedna niepoprawna odpowiedź nie zatrzyma pętli: porażka zostaje oznaczona (None), reszta się przetwarza, a odsetek zgodnych trafia do raportu",
+						"Ukrywa błędy, żeby raport wyglądał lepiej",
+						"Bez try/except Python nie wykona json.loads"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — dokładnie zachowanie, które rozlicza rubryka („obsługuje przypadki niepoprawnego formatu\").",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — to obsługa porażki, nie optymalizacja.",
+							"diagnosis": "„techniczna korzyść\""
+						},
+						{
+							"feedbackMd": "Tak — dokładnie zachowanie, które rozlicza rubryka („obsługuje przypadki niepoprawnego formatu\")."
+						},
+						{
+							"feedbackMd": "Nie — odwrotnie: porażki są LICZONE i raportowane; ukrywanie to fałszowanie (ML.3-P3).",
+							"diagnosis": "obsługa błędu mylona z zamiataniem"
+						},
+						{
+							"feedbackMd": "Nie — wykona; try/except zmienia tylko to, co dzieje się PO błędzie.",
+							"diagnosis": "przymus składniowy"
+						}
+					]
+				},
+				{
+					"ref": "llm-3-p3",
+					"conceptSlug": "json-parsowanie-walidacja",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Dlaczego łapiemy `json.JSONDecodeError`, a nie „każdy błąd\"?",
+					"options": [
+						"Bo innych błędów nie da się złapać",
+						"Bo inne błędy (np. literówka w kodzie) mają dalej głośno krzyczeć — złapanie wszystkiego zamiata prawdziwe usterki pod dywan",
+						"Bo JSONDecodeError jest najgroźniejszy",
+						"Wszystko jedno, byle był try"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — błąd to informacja (L0.3); wyciszamy wyłącznie ten, który umiemy obsłużyć.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — da się (i czasem trzeba); pytanie brzmi, czy POWINNO się tutaj.",
+							"diagnosis": "mylenie możliwości z zasadnością"
+						},
+						{
+							"feedbackMd": "Tak — błąd to informacja (L0.3); wyciszamy wyłącznie ten, który umiemy obsłużyć."
+						},
+						{
+							"feedbackMd": "Nie — jest najbardziej SPODZIEWANY w tym miejscu; groźniejsze są te, których nie przewidzieliśmy — i właśnie dlatego mają krzyczeć.",
+							"diagnosis": "ranking grozy zamiast logiki obsługi"
+						},
+						{
+							"feedbackMd": "Nie — `except:` bez typu to antywzorzec: pipeline „działa\", a Ty nie wiesz, co w nim umiera.",
+							"diagnosis": "rytuał zamiast zrozumienia — najgroźniejsze błędy bez komunikatów, F2.5-P2"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Luka w walidacji czyta się jak zdanie: „każde POLE ze schematu jest w rekordzie\" — pętla po POLA już stoi w `all(...)`, brakuje tego, CO sprawdzasz w słowniku (operator z F3.3).",
+				"**Szkielet:** `all(pole in rekord for pole in POLA)` — które słowo w luce?",
+				"**Pełne rozwiązanie z objaśnieniem:** `pole in rekord` — operator `in` na słowniku (F3.3) pyta o obecność klucza; `all` zbiera odpowiedzi (mechanika z teorii). Całość: rekord nie-None ORAZ komplet pól = „zgodny ze schematem\". Typowe potknięcie: walidacja przed try/except (na None poleci TypeError) — kolejność: parsuj-z-ochroną, POTEM waliduj."
+			],
+			"config": {
+				"estimated": "20 min"
+			}
+		},
+		{
+			"slug": "llm-4",
+			"position": 40,
+			"kind": "lab",
+			"title": "LAB Parser na porażki (5 zapisanych odpowiedzi → odsetek zgodnych)",
+			"contentMd": "### Cel\n\nPrzepuścisz przez parser 5 zapisanych odpowiedzi modelu — w tym jedną\nzłamaną i jedną w płotku markdown — i policzysz odsetek zgodnych ze\nschematem: miniatura kryterium rubryki za 25%.\n\n### Zadanie (notebook LLM.4 — lista `odpowiedzi` (5 tekstów) w komórce\n„Dane\", uzupełnij luki)\n\n```python\nimport json\n\nPOLA = [\"stanowisko\", \"miasto\", \"widelki_min\"]\nrekordy = []\nzgodne = 0\n\nfor tekst in odpowiedzi:\n    czysty = tekst.strip().removeprefix(\"```json\").removesuffix(\"```\").strip()\n    try:\n        rekord = json.loads(______)                      # luka 1: co parsujesz?\n    except ______:                                       # luka 2: który błąd łapiesz?\n        rekord = None\n    if rekord is not None and all(pole in rekord for pole in POLA):\n        zgodne = ______                                  # luka 3: licznik (F3.2!)\n    rekordy.append(rekord)\n\nprint(f\"Zgodne ze schematem: {zgodne}/{len(odpowiedzi)}\")\n```\n\n**Zaliczenie:** komórka-pieczątka: przelicza parsowanie niezależnie\n(dane zapisane ⇒ wynik jedyny: **4/5** — jedna odpowiedź celowo\nzłamana) i porównuje `zgodne` oraz zawartość `rekordy` — token przy\nzgodności. Limity klasy L0 obowiązują.",
+			"concepts": [
+				{
+					"slug": "json-parsowanie-walidacja",
+					"name": "JSON: parsowanie i walidacja odpowiedzi"
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Trzy luki to trzy atomy w pigułce: parsujesz tekst PO zdjęciu płotka (linia wyżej robi to za Ciebie); łapiesz KONKRETNY błąd z LLM.3; licznik to gest z F3.2.",
+				"**Szkielet:** luka 1: `czysty`; luka 2: `json.JSONDecodeError`; luka 3: `zgodne + 1`.",
+				"**Pełne rozwiązanie z objaśnieniem:** wynik `4/5` — odpowiedź nr 4 (ucięta w połowie) ląduje jako `None` i pipeline żyje dalej; odpowiedź nr 2 (w płotku ```json) przechodzi dzięki zdjęciu płotka PRZED parsowaniem. Jeśli masz 3/5 — płotek nie został zdjęty (parsujesz `tekst` zamiast `czysty` — luka 1); jeśli pętla się wywala — łapiesz zły typ błędu albo walidujesz przed try (LLM.3, drabinka)."
+			],
+			"config": {
+				"estimated": "20 min",
+				"checks": [
+					{
+						"type": "token",
+						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+					}
+				]
+			}
+		},
+		{
+			"slug": "llm-5",
+			"position": 50,
+			"kind": "exercise",
+			"title": "Ewaluacja: ground truth, trafność pól i wskaźnik halucynacji",
+			"contentMd": "### Cel\n\nZmierzysz jakość ekstrakcji jak w ML.5 — tylko że „modelem\" jest LLM,\na metrykami: trafność per pole i osobny wskaźnik halucynacji. To\nkryterium za 30% rubryki.\n\n### Teoria\n\n„Model ładnie odpowiada\" to nie pomiar. Pomiar wymaga **ground truth**\n— ręcznie oznaczonych poprawnych odpowiedzi: Ty czytasz ogłoszenie\ni wpisujesz prawdę do słownika. Rubryka chce ~30 sztuk i ta liczba ma\nuzasadnienie, które znasz z ML.2: przy 5 przykładach jedna pomyłka\nzmienia trafność o 20 punktów procentowych — takim wynikiem nie da się\nsterować poprawkami promptu. Oznaczanie bywa nudne i to jest jego\nukryta zaleta: czytając 30 ogłoszeń, poznajesz SWOJE dane (przypadki\nbrzegowe, dziwne zapisy widełek) lepiej niż z niejednego wykresu. Potem\nporównujesz pole po polu — czysta pętla z F3.5, żadnej magii:\n\n```python\nPOLA = [\"stanowisko\", \"miasto\", \"widelki_min\"]\ntrafienia = {pole: 0 for pole in POLA}     # skrócony zapis budowy słownika —\n                                           # pełna pętla z F3.3 zrobiłaby to samo\nhalucynacje = 0\n\nfor przypadek in przypadki:                # przypadek = {\"model\": …, \"prawda\": …}\n    for pole in POLA:\n        if przypadek[\"model\"][pole] == przypadek[\"prawda\"][pole]:\n            trafienia[pole] = trafienia[pole] + 1\n        if przypadek[\"prawda\"][pole] is None and przypadek[\"model\"][______] is not None:\n            halucynacje = halucynacje + 1      # luka wyżej: które pole sprawdzasz?\n```\n\n**Przewidź:** dla 4 przypadków testowych notebooka (każdy z 3 polami)\ntrafienia wychodzą po 3/4 na pole. Co mówi wynik „stanowisko: 0.75\"?\n\nŻe w JEDNYM z czterech przypadków model podał inne stanowisko niż\nprawda (w naszych danych: „Data Scientist\" zamiast „Starszy Data\nScientist\" — ekstrakcja zgubiła seniority). **Trafność per pole** —\nosobna liczba dla każdego pola — mówi, GDZIE pipeline kuleje; jedna\nśrednia by to ukryła (ta sama lekcja co accuracy w ML.5!).\n\n**Wskaźnik halucynacji** to osobna miara z osobnej definicji: pole,\nktóre w prawdzie jest `null` (informacji NIE MA w tekście), a model je\nWYPEŁNIŁ. W naszych 4 przypadkach: prawda ma 4 pola-braki, model\nwypełnił 2 z nich → wskaźnik 2/4 = 0.5 — poważny sygnał (co drugi brak\nmodel zmyśla!). Zauważ asymetrię: pomyłka „Warszawa\" zamiast „Radom\"\npsuje trafność; zmyślenie „Warszawa\" tam, gdzie miasta nie było, to\nhalucynacja — groźniejsza, bo tworzy dane z niczego. Dlatego rubryka\nżąda OSOBNEGO wskaźnika, nie wliczenia w trafność.\n\nWyniki idą do tabeli w repo (rubryka: „tabela ewaluacji\") — trafność\nper pole + wskaźnik halucynacji + odsetek zgodnych ze schematem\n(LLM.4). Trzy liczby, które zamieniają „ładnie odpowiada\" w pomiar —\na gdy zestawisz je dla promptu v1 i v2 (LLM.2), tabela staje się\ndowodem, że Twoje poprawki naprawdę poprawiają, a nie tylko zmieniają.",
+			"concepts": [
+				{
+					"slug": "ewaluacja-halucynacje",
+					"name": "Ewaluacja: trafność pól i wskaźnik halucynacji",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "llm-5-p1",
+					"conceptSlug": "ewaluacja-halucynacje",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Czym jest ground truth w tym projekcie?",
+					"options": [
+						"Odpowiedziami modelu przy temperaturze 0",
+						"Ręcznie oznaczonymi poprawnymi odpowiedziami — Ty czytasz ogłoszenie i zapisujesz prawdę",
+						"Dokumentacją API",
+						"Największym publicznym zbiorem"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — ~30 sztuk w capstonie; nudne i bezcenne: bez prawdy nie ma pomiaru.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — to nadal odpowiedzi MODELU; prawdą jest to, co człowiek odczytał z tekstu.",
+							"diagnosis": "model jako sędzia we własnej sprawie — kalka „konfirmacji na tych samych danych\" z EDA.3"
+						},
+						{
+							"feedbackMd": "Tak — ~30 sztuk w capstonie; nudne i bezcenne: bez prawdy nie ma pomiaru."
+						},
+						{
+							"feedbackMd": "Nie — dokumentacja opisuje narzędzie, nie prawdę Twoich danych.",
+							"diagnosis": "myli źródła autorytetu"
+						},
+						{
+							"feedbackMd": "Nie — prawda musi dotyczyć TWOICH tekstów, pole po polu.",
+							"diagnosis": "„więcej danych\" zamiast właściwych danych"
+						}
+					]
+				},
+				{
+					"ref": "llm-5-p2",
+					"conceptSlug": "ewaluacja-halucynacje",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Po co trafność PER POLE zamiast jednej średniej?",
+					"options": [
+						"Bo tak liczy się szybciej",
+						"Bo średnia ukrywa, KTÓRE pole kuleje — a naprawa promptu wymaga wiedzy gdzie (np. widełki 0.4 przy stanowisku 0.95)",
+						"Bo pola tekstowe i liczbowe nie sumują się",
+						"Rubryka każe, powód nieznany"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — ta sama lekcja co pułapka accuracy z ML.5: uśrednianie chowa porażkę.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — liczy się tyle samo; chodzi o diagnozę.",
+							"diagnosis": "„techniczna korzyść\""
+						},
+						{
+							"feedbackMd": "Tak — ta sama lekcja co pułapka accuracy z ML.5: uśrednianie chowa porażkę."
+						},
+						{
+							"feedbackMd": "Nie — policzyć średnią się DA; problemem jest jej ślepota, nie arytmetyka.",
+							"diagnosis": "przeszkoda techniczna zamiast metodycznej"
+						},
+						{
+							"feedbackMd": "Nie — powód właśnie poznałeś(-aś); rubryki tej ścieżki rozliczają praktyki, nie rytuały.",
+							"diagnosis": "wymóg jako biurokracja"
+						}
+					]
+				},
+				{
+					"ref": "llm-5-p3",
+					"conceptSlug": "ewaluacja-halucynacje",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Model wpisał „Kraków\" w polu miasto, a ogłoszenie miasta nie podaje (prawda: null). Jak to liczysz?",
+					"options": [
+						"Tylko jako nietrafienie pola",
+						"Jako nietrafienie ORAZ halucynację (prawda null + model wypełnił) — dwa liczniki, dwie miary",
+						"Jako trafienie, bo Kraków to duże miasto",
+						"Pomijam ten przypadek"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — asymetria jest celowa: dane z niczego są groźniejsze niż dane pomylone.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Połowicznie — to TAKŻE nietrafienie, ale rubryka żąda OSOBNEGO zliczenia: zmyślenie z niczego to inna klasa błędu niż pomyłka.",
+							"diagnosis": "spłaszcza halucynację do zwykłego błędu"
+						},
+						{
+							"feedbackMd": "Tak — asymetria jest celowa: dane z niczego są groźniejsze niż dane pomylone."
+						},
+						{
+							"feedbackMd": "Nie — prawdopodobieństwo to mechanizm HALUCYNACJI, nie usprawiedliwienie: w tekście miasta nie było.",
+							"diagnosis": "ocena po wiarygodności — LLM.1-P3/D"
+						},
+						{
+							"feedbackMd": "Nie — pomijanie niewygodnych przypadków to fałszowanie ewaluacji (ML.3-P3/B w nowym kostiumie).",
+							"diagnosis": "kosmetyka wyników"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Warunek halucynacji czyta się: „prawda mówi BRAK, a model coś wpisał\" — obie strony dotyczą TEGO SAMEGO pola z bieżącego obrotu pętli.",
+				"**Szkielet:** `przypadek[\"model\"][pole]` — ta sama zmienna pętli, którą sprawdziłeś po stronie prawdy.",
+				"**Pełne rozwiązanie z objaśnieniem:** luka: `pole`. Wyniki dla danych notebooka: trafienia 3/4 na każde pole, halucynacje 2 przy 4 polach-brakach (0.5). Samokontrola ewaluacji: suma pól-braków w prawdzie policzona ręcznie musi się zgadzać z mianownikiem wskaźnika — jeśli nie, licznik zlicza złe pola (wcięcia! — piętra pętli jak w F3.2-P2)."
+			],
+			"config": {
+				"estimated": "20 min"
+			}
+		},
+		{
+			"slug": "llm-6",
+			"position": 60,
+			"kind": "exercise",
+			"title": "Klucz, limity, dane osobowe: higiena pracy z API",
+			"contentMd": "### Cel\n\nSchowasz klucz API tam, gdzie jego miejsce (Colab Secrets / zmienna\nśrodowiskowa — nigdy w kodzie i repo), zaplanujesz pracę w darmowym\ntierze i wyczyścisz dane osobowe z tekstów PRZED wysłaniem do modelu.\n\n### Teoria\n\nKlucz API to **hasło do usługi wystawione na Twoje konto**: kto ma\nklucz, ten zużywa Twoje limity jako Ty — bez pytania i bez śladu. Stąd żelazna reguła (rubryka rozlicza ją\nwprost): **klucz nigdy nie stoi w kodzie ani w repo** — commit\nz kluczem w publicznym repozytorium to klucz oddany światu (historia\nGita pamięta wszystko — EDA.2!). W Colab klucz trzymasz w panelu\nsekretów — ikona klucza w lewym pasku bocznym („Secrets\" → „Add new\nsecret\"; etykiety angielskie z polskim opisem, jak w GitHubie —\nEDA.2) — a w kodzie tylko go POBIERASZ:\n\n```python\nfrom google.colab import userdata\nklucz = userdata.get(\"GEMINI_API_KEY\")    # wartość mieszka w panelu, nie w kodzie\n```\n\n**Przewidź:** co zobaczy osoba czytająca Twój notebook w repo —\nklucz czy nazwę?\n\nTylko NAZWĘ sekretu — wartość żyje w Twoim panelu Colab i nie jedzie\nz plikiem. Poza Colab tę samą rolę pełni **zmienna środowiskowa**\n(`os.environ` — stąd sformułowanie rubryki „klucz pobierany ze zmiennej\nśrodowiskowej\"); mechanizm inny, zasada identyczna. Jeżeli klucz mimo wszystko\ntrafił do repo: sama edycja pliku NIE wystarcza (historia commitów!) —\nklucz **unieważniasz i generujesz nowy** w panelu usługi.\n\nDwie pozostałe higieny z opisu projektu:\n\n- **Limity darmowego tieru.** Gemini API w darmowym tierze (klucz\n  z AI Studio na konto Google, bez podpinania karty) wystarcza na\n  capstone (~30 przykładów), ale limituje zapytania — rzędu 10 na\n  minutę (dokładne limity zmieniają się; sprawdzisz je w panelu AI\n  Studio). Pętla po przykładach może więc dostać `429` (znasz z BDL,\n  EDA.1); lekarstwo: odczekaj i wznów, nie strzelaj w pętli bez\n  przerw. Zużycie kontrolujesz, wysyłając każdy przykład RAZ\n  i ZAPISUJĄC odpowiedzi (lista — F3.1), zamiast odpytywać ponownie\n  przy każdej poprawce ewaluacji.\n- **Dane osobowe.** Realne ogłoszenia miewają nazwiska, e-maile,\n  telefony rekruterów. Opis projektu wymaga wprost: **usuń lub\n  pseudonimizuj PRZED wysłaniem do modelu i niczego takiego nie\n  commituj** — wysyłka do zewnętrznego API to przekazanie danych\n  osobie trzeciej, a repo jest publiczne. Najprościej: pracuj na\n  ogłoszeniach syntetycznych (jak w tym module) albo wytnij dane\n  kontaktowe zanim tekst opuści Twój notebook.\n\nBackward completion (notebook LLM.6): dostajesz checklistę\nbezpieczeństwa capstone'u z JEDNĄ pustą pozycją — dopisz regułę „co\nrobię, gdy klucz trafił do repo\" (dwa kroki, oba z teorii).",
+			"concepts": [
+				{
+					"slug": "klucz-sekrety-rodo",
+					"name": "Klucz API, limity, dane osobowe"
+				}
+			],
+			"questions": [
+				{
+					"ref": "llm-6-p1",
+					"conceptSlug": "klucz-sekrety-rodo",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Dlaczego klucz nie może stać w kodzie notebooka, skoro repo jest Twoje?",
+					"options": [
+						"Bo kod z kluczem nie działa",
+						"Repo capstone'u jest publiczne, a historia Gita wieczna — klucz w kodzie to klucz oddany każdemu, kto zajrzy",
+						"Bo klucz jest za długi na komórkę",
+						"Bo Google blokuje klucze w plikach"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — kto ma klucz, zużywa TWOJE limity jako Ty; sekret mieszka w panelu/env, kod zna tylko nazwę.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — działa aż za dobrze; problem jest w UJAWNIENIU, nie działaniu.",
+							"diagnosis": "szuka przeszkody technicznej"
+						},
+						{
+							"feedbackMd": "Tak — kto ma klucz, zużywa TWOJE limity jako Ty; sekret mieszka w panelu/env, kod zna tylko nazwę."
+						},
+						{
+							"feedbackMd": "Nie — zmieściłby się; nie wolno mu tam być.",
+							"diagnosis": "ograniczenie wymyślone"
+						},
+						{
+							"feedbackMd": "Nie — skanery wycieków istnieją, ale to siatka asekuracyjna, nie pozwolenie: reguła jest Twoja.",
+							"diagnosis": "outsourcing odpowiedzialności"
+						}
+					]
+				},
+				{
+					"ref": "llm-6-p2",
+					"conceptSlug": "klucz-sekrety-rodo",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Klucz trafił do publicznego repo. Usuwasz linię i commitujesz poprawkę. Wystarczy?",
+					"options": [
+						"Tak — pliku już nie ma",
+						"Nie — klucz unieważniasz w panelu usługi i generujesz nowy; edycja pliku nie cofa ujawnienia",
+						"Wystarczy zrobić repo prywatnym na godzinę",
+						"Wystarczy zmienić nazwę sekretu"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — rotacja klucza to jedyna skuteczna odpowiedź na wyciek.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — plik zniknął z OSTATNIEJ wersji, ale historia commitów (EDA.2-P2!) pamięta każdą migawkę: klucz nadal jest do odczytania.",
+							"diagnosis": "nie rozumie, że commit = wieczna migawka — sedno pytania"
+						},
+						{
+							"feedbackMd": "Tak — rotacja klucza to jedyna skuteczna odpowiedź na wyciek."
+						},
+						{
+							"feedbackMd": "Nie — nie wiesz, kto już sklonował/zeskanował; ujawnienie jest nieodwracalne.",
+							"diagnosis": "cofanie czasu zamiast rotacji"
+						},
+						{
+							"feedbackMd": "Nie — nazwa jest jawna z definicji; ujawniona została WARTOŚĆ i to ją się wymienia.",
+							"diagnosis": "myli nazwę z wartością — odwrotność P1"
+						}
+					]
+				},
+				{
+					"ref": "llm-6-p3",
+					"conceptSlug": "klucz-sekrety-rodo",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Realne ogłoszenie zawiera nazwisko i telefon rekruterki. Co robisz PRZED wysłaniem do modelu?",
+					"options": [
+						"Nic — model to nie człowiek",
+						"Usuwam/pseudonimizuję dane kontaktowe (i nie commituję surowych rekordów) — albo pracuję na ogłoszeniach syntetycznych",
+						"Wysyłam, ale nie zapisuję odpowiedzi",
+						"Zmieniam tylko nazwisko, telefon zostaje"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — czyszczenie PRZED wysyłką i PRZED repo; syntetyki załatwiają problem u źródła.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — wysyłka do zewnętrznego API to przekazanie danych podmiotowi trzeciemu; opis projektu wymaga czyszczenia wprost.",
+							"diagnosis": "„to tylko program\" jako zwolnienie z RODO"
+						},
+						{
+							"feedbackMd": "Tak — czyszczenie PRZED wysyłką i PRZED repo; syntetyki załatwiają problem u źródła."
+						},
+						{
+							"feedbackMd": "Nie — przekazanie już się odbyło; niezapisanie niczego nie cofa.",
+							"diagnosis": "sprząta po fakcie — kalka P2/C"
+						},
+						{
+							"feedbackMd": "Nie — numer telefonu to dana kontaktowa jak nazwisko; czyścisz komplet.",
+							"diagnosis": "pseudonimizacja połowiczna"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Reguła ma dwa kroki i żaden nie brzmi „usuń linię z pliku\" — myśl o WARTOŚCI klucza (gdzie żyje? jak przestaje działać?), nie o pliku.",
+				"**Szkielet:** „Gdy klucz trafił do repo: (1) natychmiast ______ klucz w panelu usługi; (2) wygeneruj ______ i umieść go w ______, nie w kodzie.\"",
+				"**Pełne rozwiązanie z objaśnieniem:** „(1) unieważnij (revoke) stary klucz w panelu usługi — od tej chwili wyciek jest bezzębny; (2) wygeneruj nowy i umieść go w panelu sekretów/zmiennej środowiskowej.\" Edycja pliku może być KROKIEM TRZECIM (porządki), nigdy pierwszym — kolejność odwrotna zostawia działający klucz w wiecznej historii."
+			],
+			"config": {
+				"estimated": "15 min"
+			}
+		},
+		{
+			"slug": "llm-7",
+			"position": 70,
+			"kind": "lab",
+			"title": "LAB Tabela ewaluacji (samodzielny finał drabiny)",
+			"contentMd": "### Cel\n\nOstatni lab całej ścieżki: z 8 zapisanych trójek (tekst ogłoszenia,\nodpowiedź modelu, ground truth) zbudujesz kompletną tabelę ewaluacji —\ndokładnie artefakt, którego rubryka capstone'u żąda za 30%.\n\n### Zadanie (notebook LLM.7 — lista `przypadki` (8 trójek, w tym\n1 odpowiedź złamana i 2 halucynacje) + pusta komórka „Twoja ewaluacja\"\n+ pieczątka)\n\n1. Parsowanie z ochroną (LLM.3/LLM.4): odpowiedzi → rekordy;\n   odsetek zgodnych ze schematem → **`zgodnosc`**.\n2. Trafność per pole (LLM.5) na przypadkach ZGODNYCH → słownik\n   **`trafnosc`** (pole → ułamek).\n3. Wskaźnik halucynacji (LLM.5) → **`halucynacje_wskaznik`**.\n4. Tabela wyników: DataFrame (PD.2!) z wierszami per pole + wydruk —\n   to Twoja „tabela ewaluacji w repozytorium\".\n5. Komórka tekstowa: 2 zdania wniosków (które pole kuleje? co byś\n   zmienił(a) w prompcie? — wzorzec EDA.3) + 1 zdanie Ograniczeń\n   (ML.6: „8 przykładów to za mało, by…\").\n\nNazwy pogrubione = część specyfikacji (pieczątka wie, gdzie patrzeć).\n\n**Zaliczenie:** komórka-pieczątka: przelicza ewaluację niezależnie\n(dane zapisane ⇒ wynik jedyny) i porównuje `zgodnosc`, `trafnosc`,\n`halucynacje_wskaznik` — token przy zgodności (tolerancja float\nz F3). Komórki tekstowe poza checkiem — ocenia je rubryka capstone'u.",
+			"concepts": [
+				{
+					"slug": "prompt-specyfikacja",
+					"name": "Prompt jako specyfikacja"
+				},
+				{
+					"slug": "json-parsowanie-walidacja",
+					"name": "JSON: parsowanie i walidacja odpowiedzi"
+				},
+				{
+					"slug": "ewaluacja-halucynacje",
+					"name": "Ewaluacja: trafność pól i wskaźnik halucynacji"
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** To LLM.4 + LLM.5 sklejone + tabela z PD.2 na wierzchu. Kolejność: parsuj-z-ochroną → waliduj → licz TYLKO na zgodnych → tabela → słowa. Ostatni raz na ścieżce: buduj przyrostowo, uruchamiaj po każdym kroku (L0.4 — od pierwszego dnia do ostatniego).",
+				"**Szkielet:** krok 1 = pętla z LLM.4 (bez luk, z pamięci); krok 2–3 = pętla z LLM.5 z filtrem `if rekord is not None` na wejściu; krok 4: `pd.DataFrame([{\"pole\": p, \"trafnosc\": trafnosc[p]} for p in POLA])` — albo zwykłą pętlą z F3.1, jak wolisz.",
+				"**Pełne rozwiązanie z objaśnieniem:** (w notebooku, zwinięte) — wartości kontrolne: `zgodnosc` 7/8; trafność liczona na 7 zgodnych; 2 halucynacje. Najczęstsze potknięcie finału: liczenie trafności także na przypadku złamanym (None) — filtr z kroku 2 jest po to, żeby porażka parsowania nie udawała porażki EKSTRAKCJI: to dwie różne miary (zgodność vs trafność), rubryka chce obu OSOBNO."
+			],
+			"config": {
+				"estimated": "30 min",
+				"checks": [
+					{
+						"type": "token",
+						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+					}
+				]
+			}
+		},
+		{
+			"slug": "llm-przeglad",
+			"position": 90,
+			"kind": "exercise",
+			"title": "Przegląd przed egzaminem",
+			"contentMd": "Zestaw powtórkowy przed egzaminem modułu (D6.3 — spacing): pytania z wcześniejszych atomów, także z poprzednich modułów. Zaliczenie pozycji: wszystkie odpowiedzi poprawne (nielimitowane próby, feedback natychmiast).",
+			"questionRefs": [
+				"eda-1-p1",
+				"eda-3-p3",
+				"ml-3-p2",
+				"ml-5-p3",
+				"llm-1-p2",
+				"llm-2-p1",
+				"llm-2-p3",
+				"llm-3-p2",
+				"llm-5-p1",
+				"llm-6-p2"
+			]
+		}
+	]
+}
