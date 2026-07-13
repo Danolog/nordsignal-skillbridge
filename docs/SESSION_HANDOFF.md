@@ -11,7 +11,56 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-13 (późny wieczór) — PLAN NAPRAW W IMPLEMENTACJI
+## STAN NA DZIŚ — 2026-07-13 (noc) — PLAN NAPRAW: BLOKI A/B1/C/D/E WYKONANE I NA PRODZIE
+
+### Co się wydarzyło (pełna sekwencja czerwonych linii, polecenie Darka)
+- **Wszystkie PR-y planu ZMERGOWANE do main:** #171 (werdykt QG + sprostowania),
+  #172 (naprawa K1–K5), #173 (runbook v1.1), #176 (Blok E), #174→#175→#177
+  (łańcuch C — squash w kolejności; konflikt squash-stacka na #177 rozwiązany
+  merge'em main do gałęzi, pełna bramka CI zielona przed każdym merge).
+- **Migracja 0037 NA PRODZIE** (verified_competencies): backup
+  `prod-backup-pre-0037-20260713-2130` (`ep-jolly-wind-aljy93t8`), dziennik
+  37→38, RLS ENABLE+FORCE + polityki + grant SELECT-only app_student,
+  backfill 2 kredencjały z 1 submisji verified (Python, Pandas).
+- **Ingest 1E.R NA PRODZIE**: backup `prod-backup-pre-ingest-1er-20260713`
+  (`ep-hidden-hat-alxesr4j`), 2× „zaktualizowano 5, błędów 0" (idempotencja),
+  weryfikacja treści (progi 792/793/787 słów, markery K1–K5, pokrycie 23 liści,
+  10 projektów ds-*), smoke `/` 200 `/login` 200 `/api/curriculum` 401.
+- **Bramka QG 1E.R: GO** — re-review Ryana (diff LLM): **GO Z NOTAMI**; werdykt
+  i rekord wykonania (ADR-010 §10) dopisane do `qg-1er-partia-naprawcza.md`.
+  Noty Ryana do następnej iteracji treści: (1) link do polityki danych Groq
+  albo zawęzić fallback; (2) w syntetycznych przykładach nakazać fikcyjne
+  nazwiska/domeny example.com.
+- **Retencja backupów Neona:** oba branche trzymać min. kilka dni → potem delete.
+
+### Stan flagi paszportu (Blok C — kod NA PRODZIE, flaga OFF)
+`FLAG_PASSPORT_VERIFIED_ONLY` **nieustawiona na Vercel = OFF** — paszport
+zachowuje się jak dotąd; reconcile pisze kredencjały „na ciemno" przy każdej
+tranzycji statusu. **Flip = decyzja Darka**: ustawić flagę na Vercel po
+weryfikacji funkcjonalnej (przebieg E2E z planu, sekcja „Blok C"), potem
+sprzątanie (calculateCoverage, licznik onboardingu client-side, kafelek
+„W trakcie: 0"). Sign-off Ryana dla **rls-matrix v0.28** — otwarty.
+
+### NASTĘPNE (kolejność)
+1. **Blok B2/B3/B4** — trzy projekty `ds-endpoint-azure/gcp/aws` (partia 2,
+   pełne QG-1…7: benchmark ≥5 ofert z URL-ami, teorie 800–1500 słów, zasoby
+   z licencjami, klauzula karty w 1. zdaniu description — runbook v1.1 §5 już
+   to sankcjonuje); potem B3 (`ds-chmura` → CI/CD+MLOps required) i B4 (test
+   kontraktowy na glob — UWAGA: 1r celowo nadpisuje 5 slugów partii 1, więc
+   asercja musi rozumieć katalog efektywny last-wins, nie porównywać plików).
+2. **Flip flagi paszportu** (po weryfikacji E2E) + sprzątanie.
+3. **1E.6** (checki labów — największy bloker produktowy) i reszta kolejki 1E
+   — bez zmian, patrz snapshot poprzedni.
+4. Do pilotażu: żywy ekspert QG-6 (akcja Darka), dług 1E.R2 (z Sophią).
+
+### Infrastruktura
+- Baza testowa **:5433 działa** (kontener `skillbridge-postgres-test`,
+  zmigrowany do 0037). `pnpm db:seed` na niej pada na FK
+  `curriculum_module_items→projects` — testy integracyjne mają własne fixtures.
+- Baseline main po merge'ach: build OK, tsc 0, Biome 3 warningi (baseline),
+  unit **1194/1194**, pełna bramka CI zielona na main.
+
+## STAN POPRZEDNI — 2026-07-13 (późny wieczór) — PLAN NAPRAW W IMPLEMENTACJI
 
 ### Plan napraw (1E.R / chmury / paszport / QG-6) — 6 PR-ów czeka na przegląd
 Plan (wiążący, decyzje Darka D1–D4) żyje POZA repo:
