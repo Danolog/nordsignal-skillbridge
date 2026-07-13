@@ -33,13 +33,15 @@
   nazwiska/domeny example.com.
 - **Retencja backupów Neona:** oba branche trzymać min. kilka dni → potem delete.
 
-### Stan flagi paszportu (Blok C — kod NA PRODZIE, flaga OFF)
-`FLAG_PASSPORT_VERIFIED_ONLY` **nieustawiona na Vercel = OFF** — paszport
-zachowuje się jak dotąd; reconcile pisze kredencjały „na ciemno" przy każdej
-tranzycji statusu. **Flip = decyzja Darka**: ustawić flagę na Vercel po
-weryfikacji funkcjonalnej (przebieg E2E z planu, sekcja „Blok C"), potem
-sprzątanie (calculateCoverage, licznik onboardingu client-side, kafelek
-„W trakcie: 0"). Sign-off Ryana dla **rls-matrix v0.28** — otwarty.
+### Flaga paszportu: FLIP WYKONANY (2026-07-13, polecenie Darka)
+`FLAG_PASSPORT_VERIFIED_ONLY=1` na Production (Vercel), deploy success, smoke
+zielony. Pre-flight: k3-validate na prodzie 25/25 PASS; prognoza pokrycia dla
+jedynego studenta z kredencjałami (Python+Pandas → 27%) potwierdzona po flipie.
+Cache `marketCoveragePercent` przeliczony dla 27 studentów: 26×0% (uczciwa
+prawda), 1×27%. **Sign-off Ryana dla rls-matrix v0.28: GO** (0 KRYT/0 WAŻN,
+3 noty INFO — wpisane do macierzy). ZOSTAJE sprzątanie po flipie (nieblokujące):
+`calculateCoverage` (martwa gałąź przy ON), licznik pokrycia w onboardingu
+(client-side, dalej liczy z deklaracji), kafelek „W trakcie: 0" w dokumencie.
 
 ### NASTĘPNE (kolejność)
 1. **Blok B2/B3/B4** — trzy projekty `ds-endpoint-azure/gcp/aws` (partia 2,
@@ -48,7 +50,7 @@ sprzątanie (calculateCoverage, licznik onboardingu client-side, kafelek
    to sankcjonuje); potem B3 (`ds-chmura` → CI/CD+MLOps required) i B4 (test
    kontraktowy na glob — UWAGA: 1r celowo nadpisuje 5 slugów partii 1, więc
    asercja musi rozumieć katalog efektywny last-wins, nie porównywać plików).
-2. **Flip flagi paszportu** (po weryfikacji E2E) + sprzątanie.
+2. **Sprzątanie po flipie** (wyżej — nieblokujące).
 3. **1E.6** (checki labów — największy bloker produktowy) i reszta kolejki 1E
    — bez zmian, patrz snapshot poprzedni.
 4. Do pilotażu: żywy ekspert QG-6 (akcja Darka), dług 1E.R2 (z Sophią).
