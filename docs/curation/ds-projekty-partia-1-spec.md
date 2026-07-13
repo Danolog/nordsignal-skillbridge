@@ -81,6 +81,16 @@ Legenda liści: nazwy **DOSŁOWNE** jak w `career-model.ts`. Fundamenty (nowa gr
 
 **Pokrycie: 5/5 grup, 23/24 liści jako `required`.** Fundamenty domknięte: `EDA` (P1), `Uczenie maszynowe` (P3), `Statystyka (Statistics)` (P3/P7), `A/B testing` (P7). Świadomie niepokryty (wzór E1 §2.5):
 
+> **AKTUALIZACJA 2026-07-13 (plan napraw, Bloki B2/B3):** wiersz P6 jest nieaktualny —
+> `ds-chmura-wdrozenie-modelu` ma po B3 `required` = **CI/CD, MLOps** (chmury zdjęte:
+> ścieżka jest bezkartowa, przyznanie Azure/GCP/AWS było inflacją kompetencji, którą
+> Blok C zamieniłby w fałszywy kredencjał paszportu). Azure/GCP/AWS pokrywają teraz
+> hands-on trzy projekty **partii 2**: `ds-endpoint-azure` / `ds-endpoint-gcp` /
+> `ds-endpoint-aws` (L2, wymóg karty za zgodą QG-5 §5 v1.1). Pokrycie katalogu
+> efektywnego pozostaje 23/24 (Snowflake bez zmian). Szczegóły i benchmark QG-1:
+> `docs/curation/ds-projekty-partia-2-spec.md`; wersje efektywne 5 slugów partii 1
+> nadpisuje partia 1r (`ds-projects-partia-1r.json`, bramka 1E.R).
+
 | Liść | % | Dlaczego nie | Czym zastąpiony |
 |---|---|---|---|
 | Snowflake | 1.6 | Trial 30 dni/$400 — łamie zasadę „trial-safe" (QG-5.5); brak darmowego środowiska bez wygasania | Grupa „Chmura i platformy danych" pokryta przez Databricks (P5) + Azure/GCP/AWS (P6); Snowflake jako *a* nigdzie — student z tą luką dostaje P5 (ta sama grupa, przenośna wiedza SQL-on-platform) |

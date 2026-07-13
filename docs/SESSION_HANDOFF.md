@@ -11,7 +11,75 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-13 (noc) — PLAN NAPRAW: BLOKI A/B1/C/D/E WYKONANE I NA PRODZIE
+## STAN NA DZIŚ — 2026-07-14 — PLAN NAPRAW DOMKNIĘTY KODOWO: B2/B3/B4 GOTOWE, CZEKA INGEST PROD
+
+### Blok B2 — partia 2 (3 projekty chmurowe) NAPISANA i ZWALIDOWANA
+- **`tools/content/ds-projects-partia-2.json`**: `ds-endpoint-azure` / `ds-endpoint-gcp`
+  / `ds-endpoint-aws` — L2×10 h, ten sam model (własny artefakt studenta
+  z `ds-pierwszy-model-predykcyjny`), pipeline: budżet+alert PRZED pierwszym zasobem →
+  wdrożenie WYŁĄCZNIE jako kod → smoke test na znanych predykcjach (baseline) → pomiar
+  mediany/p95 latencji → teardown → dowód zerowego kosztu (tekstowy eksport preferowany).
+  `required` = jedna chmura + MLOps; `acquired` = Python/Git/Uczenie maszynowe.
+  QG-5 §5: klauzula karty w 1. zdaniu description („wyłącznie weryfikacji tożsamości"),
+  link do panelu budżetu w source_links, zakaz przekraczania kwot, klauzula „kredyty
+  tylko dla NOWYCH kont". **Celowo BEZ kryterium żywego URL** (endpoint usuwany —
+  utrzymanie paliłoby kredyt); dowód = artefakty repo. Teorie 1034/1076/1185 słów
+  z „Metodyką i pułapkami"; zasoby 4/projekt z kompletem licencji i verifiedAt.
+- **Spec partii 2**: `docs/curation/ds-projekty-partia-2-spec.md` — pełny tor QG-1…QG-7:
+  benchmark 7 ofert z URL-ami (fetch 2026-07-13; triada SageMaker/Vertex/Azure ML
+  dosłownie w 3/7), kurs referencyjny Stanford CS329S + FSDL, mapowanie kryteriów→oferty,
+  fakty free-tier zweryfikowane (Azure 200 USD/30 dni; GCP 300 USD/90 dni, ręczny
+  upgrade; AWS free plan 6 mies./100 USD, konto zamyka się zamiast obciążyć kartę;
+  budżety ALARMUJĄ, nie zatrzymują). Nota w specu partii 1 §4 (wiersz P6 nieaktualny).
+- **Recenzje bramkowe (forki, 2026-07-13): Ryan GO Z NOTAMI (0K/2W/3I), Ethan GO
+  Z NOTAMI (0K/3W/5I)** — wszystkie WAŻN zastosowane: maskowanie identyfikatorów
+  konta/subskrypcji na zrzutach, higiena sekretów w zapisach żądań, tekstowy dowód
+  kosztowy obok zrzutu, klauzula nowych kont. **Dług odnotowany w specu §6 (→ 1E.R2):**
+  ds-chmura przyznaje CI/CD required bez kryterium rubryki wymuszającego CI.
+
+### Blok B3 — ds-chmura przełożony (w partii 1r — wersja efektywna last-wins!)
+`ds-chmura-wdrozenie-modelu`: `required` = **CI/CD + MLOps** (chmury zdjęte całkowicie,
+nie zdegradowane do acquired); zdanie w description kieruje do projektów Managed
+endpoint. Parytet w `seed-projects.ts` (także opis 1r-owy). Matchmaker: luka „Azure" →
+`ds-endpoint-azure`, luka „CI/CD" → `ds-chmura` (potwierdzone w kodzie przez Ethana).
+
+### Blok B4 — test kontraktowy + seed + noty Ryana 1E.R
+- **`content-ds-projects.contract.test.ts`** przepisany na glob `ds-projects-partia-*`
+  z semantyką **katalogu efektywnego** (last-wins po slugu; 1r nadpisuje 5 slugów
+  partii 1, partia 2 tylko dodaje — obie własności asertowane). Katalog efektywny:
+  13 projektów, 4×L1/7×L2/2×L3, pokrycie **23/24** (Snowflake jedyny niepokryty).
+  Guardy maszynowe QG-5 §5: klauzula karty w 1. zdaniu, link budżetu, role B3.
+  UWAGA: sort plików leksykograficzny — przy partii ≥10 przejść na numeryczny.
+- **Seed-parytet**: +3 wpisy `ds-endpoint-*` → `DEMO_PROJECTS` = **33**, rozkład
+  **12/15/6**, oss 12 (testy zaktualizowane).
+- **Noty Ryana z 1E.R uregulowane w 1r**: (1) link polityki danych Groq
+  (console.groq.com/docs/your-data — Groq NIE trenuje na inputach API; etykieta
+  ostrożna); (2) nakaz fikcyjnych nazwisk/domen example.com w syntetycznym korpusie
+  ds-llm (description + teoria).
+
+### Walidacja (pełna bramka, 2026-07-14)
+Ingest ×2 na :5433 dla 1r i partii 2 — idempotentny (2. bieg: 0 wstawionych), role
+w bazie zgodne. `pnpm test:run` **1216/1216** (baseline 1194 + nowe testy kontraktu),
+`pnpm build` OK, Biome 3 warningi (baseline).
+
+### NASTĘPNE (kolejność)
+1. **INGEST PARTII 2 + 1r NA PROD = [CZERWONA LINIA]** — wyłącznie po potwierdzeniu
+   treści przez Darka: backup gałęzią Neona → `CONFIRM_PROD_DB=1` (DIRECT) → ingest 1r
+   (zaktualizowana: B3+noty) i partii 2 → weryfikacja pokrycia 23/24 i ról → smoke.
+   **Przed ingestem prod: ręcznie zweryfikować dostępność SageMaker w AWS free planie**
+   (spec §7 — jedyny otwarty fakt; treść ma instrukcję awaryjną, więc nie blokuje).
+2. **Sprzątanie po flipie paszportu** (nieblokujące, z poprzedniego snapshotu):
+   calculateCoverage, licznik onboardingu client-side, kafelek „W trakcie: 0".
+3. **1E.6** (checki labów — największy bloker produktowy) i reszta kolejki 1E.
+4. Do pilotażu: żywy ekspert QG-6 (akcja Darka; losowy L2 MUSI objąć projekt chmurowy
+   partii 2), dług 1E.R2 (z Sophią — w tym kryterium CI dla ds-chmura, Ethan WAŻN-1).
+
+### Infrastruktura
+- Baza testowa :5433 działa (kontener `skillbridge-postgres-test`, po ingestach ma
+  8 projektów ds-*: 5×1r + 3×partia 2 — partii 1 nigdy tam nie było, to OK).
+- Baseline main po tej sesji: build OK, tsc 0, Biome 3 warningi, unit **1216/1216**.
+
+## STAN POPRZEDNI — 2026-07-13 (noc) — PLAN NAPRAW: BLOKI A/B1/C/D/E WYKONANE I NA PRODZIE
 
 ### Co się wydarzyło (pełna sekwencja czerwonych linii, polecenie Darka)
 - **Wszystkie PR-y planu ZMERGOWANE do main:** #171 (werdykt QG + sprostowania),

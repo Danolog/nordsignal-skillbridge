@@ -744,7 +744,7 @@ export const DEMO_PROJECTS: DemoProject[] = [
 		slug: "ds-chmura-wdrozenie-modelu",
 		title: "Wdrożenie modelu ML w chmurze jako endpoint",
 		description:
-			"Weź wytrenowany model predykcyjny z wcześniejszego projektu i wdróż go jako działający, publiczny endpoint. Domyślną, w pełni darmową i bezkartową drogą jest Streamlit Community Cloud lub Hugging Face Spaces — to tam powstaje trwały endpoint, do którego rekruter kliknie i zobaczy predykcję. Następnie opisujesz mapę wdrożenia na trzy chmury (Azure, GCP, AWS): na jaką usługę zarządzaną każdej z nich trafiłby ten sam model, jaki jest koszt i kompromisy — to dowód rozumienia chmury bez zakładania kont. UWAGA: darmowe tiery Azure/GCP/AWS wymagają karty kredytowej (nawet bez naliczenia opłaty), a Microsoft Learn Sandbox jest efemeryczny i nie utrzyma trwałego endpointu — bez karty cały projekt zrobisz na Streamlit/HF plus mapa wdrożenia. Zaczynasz od metryki sukcesu (latencja, dostępność) i guardraila; bezwzględny zakaz przekraczania darmowych kwot.",
+			"Weź wytrenowany model predykcyjny z wcześniejszego projektu i wdróż go jako działający, publiczny endpoint. Domyślną, w pełni darmową i bezkartową drogą jest Streamlit Community Cloud lub Hugging Face Spaces — to tam powstaje trwały endpoint, do którego rekruter kliknie i zobaczy predykcję. Następnie opisujesz mapę wdrożenia na trzy chmury (Azure, GCP, AWS): na jaką usługę zarządzaną każdej z nich trafiłby ten sam model, jaki jest koszt i kompromisy — to dowód rozumienia chmury bez zakładania kont. UWAGA: darmowe tiery Azure/GCP/AWS wymagają karty kredytowej (nawet bez naliczenia opłaty), a Microsoft Learn wycofał darmowe sandboxy (ćwiczenia wymagają dziś własnej subskrypcji Azure) — bez karty cały projekt zrobisz na Streamlit/HF plus mapa wdrożenia. Zaczynasz od metryki sukcesu (latencja, dostępność) i guardraila; bezwzględny zakaz przekraczania darmowych kwot. Ten projekt jest bezkartowy i uczy CI/CD oraz podstaw MLOps; same kompetencje chmurowe (Azure/GCP/AWS) zdobędziesz hands-on w projektach „Managed endpoint” tej ścieżki — to naturalny następny szczebel po tym projekcie.",
 		level: "L2",
 		estimatedHours: 12,
 		sourceType: "oss",
@@ -782,12 +782,10 @@ export const DEMO_PROJECTS: DemoProject[] = [
 			},
 		],
 		competencies: [
-			{ name: "Azure", role: "required" },
-			{ name: "GCP", role: "required" },
-			{ name: "AWS", role: "required" },
+			{ name: "CI/CD", role: "required" },
+			{ name: "MLOps", role: "required" },
 			{ name: "Python", role: "acquired" },
 			{ name: "Git", role: "acquired" },
-			{ name: "CI/CD", role: "acquired" },
 			{ name: "Uczenie maszynowe", role: "acquired" },
 		],
 	},
@@ -989,6 +987,155 @@ export const DEMO_PROJECTS: DemoProject[] = [
 			{ name: "MLOps", role: "acquired" },
 			{ name: "Statystyka (Statistics)", role: "acquired" },
 			{ name: "EDA", role: "acquired" },
+		],
+	},
+	// ── DS partia 2 — chmury hands-on (Blok B2; parytet z tools/content/ds-projects-partia-2.json) ──
+	{
+		slug: "ds-endpoint-azure",
+		title: "Wdrożenie modelu jako managed endpoint w Azure Machine Learning",
+		description:
+			"UWAGA: ten projekt wymaga karty płatniczej — przy zakładaniu darmowego konta Azure karta służy wyłącznie weryfikacji tożsamości (tymczasowa, zwrotna blokada ~1 USD), całość wykonasz w ramach kredytu powitalnego 200 USD/30 dni bez naliczenia opłat, a przekraczanie darmowych kwot jest bezwzględnie zakazane. Kredyty powitalne przysługują NOWYM kontom — jeśli masz już konto tej chmury bez kredytów, nie wykonuj na nim tego projektu, tylko wybierz platformę z tej partii, na której możesz założyć nowe darmowe konto. Weźmiesz WŁASNY model z projektu „Pierwszy model predykcyjny” (wybrane tam zadanie predykcyjne i punkt odcięcia różnicują prace między studentami), zarejestrujesz go w rejestrze modeli Azure ML i wdrożysz jako managed online endpoint na najtańszej instancji, w całości jako kod (az ml + pliki YAML). Zanim utworzysz pierwszy zasób, skonfigurujesz budżet z alertem w Cost Management. Endpoint zweryfikujesz smoke testem na znanych wejściach, zmierzysz medianę i p95 latencji, po czym usuniesz CAŁĄ grupę zasobów i udokumentujesz zerowy koszt zrzutem panelu. Na zrzutach paneli i w zapisach żądań maskujesz dane konta oraz nagłówki uwierzytelniające; klucze trzymasz w zmiennych środowiskowych. Endpoint po weryfikacji jest celowo usunięty, nie zostawiony online.",
+		level: "L2",
+		estimatedHours: 10,
+		sourceType: "oss",
+		sourceUrl:
+			"https://learn.microsoft.com/en-us/azure/machine-learning/how-to-deploy-online-endpoints?view=azureml-api-2",
+		rubricJson: [
+			{
+				criterion: "Guardrail kosztowy przed pierwszym zasobem",
+				weight: 15,
+				description:
+					"Budżet z alertem skonfigurowany w Azure Cost Management PRZED utworzeniem pierwszego zasobu, udokumentowany zrzutem w repozytorium (identyfikatory konta/subskrypcji i adres e-mail na zrzutach zamazane). README jawnie nazywa metrykę sukcesu wdrożenia (poprawność predykcji, latencja) i guardrail kosztowy (0 USD wydane ponad kredyt powitalny) oraz odnotowuje, że alert budżetu informuje, ale nie zatrzymuje zasobów.",
+			},
+			{
+				criterion: "Wdrożenie managed endpointu jako kod",
+				weight: 30,
+				description:
+					"Model z projektu „Pierwszy model predykcyjny” zarejestrowany w rejestrze modeli Azure ML i wdrożony jako managed online endpoint wyłącznie kodem (az ml + YAML w repozytorium); wersje bibliotek przypięte w definicji środowiska (w tym dokładna wersja scikit-learn z treningu); wybór instancji (F2s_v2 lub uzasadniony fallback) i regionu krótko uzasadniony.",
+			},
+			{
+				criterion: "Smoke test poprawności i pomiar latencji",
+				weight: 20,
+				description:
+					"3–5 przypadków testowych ze znanymi predykcjami policzonymi lokalnie (baseline poprawności) — zgodność odpowiedzi endpointu udokumentowana zapisem żądań i odpowiedzi w repo (nagłówki i klucze uwierzytelniające w zapisach zamaskowane, klucze wyłącznie w zmiennych środowiskowych); pomiar serii żądań (≥20) z raportem mediany i p95 oraz osobno pierwszego żądania (zimny start); wynik odniesiony do metryki sukcesu z briefu.",
+			},
+			{
+				criterion: "Sprzątanie i dowód zerowego kosztu",
+				weight: 15,
+				description:
+					"Po weryfikacji usunięta CAŁA grupa zasobów (samo usunięcie workspace'a nie kasuje Container Registry, Storage, Key Vault ani Application Insights); brak naliczonych opłat potwierdzony zrzutem panelu kosztów LUB tekstowym eksportem (np. wyjście `az consumption usage list` albo eksport CSV z Cost analysis) — forma tekstowa preferowana, bo jest weryfikowalna z artefaktu; procedura teardown opisana w README jako obowiązkowy krok projektu, nie opcja.",
+			},
+			{
+				criterion: "README dla rekrutera z metryką biznesową i Ograniczeniami",
+				weight: 20,
+				description:
+					"README: problem biznesowy → model i jego pochodzenie → architektura wdrożenia (endpoint/deployment, opis lub diagram) → wynik z liczbą w formule „[technika] + [metryka] + [wynik]” (np. zgodność predykcji i mediana latencji) → instrukcja odtworzenia krok po kroku; sekcja Ograniczenia: endpoint celowo usunięty (dowody w repo), brak monitoringu i autoskalowania, koszty i kompromisy platformy.",
+			},
+		],
+		competencies: [
+			{ name: "Azure", role: "required" },
+			{ name: "MLOps", role: "required" },
+			{ name: "Python", role: "acquired" },
+			{ name: "Git", role: "acquired" },
+			{ name: "Uczenie maszynowe", role: "acquired" },
+		],
+	},
+	{
+		slug: "ds-endpoint-gcp",
+		title: "Wdrożenie modelu jako endpoint w Vertex AI (Google Cloud)",
+		description:
+			"UWAGA: ten projekt wymaga karty płatniczej — przy zakładaniu konta Google Cloud karta służy wyłącznie weryfikacji tożsamości, całość wykonasz w ramach kredytu powitalnego 300 USD/90 dni bez naliczenia opłat (po okresie próbnym konto NIE przechodzi samo na płatne), a przekraczanie darmowych kwot jest bezwzględnie zakazane. Kredyty powitalne przysługują NOWYM kontom — jeśli masz już konto tej chmury bez kredytów, nie wykonuj na nim tego projektu, tylko wybierz platformę z tej partii, na której możesz założyć nowe darmowe konto. Weźmiesz WŁASNY model z projektu „Pierwszy model predykcyjny” (wybrane tam zadanie predykcyjne i punkt odcięcia różnicują prace między studentami), wgrasz artefakt do Cloud Storage, zaimportujesz do Vertex AI Model Registry z prebudowanym kontenerem scikit-learn i wdrożysz na endpoint Vertex AI — w całości jako kod (gcloud ai). Zanim utworzysz pierwszy zasób, skonfigurujesz budżet z alertem w Billing → Budgets & alerts; endpoint Vertex AI nalicza opłaty także bezczynny, więc undeploy i usunięcie zasobów to część zadania. Endpoint zweryfikujesz smoke testem na znanych wejściach, zmierzysz medianę i p95 latencji, po czym usuniesz endpoint i bucket oraz udokumentujesz zerowy koszt zrzutem panelu. Na zrzutach paneli i w zapisach żądań maskujesz dane konta oraz nagłówki uwierzytelniające; klucze trzymasz w zmiennych środowiskowych. Endpoint po weryfikacji jest celowo usunięty, nie zostawiony online.",
+		level: "L2",
+		estimatedHours: 10,
+		sourceType: "oss",
+		sourceUrl: "https://docs.cloud.google.com/vertex-ai/docs/general/deployment",
+		rubricJson: [
+			{
+				criterion: "Guardrail kosztowy przed pierwszym zasobem",
+				weight: 15,
+				description:
+					"Budżet z alertem skonfigurowany w Cloud Billing (Budgets & alerts) PRZED utworzeniem pierwszego zasobu, udokumentowany zrzutem w repozytorium (identyfikatory konta/subskrypcji i adres e-mail na zrzutach zamazane). README jawnie nazywa metrykę sukcesu wdrożenia (poprawność predykcji, latencja) i guardrail kosztowy (0 USD wydane ponad kredyt powitalny) oraz odnotowuje, że alert budżetu informuje, ale nie zatrzymuje wydatków.",
+			},
+			{
+				criterion: "Wdrożenie endpointu Vertex AI jako kod",
+				weight: 30,
+				description:
+					"Model z projektu „Pierwszy model predykcyjny” zaimportowany do Vertex AI Model Registry (artefakt w Cloud Storage + prebudowany kontener scikit-learn we właściwej wersji) i wdrożony na endpoint wyłącznie kodem (gcloud ai / skrypty w repozytorium); wersja kontenera zgodna z wersją scikit-learn z treningu; wybór typu maszyny (najmniejszy dostępny) i regionu krótko uzasadniony.",
+			},
+			{
+				criterion: "Smoke test poprawności i pomiar latencji",
+				weight: 20,
+				description:
+					"3–5 przypadków testowych ze znanymi predykcjami policzonymi lokalnie (baseline poprawności) — zgodność odpowiedzi endpointu udokumentowana zapisem żądań i odpowiedzi w repo (nagłówki i klucze uwierzytelniające w zapisach zamaskowane, klucze wyłącznie w zmiennych środowiskowych); pomiar serii żądań (≥20) z raportem mediany i p95 oraz osobno pierwszego żądania (zimny start); wynik odniesiony do metryki sukcesu z briefu.",
+			},
+			{
+				criterion: "Sprzątanie i dowód zerowego kosztu",
+				weight: 15,
+				description:
+					"Po weryfikacji wykonany undeploy modelu i usunięty endpoint (endpoint Vertex AI nalicza opłaty także bezczynny) oraz sprzątnięty bucket Cloud Storage z artefaktem; brak naliczonych opłat ponad kredyt potwierdzony zrzutem panelu kosztów LUB tekstowym eksportem (np. eksport CSV z raportu Billing / wyjście `gcloud billing`) — forma tekstowa preferowana, bo jest weryfikowalna z artefaktu; procedura teardown opisana w README jako obowiązkowy krok projektu, nie opcja.",
+			},
+			{
+				criterion: "README dla rekrutera z metryką biznesową i Ograniczeniami",
+				weight: 20,
+				description:
+					"README: problem biznesowy → model i jego pochodzenie → architektura wdrożenia (Model Registry/endpoint, opis lub diagram) → wynik z liczbą w formule „[technika] + [metryka] + [wynik]” (np. zgodność predykcji i mediana latencji) → instrukcja odtworzenia krok po kroku; sekcja Ograniczenia: endpoint celowo usunięty (dowody w repo), brak monitoringu i autoskalowania, koszty i kompromisy platformy.",
+			},
+		],
+		competencies: [
+			{ name: "GCP", role: "required" },
+			{ name: "MLOps", role: "required" },
+			{ name: "Python", role: "acquired" },
+			{ name: "Git", role: "acquired" },
+			{ name: "Uczenie maszynowe", role: "acquired" },
+		],
+	},
+	{
+		slug: "ds-endpoint-aws",
+		title: "Wdrożenie modelu jako endpoint w Amazon SageMaker (AWS)",
+		description:
+			"UWAGA: ten projekt wymaga karty płatniczej — przy zakładaniu konta AWS karta służy wyłącznie weryfikacji tożsamości (tymczasowa, zwrotna blokada ~1 USD), a projekt wykonujesz na DARMOWYM planie AWS Free Tier (6 miesięcy, 100 USD kredytu na start + do 100 USD za aktywności), którego konto nie może wygenerować rachunku — zamyka się samo, zamiast obciążyć kartę; przekraczanie darmowych kwot jest bezwzględnie zakazane. Kredyty powitalne przysługują NOWYM kontom — jeśli masz już konto tej chmury bez kredytów, nie wykonuj na nim tego projektu, tylko wybierz platformę z tej partii, na której możesz założyć nowe darmowe konto. Weźmiesz WŁASNY model z projektu „Pierwszy model predykcyjny” (wybrane tam zadanie predykcyjne i punkt odcięcia różnicują prace między studentami), spakujesz artefakt do S3 i wdrożysz jako endpoint Amazon SageMaker — domyślnie SERVERLESS Inference (skaluje się do zera); klasyczny real-time endpoint opisujesz jako wariant. Wdrożenie w całości jako kod (SDK sagemaker lub AWS CLI). Zanim utworzysz pierwszy zasób, skonfigurujesz budżet z alertem w AWS Budgets; jeśli SageMaker okaże się niedostępny w Twoim planie free, NIE przechodź na plan płatny — wykonaj równoważny projekt na Azure albo GCP. Endpoint zweryfikujesz smoke testem na znanych wejściach, zmierzysz medianę i p95 latencji, po czym usuniesz endpoint, endpoint-config, model i artefakty S3 oraz udokumentujesz zerowy koszt zrzutem panelu. Na zrzutach paneli i w zapisach żądań maskujesz dane konta oraz nagłówki uwierzytelniające; klucze trzymasz w zmiennych środowiskowych. Endpoint po weryfikacji jest celowo usunięty, nie zostawiony online.",
+		level: "L2",
+		estimatedHours: 10,
+		sourceType: "oss",
+		sourceUrl: "https://docs.aws.amazon.com/sagemaker/latest/dg/realtime-endpoints.html",
+		rubricJson: [
+			{
+				criterion: "Guardrail kosztowy przed pierwszym zasobem",
+				weight: 15,
+				description:
+					"Budżet z alertem skonfigurowany w AWS Budgets PRZED utworzeniem pierwszego zasobu, udokumentowany zrzutem w repozytorium (identyfikatory konta/subskrypcji i adres e-mail na zrzutach zamazane). README jawnie nazywa metrykę sukcesu wdrożenia (poprawność predykcji, latencja) i guardrail kosztowy (0 USD wydane ponad kredyty darmowego planu) oraz odnotowuje mechanizm ochronny planu free (konto zamyka się zamiast obciążyć kartę) i weryfikację dostępności SageMaker w planie free.",
+			},
+			{
+				criterion: "Wdrożenie endpointu SageMaker jako kod",
+				weight: 30,
+				description:
+					"Model z projektu „Pierwszy model predykcyjny” spakowany do S3 i wdrożony jako endpoint SageMaker — domyślnie Serverless Inference (real-time na najmniejszej instancji jako opisany wariant) — wyłącznie kodem (SDK sagemaker lub AWS CLI, skrypty w repozytorium); wersje bibliotek przypięte (w tym dokładna wersja scikit-learn z treningu i zgodny kontener SKLearn); konfiguracja pamięci/instancji i regionu krótko uzasadniona.",
+			},
+			{
+				criterion: "Smoke test poprawności i pomiar latencji",
+				weight: 20,
+				description:
+					"3–5 przypadków testowych ze znanymi predykcjami policzonymi lokalnie (baseline poprawności) — zgodność odpowiedzi endpointu udokumentowana zapisem żądań i odpowiedzi w repo (nagłówki i klucze uwierzytelniające w zapisach zamaskowane, klucze wyłącznie w zmiennych środowiskowych); pomiar serii żądań (≥20) z raportem mediany i p95 oraz osobno pierwszego żądania (zimny start Serverless jako jawnie opisana charakterystyka); wynik odniesiony do metryki sukcesu z briefu.",
+			},
+			{
+				criterion: "Sprzątanie i dowód zerowego kosztu",
+				weight: 15,
+				description:
+					"Po weryfikacji usunięte: endpoint, konfiguracja endpointu (endpoint-config), model w SageMaker oraz artefakty w S3; brak naliczonych opłat ponad kredyty planu potwierdzony zrzutem panelu LUB tekstowym eksportem (np. wyjście `aws ce get-cost-and-usage`) — forma tekstowa preferowana, bo jest weryfikowalna z artefaktu; procedura teardown opisana w README jako obowiązkowy krok projektu, nie opcja.",
+			},
+			{
+				criterion: "README dla rekrutera z metryką biznesową i Ograniczeniami",
+				weight: 20,
+				description:
+					"README: problem biznesowy → model i jego pochodzenie → architektura wdrożenia (S3/model/endpoint, opis lub diagram; wybór Serverless vs real-time uzasadniony) → wynik z liczbą w formule „[technika] + [metryka] + [wynik]” (np. zgodność predykcji i mediana latencji) → instrukcja odtworzenia krok po kroku; sekcja Ograniczenia: endpoint celowo usunięty (dowody w repo), zimny start Serverless, brak monitoringu, koszty i kompromisy platformy.",
+			},
+		],
+		competencies: [
+			{ name: "AWS", role: "required" },
+			{ name: "MLOps", role: "required" },
+			{ name: "Python", role: "acquired" },
+			{ name: "Git", role: "acquired" },
+			{ name: "Uczenie maszynowe", role: "acquired" },
 		],
 	},
 ];
