@@ -68,7 +68,18 @@ type ResourceType = (typeof RESOURCE_TYPES)[number];
 
 type CompetencyInput = { name: string; role: CompetencyRole };
 type RubricItemInput = { criterion: string; weight: number; description: string };
-type LearningResourceInput = { title: string; url: string; type: ResourceType; position?: number };
+// Pola license/language/registrationRequired/verifiedAt: dług QG-5 §3/§4/§7 partii 1
+// (ADR-014 D4, migracja 0035) — opcjonalne, wypełnia partia naprawcza 1E.R.
+type LearningResourceInput = {
+	title: string;
+	url: string;
+	type: ResourceType;
+	position?: number;
+	license?: string;
+	language?: string;
+	registrationRequired?: boolean;
+	verifiedAt?: string;
+};
 type SourceLinkInput = { url: string; label?: string; position?: number };
 
 export type CyberProjectInput = {
@@ -150,6 +161,20 @@ function validateResource(r: LearningResourceInput, idx: number): string | null 
 	}
 	if (r.position !== undefined && (!Number.isInteger(r.position) || (r.position as number) < 0)) {
 		return `${prefix}.position musi być liczbą całkowitą ≥ 0`;
+	}
+	if (r.license !== undefined && (typeof r.license !== "string" || r.license.trim() === "")) {
+		return `${prefix}.license musi być niepustym tekstem`;
+	}
+	if (r.language !== undefined && (typeof r.language !== "string" || r.language.trim() === "")) {
+		return `${prefix}.language musi być niepustym tekstem`;
+	}
+	if (r.registrationRequired !== undefined && typeof r.registrationRequired !== "boolean") {
+		return `${prefix}.registrationRequired musi być true/false`;
+	}
+	if (r.verifiedAt !== undefined) {
+		if (typeof r.verifiedAt !== "string" || Number.isNaN(Date.parse(r.verifiedAt))) {
+			return `${prefix}.verifiedAt musi być datą ISO (np. "2026-07-11")`;
+		}
 	}
 	return null;
 }
@@ -381,6 +406,10 @@ export async function ingestCyberProjects(
 								url: r.url,
 								type: r.type,
 								position: r.position ?? 0,
+								license: r.license ?? null,
+								language: r.language ?? null,
+								registrationRequired: r.registrationRequired ?? false,
+								verifiedAt: r.verifiedAt ? new Date(r.verifiedAt) : null,
 							})),
 						);
 						report.resourcesTotal += p.learning_resources.length;
