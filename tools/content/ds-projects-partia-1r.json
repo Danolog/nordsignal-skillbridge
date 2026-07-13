@@ -65,7 +65,7 @@
 				"license": "BSD (dokumentacja pandas)",
 				"language": "EN",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Python Data Science Handbook — darmowy podręcznik (kanon)",
@@ -75,7 +75,7 @@
 				"license": "CC BY-NC-ND (tekst), MIT (kod)",
 				"language": "EN",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Wprowadzenie do analizy danych z Python i Pandas — webinar PL (Kodołamacz/Sages, ~1 h 39 min)",
@@ -85,7 +85,7 @@
 				"license": "YouTube Standard License",
 				"language": "PL",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "NumPy — Learn (materiały dla początkujących)",
@@ -95,7 +95,7 @@
 				"license": "BSD (dokumentacja NumPy)",
 				"language": "EN",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			}
 		],
 		"source_links": [
@@ -170,17 +170,17 @@
 				"license": "MIT (DuckDB)",
 				"language": "EN",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
-				"title": "PENDING",
-				"url": "PENDING",
+				"title": "SQL Tutorial (dawniej Mode) — JOIN-y, funkcje okna, tuning zapytań; edytor w przeglądarce, bez konta",
+				"url": "https://www.thoughtspot.com/sql-tutorial",
 				"type": "course",
 				"position": 1,
-				"license": "PENDING",
+				"license": "własnościowa (ThoughtSpot; tutorial darmowy)",
 				"language": "EN",
-				"registrationRequired": true,
-				"verifiedAt": "2026-07-11"
+				"registrationRequired": false,
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Kaggle Learn — Intro to SQL (ćwiczenia wymagają darmowego konta Kaggle)",
@@ -190,7 +190,7 @@
 				"license": "własnościowa (Kaggle; kurs darmowy)",
 				"language": "EN",
 				"registrationRequired": true,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Darmowy kurs SQL cz. 1 — KajoData (~31 min; silnik MySQL, składnia ANSI przenośna do DuckDB)",
@@ -200,7 +200,7 @@
 				"license": "YouTube Standard License",
 				"language": "PL",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Pro Git — kontrola wersji (kanon Gita)",
@@ -210,7 +210,7 @@
 				"license": "CC BY-NC-SA 3.0",
 				"language": "EN",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			}
 		],
 		"source_links": [
@@ -304,7 +304,7 @@
 				"license": "BSD (dokumentacja scikit-learn)",
 				"language": "EN",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Google Machine Learning Crash Course (dostępny po polsku)",
@@ -314,7 +314,7 @@
 				"license": "CC BY 4.0 (treści developers.google.com)",
 				"language": "PL/EN",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Twój start w ML — KROK #3: jak wytrenować model (I and AI, ~29 min)",
@@ -324,17 +324,17 @@
 				"license": "YouTube Standard License",
 				"language": "PL",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "StatQuest — playlista Machine Learning (Josh Starmer)",
-				"url": "PENDING",
+				"url": "https://www.youtube.com/playlist?list=PLblh5JKOoLUICTaGLRoHQDuF_7q2GfuJF",
 				"type": "video",
 				"position": 3,
 				"license": "YouTube Standard License",
 				"language": "EN",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			}
 		],
 		"source_links": [
@@ -411,20 +411,20 @@
 				"url": "https://ai.google.dev/gemini-api/docs",
 				"type": "docs",
 				"position": 0,
-				"license": "własnościowa (Google)",
+				"license": "CC BY 4.0 (treść), Apache 2.0 (fragmenty kodu)",
 				"language": "EN/PL",
-				"registrationRequired": true,
-				"verifiedAt": "2026-07-11"
+				"registrationRequired": false,
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Gemini API — Prompting strategies (projektowanie promptów, few-shot, format wyjścia)",
 				"url": "https://ai.google.dev/gemini-api/docs/prompting-strategies",
 				"type": "docs",
 				"position": 1,
-				"license": "własnościowa (Google)",
+				"license": "CC BY 4.0 (treść), Apache 2.0 (fragmenty kodu)",
 				"language": "EN",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Hugging Face LLM Course — rozdz. 1 (jak działają LLM; to NIE jest kurs prompt engineeringu)",
@@ -434,7 +434,7 @@
 				"license": "Apache 2.0 (materiały HF)",
 				"language": "EN",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Jak działa ChatGPT? Duży model językowy (LLM) w 30 minut — Robert Sikora",
@@ -444,7 +444,7 @@
 				"license": "YouTube Standard License",
 				"language": "PL",
 				"registrationRequired": false,
-				"verifiedAt": "2026-07-11"
+				"verifiedAt": "2026-07-13"
 			}
 		],
 		"source_links": [
@@ -459,7 +459,7 @@
 				"position": 1
 			},
 			{
-				"url": "PENDING",
+				"url": "https://console.groq.com/docs/quickstart",
 				"label": "Fallback tej samej funkcji: Groq API — darmowy tier dla dewelopera",
 				"position": 2
 			}
@@ -468,7 +468,7 @@
 	{
 		"slug": "ds-chmura-wdrozenie-modelu",
 		"title": "Wdrożenie modelu ML w chmurze jako endpoint",
-		"description": "Weź wytrenowany model predykcyjny z wcześniejszego projektu i wdróż go jako działający, publiczny endpoint. Domyślną, w pełni darmową i bezkartową drogą jest Streamlit Community Cloud lub Hugging Face Spaces — to tam powstaje trwały endpoint, do którego rekruter kliknie i zobaczy predykcję. Następnie opisujesz mapę wdrożenia na trzy chmury (Azure, GCP, AWS): na jaką usługę zarządzaną każdej z nich trafiłby ten sam model, jaki jest koszt i kompromisy — to dowód rozumienia chmury bez zakładania kont. UWAGA: darmowe tiery Azure/GCP/AWS wymagają karty kredytowej (nawet bez naliczenia opłaty), a Microsoft Learn Sandbox jest efemeryczny i nie utrzyma trwałego endpointu — bez karty cały projekt zrobisz na Streamlit/HF plus mapa wdrożenia. Zaczynasz od metryki sukcesu (latencja, dostępność) i guardraila; bezwzględny zakaz przekraczania darmowych kwot.",
+		"description": "Weź wytrenowany model predykcyjny z wcześniejszego projektu i wdróż go jako działający, publiczny endpoint. Domyślną, w pełni darmową i bezkartową drogą jest Streamlit Community Cloud lub Hugging Face Spaces — to tam powstaje trwały endpoint, do którego rekruter kliknie i zobaczy predykcję. Następnie opisujesz mapę wdrożenia na trzy chmury (Azure, GCP, AWS): na jaką usługę zarządzaną każdej z nich trafiłby ten sam model, jaki jest koszt i kompromisy — to dowód rozumienia chmury bez zakładania kont. UWAGA: darmowe tiery Azure/GCP/AWS wymagają karty kredytowej (nawet bez naliczenia opłaty), a Microsoft Learn wycofał darmowe sandboxy (ćwiczenia wymagają dziś własnej subskrypcji Azure) — bez karty cały projekt zrobisz na Streamlit/HF plus mapa wdrożenia. Zaczynasz od metryki sukcesu (latencja, dostępność) i guardraila; bezwzględny zakaz przekraczania darmowych kwot.",
 		"level": "L2",
 		"estimatedHours": 12,
 		"sourceType": "oss",
@@ -530,37 +530,47 @@
 				"description": "README z problemem, linkiem do demo, metryką i instrukcją odtworzenia; sekcja Ograniczenia (koszt, skalowanie, brak monitoringu)."
 			}
 		],
-		"theory_md": "# Wdrożenie modelu ML w chmurze jako endpoint\n\n## Dlaczego model bez wdrożenia jest bezużyteczny\n\nModel żyjący wyłącznie w notebooku nie tworzy wartości. Predykcja, do której nikt nie ma dostępu, nie wpływa na żadną decyzję. Dopiero **wdrożenie** — udostępnienie modelu jako usługi, którą można wywołać — zamienia eksperyment w produkt. To także moment, w którym Data Scientist styka się z inżynierią: musi zadbać o zależności, konfigurację, sekrety i koszty. Dla rekrutera działający URL z predykcją jest silniejszym dowodem kompetencji niż najlepszy nawet notebook, bo pokazuje, że potrafisz doprowadzić rzecz do końca.\n\nTen projekt to pierwszy krok inżynierski ścieżki: bierzesz model wytrenowany wcześniej i wystawiasz go na świat. Wybierasz **jedną** chmurę spośród trzech (Microsoft Learn Sandbox / Azure, Google Cloud free tier, AWS free tier). Brief prowadzi przez wybraną platformę, ale koncepty — endpoint, kontener, zmienne środowiskowe, pipeline CI/CD — są **transferowalne**: nauczywszy się jednej chmury, rozumiesz pozostałe, bo różnią się nazwami usług, nie ideą.\n\n## Co to jest endpoint i kontener\n\n**Endpoint** to adres (URL), pod którym usługa przyjmuje żądanie i zwraca odpowiedź. W kontekście ML: klient wysyła cechy obserwacji, serwer ładuje model, liczy predykcję i odsyła wynik. Najprostszą formą jest lekka aplikacja — np. serwis Streamlit z formularzem albo prosty serwer HTTP z endpointem `/predict`.\n\n**Kontener** (Docker) to spakowane środowisko: kod, biblioteki i konfiguracja w jednym, przenośnym obrazie. Jego sens to powtarzalność — obraz uruchomiony lokalnie i w chmurze zachowuje się tak samo, bo niesie ze sobą dokładnie te same wersje zależności. Konteneryzacja rozwiązuje odwieczny problem \"u mnie działa\": jeśli działa w kontenerze, zadziała wszędzie, gdzie ten kontener uruchomisz.\n\nDla najprostszych wdrożeń możesz skorzystać z darmowych hostingów aplikacji (Streamlit Community Cloud, Hugging Face Spaces), które przyjmują repozytorium i same budują środowisko. To pełnoprawny endpoint, choć bez ręcznego zarządzania infrastrukturą chmurową.\n\n## Product sense — metryka sukcesu wdrożenia\n\nZacznij od pytania: **co znaczy, że wdrożenie się udało?** Metryki modelu (accuracy, RMSE) tu nie wystarczą — teraz liczą się właściwości usługi. Zdefiniuj metrykę wdrożenia, np. medianę latencji odpowiedzi (ile ms trwa predykcja) i dostępność (czy endpoint odpowiada). Dodaj **guardrail**: twardy limit kosztu (idealnie zero) i zakaz przekroczenia darmowej kwoty. Takie ramy odróżniają inżyniera od hobbysty — myślisz o usłudze, nie tylko o modelu.\n\n## Klauzula kosztowa\n\nUżywaj wyłącznie **darmowego tieru lub sandboxa** wybranej chmury. Microsoft Learn oferuje czasowe sandboxy w ramach ścieżek szkoleniowych, GCP i AWS mają free tier z limitami. **Bezwzględny zakaz przekraczania darmowych kwot.** Przed wdrożeniem sprawdź, które usługi są darmowe i w jakim zakresie; ustaw budżet/alert, jeśli platforma to umożliwia. Nie zostawiaj działającego zasobu na noc \"bo się przyda\" — wyłączaj to, czego nie używasz. Sekrety (klucze, tokeny) trzymaj w zmiennych środowiskowych platformy, nigdy w repozytorium.\n\n## Metodyka i pułapki\n\n**Baseline i walidacja wdrożenia.** Analogicznie do modelu, ustal punkt odniesienia dla usługi: czy endpoint zwraca poprawną predykcję dla znanego wejścia? Przygotuj przykładowe zapytanie z oczekiwaną odpowiedzią i traktuj je jak test dymny (smoke test) po każdym deployu. Podłącz go do pipeline CI/CD, żeby wdrożenie, które psuje predykcję, nie przeszło.\n\n**Typowy błąd: brak pinowania zależności.** Jeśli w requirements masz `scikit-learn` bez wersji, chmura zainstaluje najnowszą — i model zapisany starszą wersją może się nie wczytać albo dać inne wyniki. Zawsze przypinaj wersje (`scikit-learn==1.5.2`). To jedna z najczęstszych przyczyn \"działało wczoraj, nie działa dziś\".\n\n**Typowy błąd: sekrety w repozytorium.** Wrzucenie klucza API czy tokenu do Gita to realny incydent bezpieczeństwa — historia Gita pamięta wszystko, nawet po usunięciu pliku. Sekrety zawsze przez zmienne środowiskowe i menedżer sekretów platformy. Dodaj `.gitignore` i sprawdź diff przed commitem.\n\n**Typowy błąd: przekroczenie darmowej kwoty.** Zapomniana instancja, zbyt duża maszyna albo autoskalowanie potrafią wygenerować koszt. Wybieraj najmniejsze zasoby, wyłączaj po pracy, monitoruj zużycie. Guardrail kosztowy z briefu to nie formalność.\n\n**Analiza błędów i Ograniczenia.** Opisz, gdzie wdrożenie ma słabości: zimny start kontenera wydłuża pierwszą odpowiedź, darmowy tier nie ma autoskalowania i padnie pod obciążeniem, sandbox może wygasnąć po czasie. Sekcja \"Ograniczenia\" w README pokazuje dojrzałość inżynierską — świadomie nazywasz granice swojego rozwiązania, zamiast udawać, że ich nie ma.\n\n## Serializacja modelu i kontrakt wejścia\n\nWdrażając model, wystawiasz też **kontrakt danych wejściowych**. Endpoint musi wiedzieć, jakie cechy i w jakiej kolejności przyjmuje, jak radzić sobie z brakami i wartościami spoza zakresu treningu. Częsty, podstępny błąd to niespójność preprocesingu: model trenowano na cechach przeskalowanych i zakodowanych w określony sposób, a endpoint dostaje surowe dane i podaje je wprost. Predykcje wychodzą wtedy formalnie poprawne (usługa nie zwraca błędu), ale merytorycznie bezwartościowe. Dlatego cały pipeline transformacji zapisz i wczytaj razem z modelem (np. jako jeden artefakt), a nie odtwarzaj go ręcznie w kodzie serwera. Do serializacji używaj sprawdzonego mechanizmu i pamiętaj o zgodności wersji biblioteki, którą model zapisano.\n\n## Walidacja wejścia i obserwowalność\n\nUsługa produkcyjna powinna walidować wejście, zanim poda je do modelu — odrzucać żądania z brakującymi polami lub niepoprawnymi typami z czytelnym komunikatem, zamiast zwracać przypadkową predykcję. Dodaj minimalne logowanie (czas odpowiedzi, ewentualny błąd), by móc zmierzyć zadeklarowaną metrykę latencji. To pierwszy krok w stronę obserwowalności: bez logów nie wiesz, czy Twój guardrail dostępności jest spełniony, ani skąd biorą się wolne odpowiedzi. Nie loguj przy tym danych wrażliwych ani sekretów.\n\n## Podsumowanie\n\nWdrożenie zamienia model w usługę, a Data Scientista w inżyniera, który dowozi. Nauczywszy się jednej chmury, konteneryzacji, pinowania zależności i higieny sekretów, zdobywasz warsztat przenośny na Azure, GCP i AWS. Najważniejsze nawyki — metryka sukcesu wdrożenia, guardrail kosztowy, spójny preprocesing, smoke test w CI/CD i uczciwa sekcja Ograniczenia — zostaną z Tobą niezależnie od platformy i staną się fundamentem dalszej ścieżki w stronę MLOps.\n\n> **Bez karty kredytowej?** Darmowe tiery Azure/GCP/AWS wymagają karty do weryfikacji tożsamości (nawet gdy nie naliczą opłaty), a Microsoft Learn Sandbox wygasa po ćwiczeniu i nie utrzyma trwałego, klikalnego endpointu do portfolio. Dlatego działający endpoint budujesz na Streamlit Community Cloud lub Hugging Face Spaces (card-free, trwały), a znajomość trzech chmur wykazujesz mapą wdrożenia — bez zakładania kont.",
+		"theory_md": "# Wdrożenie modelu ML w chmurze jako endpoint\n\n## Dlaczego model bez wdrożenia jest bezużyteczny\n\nModel żyjący wyłącznie w notebooku nie tworzy wartości. Predykcja, do której nikt nie ma dostępu, nie wpływa na żadną decyzję. Dopiero **wdrożenie** — udostępnienie modelu jako usługi, którą można wywołać — zamienia eksperyment w produkt. To także moment, w którym Data Scientist styka się z inżynierią: musi zadbać o zależności, konfigurację, sekrety i koszty. Dla rekrutera działający URL z predykcją jest silniejszym dowodem kompetencji niż najlepszy nawet notebook, bo pokazuje, że potrafisz doprowadzić rzecz do końca.\n\nTen projekt to pierwszy krok inżynierski ścieżki: bierzesz model wytrenowany wcześniej i wystawiasz go na świat. Trwały, publiczny endpoint budujesz na Streamlit Community Cloud lub Hugging Face Spaces — obie platformy są darmowe i nie wymagają karty. Trzy duże chmury (Azure, GCP, AWS) poznajesz przez **mapę wdrożenia**, a nie przez zakładanie kont. Koncepty — endpoint, kontener, zmienne środowiskowe, pipeline CI/CD — są **transferowalne**: nauczywszy się jednej platformy, rozumiesz pozostałe, bo różnią się nazwami usług, nie ideą.\n\n## Co to jest endpoint i kontener\n\n**Endpoint** to adres (URL), pod którym usługa przyjmuje żądanie i zwraca odpowiedź. W kontekście ML: klient wysyła cechy obserwacji, serwer ładuje model, liczy predykcję i odsyła wynik. Najprostszą formą jest lekka aplikacja — np. serwis Streamlit z formularzem albo prosty serwer HTTP z endpointem `/predict`.\n\n**Kontener** (Docker) to spakowane środowisko: kod, biblioteki i konfiguracja w jednym, przenośnym obrazie. Jego sens to powtarzalność — obraz uruchomiony lokalnie i w chmurze zachowuje się tak samo, bo niesie ze sobą dokładnie te same wersje zależności. Konteneryzacja rozwiązuje odwieczny problem \"u mnie działa\": jeśli działa w kontenerze, zadziała wszędzie, gdzie ten kontener uruchomisz.\n\nDla najprostszych wdrożeń możesz skorzystać z darmowych hostingów aplikacji (Streamlit Community Cloud, Hugging Face Spaces), które przyjmują repozytorium i same budują środowisko. To pełnoprawny endpoint, choć bez ręcznego zarządzania infrastrukturą chmurową.\n\n## Product sense — metryka sukcesu wdrożenia\n\nZacznij od pytania: **co znaczy, że wdrożenie się udało?** Metryki modelu (accuracy, RMSE) tu nie wystarczą — teraz liczą się właściwości usługi. Zdefiniuj metrykę wdrożenia, np. medianę latencji odpowiedzi (ile ms trwa predykcja) i dostępność (czy endpoint odpowiada). Dodaj **guardrail**: twardy limit kosztu (idealnie zero) i zakaz przekroczenia darmowej kwoty. Takie ramy odróżniają inżyniera od hobbysty — myślisz o usłudze, nie tylko o modelu.\n\n## Klauzula kosztowa\n\nUżywaj wyłącznie **darmowych tierów** wybranych platform. Streamlit Community Cloud i Hugging Face Spaces (CPU Basic) są darmowe i bezkartowe — to na nich stoi Twój endpoint. Darmowe tiery Azure/GCP/AWS wymagają karty do weryfikacji tożsamości, więc na ścieżce bezkartowej ich nie dotykasz. **Bezwzględny zakaz przekraczania darmowych kwot.** Przed wdrożeniem sprawdź, które usługi są darmowe i w jakim zakresie; ustaw budżet/alert, jeśli platforma to umożliwia. Nie zostawiaj działającego zasobu na noc \"bo się przyda\" — wyłączaj to, czego nie używasz. Sekrety (klucze, tokeny) trzymaj w zmiennych środowiskowych platformy, nigdy w repozytorium.\n\n## Metodyka i pułapki\n\n**Baseline i walidacja wdrożenia.** Analogicznie do modelu, ustal punkt odniesienia dla usługi: czy endpoint zwraca poprawną predykcję dla znanego wejścia? Przygotuj przykładowe zapytanie z oczekiwaną odpowiedzią i traktuj je jak test dymny (smoke test) po każdym deployu. Podłącz go do pipeline CI/CD, żeby wdrożenie, które psuje predykcję, nie przeszło.\n\n**Typowy błąd: brak pinowania zależności.** Jeśli w requirements masz `scikit-learn` bez wersji, chmura zainstaluje najnowszą — i model zapisany starszą wersją może się nie wczytać albo dać inne wyniki. Zawsze przypinaj wersje (`scikit-learn==1.5.2`). To jedna z najczęstszych przyczyn \"działało wczoraj, nie działa dziś\".\n\n**Typowy błąd: sekrety w repozytorium.** Wrzucenie klucza API czy tokenu do Gita to realny incydent bezpieczeństwa — historia Gita pamięta wszystko, nawet po usunięciu pliku. Sekrety zawsze przez zmienne środowiskowe i menedżer sekretów platformy. Dodaj `.gitignore` i sprawdź diff przed commitem.\n\n**Typowy błąd: przekroczenie darmowej kwoty.** Zapomniana instancja, zbyt duża maszyna albo autoskalowanie potrafią wygenerować koszt. Wybieraj najmniejsze zasoby, wyłączaj po pracy, monitoruj zużycie. Guardrail kosztowy z briefu to nie formalność.\n\n**Analiza błędów i Ograniczenia.** Opisz, gdzie wdrożenie ma słabości: zimny start kontenera wydłuża pierwszą odpowiedź, darmowy tier nie ma autoskalowania i padnie pod obciążeniem, a darmowy Space usypia po okresie bezczynności (pierwsze wejście rekrutera będzie wolniejsze). Sekcja \"Ograniczenia\" w README pokazuje dojrzałość inżynierską — świadomie nazywasz granice swojego rozwiązania, zamiast udawać, że ich nie ma.\n\n## Serializacja modelu i kontrakt wejścia\n\nWdrażając model, wystawiasz też **kontrakt danych wejściowych**. Endpoint musi wiedzieć, jakie cechy i w jakiej kolejności przyjmuje, jak radzić sobie z brakami i wartościami spoza zakresu treningu. Częsty, podstępny błąd to niespójność preprocesingu: model trenowano na cechach przeskalowanych i zakodowanych w określony sposób, a endpoint dostaje surowe dane i podaje je wprost. Predykcje wychodzą wtedy formalnie poprawne (usługa nie zwraca błędu), ale merytorycznie bezwartościowe. Dlatego cały pipeline transformacji zapisz i wczytaj razem z modelem (np. jako jeden artefakt), a nie odtwarzaj go ręcznie w kodzie serwera. Do serializacji używaj sprawdzonego mechanizmu i pamiętaj o zgodności wersji biblioteki, którą model zapisano.\n\n## Walidacja wejścia i obserwowalność\n\nUsługa produkcyjna powinna walidować wejście, zanim poda je do modelu — odrzucać żądania z brakującymi polami lub niepoprawnymi typami z czytelnym komunikatem, zamiast zwracać przypadkową predykcję. Dodaj minimalne logowanie (czas odpowiedzi, ewentualny błąd), by móc zmierzyć zadeklarowaną metrykę latencji. To pierwszy krok w stronę obserwowalności: bez logów nie wiesz, czy Twój guardrail dostępności jest spełniony, ani skąd biorą się wolne odpowiedzi. Nie loguj przy tym danych wrażliwych ani sekretów.\n\n## Podsumowanie\n\nWdrożenie zamienia model w usługę, a Data Scientista w inżyniera, który dowozi. Nauczywszy się jednej chmury, konteneryzacji, pinowania zależności i higieny sekretów, zdobywasz warsztat przenośny na Azure, GCP i AWS. Najważniejsze nawyki — metryka sukcesu wdrożenia, guardrail kosztowy, spójny preprocesing, smoke test w CI/CD i uczciwa sekcja Ograniczenia — zostaną z Tobą niezależnie od platformy i staną się fundamentem dalszej ścieżki w stronę MLOps.\n\n> **Bez karty kredytowej?** Darmowe tiery Azure/GCP/AWS wymagają karty do weryfikacji tożsamości (nawet gdy nie naliczą opłaty), a Microsoft Learn wycofał darmowe sandboxy — jego ćwiczenia wymagają dziś własnej subskrypcji Azure. Dlatego działający endpoint budujesz na Streamlit Community Cloud lub Hugging Face Spaces (card-free, trwały), a znajomość trzech chmur wykazujesz mapą wdrożenia — bez zakładania kont.",
 		"learning_resources": [
 			{
 				"title": "Streamlit Community Cloud — Deploy (darmowe, bez karty)",
 				"url": "https://docs.streamlit.io/deploy/streamlit-community-cloud",
 				"type": "docs",
-				"position": 0
+				"position": 0,
+				"license": "Apache 2.0 (dokumentacja Streamlit; Community Cloud darmowy)",
+				"language": "EN",
+				"registrationRequired": true,
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Hugging Face Spaces — hosting aplikacji ML (darmowe)",
 				"url": "https://huggingface.co/docs/hub/spaces",
 				"type": "docs",
-				"position": 1
-			},
-			{
-				"title": "Microsoft Learn — Azure (uwaga: konto free wymaga karty)",
-				"url": "https://learn.microsoft.com/en-us/training/azure/",
-				"type": "course",
-				"position": 2
+				"position": 1,
+				"license": "Apache 2.0 (dokumentacja Hub; Spaces na CPU Basic darmowe)",
+				"language": "EN",
+				"registrationRequired": true,
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "Google Cloud Skills",
 				"url": "https://www.skills.google/",
 				"type": "course",
-				"position": 3
+				"position": 2,
+				"license": "własnościowa (Google/Qwiklabs; plan Starter darmowy, 35 kredytów/mies.)",
+				"language": "EN",
+				"registrationRequired": true,
+				"verifiedAt": "2026-07-13"
 			},
 			{
 				"title": "AWS Skill Builder",
 				"url": "https://skillbuilder.aws/",
 				"type": "course",
-				"position": 4
+				"position": 3,
+				"license": "własnościowa (AWS; 900+ kursów darmowych, AWS Builder ID bez karty)",
+				"language": "EN",
+				"registrationRequired": true,
+				"verifiedAt": "2026-07-13"
 			}
 		],
 		"source_links": [
@@ -573,11 +583,6 @@
 				"url": "https://huggingface.co/docs/hub/spaces",
 				"label": "Hugging Face Spaces (darmowa alternatywa deploymentu)",
 				"position": 1
-			},
-			{
-				"url": "https://learn.microsoft.com/en-us/training/support/faq?pivots=sandbox",
-				"label": "Microsoft Learn — wbudowany darmowy sandbox ćwiczeń (aktywacja w module, bez własnej subskrypcji; efemeryczny — nie utrzyma trwałego endpointu)",
-				"position": 2
 			}
 		]
 	}
