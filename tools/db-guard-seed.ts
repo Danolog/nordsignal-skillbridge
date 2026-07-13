@@ -17,7 +17,13 @@
  */
 
 import { execSync } from "node:child_process";
+import { config } from "dotenv";
 import { assertTestDb } from "./assert-test-db";
+
+// Guard biegnie PRZED drizzle-kit, więc musi sam wczytać .env.local — inaczej
+// DATABASE_URL jest puste i guard przerywa, zanim config drizzle go załaduje.
+// dotenv nie nadpisuje zmiennych już obecnych w środowisku (eksport z shella wygrywa).
+config({ path: ".env.local" });
 
 try {
 	assertTestDb(process.env.DATABASE_URL, "DATABASE_URL");
