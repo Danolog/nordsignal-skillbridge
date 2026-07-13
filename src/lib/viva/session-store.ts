@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { projectSubmissions, vivaAnswers, vivaSessions } from "@/lib/db/schema";
+import { reconcileVerifiedCompetencies } from "@/lib/projects/reconcile-verified";
 import { vivaProjection } from "@/lib/viva/service";
 import type { VivaResult, VivaSessionStatus } from "@/lib/viva/types";
 
@@ -146,6 +147,10 @@ export async function closeSessionWithOutcome(args: {
 				updatedAt: now,
 			})
 			.where(eq(projectSubmissions.id, args.session.submissionId));
+		// Blok C (C2): zdana obrona = tranzycja na 'verified' → kredencjały
+		// w TEJ SAMEJ tx (komplet albo nic). failed nie zmienia statusu —
+		// reconcile poprawnie nic nie wstawi (i nic nie skasuje, bo submitted).
+		await reconcileVerifiedCompetencies(tx, args.session.submissionId);
 	});
 }
 

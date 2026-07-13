@@ -27,6 +27,7 @@ import { db } from "@/lib/db";
 import { projectSubmissions, submissionReviews, vivaSessions } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
+import { reconcileVerifiedCompetencies } from "@/lib/projects/reconcile-verified";
 import { checkReviewerAuth } from "@/lib/reviewer-auth";
 import { vivaProjection } from "@/lib/viva/service";
 
@@ -117,6 +118,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 				.update(projectSubmissions)
 				.set({ status: newStatus, updatedAt: new Date() })
 				.where(eq(projectSubmissions.id, id));
+
+			// Blok C (C2): approve → kredencjały w tej samej tx; reject →
+			// delete (cofnięcie kredencjału — to JEST ścieżka odbierania).
+			await reconcileVerifiedCompetencies(tx, id);
 
 			// B7/1.16a (ADR-013 D1): decyzja człowieka jest ostateczna — żywa sesja
 			// obrony staje się bezprzedmiotowa (superseded); po decyzji viva nie

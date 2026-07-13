@@ -18,6 +18,7 @@ import {
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
+import { reconcileVerifiedCompetencies } from "@/lib/projects/reconcile-verified";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 import type { HiddenTestSuite, SandboxFile } from "@/lib/sandbox/run-hidden-tests";
 import { vivaProjection } from "@/lib/viva/service";
@@ -268,6 +269,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 				logError("submit.viva.session.fallback", err2, { submissionId: submission.id });
 			}
 		}
+	}
+
+	// Blok C (C2): mostek projekt→paszport — uzgodnienie kredencjałów po
+	// utrwaleniu statusu. Pokrywa i świeży 'verified' (automat bez vivy), i
+	// resubmit zbijający 'verified' → delete. Owner-side (app_student ma na
+	// verified_competencies tylko SELECT), stąd db, nie tx studenta.
+	// Best-effort: awaria nie psuje submitu — następna tranzycja uzgodni.
+	try {
+		await db.transaction((tx) => reconcileVerifiedCompetencies(tx, submission.id));
+	} catch (err) {
+		logError("submit.reconcileVerified", err, { submissionId: submission.id });
 	}
 
 	// Audit log idzie przez owner db — audit_log ma deny-all RLS dla

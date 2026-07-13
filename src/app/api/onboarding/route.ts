@@ -12,6 +12,7 @@ import {
 	passports,
 	projectSubmissions,
 	students,
+	verifiedCompetencies,
 } from "@/lib/db/schema";
 import { withTenantContext } from "@/lib/db/tenant-context";
 import { resolveTenantId } from "@/lib/db/tenant-mapping";
@@ -323,6 +324,23 @@ export async function POST(req: Request) {
 	} catch (err) {
 		logError("onboarding", err, { phase: "persist", userId });
 		return NextResponse.json({ error: "Persistence failed" }, { status: 500 });
+	}
+
+	// Blok C (C2): kredencjały verified_competencies dziedziczą tenant_id jak
+	// submisje wyżej — bez tego re-onboarding ze zmienioną uczelnią zostawiłby
+	// je ze starym tenantem. OWNER-SIDE (app_student ma na tej tabeli tylko
+	// SELECT — RLS 0037), dlatego poza withTenantContext. Wierszy NIE kasujemy:
+	// kredencjał przeżywa re-onboarding (wipe+insert dotyczy competencies,
+	// czyli deklaracji — to dokładnie powód, dla którego istnieje osobna tabela).
+	// Best-effort: dla nowych studentów 0 wierszy; awaria nie blokuje
+	// onboardingu (log + ponowny onboarding domknie synchronizację).
+	try {
+		await db
+			.update(verifiedCompetencies)
+			.set({ tenantId })
+			.where(eq(verifiedCompetencies.studentId, studentId));
+	} catch (err) {
+		logError("onboarding", err, { phase: "verifiedCompetenciesTenantSync", studentId });
 	}
 
 	// Synchronous generation — Vercel serverless terminates the function after the response,
