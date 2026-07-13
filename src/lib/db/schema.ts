@@ -742,6 +742,56 @@ export const projectSubmissions = pgTable(
 );
 
 // ============================================================================
+// Blok C planu napraw (2026-07-13) — MOSTEK projekt→paszport. Migracja 0037.
+//
+// Kredencjał „kompetencja zweryfikowana projektem": SNAPSHOT nazw z
+// project_competencies(role='required') w chwili, gdy submisja osiąga status
+// 'verified' (decyzja D2 Darka: automat score ≥ 70 / zdana viva / akceptacja
+// człowieka — wszystkie trzy ścieżki). Snapshot, NIE derywacja na żywo —
+// katalog project_competencies jest edytowalny, a kredencjał widziany przez
+// rekruterów musi być stabilny (ADR-008 „etykieta nie kłamie").
+//
+// OSOBNA tabela, nie rozszerzenie CHECK-a competencies.verified_by_method:
+// onboarding robi wipe+insert na competencies (api/onboarding), więc
+// re-onboarding skasowałby kredencjał; poza tym po decyzji D1 competencies
+// pełni rolę narzędzia analizy luk (deklaracje), a kredencjał jest niezmienny.
+//
+// UWAGA nazwy ról: mostek bierze role='required' (czego projekt UCZY);
+// 'acquired' to PREREKWIZYT i nigdy nie idzie do paszportu.
+// Zapisy WYŁĄCZNIE owner-side (reconcileVerifiedCompetencies); app_student ma
+// tylko SELECT, app_faculty bez grantu — RLS w migracji 0037 (wzorzec 0034).
+// ============================================================================
+
+export const verifiedCompetencies = pgTable(
+	"verified_competencies",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		submissionId: uuid("submission_id")
+			.notNull()
+			.references(() => projectSubmissions.id, { onDelete: "cascade" }),
+		/** Snapshot nazwy liścia z project_competencies.role='required'. */
+		competencyName: text("competency_name").notNull(),
+		verifiedAt: timestamp("verified_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_verified_competencies_student_id").on(table.studentId),
+		index("idx_verified_competencies_tenant_id").on(table.tenantId),
+		// Reconcile robi upsert po tej parze; dwie submisje mogą dać tę samą
+		// nazwę (deduplikacja po nazwie dopiero przy odczycie).
+		uniqueIndex("uq_verified_competencies_submission_name").on(
+			table.submissionId,
+			table.competencyName,
+		),
+	],
+);
+
+// ============================================================================
 // B6/1.8 (ADR-012) — UKRYTE TEST-SUITES piaskownicy. Migracja 0028.
 //
 // Decyzja schematu: OSOBNA tabela, NIE kolumna na projects — trasy katalogu
@@ -1481,7 +1531,7 @@ export const projectSourceLinksRelations = relations(projectSourceLinks, ({ one 
 	}),
 }));
 
-export const projectSubmissionsRelations = relations(projectSubmissions, ({ one }) => ({
+export const projectSubmissionsRelations = relations(projectSubmissions, ({ one, many }) => ({
 	student: one(students, {
 		fields: [projectSubmissions.studentId],
 		references: [students.id],
@@ -1489,6 +1539,18 @@ export const projectSubmissionsRelations = relations(projectSubmissions, ({ one 
 	project: one(projects, {
 		fields: [projectSubmissions.projectId],
 		references: [projects.id],
+	}),
+	verifiedCompetencies: many(verifiedCompetencies),
+}));
+
+export const verifiedCompetenciesRelations = relations(verifiedCompetencies, ({ one }) => ({
+	student: one(students, {
+		fields: [verifiedCompetencies.studentId],
+		references: [students.id],
+	}),
+	submission: one(projectSubmissions, {
+		fields: [verifiedCompetencies.submissionId],
+		references: [projectSubmissions.id],
 	}),
 }));
 
