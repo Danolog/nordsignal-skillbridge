@@ -1,0 +1,461 @@
+{
+	"moduleSlug": "m-eda",
+	"items": [
+		{
+			"slug": "eda-1",
+			"position": 10,
+			"kind": "exercise",
+			"title": "API: program pyta inny komputer o dane",
+			"contentMd": "### Cel\n\nPobierzesz dane z prawdziwego API (GUS BDL) — zapytanie z parametrami,\nkontrola statusu, odpowiedź JSON — i rozpoznasz w odpowiedzi starą\nznajomą: listę słowników.\n\n### Teoria\n\nDotąd dane wpisywałeś(-aś) w kod. Prawdziwe dane mieszkają na cudzych\nkomputerach — a **API** (ang. *Application Programming Interface*) to ich\nokienko podawcze: umówiony adres, pod którym PROGRAM może poprosić o dane\ni dostać je w formacie dla programów. GUS wystawia tak Bank Danych\nLokalnych (BDL): statystyki Polski na licencji CC BY 4.0.\n\nRozmowę z API prowadzi pakiet **`requests`** (w Colab preinstalowany —\nPD.1 w akcji):\n\n```python\nimport requests\n\nurl = \"https://bdl.stat.gov.pl/api/v1/data/by-variable/60270\"\nparametry = {\"unit-level\": 2, \"year\": 2023, \"format\": \"json\", \"page-size\": 20}\nodpowiedz = requests.get(url, params=parametry)   # zapytanie GET: \"poproszę dane\"\nprint(odpowiedz.status_code)                      # jak poszło?\n```\n\n**Przewidź:** co wypisze ostatnia linia, jeśli wszystko poszło dobrze?\n\n`200` — kod „OK\" umowy, którą zna cały internet: **status** to pierwsza\nrzecz, którą sprawdzasz po KAŻDYM zapytaniu. `200` = dostałeś dane;\n`404` = zły adres; `429` = za dużo zapytań, zwolnij; `5xx` = serwer ma\nproblem (nie Ty). Rozbiór zapytania:\n\n- `url` — adres okienka (znajdziesz go w dokumentacji API; tu: dane\n  zmiennej 60270 — stopy bezrobocia);\n- `params` — słownik (F3.3!) parametrów: czego dokładnie chcesz\n  (`unit-level: 2` = poziom województw, `year` = rok). Requests sam\n  dokleja parametry do adresu — czytelniej niż ręczne sklejanie tekstu.\n- `page-size` zasługuje na osobne zdanie: **API stronicują odpowiedzi**.\n  Bez tego parametru BDL odda pierwszą stronę (10 rekordów), choć\n  województw jest 16 — w odpowiedzi `totalRecords` mówi, ile danych\n  JEST, a `len(dane[\"results\"])` — ile dostałeś(-aś) NA TEJ stronie.\n  Gdy te liczby się różnią, podnieś `page-size` (albo pobierz kolejne\n  strony). Rozjazd „mam mniej wierszy, niż powinno być\" to klasyk\n  pierwszej pracy z API — teraz już wiesz, gdzie patrzeć.\n\nDane wyjmujesz metodą **`.json()`** — i tu niespodzianka, która nie jest\nniespodzianką: dostajesz **słowniki i listy**. Dokładnie te struktury,\nktóre ćwiczysz od F3 — **JSON to zapis danych, który Python czyta wprost\njako słowniki/listy**. Odpowiedź BDL to słownik, w którym pod kluczem\n`\"results\"` siedzi lista słowników-województw:\n\n```python\ndane = odpowiedz.json()\nprint(dane[\"results\"][0][\"name\"])   # łańcuszek z F3.5: rekord 0, pole name\n```\n\nDla zmiennej 60270 wypisze `MAŁOPOLSKIE`. Od tego miejsca API przestaje\nbyć magią: odpowiedź to tabela rekordów jak z F3.5, czasem zagnieżdżona —\nrekord-województwo ma w środku LISTĘ pomiarów (po jednym na rok).\nSpłaszcza się ją **pętlą w pętli**: zewnętrzna idzie po województwach,\nwewnętrzna — po pomiarach BIEŻĄCEGO województwa. Mechanika jest znajoma:\nkażdy obrót pętli zewnętrznej uruchamia CAŁĄ pętlę wewnętrzną od nowa,\na wcięcia piętrują się dokładnie jak przy `if` w `for` (F3.2) — ciało\nwewnętrznej pętli jest wcięte podwójnie. 16 województw × 2 pomiary =\n32 obroty wewnętrzne = 32 płaskie rekordy do `pd.DataFrame` (PD.2).\nPrzećwiczysz to ze szkieletem w labie EDA.4 — a w capstonie napiszesz\njuż sam(a). Cała nowość tego atomu to okienko, status i strony; reszta\nto Twoje stare klocki.\n\nNa koniec dwa nawyki dobrego obywatela API: po pierwsze, nie strzelaj\nzapytaniami w pętli — serwery limitują ruch (status `429` = „zwolnij\"),\na Tobie i tak wystarczy jedno zapytanie zapisane do zmiennej. Po drugie,\ndane mają licencję: BDL to CC BY 4.0, czyli wolno wszystko POZA\npominięciem autora — uznanie autorstwa GUS wpiszesz do README\nw następnym atomie.",
+			"concepts": [
+				{
+					"slug": "api-json-pobieranie",
+					"name": "API i JSON: program pyta inny komputer o dane",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "eda-1-p1",
+					"conceptSlug": "api-json-pobieranie",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Po `odpowiedz = requests.get(url, params=parametry)` pierwszą rzeczą sprawdzasz…",
+					"options": [
+						"`odpowiedz.json()` — od razu dane",
+						"`odpowiedz.status_code` — czy jest 200",
+						"Czy internet działa",
+						"Długość adresu url"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — status to odpowiedź serwera „jak poszło\"; 200 = OK, dopiero potem `.json()`.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — gdy status jest zły, `.json()` może rzucić błędem albo oddać komunikat zamiast danych; najpierw upewnij się, że w ogóle DOSTAŁEŚ dane.",
+							"diagnosis": "pomija kontrolę statusu — nawyk nr 1 pracy z API"
+						},
+						{
+							"feedbackMd": "Tak — status to odpowiedź serwera „jak poszło\"; 200 = OK, dopiero potem `.json()`."
+						},
+						{
+							"feedbackMd": "Nie — brak internetu objawi się błędem już przy `get` (zapytanie w ogóle nie wyjdzie); status ocenia rozmowę, która SIĘ ODBYŁA.",
+							"diagnosis": "myli warstwę połączenia z warstwą odpowiedzi"
+						},
+						{
+							"feedbackMd": "Nie — adres oceni serwer; jego werdykt przeczytasz właśnie w statusie (404 = zły adres).",
+							"diagnosis": "szuka walidacji po swojej stronie zamiast odpowiedzi serwera"
+						}
+					]
+				},
+				{
+					"ref": "eda-1-p2",
+					"conceptSlug": "api-json-pobieranie",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Co zwraca `odpowiedz.json()` dla API takiego jak BDL?",
+					"options": [
+						"Tekst do samodzielnego pocięcia",
+						"Słowniki i listy — te same struktury, co w F3 (u BDL: słownik z listą rekordów pod `\"results\"`)",
+						"Gotowy DataFrame",
+						"Plik zapisany na Dysku"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — JSON czyta się wprost jako Twoje struktury; dalej pracujesz jak z tabelą rekordów z F3.5.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — od cięcia tekstu jest właśnie `.json()`: oddaje GOTOWE struktury Pythona.",
+							"diagnosis": "nie wie, że parsowanie już zrobione"
+						},
+						{
+							"feedbackMd": "Tak — JSON czyta się wprost jako Twoje struktury; dalej pracujesz jak z tabelą rekordów z F3.5."
+						},
+						{
+							"feedbackMd": "Nie — DataFrame budujesz SAM(A) z tych struktur (`pd.DataFrame(...)` — PD.2); API oddaje surowiec.",
+							"diagnosis": "oczekuje, że API zna pandas"
+						},
+						{
+							"feedbackMd": "Nie — odpowiedź ląduje w pamięci sesji, w zmiennej; nic samo się nie zapisuje.",
+							"diagnosis": "model „pobieranie = plik\""
+						}
+					]
+				},
+				{
+					"ref": "eda-1-p3",
+					"conceptSlug": "api-json-pobieranie",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Zapytanie wraca ze statusem `404`. Gdzie szukasz problemu?",
+					"options": [
+						"W swoim kodzie pandas",
+						"W adresie/parametrach zapytania — serwer mówi „nie ma takiego zasobu\"",
+						"W swojej sieci — internet padł",
+						"U siebie na Dysku Google"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — literówka w url albo złym identyfikatorze; porównaj adres z dokumentacją API.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — do pandas jeszcze nie doszło: rozmowa z serwerem zakończyła się „nie znam takiego adresu\".",
+							"diagnosis": "szuka błędu w złej warstwie"
+						},
+						{
+							"feedbackMd": "Tak — literówka w url albo złym identyfikatorze; porównaj adres z dokumentacją API."
+						},
+						{
+							"feedbackMd": "Nie — 404 to ODPOWIEDŹ serwera: połączenie działa, serwer po prostu nie zna adresu.",
+							"diagnosis": "jak P1/C, odwrotny kierunek"
+						},
+						{
+							"feedbackMd": "Nie — Dysk nie bierze udziału w zapytaniu do API.",
+							"diagnosis": "miesza przestrzenie z L0"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Rytm pracy z API jest zawsze ten sam: adres + parametry → `get` → sprawdź status → `.json()` → obejrzyj klucze (`dane.keys()` albo po prostu print) → znajdź listę rekordów → dalej to F3.5/PD.2.",
+				"**Szkielet:** W notebooku EDA.1: uruchom gotowe zapytanie z WE; potem wypisz `list(dane.keys())` i `len(dane[\"results\"])` — ile województw wróciło? Na koniec łańcuszkiem wyciągnij nazwę trzeciego rekordu.",
+				"**Pełne rozwiązanie z objaśnieniem:** `len(dane[\"results\"])` → `16` (wszystkie województwa — dzięki `page-size: 20`; bez niego dostałbyś pierwszą stronę: 10, przy `totalRecords` wciąż 16 — paginacja z teorii); `dane[\"results\"][2][\"name\"]` → trzecia nazwa z odpowiedzi. Jeśli status ≠ 200: `404` — porównaj url z WE znak po znaku; `429` — odczekaj chwilę (BDL limituje anonimowe zapytania) i uruchom ponownie; błąd już przy `get` (np. `ConnectionError`) — najpewniej chwilowy brak sieci sesji Colab, uruchom komórkę jeszcze raz. Pełna pierwsza pomoc — na stronie modułu."
+			],
+			"config": {
+				"estimated": "15 min"
+			},
+			"resources": [
+				{
+					"title": "Dokumentacja API GUS BDL (PL; limity, endpointy, rejestracja opcjonalna)",
+					"url": "https://api.stat.gov.pl/Home/BdlApi",
+					"type": "docs",
+					"license": "CC BY 4.0 (dane GUS)",
+					"language": "PL",
+					"registrationRequired": false,
+					"verifiedAt": "2026-07-11",
+					"notes": "praktyka-docs (ścieżka główna capstone'u — PL!) · 2026-07-11 (żywe — zweryfikowane przy audycie partii 1 i ponownie przy autoringu: API odpowiada)"
+				},
+				{
+					"title": "Git i GitHub w 60 minut (Jak nauczyć się programowania, ~80 min, 2021) — kontekst czym jest Git; UWAGA: terminal-first (nasza ścieżka celowo go omija) + UI GitHuba z 2021",
+					"url": "https://www.youtube.com/watch?v=Ebe9D5zRkvM",
+					"type": "video",
+					"license": "YouTube Standard License",
+					"language": "PL",
+					"registrationRequired": false,
+					"verifiedAt": "2026-07-11",
+					"notes": "wideo/kurs (trzecia funkcja QG-5; pogłębienie) · 2026-07-11 (metadane; research: brak aktualnego wideo PL „bez terminala\" — adnotacje obowiązkowe przy prezentacji)"
+				},
+				{
+					"title": "Git i GitHub — pełny kurs dla początkujących (CodeBucket, ~43 min, 2023) — świeższe UI GitHuba; też terminal-first",
+					"url": "https://www.youtube.com/watch?v=-lrxvGP-Zd0",
+					"type": "video",
+					"license": "YouTube Standard License",
+					"language": "PL",
+					"registrationRequired": false,
+					"verifiedAt": "2026-07-11",
+					"notes": "wideo pomocnicze · 2026-07-11 (metadane; seans kontrolny przed ingest)"
+				}
+			]
+		},
+		{
+			"slug": "eda-2",
+			"position": 20,
+			"kind": "exercise",
+			"title": "Git i GitHub: historia Twojej pracy (bez terminala)",
+			"contentMd": "### Cel\n\nZałożysz repozytorium na GitHubie, wyślesz do niego notebook prosto\nz Colab i dodasz README — rozumiejąc, czym jest commit i dlaczego rubryka\ncapstone'u żąda „sensownej historii commitów\".\n\n### Teoria\n\nRubryka Twojego capstone'u wymaga „reprodukowalnego repozytorium\nz sensowną historią commitów\". Rozszyfrujmy — bez terminala, którego na\ntej ścieżce (na razie) nie potrzebujesz.\n\n**Git** to system wersji: pamięta każdą zapisaną migawkę Twojej pracy.\n**GitHub** to serwis, który trzyma te migawki w chmurze i pokazuje je\nświatu — to tam rekruterzy i prowadzący obejrzą Twój projekt.\n**Repozytorium** (repo) = teczka projektu na GitHubie: notebook, README,\nrequirements. **Commit** = jedna migawka z OPISEM — „pobranie danych\nz BDL\", „czyszczenie braków z uzasadnieniem\". Historia commitów czyta\nsię jak dziennik pracy: widać, że projekt powstawał etapami, a nie\nwylądował jednym wrzutem w ostatnią noc — i dokładnie to sprawdza\nrubryka.\n\nTwój obieg pracy — trzy ruchy, wszystkie klikane:\n\n1. **Repo zakładasz na GitHubie** (przycisk „New repository\"): nazwa\n   projektu, opis jednym zdaniem, widoczność publiczna (Passport\n   linkuje do publicznych prac). GitHub mówi wyłącznie po angielsku —\n   etykiety podajemy dosłownie, z polskim opisem, co robią.\n2. **Notebook wysyłasz z Colab**: menu **Plik → Zapisz kopię w usłudze GitHub**\n   — Colab poprosi (raz) o połączenie kont, potem wskazujesz repo\n   i wpisujesz **opis commita**. Każde takie zapisanie = nowy commit;\n   pracujesz etapami, więc zapisujesz PO KAŻDYM domkniętym etapie,\n   z opisem mówiącym CO się zmieniło.\n3. **Pliki tekstowe dodajesz w GitHubie** (przycisk „Add file\" →\n   „Create new file\"): `README.md` — co to za projekt, skąd dane\n   (uznanie autorstwa GUS — licencja CC BY 4.0!), jak uruchomić;\n   `requirements.txt` — po jednej nazwie pakietu na linię (`pandas`,\n   `requests`, `matplotlib`) — lista z PD.1, dzięki której ktoś inny\n   odtworzy Twoje środowisko.\n\n**Przewidź:** zapisujesz kopię z Colab dwa razy — po etapie pobierania\ndanych i po etapie wykresów. Co pokaże zakładka historii repo?\n\nDwie migawki z Twoimi opisami, najnowsza u góry — i dokładnie tak,\netap po etapie, powstaje „sensowna historia commitów\" z rubryki.\n\nOpis commita to nie formalność: „update\", „final\", „final2\" mówią NIC;\n„wykres trendu bezrobocia + opis osi\" mówi wszystko. Reguła: opis\nodpowiada na pytanie „co dokłada ta migawka?\".\n\nAtom zalicza quiz (M10) — ale wykonanie ruchów 1–3 zweryfikuje dopiero\nkamień K3 capstone'u: zrób je TERAZ, żeby przy capstonie repo już czekało.",
+			"concepts": [
+				{
+					"slug": "git-repo-commit",
+					"name": "Git i GitHub: repozytorium, commit, historia",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "eda-2-p1",
+					"conceptSlug": "git-repo-commit",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Po co rubryka żąda historii commitów, skoro liczy się końcowy notebook?",
+					"options": [
+						"Żeby sprawdzić, ile godzin pracowałeś",
+						"Bo historia etapów pokazuje warsztat: jak praca powstawała, jakie decyzje zapadały po kolei — i uwiarygadnia, że jest Twoja",
+						"To wymóg techniczny GitHuba",
+						"Żeby dało się cofnąć zmiany"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — dziennik pracy to część dowodu kompetencji, który trafia do Passportu.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — commity nie mierzą czasu; pokazują ETAPY i decyzje.",
+							"diagnosis": "commit jako stoper"
+						},
+						{
+							"feedbackMd": "Tak — dziennik pracy to część dowodu kompetencji, który trafia do Passportu."
+						},
+						{
+							"feedbackMd": "Nie — GitHub przyjmie i jeden commit; to RUBRYKA chce zobaczyć proces.",
+							"diagnosis": "wymóg oceny mylony z wymogiem narzędzia"
+						},
+						{
+							"feedbackMd": "To PRAWDZIWA zaleta Gita, ale nie powód rubryki: rubryka ocenia dowód procesu pracy.",
+							"diagnosis": "zna zaletę wersjonowania, nie kontekst oceny"
+						}
+					]
+				},
+				{
+					"ref": "eda-2-p2",
+					"conceptSlug": "git-repo-commit",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Czym jest commit?",
+					"options": [
+						"Kopią całego GitHuba na Dysk",
+						"Migawką pracy z opisem, dopisaną do historii repozytorium",
+						"Usunięciem starej wersji pliku",
+						"Wiadomością do prowadzącego"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — każdy „Zapisz kopię w usłudze GitHub\" z opisem to jedna migawka; historia = lista migawek.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — commit idzie w drugą stronę: z Twojej pracy DO repozytorium.",
+							"diagnosis": "kierunek odwrócony"
+						},
+						{
+							"feedbackMd": "Tak — każdy „Zapisz kopię w usłudze GitHub\" z opisem to jedna migawka; historia = lista migawek."
+						},
+						{
+							"feedbackMd": "Nie — commit DOKŁADA nową migawkę; stare zostają w historii (po to jest system wersji).",
+							"diagnosis": "model „nadpisz plik\""
+						},
+						{
+							"feedbackMd": "Nie — opis commita czytają ludzie, ale adresatem jest HISTORIA projektu, nie skrzynka odbiorcza.",
+							"diagnosis": "opis commita jako komunikator"
+						}
+					]
+				},
+				{
+					"ref": "eda-2-p3",
+					"conceptSlug": "git-repo-commit",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Co MUSI znaleźć się w README Twojego capstone'u?",
+					"options": [
+						"Cały kod analizy",
+						"Opis projektu, źródło danych z uznaniem autorstwa GUS (CC BY 4.0) i instrukcja uruchomienia",
+						"Wyłącznie link do Colab",
+						"Historia commitów przepisana ręcznie"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — rubryka: „README z opisem uruchomienia\"; licencja danych WYMAGA uznania autorstwa.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — kod mieszka w notebooku; README to przewodnik PO projekcie.",
+							"diagnosis": "README jako zrzut kodu"
+						},
+						{
+							"feedbackMd": "Tak — rubryka: „README z opisem uruchomienia\"; licencja danych WYMAGA uznania autorstwa."
+						},
+						{
+							"feedbackMd": "Nie — link bywa częścią instrukcji, ale README bez opisu i atrybucji nie spełnia ani rubryki, ani licencji.",
+							"diagnosis": "minimalizm poniżej wymogu"
+						},
+						{
+							"feedbackMd": "Nie — historię GitHub pokazuje sam; README jej nie duplikuje (anty-redundancja obowiązuje i w repo).",
+							"diagnosis": "dubluje to, co narzędzie daje za darmo"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Ruch 0: sprawdź, że jesteś zalogowany(-a) na GitHubie (awatar w prawym górnym rogu github.com). Potem kolejność: repo (raz) → commit z Colab (wielokrotnie, po każdym etapie) → README/requirements (raz, w GitHubie). Zgubisz się w klikaniu — wróć do pytania „który z trzech ruchów robię?\".",
+				"**Szkielet:** Ruch 1: github.com → „New repository\" → nazwa np. `eda-bdl-bezrobocie` → Public → Create. Ruch 2: w Colab **Plik → Zapisz kopię w usłudze GitHub** → przy pierwszym razie okno „Authorize\" (zatwierdź) → w oknie zapisu wybierz repo i wpisz opis commita → OK; wejdź na GitHub i ZOBACZ swój commit na liście. Ruch 3: w repo „Add file\" → „Create new file\" → nazwa `README.md` → treść → „Commit changes\" (to też commit!).",
+				"**Pełne rozwiązanie z objaśnieniem:** Po trzech ruchach Twoje repo ma: notebook (z co najmniej jednym commitem z Colab), `README.md` i `requirements.txt`, a zakładka historii pokazuje listę migawek z opisami. Typowe blokady: Colab nie widzi repo → autoryzacja nie objęła repozytoriów (powtórz „Zapisz kopię w usłudze GitHub\" i zaznacz zgodę) albo repo założone na innym koncie; „Zapisz kopię w usłudze GitHub\" nie widać w menu → jesteś w podglądzie cudzego notebooka, nie we własnej kopii (L0.2). Pełna lista — pierwsza pomoc modułu."
+			],
+			"config": {
+				"estimated": "20 min"
+			}
+		},
+		{
+			"slug": "eda-3",
+			"position": 30,
+			"kind": "exercise",
+			"title": "EDA to metoda: pytania, eksploracja, hipotezy",
+			"contentMd": "### Cel\n\nUstawisz sobie w głowie PRZEBIEG eksploracyjnej analizy danych — od\npytania badawczego do hipotez „wprost z danych\" — i granicę, której EDA\nnie przekracza: eksploracja to nie dowodzenie.\n\n### Teoria\n\nMasz wszystkie narzędzia: pobieranie (EDA.1), tabele, braki, grupy,\nwykresy (M-PD). EDA to sposób ich UŻYCIA — briefing Twojego capstone'u\nnazywa to „ustrukturyzowanym dialogiem z danymi\". Przebieg, który\nprzećwiczyłeś(-aś) w miniaturze w PD.8, w pełnej wersji wygląda tak:\n\n1. **Pytania badawcze PRZED kodem.** Nie „co tam jest w danych?\", tylko\n   konkret: „czy bezrobocie spada we wszystkich województwach, czy\n   tylko w bogatych?\". Pytanie wyznacza, co pobierasz i co rysujesz.\n2. **Obejrzenie i czyszczenie** (rytuał PD.2, decyzje PD.5) — z\n   uzasadnieniem każdej decyzji. To fundament: wnioski z brudnych danych\n   to brudne wnioski.\n3. **Eksploracja:** rozkłady, grupy, trendy (PD.6–PD.7). Każdy wykres\n   traktuj jak PYTANIE, nie odpowiedź — briefing podaje przykład: skok\n   wartości w jednym roku to pytanie „zmiana realna czy zmiana metody\n   pomiaru?\".\n4. **Hipotezy „wprost z danych\"** — 2–3 zdania w formie: „dane sugerują\n   X; żeby to potwierdzić, trzeba by Y\". To jest wymagany finał rubryki.\n\n**Przewidź**, które zdanie jest hipotezą EDA: (a) „bezrobocie na pewno\nspadło dzięki inwestycjom\", (b) „dane sugerują szybszy spadek bezrobocia\nna zachodzie kraju — wymaga weryfikacji na kolejnych latach\"?\n\nZdanie (b): obserwacja z danych + zastrzeżenie weryfikacji. Zdanie (a)\ngrzeszy podwójnie — „na pewno\" i przyczyną, której w danych nie było.\n\nI granica, od której zależy Twoja wiarygodność: **EDA generuje hipotezy,\nale ich NIE dowodzi**. Zobaczyłeś(-aś) w danych wzór i sformułowałeś(-aś)\nhipotezę — nie wolno „potwierdzić\" jej na TYCH SAMYCH danych, z których\nwyrosła: to rozumowanie w kółko (briefing: „prawie zawsze oszukasz samego\nsiebie\"). Potwierdzenie wymaga nowych danych albo formalnego testu —\ni to już nie jest zadanie EDA. Dlatego rubryka każe pisać hipotezy\n„z zaznaczeniem, że wymagają dalszej weryfikacji\" — takie zastrzeżenie\nto nie asekuracja, to znak, że wiesz, co robisz.\n\nW praktyce EDA jest iteracyjna: wykres rodzi nowe pytanie, wracasz do\nkroku 3 (czasem do 2 — nowy problem w danych), aż pytania badawcze mają\nuczciwe odpowiedzi „co widać\" + hipotezy „co z tego może wynikać\".\nNotebook z takiej pracy czyta się jak raport (PD.7) — i dokładnie tak\noceni go rubryka.",
+			"concepts": [
+				{
+					"slug": "eda-metoda-hipotezy",
+					"name": "EDA jako metoda: pytania, eksploracja, hipotezy",
+					"key": true
+				}
+			],
+			"questions": [
+				{
+					"ref": "eda-3-p1",
+					"conceptSlug": "eda-metoda-hipotezy",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Czym różni się eksploracja od konfirmacji (potwierdzania)?",
+					"options": [
+						"Niczym — to synonimy",
+						"Eksploracja generuje hipotezy z danych; konfirmacja sprawdza je na NOWYCH danych lub testem — nigdy na tych samych",
+						"Eksploracja jest dla początkujących, konfirmacja dla zaawansowanych",
+						"Eksploracja używa wykresów, konfirmacja tabel"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — hipoteza potwierdzona na danych, z których wyrosła, to rozumowanie w kółko.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — to dwie różne fazy: eksploracja SZUKA hipotez, konfirmacja je SPRAWDZA — i nie wolno robić obu na tych samych danych.",
+							"diagnosis": "brak kluczowego rozróżnienia Tukeya"
+						},
+						{
+							"feedbackMd": "Tak — hipoteza potwierdzona na danych, z których wyrosła, to rozumowanie w kółko."
+						},
+						{
+							"feedbackMd": "Nie — to fazy procesu, nie poziomy trudności; zawodowcy robią obie, w tej kolejności.",
+							"diagnosis": "hierarchia zamiast sekwencji"
+						},
+						{
+							"feedbackMd": "Nie — narzędzia bywają te same; różni je CEL i dane, na których wolno działać.",
+							"diagnosis": "rozróżnienie po narzędziu zamiast po celu"
+						}
+					]
+				},
+				{
+					"ref": "eda-3-p2",
+					"conceptSlug": "eda-metoda-hipotezy",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Kiedy formułujesz pytania badawcze?",
+					"options": [
+						"Po zobaczeniu wszystkich wykresów",
+						"Przed kodem — pytanie wyznacza, co pobierasz, czyścisz i rysujesz",
+						"Nigdy — EDA jest od odpowiedzi, nie pytań",
+						"Dopiero w README"
+					],
+					"answer": {
+						"correct": 1
+					},
+					"explanationMd": "Tak — krok 1 przebiegu; iteracja może pytania zawęzić, ale start jest od pytania.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — bez pytań nie wiesz, KTÓRE wykresy rysować; pytania sterują eksploracją (co nie znaczy, że nie wolno ich potem doprecyzować).",
+							"diagnosis": "eksploracja jako bezcelowe oglądanie"
+						},
+						{
+							"feedbackMd": "Tak — krok 1 przebiegu; iteracja może pytania zawęzić, ale start jest od pytania."
+						},
+						{
+							"feedbackMd": "Nie — EDA bez pytań to przewijanie tabel; pytanie jest jednostką pracy.",
+							"diagnosis": "EDA jako rytuał describe+wykres"
+						},
+						{
+							"feedbackMd": "Nie — README RELACJONUJE pytania i odpowiedzi; zadaje się je na początku.",
+							"diagnosis": "dokumentacja mylona z metodą"
+						}
+					]
+				},
+				{
+					"ref": "eda-3-p3",
+					"conceptSlug": "eda-metoda-hipotezy",
+					"difficulty": 1,
+					"type": "single_choice",
+					"stem": "Twoja hipoteza wyrosła z wykresu trendu. Jak brzmi jej POPRAWNY zapis w raporcie EDA?",
+					"options": [
+						"„Wykres dowodzi, że bezrobocie spada dzięki inwestycjom\"",
+						"„Dane są zbyt niepewne, żeby cokolwiek stwierdzić\"",
+						"„Dane sugerują szybszy spadek bezrobocia w województwach zachodnich; weryfikacja wymaga danych o [czynniku] / kolejnych lat\"",
+						"„Hipoteza potwierdzona, bo na wykresie wyraźnie widać\""
+					],
+					"answer": {
+						"correct": 2
+					},
+					"explanationMd": "Tak — co widać + czego trzeba do potwierdzenia; dokładnie forma z rubryki.",
+					"optionFeedback": [
+						{
+							"feedbackMd": "Nie — podwójny grzech: „dowodzi\" (EDA nie dowodzi) i przyczyna spoza danych (inwestycji w ogóle nie badałeś).",
+							"diagnosis": "nadinterpretacja + przyczynowość z powietrza"
+						},
+						{
+							"feedbackMd": "Nie — to ucieczka: EDA MA sformułować hipotezy; uczciwość ≠ brak wniosków.",
+							"diagnosis": "myli ostrożność z odmową pracy"
+						},
+						{
+							"feedbackMd": "Tak — co widać + czego trzeba do potwierdzenia; dokładnie forma z rubryki."
+						},
+						{
+							"feedbackMd": "Nie — wykres to źródło hipotezy; „potwierdzenie\" na tych samych danych to rozumowanie w kółko (P1).",
+							"diagnosis": "konfirmacja na danych źródłowych"
+						}
+					]
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Zapamiętaj przebieg jako 4 kroki: PYTANIE → PORZĄDEK (obejrzyj+wyczyść z uzasadnieniem) → EKSPLORACJA (wykres = pytanie) → HIPOTEZY („sugerują…, wymaga weryfikacji przez…\"). Granica: nic nie „dowodzisz\".",
+				"**Szkielet:** W notebooku EDA.3 dostajesz trzy zdania z raportów — oceń każde: [uczciwa hipoteza / nadinterpretacja / ucieczka] i popraw nadinterpretację do formy z kroku 4.",
+				"**Pełne rozwiązanie z objaśnieniem:** wzorzec poprawy: usuń „dowodzi/ na pewno/dzięki X (nieobecnemu w danych)\", zostaw obserwację („w latach A–B wartość rośnie o…\"), dodaj warunek weryfikacji. Autotest przed capstone'em: czy każda Twoja hipoteza ma (a) obserwację z konkretnej komórki notebooka, (b) zastrzeżenie weryfikacji? Jeśli (a) brakuje — to nie hipoteza z danych, tylko przekonanie."
+			],
+			"config": {
+				"estimated": "10–15 min"
+			}
+		},
+		{
+			"slug": "eda-4",
+			"position": 40,
+			"kind": "lab",
+			"title": "LAB Pierwsze pobranie z BDL (obowiązkowy przed capstone'em — D1)",
+			"contentMd": "### Cel\n\nPrzejdziesz pełną ścieżkę capstone'u w miniaturze: prawdziwe zapytanie\ndo BDL → zagnieżdżony JSON → spłaszczenie pętlą → DataFrame → jeden\nwykres. Po tym labie API nie będzie w capstonie żadną niewiadomą.\n\n### Zadanie (notebook EDA.4 — kopia na Dysk, uruchom i uzupełnij luki)\n\n```python\nimport requests\nimport pandas as pd\n\n# --- zapytanie (gotowe — zweryfikowane, działa) ---\nurl = \"https://bdl.stat.gov.pl/api/v1/data/by-variable/60270\"   # stopa bezrobocia rej.\nparametry = {\"unit-level\": 2, \"year\": [2022, 2023], \"format\": \"json\", \"page-size\": 20}\nodpowiedz = requests.get(url, params=parametry)\nprint(odpowiedz.status_code)              # ma być 200 — EDA.1!\n\ndane = odpowiedz.json()\n\n# --- spłaszczenie: zagnieżdżony JSON → lista rekordów (czysty F3) ---\nrekordy = []\nfor wojewodztwo in dane[\"results\"]:       # rekord-województwo ma w środku LISTĘ pomiarów\n    for pomiar in wojewodztwo[\"values\"]:  # pętla w pętli: dla każdego pomiaru…\n        rekordy.append({\n            \"wojewodztwo\": wojewodztwo[______],   # luka 1: pole z nazwą (podejrzyj JSON!)\n            \"rok\": int(pomiar[\"year\"]),           # rok wraca jako TEKST → konwersja (F2.1)\n            \"stopa\": pomiar[______],              # luka 2: pole z wartością\n        })\n\ndf = pd.DataFrame(rekordy)\nprint(len(df))                            # luka 3 (w głowie): ile rekordów oczekujesz?\n\n# --- rytuał i pierwszy obraz (M-PD) ---\ndf.head()\ndf.groupby(______)[______].mean()         # luki 4–5: średnia stopa per rok\n```\n\nNa koniec dorysuj wykres: stopa w czasie dla JEDNEGO województwa\n(sito + linia — PD.3/PD.7; przy dwóch latach będzie skromny — w capstonie\npobierzesz więcej lat).\n\n**Zaliczenie:** komórka-pieczątka: sprawdza, że `df` istnieje, ma\n3 kolumny i 32 wiersze (16 województw × 2 lata), `rok` jest liczbą\n(konwersja wykonana!), a średnie per rok zgadzają się z niezależnym\nprzeliczeniem — i liczy token. Jawny limit: pieczątka NIE odpytuje API\nponownie (tokenu nie blokuje chwilowa niedostępność BDL — liczy się stan\nsesji po Twoim udanym pobraniu).",
+			"concepts": [
+				{
+					"slug": "api-json-pobieranie",
+					"name": "API i JSON: program pyta inny komputer o dane"
+				}
+			],
+			"hints": [
+				"**Koncepcyjny:** Nie zgaduj pól JSON-a — OBEJRZYJ je: wypisz `dane[\"results\"][0]` i zobacz klucze rekordu (tak się pracuje z każdym nowym API). Pętla w pętli czyta się jak zdanie: „dla każdego województwa, dla każdego jego pomiaru — dołóż płaski rekord\".",
+				"**Szkielet:** luka 1: klucz z NAZWĄ województwa w wypisanym rekordzie; luka 2: klucz z wartością pomiaru (nie rokiem); luka 3: 16 × 2 = ?; luki 4–5: `groupby(\"rok\")[\"stopa\"]`.",
+				"**Pełne rozwiązanie z objaśnieniem:** luka 1: `\"name\"`; luka 2: `\"val\"`; len → `32`; `df.groupby(\"rok\")[\"stopa\"].mean()` → dwie linie (2022 i 2023), wartości ~5–6% (sprawdź rząd wielkości: to stopy procentowe). Zwróć uwagę na `int(pomiar[\"year\"])` — API oddało rok jako tekst `\"2022\"` (cudzysłów w podejrzanym JSON-ie!), a bez konwersji oś czasu na wykresie zachowa się dziwnie — to konwersja z F2.1 w bojowym użyciu. Status ≠ 200 → drabinka EDA.1. Pieczątka czerwona przy zielonym oku → policz kolumny (dokładnie 3?) i sprawdź typ roku (`df.dtypes` — ma być liczba, nie object/str)."
+			],
+			"config": {
+				"estimated": "20–25 min",
+				"checks": [
+					{
+						"type": "token",
+						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+					}
+				]
+			}
+		},
+		{
+			"slug": "eda-przeglad",
+			"position": 60,
+			"kind": "exercise",
+			"title": "Przegląd przed egzaminem",
+			"contentMd": "Zestaw powtórkowy przed egzaminem modułu (D6.3 — spacing): pytania z wcześniejszych atomów, także z poprzednich modułów. Zaliczenie pozycji: wszystkie odpowiedzi poprawne (nielimitowane próby, feedback natychmiast).",
+			"questionRefs": [
+				"pd-2-p1",
+				"pd-3-p2",
+				"pd-5-p1",
+				"pd-5-p3",
+				"pd-6-p2",
+				"pd-6-p3",
+				"pd-7-p2",
+				"pd-7-p3",
+				"eda-1-p2",
+				"eda-3-p1"
+			]
+		}
+	]
+}

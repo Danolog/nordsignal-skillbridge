@@ -221,6 +221,195 @@ const MANIFESTS: ModuleManifest[] = [
 			],
 		},
 	},
+	{
+		moduleSlug: "m-pandas",
+		sourceFile: "sophia-1e2-mpd-atomy.md",
+		conceptNames: {
+			"import-pakiety-terminal": "Import pakietów i terminal w komórce",
+			"dataframe-tabela": "DataFrame: tabela w opakowaniu narzędzia",
+			"maska-filtrowanie": "Maska: warunek na całej kolumnie naraz",
+			"braki-danych-decyzje": "Braki danych: policz, zrozum, zdecyduj",
+			"grupowanie-agregacja": "Grupowanie: podziel, policz, sklej",
+			"wykresy-opisane": "Wykres, który wspiera wniosek",
+		},
+		overrides: {
+			"PD.4": { checks: TOKEN_CHECK },
+			// Lab samodzielny — meta mówi „wszystkie z M-PD" (bez slugów).
+			"PD.8": {
+				concepts: [
+					{ slug: "dataframe-tabela" },
+					{ slug: "maska-filtrowanie" },
+					{ slug: "braki-danych-decyzje" },
+					{ slug: "grupowanie-agregacja" },
+					{ slug: "wykresy-opisane" },
+				],
+				checks: TOKEN_CHECK,
+			},
+		},
+		przeglad: {
+			refs: [
+				"F3.5-P1",
+				"F3.5-P2",
+				"F3.2-P2",
+				"F3.6-P2",
+				"PD.1-P2",
+				"PD.2-P2",
+				"PD.3-P1",
+				"PD.5-P3",
+				"PD.6-P2",
+				"PD.7-P3",
+			],
+		},
+	},
+	{
+		moduleSlug: "m-eda",
+		sourceFile: "sophia-1e2-meda-atomy.md",
+		conceptNames: {
+			"api-json-pobieranie": "API i JSON: program pyta inny komputer o dane",
+			"git-repo-commit": "Git i GitHub: repozytorium, commit, historia",
+			"eda-metoda-hipotezy": "EDA jako metoda: pytania, eksploracja, hipotezy",
+		},
+		// Moduł 4-atomowy (podział M-EDA wg audytu pojemności D10). BEZ egzaminu MC —
+		// bramką jest capstone, więc zasady modułu definiują „przegląd przed capstone'em"
+		// (nie „przed egzaminem" jak M-PD/M-SQL/M-ML/M-LLM); pozycja przeglądu ta sama.
+		overrides: {
+			"EDA.4": { checks: TOKEN_CHECK },
+		},
+		przeglad: {
+			refs: [
+				"PD.2-P1",
+				"PD.3-P2",
+				"PD.5-P1",
+				"PD.5-P3",
+				"PD.6-P2",
+				"PD.6-P3",
+				"PD.7-P2",
+				"PD.7-P3",
+				"EDA.1-P2",
+				"EDA.3-P1",
+			],
+		},
+	},
+	{
+		moduleSlug: "m-sql",
+		sourceFile: "sophia-1e2-msql-atomy.md",
+		conceptNames: {
+			"sql-select-zapytanie": "SELECT: zapytanie do tabeli",
+			"sql-where-order": "WHERE i ORDER BY: przesiej i uporządkuj",
+			"sql-group-by-agregacja": "GROUP BY: agregaty per grupa",
+			"sql-join-ziarno": "JOIN i ziarno wiersza",
+			"sql-funkcje-okna": "Funkcje okna: agregat, który nie zjada wierszy",
+		},
+		overrides: {
+			"SQL.4": { checks: TOKEN_CHECK },
+			// Lab samodzielny — meta mówi „wszystkie z M-SQL" (bez slugów).
+			"SQL.7": {
+				concepts: [
+					{ slug: "sql-group-by-agregacja" },
+					{ slug: "sql-join-ziarno" },
+					{ slug: "sql-funkcje-okna" },
+				],
+				checks: TOKEN_CHECK,
+			},
+		},
+		przeglad: {
+			refs: [
+				"PD.3-P1",
+				"PD.6-P2",
+				"EDA.3-P3",
+				"SQL.1-P2",
+				"SQL.2-P1",
+				"SQL.2-P3",
+				"SQL.3-P2",
+				"SQL.5-P1",
+				"SQL.5-P3",
+				"SQL.6-P2",
+			],
+		},
+	},
+	{
+		moduleSlug: "m-ml",
+		sourceFile: "sophia-1e2-mml-atomy.md",
+		conceptNames: {
+			"model-fit-predict": "Model: dopasuj (fit) i przewiduj (predict)",
+			"train-test-podzial": "Podział train/test: uczciwy sprawdzian",
+			"baseline-punkt-odniesienia": "Baseline: punkt odniesienia przed modelem",
+			"metryki-macierz-pomylek": "Metryki i macierz pomyłek",
+			"leakage-uczciwosc-ewaluacji": "Leakage: uczciwość ewaluacji",
+		},
+		overrides: {
+			// Meta: „Koncepty ćwiczone: ML.1–ML.3" (bez slugów).
+			"ML.4": {
+				concepts: [
+					{ slug: "model-fit-predict" },
+					{ slug: "train-test-podzial" },
+					{ slug: "baseline-punkt-odniesienia" },
+				],
+				checks: TOKEN_CHECK,
+			},
+			// Lab samodzielny — meta mówi „wszystkie z M-ML".
+			"ML.7": {
+				concepts: [
+					{ slug: "train-test-podzial" },
+					{ slug: "baseline-punkt-odniesienia" },
+					{ slug: "metryki-macierz-pomylek" },
+					{ slug: "leakage-uczciwosc-ewaluacji" },
+				],
+				checks: TOKEN_CHECK,
+			},
+		},
+		przeglad: {
+			refs: [
+				"PD.5-P3",
+				"PD.6-P3",
+				"EDA.3-P1",
+				"SQL.5-P3",
+				"ML.1-P2",
+				"ML.2-P1",
+				"ML.2-P3",
+				"ML.3-P2",
+				"ML.5-P1",
+				"ML.6-P2",
+			],
+		},
+	},
+	{
+		moduleSlug: "m-llm",
+		sourceFile: "sophia-1e2-mllm-atomy.md",
+		conceptNames: {
+			"llm-niedeterminizm-temperatura": "LLM: niedeterminizm i temperatura",
+			"prompt-specyfikacja": "Prompt jako specyfikacja",
+			"json-parsowanie-walidacja": "JSON: parsowanie i walidacja odpowiedzi",
+			"ewaluacja-halucynacje": "Ewaluacja: trafność pól i wskaźnik halucynacji",
+			"klucz-sekrety-rodo": "Klucz API, limity, dane osobowe",
+		},
+		overrides: {
+			"LLM.4": { checks: TOKEN_CHECK },
+			// Lab samodzielny (finał drabiny) — meta mówi „wszystkie z M-LLM".
+			"LLM.7": {
+				concepts: [
+					{ slug: "prompt-specyfikacja" },
+					{ slug: "json-parsowanie-walidacja" },
+					{ slug: "ewaluacja-halucynacje" },
+				],
+				checks: TOKEN_CHECK,
+			},
+		},
+		przeglad: {
+			refs: [
+				"EDA.1-P1",
+				"EDA.3-P3",
+				"ML.3-P2",
+				"ML.5-P3",
+				"LLM.1-P2",
+				"LLM.2-P1",
+				"LLM.2-P3",
+				"LLM.3-P2",
+				"LLM.5-P1",
+				"LLM.6-P2",
+			],
+		},
+	},
 ];
 
 /** "F1.5-P2" → "f1-5-p2" (globalny ref pytania w zestawie treści). */

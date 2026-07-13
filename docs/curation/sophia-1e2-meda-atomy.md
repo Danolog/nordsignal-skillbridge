@@ -258,6 +258,9 @@ Opis commita to nie formalność: „update", „final", „final2" mówią NIC;
 „wykres trendu bezrobocia + opis osi" mówi wszystko. Reguła: opis
 odpowiada na pytanie „co dokłada ta migawka?".
 
+Atom zalicza quiz (M10) — ale wykonanie ruchów 1–3 zweryfikuje dopiero
+kamień K3 capstone'u: zrób je TERAZ, żeby przy capstonie repo już czekało.
+
 ### Pytania (retrieval)
 
 **P1. Po co rubryka żąda historii commitów, skoro liczy się końcowy
@@ -303,9 +306,6 @@ notebook?**
 - D. Historia commitów przepisana ręcznie — *Nie — historię GitHub
   pokazuje sam; README jej nie duplikuje (anty-redundancja obowiązuje
   i w repo).* (diagnoza: dubluje to, co narzędzie daje za darmo)
-
-Atom zalicza quiz (M10) — ale wykonanie ruchów 1–3 zweryfikuje dopiero
-kamień K3 capstone'u: zrób je TERAZ, żeby przy capstonie repo już czekało.
 
 ### Drabinka hintów (kroki wykonawcze 1–3 z teorii)
 
