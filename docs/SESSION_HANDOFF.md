@@ -11,7 +11,7 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-13
+## STAN NA DZIŚ — 2026-07-13 (wieczór)
 
 ### Gdzie żyje repo
 - **iMac: `~/Claude_Projekty/SkillBridge`** — **POZA iCloud, i tak ma zostać.**
@@ -22,124 +22,113 @@
   dołożenie paczek obiektów z lustrzanego klonu origin do `.git/objects/pack/`
   → `git restore` usuniętych ścieżek → czysto. **Nie przenosić repo z powrotem
   pod `~/Documents` ani `~/Desktop`.** Obejście „`.next` jako symlink do
-  `.next.nosync`" jest już NIEAKTUALNE (a osierocony `.next.nosync` wywala
-  `pnpm lint`, bo biome go nie ignoruje).
+  `.next.nosync`" jest NIEAKTUALNE (a osierocony `.next.nosync` wywala `pnpm lint`).
 - **Zdalnie:** `github.com/Danolog/nordsignal-skillbridge` (stary URL
-  `Danolog/SkillBridge_AI` w `origin` przekierowuje — to to samo repo), gałąź `main`.
+  `Danolog/SkillBridge_AI` w `origin` przekierowuje — to to samo repo).
 - **Środowisko:** Node 25.6.0, pnpm 10.29.2, Next 16.2.9. Baza lokalna: kontener
-  Dockera `skillbridge-postgres` (port 5432) — NIE twórz nowego. Trzy pliki env
-  (`.env.local` / `.env.test` / `.env.prod`); wejście na prod zawsze jawne przez
-  `pnpm dotenv -e .env.prod -- …`.
-- **Baseline `main` (`0a074c2`):** build OK, tsc 0, Biome 0, unit **1155/1155**
-  (117 plików); pełna bramka CI zielona na PR #168 (build, typecheck, lint, test,
-  integration, secret-scan, deps-scan, Vercel Preview).
-- **Migracje:** lokalna/test = **0035**, prod = **0035** (parzystość).
-  **Kolejka prod: 0036** — czeka w PR #164 (patrz 1E.2).
+  `skillbridge-postgres` (:5432) — NIE twórz nowego. Trzy pliki env; wejście na prod
+  zawsze jawne: `pnpm dotenv -e .env.prod -- …`.
+- **Baseline `main` (`04f9eca`):** build OK, tsc 0, Biome 0, unit **1166/1166**;
+  pełna bramka CI zielona na #164/#169/#170.
+- **Migracje: lokalna = 0036, prod = 0036** (pełna parzystość, dziennik 37/37).
+  **Kolejka migracji prod: PUSTA.**
 
-### Faza 0 — ZAMKNIĘTA
-Zadania 0.0–0.16 zmergowane. Dwie zaległości — akcje Darka, nie kod (niżej).
+### Oliver ma teraz dostęp do prod DB (2026-07-13)
+- `NEON_API_KEY` w `.env.prod` (dodał Darek) + allowlista w
+  `.claude/settings.local.json`: `pnpm dotenv`, `pnpm db:migrate`,
+  `pnpm db:ingest-curriculum`, `npx neonctl`.
+- **Migracje robię sam z terminala** — Neon CLI potrzebne TYLKO do backupu gałęzią
+  i rollbacku; sama migracja idzie przez `.env.prod` + `CONFIRM_PROD_DB=1`.
+- **Wzorzec wykonany 2026-07-13 (powtarzać):** backup gałęzią Neona →
+  kontrola dziennika PRZED (`__drizzle_migrations` vs `_journal.json`) →
+  `pnpm dotenv -e .env.prod -- bash -c 'CONFIRM_PROD_DB=1 DATABASE_URL="$DATABASE_URL_UNPOOLED" pnpm db:migrate'`
+  (**DIRECT, nie pooler**; drizzle-kit sam wpisuje hash do dziennika — koniec
+  z ręcznym INSERT-em z runbooków i ryzykiem rozjazdu) → weryfikacja obiektów.
+- Guard `assertTestDb`: hard-deny na fragment `skill-bridge-ai` NIE łapie prod-DSN
+  (fragment siedzi w `BETTER_AUTH_URL`/`NEXT_PUBLIC_APP_URL`, nie w `DATABASE_URL`).
 
-### Faza 1 — KODOWO DOMKNIĘTA
-Bloki **AG** (eval + rynek + doradca), **B8**, **B6**, **A5**, **C11**, **B7**
-— wszystkie zamknięte; A5, C11, B7 oraz 1.17+1.18 **LIVE na produkcji**
-(flagi ON: FLAG_DIAGNOSTIC_ASSESSMENT, FLAG_SOCRATIC_TUTOR, FLAG_VIVA_DEFENSE,
-FLAG_PLACEMENT_TRACKING, FLAG_STUDY_RHYTHM, FLAG_CAREER_MODEL_FROM_DB,
-FLAG_GAP_VERIFIER). Szczegóły każdego bloku: `git log` i poprzednie snapshoty
-tego pliku.
+### Faza 0 — ZAMKNIĘTA · Faza 1 — KODOWO DOMKNIĘTA
+Bloki AG, B8, B6, A5, C11, B7 zamknięte; A5/C11/B7 + 1.17/1.18 LIVE na prodzie.
+Szczegóły: `git log` i wcześniejsze snapshoty tego pliku.
 
-### Faza 1E — ścieżka edukacyjna (pilotaż DS) — W TOKU
+### Faza 1E — pilotaż DS
 
-- **1E.1 ✅ LIVE NA PRODZIE** — model danych curriculum + drabina modułów
-  (migracja 0035, ingest drabiny, flaga ON).
+- **1E.1 ✅ LIVE** — model danych curriculum + drabina (0035, flaga ON).
 
-- **1E.2 ✅ WYKONANE KODOWO — WISI W DWÓCH PR-ach.**
-  - **PR #164** (mechanika): migracja **0036** (`curriculum_module_items.slug`,
-    `question_items.option_feedback_json`), ingest atomów + banku foundations,
-    strażnik `CONFIRM_CONTENT_MIGRATION=1`, recompute; **rls-matrix v0.27**
-    do sign-offu Ryana.
-  - **PR #165** (treść fundamentów, stacked na #164): packer
-    `pnpm content:pack-curriculum` + 4 pliki JSON w `tools/content/curriculum-atoms/`
-    (L0 / F1 / F2 / F3) = 28 pozycji / 57 pytań / 19 konceptów.
-  - ⚠ **Obie gałęzie są 7 commitów ZA `main`** (m.in. treść M-* Sophii, #166, #168)
-    → **wymagają aktualizacji przed mergem.**
-  - **Kolejność wykonania (runbook `docs/runbooks/aktywacja-1e2-neon-console.md`):**
-    migracja **0036** w konsoli Neona **PRZED** merge #164 (trasa answer czyta nową
-    kolumnę!) → merge #164 → #165 → ingest treści → sign-off rls-matrix v0.27.
-  - **Uwaga produktowa:** laby (całe L0) są niekompletowalne do **1E.6** — onboarding
-    realnych studentów dopiero po 1E.6.
+- **1E.2 ✅ LIVE NA PRODZIE — PEŁNA DRABINA (2026-07-13).**
+  - Migracja **0036** wykonana na prodzie PRZED mergem #164 (trasa answer czyta
+    nową kolumnę): dziennik 37/37, `when` zgodny, kolumny `curriculum_module_items.slug`
+    + `question_items.option_feedback_json`, UNIQUE INDEX `(module_id, slug)`,
+    backfill slugów 4/4, granty OK (`question_items` = wariant DENY).
+    Backup: gałąź Neona **`prod-backup-pre-0036-20260713-1712`**.
+  - **#164** (mechanika) → merge. **#165 ZAMKNĄŁ SIĘ SAM** przy mergu #164 (GitHub
+    zamyka PR, gdy znika jego gałąź bazowa — PR-y były stacked) → wystawiony
+    następca **#169** z tej samej gałęzi na `main` → merge. Konflikt add/add
+    w `tools/ingest-curriculum.ts` rozwiązany na korzyść gałęzi (nadzbiór z fixem
+    `canonicalJson` — idempotencja feedbacku).
+  - **#170** — spakowane **5 modułów M-\*** (M-PD/M-EDA/M-SQL/M-ML/M-LLM):
+    33 atomy + 5 pozycji przeglądu = 38 pozycji, 72 pytania, 24 koncepty.
+    Poprawka formatu w treści: `M-EDA/EDA.2` — akapit „Atom zalicza quiz (M10)…"
+    stał PO opcjach pytania (parser doklejał go do feedbacku opcji D) → przeniesiony
+    do teorii. Jedyne takie miejsce w 9 dokumentach.
+  - **STAN PROD:** 9 modułów, **70 pozycji, 0 modułów pustych**, 273 pytania
+    (144 diagnostyczne + 129 curriculum), 67 konceptów, 129 z feedbackiem per opcja,
+    0 duplikatów `(module_id, slug)`. Smoke: `/` 200, `/login` 200,
+    `/api/curriculum` 401. Ingest idempotentny (drugi bieg: +0 nowych).
+  - ⚠ **Laby są NIEKOMPLETOWALNE do 1E.6** (brak checków automatycznych) — całe L0
+    to laby. **Onboarding realnych studentów dopiero po 1E.6.** Do tego czasu drabina
+    służy podglądowi treści i atomom `exercise`.
+  - ⚠ **TODO treściowe Sophii sprzed ingestu wciąż otwarte:** notebooki Colab,
+    screenshoty UI, research wideo PL (są w sekcjach „Notatki dla Olivera" w plikach
+    `docs/curation/sophia-1e2-*.md`). Nie blokowały pakowania; blokują dopiero
+    realny onboarding (razem z 1E.6).
+  - **Do zrobienia:** sign-off Ryana dla **rls-matrix v0.27**.
 
-- **Treść drabiny DS — KOMPLET na `main`, ale spakowane tylko fundamenty.**
-  W `docs/curation/` leży 9 zatwierdzonych plików Sophii (~10 400 linii):
-  L0 / F1 / F2 / F3 (fundamenty) + **M-PD (8 atomów), M-EDA (4), M-SQL (7),
-  M-ML (7), M-LLM (7) = 33 atomy**. Do JSON-a spakowane są **wyłącznie fundamenty**
-  (PR #165). **Pięć modułów M-\* czeka na packer + ingest — bez tego drabina DS
-  stanie pusta po aktywacji 1E.2.** Mechanika gotowa (packer + kontrakt-testy
-  z testem determinizmu), to nie jest nowa robota koncepcyjna.
-
-- **1E.R ✅ DOMKNIĘTE KODOWO (#168, 2026-07-13)** — partia naprawcza projektów DS
-  (ADR-014 D7). Praca Sophii przetrwała awarię sesji w
-  `tools/content/ds-projects-partia-1r.json` (commit „wip: przed migracją").
-  Domknięcie: **21/21 zasobów** z kompletem metadanych (`license`, `language`,
-  `registrationRequired`, `verifiedAt` — kolumny z 0035) → **dług QG-5 §3/§4/§7
-  partii 1 spłacony**; **0 placeholderów PENDING** (blokowały ingest — `validateUrl`
-  woła `new URL()`); **0 zasobów wymagających karty płatniczej**.
-  - Uzupełnione: kurs SQL (ThoughtSpot/Mode — funkcje okna, bez rejestracji),
-    playlista StatQuest, Groq quickstart jako darmowy fallback dla Gemini.
-  - Sprostowane: dokumentacja Gemini to **CC BY 4.0** (kod: Apache 2.0), nie
-    „własnościowa (Google)". Wzorzec: portale deweloperskie Google publikują na
-    CC BY 4.0 — każde „własnościowa" przy `ai.google.dev` / `developers.google.com`
-    jest podejrzane.
-  - **`ds-chmura`: usunięty Microsoft Learn** [decyzja Darka]. Darmowe sandboxy
-    Microsoft Learn **zostały WYCOFANE** — ćwiczenia wymagają dziś subskrypcji Azure
-    (karta), czyli **ten sam błąd, dla którego powstała partia 1E.R**. Wraz z zasobem
-    poszły 4 miejsca w treści twierdzące, że sandbox istnieje (`theory_md`,
-    `description`, `source_links`).
-  - **Dowód:** 40/40 URL-i sprawdzonych (HTTP 200; `skills.google` daje 403 tylko
-    botom); ingest na bazie lokalnej ×2 idempotentny (5 projektów / 21 materiałów /
-    17 linków, 0 błędów); kolumny wypełnione w 21/21 wierszy.
-  - **CZEGO BRAKUJE:** partia **nie przeszła QG-1…7** (wymóg ADR-014 D7) i **nie jest
-    zaingestowana na prod** ([CZERWONA LINIA], ADR-010: sign-off + backup +
-    transakcyjny SQL).
+- **1E.R ✅ DOMKNIĘTE KODOWO (#168)** — partia naprawcza projektów DS (ADR-014 D7).
+  21/21 zasobów z kompletem metadanych (`license`/`language`/`registrationRequired`/
+  `verifiedAt`) → **dług QG-5 §3/§4/§7 spłacony**; 0 placeholderów PENDING (blokowały
+  ingest — `validateUrl` woła `new URL()`); **0 zasobów wymagających karty**.
+  Usunięty Microsoft Learn z `ds-chmura`: darmowe sandboxy Microsoft Learn **WYCOFANE**,
+  ćwiczenia wymagają subskrypcji Azure (karta) — ten sam błąd, dla którego 1E.R powstało.
+  Sprostowane licencje Gemini (CC BY 4.0, nie „własnościowa"; portale deweloperskie
+  Google publikują na CC BY 4.0 — każde „własnościowa" przy `ai.google.dev` podejrzane).
+  **CZEGO BRAKUJE:** QG-1…7 (wymóg ADR-014 D7) + ingest 1E.R na prod
+  ([CZERWONA LINIA], ADR-010).
 
 ### NASTĘPNE (kolejność)
-1. **Domknąć 1E.2:** migracja 0036 (konsola Neona) → merge #164 → #165 → ingest
-   fundamentów → sign-off Ryana dla rls-matrix v0.27. Gałęzie PR najpierw
-   zaktualizować względem `main`.
-2. **Spakować 5 modułów M-\*** (33 atomy) packerem + ingest — żeby drabina DS nie
-   stała pusta.
-3. **QG-1…7 partii 1E.R** → dopiero potem ingest 1E.R na prod (czerwona linia).
-4. **1E.3** (egzaminy modułowe + mastery gate) i **1E.4** (spaced repetition) —
-   oba konsumują bank pytań z 1E.2.
+1. **1E.6** — checki automatyczne labów. **Bez tego nie ma onboardingu studentów**
+   (całe L0 = laby). Największy bloker produktowy.
+2. **QG-1…7 partii 1E.R** → ingest 1E.R na prod (czerwona linia).
+3. **1E.3** (egzaminy modułowe + mastery gate) — treść egzaminów JEST w plikach
+   Sophii, packer jej nie parsuje (świadomie, poza zakresem 1E.2).
+4. **1E.4** (spaced repetition) — bank pytań z 1E.2 gotowy (273 pytania).
+5. Sign-off Ryana: rls-matrix v0.27.
 
 ### Otwarte zaległości (akcje Darka, nie kod)
-- **0.7-sekret** — skasować na GitHubie tokeny `skillbridge-prod-repo-read`
-  (trafił do transkryptu 2026-07-10) oraz stary z 2026-06-29; wystawić świeży
-  fine-grained public-read i podmienić env.
-- **0.13 CSP** — potwierdzić PR #121 (CSP enforce + drop `unsafe-eval`) na
-  Preview/prod albo rollback. Runtime CSP niewykrywalny lokalnie.
-- **Baza testowa integration** — nadal stawiana ad-hoc (Docker Postgres :5433 +
-  `db:migrate:test`); brak stałego compose. Na iMacu **:5433 nie działa** —
-  `pnpm test:integration` lokalnie nie ruszy bez ręcznego setupu (bramką jest CI).
+- **0.7-sekret** — skasować tokeny `skillbridge-prod-repo-read` (2026-07-10 i stary
+  z 2026-06-29); wystawić świeży fine-grained public-read i podmienić env.
+- **0.13 CSP** — potwierdzić PR #121 (CSP enforce + drop `unsafe-eval`) na Preview/prod
+  albo rollback. Runtime CSP niewykrywalny lokalnie.
+- **Baza testowa integration** — :5433 na iMacu NIE działa; `pnpm test:integration`
+  lokalnie nie ruszy bez ręcznego setupu (bramką jest CI). Rozważyć stały compose.
 - **Dependabot** — otwarte PR-y: #167, #127, #88, #87, #86, #83.
 
 ### Ostrzeżenia / kontekst dla nowej sesji
-- **Tryb Wykonawca/Audytor PORZUCONY NA ZAWSZE** (decyzja Darka 2026-07-07) — jeden
-  agent implementuje i weryfikuje. Self-merge PR-ów bywa blokowany przez klasyfikator
-  (wtedy merge klika Darek).
-- **Nie trzymać repo pod iCloud** (patrz „Gdzie żyje repo") — iCloud kasuje nie tylko
-  `.next`, ale i obiekty `.git` oraz pliki typu `.vercel/project.json`. Jeśli plik
-  konfiguracyjny „zniknął sam", to pierwszy podejrzany, nie bug w kodzie.
+- **Tryb Wykonawca/Audytor PORZUCONY NA ZAWSZE** (2026-07-07) — jeden agent
+  implementuje i weryfikuje.
+- **Nie trzymać repo pod iCloud** — kasuje nie tylko `.next`, ale i obiekty `.git`
+  oraz pliki typu `.vercel/project.json`. „Plik zniknął sam" = pierwszy podejrzany.
+- **Merge stacked PR-ów:** `--delete-branch` na dolnym PR-ze ZAMYKA górny (jego baza
+  znika) i reopen jest niemożliwy → wystawić nowy PR z tej samej gałęzi.
 - **Ingest na prod = [CZERWONA LINIA]:** sign-off + backup gałęzią Neona +
-  transakcyjny SQL (ADR-009/010). Przed prod `db:migrate` porównaj
-  `__drizzle_migrations` z `_journal.json`.
+  transakcyjny SQL (ADR-009/010).
 - **Migracja przed deployem:** gdy nowy kod czyta obiekt ze swojej migracji, migracja
-  prod MUSI wyprzedzić merge (Vercel auto-deployuje z `main`) — dotyczy teraz 0036/#164.
+  prod MUSI wyprzedzić merge (Vercel auto-deployuje z `main`).
 - **Vercel env = `sensitive`:** `vercel env pull` pokazuje `""` dla wszystkich zmiennych,
-  także działających. To artefakt pulla, nie stan flagi — dowód tylko funkcjonalny.
+  także działających — artefakt pulla, nie stan flagi; dowód tylko funkcjonalny.
 - „Partie 0–5" w starszych handoffach to tor **10 poprawek**, NIE partie treści B3 ani
   fazy 0–3 z roadmapy — nie mylić numeracji.
-- **Reguła twarda:** handoff i commity **pushować** na koniec sesji. Commit lokalny nie
-  przeżywa awarii sprzętu.
+- **Reguła twarda:** handoff i commity **pushować** na koniec sesji.
 
 ---
 
