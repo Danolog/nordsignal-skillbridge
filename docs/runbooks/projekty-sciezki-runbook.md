@@ -104,7 +104,7 @@ Fazy A–F wykonujemy dokładnie jak w cyber (szczegóły: E1 §1–6, README na
 4. **README „dla rekrutera" (60 sekund)** — każdy L2/L3: problem biznesowy → dane → podejście → wynik z liczbą → demo/zrzut → jak odtworzyć; struktura repo (`data/`, `notebooks/`, `src/`, `requirements.txt`).
 5. **Metryka biznesowa, nie tylko modelowa** — rubryka L2+ wymusza zdanie „[technika] + [metryka] + [wynik/wpływ]".
 6. **Szablon portfolio dla L3** — sekcje: Cel · Dane · Metoda · Wynik · Wnioski/Ograniczenia · README dla nie-technicznego czytelnika.
-7. **Zróżnicowanie per student** — brief AI parametryzuje dane/zakres tak, by artefakty studentów nie były identyczne (antyklisza platformowa).
+7. **Zróżnicowanie per student** — brief AI parametryzuje dane/zakres tak, by artefakty studentów nie były identyczne (antyklisza platformowa). **Instrukcje różnicujące muszą żyć w `description` projektu, nie w `theory_md`** — generator briefu (`src/lib/ai/generate-brief.ts`) dostaje w prompcie wyłącznie `description`; oś różnicowania zapisana w teorii jest dla briefu niewidzialna (lekcja z naprawy K5 partii 1E.R).
 8. **Kryteria rubryki sprawdzalne z artefaktu** (repo/notebook/raport), nie z żywej sesji — zasada z E1 §7.6 zostaje.
 9. **Eksperymentacja, product sense i decision memo** (Darek, 2026-07-01 — dla ścieżek danych/produktowych; największa luka wobec procesów rekrutacyjnych Google→Booking):
    - **≥1 projekt L2/L3 partii** oparty na **eksperymentacji A/B**: hipoteza → metryka sukcesu + guardrail → power/MDE → test → decyzja.
@@ -132,7 +132,13 @@ Fazy A–F wykonujemy dokładnie jak w cyber (szczegóły: E1 §1–6, README na
 2. **Trwałe URL-e**: oficjalne domeny projektów, strony autorów, OCW — nie agregatory/blogi/Medium.
 3. **Licencja przy każdym datasecie** w `source_links` (nazwa + URL licencji) — warunek merge'a. „Darmowy PDF ≠ wolna licencja": linkować wolno, kopiować do `theory_md` nie (przykład: ISLP „All Rights Reserved"; CC BY-NC-ND = bez tłumaczeń fragmentów).
 4. **Zakaz materiałów za rejestracją, gdy istnieje odpowiednik bez** — jeśli rejestracja konieczna, oznaczyć w opisie zasobu.
-5. **Środowiska „trial-safe"**: projekt chmurowy projektujemy pod darmowe środowisko bez karty i bez wygasania (sandbox), a limity/wygasanie triali komunikujemy w briefie. Sprawdzamy stan darmowości NA DZIŚ (przykład-lekcja: Databricks Community Edition wycofana 1.01.2026 — linkujemy Free Edition).
+5. **Środowiska „trial-safe"**: domyślnie projekt chmurowy projektujemy pod darmowe środowisko bez karty i bez wygasania (sandbox), a limity/wygasanie triali komunikujemy w briefie. Sprawdzamy stan darmowości NA DZIŚ (przykład-lekcja: Databricks Community Edition wycofana 1.01.2026 — linkujemy Free Edition).
+   **Wyjątek (decyzja Darka, 2026-07-13):** projekt chmurowy **może** wymagać karty płatniczej, jeśli liść ma istotny popyt rynkowy i nie istnieje bezkartowy odpowiednik hands-on. Warunki twarde:
+   - karta służy **wyłącznie weryfikacji tożsamości** — przy trzymaniu się darmowych kwot opłaty nie są pobierane;
+   - **jawne ostrzeżenie** o wymogu karty w opisie projektu (pierwsze zdanie `description`) i w katalogu;
+   - bezwzględny **zakaz przekraczania darmowych kwot** (zostaje bez zmian);
+   - w `source_links` projektu **link do panelu budżetu/alertów** danej platformy.
+   Uzasadnienie: bramka trial-safe w brzmieniu bezwyjątkowym wycinała 3 z 24 liści ścieżki DS, w tym dwa najsilniejsze po Pythonie (Azure 35%, AWS 30%, GCP 19% ofert — benchmark QG-1).
 6. **Fallback**: dla każdego kluczowego zasobu wskazane źródło zapasowe tej samej funkcji.
 7. **Data weryfikacji linków** w specu partii; okresowy link-check (HTTP 200, brak redirectu do loginu/paywalla) — mechanizm `project_source_links.isDead` już istnieje.
 
@@ -146,6 +152,7 @@ Fazy A–F wykonujemy dokładnie jak w cyber (szczegóły: E1 §1–6, README na
 - Ekspert: praktyk danej roli (dla DS: senior DS / lead z firmy zatrudniającej juniorów; dla cyber: CISO/architekt SOC) — spoza zespołu autorskiego.
 - Checklist eksperta: (1) czy scenariusz odzwierciedla realną pracę, (2) czy artefakt byłby atutem na rozmowie, (3) czy student nie uczy się złych nawyków, (4) czy poziom trudności odpowiada deklarowanemu.
 - Wynik: sign-off w PR treści (komentarz/approval) — trzecia bramka obok Ryana (RODO) i Ethana (tech).
+- **Doprecyzowanie (2026-07-13):** agent-recenzent z soczewką praktyka jest **dopuszczalny dla treści przed pilotażem** (tak wykonano sign-off partii 1 DS — spec §6 odnotowuje agenta-personę, nie praktyka z branży). **Sign-off żywego człowieka spoza zespołu autorskiego jest wymagany, zanim pierwszy Verified Receipt oparty na partii trafi do pracodawcy** — oświadczeniem wobec osoby trzeciej jest receipt, nie treść w bazie. Partia bez L3 (jak 1E.R) nie jest przez QG-6 blokowana.
 
 ## QG-7 — Kalibracja i pilot (po publikacji)
 
@@ -176,4 +183,5 @@ Fazy A–F wykonujemy dokładnie jak w cyber (szczegóły: E1 §1–6, README na
 
 ## 3. Historia wersji
 
+- **v1.1 (2026-07-13, Oliver):** QG-5 §5 — wyjątek od trial-safe (decyzja Darka: chmury hands-on nawet za cenę karty; karta wyłącznie do weryfikacji tożsamości, jawne ostrzeżenie, zakaz przekraczania darmowych kwot, link do panelu budżetu). QG-6 — agent-recenzent dopuszczalny przed pilotażem, żywy ekspert wymagany przed pierwszym Verified Receipt; partia bez L3 nie jest blokowana. QG-4 §7 — instrukcje różnicujące per student muszą żyć w `description` (generator briefu nie widzi `theory_md`).
 - **v1.0 (2026-07-01, Oliver):** pierwsza wersja kanoniczna — uogólnienie procesu cyber + bramki QG-1…QG-7 z weryfikacji DS (`docs/curation/weryfikacja-ds-plan-projektow.md`).
