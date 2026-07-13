@@ -71,6 +71,12 @@ let pool: Pool | undefined;
 let db: any;
 
 async function cleanup(): Promise<void> {
+	// 1E.1/1E.2: pozycje capstone curriculum trzymają FK do projects (bez CASCADE
+	// — świadomie); na bazie testowej po ingest-curriculum trzeba je odpiąć przed
+	// kasacją katalogu (kolejny ingest curriculum odtwarza pozycje).
+	await pool?.query(
+		"DELETE FROM curriculum_module_items WHERE project_id IN (SELECT id FROM projects WHERE slug LIKE 'ds-%')",
+	);
 	// ON DELETE CASCADE z projects sprząta project_competencies / resources / links.
 	await pool?.query("DELETE FROM projects WHERE slug LIKE 'ds-%'");
 }

@@ -129,6 +129,12 @@ dBack("1E.1d/e/f · curriculum: prereq 403, zapis postępu, streak (realna baza)
 		    VALUES (${moduleB}, ${moduleA}) ON CONFLICT DO NOTHING`,
 		);
 
+		// Deterministyczne pozycje modułów syntetycznych: wcześniejsze biegi/ingesty
+		// mogły zostawić pozycje pod tymi samymi position (unikat per moduł).
+		await db.execute(
+			sql`DELETE FROM curriculum_module_items
+		    WHERE module_id IN (${moduleA}, ${moduleB}) AND slug <> 'cwiczenie'`,
+		);
 		for (const [moduleId, stem] of [
 			[moduleA, "Pytanie A?"],
 			[moduleB, "Pytanie B?"],
@@ -142,9 +148,9 @@ dBack("1E.1d/e/f · curriculum: prereq 403, zapis postępu, streak (realna baza)
 				.then((r: { rows: { id: string }[] }) => r.rows);
 			const [item] = await db
 				.execute(
-					sql`INSERT INTO curriculum_module_items (module_id, position, kind, title, config_json)
-				    VALUES (${moduleId}, 1, 'exercise', 'Ćwiczenie', ${JSON.stringify({ questionItemIds: [q.id] })}::jsonb)
-				    ON CONFLICT (module_id, position) DO UPDATE SET config_json = EXCLUDED.config_json
+					sql`INSERT INTO curriculum_module_items (module_id, slug, position, kind, title, config_json)
+				    VALUES (${moduleId}, 'cwiczenie', 1, 'exercise', 'Ćwiczenie', ${JSON.stringify({ questionItemIds: [q.id] })}::jsonb)
+				    ON CONFLICT (module_id, slug) DO UPDATE SET config_json = EXCLUDED.config_json
 				    RETURNING id`,
 				)
 				.then((r: { rows: { id: string }[] }) => r.rows);

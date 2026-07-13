@@ -1187,6 +1187,11 @@ export const questionItems = pgTable(
 		answerJson: jsonb("answer_json").notNull(),
 		// Feedback po odpowiedzi — konsument: 1E.4 (diagnoza go NIE zwraca §2.2).
 		explanationMd: text("explanation_md"),
+		// 1E.2: feedback diagnostyczny per opcja (treść atomów Sophii) — tablica
+		// [{feedbackMd, diagnosis?}] wyrównana indeksami z options_json. Jak
+		// explanation_md: edytowalne w miejscu, POZA hashem tożsamości itemu;
+		// nigdy nie wraca w treści pytania (tylko feedback wybranej opcji po ocenie).
+		optionFeedbackJson: jsonb("option_feedback_json"),
 		status: text("status").notNull().default("active"),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -1625,6 +1630,9 @@ export const curriculumModuleItems = pgTable(
 		moduleId: uuid("module_id")
 			.notNull()
 			.references(() => curriculumModules.id, { onDelete: "cascade" }),
+		// Tożsamość pozycji = stabilny slug w module (klucz upsertu ingestu —
+		// ustalenie wiążące 1E.2 z przeglądu Ethana); position = TYLKO sortowanie.
+		slug: text("slug").notNull(),
 		position: integer("position").notNull(),
 		// kind: CHECK lista miękka (konwencja repo jak assessment_sessions.kind)
 		// — 'review' ZAREZERWOWANE pod FSRS 1E.4, bez konsumenta do tego czasu.
@@ -1642,6 +1650,7 @@ export const curriculumModuleItems = pgTable(
 	},
 	(table) => [
 		index("idx_curriculum_module_items_module_id").on(table.moduleId),
+		uniqueIndex("uq_curriculum_module_items_module_slug").on(table.moduleId, table.slug),
 		uniqueIndex("uq_curriculum_module_items_module_position").on(table.moduleId, table.position),
 		check(
 			"curriculum_module_items_kind_values",
