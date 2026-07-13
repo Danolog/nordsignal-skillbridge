@@ -241,8 +241,19 @@ aktualna cena najmniejszej maszyny endpointu Vertex w wybranym regionie (kalkula
 5. ✅ **Walidacja E:** ingest ×2 na bazie testowej :5433 (`--path "Data Scientist"`,
    idempotencja: 2. bieg 0 wstawionych / 3 zaktualizowane) + pełne
    `pnpm build/lint/test:run` zielone (1216 testów).
-6. ⏳ **Ingest prod (F):** [CZERWONA LINIA] ADR-010 — backup gałęzią Neona →
-   `CONFIRM_PROD_DB=1` → weryfikacja pokrycia → audit log. **Wyłącznie po potwierdzeniu
-   treści przez Darka.**
+6. ✅ **Ingest prod (F) — WYKONANY 2026-07-14, polecenie Darka** ([CZERWONA LINIA]
+   ADR-010, rekord wykonania §10):
+   - Backup: gałąź Neona **`prod-backup-pre-ingest-partia2-20260714`**
+     (`br-polished-sky-al0fstob`); dla zwolnienia limitu gałęzi usunięto przeterminowany
+     backup `prod-backup-pre-0022-20260707-154154` (7 dni, nadpisany 4 nowszymi);
+     backupy z 2026-07-13 zachowane zgodnie z retencją.
+   - Ingest ×2 (idempotencja): 1r — „zaktualizowano 5, błędów 0" ×2; partia 2 —
+     „wstawiono 3" / „zaktualizowano 3", błędów 0.
+   - Weryfikacja PO: 13 projektów ds-*; role `ds-chmura` = CI/CD+MLOps,
+     `ds-endpoint-azure/gcp/aws` = chmura+MLOps; 23 liście required (23/24, Snowflake
+     poza); klauzula karty w 1. zdaniu description w bazie; link budżetowy w source_links
+     każdego z trzech projektów; link polityki danych Groq w ds-llm.
+   - Smoke `skill-bridge-ai-seven.vercel.app`: `/` 200, `/login` 200, `/projects` 307
+     (redirect do logowania — trasa chroniona, poprawnie).
 7. **QG-7:** pilot — rzeczywisty czas vs 10 h, odsetek studentów blokowanych przez brak
    karty (sygnał do kalibracji komunikacji), incydenty kosztowe (oczekiwane: 0).

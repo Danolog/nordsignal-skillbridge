@@ -11,7 +11,21 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-14 — PLAN NAPRAW DOMKNIĘTY KODOWO: B2/B3/B4 GOTOWE, CZEKA INGEST PROD
+## STAN NA DZIŚ — 2026-07-14 — PLAN NAPRAW DOMKNIĘTY: B2/B3/B4 NA PRODZIE (INGEST WYKONANY)
+
+### INGEST PROD WYKONANY (2026-07-14, polecenie Darka — czerwona linia ADR-010)
+- Backup: gałąź Neona **`prod-backup-pre-ingest-partia2-20260714`**
+  (`br-polished-sky-al0fstob`); zwolnienie limitu gałęzi: usunięty przeterminowany
+  `prod-backup-pre-0022-20260707-154154` (7 dni, nadpisany 4 nowszymi); backupy
+  z 2026-07-13 zachowane (retencja: trzymać kilka dni → delete).
+- Ingest ×2 (idempotencja): 1r „zaktualizowano 5, błędów 0" ×2; partia 2 „wstawiono 3"
+  → „zaktualizowano 3", błędów 0.
+- Weryfikacja PO: **13 projektów ds-*** na prodzie; role `ds-chmura` = CI/CD+MLOps,
+  `ds-endpoint-*` = chmura+MLOps; pokrycie 23/24 (Snowflake poza); klauzula karty
+  w 1. zdaniu, linki budżetowe i link polityki Groq w bazie. Smoke: `/` 200,
+  `/login` 200, `/projects` 307 (chroniona). Rekord wykonania: spec partii 2 §8.
+- Otwarte po ingeście: ręczna weryfikacja dostępności SageMaker w AWS free planie
+  (spec §7; treść ma instrukcję awaryjną, nieblokujące) — akcja Darka lub pilot.
 
 ### Blok B2 — partia 2 (3 projekty chmurowe) NAPISANA i ZWALIDOWANA
 - **`tools/content/ds-projects-partia-2.json`**: `ds-endpoint-azure` / `ds-endpoint-gcp`
@@ -63,11 +77,8 @@ w bazie zgodne. `pnpm test:run` **1216/1216** (baseline 1194 + nowe testy kontra
 `pnpm build` OK, Biome 3 warningi (baseline).
 
 ### NASTĘPNE (kolejność)
-1. **INGEST PARTII 2 + 1r NA PROD = [CZERWONA LINIA]** — wyłącznie po potwierdzeniu
-   treści przez Darka: backup gałęzią Neona → `CONFIRM_PROD_DB=1` (DIRECT) → ingest 1r
-   (zaktualizowana: B3+noty) i partii 2 → weryfikacja pokrycia 23/24 i ról → smoke.
-   **Przed ingestem prod: ręcznie zweryfikować dostępność SageMaker w AWS free planie**
-   (spec §7 — jedyny otwarty fakt; treść ma instrukcję awaryjną, więc nie blokuje).
+1. ✅ ~~Ingest partii 2 + 1r na prod~~ — WYKONANY (sekcja wyżej). Zostaje: ręczna
+   weryfikacja dostępności SageMaker w AWS free planie (spec §7, nieblokujące).
 2. **Sprzątanie po flipie paszportu** (nieblokujące, z poprzedniego snapshotu):
    calculateCoverage, licznik onboardingu client-side, kafelek „W trakcie: 0".
 3. **1E.6** (checki labów — największy bloker produktowy) i reszta kolejki 1E.
