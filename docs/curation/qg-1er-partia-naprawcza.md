@@ -152,6 +152,15 @@ Bramka wymaga praktyka **spoza zespołu autorskiego**. Nie zastąpi go agent. Be
 DoD partii jest formalnie niedomknięty (dotyczy L3; w tej piątce L3 nie ma, ale
 partia 1 jako całość ma dwa).
 
+> **Doprecyzowanie (2026-07-13, runbook v1.1):** QG-6 dotyczy L3 (+ zalecany losowy
+> L2) — **1E.R nie ma ani jednego L3, więc ta bramka jej nie blokuje.** Sign-off
+> partii 1 wykonał agent-persona, co runbook v1.1 uznaje za dopuszczalne **przed
+> pilotażem**; sign-off żywego praktyka (senior/lead DS, ~2 h, checklist z runbooka)
+> jest wymagany, **zanim pierwszy Verified Receipt trafi do pracodawcy** — dotyczy
+> `ds-mlops-pipeline-treningowy`, `ds-capstone-strumien-i-raport` (L3) + losowego L2,
+> w tym co najmniej jednego z przyszłych projektów chmurowych. Akcja Darka
+> (kanał: WSB Merito / kontakty z EduTech Masters).
+
 ---
 
 ## DŁUG (ticket **1E.R2** — rewizja rubryk pod inwarianty QG-2; z Sophią)
