@@ -78,10 +78,22 @@ Szczegóły: `git log` i wcześniejsze snapshoty tego pliku.
   - ⚠ **Laby są NIEKOMPLETOWALNE do 1E.6** (brak checków automatycznych) — całe L0
     to laby. **Onboarding realnych studentów dopiero po 1E.6.** Do tego czasu drabina
     służy podglądowi treści i atomom `exercise`.
-  - ⚠ **TODO treściowe Sophii sprzed ingestu wciąż otwarte:** notebooki Colab,
-    screenshoty UI, research wideo PL (są w sekcjach „Notatki dla Olivera" w plikach
-    `docs/curation/sophia-1e2-*.md`). Nie blokowały pakowania; blokują dopiero
-    realny onboarding (razem z 1E.6).
+  - ⚠ **TODO treściowe Sophii sprzed ingestu wciąż otwarte** (sekcje „Notatki dla
+    Olivera" w `docs/curation/sophia-1e2-*.md`). Nie blokowały pakowania; blokują
+    dopiero realny onboarding (razem z 1E.6). **Inwentaryzacja 2026-07-13:**
+    - **Notebooki Colab — 66 szt.** (L0=4, F1=7, F2=7, F3=8, M-PD=9, M-EDA=4,
+      M-SQL=9, M-ML=9, M-LLM=9). W repo **nie ma ani jednego `.ipynb`** — budowa
+      od zera. **ŚWIADOMIE ODŁOŻONE DO 1E.6** (decyzja Darka 2026-07-13) — powód
+      niżej, w kolejce.
+    - **Screenshoty UI:** L0 (2 etykiety: pełny tytuł ostrzeżenia o cudzym notebooku
+      + dokładny format nazwy kopii „Kopia…"), M-EDA (Colab↔GitHub, EDA.2),
+      M-LLM (panel Secrets). Wymagają konta Google — **akcja Darka albo sterowanie
+      jego Chrome** (agent nie ma konta).
+    - **Wideo PL:** 8 seansów kontrolnych (L0, F1, F2, F3, M-PD, M-EDA ×2, M-ML ×3,
+      M-LLM ×2 — URL-e i timestampy w tabelach zasobów) + **1 realny research
+      niezrobiony: M-SQL** (wideo PL SQL + weryfikacja URL `duckdb.org/docs`).
+      ⚠ **Agent nie ogląda wideo** — może najwyżej zweryfikować transkrypt/opis/
+      rozdziały/żywotność URL; „seans" pozostaje akcją człowieka.
   - **Do zrobienia:** sign-off Ryana dla **rls-matrix v0.27**.
 
 - **1E.R ✅ DOMKNIĘTE KODOWO (#168)** — partia naprawcza projektów DS (ADR-014 D7).
@@ -98,6 +110,17 @@ Szczegóły: `git log` i wcześniejsze snapshoty tego pliku.
 ### NASTĘPNE (kolejność)
 1. **1E.6** — checki automatyczne labów. **Bez tego nie ma onboardingu studentów**
    (całe L0 = laby). Największy bloker produktowy.
+   **Pierwsza decyzja 1E.6 = kontrakt tokenu pieczątki — ona odblokowuje 66 notebooków.**
+   `sophia-1e2-l0-atomy.md:747` odkłada „finalny kształt funkcji tokenu" właśnie tu,
+   a każdy notebook kończy komórką-pieczątką, która tę funkcję zawiera → pisanie
+   notebooków PRZED tą decyzją = ryzyko przepisania 66 plików. Dlatego notebooki
+   czekają na 1E.6, nie odwrotnie.
+   **Rekomendacja projektowa (Sophia 2026-07-13):** rozdzielić w pieczątce dwie
+   warstwy — (a) *check per atom* (logika treściowa, różna w każdym notebooku,
+   definicje w sekcjach „Zaliczenie" dokumentów Sophii) i (b) *derywacja tokenu*
+   (jeden wspólny blok, identyczny we wszystkich 66). Wtedy zmiana decyzji o funkcji
+   tokenu = mechaniczna podmiana jednego bloku, a nie rewrite treści.
+   Znane limity mechanizmu (świadome, na pilot) — `sophia-1e2-l0-atomy.md:747-760`.
 2. **QG-1…7 partii 1E.R** → ingest 1E.R na prod (czerwona linia).
 3. **1E.3** (egzaminy modułowe + mastery gate) — treść egzaminów JEST w plikach
    Sophii, packer jej nie parsuje (świadomie, poza zakresem 1E.2).
