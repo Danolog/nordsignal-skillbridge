@@ -1,24 +1,35 @@
 // ============================================================================
-// 1E.1e — POST /api/curriculum/items/[id]/complete: kompletowanie pozycji
-// lab/project — INTERFEJS wyniku checku (ADR-014 pkt 11: weryfikacja
-// AUTOMATYCZNA; implementacja automatów per lab/kamień = 1E.6, hak:
-// config_json.checks).
+// POST /api/curriculum/items/[id]/complete — kompletowanie pozycji lab/project.
+// Weryfikacja AUTOMATYCZNA, zero samodeklaracji (ADR-014 pkt 11).
 //
-// Reguła w 1E.1 (deterministyczna, bez samodeklaracji):
 //  - kind='project': zaliczenie wywodzi się z ISTNIEJĄCEGO pipeline'u ocen —
-//    wymagane zgłoszenie studenta do projektu pozycji ze statusem
-//    submitted/verified (wariant C, decyzja Darka pkt 2: submitted odblokowuje
-//    drabinę; verified pozostaje warunkiem receiptu w Passporcie).
-//  - kind='lab': w 1E.1 endpoint odrzuca (501) — check automatyczny wchodzi
-//    w 1E.6; pilotowe pozycje lab pojawią się w treści dopiero z 1E.2.
-// Flaga off → 404; zablokowany moduł/pozycja → 403.
+//    wymagane zgłoszenie ze statusem submitted/verified (wariant C, ADR-014 pkt 2:
+//    submitted odblokowuje drabinę; verified pozostaje warunkiem receiptu).
+//
+//  - kind='lab' (1E.6b, ADR-015): zaliczenie = TOKEN PIECZĄTKI. Student wkleja
+//    token wypisany przez komórkę-pieczątkę w notebooku Colab. Token niesie
+//    ŁADUNEK — wartości wyliczone w sesji studenta. **Serwer NIE UFA fladze
+//    „zaliczone"**: bierze ładunek i SAM weryfikuje każdy check (`lab-checks.ts`).
+//
+//    Kody odpowiedzi rozróżniają trzy RÓŻNE porażki, bo znaczą co innego:
+//      400 „Invalid token"  — literówka / token z innej pozycji lub konta
+//      409 „Checks failed"  — token POPRAWNY, ale praca nie spełnia warunków
+//                             (zwracamy KTÓRY check padł, NIGDY wartości oczekiwanej)
+//      501                  — brak LAB_TOKEN_SECRET albo brak kontraktu checków
+//                             (fail-closed: uczciwe „nie umiemy sprawdzić" zamiast
+//                              zaliczania na pusto)
+//
+// Flaga off → 404; brak sesji → 401; zablokowany moduł/pozycja → 403.
 // ============================================================================
 
 import { and, eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { auth } from "@/lib/auth/server";
 import { completeItem } from "@/lib/curriculum/completion";
+import { evaluateChecks, parseChecks } from "@/lib/curriculum/lab-checks";
+import { isLabTokenConfigured, parseToken } from "@/lib/curriculum/lab-token";
 import { getModuleItems, isModuleUnlocked } from "@/lib/curriculum/ladder";
 import { isUuid } from "@/lib/curriculum/params";
 import { db } from "@/lib/db";
@@ -26,7 +37,9 @@ import { curriculumModuleItems, projectSubmissions, students } from "@/lib/db/sc
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 
-export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+const LabBodySchema = z.object({ token: z.string().min(1).max(4096) });
+
+export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
 	if (!isFeatureEnabled("curriculumPath")) {
 		return NextResponse.json({ error: "Not found" }, { status: 404 });
 	}
@@ -36,6 +49,16 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 	const { id } = await ctx.params;
 	// 0.15/B3: zły format uuid dawał 22P02 z Postgresa → 500 zamiast 400.
 	if (!isUuid(id)) return NextResponse.json({ error: "Invalid item id" }, { status: 400 });
+
+	// Ciało jest OPCJONALNE: kind='project' zalicza się bez niego (ze zgłoszenia),
+	// kind='lab' wymaga tokenu. Puste/niepoprawne ciało nie może wywalić trasy.
+	let body: unknown = {};
+	try {
+		body = await req.json();
+	} catch {
+		body = {};
+	}
+
 	try {
 		const student = await db.query.students.findFirst({
 			where: eq(students.userId, session.user.id),
@@ -45,7 +68,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 
 		const item = await db.query.curriculumModuleItems.findFirst({
 			where: eq(curriculumModuleItems.id, id),
-			columns: { id: true, moduleId: true, kind: true, projectId: true },
+			columns: { id: true, moduleId: true, kind: true, projectId: true, configJson: true },
 		});
 		if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
 
@@ -89,9 +112,55 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 		}
 
 		if (item.kind === "lab") {
-			// Automatyczne checki labów wchodzą w 1E.6 (decyzja Darka pkt 11 —
-			// bez samodeklaracji); do tego czasu pozycja niekompletowalna.
-			return NextResponse.json({ error: "Lab checks not implemented yet" }, { status: 501 });
+			// 1E.6b (ADR-015): zaliczenie = TOKEN PIECZĄTKI, weryfikowany serwerowo.
+			// Serwer NIE ufa fladze „zaliczone" z notebooka — bierze ładunek tokenu
+			// (wartości wyliczone w sesji Colab) i SAM sprawdza każdy check.
+			// FAIL-CLOSED: bez sekretu nie da się zweryfikować ŻADNEGO tokenu —
+			// lepiej uczciwe 501 niż zaliczanie labów bez weryfikacji.
+			if (!isLabTokenConfigured()) {
+				logError("curriculum.lab.secret_missing", new Error("LAB_TOKEN_SECRET nieustawiony"));
+				return NextResponse.json({ error: "Lab checks unavailable" }, { status: 501 });
+			}
+			const checks = parseChecks(item.configJson);
+			if (checks.length === 0) {
+				// Treść bez realnego kontraktu checków (atrapa z 1E.2) — pozycja
+				// pozostaje niekompletowalna. Lepiej uczciwe 501 niż zaliczenie
+				// czegokolwiek na pusto.
+				return NextResponse.json({ error: "Lab has no checks defined" }, { status: 501 });
+			}
+
+			const parsedBody = LabBodySchema.safeParse(body);
+			if (!parsedBody.success) {
+				return NextResponse.json({ error: "Token required" }, { status: 400 });
+			}
+
+			const parsed = parseToken(student.id, item.id, parsedBody.data.token);
+			if (!parsed.ok) {
+				// Komunikat rozróżnia „przepisałeś z błędem" od „to nie Twój token" —
+				// bez zdradzania oczekiwanych wartości.
+				return NextResponse.json(
+					{ error: "Invalid token", reason: parsed.reason },
+					{ status: 400 },
+				);
+			}
+
+			const { passed, results } = evaluateChecks(checks, parsed.payload);
+			if (!passed) {
+				// 409, nie 400: token jest POPRAWNY, ale praca nie spełnia checków.
+				// Zwracamy, KTÓRY check nie przeszedł (bez wartości oczekiwanej).
+				return NextResponse.json(
+					{ error: "Checks failed", results, itemCompleted: false },
+					{ status: 409 },
+				);
+			}
+
+			const { moduleCompleted } = await completeItem(
+				student.id,
+				student.tenantId,
+				item.id,
+				item.moduleId,
+			);
+			return NextResponse.json({ itemCompleted: true, moduleCompleted, results });
 		}
 
 		return NextResponse.json({ error: "Item kind not completable here" }, { status: 400 });

@@ -128,8 +128,13 @@
 				"uiVerifiedAt": "2026-07-11",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "predicate",
+						"note": "pieczątka wykonała się w żywej sesji. NAJSŁABSZY check drabiny — atom nie zostawia stanu do sprawdzenia (jedyna komórka to print). Świadome ustępstwo: to atom „hello world”.",
+						"rule": {
+							"op": "is_true",
+							"var": "_wykonano"
+						}
 					}
 				]
 			},
@@ -292,8 +297,23 @@
 				"uiVerifiedAt": "2026-07-11",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "predicate",
+						"note": "`imie` różne od domyślnego „Alex” — dowód zmiany kodu i ponownego wykonania komórki",
+						"rule": {
+							"op": "neq_const",
+							"var": "imie",
+							"const": "Alex"
+						}
+					},
+					{
+						"id": "C2",
+						"kind": "predicate",
+						"note": "`imie` jest niepustym tekstem",
+						"rule": {
+							"op": "nonempty_string",
+							"var": "imie"
+						}
 					}
 				]
 			}
@@ -425,8 +445,13 @@
 				"uiVerifiedAt": "2026-07-11",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "predicate",
+						"note": "zmienne żyją w bieżącej sesji (token dowodzi wykonania komórek). LIMIT: restart sesji jest z poziomu Pythona NIEWERYFIKOWALNY — kroki restartu są instruktażowe (jawne ustępstwo Sophii).",
+						"rule": {
+							"op": "is_true",
+							"var": "_wykonano"
+						}
 					}
 				]
 			}
@@ -548,8 +573,14 @@
 				"uiVerifiedAt": "2026-07-11",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "predicate",
+						"note": "co najmniej 2 zmienne liczbowe o nazwach SPOZA listy przykładów. LIMIT: obchodzilny ręcznym zdefiniowaniem zmiennych — wystarczający na pilot (jawne ustępstwo Sophii).",
+						"rule": {
+							"op": "count_gte",
+							"var": "_wlasne_zmienne",
+							"n": 2
+						}
 					}
 				]
 			}

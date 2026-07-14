@@ -414,8 +414,28 @@
 				"estimated": "20 min",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "relation",
+						"note": "`razem` = `cena` × `sztuki` — pieczątka przelicza niezależnie z danych studenta",
+						"rule": {
+							"op": "eq",
+							"left": "razem",
+							"right": {
+								"mul": ["cena", "sztuki"]
+							}
+						}
+					},
+					{
+						"id": "C2",
+						"kind": "relation",
+						"note": "`srednio_dziennie` = `razem` / 30",
+						"rule": {
+							"op": "eq",
+							"left": "srednio_dziennie",
+							"right": {
+								"div": ["razem", 30]
+							}
+						}
 					}
 				]
 			}
@@ -687,8 +707,27 @@
 				"estimated": "20–25 min",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "relation",
+						"note": "`koszt_tygodnia` = `cena_przejazdu` × `przejazdy_dziennie` × 5",
+						"rule": {
+							"op": "eq",
+							"left": "koszt_tygodnia",
+							"right": {
+								"mul": ["cena_przejazdu", "przejazdy_dziennie", 5]
+							}
+						}
+					},
+					{
+						"id": "C2",
+						"kind": "predicate",
+						"fragile": true,
+						"note": "obecność `if`/`else` w kodzie komórki — KRUCHE (introspekcja tekstu). Nie blokuje zaliczenia: fallback zadeklarowany przez Sophię (F1.7). Warunek egzekwuje treść zadania, nie automat.",
+						"rule": {
+							"op": "contains_all",
+							"var": "_zrodlo",
+							"needles": ["if", "else"]
+						}
 					}
 				]
 			}

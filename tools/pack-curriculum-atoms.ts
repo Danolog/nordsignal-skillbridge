@@ -63,9 +63,232 @@ type ModuleManifest = {
 	przeglad?: { refs: string[] };
 };
 
-/** Opisowy hak checku „komórka-pieczątka + token" (implementacja 1E.6). */
-const TOKEN_CHECK = [
-	{ type: "token", note: "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)" },
+// ============================================================================
+// 1E.6b (ADR-015) — WYKONYWALNE checki labów.
+//
+// Do 1E.6b `config.checks` było ATRAPĄ (`{type:"token", note}`) — hak bez logiki.
+// Teraz każdy check jest kontraktem, który SERWER weryfikuje (`lab-checks.ts`).
+//
+// PROTOKÓŁ ŁADUNKU: komórka-pieczątka SPŁASZCZA stan sesji do skalarów i krótkich
+// list (nie wysyła DataFrame'ów). Klucze ładunku = nazwy zmiennych z treści Sophii
+// (`razem`, `cena`, `ceny`, `wydatki`, `acc_base`…), plus klucze meta z `_`:
+//   `_wykonano`        — pieczątka poszła w żywej sesji (bool)
+//   `_wlasne_zmienne`  — liczba zmiennych liczbowych spoza nazw z przykładów (L0.4)
+//   `_zrodlo`          — sklejony tekst wykonanych komórek (TYLKO checki `fragile`)
+//
+// `fragile: true` = check NIGDY nie blokuje zaliczenia (fallback zadeklarowany
+// przez Sophię dla introspekcji tekstu w F1.7/F2.7). Sama introspekcja nie może
+// niczego zaliczyć — bezpiecznik jest w `evaluateChecks`.
+//
+// ⚠ SZEŚĆ LABÓW NIE MA TU CHECKÓW (PD.4, PD.8, EDA.4, SQL.4, SQL.7, LLM.7) —
+// ich TREŚĆ jest dziś niesprawdzalna (m.in. `duckdb.sql()` bez przypisania wyniku
+// do zmiennej; `groupby().mean()` bez kotwicy; sprzeczność w PD.4). Zostają
+// świadomie BEZ checków → trasa `complete` zwraca dla nich uczciwe 501, zamiast
+// zaliczać cokolwiek na podstawie zgadniętych nazw zmiennych. Poprawka treści
+// idzie osobnym torem przez QG.
+// ============================================================================
+
+type Check = Record<string, unknown>;
+
+/** L0.1 — atom nie zostawia ŻADNEGO stanu (jedyna komórka to `print`). */
+const CHECKS_L0_1: Check[] = [
+	{
+		id: "C1",
+		kind: "predicate",
+		note: "pieczątka wykonała się w żywej sesji. NAJSŁABSZY check drabiny — atom nie zostawia stanu do sprawdzenia (jedyna komórka to print). Świadome ustępstwo: to atom „hello world”.",
+		rule: { op: "is_true", var: "_wykonano" },
+	},
+];
+
+const CHECKS_L0_2: Check[] = [
+	{
+		id: "C1",
+		kind: "predicate",
+		note: "`imie` różne od domyślnego „Alex” — dowód zmiany kodu i ponownego wykonania komórki",
+		rule: { op: "neq_const", var: "imie", const: "Alex" },
+	},
+	{
+		id: "C2",
+		kind: "predicate",
+		note: "`imie` jest niepustym tekstem",
+		rule: { op: "nonempty_string", var: "imie" },
+	},
+];
+
+const CHECKS_L0_3: Check[] = [
+	{
+		id: "C1",
+		kind: "predicate",
+		note: "zmienne żyją w bieżącej sesji (token dowodzi wykonania komórek). LIMIT: restart sesji jest z poziomu Pythona NIEWERYFIKOWALNY — kroki restartu są instruktażowe (jawne ustępstwo Sophii).",
+		rule: { op: "is_true", var: "_wykonano" },
+	},
+];
+
+const CHECKS_L0_4: Check[] = [
+	{
+		id: "C1",
+		kind: "predicate",
+		note: "co najmniej 2 zmienne liczbowe o nazwach SPOZA listy przykładów. LIMIT: obchodzilny ręcznym zdefiniowaniem zmiennych — wystarczający na pilot (jawne ustępstwo Sophii).",
+		rule: { op: "count_gte", var: "_wlasne_zmienne", n: 2 },
+	},
+];
+
+const CHECKS_F1_4: Check[] = [
+	{
+		id: "C1",
+		kind: "relation",
+		note: "`razem` = `cena` × `sztuki` — pieczątka przelicza niezależnie z danych studenta",
+		rule: { op: "eq", left: "razem", right: { mul: ["cena", "sztuki"] } },
+	},
+	{
+		id: "C2",
+		kind: "relation",
+		note: "`srednio_dziennie` = `razem` / 30",
+		rule: { op: "eq", left: "srednio_dziennie", right: { div: ["razem", 30] } },
+	},
+];
+
+const CHECKS_F1_7: Check[] = [
+	{
+		id: "C1",
+		kind: "relation",
+		note: "`koszt_tygodnia` = `cena_przejazdu` × `przejazdy_dziennie` × 5",
+		rule: {
+			op: "eq",
+			left: "koszt_tygodnia",
+			right: { mul: ["cena_przejazdu", "przejazdy_dziennie", 5] },
+		},
+	},
+	{
+		id: "C2",
+		kind: "predicate",
+		fragile: true,
+		note: "obecność `if`/`else` w kodzie komórki — KRUCHE (introspekcja tekstu). Nie blokuje zaliczenia: fallback zadeklarowany przez Sophię (F1.7). Warunek egzekwuje treść zadania, nie automat.",
+		rule: { op: "contains_all", var: "_zrodlo", needles: ["if", "else"] },
+	},
+];
+
+const CHECKS_F2_4: Check[] = [
+	{
+		id: "C1",
+		kind: "predicate",
+		note: "`ceny` to lista co najmniej 5 pozycji (dowód dopisania piątej)",
+		rule: { op: "len_gte", var: "ceny", n: 5 },
+	},
+	{
+		id: "C2",
+		kind: "predicate",
+		note: "wszystkie pozycje `ceny` są liczbami. LIMIT: pieczątka NIE WIDZI wypisania paragonu — samej pętli nie weryfikuje (jawny limit Sophii).",
+		rule: { op: "all_numbers", var: "ceny" },
+	},
+];
+
+const CHECKS_F2_7: Check[] = [
+	{
+		id: "C1",
+		kind: "predicate",
+		note: "`wydatki` to lista co najmniej 5 liczb",
+		rule: { op: "len_gte", var: "wydatki", n: 5 },
+	},
+	{
+		id: "C2",
+		kind: "value",
+		note: "SONDA: pieczątka WYWOŁUJE funkcję studenta `suma_wydatkow` na WŁASNEJ próbce [1,2,3] → musi zwrócić 6. Łapie funkcję czytającą dane globalne zamiast parametru — najmocniejszy check tego modułu.",
+		var: "sonda_suma_wydatkow",
+		expect: 6,
+	},
+	{
+		id: "C3",
+		kind: "predicate",
+		fragile: true,
+		note: "obecność `input(` oraz `if`/`else` w kodzie — KRUCHE (introspekcja tekstu), nie blokuje zaliczenia",
+		rule: { op: "contains_all", var: "_zrodlo", needles: ["input(", "if", "else"] },
+	},
+];
+
+const CHECKS_F3_4: Check[] = [
+	{
+		id: "C1",
+		kind: "relation",
+		note: "`suma_duzych` = suma pozycji `duze` (pieczątka przelicza własną maską)",
+		rule: { op: "eq", left: "suma_duzych", right: "ref_suma_duzych" },
+	},
+	{
+		id: "C2",
+		kind: "relation",
+		note: "`male_licznik` zgadza się z niezależnym przeliczeniem pieczątki",
+		rule: { op: "eq", left: "male_licznik", right: "ref_male_licznik" },
+	},
+];
+
+/** F3.7 — MINI-PROJEKT (pkt 12b): 3 kamienie K1–K3, każdy = zdarzenie postępu. */
+const CHECKS_F3_7: Check[] = [
+	{
+		id: "K1",
+		kind: "predicate",
+		note: "K1 — struktura danych: `wydatki` ma co najmniej 8 rekordów",
+		rule: { op: "len_gte", var: "wydatki", n: 8 },
+	},
+	{
+		id: "K2",
+		kind: "relation",
+		note: "K2 — SONDA WIELOFUNKCYJNA: pieczątka woła trzy funkcje studenta na WŁASNEJ próbnej tabeli i porównuje z własnym wynikiem (tolerancja abs(x-y) < 0.01)",
+		rule: { op: "eq", left: "sonda_suma", right: "ref_sonda_suma" },
+	},
+	{
+		id: "K3",
+		kind: "relation",
+		note: "K3 — spójność sum: całość = suma po kategoriach WYPROWADZONYCH z danych studenta. LIMIT: literówek kategorii w `print`-ach pieczątka NIE WYKRYJE (jawny limit Sophii).",
+		rule: { op: "eq", left: "suma_wszystkich", right: "suma_kategorii_lacznie" },
+	},
+];
+
+/** M-ML: dane i ziarna ZAFIKSOWANE w treści → wartości znane z góry (checki MOCNE). */
+const CHECKS_ML_4: Check[] = [
+	{
+		id: "C1",
+		kind: "value",
+		note: "baseline (most_frequent) na zafiksowanym podziale: 4/6",
+		var: "acc_base",
+		expect: 0.6666666666666666,
+	},
+	{
+		id: "C2",
+		kind: "value",
+		note: "model na zafiksowanym podziale: 5/6",
+		var: "acc_model",
+		expect: 0.8333333333333334,
+	},
+];
+
+const CHECKS_ML_7: Check[] = [
+	{ id: "C1", kind: "value", note: "baseline", var: "acc_base", expect: 0.6666666666666666 },
+	{ id: "C2", kind: "value", note: "model", var: "acc_model", expect: 0.8333333333333334 },
+	{ id: "C3", kind: "value", note: "precyzja = 4/5", var: "prec", expect: 0.8 },
+	{ id: "C4", kind: "value", note: "czułość = 4/4", var: "rec", expect: 1 },
+	{
+		id: "C5",
+		kind: "value",
+		note: "macierz pomyłek [[1,1],[0,4]] spłaszczona do listy",
+		var: "macierz",
+		expect: [1, 1, 0, 4],
+	},
+];
+
+const CHECKS_LLM_4: Check[] = [
+	{
+		id: "C1",
+		kind: "predicate",
+		note: "`rekordy` — 5 przypadków z utrwalonego zbioru",
+		rule: { op: "len_eq", var: "rekordy", n: 5 },
+	},
+	{
+		id: "C2",
+		kind: "value",
+		note: "zgodnych z ground truth: 4 z 5 (wynik zafiksowany treścią)",
+		var: "zgodne",
+		expect: 4,
+	},
 ];
 
 const MANIFESTS: ModuleManifest[] = [
@@ -82,13 +305,13 @@ const MANIFESTS: ModuleManifest[] = [
 		overrides: {
 			"L0.1": {
 				concepts: [{ slug: "colab-uruchomienie-komorki", key: true }],
-				checks: TOKEN_CHECK,
+				checks: CHECKS_L0_1,
 			},
-			"L0.2": { concepts: [{ slug: "notebook-komorki-kod-tekst" }], checks: TOKEN_CHECK },
-			"L0.3": { concepts: [{ slug: "sesja-stan-zmiennych", key: true }], checks: TOKEN_CHECK },
+			"L0.2": { concepts: [{ slug: "notebook-komorki-kod-tekst" }], checks: CHECKS_L0_2 },
+			"L0.3": { concepts: [{ slug: "sesja-stan-zmiennych", key: true }], checks: CHECKS_L0_3 },
 			"L0.4": {
 				concepts: [{ slug: "skrypt-sekwencja-instrukcji", key: true }],
-				checks: TOKEN_CHECK,
+				checks: CHECKS_L0_4,
 			},
 		},
 	},
@@ -103,11 +326,11 @@ const MANIFESTS: ModuleManifest[] = [
 			"decyzja-if-else": "Decyzja: if / else",
 		},
 		overrides: {
-			"F1.4": { checks: TOKEN_CHECK },
+			"F1.4": { checks: CHECKS_F1_4 },
 			// Lab samodzielny — meta bez slugów; koncepty domykane treścią zadania.
 			"F1.7": {
 				concepts: [{ slug: "porownanie-bool" }, { slug: "decyzja-if-else" }],
-				checks: TOKEN_CHECK,
+				checks: CHECKS_F1_7,
 			},
 		},
 		// Zasady modułu F1: „Przegląd przed egzaminem (D6.3, czysty reuse)" — 11 pytań.
@@ -138,17 +361,10 @@ const MANIFESTS: ModuleManifest[] = [
 			"funkcja-def-return": "Funkcja: def i return",
 		},
 		overrides: {
-			"F2.4": { checks: TOKEN_CHECK },
+			"F2.4": { checks: CHECKS_F2_4 },
 			"F2.7": {
 				concepts: [{ slug: "wzorzec-akumulatora" }, { slug: "funkcja-def-return" }],
-				checks: [
-					{
-						type: "token",
-						note:
-							"pieczątka WYWOŁUJE funkcję studenta na próbnej liście i porównuje wynik " +
-							"(rozszerzenie mechanizmu — notatki F2; definicja 1E.6)",
-					},
-				],
+				checks: CHECKS_F2_7,
 			},
 		},
 		// Zasady modułu F2: 10 pytań reuse.
@@ -178,7 +394,7 @@ const MANIFESTS: ModuleManifest[] = [
 			"agregaty-sum-min-max": "Gotowe agregaty: sum, min, max",
 		},
 		overrides: {
-			"F3.4": { checks: TOKEN_CHECK },
+			"F3.4": { checks: CHECKS_F3_4 },
 			// MINI-PROJEKT (pkt 12b): kind lab + 3 kamienie automatyczne — decyzja
 			// Darka 2026-07-11 (bez wiersza w projects/pipeline'u marketplace).
 			"F3.7": {
@@ -190,19 +406,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "slownik-klucz-wartosc" },
 					{ slug: "agregaty-sum-min-max" },
 				],
-				checks: [
-					{ type: "milestone", id: "K1", note: "walidacja struktury danych (lista słowników)" },
-					{
-						type: "milestone",
-						id: "K2",
-						note: "pieczątka wywołuje trzy funkcje studenta na próbnej tabeli (tolerancja abs(x-y)<0.01)",
-					},
-					{
-						type: "milestone",
-						id: "K3",
-						note: "spójność sum: całość = suma po kategoriach wyprowadzonych z danych studenta",
-					},
-				],
+				checks: CHECKS_F3_7,
 			},
 		},
 		// Zasady modułu F3: 10 pytań reuse.
@@ -233,7 +437,7 @@ const MANIFESTS: ModuleManifest[] = [
 			"wykresy-opisane": "Wykres, który wspiera wniosek",
 		},
 		overrides: {
-			"PD.4": { checks: TOKEN_CHECK },
+			"PD.4": { checks: [] },
 			// Lab samodzielny — meta mówi „wszystkie z M-PD" (bez slugów).
 			"PD.8": {
 				concepts: [
@@ -243,7 +447,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "grupowanie-agregacja" },
 					{ slug: "wykresy-opisane" },
 				],
-				checks: TOKEN_CHECK,
+				checks: [],
 			},
 		},
 		przeglad: {
@@ -273,7 +477,7 @@ const MANIFESTS: ModuleManifest[] = [
 		// bramką jest capstone, więc zasady modułu definiują „przegląd przed capstone'em"
 		// (nie „przed egzaminem" jak M-PD/M-SQL/M-ML/M-LLM); pozycja przeglądu ta sama.
 		overrides: {
-			"EDA.4": { checks: TOKEN_CHECK },
+			"EDA.4": { checks: [] },
 		},
 		przeglad: {
 			refs: [
@@ -301,7 +505,7 @@ const MANIFESTS: ModuleManifest[] = [
 			"sql-funkcje-okna": "Funkcje okna: agregat, który nie zjada wierszy",
 		},
 		overrides: {
-			"SQL.4": { checks: TOKEN_CHECK },
+			"SQL.4": { checks: [] },
 			// Lab samodzielny — meta mówi „wszystkie z M-SQL" (bez slugów).
 			"SQL.7": {
 				concepts: [
@@ -309,7 +513,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "sql-join-ziarno" },
 					{ slug: "sql-funkcje-okna" },
 				],
-				checks: TOKEN_CHECK,
+				checks: [],
 			},
 		},
 		przeglad: {
@@ -345,7 +549,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "train-test-podzial" },
 					{ slug: "baseline-punkt-odniesienia" },
 				],
-				checks: TOKEN_CHECK,
+				checks: CHECKS_ML_4,
 			},
 			// Lab samodzielny — meta mówi „wszystkie z M-ML".
 			"ML.7": {
@@ -355,7 +559,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "metryki-macierz-pomylek" },
 					{ slug: "leakage-uczciwosc-ewaluacji" },
 				],
-				checks: TOKEN_CHECK,
+				checks: CHECKS_ML_7,
 			},
 		},
 		przeglad: {
@@ -384,7 +588,7 @@ const MANIFESTS: ModuleManifest[] = [
 			"klucz-sekrety-rodo": "Klucz API, limity, dane osobowe",
 		},
 		overrides: {
-			"LLM.4": { checks: TOKEN_CHECK },
+			"LLM.4": { checks: CHECKS_LLM_4 },
 			// Lab samodzielny (finał drabiny) — meta mówi „wszystkie z M-LLM".
 			"LLM.7": {
 				concepts: [
@@ -392,7 +596,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "json-parsowanie-walidacja" },
 					{ slug: "ewaluacja-halucynacje" },
 				],
-				checks: TOKEN_CHECK,
+				checks: [],
 			},
 		},
 		przeglad: {

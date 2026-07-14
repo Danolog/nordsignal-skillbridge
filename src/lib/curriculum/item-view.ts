@@ -16,6 +16,8 @@
 
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { questionIdsFromConfig } from "@/lib/curriculum/completion";
+import { parseChecks } from "@/lib/curriculum/lab-checks";
+import { atomCode, isLabTokenConfigured } from "@/lib/curriculum/lab-token";
 import { getModuleItems, isModuleUnlocked, type LadderItem } from "@/lib/curriculum/ladder";
 import { db } from "@/lib/db";
 import {
@@ -59,6 +61,17 @@ export interface CurriculumItemView {
 		estimatedTime: string | null;
 		/** Drabinka podpowiedzi (config_json.hints) — odsłaniana krok po kroku. */
 		hints: string[];
+		/**
+		 * 1E.6b (ADR-015) — kod atomu dla pozycji `lab`: student przepisuje go do
+		 * komórki-pieczątki w notebooku, a pieczątka podpisuje nim ładunek.
+		 * `null` dla pozycji, które nie są labem.
+		 *
+		 * To NIE jest sekret w sensie bezpieczeństwa (patrz `lab-token.ts`) —
+		 * jest per student+pozycja, więc token kolegi nie przejdzie.
+		 */
+		atomCode: string | null;
+		/** Czy lab ma realny kontrakt checków (a nie atrapę z 1E.2). */
+		hasChecks: boolean;
 	};
 	questions: CurriculumQuestion[];
 	/** Pytania już zaliczone poprawnie — pętla nie każe ich powtarzać. */
@@ -185,6 +198,13 @@ export async function getItemView(studentId: string, itemId: string): Promise<It
 				contentMd: item.contentMd,
 				estimatedTime: estimatedFromConfig(item.configJson),
 				hints: hintsFromConfig(item.configJson),
+				// 1E.6b: kod atomu tylko dla labów — student przepisuje go do pieczątki.
+				// Brak LAB_TOKEN_SECRET ⇒ null (fail-closed: lab niekompletowalny),
+				// ale strona nadal się renderuje — teoria i instrukcja są do przeczytania.
+				atomCode:
+					item.kind === "lab" && isLabTokenConfigured() ? atomCode(studentId, item.id) : null,
+				hasChecks:
+					item.kind === "lab" && isLabTokenConfigured() && parseChecks(item.configJson).length > 0,
 			},
 			questions,
 			answeredCorrectQuestionIds: answered.map((a) => a.questionItemId),

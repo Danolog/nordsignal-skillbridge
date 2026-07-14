@@ -449,8 +449,18 @@
 				"estimated": "20 min",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "value",
+						"note": "baseline (most_frequent) na zafiksowanym podziale: 4/6",
+						"var": "acc_base",
+						"expect": 0.6666666666666666
+					},
+					{
+						"id": "C2",
+						"kind": "value",
+						"note": "model na zafiksowanym podziale: 5/6",
+						"var": "acc_model",
+						"expect": 0.8333333333333334
 					}
 				]
 			}
@@ -740,8 +750,39 @@
 				"estimated": "30 min",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "value",
+						"note": "baseline",
+						"var": "acc_base",
+						"expect": 0.6666666666666666
+					},
+					{
+						"id": "C2",
+						"kind": "value",
+						"note": "model",
+						"var": "acc_model",
+						"expect": 0.8333333333333334
+					},
+					{
+						"id": "C3",
+						"kind": "value",
+						"note": "precyzja = 4/5",
+						"var": "prec",
+						"expect": 0.8
+					},
+					{
+						"id": "C4",
+						"kind": "value",
+						"note": "czułość = 4/4",
+						"var": "rec",
+						"expect": 1
+					},
+					{
+						"id": "C5",
+						"kind": "value",
+						"note": "macierz pomyłek [[1,1],[0,4]] spłaszczona do listy",
+						"var": "macierz",
+						"expect": [1, 1, 0, 4]
 					}
 				]
 			}
