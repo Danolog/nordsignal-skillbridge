@@ -20,6 +20,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/server";
 import { completeItem } from "@/lib/curriculum/completion";
 import { getModuleItems, isModuleUnlocked } from "@/lib/curriculum/ladder";
+import { isUuid } from "@/lib/curriculum/params";
 import { db } from "@/lib/db";
 import { curriculumModuleItems, projectSubmissions, students } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
@@ -33,6 +34,8 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 	if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 	const { id } = await ctx.params;
+	// 0.15/B3: zły format uuid dawał 22P02 z Postgresa → 500 zamiast 400.
+	if (!isUuid(id)) return NextResponse.json({ error: "Invalid item id" }, { status: 400 });
 	try {
 		const student = await db.query.students.findFirst({
 			where: eq(students.userId, session.user.id),

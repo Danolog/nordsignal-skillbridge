@@ -139,6 +139,37 @@ export async function getLadder(studentId: string, pathKey: string): Promise<Lad
 }
 
 /**
+ * 1E.6a — liczba pozycji ZALICZONYCH per moduł (completed + skipped_by_placement,
+ * bo skipped liczy się jak zaliczona dla sekwencji — D3/D8). Konsument: pasek
+ * postępu na drabinie. Odczyt owner-side, bez zapisów.
+ */
+export async function getCompletedItemCounts(
+	studentId: string,
+	moduleIds: string[],
+): Promise<Map<string, number>> {
+	const counts = new Map<string, number>();
+	if (moduleIds.length === 0) return counts;
+	const rows = await db
+		.select({
+			moduleId: curriculumModuleItems.moduleId,
+			status: curriculumItemProgress.status,
+		})
+		.from(curriculumItemProgress)
+		.innerJoin(curriculumModuleItems, eq(curriculumItemProgress.itemId, curriculumModuleItems.id))
+		.where(
+			and(
+				eq(curriculumItemProgress.studentId, studentId),
+				inArray(curriculumModuleItems.moduleId, moduleIds),
+				inArray(curriculumItemProgress.status, ["completed", "skipped_by_placement"]),
+			),
+		);
+	for (const row of rows) {
+		counts.set(row.moduleId, (counts.get(row.moduleId) ?? 0) + 1);
+	}
+	return counts;
+}
+
+/**
  * Czy moduł jest odblokowany dla studenta (completed też = odblokowany).
  * Twarde egzekwowanie prereq w API: false ⇒ trasa zwraca 403 na odczyt i zapis.
  */

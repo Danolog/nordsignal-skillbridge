@@ -47,6 +47,8 @@ interface DashboardHubProps {
 	marketNotifications: MarketNotificationsState;
 	/** 1.18: stan karty rytmu (null = flaga off — karta nie istnieje). */
 	rhythmCard: RhythmCardState | null;
+	/** 1E.6a: flaga curriculumPath — off = kafelek ścieżki nauki nie istnieje. */
+	curriculumEnabled: boolean;
 }
 
 const GOAL_COVERAGE = 80;
@@ -150,6 +152,7 @@ export function DashboardHub(props: DashboardHubProps) {
 		topGap,
 		marketNotifications,
 		rhythmCard,
+		curriculumEnabled,
 	} = props;
 
 	const firstName = user.name.split(" ")[0];
@@ -268,6 +271,32 @@ export function DashboardHub(props: DashboardHubProps) {
 				</div>
 			)}
 
+			{/* 1E.6a: wejście na drabinę curriculum (flaga off → kafelek nie istnieje) */}
+			{curriculumEnabled && (
+				<div className="db-section">
+					<div className="db-eyebrow">Ścieżka nauki</div>
+					<div className="db-section-note">
+						Drabina modułów od podstaw do projektu — kolejny otwiera się po zaliczeniu poprzedniego.
+					</div>
+					<div className="db-card db-nextstep">
+						<div className="db-nextstep-top">
+							<div>
+								<h3 className="db-nextstep-h3">Ucz się po kolei, bez skrótów</h3>
+								<p className="db-nextstep-why">
+									Teoria, ćwiczenia i laby ułożone w drabinę. Zaliczasz pozycję dopiero, gdy
+									odpowiesz poprawnie na wszystkie pytania — bez samodeklaracji.
+								</p>
+							</div>
+						</div>
+						<div className="db-nextstep-cta">
+							<Link href="/curriculum" className="db-anchor-dark">
+								Otwórz ścieżkę nauki →
+							</Link>
+						</div>
+					</div>
+				</div>
+			)}
+
 			{/* Kanban kompetencji */}
 			<div className="db-section">
 				<div className="db-eyebrow">Twoje kompetencje</div>
@@ -328,6 +357,11 @@ export function DashboardHub(props: DashboardHubProps) {
 
 			{/* Szybkie wejścia */}
 			<div className="db-quicklinks">
+				{curriculumEnabled && (
+					<Link href="/curriculum" className="db-quicklink">
+						Ścieżka nauki <ArrowRight size={15} />
+					</Link>
+				)}
 				<Link href="/gap-analysis" className="db-quicklink">
 					Analiza luk <ArrowRight size={15} />
 				</Link>

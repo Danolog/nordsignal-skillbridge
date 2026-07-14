@@ -127,6 +127,8 @@ export default async function DashboardPage() {
 			topGap={topGap}
 			marketNotifications={marketNotifications}
 			rhythmCard={rhythmCard}
+			// 1E.6a: kafelek ścieżki nauki tylko przy włączonej fladze (deploy ≠ release).
+			curriculumEnabled={isFeatureEnabled("curriculumPath")}
 		/>
 	);
 }

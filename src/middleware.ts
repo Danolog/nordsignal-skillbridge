@@ -52,5 +52,8 @@ export const config = {
 		"/projects/:path*",
 		"/passport",
 		"/profil/:path*",
+		// 1E.6a: drabina curriculum — strona i tak sprawdza sesję, ale przekierowanie
+		// na /login dzieje się przed renderem (spójnie z resztą tras studenta).
+		"/curriculum/:path*",
 	],
 };

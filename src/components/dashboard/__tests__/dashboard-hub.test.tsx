@@ -60,6 +60,8 @@ const defaultProps = {
 	},
 	// 1.18: flaga off → karta rytmu nie istnieje (osobne testy w rhythm.test.tsx).
 	rhythmCard: null,
+	// 1E.6a: flaga off → kafelek ścieżki nauki nie istnieje.
+	curriculumEnabled: false,
 };
 
 describe("DashboardHub", () => {
@@ -104,5 +106,19 @@ describe("DashboardHub", () => {
 	it("obsługuje pustą mapę kompetencji bez błędu", () => {
 		render(<DashboardHub {...defaultProps} competencies={[]} gaps={[]} topGap={null} />);
 		expect(screen.getByText(/mapa kompetencji jest jeszcze pusta/i)).toBeInTheDocument();
+	});
+
+	// 1E.6a: „deploy ≠ release" — kafelek ścieżki nauki istnieje TYLKO przy fladze on.
+	it("nie pokazuje kafelka ścieżki nauki przy fladze off", () => {
+		render(<DashboardHub {...defaultProps} />);
+		const hrefs = screen.getAllByRole("link").map((l) => l.getAttribute("href"));
+		expect(hrefs).not.toContain("/curriculum");
+	});
+
+	it("pokazuje kafelek ścieżki nauki przy fladze on", () => {
+		render(<DashboardHub {...defaultProps} curriculumEnabled />);
+		const hrefs = screen.getAllByRole("link").map((l) => l.getAttribute("href"));
+		expect(hrefs).toContain("/curriculum");
+		expect(screen.getByText("Ucz się po kolei, bez skrótów")).toBeInTheDocument();
 	});
 });

@@ -23,6 +23,9 @@ OBA: ten plik i mapę `EXPECTED_ROUTES` w teście (test pilnuje, że się nie ro
 | `/onboarding` | `flow` | CTA landingu „Stwórz swój Paszport" (`src/app/page.tsx`) |
 | `/pomocnik-kariery` | `flow` | **Krok 0 onboardingu** (decyzja Darka 2026-06-03, plan §1 pkt 2; strumień E / #5). Pomocnik wpięty jako Krok 0 wizarda (`onboarding-wizard.tsx` renderuje `CareerHelperFlow` w trybie embedded). Trasa `/pomocnik-kariery` zostaje jako osobne wejście standalone dla już-onboardowanego studenta. Brak kafelka w sidebarze (decyzja IA: nie w Becie — spec §6). |
 | `/projects/[id]` | `child` | detal z `/projects` |
+| `/curriculum` | `flow` | **1E.6a** — kafelek „Ścieżka nauki" na pulpicie (`dashboard-hub.tsx`), widoczny WYŁĄCZNIE przy fladze `FLAG_CURRICULUM_PATH` (deploy ≠ release). Flaga off → trasa zwraca 404. Brak pozycji w sidebarze, dopóki pilotaż DS jest za flagą. |
+| `/curriculum/[moduleId]` | `child` | widok modułu z drabiny `/curriculum` |
+| `/curriculum/[moduleId]/[itemId]` | `child` | widok pozycji z widoku modułu |
 
 ## Reguła osiągalności (egzekwowana testem)
 

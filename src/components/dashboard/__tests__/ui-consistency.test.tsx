@@ -69,6 +69,11 @@ const EXPECTED_ROUTES: Record<string, "nav" | "flow" | "child"> = {
 	"/onboarding": "flow",
 	"/pomocnik-kariery": "flow",
 	"/projects/[id]": "child",
+	// 1E.6a: drabina curriculum za flagą FLAG_CURRICULUM_PATH — wejście z kafelka
+	// na pulpicie (nie sidebar, dopóki pilotaż DS jest za flagą).
+	"/curriculum": "flow",
+	"/curriculum/[moduleId]": "child",
+	"/curriculum/[moduleId]/[itemId]": "child",
 };
 
 /**
