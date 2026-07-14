@@ -11,7 +11,90 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-14 — PLAN NAPRAW DOMKNIĘTY: B2/B3/B4 NA PRODZIE (INGEST WYKONANY)
+## STAN NA DZIŚ — 2026-07-14 (wieczór) — 1E.6 DOMKNIĘTE: DRABINA RUSZYŁA
+
+### Co się wydarzyło (4 PR-y, wszystkie na `main`)
+
+- **#178 · roadmapa v3** — `.agents/plans/11-roadmap-fazy-0-3.md` deklarował się „źródłem
+  prawdy", ale był zamrożony od 2026-07-03. **Etykieta `1E.6` była PRZECIĄŻONA**: roadmapa
+  i kod rozumiały ją jako *UI drabiny*, ADR-014 (D3/D10/pkt 11) i handoffy jako *checki labów*
+  — **oba zakresy były otwarte**. Rozbite na **1E.6a** (UI) i **1E.6b** (checki + token).
+  Dopisane 1E.R/1E.R2, statusy 1E.0–1E.2, korekta 0.13 (PR #121 jest zmergowany).
+- **#179 · dług DoD** — kontrakt-test treści pokrywał **4 z 9 modułów**; 5 modułów M-* poszło
+  na prod (#170) **bez testu**. Rozszerzone na 9 (66 pozycji, 129 pytań) + Biome 3 → **0**.
+- **#180 · 1E.6a — UI drabiny.** Treść 1E.2 leżała na prodzie i **nie było jak jej zobaczyć**
+  (zero `.tsx` z curriculum). Nowa trasa `GET /api/curriculum/items/[id]` (API nie miało czym
+  nakarmić UI). Guardy UUID na WSZYSTKICH trasach curriculum (wzorzec 0.15/B3 — zły id dawał
+  500 zamiast 400).
+- **#181 · 1E.6b — checki labów + ADR-015.** **Największy bloker fazy 1E domknięty.**
+
+### 1E.6b — jak to działa (ADR-015: `docs/decisions/015-kontrakt-checkow-labow.md`)
+
+**Pieczątka NIE mówi „zaliczone"** — przenosi ŁADUNEK z wartościami wyliczonymi w sesji Colab,
+a **serwer sam weryfikuje każdy check**. Trzy klasy o uczciwie różnej sile: `value` (mocna),
+`relation` (średnia), `predicate` (słaba). **Żadna nie dowodzi, że student napisał kod sam** —
+dlatego lab BRAMKUJE POSTĘP, a kredencjał nadal wymaga sandboxa + vivy + człowieka.
+
+⚠ **HMAC NIE JEST TU KONTROLĄ BEZPIECZEŃSTWA** (tak zapisane w kodzie i ADR): student zna swój
+kod atomu, więc policzy podpis ręcznie. To **suma kontrolna** — łapie literówkę i blokuje token
+kolegi (kod jest per student+pozycja).
+
+⚠ **KOREKTA ADR-014 D3:** zakładał „reuse sandboxa 1.9". Audyt **19 labów** (nie 18 — F3.7 jest
+nadpisany `project→lab` w manifeście packera): **ZERO wymaga uruchomienia kodu studenta u nas.**
+Sandbox wypada z zakresu.
+
+### STAN PROD (2026-07-14)
+- Kod 1E.6a+1E.6b **na prodzie**; `LAB_TOKEN_SECRET` ustawiony (Production + Preview).
+- Ingest treści z REALNYMI checkami wykonany. Backup: **`prod-backup-pre-1e6b-20260714`**
+  (`br-orange-lake-al3iweal`). Idempotentny (2. bieg: 0 zmian). Migracja NIEPOTRZEBNA
+  (`config_json` = jsonb, zmiana czysto treściowa; dziennik nadal 38).
+- Weryfikacja: **0 atrap**, **13 labów z kontraktem**, **6 bez checków** (dług treści, niżej).
+  9 modułów / 70 pozycji / 273 pytania (= 144 diagnostyczne + 129 curriculum — liczba z handoffa
+  POTWIERDZONA, nie jest zawyżona).
+- 🔴 **`FLAG_CURRICULUM_PATH` WYŁĄCZONA NA PRODZIE (0) — świadomie, przeze mnie.**
+  Powód: po 1E.6a/6b realni studenci (jest ich 27) **zobaczyliby kafelek „Ścieżka nauki",
+  weszli w L0.1 i przeczytali „Otwórz notebook L0.1 linkiem z tej pozycji" — a takiego linku
+  NIE MA.** Notebooki to Krok 4. To był ślepy zaułek. **Flagę zapalić DOPIERO po notebookach L0.**
+  Smoke po redeployu: `/` 200, `/login` 200, `/api/curriculum` **404** (flaga off).
+  ⚠ Zmiana env na Vercelu NIE działa wstecz — wymagany był redeploy (zrobiony).
+
+### DŁUGI OTWARTE (jawne, nie zamiecione)
+
+1. 🔴 **6 labów bez checków — dług TREŚCI, nie kodu.** `PD.4`, `PD.8`, `EDA.4`, `SQL.4`,
+   `SQL.7`, `LLM.7`. Ich treść jest **niesprawdzalna**:
+   - **SQL.4/SQL.7:** `duckdb.sql()` **bez przypisania wyniku do zmiennej** — pieczątka nie ma
+     czego porównać, choć treść obiecuje porównanie;
+   - **EDA.4:** `groupby().mean()` bez kotwicy w zmiennej;
+   - **PD.4:** sprzeczność — „`maz` ma 2 kolumny **i** jedno województwo", ale po wyborze kolumn
+     `wojewodztwo` w `maz` **już nie istnieje**;
+   - **PD.8:** dane źródłowe tylko w notebooku;
+   - **LLM.7:** `zgodnosc` — odsetek czy licznik?
+   Zostawione BEZ checków → uczciwe 501. **Świadomie NIE wpuściłem na prod zgadniętych nazw
+   zmiennych.** Poprawka treści → QG → repack → re-ingest.
+2. 🟠 **`hintDepth` NIE JEST POMIAREM** (przegląd bezpieczeństwa 1E.6a). Cała drabinka hintów
+   (w tym hint 3 = „pełne rozwiązanie") jedzie w propsach do klienta → siedzi w HTML; `slice`
+   jest filtrem wyłącznie prezentacyjnym. Nieszkodliwe dla R13, ale **`hintDepth` to cecha
+   wejściowa FSRS** → **NAPRAWIĆ PRZED 1E.4** (serwować hint N na żądanie z trasy zapisującej
+   głębokość serwerowo).
+
+### NASTĘPNE (kolejność)
+1. **Notebooki Colab** (Krok 4) — kontrakt tokenu JEST, więc nic ich już nie blokuje.
+   **Bez nich nie zapalamy flagi.** Warstwa pieczątki = JEDEN blok identyczny we wszystkich
+   (wzorzec w `pieczatka.py` z weryfikacji — Python i TS zgodne co do kanonicznej serializacji).
+   ⚠ Screenshoty UI i seanse 8 wideo PL = **akcje Darka** (konto Google; agent wideo nie ogląda).
+2. **Dług treści 6 labów** (wyżej) → QG → re-ingest.
+3. **1E.3** (egzaminy + mastery gate) — packer nie parsuje `kind='exam'` (`ITEM_KINDS`).
+4. **1E.4** (FSRS) — najpierw napraw `hintDepth`.
+5. **1E.5** (kuracja + mostki), **1E.7** (placement — obie strony już istnieją).
+6. Tor równoległy (bez zmian): sprzątanie po flipie paszportu, 1E.R2, żywy ekspert QG-6,
+   SageMaker, 0.7-sekret, 0.13.
+
+### Baseline `main` po tej sesji
+build OK · tsc 0 · **Biome 0** (było 3) · unit **1261/1261** (było 1216) · integration **174/174**.
+**Chromium Playwrighta DZIAŁA na macOS** — brakowało tylko binarki (`playwright install chromium`);
+notka „nie wspiera WSL" była myląca. E2E przeglądarkowy jest odtąd możliwy.
+
+## STAN POPRZEDNI — 2026-07-14 — PLAN NAPRAW DOMKNIĘTY: B2/B3/B4 NA PRODZIE (INGEST WYKONANY)
 
 ### INGEST PROD WYKONANY (2026-07-14, polecenie Darka — czerwona linia ADR-010)
 - Backup: gałąź Neona **`prod-backup-pre-ingest-partia2-20260714`**
