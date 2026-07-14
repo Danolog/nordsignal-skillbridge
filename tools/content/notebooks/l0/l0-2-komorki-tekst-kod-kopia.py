@@ -18,9 +18,9 @@
 # %% [markdown]
 # ## To jest komórka tekstowa
 #
-# Ta komórka (i wszystkie z szarym tekstem na białym tle) zawiera tylko
-# objaśnienia. Nie ma przycisku ▶ i **nie wykonuje się** — jest do czytania.
-# Komórka kodu to szare pole z kodem — tylko ona „coś robi".
+# Ta komórka — jak każda komórka bez przycisku ▶ — zawiera tylko objaśnienia
+# i **nie wykonuje się**; jest do czytania. Komórka kodu to pole z kodem
+# i przyciskiem ▶ — tylko ona „coś robi".
 #
 # Notebooki na tej ścieżce przeplatają jedno z drugim: komórka tekstowa mówi,
 # CO zaraz zrobimy i po co, komórka kodu — robi to. Czytaj po kolei.

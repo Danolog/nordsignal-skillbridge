@@ -208,8 +208,8 @@ describe("symulacja sesji studenta: komórki notebooka → token → checki z pr
 		{
 			slug: "l0-4",
 			replacements: [
-				["przejazdy = ___", "przejazdy = 3"],
-				["print(bilet * ___)", "print(bilet * przejazdy)"],
+				["przejazdy = _luka_", "przejazdy = 3"],
+				["print(bilet * _luka_)", "print(bilet * przejazdy)"],
 				["# Twój skrypt — pisz tutaj:", OWN_SCRIPT],
 			],
 			// strony, wieczory, wynik — 3 własne zmienne liczbowe.
@@ -267,8 +267,8 @@ describe("symulacja sesji studenta: komórki notebooka → token → checki z pr
 			name: "l0-4: brak własnych zmiennych — pieczątka odmawia",
 			slug: "l0-4",
 			replacements: [
-				["przejazdy = ___", "przejazdy = 3"],
-				["print(bilet * ___)", "print(bilet * przejazdy)"],
+				["przejazdy = _luka_", "przejazdy = 3"],
+				["print(bilet * _luka_)", "print(bilet * przejazdy)"],
 			],
 			message: /za mało własnych/,
 		},

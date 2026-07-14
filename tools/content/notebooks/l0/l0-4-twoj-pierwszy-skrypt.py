@@ -19,14 +19,15 @@ print(koszt)            # liczba spod nazwy koszt — bez cudzysłowu!
 # %% [markdown]
 # ## Rozgrzewka
 #
-# W komórce poniżej są **dwie luki** (`___`). Uzupełnij je i uruchom komórkę.
-# Wskazówka do drugiej luki: użyj nazwy, pod którą zapamiętano liczbę
-# przejazdów.
+# W komórce poniżej są **dwie luki** (`_luka_`). Uzupełnij je i uruchom
+# komórkę. Wskazówka do drugiej luki: użyj nazwy, pod którą zapamiętano
+# liczbę przejazdów. (Uruchomienie bez uzupełnienia da `NameError: name
+# '_luka_' is not defined` — czytasz go dokładnie tak, jak w L0.3.)
 
 # %%
-bilet = 4          # cena biletu w zł
-przejazdy = ___    # ile razy jeździsz w tygodniu — wpisz liczbę
-print(bilet * ___) # policz koszt tygodnia — jakiej nazwy tu użyć?
+bilet = 4             # cena biletu w zł
+przejazdy = _luka_    # ile razy jeździsz w tygodniu — wpisz liczbę
+print(bilet * _luka_) # policz koszt tygodnia — jakiej nazwy tu użyć?
 
 # %% [markdown]
 # ## Twój skrypt (to zalicza atom i cały moduł L0)

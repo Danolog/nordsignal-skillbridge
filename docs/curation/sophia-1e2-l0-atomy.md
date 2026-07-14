@@ -567,9 +567,9 @@ Zanim napiszesz własny skrypt, rozgrzewka na uzupełnianie (w notebooku L0.4,
 komórka „Rozgrzewka" — uzupełnij dwie luki i uruchom):
 
 ```python
-bilet = 4          # cena biletu w zł
-przejazdy = ___    # ile razy jeździsz w tygodniu — wpisz liczbę
-print(bilet * ___) # policz koszt tygodnia — jakiej nazwy tu użyć?
+bilet = 4             # cena biletu w zł
+przejazdy = _luka_    # ile razy jeździsz w tygodniu — wpisz liczbę
+print(bilet * _luka_) # policz koszt tygodnia — jakiej nazwy tu użyć?
 ```
 
 ### Checklist wykonania (to zalicza atom i moduł L0)
@@ -587,9 +587,9 @@ print(bilet * ___) # policz koszt tygodnia — jakiej nazwy tu użyć?
 
 **Zaliczenie:** poprawny token — komórka-pieczątka sprawdza deterministycznie,
 że w pamięci sesji istnieją ≥2 zmienne liczbowe **o nazwach spoza przykładów
-notebooka** (wykluczone: `cena`, `dni`, `koszt`, `bilet`, `przejazdy`) oraz
-wynik działania na nich — czyli że własny skrypt z kroku 4 faktycznie SIĘ
-WYKONAŁ w tej sesji — i dopiero wtedy liczy token z kodu atomu. To jest
+notebooka** (wykluczone: `cena`, `dni`, `koszt`, `bilet`, `przejazdy`) — czyli
+że własny skrypt z kroku 4 faktycznie SIĘ WYKONAŁ w tej sesji — i dopiero
+wtedy liczy token z kodu atomu. To jest
 „pierwszy uruchomiony skrypt jako dowód" z ADR-014. (Check pozostaje obchodzilny
 świadomym oszustwem — wystarczający na pilot; szczegóły w notatkach niżej.)
 
@@ -795,3 +795,26 @@ stanu sesji w P3 L0.4 — zmienne przemianowane na nieużywane + dopisek „świ
 sesja"; check L0.4 zaliczający na zmiennych z przykładu — dodane wykluczenie
 nazw), 5 WAŻNYCH i 6 drobnych — wszystkie wcielone lub jawnie zadeklarowane
 wyżej. Werdykt przeglądu: „gotowe po poprawkach", poprawki naniesione.
+
+## Przebieg QG notebooków L0 (2026-07-14, Krok 4)
+
+Notebooki zbudowane wg kontraktu ADR-015 (`tools/content/notebooks/l0/`,
+warstwa pieczątki = jeden wspólny blok `pieczatka.py`) przeszły adwersaryjny
+przegląd agenta (Fable 5): **GO Z NOTAMI** — 0 KRYT, 2 WAŻN, 3 INFO.
+Erraty wcielone w tej samej sesji (w treści atomów tylko poprawki — notatki
+QG żyją tu, bo sekcje atomów idą VERBATIM do widoku studenta):
+1. **WAŻN — placeholder rozgrzewki L0.4:** `___` → `_luka_`. W IPythonie/Colabie
+   `___` ISTNIEJE od startu sesji (zmienna historii), więc nieuzupełniona luka
+   wykonywała się PO CICHU (`4 * ''` = pusta linia) zamiast dać uczący
+   `NameError`; `_luka_` nie istnieje i daje dokładnie błąd, który L0.3 uczy czytać.
+2. **WAŻN — diagnoza literówki kodu atomu:** komunikat `bad_signature` w
+   `lab-stamp.tsx` wskazuje teraz także błędnie przepisany kod atomu (pieczątka
+   wypisze token dla dowolnego niepustego kodu — HMAC łapie to dopiero na serwerze).
+3. **INFO — zdanie „Zaliczenie" L0.4:** usunięte „oraz wynik działania na nich" —
+   check liczy WYŁĄCZNIE zmienne (zredukowany check z notatki (c) niżej,
+   ADR-015 §5 pkt 3); pozostałe INFO: zapowiedź pola `input()` w L0.1,
+   opis komórki tekstowej bez koloru tła (ciemny motyw Colaba).
+Parytet pieczątki Python↔TS oraz
+zgodność ładunków z checkami na prodzie przybite testem
+`tests/unit/ds/notebooks-l0.contract.test.ts`; przejście całego L0
+tokenami z opublikowanych notebooków zweryfikowane na bazie testowej.

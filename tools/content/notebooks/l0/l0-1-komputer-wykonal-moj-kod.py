@@ -4,7 +4,9 @@
 # **SkillBridge · ścieżka Data Science · moduł L0 „Start"**
 #
 # Za chwilę uruchomisz prawdziwy kod — w przeglądarce, bez instalowania
-# czegokolwiek. Wystarczą dwa kliknięcia:
+# czegokolwiek. Upewnij się tylko, że jesteś zalogowany(-a) na konto Google
+# (inaczej Colab pokaże stronę logowania zamiast uruchomić kod). Dalej
+# wystarczą dwa kliknięcia:
 #
 # 1. Najedź kursorem na komórkę z kodem poniżej i kliknij przycisk **▶**
 #    po jej lewej stronie (albo kliknij w komórkę i wciśnij **Ctrl+Enter**).
@@ -30,8 +32,10 @@ print("Witaj w SkillBridge!")   # print(...) = „wypisz na ekran"
 # ## Pieczątka — zalicz ten lab w SkillBridge
 #
 # 1. Uruchom komórkę poniżej (tak samo: ▶).
-# 2. Gdy poprosi o **kod atomu** — przepisz kod widoczny w SkillBridge przy
-#    tej pozycji i wciśnij Enter.
+# 2. Pod komórką pojawi się **pole tekstowe** — a `[*]` będzie się kręcić,
+#    dopóki nie odpowiesz; tym razem to normalne, komórka czeka na Ciebie.
+#    Przepisz w pole **kod atomu** widoczny w SkillBridge przy tej pozycji
+#    i wciśnij Enter.
 # 3. Skopiuj wypisany **token** i wklej go w SkillBridge w polu „Pieczątka".
 
 # %% [pieczatka]
