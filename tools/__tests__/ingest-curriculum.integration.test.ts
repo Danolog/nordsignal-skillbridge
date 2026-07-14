@@ -91,7 +91,18 @@ function contentsV1(): AtomModuleContent[] {
 					contentMd: "Checklist labu.",
 					concepts: [{ slug: CONCEPT, name: "Koncept ingest 1E.2" }],
 					hints: ["h1", "h2", "h3"],
-					config: { checks: [{ type: "token", note: "definicja 1E.6" }] },
+					// 1E.6b (ADR-015): realny kontrakt checku, nie atrapa `{type:"token"}`
+					// — walidator ją odrzuca (`validateChecks` w content-curriculum-atoms).
+					config: {
+						checks: [
+							{
+								id: "C1",
+								kind: "predicate",
+								note: "pieczątka wykonała się w sesji",
+								rule: { op: "is_true", var: "_wykonano" },
+							},
+						],
+					},
 				},
 				{
 					slug: "a-przeglad",

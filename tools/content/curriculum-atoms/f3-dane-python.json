@@ -411,8 +411,24 @@
 				"estimated": "20 min",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "relation",
+						"note": "`suma_duzych` = suma pozycji `duze` (pieczątka przelicza własną maską)",
+						"rule": {
+							"op": "eq",
+							"left": "suma_duzych",
+							"right": "ref_suma_duzych"
+						}
+					},
+					{
+						"id": "C2",
+						"kind": "relation",
+						"note": "`male_licznik` zgadza się z niezależnym przeliczeniem pieczątki",
+						"rule": {
+							"op": "eq",
+							"left": "male_licznik",
+							"right": "ref_male_licznik"
+						}
 					}
 				]
 			}
@@ -691,19 +707,34 @@
 				"estimated": "45–60 min",
 				"checks": [
 					{
-						"type": "milestone",
 						"id": "K1",
-						"note": "walidacja struktury danych (lista słowników)"
+						"kind": "predicate",
+						"note": "K1 — struktura danych: `wydatki` ma co najmniej 8 rekordów",
+						"rule": {
+							"op": "len_gte",
+							"var": "wydatki",
+							"n": 8
+						}
 					},
 					{
-						"type": "milestone",
 						"id": "K2",
-						"note": "pieczątka wywołuje trzy funkcje studenta na próbnej tabeli (tolerancja abs(x-y)<0.01)"
+						"kind": "relation",
+						"note": "K2 — SONDA WIELOFUNKCYJNA: pieczątka woła trzy funkcje studenta na WŁASNEJ próbnej tabeli i porównuje z własnym wynikiem (tolerancja abs(x-y) < 0.01)",
+						"rule": {
+							"op": "eq",
+							"left": "sonda_suma",
+							"right": "ref_sonda_suma"
+						}
 					},
 					{
-						"type": "milestone",
 						"id": "K3",
-						"note": "spójność sum: całość = suma po kategoriach wyprowadzonych z danych studenta"
+						"kind": "relation",
+						"note": "K3 — spójność sum: całość = suma po kategoriach WYPROWADZONYCH z danych studenta. LIMIT: literówek kategorii w `print`-ach pieczątka NIE WYKRYJE (jawny limit Sophii).",
+						"rule": {
+							"op": "eq",
+							"left": "suma_wszystkich",
+							"right": "suma_kategorii_lacznie"
+						}
 					}
 				]
 			}

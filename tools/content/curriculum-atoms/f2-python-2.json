@@ -415,8 +415,23 @@
 				"estimated": "15–20 min",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "predicate",
+						"note": "`ceny` to lista co najmniej 5 pozycji (dowód dopisania piątej)",
+						"rule": {
+							"op": "len_gte",
+							"var": "ceny",
+							"n": 5
+						}
+					},
+					{
+						"id": "C2",
+						"kind": "predicate",
+						"note": "wszystkie pozycje `ceny` są liczbami. LIMIT: pieczątka NIE WIDZI wypisania paragonu — samej pętli nie weryfikuje (jawny limit Sophii).",
+						"rule": {
+							"op": "all_numbers",
+							"var": "ceny"
+						}
 					}
 				]
 			}
@@ -688,8 +703,32 @@
 				"estimated": "25 min",
 				"checks": [
 					{
-						"type": "token",
-						"note": "pieczątka WYWOŁUJE funkcję studenta na próbnej liście i porównuje wynik (rozszerzenie mechanizmu — notatki F2; definicja 1E.6)"
+						"id": "C1",
+						"kind": "predicate",
+						"note": "`wydatki` to lista co najmniej 5 liczb",
+						"rule": {
+							"op": "len_gte",
+							"var": "wydatki",
+							"n": 5
+						}
+					},
+					{
+						"id": "C2",
+						"kind": "value",
+						"note": "SONDA: pieczątka WYWOŁUJE funkcję studenta `suma_wydatkow` na WŁASNEJ próbce [1,2,3] → musi zwrócić 6. Łapie funkcję czytającą dane globalne zamiast parametru — najmocniejszy check tego modułu.",
+						"var": "sonda_suma_wydatkow",
+						"expect": 6
+					},
+					{
+						"id": "C3",
+						"kind": "predicate",
+						"fragile": true,
+						"note": "obecność `input(` oraz `if`/`else` w kodzie — KRUCHE (introspekcja tekstu), nie blokuje zaliczenia",
+						"rule": {
+							"op": "contains_all",
+							"var": "_zrodlo",
+							"needles": ["input(", "if", "else"]
+						}
 					}
 				]
 			}

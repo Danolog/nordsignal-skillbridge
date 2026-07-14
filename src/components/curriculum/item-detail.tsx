@@ -16,6 +16,7 @@
 import { ArrowLeft, ExternalLink, FlaskConical } from "lucide-react";
 import Link from "next/link";
 import { ItemRunner } from "@/components/curriculum/item-runner";
+import { LabStamp } from "@/components/curriculum/lab-stamp";
 import { ITEM_STATUS_LABEL, itemKindLabel, statusBadgeClass } from "@/components/curriculum/labels";
 import { TheoryMarkdown } from "@/components/skillbridge/b3/TheoryMarkdown";
 import type { CurriculumItemView } from "@/lib/curriculum/item-view";
@@ -51,17 +52,22 @@ export function ItemDetail({ view }: { view: CurriculumItemView }) {
 				<h1 className="mt-2 text-2xl font-semibold text-foreground">{item.title}</h1>
 			</header>
 
-			{isLab && (
+			{/*
+			 * 1E.6b: lab z realnym kontraktem checków dostaje pieczątkę (kod atomu
+			 * + pole tokenu). Lab BEZ checków — albo przy braku LAB_TOKEN_SECRET —
+			 * nadal jest niezaliczalny i mówimy to WPROST, zamiast pokazywać pole,
+			 * które i tak nic nie zapisze.
+			 */}
+			{isLab && !item.hasChecks && (
 				<div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
 					<h2 className="flex items-center gap-2 text-sm font-semibold text-amber-900">
 						<FlaskConical aria-hidden className="size-4" />
 						Ta pozycja jest zablokowana — jeszcze nie da się jej zaliczyć
 					</h2>
 					<p className="mt-1 text-sm text-amber-900">
-						Lab zalicza się automatycznym sprawdzeniem wykonanej pracy (bez samodeklaracji). Ten
-						mechanizm powstaje w zadaniu 1E.6b — do tego czasu możesz przeczytać instrukcję i
-						wykonać ją u siebie, ale drabina nie zapisze zaliczenia i kolejne pozycje pozostają
-						zablokowane.
+						Lab zalicza się automatycznym sprawdzeniem wykonanej pracy (bez samodeklaracji). Dla tej
+						pozycji sprawdzenie nie jest jeszcze skonfigurowane — możesz przeczytać instrukcję i
+						wykonać ją u siebie, ale drabina nie zapisze zaliczenia.
 					</p>
 				</div>
 			)}
@@ -70,6 +76,14 @@ export function ItemDetail({ view }: { view: CurriculumItemView }) {
 				<article className="rounded-xl border border-border bg-card p-5">
 					<TheoryMarkdown source={item.contentMd} />
 				</article>
+			)}
+
+			{isLab && item.hasChecks && item.atomCode && (
+				<LabStamp
+					itemId={item.id}
+					atomCode={item.atomCode}
+					completed={item.status === "completed" || item.status === "skipped_by_placement"}
+				/>
 			)}
 
 			{isLab && item.hints.length > 0 && (

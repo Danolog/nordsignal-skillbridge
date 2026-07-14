@@ -95,11 +95,45 @@ describe("1E.2 · kontrakt treści atomów — cały zestaw (9 modułów)", () =
 		}
 	});
 
-	it("każdy lab ma co najmniej jeden check automatyczny (wsad dla 1E.6b)", () => {
+	// ── 1E.6b (ADR-015): kontrakt checków labów ────────────────────────────────
+	// Sześć labów jest ŚWIADOMIE bez checków, bo ich TREŚĆ jest niesprawdzalna
+	// (SQL.4/SQL.7: `duckdb.sql()` bez przypisania wyniku; EDA.4: `groupby().mean()`
+	// bez kotwicy w zmiennej; PD.4: sprzeczność „maz ma 2 kolumny I jedno
+	// województwo" — po wyborze kolumn `wojewodztwo` już tam nie ma; PD.8: dane
+	// tylko w notebooku; LLM.7: `zgodnosc` = odsetek czy licznik?).
+	// Lepsze uczciwe 501 niż zaliczanie na podstawie zgadniętych nazw zmiennych.
+	// Ta lista jest DŁUGIEM — kurczy się po poprawkach treści przez QG.
+	const LABY_BEZ_CHECKOW = ["pd-4", "pd-8", "eda-4", "sql-4", "sql-7", "llm-7"];
+
+	it("13 labów ma realny kontrakt checków; 6 (jawny dług treści) świadomie nie ma", () => {
 		const labs = allItems.filter((i) => i.kind === "lab");
-		expect(labs.length).toBeGreaterThan(0);
-		for (const lab of labs) {
-			expect(checksOf(lab).length, lab.slug).toBeGreaterThan(0);
+		expect(labs).toHaveLength(19);
+
+		const bez = labs.filter((l) => checksOf(l).length === 0).map((l) => l.slug);
+		expect(bez.sort()).toEqual([...LABY_BEZ_CHECKOW].sort());
+		expect(labs.filter((l) => checksOf(l).length > 0)).toHaveLength(13);
+	});
+
+	it("ZERO atrap z 1E.2: żaden check nie ma {type} zamiast {kind}", () => {
+		for (const item of allItems) {
+			for (const c of checksOf(item) as Record<string, unknown>[]) {
+				expect(c.kind, `${item.slug}: atrapa {type:"${c.type}"} zamiast kontraktu`).toBeDefined();
+				expect(["value", "relation", "predicate"]).toContain(c.kind);
+				expect(c.id, item.slug).toBeTruthy();
+				expect(c.note, `${item.slug}/${c.id}: limity checku muszą być zapisane`).toBeTruthy();
+			}
+		}
+	});
+
+	it("BEZPIECZNIK: żaden lab nie zalicza się na samych checkach `fragile`", () => {
+		for (const lab of allItems.filter((i) => i.kind === "lab")) {
+			const checks = checksOf(lab) as { fragile?: boolean }[];
+			if (checks.length === 0) continue;
+			const solidne = checks.filter((c) => c.fragile !== true);
+			expect(
+				solidne.length,
+				`${lab.slug}: same checki fragile = zerowa wartość dowodowa`,
+			).toBeGreaterThan(0);
 		}
 	});
 

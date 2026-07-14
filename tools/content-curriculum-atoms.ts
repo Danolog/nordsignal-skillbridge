@@ -33,6 +33,105 @@ const QUESTION_TYPES: ReadonlySet<string> = new Set([
 ]);
 const CHOICE_TYPES: ReadonlySet<string> = new Set(["single_choice", "multi_choice"]);
 const ITEM_KINDS: ReadonlySet<string> = new Set(["theory", "exercise", "lab"]);
+
+// 1E.6b (ADR-015) — kontrakt checków labów. Musi być zgodny z silnikiem
+// `src/lib/curriculum/lab-checks.ts` (serwer ewaluuje ładunek pieczątki).
+const CHECK_KINDS: ReadonlySet<string> = new Set(["value", "relation", "predicate"]);
+const RELATION_OPS: ReadonlySet<string> = new Set(["eq", "gte", "lte"]);
+const PREDICATE_OPS: ReadonlySet<string> = new Set([
+	"neq_const",
+	"len_gte",
+	"len_eq",
+	"all_numbers",
+	"count_gte",
+	"is_true",
+	"nonempty_string",
+	"contains_all",
+]);
+
+/**
+ * Walidacja `config.checks`. Reguły:
+ *  - albo BRAK checków (lab świadomie niekompletowalny — uczciwe 501 na trasie),
+ *    albo komplet zgodny z kontraktem; ATRAPA (`{type:"token"}`) jest BŁĘDEM;
+ *  - `id` unikalne w obrębie pozycji;
+ *  - pozycja MUSI mieć co najmniej jeden check NIEkruchy — inaczej zaliczałaby się
+ *    na samej introspekcji tekstu (check o zerowej wartości dowodowej);
+ *  - checki tylko przy `kind: "lab"`.
+ */
+function validateChecks(item: AtomItemInput, where: string): string[] {
+	const problems: string[] = [];
+	const raw = (item.config as { checks?: unknown } | undefined)?.checks;
+	if (raw === undefined) return problems;
+	if (!Array.isArray(raw)) return [`${where}: config.checks musi być tablicą`];
+	if (raw.length === 0) return problems; // świadomie bez checków
+
+	if (item.kind !== "lab") {
+		problems.push(`${where}: checki dozwolone tylko przy kind="lab"`);
+	}
+
+	const ids = new Set<string>();
+	let solid = 0;
+	let parsed = 0;
+
+	for (const [i, c] of raw.entries()) {
+		const at = `${where}: check[${i}]`;
+		if (typeof c !== "object" || c === null) {
+			problems.push(`${at}: nie jest obiektem`);
+			continue;
+		}
+		const check = c as Record<string, unknown>;
+
+		if ("type" in check && !("kind" in check)) {
+			problems.push(`${at}: ATRAPA z 1E.2 ({type:"${check.type}"}) — kontrakt wymaga "kind"`);
+			continue;
+		}
+		if (typeof check.id !== "string" || check.id.length === 0) {
+			problems.push(`${at}: brak id`);
+		} else if (ids.has(check.id)) {
+			problems.push(`${at}: zduplikowane id "${check.id}"`);
+		} else {
+			ids.add(check.id);
+		}
+		if (typeof check.note !== "string" || check.note.trim().length === 0) {
+			problems.push(`${at}: brak note (limity checku muszą być zapisane)`);
+		}
+		const kind = check.kind;
+		if (typeof kind !== "string" || !CHECK_KINDS.has(kind)) {
+			problems.push(`${at}: kind "${String(kind)}" spoza value|relation|predicate`);
+			continue;
+		}
+		parsed++;
+		if (check.fragile !== true) solid++;
+
+		if (kind === "value") {
+			if (typeof check.var !== "string" || check.var.length === 0) {
+				problems.push(`${at}: value wymaga "var"`);
+			}
+			if (!("expect" in check)) problems.push(`${at}: value wymaga "expect"`);
+		} else {
+			const rule = check.rule as Record<string, unknown> | undefined;
+			if (typeof rule !== "object" || rule === null) {
+				problems.push(`${at}: ${kind} wymaga "rule"`);
+				continue;
+			}
+			const op = String(rule.op);
+			const allowed = kind === "relation" ? RELATION_OPS : PREDICATE_OPS;
+			if (!allowed.has(op)) {
+				problems.push(`${at}: nieznany operator "${op}" dla ${kind}`);
+			}
+		}
+	}
+
+	// Bezpiecznik zgłaszamy TYLKO wtedy, gdy checki w ogóle się sparsowały — inaczej
+	// dokładałby mylący drugi błąd do pozycji, która ma po prostu atrapę.
+	if (parsed > 0 && solid === 0) {
+		problems.push(
+			`${where}: pozycja ma same checki "fragile" — zaliczałaby się na samej ` +
+				`introspekcji tekstu (bezpiecznik ADR-015)`,
+		);
+	}
+	return problems;
+}
 const RESOURCE_TYPES: ReadonlySet<string> = new Set(["video", "docs", "course", "book"]);
 const KEBAB = /^[a-z0-9-]+$/;
 
@@ -230,6 +329,12 @@ export function validateModuleContent(content: AtomModuleContent): string[] {
 		if (typeof item.contentMd !== "string" || item.contentMd.trim().length === 0) {
 			problems.push(`${where}: pusty contentMd`);
 		}
+
+		// 1E.6b (ADR-015) — walidacja kontraktu checków. Do 1E.6b `config.checks`
+		// NIE BYŁO SPRAWDZANE W OGÓLE (config = Record<string, unknown>), więc atrapa
+		// `{type:"token"}` przechodziła jako „check". Teraz: albo realny kontrakt,
+		// albo pusto (lab świadomie niekompletowalny → uczciwe 501), ale NIGDY atrapa.
+		problems.push(...validateChecks(item, where));
 
 		const conceptSlugs = new Set((item.concepts ?? []).map((c) => c.slug));
 		for (const c of item.concepts ?? []) {

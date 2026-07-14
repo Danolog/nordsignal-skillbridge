@@ -428,12 +428,7 @@
 			],
 			"config": {
 				"estimated": "15–20 min",
-				"checks": [
-					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
-					}
-				]
+				"checks": []
 			}
 		},
 		{
@@ -843,12 +838,7 @@
 			],
 			"config": {
 				"estimated": "25–30 min",
-				"checks": [
-					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
-					}
-				]
+				"checks": []
 			}
 		},
 		{

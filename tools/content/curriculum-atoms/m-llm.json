@@ -442,8 +442,21 @@
 				"estimated": "20 min",
 				"checks": [
 					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
+						"id": "C1",
+						"kind": "predicate",
+						"note": "`rekordy` — 5 przypadków z utrwalonego zbioru",
+						"rule": {
+							"op": "len_eq",
+							"var": "rekordy",
+							"n": 5
+						}
+					},
+					{
+						"id": "C2",
+						"kind": "value",
+						"note": "zgodnych z ground truth: 4 z 5 (wynik zafiksowany treścią)",
+						"var": "zgodne",
+						"expect": 4
 					}
 				]
 			}
@@ -726,12 +739,7 @@
 			],
 			"config": {
 				"estimated": "30 min",
-				"checks": [
-					{
-						"type": "token",
-						"note": "komórka-pieczątka + token (mechanizm w zasadach L0; definicja 1E.6)"
-					}
-				]
+				"checks": []
 			}
 		},
 		{
