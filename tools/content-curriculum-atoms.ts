@@ -132,6 +132,27 @@ function validateChecks(item: AtomItemInput, where: string): string[] {
 	}
 	return problems;
 }
+
+/**
+ * Krok 4 — `config.notebookUrl` (link „Otwórz notebook w Colab"). Dozwolony
+ * wyłącznie przy `kind: "lab"` i wyłącznie jako https na hoście Colaba —
+ * literówka w treści dawałaby studentowi martwy przycisk na prodzie.
+ */
+function validateNotebookUrl(item: AtomItemInput, where: string): string[] {
+	const raw = (item.config as { notebookUrl?: unknown } | undefined)?.notebookUrl;
+	if (raw === undefined) return [];
+	if (item.kind !== "lab") return [`${where}: notebookUrl dozwolony tylko przy kind="lab"`];
+	if (typeof raw !== "string") return [`${where}: notebookUrl musi być stringiem`];
+	try {
+		const url = new URL(raw);
+		if (url.protocol !== "https:" || url.host !== "colab.research.google.com") {
+			return [`${where}: notebookUrl musi być https na colab.research.google.com`];
+		}
+	} catch {
+		return [`${where}: notebookUrl nie jest poprawnym URL-em`];
+	}
+	return [];
+}
 const RESOURCE_TYPES: ReadonlySet<string> = new Set(["video", "docs", "course", "book"]);
 const KEBAB = /^[a-z0-9-]+$/;
 
@@ -335,6 +356,7 @@ export function validateModuleContent(content: AtomModuleContent): string[] {
 		// `{type:"token"}` przechodziła jako „check". Teraz: albo realny kontrakt,
 		// albo pusto (lab świadomie niekompletowalny → uczciwe 501), ale NIGDY atrapa.
 		problems.push(...validateChecks(item, where));
+		problems.push(...validateNotebookUrl(item, where));
 
 		const conceptSlugs = new Set((item.concepts ?? []).map((c) => c.slug));
 		for (const c of item.concepts ?? []) {

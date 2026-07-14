@@ -72,6 +72,29 @@ export function ItemDetail({ view }: { view: CurriculumItemView }) {
 				</div>
 			)}
 
+			{/*
+			 * Krok 4: checklist laba zaczyna się od „Otwórz notebook … linkiem z tej
+			 * pozycji" — przycisk stoi więc PRZED teorią, żeby obietnica z treści
+			 * miała pokrycie na pierwszym ekranie.
+			 */}
+			{isLab && item.notebookUrl && (
+				<a
+					href={item.notebookUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted"
+				>
+					<span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+						<FlaskConical aria-hidden className="size-4" />
+						Otwórz notebook w Google Colab
+					</span>
+					<span className="flex items-center gap-1 text-xs text-muted-foreground">
+						nowa karta
+						<ExternalLink aria-hidden className="size-3.5" />
+					</span>
+				</a>
+			)}
+
 			{item.contentMd && (
 				<article className="rounded-xl border border-border bg-card p-5">
 					<TheoryMarkdown source={item.contentMd} />

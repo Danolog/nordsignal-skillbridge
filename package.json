@@ -30,6 +30,7 @@
 		"db:seed": "tsx tools/db-guard-seed.ts",
 		"db:ingest-career-model": "tsx tools/ingest-career-model.ts",
 		"content:pack-curriculum": "tsx tools/pack-curriculum-atoms.ts",
+		"content:build-notebooks": "tsx tools/build-notebooks.ts",
 		"db:ingest-curriculum": "tsx tools/ingest-curriculum.ts",
 		"db:ingest-question-bank": "tsx tools/ingest-question-bank.ts"
 	},
