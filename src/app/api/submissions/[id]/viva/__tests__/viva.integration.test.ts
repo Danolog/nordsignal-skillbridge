@@ -160,6 +160,7 @@ dBack("B7/1.16a · cykl życia obrony ustnej (realna baza, DoD)", () => {
 				answerParams(submissionId, sessionId),
 			);
 		}
+		if (!last) throw new Error("startAndAnswer wymaga count >= 1");
 		return { sessionId, last };
 	}
 
@@ -348,7 +349,7 @@ dBack("B7/1.16a · cykl życia obrony ustnej (realna baza, DoD)", () => {
 			.mockResolvedValueOnce({ points: 0, justification: "wymijająca" });
 
 		const { last } = await startAndAnswer(submissionId, 3);
-		expect((await last!.json()).state).toBe("failed");
+		expect((await last.json()).state).toBe("failed");
 
 		const sub = await pool?.query(
 			"SELECT status, needs_human_review FROM project_submissions WHERE id = $1",
@@ -362,7 +363,7 @@ dBack("B7/1.16a · cykl życia obrony ustnej (realna baza, DoD)", () => {
 		judgeMock.mockRejectedValue(new Error("judge down"));
 
 		const { sessionId, last } = await startAndAnswer(submissionId, 1);
-		expect((await last!.json()).state).toBe("inconclusive");
+		expect((await last.json()).state).toBe("inconclusive");
 
 		const sess = await pool?.query("SELECT status FROM viva_sessions WHERE id = $1", [sessionId]);
 		expect(sess?.rows[0].status).toBe("inconclusive");
