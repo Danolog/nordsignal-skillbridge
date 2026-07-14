@@ -160,7 +160,14 @@ dBack("B7/1.16a · cykl życia obrony ustnej (realna baza, DoD)", () => {
 				answerParams(submissionId, sessionId),
 			);
 		}
+		// `last` jest null przy count = 0 (część testów tylko OTWIERA sesję, nie odpowiada).
 		return { sessionId, last };
+	}
+
+	/** Czyta ciało ostatniej odpowiedzi; rzuca, gdy wywołano startAndAnswer z count = 0. */
+	async function lastJson(last: Response | null) {
+		if (!last) throw new Error("brak odpowiedzi — startAndAnswer wywołano z count = 0");
+		return last.json();
 	}
 
 	async function cleanup() {
@@ -348,7 +355,7 @@ dBack("B7/1.16a · cykl życia obrony ustnej (realna baza, DoD)", () => {
 			.mockResolvedValueOnce({ points: 0, justification: "wymijająca" });
 
 		const { last } = await startAndAnswer(submissionId, 3);
-		expect((await last!.json()).state).toBe("failed");
+		expect((await lastJson(last)).state).toBe("failed");
 
 		const sub = await pool?.query(
 			"SELECT status, needs_human_review FROM project_submissions WHERE id = $1",
@@ -362,7 +369,7 @@ dBack("B7/1.16a · cykl życia obrony ustnej (realna baza, DoD)", () => {
 		judgeMock.mockRejectedValue(new Error("judge down"));
 
 		const { sessionId, last } = await startAndAnswer(submissionId, 1);
-		expect((await last!.json()).state).toBe("inconclusive");
+		expect((await lastJson(last)).state).toBe("inconclusive");
 
 		const sess = await pool?.query("SELECT status FROM viva_sessions WHERE id = $1", [sessionId]);
 		expect(sess?.rows[0].status).toBe("inconclusive");

@@ -192,7 +192,6 @@ export function TutorPanel({ projectId }: { projectId: string }) {
 					</p>
 				)}
 				{messages.map((m, i) => (
-					// biome-ignore lint/suspicious/noArrayIndexKey: rozmowa jest append-only — indeks jest stabilny.
 					<div key={`${m.role}-${i}`} className={`tutor-msg tutor-msg-${m.role}`}>
 						<span className="tutor-msg-author">{m.role === "ai" ? "Tutor" : "Ty"}</span>
 						<p className="tutor-msg-content">{m.content}</p>
