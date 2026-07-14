@@ -136,7 +136,8 @@
 							"var": "_wykonano"
 						}
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/l0/l0-1-komputer-wykonal-moj-kod.ipynb"
 			},
 			"resources": [
 				{
@@ -315,7 +316,8 @@
 							"var": "imie"
 						}
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/l0/l0-2-komorki-tekst-kod-kopia.ipynb"
 			}
 		},
 		{
@@ -453,7 +455,8 @@
 							"var": "_wykonano"
 						}
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/l0/l0-3-sesja-ma-pamiec.ipynb"
 			}
 		},
 		{
@@ -461,7 +464,7 @@
 			"position": 40,
 			"kind": "lab",
 			"title": "Twój pierwszy własny skrypt",
-			"contentMd": "### Cel\n\nNapiszesz od zera i uruchomisz własny, kilkulinijkowy skrypt, który coś\npoliczy i wypisze wynik. Uruchomiony skrypt to Twój dowód zaliczenia całego\nmodułu L0.\n\n### Teoria\n\nWszystkie klocki już znasz z L0.1–L0.3 — teraz złożysz z nich pierwszą całość.\n\n**Skrypt** to przepis: lista instrukcji, którą Python wykonuje **od góry do\ndołu, linia po linii**. W jednej komórce może być wiele linii — to wciąż jeden\nskrypt. Dobry nawyk od pierwszego dnia: nie pisz wszystkiego na raz. Dopisz\nlinię, uruchom komórkę, sprawdź wynik, dopisz następną. Krótkie pętle\n„napisz–uruchom–sprawdź\" to normalny tryb pracy z kodem — a ewentualny błąd\nzawsze dotyczy wtedy ostatniej dopisanej linii, więc wiadomo, gdzie szukać.\nTwoje klocki:\n\n- **zmienna** — zapamiętuje wartość pod nazwą (`kawa = 12`),\n- **działanie** — `+`, `-`, `*` (mnożenie to gwiazdka, nie ×),\n- **`print(...)`** — wypisuje wynik na ekran.\n\nSkoro piszesz sam(a), to Ty wymyślasz **nazwy zmiennych**. Zasady są trzy:\nnazwa bez spacji (zamiast spacji podkreślnik: `cena_biletu`), Python rozróżnia\nwielkość liter (`Dni` i `dni` to DWIE różne nazwy — najbezpieczniej pisz\nwszystko małymi), a najlepsza nazwa to taka, która mówi, co jest w pudełku\n(`cena`, nie `x` — za dwa tygodnie podziękujesz sobie za czytelność). Polskich\nznaków (ą, ż) unikaj — formalnie działają, ale przysporzą kłopotów przy pracy\nz cudzym kodem.\n\nJedna nowa rzecz, o którą potyka się każdy początkujący: **liczba a tekst**.\n`12` (bez cudzysłowu) to liczba — można na niej liczyć. `\"12\"` (w cudzysłowie)\nto tekst, który tylko WYGLĄDA jak liczba. Zasada na teraz: **to, na czym\nliczysz, piszesz bez cudzysłowu; cudzysłów jest dla tekstu do wypisania.**\n\nPrzykład w całości — miesięczny koszt nawyku kawowego:\n\n```python\ncena = 12               # liczba (bez cudzysłowu) — cena jednej kawy w zł\ndni = 30                # liczba dni w miesiącu\nkoszt = cena * dni      # policz i zapamiętaj wynik pod nazwą: koszt\nprint(\"Kawa miesięcznie, zł:\")   # tekst w cudzysłowie — etykieta wyniku\nprint(koszt)            # liczba spod nazwy koszt — bez cudzysłowu!\n```\n\n**Przewidź:** co dokładnie wypiszą dwie ostatnie linie? I pytanie-pułapka: co\nwypisałaby linia `print(\"koszt\")` — z cudzysłowem?\n\nWynik: `Kawa miesięcznie, zł:` i pod spodem `360`. A `print(\"koszt\")` wypisze\ndosłownie słowo `koszt` — cudzysłów mówi „to tekst\", więc Python nie zagląda\ndo pudełka o tej nazwie.\n\nZanim napiszesz własny skrypt, rozgrzewka na uzupełnianie (w notebooku L0.4,\nkomórka „Rozgrzewka\" — uzupełnij dwie luki i uruchom):\n\n```python\nbilet = 4          # cena biletu w zł\nprzejazdy = ___    # ile razy jeździsz w tygodniu — wpisz liczbę\nprint(bilet * ___) # policz koszt tygodnia — jakiej nazwy tu użyć?\n```\n\n### Checklist wykonania (to zalicza atom i moduł L0)\n\n1. Otwórz notebook **L0.4**, zrób kopię na Dysk.\n2. Uruchom komórkę z przykładem „kawa\" i sprawdź przewidywania z teorii.\n3. Uzupełnij i uruchom komórkę „Rozgrzewka\" (dwie luki).\n4. W pustej komórce „Twój skrypt\" napisz własny skrypt wg specyfikacji:\n   **co najmniej dwie zmienne liczbowe, jedno działanie na nich i jeden\n   `print` z wynikiem** — policz coś swojego (wydatki, kilometry, strony\n   książki — temat dowolny).\n5. Uruchom swój skrypt; jeśli czerwony błąd — czytaj komunikat i drabinkę\n   hintów (błąd ≠ porażka, to feedback).\n6. Uruchom komórkę-pieczątkę i przenieś token do SkillBridge.\n\n**Zaliczenie:** poprawny token — komórka-pieczątka sprawdza deterministycznie,\nże w pamięci sesji istnieją ≥2 zmienne liczbowe **o nazwach spoza przykładów\nnotebooka** (wykluczone: `cena`, `dni`, `koszt`, `bilet`, `przejazdy`) oraz\nwynik działania na nich — czyli że własny skrypt z kroku 4 faktycznie SIĘ\nWYKONAŁ w tej sesji — i dopiero wtedy liczy token z kodu atomu. To jest\n„pierwszy uruchomiony skrypt jako dowód\" z ADR-014. (Check pozostaje obchodzilny\nświadomym oszustwem — wystarczający na pilot; szczegóły w notatkach niżej.)",
+			"contentMd": "### Cel\n\nNapiszesz od zera i uruchomisz własny, kilkulinijkowy skrypt, który coś\npoliczy i wypisze wynik. Uruchomiony skrypt to Twój dowód zaliczenia całego\nmodułu L0.\n\n### Teoria\n\nWszystkie klocki już znasz z L0.1–L0.3 — teraz złożysz z nich pierwszą całość.\n\n**Skrypt** to przepis: lista instrukcji, którą Python wykonuje **od góry do\ndołu, linia po linii**. W jednej komórce może być wiele linii — to wciąż jeden\nskrypt. Dobry nawyk od pierwszego dnia: nie pisz wszystkiego na raz. Dopisz\nlinię, uruchom komórkę, sprawdź wynik, dopisz następną. Krótkie pętle\n„napisz–uruchom–sprawdź\" to normalny tryb pracy z kodem — a ewentualny błąd\nzawsze dotyczy wtedy ostatniej dopisanej linii, więc wiadomo, gdzie szukać.\nTwoje klocki:\n\n- **zmienna** — zapamiętuje wartość pod nazwą (`kawa = 12`),\n- **działanie** — `+`, `-`, `*` (mnożenie to gwiazdka, nie ×),\n- **`print(...)`** — wypisuje wynik na ekran.\n\nSkoro piszesz sam(a), to Ty wymyślasz **nazwy zmiennych**. Zasady są trzy:\nnazwa bez spacji (zamiast spacji podkreślnik: `cena_biletu`), Python rozróżnia\nwielkość liter (`Dni` i `dni` to DWIE różne nazwy — najbezpieczniej pisz\nwszystko małymi), a najlepsza nazwa to taka, która mówi, co jest w pudełku\n(`cena`, nie `x` — za dwa tygodnie podziękujesz sobie za czytelność). Polskich\nznaków (ą, ż) unikaj — formalnie działają, ale przysporzą kłopotów przy pracy\nz cudzym kodem.\n\nJedna nowa rzecz, o którą potyka się każdy początkujący: **liczba a tekst**.\n`12` (bez cudzysłowu) to liczba — można na niej liczyć. `\"12\"` (w cudzysłowie)\nto tekst, który tylko WYGLĄDA jak liczba. Zasada na teraz: **to, na czym\nliczysz, piszesz bez cudzysłowu; cudzysłów jest dla tekstu do wypisania.**\n\nPrzykład w całości — miesięczny koszt nawyku kawowego:\n\n```python\ncena = 12               # liczba (bez cudzysłowu) — cena jednej kawy w zł\ndni = 30                # liczba dni w miesiącu\nkoszt = cena * dni      # policz i zapamiętaj wynik pod nazwą: koszt\nprint(\"Kawa miesięcznie, zł:\")   # tekst w cudzysłowie — etykieta wyniku\nprint(koszt)            # liczba spod nazwy koszt — bez cudzysłowu!\n```\n\n**Przewidź:** co dokładnie wypiszą dwie ostatnie linie? I pytanie-pułapka: co\nwypisałaby linia `print(\"koszt\")` — z cudzysłowem?\n\nWynik: `Kawa miesięcznie, zł:` i pod spodem `360`. A `print(\"koszt\")` wypisze\ndosłownie słowo `koszt` — cudzysłów mówi „to tekst\", więc Python nie zagląda\ndo pudełka o tej nazwie.\n\nZanim napiszesz własny skrypt, rozgrzewka na uzupełnianie (w notebooku L0.4,\nkomórka „Rozgrzewka\" — uzupełnij dwie luki i uruchom):\n\n```python\nbilet = 4             # cena biletu w zł\nprzejazdy = _luka_    # ile razy jeździsz w tygodniu — wpisz liczbę\nprint(bilet * _luka_) # policz koszt tygodnia — jakiej nazwy tu użyć?\n```\n\n### Checklist wykonania (to zalicza atom i moduł L0)\n\n1. Otwórz notebook **L0.4**, zrób kopię na Dysk.\n2. Uruchom komórkę z przykładem „kawa\" i sprawdź przewidywania z teorii.\n3. Uzupełnij i uruchom komórkę „Rozgrzewka\" (dwie luki).\n4. W pustej komórce „Twój skrypt\" napisz własny skrypt wg specyfikacji:\n   **co najmniej dwie zmienne liczbowe, jedno działanie na nich i jeden\n   `print` z wynikiem** — policz coś swojego (wydatki, kilometry, strony\n   książki — temat dowolny).\n5. Uruchom swój skrypt; jeśli czerwony błąd — czytaj komunikat i drabinkę\n   hintów (błąd ≠ porażka, to feedback).\n6. Uruchom komórkę-pieczątkę i przenieś token do SkillBridge.\n\n**Zaliczenie:** poprawny token — komórka-pieczątka sprawdza deterministycznie,\nże w pamięci sesji istnieją ≥2 zmienne liczbowe **o nazwach spoza przykładów\nnotebooka** (wykluczone: `cena`, `dni`, `koszt`, `bilet`, `przejazdy`) — czyli\nże własny skrypt z kroku 4 faktycznie SIĘ WYKONAŁ w tej sesji — i dopiero\nwtedy liczy token z kodu atomu. To jest\n„pierwszy uruchomiony skrypt jako dowód\" z ADR-014. (Check pozostaje obchodzilny\nświadomym oszustwem — wystarczający na pilot; szczegóły w notatkach niżej.)",
 			"concepts": [
 				{
 					"slug": "skrypt-sekwencja-instrukcji",
@@ -582,7 +585,8 @@
 							"n": 2
 						}
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/l0/l0-4-twoj-pierwszy-skrypt.ipynb"
 			}
 		}
 	]

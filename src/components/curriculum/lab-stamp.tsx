@@ -74,7 +74,7 @@ export function LabStamp({
 			if (res.status === 400) {
 				toast.error(
 					data.reason === "bad_signature"
-						? "Ten token nie pasuje do tej pozycji (albo pochodzi z innego konta)."
+						? "Ten token nie pasuje do tej pozycji — najczęściej to literówka w kodzie atomu przepisanym do notebooka (sprawdź punkt 1) albo token z innego konta."
 						: "Token wygląda na uszkodzony — skopiuj go jeszcze raz w całości.",
 				);
 				return;

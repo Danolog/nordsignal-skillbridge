@@ -72,6 +72,12 @@ export interface CurriculumItemView {
 		atomCode: string | null;
 		/** Czy lab ma realny kontrakt checków (a nie atrapę z 1E.2). */
 		hasChecks: boolean;
+		/**
+		 * Krok 4 — link „Otwórz notebook w Colab" (config_json.notebookUrl).
+		 * Tylko https na colab.research.google.com (walidowane też w packerze);
+		 * null dla pozycji bez notebooka.
+		 */
+		notebookUrl: string | null;
 	};
 	questions: CurriculumQuestion[];
 	/** Pytania już zaliczone poprawnie — pętla nie każe ich powtarzać. */
@@ -96,6 +102,24 @@ function estimatedFromConfig(configJson: unknown): string | null {
 	if (typeof configJson !== "object" || configJson === null) return null;
 	const estimated = (configJson as { estimated?: unknown }).estimated;
 	return typeof estimated === "string" ? estimated : null;
+}
+
+/**
+ * Link do notebooka Colab z config_json — guard hosta powtórzony przy odczycie,
+ * żeby zepsuty rekord w bazie nie wyrenderował linku poza Colaba (treść jest
+ * ingestowana, ale defense-in-depth jest tania).
+ */
+function notebookUrlFromConfig(configJson: unknown): string | null {
+	if (typeof configJson !== "object" || configJson === null) return null;
+	const url = (configJson as { notebookUrl?: unknown }).notebookUrl;
+	if (typeof url !== "string") return null;
+	try {
+		const parsed = new URL(url);
+		if (parsed.protocol !== "https:" || parsed.host !== "colab.research.google.com") return null;
+	} catch {
+		return null;
+	}
+	return url;
 }
 
 /**
@@ -205,6 +229,7 @@ export async function getItemView(studentId: string, itemId: string): Promise<It
 					item.kind === "lab" && isLabTokenConfigured() ? atomCode(studentId, item.id) : null,
 				hasChecks:
 					item.kind === "lab" && isLabTokenConfigured() && parseChecks(item.configJson).length > 0,
+				notebookUrl: item.kind === "lab" ? notebookUrlFromConfig(item.configJson) : null,
 			},
 			questions,
 			answeredCorrectQuestionIds: answered.map((a) => a.questionItemId),

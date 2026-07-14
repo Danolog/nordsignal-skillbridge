@@ -44,12 +44,26 @@ import type {
 const CURATION_DIR = join(process.cwd(), "docs", "curation");
 const OUT_DIR = join(process.cwd(), "tools", "content", "curriculum-atoms");
 
+/**
+ * Krok 4 — baza linków „Otwórz notebook w Colab". Notebooki są publikowane
+ * do publicznego repo (główne repo jest prywatne, a Colab otwiera z GitHuba
+ * wyłącznie publiczne); źródła i build: tools/content/notebooks/ + notebooks/.
+ */
+const NOTEBOOKS_BASE =
+	"https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main";
+
 type AtomOverride = {
 	kind?: string;
 	/** Tytuł studencki (gdy nagłówek dokumentu niesie wewnętrzne odnośniki). */
 	title?: string;
 	concepts?: { slug: string; key?: boolean }[];
 	checks?: unknown[];
+	/**
+	 * Krok 4 — link „Otwórz notebook w Colab" dla pozycji `lab`. Notebooki żyją
+	 * w PUBLICZNYM repo skillbridge-notebooks (Colab nie otwiera z prywatnego),
+	 * budowane z tools/content/notebooks/ (`pnpm content:build-notebooks`).
+	 */
+	notebookUrl?: string;
 };
 
 type ModuleManifest = {
@@ -306,12 +320,22 @@ const MANIFESTS: ModuleManifest[] = [
 			"L0.1": {
 				concepts: [{ slug: "colab-uruchomienie-komorki", key: true }],
 				checks: CHECKS_L0_1,
+				notebookUrl: `${NOTEBOOKS_BASE}/l0/l0-1-komputer-wykonal-moj-kod.ipynb`,
 			},
-			"L0.2": { concepts: [{ slug: "notebook-komorki-kod-tekst" }], checks: CHECKS_L0_2 },
-			"L0.3": { concepts: [{ slug: "sesja-stan-zmiennych", key: true }], checks: CHECKS_L0_3 },
+			"L0.2": {
+				concepts: [{ slug: "notebook-komorki-kod-tekst" }],
+				checks: CHECKS_L0_2,
+				notebookUrl: `${NOTEBOOKS_BASE}/l0/l0-2-komorki-tekst-kod-kopia.ipynb`,
+			},
+			"L0.3": {
+				concepts: [{ slug: "sesja-stan-zmiennych", key: true }],
+				checks: CHECKS_L0_3,
+				notebookUrl: `${NOTEBOOKS_BASE}/l0/l0-3-sesja-ma-pamiec.ipynb`,
+			},
 			"L0.4": {
 				concepts: [{ slug: "skrypt-sekwencja-instrukcji", key: true }],
 				checks: CHECKS_L0_4,
+				notebookUrl: `${NOTEBOOKS_BASE}/l0/l0-4-twoj-pierwszy-skrypt.ipynb`,
 			},
 		},
 	},
@@ -854,6 +878,7 @@ function packModule(manifest: ModuleManifest): AtomModuleContent {
 		if (atom.estimated) config.estimated = atom.estimated;
 		if (atom.uiVerifiedAt) config.uiVerifiedAt = atom.uiVerifiedAt;
 		if (override.checks) config.checks = override.checks;
+		if (override.notebookUrl) config.notebookUrl = override.notebookUrl;
 
 		return {
 			slug: ref,
