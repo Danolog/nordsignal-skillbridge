@@ -11,7 +11,77 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-14 (wieczór) — 1E.6 DOMKNIĘTE: DRABINA RUSZYŁA
+## STAN NA DZIŚ — 2026-07-14 (noc) — KROK 4/L0: NOTEBOOKI SĄ, DRABINA DZIAŁA END-TO-END
+
+### Co się wydarzyło (PR #182, squash na main)
+
+- **4 notebooki Colab L0** wg kontraktu ADR-015 — pierwszy realny materiał, na
+  którym student może przejść drabinę. **Warstwa pieczątki = JEDEN wspólny blok**
+  (`tools/content/notebooks/pieczatka.py`, jedyne źródło prawdy funkcji tokenu);
+  źródła notebooków w formacie percent (`tools/content/notebooks/l0/*.py`,
+  komórka `# %% [pieczatka]` niesie tylko warstwę treści checku per atom);
+  builder `pnpm content:build-notebooks` → deterministyczne `notebooks/l0/*.ipynb`.
+- **Publikacja: `github.com/Danolog/skillbridge-notebooks` (PUBLIC)** — Colab
+  nie otwiera notebooków z prywatnego repo, a nasze jest PRIVATE. Publiczne repo
+  to WYŁĄCZNIE cel publikacji (README to mówi): edycje w głównym repo → rebuild
+  → push zbudowanych .ipynb (na razie ręcznie: cp + commit; klon jednorazowy).
+- **`config.notebookUrl`**: packer (manifest L0) → walidator (tylko `lab`,
+  tylko https colab) → `item-view` (guard hosta powtórzony przy odczycie) →
+  przycisk „Otwórz notebook w Google Colab" nad teorią laba.
+- **Parytet Python↔TS przybity testem** (`tests/unit/ds/notebooks-l0.contract.test.ts`,
+  21 testów): identyczność bloku pieczątki bajt-w-bajt, drift buildera, token
+  z REALNEGO python3 przez `parseToken`+`evaluateChecks` na checkach z prod-JSON-a,
+  odmowy pieczątki. python3 wymagany twardo (macOS/ubuntu mają).
+
+### QG treści notebooków: GO Z NOTAMI (0 KRYT / 2 WAŻN / 3 INFO) — wcielone
+
+Log w `sophia-1e2-l0-atomy.md` (sekcja „Przebieg QG notebooków L0"). Perła
+WAŻN-1: **`___` w IPythonie/Colabie ISTNIEJE od startu sesji** (zmienna historii)
+— nieuzupełniona luka rozgrzewki L0.4 wykonywała się PO CICHU zamiast dać uczący
+NameError → placeholder zmieniony na `_luka_` (podkreślnik = nie liczy się do
+checku). ⚠ **Nauka procesowa: sekcje atomów w dokumentach Sophii idą VERBATIM
+do widoku studenta** — erraty/meta wolno pisać wyłącznie w logu QG (pierwsza
+wersja erraty wyciekła do contentMd; wyłapane przed PR-em, przeniesione).
+
+### Weryfikacja uruchomieniowa (baza :5433, flaga ON lokalnie)
+
+Student e2e przeszedł **całe L0 tokenami z OPUBLIKOWANYCH notebooków**
+(pobranych z GitHuba — dokładnie to, co dostanie student): L0.1→L0.4
+`itemCompleted`, moduł `completed`, **F1 odblokowany**. Negatywy: literówka
+w tokenie → 400 `bad_signature`; token z cudzego kodu atomu → 400; pieczątka
+bez wykonanej pracy → polska odmowa PRZED emisją tokenu. Przycisk Colab
+w HTML pozycji. (Drobiazg po sesji: konto `e2e-main` na :5433 ma
+`career_goal='Data Scientist'` — seed:e2e to nadpisze.)
+
+### PROD (2026-07-14, czerwona linia wzorcem)
+
+- Backup: **`prod-backup-pre-ingest-krok4-l0-20260714`** (`br-fancy-mud-algw5lzi`);
+  zwolnienie limitu gałęzi: usunięty przeterminowany `backup/pre-0031-2026-07-09`.
+- Ingest **×2 idempotentny** (2. bieg: 0 zmian; „moduły=9, pozycje=70" oba biegi).
+- Weryfikacja PO: 4 laby L0 z `notebookUrl` (JEDYNE w całej bazie), `_luka_`
+  w contentMd l0-4, **0 przecieków erraty**, 70 pozycji bez zmian.
+  Smoke: `/` 200, `/login` 200, `/api/curriculum` **404** (flaga off).
+- 🔴 **`FLAG_CURRICULUM_PATH` NADAL 0 — celowo.** Do zapalenia brakuje WYŁĄCZNIE
+  akcji Darka (kod i treść L0 są gotowe): (1) screenshoty 2 etykiet UI Colab,
+  (2) seans kontrolny wideo PL (wlRT_MZOvBE), (3) test przebiegu **≤15 min** L0.1
+  na czystym koncie Google (twardy wymóg D10). Po nich: flaga=1 + **REDEPLOY**.
+
+### NASTĘPNE (kolejność)
+1. **Akcje Darka do flagi** (wyżej) — nic więcej nie blokuje L0 na prodzie.
+2. **Notebooki F1 (7 szt.)** — wzorzec kompletny (źródło percent + `[pieczatka]`;
+   checki F1.4/F1.7 już w packerze); dalej F2/F3/M-* (razem 62 do zrobienia).
+3. **Dług treści 6 labów** (PD.4, PD.8, EDA.4, SQL.4, SQL.7, LLM.7 — bez checków,
+   uczciwe 501) → poprawka treści → QG → repack → re-ingest.
+4. **1E.3** (packer: `exam` w `ITEM_KINDS`), **1E.4** (najpierw `hintDepth`),
+   **1E.5**, **1E.7** — bez zmian.
+5. Tor równoległy bez zmian (sprzątanie po flipie paszportu, 1E.R2, żywy ekspert
+   QG-6, SageMaker, 0.7-sekret, 0.13).
+
+### Baseline `main` po tej sesji
+build OK · tsc 0 · Biome 0 · unit **1282/1282** (było 1261) · pełna bramka CI
+zielona na #182 (integration, e2e-safe, gitleaks, deps-scan w komplecie).
+
+## STAN POPRZEDNI — 2026-07-14 (wieczór) — 1E.6 DOMKNIĘTE: DRABINA RUSZYŁA
 
 ### Co się wydarzyło (4 PR-y, wszystkie na `main`)
 
