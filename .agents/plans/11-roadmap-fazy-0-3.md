@@ -4,6 +4,13 @@
 > **Faza 1E: pełna ścieżka edukacyjna** (A1–A4) z pilotażem na kierunku
 > **Data Science**, oraz korekty priorytetów w F2/F3 (D14→P0, D16, C12).
 > Nowe/zmienione względem wersji 1 oznaczone **[NOWE]** / **[ZMIANA]**.
+>
+> **Wersja 3 (2026-07-14) — synchronizacja z rzeczywistością.** Plik był zamrożony
+> od 2026-07-03 i rozjechał się z ADR-014 oraz ze stanem kodu. Zmiany: statusy
+> wykonania w Fazie 1E, **rozbicie przeciążonej etykiety 1E.6 na 1E.6a (UI) i 1E.6b
+> (checki labów + kontrakt tokenu)**, dopisanie **1E.R/1E.R2** (ADR-014 D7),
+> aktualizacja kręgosłupa w §7 i wpisu 0.13. Oznaczone **[AKTUALIZACJA 2026-07-14]**.
+> Statusy Fazy 0/1/AG zweryfikowane w kodzie (plik + commit + test + flaga), nie w opisach.
 
 ---
 
@@ -84,8 +91,9 @@ Wejście do Fazy 1/1E dopiero po zamknięciu HIGH/MEDIUM z audytu.
   w oknie 24h (check w tx przed zamknięciem aktywnej → 429).
 - **0.12 ✅ WYKONANE (2026-07-03, PR #120)** · Limit stron PDF `getText({ first: 40 })`
   (tnie parsowanie, nie tylko output).
-- **0.13 ⏳ WSTRZYMANE — PREVIEW (Darek), PR #121 otwarty** · CSP enforce + drop unsafe-eval
-  (unsafe-inline zostaje). Runtime CSP niewykrywalny lokalnie → weryfikacja na Preview.
+- **0.13 ✅ KODOWO — PR #121 ZMERGOWANY; ⏳ weryfikacja runtime (Darek)** [AKTUALIZACJA
+  2026-07-14] · CSP enforce + drop unsafe-eval (unsafe-inline zostaje) — `next.config.ts:11-21`.
+  Runtime CSP niewykrywalny lokalnie → zostaje wyłącznie potwierdzenie na Preview/prod.
   Follow-up: pełne usunięcie unsafe-inline = migracja na nonce w middleware.
 - **0.14 ✅ WYKONANE (2026-07-03, PR #122)** · Guard `assertTestDb` w run-sql-file (.mjs→.ts)
   + testy guarda (był nietestowany). `tools/fix-drizzle-journal-0019.sql` już w repo.
@@ -183,21 +191,43 @@ kuracja) — ręczna kuracja nie skaluje się na 21 ścieżek.
 Strumień może biec równolegle do bloków B6–B8 z Fazy 1 (inne pliki, inne
 kompetencje zespołu); punkty styku z 1.11/1.12 wskazane niżej.
 
-- **1E.0 · Design spike curriculum (A1)** [SIGN-OFF Darek/Sophia — decyzja
+> **[AKTUALIZACJA 2026-07-14 — synchronizacja z rzeczywistością]** Ta sekcja była
+> zamrożona od 2026-07-03 i rozjechała się z ADR-014 oraz stanem kodu. Korekty:
+> 1. **1E.0 / 1E.1 / 1E.2 / 1E.R — WYKONANE** (statusy przy pozycjach).
+> 2. **1E.6 było etykietą PRZECIĄŻONĄ.** Roadmapa (i kod) rozumiały ją jako *UI
+>    drabiny*; ADR-014 (D3/D10/pkt 11) i handoffy jako *checki automatyczne labów*.
+>    **Oba zakresy są otwarte** — nic nie zostało po cichu dostarczone. Rozbite
+>    poniżej na **1E.6a** (UI) i **1E.6b** (checki + kontrakt tokenu).
+> 3. **1E.R** (partia naprawcza projektów DS, ADR-014 D7) nie istniało w tej
+>    roadmapie — dopisane niżej. Otwarty następca: **1E.R2**.
+> 4. ⚠ **1E.1 dostarczyło wyłącznie API** (`/api/curriculum/*`). UI drabiny NIE
+>    ISTNIEJE — zero plików `.tsx` z curriculum; `tests/e2e-pw/60-1e1-curriculum.spec.ts`
+>    sam to przyznaje: *„feature jest API-only do 1E.6"*. Skutek: treść 1E.2
+>    (9 modułów, 70 pozycji) leży na produkcji i **nie ma jak jej zobaczyć**.
+
+- **1E.0 ✅ WYKONANE (2026-07-11)** · Design spike curriculum (A1) [SIGN-OFF Darek/Sophia — decyzja
   dydaktyczna, nie techniczna]. Encje `curriculum_modules` / pozycje modułu
   (teoria, ćwiczenia, projekt, egzamin) / prerekwizyty BLOKUJĄCE (dziś prereqi
   tylko ważą matching — mają wymuszać kolejność). Wzorzec: MIT OCW / CS50
   (wykład → problem set → projekt). Definicja relacji do istniejących encji
   (projects, project_learning_resources.theoryMd, project_competencies).
   Time-box, wyjście = ADR. Blokuje 1E.1–1E.7.
+  **Wyjście: `docs/decisions/014-curriculum-sciezka-edukacyjna.md` (ADR-014), sign-off Darka.**
 
-- **1E.1 · Model danych curriculum + migracje (A1)** — addytywne, RLS wg DoD.
+- **1E.1 ✅ WYKONANE — LIVE na prodzie (migracja 0035)** · Model danych curriculum
+  + migracje (A1) — addytywne, RLS wg DoD.
   Moduły DS spinają istniejące projekty z partii 1 w drabinę; egzekwowanie
   prereq w API (blokada zapisu do modułu bez zaliczenia poprzedniego — za
-  flagą). Dowód: test — student bez zaliczonego modułu N nie otworzy N+1;
+  flagą `curriculumPath`). Dowód: test — student bez zaliczonego modułu N nie otworzy N+1;
   z flagą off zachowanie jak dziś.
+  ⚠ **Dostarczone WYŁĄCZNIE API** (`src/app/api/curriculum/*`, `src/lib/curriculum/ladder.ts`).
+  UI drabiny = osobne zadanie **1E.6a** (niżej).
 
-- **1E.2 · Fundamenty CS/matmy — model + partia 1 DS (A2, P0)**. Osobny trzon
+- **1E.2 ✅ WYKONANE — LIVE na prodzie (migracja 0036; PR #164/#169/#170)** ·
+  Fundamenty CS/matmy — model + partia 1 DS (A2, P0). Stan: 9 modułów, 70 pozycji,
+  67 konceptów. Otwarty dług treściowy: **66 notebooków Colab** (0 `.ipynb` w repo)
+  — zablokowany kontraktem tokenu z **1E.6b**; plus screenshoty UI i seanse wideo
+  (akcje Darka). Osobny trzon
   „Fundamenty" wspólny dla rodzin ścieżek: bank zadań o jednoznacznych
   odpowiedziach (zamknięte/numeryczne/krótka forma) + **deterministyczny
   autograding** (bez LLM — zadania mają jednoznaczne odpowiedzi; koszt ~0).
@@ -234,10 +264,42 @@ kompetencje zespołu); punkty styku z 1.11/1.12 wskazane niżej.
   Dowód: test — mostek serwowany z cache przy drugim odczycie (0 wywołań LLM);
   każda pozycja kuracji ma źródło+licencję.
 
-- **1E.6 · UI ścieżki: drabina modułów (A1)** — widok curriculum DS: postęp,
-  blokady prereq, teoria/ćwiczenia/projekt/egzamin per moduł; za flagą.
+- **1E.6a · UI ścieżki: drabina modułów (A1)** [ROZBITE 2026-07-14 — patrz nota
+  na górze sekcji] — widok curriculum DS: postęp, blokady prereq,
+  teoria/ćwiczenia/lab/projekt/egzamin per moduł; za flagą. Konsumuje **istniejące**
+  API z 1E.1 (`getLadder`, `isModuleUnlocked`, `getModuleItems`) — zero nowych tras,
+  zero migracji. Pozycja `lab` renderuje się jako zablokowana do czasu 1E.6b.
   Dowód: E2E — student widzi drabinę, moduł zablokowany do zaliczenia
   poprzedniego, wejście w moduł pokazuje pozycje.
+
+- **1E.6b · Checki automatyczne labów + kontrakt tokenu pieczątki (A1)** [NOWE
+  2026-07-14 — zakres wprowadzony przez ADR-014 D3/D10/pkt 11, wcześniej ukryty
+  pod przeciążoną etykietą „1E.6"]. **Największy bloker produktowy — całe L0 to laby,
+  a `POST /api/curriculum/items/[id]/complete` zwraca dla nich `501`.**
+  - Wyjście spike'u = **ADR kontraktu tokenu** [SIGN-OFF]: laby L0–F3 = pieczątka
+    licząca check deterministycznie **w sesji Colab** (0 LLM, bez sandboxa);
+    kamienie capstone'ów wymagające URUCHOMIENIA kodu studenta = **reuse sandboxa 1.9**
+    (`src/lib/sandbox/run-hidden-tests.ts`).
+  - Kontrakt `configJson.checks` per pozycja (hak zarezerwowany w schemacie).
+  - **Rozdzielenie warstw:** *check per atom* (treść) oddzielony od *derywacji tokenu*
+    (jeden wspólny blok we wszystkich notebookach) — inaczej zmiana decyzji o tokenie
+    = rewrite 66 notebooków.
+  - **Jawny limit:** token jest podrabialny (funkcja widoczna w komórce). Świadomie
+    zaakceptowane — laby **bramkują postęp, nie wystawiają kredencjału**; receipt
+    nadal wymaga sandboxa + vivy + recenzji człowieka (ADR-014 D3 wariant C; od
+    2026-07-14 wzmocnione flagą `passportVerifiedOnly`).
+  - **Odblokowuje 66 notebooków Colab** (dług treściowy 1E.2).
+  Dowód: poprawny token zalicza lab; token z innego atomu/studenta odrzucony;
+  flaga off = zachowanie jak dziś.
+
+- **1E.R ✅ WYKONANE — LIVE na prodzie (PR #168; QG: GO; ingest 2026-07-13/14)**
+  [NOWE 2026-07-14 — zadanie wprowadzone przez **ADR-014 D7**, nie istniało
+  w pierwotnej numeracji roadmapy; wykonywane równolegle z 1E.1/1E.2, „przed 1E.5"] ·
+  Partia naprawcza projektów DS: komplet metadanych zasobów
+  (`license`/`language`/`registrationRequired`/`verifiedAt`), usunięcie źródeł
+  wymagających karty → **dług QG-5 §3/§4/§7 spłacony**.
+  **Otwarty następca: 1E.R2** (z Sophią) — m.in. kryterium rubryki wymuszające CI
+  dla `ds-chmura` (projekt przyznaje CI/CD `required` bez kryterium, które CI egzekwuje).
 
 - **1E.7 · Placement diagnozy w curriculum (A5-domknięcie)** — wynik testu
   adaptacyjnego (1.11/1.12) mapuje studenta na pozycję startową w drabinie DS
@@ -246,11 +308,14 @@ kompetencje zespołu); punkty styku z 1.11/1.12 wskazane niżej.
   do wyniku, nie od zera.
 
 **Bramka wyjścia 1E (pilotaż DS):** student bez sylabusa przechodzi diagnozę →
-placement → moduł (teoria z kuracji + ćwiczenia z autogradingiem + projekt +
-egzamin) → mastery gate ≥ progu → powtórki FSRS utrzymują wiedzę; tutor (1.13)
-zna kontekst modułu; całość za flagą; koszt per student w ai_usage_ledger
-mieści się w założeniach P&L. Decyzja o rollout'cie na kolejną ścieżkę =
-osobny sign-off po przeglądzie metryk pilotażu.
+placement → moduł (teoria z kuracji + ćwiczenia z autogradingiem + **lab zaliczany
+checkiem automatycznym** + projekt + egzamin) → mastery gate ≥ progu → powtórki FSRS
+utrzymują wiedzę; tutor (1.13) zna kontekst modułu; całość za flagą; koszt per student
+w ai_usage_ledger mieści się w założeniach P&L. Decyzja o rollout'cie na kolejną
+ścieżkę = osobny sign-off po przeglądzie metryk pilotażu.
+**[AKTUALIZACJA 2026-07-14] Warunek wstępny onboardingu realnych studentów:** 1E.6a
+(student widzi drabinę) + 1E.6b (laby są kompletowalne) + 66 notebooków Colab.
+Bez tego kompletu drabina jest niewidoczna i nieprzechodnia — całe L0 to laby.
 
 ---
 
@@ -430,8 +495,13 @@ dojrzałych, receipty w ≥2 ATS.
 
 1. 0.0 ✅ → 0.1 → 0.5 przed funkcjami AI H1 (koszt pod kontrolą).
 2. 0.2a → 0.2b (remediacja przed unikatem).
-3. **1.0 → 1E.0 → 1E.1 → 1E.2 → 1E.3 → 1E.4** — kręgosłup warstwy edukacyjnej;
-   1E.2 blokuje zarówno mastery (1E.3) jak i powtórki (1E.4).
+3. **1.0 → 1E.0 → 1E.1 → 1E.2 → 1E.6a → 1E.6b → 1E.3 → 1E.4 → 1E.5 → 1E.7** —
+   kręgosłup warstwy edukacyjnej [ZAKTUALIZOWANE 2026-07-14]. 1E.2 blokuje zarówno
+   mastery (1E.3) jak i powtórki (1E.4). **1E.6a/1E.6b wsunięte przed 1E.3**, bo bez
+   nich drabina jest niewidoczna (brak UI) i niekompletowalna (laby → `501`) —
+   dokładanie egzaminów do drabiny, której student nie widzi i nie może przejść,
+   nie ma sensu. **1E.6b odblokowuje 66 notebooków Colab** (dług treściowy 1E.2).
+   **1E.R** (ADR-014 D7) biegło równolegle z 1E.1/1E.2 — wykonane; następca **1E.R2** otwarty.
 4. **1.11 i 1E.2 projektować RAZEM** (wspólny bank pytań) — zrobione osobno
    wymuszą bolesną migrację scalającą.
 5. 1E (pilotaż DS) → E2.C → rollout curriculum na kolejne ścieżki. Nie odwrotnie.
