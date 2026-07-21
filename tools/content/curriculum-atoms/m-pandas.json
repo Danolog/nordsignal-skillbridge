@@ -123,7 +123,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `import pandas as pd` → `print(pd.__version__)` wypisze numer (różny między środowiskami — to w porządku). `import nieistniejacy_pakiet` → `ModuleNotFoundError: No module named 'nieistniejacy_pakiet'` — konkret po dwukropku podaje nazwę, której system nie zna. Jeśli import pandas NIE działa (świeży `ModuleNotFoundError` po restarcie) — sprawdź, czy komórka z importem została wykonana W TEJ sesji (L0.3: import żyje w pamięci sesji)."
 			],
 			"config": {
-				"estimated": "10–15 min"
+				"estimated": "10–15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mpd/pd-1-pakiety-import-pip.ipynb"
 			},
 			"resources": [
 				{
@@ -276,7 +277,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `head()` pokaże 4 wiersze z indeksem 0–3; `len(df)` → `4`; `info()` wymieni 3 kolumny, po 4 wartości niepuste (non-null), typy: `kwota` jako `float64`, tekstowe jako `object`/`str` (wersja pandas — obie znaczą tekst); `df[\"kwota\"].sum()` → `75.9`. Jeśli `NameError: name 'pd' is not defined` — komórka z importem nie wykonała się w tej sesji (PD.1); jeśli `KeyError` — porównaj klucz kolumny znak po znaku z `head()`."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mpd/pd-2-dataframe-tabela.ipynb"
 			}
 		},
 		{
@@ -402,7 +404,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `jedzenie = df[df[\"kategoria\"] == \"jedzenie\"]` → `len(jedzenie)` = `2` (obiad i kawa). Pułapki: pojedynczy `=` w masce → `SyntaxError` (strażnik z F1.5 działa i tu); `KeyError` → literówka nazwy kolumny; 0 wierszy przy poprawnej składni → wartość nie zgadza się co do znaku z danymi (np. „Jedzenie\" wielką literą — porównania tekstów z F1.5)."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mpd/pd-3-maska-filtrowanie.ipynb"
 			}
 		},
 		{
@@ -471,7 +474,8 @@
 							"n": 2
 						}
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mpd/pd-4-lab-sito-na-tabeli.ipynb"
 			}
 		},
 		{
@@ -597,7 +601,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `czysta = df.dropna()`, `print(len(czysta))` — przy 8 wierszach i 2 brakach: `8`, potem `6`. Decyzja do komórki tekstowej: co usuwasz, ile tracisz, czemu to akceptowalne. Częsty błąd mechaniczny: `df.dropna` BEZ nawiasów — Python wypisze dziwny opis zamiast tabeli (to metoda nieWYWOŁANA — nawiasy uruchamiają, jak w F2.6: definicja ≠ wywołanie)."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mpd/pd-5-braki-danych.ipynb"
 			}
 		},
 		{
@@ -718,7 +723,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `df.groupby(\"wojewodztwo\")[\"wartosc\"].mean()` — dla danych PD.4: mazowieckie (102.5+98.7+105.1)/3 = 102.1, opolskie (91.2+89.4+93.8)/3 ≈ 91.47, pomorskie (99.9+97.3)/2 = 98.6. Surowy wynik pandas pokaże więcej cyfr po kropce (float — F2.1); komentarz zadania zaokrągla do 2 miejsc dla czytelności — wartości mają się zgadzać co do zaokrąglenia, nie co do znaku. Częste potknięcia: `sum` zamiast `mean` (wartości ~3× większe — porównaj rząd wielkości z danymi); `KeyError` — literówka nazwy kolumny w którymkolwiek członie."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mpd/pd-6-grupowanie-describe.ipynb"
 			}
 		},
 		{
@@ -843,7 +849,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** wykres 1: `df[df[\"wojewodztwo\"] == \"mazowieckie\"].plot(x=\"rok\", y=\"wartosc\", kind=\"line\", title=\"Wskaźnik — mazowieckie\", xlabel=\"Rok\", ylabel=\"Wartość (2015 = 100)\")`; wykres 2: `df[\"wartosc\"] .plot(kind=\"hist\", title=\"Rozkład wartości\", xlabel=\"Wartość\")`. Jeśli wykres się „nie pokazuje\" — uruchom komórkę ponownie i sprawdź, czy wywołanie `.plot` nie jest w środku komórki, po którym następują inne printy (najczyściej: jedno wywołanie plot na komórkę); linia „schodkowa\" zamiast gładkiej → dane nieprzefiltrowane (rysujesz wszystkie województwa naraz — najpierw sito)."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mpd/pd-7-wykresy-opisane.ipynb"
 			}
 		},
 		{
@@ -925,7 +932,8 @@
 							"var": "srednie_zgodne"
 						}
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mpd/pd-8-lab-mini-eda.ipynb"
 			}
 		},
 		{
