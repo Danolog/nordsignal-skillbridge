@@ -1177,3 +1177,36 @@ i 5.5 Słowniki), timestamp słowników w wideo (2:38:22), ustalona
 NIESTABILNOŚĆ komunikatu `max([])` między Pythonem ≤3.11 a ≥3.12
 (zmiana w 3.12.0, zweryfikowana w źródłach CPython) — treść cytuje
 ostrożnie, uwaga wersyjna w TODO budowy notebooków.
+
+## Przebieg QG notebooków F3 (2026-07-21, Krok 4 partia 4)
+
+7 źródeł percent (`tools/content/notebooks/f3/`) + build deterministyczny →
+**agent QG (Fable 5, adwersaryjnie, realne wykonanie komórek python3, pełne
+ścieżki odmów obu pieczątek, happy-path end-to-end przez serwerowy
+`evaluateChecks`): ZATWIERDZONE — 0 KRYT / 1 WAŻN / 5 INFO**; wartości
+wszystkich drabinek przeliczone i zgodne, zero błędów niezapowiedzianych.
+
+- **WAŻN (wcielone):** pieczątka F3.7 nie weryfikowała lokalnie KWOTY
+  rekordu z `najdrozszy` — student budujący nowy słownik z dobrą nazwą
+  a złą kwotą dostawał token, który serwer odrzucał bez lokalnej diagnozy;
+  wariant bez klucza `"kwota"` dawał kryptyczny `KeyError`. Dodany check
+  `abs(top["kwota"] − ref) < 0.01` z komunikatem „zwracaj CAŁY, NIEZMIENIONY
+  rekord" + spójny odczyt przez `.get`.
+- **INFO-1 (wcielone):** strażnik niepustej listy w pieczątce F3.4
+  (wyrównanie wzorca z F2.7; pusta lista dawała token na trywialnie
+  spójnych relacjach).
+- **Limity zadeklarowane (bez akcji):** ręczne stałe zgodne z jednym `prog`
+  przechodzą w F3.4 (jawna decyzja: instruktażowe dwa progi, klasa L0);
+  spłaszczenie ładunku F3.7 (`wydatki` = lista kwot — kanonizacja nie
+  przenosi słowników; pełna struktura egzekwowana notebookowo, serwerowe
+  K1 sprawdza długość); teoretyczna kumulacja tolerancji składników
+  `sonda_suma` (realnie szum ~1e-13).
+- **Świadome odstępstwa WE (2):** F3.3 kom. 2 dodaje `print(wydatek)`;
+  F3.6 kom. 2 dokleja tabelę z F3.5 przed duetem filtr+sum (duet bajt
+  w bajt). Pozostałe WE identyczne z dokumentem.
+
+Nowy strażnik trwały dla WSZYSTKICH partii:
+`tests/unit/ds/notebooks-stamp-syntax.contract.test.ts` kompiluje realnym
+python3 każdą komórkę-pieczątkę każdego zbudowanego notebooka — klasa błędu
+„ASCII `"` po polskim cudzysłowie" (wracała w F1/F2/F3) nie przejdzie builda.
+Parytet Python↔TS pod testem `tests/unit/ds/notebooks-f3.contract.test.ts`.

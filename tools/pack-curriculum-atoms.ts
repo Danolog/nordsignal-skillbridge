@@ -680,8 +680,18 @@ const MANIFESTS: ModuleManifest[] = [
 			"lista-slownikow-rekordy": "Lista słowników: tabela rekordów",
 			"agregaty-sum-min-max": "Gotowe agregaty: sum, min, max",
 		},
+		// Krok 4 partia 4: KAŻDY atom F3 ma notebook towarzyszący (jak F1/F2);
+		// pieczątka tylko w labach F3.4/F3.7 (mini-projekt = lab, decyzja niżej).
 		overrides: {
-			"F3.4": { checks: CHECKS_F3_4 },
+			"F3.1": { notebookUrl: `${NOTEBOOKS_BASE}/f3/f3-1-lista-rosnie-append.ipynb` },
+			"F3.2": { notebookUrl: `${NOTEBOOKS_BASE}/f3/f3-2-filtrowanie-i-zliczanie.ipynb` },
+			"F3.3": { notebookUrl: `${NOTEBOOKS_BASE}/f3/f3-3-slownik-klucz-wartosc.ipynb` },
+			"F3.4": {
+				checks: CHECKS_F3_4,
+				notebookUrl: `${NOTEBOOKS_BASE}/f3/f3-4-lab-sito-wydatkow.ipynb`,
+			},
+			"F3.5": { notebookUrl: `${NOTEBOOKS_BASE}/f3/f3-5-lista-slownikow-tabela.ipynb` },
+			"F3.6": { notebookUrl: `${NOTEBOOKS_BASE}/f3/f3-6-gotowe-agregaty.ipynb` },
 			// MINI-PROJEKT (pkt 12b): kind lab + 3 kamienie automatyczne — decyzja
 			// Darka 2026-07-11 (bez wiersza w projects/pipeline'u marketplace).
 			"F3.7": {
@@ -694,6 +704,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "agregaty-sum-min-max" },
 				],
 				checks: CHECKS_F3_7,
+				notebookUrl: `${NOTEBOOKS_BASE}/f3/f3-7-miniprojekt-raport-wydatkow.ipynb`,
 			},
 		},
 		// Zasady modułu F3: 10 pytań reuse.

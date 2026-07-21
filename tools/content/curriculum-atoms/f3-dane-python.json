@@ -119,7 +119,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `ceny_po_rabacie = []`, w ciele `ceny_po_rabacie.append(cena * 0.9)` (nazwa z nagłówka pętli). Wynik: `[90.0, 36.0, 225.0]` — każdy element przeszedł przez `* 0.9`, kolejność z listy źródłowej. Diagnostyka: `AttributeError: 'NoneType' object has no attribute 'append'` w drugim obrocie = gdzieś wcześniej przypisano wynik append do nazwy listy (P2); lista z jednym elementem zamiast trzech = start `[]` wisi w ciele pętli (zerowanie — F2.5-P2, ta sama choroba)."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f3/f3-1-lista-rosnie-append.ipynb"
 			},
 			"resources": [
 				{
@@ -262,7 +263,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `male.append(wydatek)` — podwójnie wcięte. Przebieg bramki `< 50`: 120 nie, 80 nie, 45 TAK, 200 nie, 15 TAK → `[45, 15]`. Jeśli `male` wyszło jako kopia całej listy — wcięcie pojedyncze (P2); jeśli puste — sprawdź kierunek znaku w bramce (`<` vs `>`, F1.5); jeśli `AttributeError` o NoneType — gdzieś przypisano wynik append (F3.1-P2)."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f3/f3-2-filtrowanie-i-zliczanie.ipynb"
 			}
 		},
 		{
@@ -383,7 +385,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `obiad = {\"danie\": \"pierogi\", \"cena\": 24.50}` i `print(f\"{obiad['danie']} za {obiad['cena']} zł\")` → `pierogi za 24.5 zł`. Dwa niuanse: wewnątrz f-stringa klucz ujmij w POJEDYNCZE cudzysłowy (`'danie'`), żeby nie zderzył się z podwójnymi obejmującymi cały tekst; `24.50` wypisuje się jako `24.5` — Python ucina nieznaczące zero (to nadal ta sama wartość; `round`/formatowanie groszy dopracujesz w mini-projekcie). `KeyError: 'Danie'`? Porównaj klucz z odczytu z kluczem z definicji znak po znaku."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f3/f3-3-slownik-klucz-wartosc.ipynb"
 			}
 		},
 		{
@@ -430,7 +433,8 @@
 							"right": "ref_male_licznik"
 						}
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f3/f3-4-lab-sito-wydatkow.ipynb"
 			}
 		},
 		{
@@ -551,7 +555,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `for wydatek in wydatki:` oraz `if wydatek[\"kategoria\"] == \"transport\":`. Dla tabeli z teorii suma to `4.4` (jeden rekord transportu). Kontrola pięter: `for` bez wcięcia, `if` wcięty raz, sumowanie — dwa razy (należy do bramki). `KeyError: 'Kategoria'` → literówka klucza (F3.3-P3); suma 40.9 (wszystko) → bramka wypadła z pętli albo sumowanie z bramki (wcięcia — F3.2-P2)."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f3/f3-5-lista-slownikow-tabela.ipynb"
 			}
 		},
 		{
@@ -671,7 +676,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** np. `moje = [12.50, 45.00, 8.20, 120.00, 33.40]` → `min` 8.2, `max` 120.0, średnia `round(sum(moje) / len(moje), 2)` → `43.82`. `TypeError` przy sum → w liście został tekst (sprawdź cudzysłowy); `ValueError` przy max → lista pusta (nie uzupełniona)."
 			],
 			"config": {
-				"estimated": "10 min"
+				"estimated": "10 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f3/f3-6-gotowe-agregaty.ipynb"
 			}
 		},
 		{
@@ -736,7 +742,8 @@
 							"right": "suma_kategorii_lacznie"
 						}
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f3/f3-7-miniprojekt-raport-wydatkow.ipynb"
 			}
 		},
 		{
