@@ -416,7 +416,7 @@
 			"position": 40,
 			"kind": "lab",
 			"title": "LAB Pierwsze pobranie z BDL (obowiązkowy przed capstone'em — D1)",
-			"contentMd": "### Cel\n\nPrzejdziesz pełną ścieżkę capstone'u w miniaturze: prawdziwe zapytanie\ndo BDL → zagnieżdżony JSON → spłaszczenie pętlą → DataFrame → jeden\nwykres. Po tym labie API nie będzie w capstonie żadną niewiadomą.\n\n### Zadanie (notebook EDA.4 — kopia na Dysk, uruchom i uzupełnij luki)\n\n```python\nimport requests\nimport pandas as pd\n\n# --- zapytanie (gotowe — zweryfikowane, działa) ---\nurl = \"https://bdl.stat.gov.pl/api/v1/data/by-variable/60270\"   # stopa bezrobocia rej.\nparametry = {\"unit-level\": 2, \"year\": [2022, 2023], \"format\": \"json\", \"page-size\": 20}\nodpowiedz = requests.get(url, params=parametry)\nprint(odpowiedz.status_code)              # ma być 200 — EDA.1!\n\ndane = odpowiedz.json()\n\n# --- spłaszczenie: zagnieżdżony JSON → lista rekordów (czysty F3) ---\nrekordy = []\nfor wojewodztwo in dane[\"results\"]:       # rekord-województwo ma w środku LISTĘ pomiarów\n    for pomiar in wojewodztwo[\"values\"]:  # pętla w pętli: dla każdego pomiaru…\n        rekordy.append({\n            \"wojewodztwo\": wojewodztwo[______],   # luka 1: pole z nazwą (podejrzyj JSON!)\n            \"rok\": int(pomiar[\"year\"]),           # rok wraca jako TEKST → konwersja (F2.1)\n            \"stopa\": pomiar[______],              # luka 2: pole z wartością\n        })\n\ndf = pd.DataFrame(rekordy)\nprint(len(df))                            # luka 3 (w głowie): ile rekordów oczekujesz?\n\n# --- rytuał i pierwszy obraz (M-PD) ---\ndf.head()\ndf.groupby(______)[______].mean()         # luki 4–5: średnia stopa per rok\n```\n\nNa koniec dorysuj wykres: stopa w czasie dla JEDNEGO województwa\n(sito + linia — PD.3/PD.7; przy dwóch latach będzie skromny — w capstonie\npobierzesz więcej lat).\n\n**Zaliczenie:** komórka-pieczątka: sprawdza, że `df` istnieje, ma\n3 kolumny i 32 wiersze (16 województw × 2 lata), `rok` jest liczbą\n(konwersja wykonana!), a średnie per rok zgadzają się z niezależnym\nprzeliczeniem — i liczy token. Jawny limit: pieczątka NIE odpytuje API\nponownie (tokenu nie blokuje chwilowa niedostępność BDL — liczy się stan\nsesji po Twoim udanym pobraniu).",
+			"contentMd": "### Cel\n\nPrzejdziesz pełną ścieżkę capstone'u w miniaturze: prawdziwe zapytanie\ndo BDL → zagnieżdżony JSON → spłaszczenie pętlą → DataFrame → jeden\nwykres. Po tym labie API nie będzie w capstonie żadną niewiadomą.\n\n### Zadanie (notebook EDA.4 — kopia na Dysk, uruchom i uzupełnij luki)\n\n```python\nimport requests\nimport pandas as pd\n\n# --- zapytanie (gotowe — zweryfikowane, działa) ---\nurl = \"https://bdl.stat.gov.pl/api/v1/data/by-variable/60270\"   # stopa bezrobocia rej.\nparametry = {\"unit-level\": 2, \"year\": [2022, 2023], \"format\": \"json\", \"page-size\": 20}\nodpowiedz = requests.get(url, params=parametry)\nprint(odpowiedz.status_code)              # ma być 200 — EDA.1!\n\ndane = odpowiedz.json()\n\n# --- spłaszczenie: zagnieżdżony JSON → lista rekordów (czysty F3) ---\nrekordy = []\nfor wojewodztwo in dane[\"results\"]:       # rekord-województwo ma w środku LISTĘ pomiarów\n    for pomiar in wojewodztwo[\"values\"]:  # pętla w pętli: dla każdego pomiaru…\n        rekordy.append({\n            \"wojewodztwo\": wojewodztwo[______],   # luka 1: pole z nazwą (podejrzyj JSON!)\n            \"rok\": int(pomiar[\"year\"]),           # rok wraca jako TEKST → konwersja (F2.1)\n            \"stopa\": pomiar[______],              # luka 2: pole z wartością\n        })\n\ndf = pd.DataFrame(rekordy)\nprint(len(df))                            # luka 3 (w głowie): ile rekordów oczekujesz?\n\n# --- rytuał i pierwszy obraz (M-PD) ---\ndf.head()\nsrednie_rok = df.groupby(______)[______].mean()   # luki 4–5: średnia stopa per rok\nsrednie_rok                               # nazwa w ostatniej linii = pokaż wynik\n```\n\nNa koniec dorysuj wykres: stopa w czasie dla JEDNEGO województwa\n(sito + linia — PD.3/PD.7; przy dwóch latach będzie skromny — w capstonie\npobierzesz więcej lat).\n\n**Zaliczenie:** komórka-pieczątka: sprawdza, że `df` istnieje, ma\n3 kolumny i 32 wiersze (16 województw × 2 lata), `rok` jest liczbą\n(konwersja wykonana!), status udanego pobrania w sesji to 200,\na `srednie_rok` zgadza się z niezależnym przeliczeniem grupowania na\n`df` (nazwa `srednie_rok` jest częścią specyfikacji — pieczątka musi\nwiedzieć, gdzie patrzeć) — i liczy token. Jawny limit: pieczątka NIE\nodpytuje API ponownie (tokenu nie blokuje chwilowa niedostępność BDL —\nliczy się stan sesji po Twoim udanym pobraniu).",
 			"concepts": [
 				{
 					"slug": "api-json-pobieranie",
@@ -426,11 +426,51 @@
 			"hints": [
 				"**Koncepcyjny:** Nie zgaduj pól JSON-a — OBEJRZYJ je: wypisz `dane[\"results\"][0]` i zobacz klucze rekordu (tak się pracuje z każdym nowym API). Pętla w pętli czyta się jak zdanie: „dla każdego województwa, dla każdego jego pomiaru — dołóż płaski rekord\".",
 				"**Szkielet:** luka 1: klucz z NAZWĄ województwa w wypisanym rekordzie; luka 2: klucz z wartością pomiaru (nie rokiem); luka 3: 16 × 2 = ?; luki 4–5: `groupby(\"rok\")[\"stopa\"]`.",
-				"**Pełne rozwiązanie z objaśnieniem:** luka 1: `\"name\"`; luka 2: `\"val\"`; len → `32`; `df.groupby(\"rok\")[\"stopa\"].mean()` → dwie linie (2022 i 2023), wartości ~5–6% (sprawdź rząd wielkości: to stopy procentowe). Zwróć uwagę na `int(pomiar[\"year\"])` — API oddało rok jako tekst `\"2022\"` (cudzysłów w podejrzanym JSON-ie!), a bez konwersji oś czasu na wykresie zachowa się dziwnie — to konwersja z F2.1 w bojowym użyciu. Status ≠ 200 → drabinka EDA.1. Pieczątka czerwona przy zielonym oku → policz kolumny (dokładnie 3?) i sprawdź typ roku (`df.dtypes` — ma być liczba, nie object/str)."
+				"**Pełne rozwiązanie z objaśnieniem:** luka 1: `\"name\"`; luka 2: `\"val\"`; len → `32`; `srednie_rok = df.groupby(\"rok\")[\"stopa\"].mean()` → dwie linie (2022 i 2023), wartości ~5–6% (sprawdź rząd wielkości: to stopy procentowe). Zwróć uwagę na `int(pomiar[\"year\"])` — API oddało rok jako tekst `\"2022\"` (cudzysłów w podejrzanym JSON-ie!), a bez konwersji oś czasu na wykresie zachowa się dziwnie — to konwersja z F2.1 w bojowym użyciu. Status ≠ 200 → drabinka EDA.1. Pieczątka czerwona przy zielonym oku → policz kolumny (dokładnie 3?) i sprawdź typ roku (`df.dtypes` — ma być liczba, nie object/str)."
 			],
 			"config": {
 				"estimated": "20–25 min",
-				"checks": []
+				"checks": [
+					{
+						"id": "C1",
+						"kind": "value",
+						"note": "status udanego pobrania w sesji = 200 (pieczątka NIE odpytuje API ponownie — jawny limit treści)",
+						"var": "status",
+						"expect": 200
+					},
+					{
+						"id": "C2",
+						"kind": "value",
+						"note": "`df`: 3 kolumny (wojewodztwo, rok, stopa)",
+						"var": "kolumny",
+						"expect": 3
+					},
+					{
+						"id": "C3",
+						"kind": "value",
+						"note": "`df`: 32 wiersze (16 województw × 2 lata — zapytanie zafiksowane treścią)",
+						"var": "wiersze",
+						"expect": 32
+					},
+					{
+						"id": "C4",
+						"kind": "predicate",
+						"note": "`rok` jest liczbą (konwersja int wykonana — API oddaje rok jako tekst)",
+						"rule": {
+							"op": "is_true",
+							"var": "rok_liczbowy"
+						}
+					},
+					{
+						"id": "C5",
+						"kind": "predicate",
+						"note": "`srednie_rok` == niezależne przeliczenie grupowania na `df` (nazwa częścią specyfikacji)",
+						"rule": {
+							"op": "is_true",
+							"var": "srednie_zgodne"
+						}
+					}
+				]
 			}
 		},
 		{

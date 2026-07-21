@@ -94,12 +94,11 @@ type ModuleManifest = {
 // przez Sophię dla introspekcji tekstu w F1.7/F2.7). Sama introspekcja nie może
 // niczego zaliczyć — bezpiecznik jest w `evaluateChecks`.
 //
-// ⚠ SZEŚĆ LABÓW NIE MA TU CHECKÓW (PD.4, PD.8, EDA.4, SQL.4, SQL.7, LLM.7) —
-// ich TREŚĆ jest dziś niesprawdzalna (m.in. `duckdb.sql()` bez przypisania wyniku
-// do zmiennej; `groupby().mean()` bez kotwicy; sprzeczność w PD.4). Zostają
-// świadomie BEZ checków → trasa `complete` zwraca dla nich uczciwe 501, zamiast
-// zaliczać cokolwiek na podstawie zgadniętych nazw zmiennych. Poprawka treści
-// idzie osobnym torem przez QG.
+// Dług „6 labów bez checków" (PD.4, PD.8, EDA.4, SQL.4, SQL.7, LLM.7) SPŁACONY
+// 2026-07-21: treść poprawiona przez QG (kotwice `z1`–`z3`/`srednie_rok`, kształt
+// danych PD.8/LLM.7 przybity w treści, sprzeczność PD.4 i semantyka `zgodnosc`
+// rozstrzygnięte) i każdy lab ma kontrakt niżej. Wartości `expect` pochodzą
+// WPROST z sekcji Zaliczenie/drabinek Sophii — nie ze zgadywania.
 // ============================================================================
 
 type Check = Record<string, unknown>;
@@ -305,6 +304,247 @@ const CHECKS_LLM_4: Check[] = [
 	},
 ];
 
+// ── Spłata długu 6 labów (QG 2026-07-21) — kontrakty wg poprawionej treści ──
+
+/** PD.4 — dane zafiksowane w treści (8 wierszy à la BDL, 3 województwa). */
+const CHECKS_PD_4: Check[] = [
+	{
+		id: "C1",
+		kind: "value",
+		note: "`rok2020`: 3 wiersze (dane zafiksowane treścią; krok 3 nie dotyka kroku 2)",
+		var: "rok2020_wiersze",
+		expect: 3,
+	},
+	{
+		id: "C2",
+		kind: "predicate",
+		note: "`rok2020` zawiera WYŁĄCZNIE rok 2020 — pieczątka liczy własną maską na `df`",
+		rule: { op: "is_true", var: "rok2020_tylko_2020" },
+	},
+	{
+		id: "C3",
+		kind: "value",
+		note: "`maz` ma dokładnie 2 kolumny (rok, wartosc)",
+		var: "maz_kolumny",
+		expect: 2,
+	},
+	{
+		id: "C4",
+		kind: "predicate",
+		note:
+			"wartości `maz` pokrywają się z dokładnie JEDNYM województwem z `df` — po wyborze " +
+			"kolumn nazwy województwa w `maz` już nie ma, pieczątka porównuje wartości z pełną tabelą",
+		rule: { op: "is_true", var: "maz_jedno_wojewodztwo" },
+	},
+	{
+		id: "C5",
+		kind: "predicate",
+		note: "`maz` niepusty (mazowieckie/opolskie → 3 wiersze, pomorskie → 2)",
+		rule: { op: "count_gte", var: "maz_wiersze", n: 2 },
+	},
+];
+
+/** PD.8 — dane w notebooku; KSZTAŁT zafiksowany treścią (12 wierszy, 2 braki). */
+const CHECKS_PD_8: Check[] = [
+	{
+		id: "C1",
+		kind: "value",
+		note: "tabela wejściowa nietknięta: 12 wierszy (3 województwa × 4 lata)",
+		var: "wiersze_wejscie",
+		expect: 12,
+	},
+	{
+		id: "C2",
+		kind: "value",
+		note: "tabela wejściowa: dokładnie 2 braki w `wartosc`",
+		var: "braki_wejscie",
+		expect: 2,
+	},
+	{
+		id: "C3",
+		kind: "predicate",
+		note: "`dane_analiza`: len ≥ 7 (drop/zostaw/zawężenie lat + drop — każda decyzja legalna)",
+		rule: { op: "count_gte", var: "wiersze_analiza", n: 7 },
+	},
+	{
+		id: "C4",
+		kind: "relation",
+		note: "`dane_analiza` nie większa niż wejście (len ≤ 12)",
+		rule: { op: "lte", left: "wiersze_analiza", right: 12 },
+	},
+	{
+		id: "C5",
+		kind: "predicate",
+		note: "`srednie_woj` == niezależne przeliczenie grupowania na `dane_analiza` (pieczątka liczy sama)",
+		rule: { op: "is_true", var: "srednie_zgodne" },
+	},
+];
+
+/** EDA.4 — żywe API BDL: wartości stopy nieznane z góry, kształt zafiksowany treścią. */
+const CHECKS_EDA_4: Check[] = [
+	{
+		id: "C1",
+		kind: "value",
+		note: "status udanego pobrania w sesji = 200 (pieczątka NIE odpytuje API ponownie — jawny limit treści)",
+		var: "status",
+		expect: 200,
+	},
+	{
+		id: "C2",
+		kind: "value",
+		note: "`df`: 3 kolumny (wojewodztwo, rok, stopa)",
+		var: "kolumny",
+		expect: 3,
+	},
+	{
+		id: "C3",
+		kind: "value",
+		note: "`df`: 32 wiersze (16 województw × 2 lata — zapytanie zafiksowane treścią)",
+		var: "wiersze",
+		expect: 32,
+	},
+	{
+		id: "C4",
+		kind: "predicate",
+		note: "`rok` jest liczbą (konwersja int wykonana — API oddaje rok jako tekst)",
+		rule: { op: "is_true", var: "rok_liczbowy" },
+	},
+	{
+		id: "C5",
+		kind: "predicate",
+		note: "`srednie_rok` == niezależne przeliczenie grupowania na `df` (nazwa częścią specyfikacji)",
+		rule: { op: "is_true", var: "srednie_zgodne" },
+	},
+];
+
+/** SQL.4 — mini-świat zafiksowany treścią (5 przejazdów, godziny 8/17/9). */
+const CHECKS_SQL_4: Check[] = [
+	{
+		id: "C1",
+		kind: "value",
+		note: "Z1: 5 wierszy (rytuał obejrzenia — luka 1 wypełniona; Zaliczenie obiecuje porównanie z1–z3)",
+		var: "z1_wiersze",
+		expect: 5,
+	},
+	{
+		id: "C2",
+		kind: "value",
+		note: "Z2: 4 wiersze (minuty > 10)",
+		var: "z2_wiersze",
+		expect: 4,
+	},
+	{
+		id: "C3",
+		kind: "value",
+		note: "Z2: pierwszy wiersz id=2 (ORDER BY minuty DESC — 35 minut)",
+		var: "z2_pierwszy_id",
+		expect: 2,
+	},
+	{
+		id: "C4",
+		kind: "value",
+		note: "Z3: 3 grupy (godziny 8/17/9)",
+		var: "z3_grupy",
+		expect: 3,
+	},
+	{
+		id: "C5",
+		kind: "value",
+		note: "Z3: na czele godzina 8",
+		var: "z3_top_godzina",
+		expect: 8,
+	},
+	{
+		id: "C6",
+		kind: "value",
+		note: "Z3: suma kwot godziny 8 = 84.5",
+		var: "z3_top_suma",
+		expect: 84.5,
+	},
+];
+
+/** SQL.7 — mini-świat zafiksowany treścią (JOIN + GROUP BY + okno). */
+const CHECKS_SQL_7: Check[] = [
+	{
+		id: "C1",
+		kind: "value",
+		note: "Z1: 5 wierszy — ziarno przejazdów zachowane (kartezjan dałby więcej)",
+		var: "z1_wiersze",
+		expect: 5,
+	},
+	{
+		id: "C2",
+		kind: "value",
+		note: "Z2: na czele Manhattan (ORDER BY suma DESC)",
+		var: "z2_top_nazwa",
+		expect: "Manhattan",
+	},
+	{
+		id: "C3",
+		kind: "value",
+		note: "Z2: Manhattan 3 przejazdy",
+		var: "z2_top_liczba",
+		expect: 3,
+	},
+	{
+		id: "C4",
+		kind: "value",
+		note: "Z2: suma kwot Manhattanu 65.5",
+		var: "z2_top_suma",
+		expect: 65.5,
+	},
+	{
+		id: "C5",
+		kind: "value",
+		note: "Z3: dokładnie 3 wiersze z miejscem 1 (po jednym na strefę)",
+		var: "z3_miejsca_1",
+		expect: 3,
+	},
+];
+
+/** LLM.7 — dane zapisane w notebooku; wyniki zafiksowane treścią (0.875 / 0.5). */
+const CHECKS_LLM_7: Check[] = [
+	{
+		id: "C1",
+		kind: "value",
+		note: "8 przypadków z utrwalonego zbioru",
+		var: "przypadki_liczba",
+		expect: 8,
+	},
+	{
+		id: "C2",
+		kind: "value",
+		note: "`zgodnosc` = 0.875 (7 z 8 — jedna odpowiedź celowo złamana; ODSETEK, nie licznik)",
+		var: "zgodnosc",
+		expect: 0.875,
+	},
+	{
+		id: "C3",
+		kind: "value",
+		note: "`halucynacje_wskaznik` = 0.5 (2 wypełnione z 4 pól-braków w prawdzie — definicja LLM.5)",
+		var: "halucynacje_wskaznik",
+		expect: 0.5,
+	},
+	{
+		id: "C4",
+		kind: "predicate",
+		note: "`trafnosc` spłaszczona do listy 3 ułamków w kolejności POLA (ładunek nie przenosi słowników)",
+		rule: { op: "len_eq", var: "trafnosc_wartosci", n: 3 },
+	},
+	{
+		id: "C5",
+		kind: "predicate",
+		note: "`trafnosc_wartosci` to liczby",
+		rule: { op: "all_numbers", var: "trafnosc_wartosci" },
+	},
+	{
+		id: "C6",
+		kind: "predicate",
+		note: "`trafnosc` == niezależne przeliczenie pieczątki na zgodnych przypadkach",
+		rule: { op: "is_true", var: "trafnosc_zgodna" },
+	},
+];
+
 const MANIFESTS: ModuleManifest[] = [
 	{
 		moduleSlug: "l0-start",
@@ -473,7 +713,7 @@ const MANIFESTS: ModuleManifest[] = [
 			"wykresy-opisane": "Wykres, który wspiera wniosek",
 		},
 		overrides: {
-			"PD.4": { checks: [] },
+			"PD.4": { checks: CHECKS_PD_4 },
 			// Lab samodzielny — meta mówi „wszystkie z M-PD" (bez slugów).
 			"PD.8": {
 				concepts: [
@@ -483,7 +723,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "grupowanie-agregacja" },
 					{ slug: "wykresy-opisane" },
 				],
-				checks: [],
+				checks: CHECKS_PD_8,
 			},
 		},
 		przeglad: {
@@ -513,7 +753,7 @@ const MANIFESTS: ModuleManifest[] = [
 		// bramką jest capstone, więc zasady modułu definiują „przegląd przed capstone'em"
 		// (nie „przed egzaminem" jak M-PD/M-SQL/M-ML/M-LLM); pozycja przeglądu ta sama.
 		overrides: {
-			"EDA.4": { checks: [] },
+			"EDA.4": { checks: CHECKS_EDA_4 },
 		},
 		przeglad: {
 			refs: [
@@ -541,7 +781,7 @@ const MANIFESTS: ModuleManifest[] = [
 			"sql-funkcje-okna": "Funkcje okna: agregat, który nie zjada wierszy",
 		},
 		overrides: {
-			"SQL.4": { checks: [] },
+			"SQL.4": { checks: CHECKS_SQL_4 },
 			// Lab samodzielny — meta mówi „wszystkie z M-SQL" (bez slugów).
 			"SQL.7": {
 				concepts: [
@@ -549,7 +789,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "sql-join-ziarno" },
 					{ slug: "sql-funkcje-okna" },
 				],
-				checks: [],
+				checks: CHECKS_SQL_7,
 			},
 		},
 		przeglad: {
@@ -632,7 +872,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "json-parsowanie-walidacja" },
 					{ slug: "ewaluacja-halucynacje" },
 				],
-				checks: [],
+				checks: CHECKS_LLM_7,
 			},
 		},
 		przeglad: {

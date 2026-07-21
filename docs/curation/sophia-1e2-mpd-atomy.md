@@ -497,10 +497,12 @@ pełna maska (porównanie kolumny z liczbą); luki 3–5 — wartość tekstowa
 i dwie nazwy kolumn. Po uruchomieniu zmień województwo w kroku 3 na
 „opolskie" — wynik ma się przeliczyć bez innych zmian.
 
-**Zaliczenie:** komórka-pieczątka: sprawdza relacje dla bieżących danych —
-`rok2020` to dokładnie wiersze z rokiem 2020 (liczy własną maską),
-`maz` ma dokładnie 2 kolumny i tylko jedno województwo — i liczy token.
-Limity klasy L0 obowiązują.
+**Zaliczenie:** komórka-pieczątka: sprawdza dla bieżących danych, że
+`rok2020` to dokładnie wiersze z rokiem 2020 (liczy własną maską), a `maz`
+ma dokładnie 2 kolumny (`rok`, `wartosc`) i jego wartości pokrywają się
+z dokładnie JEDNYM województwem z `df` — po wyborze kolumn nazwy
+województwa w `maz` już nie ma, więc pieczątka porównuje wartości
+z pełną tabelą — i liczy token. Limity klasy L0 obowiązują.
 
 ### Drabinka hintów
 
@@ -949,12 +951,14 @@ w miniaturze, na danych wpisanych w kod (API dojdzie w M-EDA).
 ### Zadanie (notebook PD.8 — tabela 12 rekordów à la BDL w komórce
 „Dane" + pusta komórka „Twoja analiza" + pieczątka)
 
-Na danych z notebooka (3 województwa × 4 lata, kolumny `rok`,
-`wojewodztwo`, `wartosc`, dwa wiersze z brakiem):
+Na danych z notebooka (**dokładnie 12 wierszy**: 3 województwa × 4 lata,
+kolumny `rok`, `wojewodztwo`, `wartosc`, **dokładnie 2 wiersze z brakiem
+w `wartosc`** — kształt danych jest częścią kontraktu pieczątki):
 
 1. **Rytuał PD.2:** obejrzyj tabelę (`head`, `len`, `info`).
-2. **Braki (PD.5):** policz je, podejmij decyzję (drop/zostaw/zawęź)
-   i UZASADNIJ jednym zdaniem w komórce tekstowej.
+2. **Braki (PD.5):** policz je, podejmij decyzję (drop/zostaw/zawęź —
+   przy zawężeniu np. do 3 ostatnich lat, nie węziej) i UZASADNIJ
+   jednym zdaniem w komórce tekstowej.
 3. **Grupy (PD.6):** średnia `wartosc` per województwo; wskaż w komórce
    tekstowej, które województwo najwyżej.
 4. **Wykres (PD.7):** trend `wartosc` w czasie dla wybranego województwa
@@ -967,11 +971,13 @@ Dwie nazwy są CZĘŚCIĄ specyfikacji (pieczątka musi wiedzieć, gdzie
 patrzeć): tabelę po decyzji o brakach nazwij **`dane_analiza`**, wynik
 grupowania — **`srednie_woj`**. Reszta nazw dowolna.
 
-**Zaliczenie:** komórka-pieczątka: sprawdza, że `dane_analiza` istnieje
-i ma spójny `len` (12, 10 albo zawężony zakres lat — każda z trzech
-decyzji o brakach legalna), a `srednie_woj` zgadza się z niezależnym
-przeliczeniem grupowania na `dane_analiza` — i liczy token. Jawny limit
-(klasa L0): komórek TEKSTOWYCH (uzasadnienie, wniosek) pieczątka nie
+**Zaliczenie:** komórka-pieczątka: sprawdza, że tabela wejściowa jest
+nietknięta (12 wierszy, 2 braki), `dane_analiza` istnieje i ma spójny
+`len` (od 7 do 12 — każda z trzech decyzji o brakach legalna, również
+zawężenie lat połączone z usunięciem braków), a `srednie_woj` zgadza się
+z niezależnym przeliczeniem grupowania na `dane_analiza` — i liczy
+token. Jawny limit (klasa L0): komórek TEKSTOWYCH (uzasadnienie,
+wniosek) pieczątka nie
 ocenia — w M-PD ocenia je student sam wg drabinki; przy capstonie zrobi
 to rubryka i viva.
 
@@ -1281,3 +1287,16 @@ dwa polskie wideo (webinar Kodołamacz 2025 + krótki wstęp Analityk edu pl
 ze sprawdzonym notebookiem — 0 archaizmów), **Colab = pandas 2.2.2**
 (oficjalne backend-info, stan 2026-06-25); kanał z F1–F3 nie ma materiału
 o pandas (sprawdzone — ciągłość autora odpada).
+
+## Przebieg QG spłaty długu labów PD.4/PD.8 (2026-07-21)
+
+Dług „lab bez checków" spłacony: PD.4 — Zaliczenie przepisane bez
+sprzeczności (po wyborze kolumn `wojewodztwo` w `maz` nie istnieje;
+pieczątka porównuje wartości z pełną tabelą); PD.8 — kształt danych
+przybity w treści (12 wierszy / 2 braki), widełki `len` 7–12, krok 2
+doprecyzowany („zawęź np. do 3 ostatnich lat" — INFO-1; osiągalność
+len=7 sprawdzona kombinatorycznie). Kontrakty CHECKS_PD_4/PD_8
+w packerze policzone z danych treści i zweryfikowane przez agenta QG
+realnym pandas — **GO Z NOTAMI** (0 KRYT / przeliczenia w raporcie QG
+sesji 2026-07-21). Nota INFO-5: check C5 PD.4 (`len(maz) ≥ 2`) sprawdza
+minimalnie więcej, niż Zaliczenie obiecuje — świadome, nieszkodliwe.

@@ -484,18 +484,20 @@ którą na capstonie przejdziesz na prawdziwych przejazdach NYC.
 import duckdb
 
 # Z1: obejrzyj tabelę (rytuał!)
-duckdb.sql("SELECT * FROM przejazdy LIMIT ______")            # luka 1
+z1 = duckdb.sql("SELECT * FROM przejazdy LIMIT ______").df()  # luka 1
+z1
 
 # Z2: przejazdy dłuższe niż 10 minut, od najdłuższego
-duckdb.sql("""
+z2 = duckdb.sql("""
     SELECT id, minuty, kwota
     FROM przejazdy
     WHERE ______                                              -- luka 2
     ORDER BY ______ DESC                                      -- luka 3
-""")
+""").df()
+z2
 
 # Z3: ile przejazdów i jaka suma kwot w każdej godzinie?
-duckdb.sql("""
+z3 = duckdb.sql("""
     SELECT
         godzina,
         ______   AS liczba,                                   -- luka 4
@@ -503,11 +505,17 @@ duckdb.sql("""
     FROM przejazdy
     GROUP BY godzina
     ORDER BY suma_kwot DESC
-""")
+""").df()
+z3
 ```
 
+Wyniki lądują pod nazwami **`z1`–`z3`** (metoda `.df()` z SQL.1 — wynik
+jako DataFrame); nazwy są częścią specyfikacji, bo pieczątka musi
+wiedzieć, gdzie patrzeć. W notebooku każde zapytanie stoi w osobnej
+komórce, a nazwa w jej ostatniej linii pokazuje tabelę.
+
 **Zaliczenie:** komórka-pieczątka: wykonuje trzy zapytania kontrolne
-własną kopią SQL-a i porównuje z wynikami Twoich (Z2: 4 wiersze,
+własną kopią SQL-a i porównuje z Twoimi `z1`–`z3` (Z2: 4 wiersze,
 pierwszy id=2; Z3: 3 grupy, na czele godzina 8 z sumą 84.5) — token
 przy zgodności. Limity klasy L0 obowiązują.
 
@@ -836,7 +844,9 @@ i ranking oknem — każde z rytuałem kontroli ziarna.
 komórka „Twój raport" + pieczątka)
 
 Napisz trzy zapytania (każde w osobnym wywołaniu `duckdb.sql`,
-sformatowane wg zasady czytelności):
+sformatowane wg zasady czytelności). Wyniki zapisz pod nazwami **`z1`**,
+**`z2`**, **`z3`** (metoda `.df()` z SQL.1) — nazwy są częścią
+specyfikacji, jak w PD.8: pieczątka musi wiedzieć, gdzie patrzeć:
 
 1. **Z1 — złączenie:** wszystkie przejazdy z NAZWĄ strefy (id, nazwa,
    minuty, kwota); najpierw rytuał COUNT przed/po (SQL.5) — w komórce
@@ -850,8 +860,8 @@ sformatowane wg zasady czytelności):
    z SQL.6 — rubryka!).
 
 **Zaliczenie:** komórka-pieczątka: wykonuje własne wersje Z1–Z3
-i porównuje wyniki (Z1: 5 wierszy; Z2: Manhattan 3/65.5 na czele?
-sprawdź — Brooklyn ma 61.0 jednym kursem!; Z3: miejsca 1 w trzech
+i porównuje z Twoimi `z1`–`z3` (Z1: 5 wierszy; Z2: Manhattan 3/65.5 na
+czele? sprawdź — Brooklyn ma 61.0 jednym kursem!; Z3: miejsca 1 w trzech
 strefach) — token przy zgodności. Zdania w komórkach tekstowych poza
 checkiem (jawny limit klasy L0) — oceni je rubryka capstone'u, tu
 ćwiczysz formę.
@@ -1146,6 +1156,30 @@ Sedno M-SQL w całości w polskiej teorii atomów (D4).
   W skrypcie PRZYPIĄĆ konkretny miesiąc (TLC uprzedza o zmianach
   schematu między latami); nyc.gov blokuje boty bez przeglądarkowego
   UA — znane z audytu partii 1, pliki CloudFront wolne od tego.
+- **Kanoniczny mini-świat `przejazdy`/`strefy` (QG 2026-07-21, WAŻN-1):**
+  wartości były rozsypane po atomach/hintach — poniżej JEDYNY obowiązujący
+  listing (checki labów SQL.4/SQL.7 są policzone z NIEGO; komórka „Dane"
+  notebooków M-SQL musi go odtworzyć co do wartości):
+
+  ```python
+  przejazdy = pd.DataFrame([
+      {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 23.5, "godzina": 8},
+      {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 61.0, "godzina": 8},
+      {"id": 3, "strefa_id": 10, "minuty": 7,  "kwota": 14.0, "godzina": 9},
+      {"id": 4, "strefa_id": 30, "minuty": 22, "kwota": 41.5, "godzina": 17},
+      {"id": 5, "strefa_id": 10, "minuty": 15, "kwota": 28.0, "godzina": 17},
+  ])
+  strefy = pd.DataFrame([
+      {"strefa_id": 10, "nazwa": "Manhattan"},
+      {"strefa_id": 20, "nazwa": "Brooklyn"},
+      {"strefa_id": 30, "nazwa": "Queens"},
+  ])
+  ```
+
+  Punkty kontrolne (muszą się zgadzać po każdej edycji danych): SQL.4
+  Z2 → 4 wiersze, pierwszy id=2; Z3 → (8, 84.5), (17, 69.5), (9, 14.0);
+  SQL.7 Z1 → 5 wierszy; Z2 → Manhattan 3/65.5, Brooklyn 1/61.0,
+  Queens 1/41.5; kartezjan bez ON → 15.
 - **TODO przed ingest 1E.2:**
   1. Budowa 9 notebooków M-SQL (DuckDB 1.3.2; test `duckdb.sql` na
      DataFrame'ach w Colab — smoke na świeżej sesji).
@@ -1176,3 +1210,15 @@ DuckDB to `/docs/current/` (stary przekierowuje), komplet wideo PL
 o oknach; silnik MySQL, składnia ANSI przenośna — adnotacja), pliki
 parquet NYC TLC publiczne na CloudFront bez rejestracji (wzorzec pod
 skrypt ładujący — hak do 1E.R).
+
+## Przebieg QG spłaty długu labów SQL.4/SQL.7 (2026-07-21)
+
+Kotwice `z1`–`z3` (metoda `.df()` z SQL.1) dopisane do zadań — bez
+przypisania wyników pieczątka nie miała czego porównywać. **WAŻN-1:**
+wartości mini-świata były rozsypane po hintach pięciu atomów — kanoniczny
+listing `przejazdy`/`strefy` przybity w „Notatkach dla Olivera" (checki
+labów policzone z NIEGO; rekonstrukcja zweryfikowana przez agenta QG
+realnym DuckDB — 10+ punktów kontrolnych SQL.2–SQL.7 spójnych z jednym
+zbiorem). **WAŻN-2:** kontrakt SQL.4 rozszerzony o `z1_wiersze=5`
+(Zaliczenie obiecuje porównanie `z1`–`z3` — teraz sprawdzane w komplecie).
+**GO Z NOTAMI.**

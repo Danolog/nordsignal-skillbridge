@@ -96,22 +96,16 @@ describe("1E.2 · kontrakt treści atomów — cały zestaw (9 modułów)", () =
 	});
 
 	// ── 1E.6b (ADR-015): kontrakt checków labów ────────────────────────────────
-	// Sześć labów jest ŚWIADOMIE bez checków, bo ich TREŚĆ jest niesprawdzalna
-	// (SQL.4/SQL.7: `duckdb.sql()` bez przypisania wyniku; EDA.4: `groupby().mean()`
-	// bez kotwicy w zmiennej; PD.4: sprzeczność „maz ma 2 kolumny I jedno
-	// województwo" — po wyborze kolumn `wojewodztwo` już tam nie ma; PD.8: dane
-	// tylko w notebooku; LLM.7: `zgodnosc` = odsetek czy licznik?).
-	// Lepsze uczciwe 501 niż zaliczanie na podstawie zgadniętych nazw zmiennych.
-	// Ta lista jest DŁUGIEM — kurczy się po poprawkach treści przez QG.
-	const LABY_BEZ_CHECKOW = ["pd-4", "pd-8", "eda-4", "sql-4", "sql-7", "llm-7"];
-
-	it("13 labów ma realny kontrakt checków; 6 (jawny dług treści) świadomie nie ma", () => {
+	// Dług „6 labów bez checków" (PD.4/PD.8/EDA.4/SQL.4/SQL.7/LLM.7) spłacony
+	// 2026-07-21: treść poprawiona przez QG (kotwice wyników, kształt danych
+	// przybity, sprzeczność PD.4 i semantyka `zgodnosc` rozstrzygnięte).
+	// Ten test pilnuje, żeby dług NIE WRÓCIŁ: każdy lab ma realny kontrakt.
+	it("WSZYSTKIE 19 labów ma realny kontrakt checków (dług 6 labów spłacony)", () => {
 		const labs = allItems.filter((i) => i.kind === "lab");
 		expect(labs).toHaveLength(19);
 
 		const bez = labs.filter((l) => checksOf(l).length === 0).map((l) => l.slug);
-		expect(bez.sort()).toEqual([...LABY_BEZ_CHECKOW].sort());
-		expect(labs.filter((l) => checksOf(l).length > 0)).toHaveLength(13);
+		expect(bez).toEqual([]);
 	});
 
 	it("ZERO atrap z 1E.2: żaden check nie ma {type} zamiast {kind}", () => {

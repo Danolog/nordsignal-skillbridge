@@ -435,7 +435,7 @@
 			"position": 40,
 			"kind": "lab",
 			"title": "LAB Godziny szczytu (SELECT→WHERE→GROUP BY na mini-przejazdach)",
-			"contentMd": "### Cel\n\nTrzy zapytania rosnącej mocy na mini-świecie capstone'u: podgląd →\nprzesiew z porządkiem → agregacja per grupa. Dokładnie ta drabinka,\nktórą na capstonie przejdziesz na prawdziwych przejazdach NYC.\n\n### Zadanie (notebook SQL.4 — tabele `przejazdy`/`strefy` w komórce\n„Dane\", uzupełnij luki)\n\n```python\nimport duckdb\n\n# Z1: obejrzyj tabelę (rytuał!)\nduckdb.sql(\"SELECT * FROM przejazdy LIMIT ______\")            # luka 1\n\n# Z2: przejazdy dłuższe niż 10 minut, od najdłuższego\nduckdb.sql(\"\"\"\n    SELECT id, minuty, kwota\n    FROM przejazdy\n    WHERE ______                                              -- luka 2\n    ORDER BY ______ DESC                                      -- luka 3\n\"\"\")\n\n# Z3: ile przejazdów i jaka suma kwot w każdej godzinie?\nduckdb.sql(\"\"\"\n    SELECT\n        godzina,\n        ______   AS liczba,                                   -- luka 4\n        ______   AS suma_kwot                                 -- luka 5\n    FROM przejazdy\n    GROUP BY godzina\n    ORDER BY suma_kwot DESC\n\"\"\")\n```\n\n**Zaliczenie:** komórka-pieczątka: wykonuje trzy zapytania kontrolne\nwłasną kopią SQL-a i porównuje z wynikami Twoich (Z2: 4 wiersze,\npierwszy id=2; Z3: 3 grupy, na czele godzina 8 z sumą 84.5) — token\nprzy zgodności. Limity klasy L0 obowiązują.",
+			"contentMd": "### Cel\n\nTrzy zapytania rosnącej mocy na mini-świecie capstone'u: podgląd →\nprzesiew z porządkiem → agregacja per grupa. Dokładnie ta drabinka,\nktórą na capstonie przejdziesz na prawdziwych przejazdach NYC.\n\n### Zadanie (notebook SQL.4 — tabele `przejazdy`/`strefy` w komórce\n„Dane\", uzupełnij luki)\n\n```python\nimport duckdb\n\n# Z1: obejrzyj tabelę (rytuał!)\nz1 = duckdb.sql(\"SELECT * FROM przejazdy LIMIT ______\").df()  # luka 1\nz1\n\n# Z2: przejazdy dłuższe niż 10 minut, od najdłuższego\nz2 = duckdb.sql(\"\"\"\n    SELECT id, minuty, kwota\n    FROM przejazdy\n    WHERE ______                                              -- luka 2\n    ORDER BY ______ DESC                                      -- luka 3\n\"\"\").df()\nz2\n\n# Z3: ile przejazdów i jaka suma kwot w każdej godzinie?\nz3 = duckdb.sql(\"\"\"\n    SELECT\n        godzina,\n        ______   AS liczba,                                   -- luka 4\n        ______   AS suma_kwot                                 -- luka 5\n    FROM przejazdy\n    GROUP BY godzina\n    ORDER BY suma_kwot DESC\n\"\"\").df()\nz3\n```\n\nWyniki lądują pod nazwami **`z1`–`z3`** (metoda `.df()` z SQL.1 — wynik\njako DataFrame); nazwy są częścią specyfikacji, bo pieczątka musi\nwiedzieć, gdzie patrzeć. W notebooku każde zapytanie stoi w osobnej\nkomórce, a nazwa w jej ostatniej linii pokazuje tabelę.\n\n**Zaliczenie:** komórka-pieczątka: wykonuje trzy zapytania kontrolne\nwłasną kopią SQL-a i porównuje z Twoimi `z1`–`z3` (Z2: 4 wiersze,\npierwszy id=2; Z3: 3 grupy, na czele godzina 8 z sumą 84.5) — token\nprzy zgodności. Limity klasy L0 obowiązują.",
 			"concepts": [
 				{
 					"slug": "sql-select-zapytanie",
@@ -457,7 +457,50 @@
 			],
 			"config": {
 				"estimated": "15–20 min",
-				"checks": []
+				"checks": [
+					{
+						"id": "C1",
+						"kind": "value",
+						"note": "Z1: 5 wierszy (rytuał obejrzenia — luka 1 wypełniona; Zaliczenie obiecuje porównanie z1–z3)",
+						"var": "z1_wiersze",
+						"expect": 5
+					},
+					{
+						"id": "C2",
+						"kind": "value",
+						"note": "Z2: 4 wiersze (minuty > 10)",
+						"var": "z2_wiersze",
+						"expect": 4
+					},
+					{
+						"id": "C3",
+						"kind": "value",
+						"note": "Z2: pierwszy wiersz id=2 (ORDER BY minuty DESC — 35 minut)",
+						"var": "z2_pierwszy_id",
+						"expect": 2
+					},
+					{
+						"id": "C4",
+						"kind": "value",
+						"note": "Z3: 3 grupy (godziny 8/17/9)",
+						"var": "z3_grupy",
+						"expect": 3
+					},
+					{
+						"id": "C5",
+						"kind": "value",
+						"note": "Z3: na czele godzina 8",
+						"var": "z3_top_godzina",
+						"expect": 8
+					},
+					{
+						"id": "C6",
+						"kind": "value",
+						"note": "Z3: suma kwot godziny 8 = 84.5",
+						"var": "z3_top_suma",
+						"expect": 84.5
+					}
+				]
 			}
 		},
 		{
@@ -717,7 +760,7 @@
 			"position": 70,
 			"kind": "lab",
 			"title": "LAB Raport stref (samodzielny finał: JOIN + GROUP BY + okno)",
-			"contentMd": "### Cel\n\nZbudujesz trzy zapytania raportu, które na capstonie napiszesz dla\nprawdziwych danych NYC: złączenie ze słownikiem, agregat per strefa\ni ranking oknem — każde z rytuałem kontroli ziarna.\n\n### Zadanie (notebook SQL.7 — tabele `przejazdy`/`strefy` + pusta\nkomórka „Twój raport\" + pieczątka)\n\nNapisz trzy zapytania (każde w osobnym wywołaniu `duckdb.sql`,\nsformatowane wg zasady czytelności):\n\n1. **Z1 — złączenie:** wszystkie przejazdy z NAZWĄ strefy (id, nazwa,\n   minuty, kwota); najpierw rytuał COUNT przed/po (SQL.5) — w komórce\n   tekstowej zapisz jego wynik jednym zdaniem.\n2. **Z2 — agregat per strefa:** nazwa strefy, liczba przejazdów, suma\n   kwot; od najwyższej sumy. (Uwaga: grupujesz po wyniku złączenia —\n   nazwa strefy pochodzi ze słownika!)\n3. **Z3 — ranking oknem:** id, nazwa strefy, kwota i miejsce przejazdu\n   w rankingu najdroższych SWOJEJ strefy; plus jedno zdanie w komórce\n   tekstowej: dlaczego okno, a nie GROUP BY (wzorzec uzasadnienia\n   z SQL.6 — rubryka!).\n\n**Zaliczenie:** komórka-pieczątka: wykonuje własne wersje Z1–Z3\ni porównuje wyniki (Z1: 5 wierszy; Z2: Manhattan 3/65.5 na czele?\nsprawdź — Brooklyn ma 61.0 jednym kursem!; Z3: miejsca 1 w trzech\nstrefach) — token przy zgodności. Zdania w komórkach tekstowych poza\ncheckiem (jawny limit klasy L0) — oceni je rubryka capstone'u, tu\nćwiczysz formę.",
+			"contentMd": "### Cel\n\nZbudujesz trzy zapytania raportu, które na capstonie napiszesz dla\nprawdziwych danych NYC: złączenie ze słownikiem, agregat per strefa\ni ranking oknem — każde z rytuałem kontroli ziarna.\n\n### Zadanie (notebook SQL.7 — tabele `przejazdy`/`strefy` + pusta\nkomórka „Twój raport\" + pieczątka)\n\nNapisz trzy zapytania (każde w osobnym wywołaniu `duckdb.sql`,\nsformatowane wg zasady czytelności). Wyniki zapisz pod nazwami **`z1`**,\n**`z2`**, **`z3`** (metoda `.df()` z SQL.1) — nazwy są częścią\nspecyfikacji, jak w PD.8: pieczątka musi wiedzieć, gdzie patrzeć:\n\n1. **Z1 — złączenie:** wszystkie przejazdy z NAZWĄ strefy (id, nazwa,\n   minuty, kwota); najpierw rytuał COUNT przed/po (SQL.5) — w komórce\n   tekstowej zapisz jego wynik jednym zdaniem.\n2. **Z2 — agregat per strefa:** nazwa strefy, liczba przejazdów, suma\n   kwot; od najwyższej sumy. (Uwaga: grupujesz po wyniku złączenia —\n   nazwa strefy pochodzi ze słownika!)\n3. **Z3 — ranking oknem:** id, nazwa strefy, kwota i miejsce przejazdu\n   w rankingu najdroższych SWOJEJ strefy; plus jedno zdanie w komórce\n   tekstowej: dlaczego okno, a nie GROUP BY (wzorzec uzasadnienia\n   z SQL.6 — rubryka!).\n\n**Zaliczenie:** komórka-pieczątka: wykonuje własne wersje Z1–Z3\ni porównuje z Twoimi `z1`–`z3` (Z1: 5 wierszy; Z2: Manhattan 3/65.5 na\nczele? sprawdź — Brooklyn ma 61.0 jednym kursem!; Z3: miejsca 1 w trzech\nstrefach) — token przy zgodności. Zdania w komórkach tekstowych poza\ncheckiem (jawny limit klasy L0) — oceni je rubryka capstone'u, tu\nćwiczysz formę.",
 			"concepts": [
 				{
 					"slug": "sql-group-by-agregacja",
@@ -739,7 +782,43 @@
 			],
 			"config": {
 				"estimated": "25 min",
-				"checks": []
+				"checks": [
+					{
+						"id": "C1",
+						"kind": "value",
+						"note": "Z1: 5 wierszy — ziarno przejazdów zachowane (kartezjan dałby więcej)",
+						"var": "z1_wiersze",
+						"expect": 5
+					},
+					{
+						"id": "C2",
+						"kind": "value",
+						"note": "Z2: na czele Manhattan (ORDER BY suma DESC)",
+						"var": "z2_top_nazwa",
+						"expect": "Manhattan"
+					},
+					{
+						"id": "C3",
+						"kind": "value",
+						"note": "Z2: Manhattan 3 przejazdy",
+						"var": "z2_top_liczba",
+						"expect": 3
+					},
+					{
+						"id": "C4",
+						"kind": "value",
+						"note": "Z2: suma kwot Manhattanu 65.5",
+						"var": "z2_top_suma",
+						"expect": 65.5
+					},
+					{
+						"id": "C5",
+						"kind": "value",
+						"note": "Z3: dokładnie 3 wiersze z miejscem 1 (po jednym na strefę)",
+						"var": "z3_miejsca_1",
+						"expect": 3
+					}
+				]
 			}
 		},
 		{
