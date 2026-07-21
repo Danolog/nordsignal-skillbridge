@@ -11,7 +11,48 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-21 — MAKE IT STICK: PLAN 13 + QUICK-WINY MIS NA MAIN, MIGRACJA 0038 NA PRODZIE
+## STAN NA DZIŚ — 2026-07-21 (po południu) — NOCNY TOR e2e-llm ZIELONY PIERWSZY RAZ W HISTORII
+
+### Werdykt
+
+Run 29829371083 (workflow_dispatch po #195): **8/8 jobów success, e2e-llm 9/9
+testów w 6,1 min.** Wcześniej nocny tor NIE BYŁ zielony ANI RAZU od powstania
+(2026-06-25) — padał co noc, po cichu (job non-blocking, na PR-ach się pomijał).
+Naprawa zeszła przez **7 warstw** (PR #184, #190–#195), każda odkryta realnym
+przebiegiem:
+
+1. **#184 infra:** sidecar `redis`+SRH (REST zgodny z Upstash) — serwer
+   produkcyjny w CI wstaje z NIETKNIĘTYM boot-guardem rate-limitera; do tego
+   `.gitleaksignore` (rekwizyt testu PII flagowany przez pełny skan historii)
+   i 2×HIGH audytu (`pnpm.overrides`: brace-expansion, js-yaml). Sekret
+   `ANTHROPIC_API_KEY_CI` był OK — plotka o jego braku to echo źródła kroku w logu.
+2. **#190 PRODUKT:** tura czatu B0 z `aiHeavy` (5/min) → `aiLight` — limiter
+   ścinał 9-turową rozmowę na turze 5 (ścinałby też ŻYWEGO studenta piszącego
+   szybciej niż 12 s/turę). `/summary` zostaje na aiHeavy. ⚠ Rekalibracja
+   w terytorium audytu Ryana — uzasadnienie w komicie; sign-off wskazany.
+3. **#191:** izolacja stanu konta b4 (specy 10/20/40 współdzielą konto —
+   `helpers/db-reset.ts` przywraca Krok 0 + czyści sesje Pomocnika).
+4. **#192:** specy 20/40 dogonione do redesignu wizarda (krok 2 = „Sylabus
+   (opcjonalny)"; test B4 pokrywał krok samooceny ZNIESIONY przez D5 —
+   przepisany pod katalog rynku z anty-regresją progu).
+5. **#193:** cel kariery przez deterministyczny picker (LLM proponował ścieżki
+   spoza katalogu — „Backend Developer" — a krok 3 uczciwie blokuje Zatwierdź).
+6. **#194:** `db:ingest-career-model` w jobie (model kariery w bazie CI).
+7. **#195:** `seed:e2e` zasila `jobMarketData` z artefaktu JustJoinIT
+   (tylko-gdy-pusto) — krok 3 czyta TĘ tabelę, a wgrywał ją wyłącznie demo
+   `db:seed`, którego CI nie zna. Klasyka „works on my machine".
+
+### Długi/noty po tej robocie
+- **Klient nie sygnalizuje 429 tury czatu** (wiadomości pęcznieją bez odpowiedzi
+  i bez komunikatu) — UX-owy dług, osobne zadanie.
+- **Sign-off Ryana** dla rekalibracji `aiLight` (pkt 2) — decyzja Darka.
+- B0 „przebieg 3/3" bywa flaky (timeout LLM raz na kilka biegów; retry łapie) —
+  akceptowalne dla non-blocking nocnego toru.
+- ⚠ **Incydent współdzielonego katalogu:** gałąź #190 przemyciła cudzy commit
+  (mis3 siedział na lokalnym main w trakcie brancha) — wykryte, gałąź
+  przebudowana; ustawiane są worktree per strumień (decyzja Darka 2026-07-21).
+
+## STAN POPRZEDNI — 2026-07-21 — MAKE IT STICK: PLAN 13 + QUICK-WINY MIS NA MAIN, MIGRACJA 0038 NA PRODZIE
 
 ### Co się wydarzyło (4 PR-y, wszystkie squash na main)
 
