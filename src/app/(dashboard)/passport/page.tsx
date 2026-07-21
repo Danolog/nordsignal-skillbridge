@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { type PassportData, PassportView } from "@/components/passport/passport-view";
+import { VerifiedStatsPanel } from "@/components/passport/verified-stats-panel";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import {
@@ -23,6 +24,8 @@ import {
 import {
 	buildVerifiedPassportCompetencies,
 	loadVerifiedCompetencyNames,
+	loadVerifiedCompetencyStats,
+	type VerifiedCompetencyStat,
 } from "@/lib/passport-verified";
 
 export default async function PassportPage() {
@@ -49,6 +52,10 @@ export default async function PassportPage() {
 	// Deklaracje/diagnoza zostają w aplikacji (Kanban, analiza luk) — D1.
 	// OFF = zachowanie jak dotąd (deklaracje + calculateCoverage).
 	const verifiedOnly = isFeatureEnabled("passportVerifiedOnly");
+	// MIS.3: panel świeżości/kontekstów TYLKO w widoku prywatnym i tylko przy
+	// obu flagach ON (bez verifiedOnly nie ma kredencjałów, które by opisywał).
+	const freshnessEnabled = verifiedOnly && isFeatureEnabled("passportFreshness");
+	let verifiedStats: VerifiedCompetencyStat[] = [];
 	let coverage: number;
 	let passportCompetencies: PassportData["competencies"];
 	if (verifiedOnly) {
@@ -56,6 +63,9 @@ export default async function PassportPage() {
 			loadVerifiedCompetencyNames(db, student.id),
 			loadMarketCatalog(student.careerGoal),
 		]);
+		if (freshnessEnabled) {
+			verifiedStats = await loadVerifiedCompetencyStats(db, student.id);
+		}
 		coverage = computeDemandCoverage(
 			catalog,
 			verifiedNames.map((name) => ({ name })),
@@ -138,5 +148,14 @@ export default async function PassportPage() {
 		publicEnabled: passport.publicEnabled,
 	};
 
-	return <PassportView data={passportData} />;
+	return (
+		<>
+			<PassportView data={passportData} />
+			{freshnessEnabled && verifiedStats.length > 0 && (
+				<div className="mx-auto mt-6 max-w-3xl px-4 pb-8">
+					<VerifiedStatsPanel stats={verifiedStats} />
+				</div>
+			)}
+		</>
+	);
 }

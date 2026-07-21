@@ -11,7 +11,7 @@
 // bajt-w-bajt jak dotąd; ten moduł nie jest wtedy wołany z żadnej trasy.
 // ============================================================================
 
-import { eq } from "drizzle-orm";
+import { countDistinct, eq, max } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { passports, students, verifiedCompetencies } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
@@ -39,6 +39,61 @@ export async function loadVerifiedCompetencyNames(
 		.from(verifiedCompetencies)
 		.where(eq(verifiedCompetencies.studentId, studentId));
 	return rows.map((r) => r.name);
+}
+
+// ============================================================================
+// MIS.3 (plan 13) — świeżość i konteksty kredencjałów. WYŁĄCZNIE widok
+// PRYWATNY studenta (decyzja Darka 2026-07-21: publiczny paszport bez zmian
+// do osobnej decyzji po pilotażu). Czysta ekspozycja danych, zero migracji.
+// ============================================================================
+
+/** Statystyki kredencjału per nazwa: ostatnie potwierdzenie + liczba kontekstów. */
+export interface VerifiedCompetencyStat {
+	name: string;
+	lastVerifiedAt: Date;
+	/** Liczba RÓŻNYCH submisji potwierdzających nazwę — „kontekstów" (#8: ≥2 = ugruntowana). */
+	contextCount: number;
+}
+
+/**
+ * Agregacja po nazwie kompetencji: MAX(verifiedAt) i COUNT(DISTINCT submissionId).
+ * To samo zapytanie zasili metrykę transferu (MIS.8) — jedna funkcja, dwaj konsumenci.
+ */
+export async function loadVerifiedCompetencyStats(
+	dbOrTx: Pick<typeof db, "select">,
+	studentId: string,
+): Promise<VerifiedCompetencyStat[]> {
+	const rows = await dbOrTx
+		.select({
+			name: verifiedCompetencies.competencyName,
+			lastVerifiedAt: max(verifiedCompetencies.verifiedAt),
+			contextCount: countDistinct(verifiedCompetencies.submissionId),
+		})
+		.from(verifiedCompetencies)
+		.where(eq(verifiedCompetencies.studentId, studentId))
+		.groupBy(verifiedCompetencies.competencyName);
+	return rows.map((r) => ({
+		name: r.name,
+		// max() jest typowany nullable, ale po GROUP BY grupa zawsze ma wiersz;
+		// koercja pokrywa też driver zwracający string zamiast Date.
+		lastVerifiedAt:
+			r.lastVerifiedAt instanceof Date ? r.lastVerifiedAt : new Date(String(r.lastVerifiedAt)),
+		contextCount: Number(r.contextCount),
+	}));
+}
+
+/** Progi świeżości w dniach (MIS.3, startowe — do rewizji po pilotażu). */
+export const FRESHNESS_FRESH_DAYS = 90;
+export const FRESHNESS_AGING_DAYS = 180;
+
+export type FreshnessBucket = "fresh" | "aging" | "stale";
+
+/** Kubełek świeżości: <90 dni świeża, 90–180 starzejąca się, >180 do odświeżenia. */
+export function freshnessBucket(lastVerifiedAt: Date, now: Date): FreshnessBucket {
+	const days = (now.getTime() - lastVerifiedAt.getTime()) / (24 * 60 * 60 * 1000);
+	if (days < FRESHNESS_FRESH_DAYS) return "fresh";
+	if (days <= FRESHNESS_AGING_DAYS) return "aging";
+	return "stale";
 }
 
 /** Kształt pozycji kompetencji w PassportData (podzbiór dotychczasowego). */
