@@ -11,7 +11,31 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-21 (wieczór) — NOTEBOOKI F1 + SPŁATA DŁUGU 6 LABÓW NA PRODZIE
+## STAN NA DZIŚ — 2026-07-21 (wieczór) — NOTEBOOKI F1+F2, SPŁATA DŁUGU 6 LABÓW — WSZYSTKO NA PRODZIE
+
+### Część 3: notebooki F2 (7 szt.) — PR #198 (squash `884bc4f`), 18/66
+
+- Wzorzec F1 + **nowe mechanizmy**: pieczątka F2.7 WYWOŁUJE funkcję
+  studenta na próbnej liście (`[1,2,3]→6`, parytet z serwerowym
+  value-checkiem `sonda_suma_wydatkow`; celny komunikat przy pętli po
+  globalnej liście); pieczątka NIE wywołuje `input()` (token bez
+  interakcji); `_zrodlo` = ostatni kandydat z KOMPLETEM
+  `input(`/`if`/`else` (lekcja F1.7). Harness: kolejka `inputs`.
+- **QG agentem (realne wykonanie komórek + WSZYSTKIE ścieżki odmów):
+  GO Z NOTAMI (0K/0W/7I)** — m.in. zweryfikowane, że `NameError`
+  w `_luka_(input(...))` pada PRZED polem input; INFO-5 wcielone;
+  log w `sophia-1e2-f2-atomy.md`. Kontrakt-test notebooks-f2: 13 testów.
+- Pułapka CI tej partii: flaga regex `/s` (dotAll) nie przechodzi przez
+  `tsc --noEmit` (target) — używać `[\s\S]`; lokalny `pnpm build` tego
+  NIE łapie, typecheck w CI tak.
+- **Publikacja:** `skillbridge-notebooks` @ `b68a947` (katalog `f2/`).
+- **PROD:** retencja — usunięte 2 przeterminowane gałęzie backupowe
+  (pre-0036, pre-ingest-1er z 2026-07-13); backup
+  **`prod-backup-pre-ingest-krok4-f2-20260721`** (`br-crimson-unit-al0vmsm2`);
+  ingest ×2 idempotentny; weryfikacja PO: **18 pozycji z notebookUrl**
+  (4 L0 + 7 F1 + 7 F2 — komplet fundamentów L0/F1/F2), `f2-przeglad`
+  bez URL-a. Smoke: `/` 200, `/login` 200, `/api/curriculum` 404
+  (flaga OFF).
 
 ### Część 2: dług treści 6 labów SPŁACONY (PR #197, squash `9509007`)
 
@@ -95,16 +119,17 @@ checków** (kontrakt-test pilnuje 19/19 — dług nie wróci po cichu).
 
 ### NASTĘPNE (kolejność — zgodnie z roadmapą §4, potwierdzone przez Darka)
 1. **Akcje Darka do flagi L0** (bez zmian). 2. ~~Dług treści 6 labów~~ —
-   **SPŁACONY** (#197, część 2 wyżej).
-3. **Notebooki F2 (7 szt.)** i dalej F3/M-* (zostało 55/66).
-4. **1E.3** (packer: `exam` w `ITEM_KINDS`). 5. **1E.4** dopiero po
-   naprawie `hintDepth` (MIS.1 już na main). 6. Tor równoległy bez zmian.
+   **SPŁACONY** (#197). 3. ~~Notebooki F2~~ — **ZROBIONE** (#198).
+4. **Notebooki F3 (8 szt.)** i dalej M-* (zostało 48/66; dla M-SQL/M-LLM
+   kontrakty danych już przybite — listing `przejazdy`/`strefy`, nota
+   o 4 polach-brakach).
+5. **1E.3** (packer: `exam` w `ITEM_KINDS`). 6. **1E.4** dopiero po
+   naprawie `hintDepth` (MIS.1 już na main). 7. Tor równoległy bez zmian.
 
 ### Baseline `main` po tej sesji
-build OK · tsc 0 · Biome 0 · unit **1305/1305** · pełna bramka CI zielona
-na #196 i #197 · roadmapa §4: dług notebooków zaktualizowany (11/66) ·
-gałęzie Neona: 10 (kandydaci do delete: pre-0036 i pre-ingest-1er
-z 2026-07-13).
+build OK · tsc 0 · Biome 0 · unit **1318/1318** · pełna bramka CI zielona
+na #196/#197/#198 · roadmapa §4: dług notebooków 18/66 · gałęzie Neona: 9
+(po retencji).
 
 ## STAN POPRZEDNI — 2026-07-21 (po południu) — NOCNY TOR e2e-llm ZIELONY PIERWSZY RAZ W HISTORII
 
