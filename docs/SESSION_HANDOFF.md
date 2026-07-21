@@ -11,7 +11,73 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-14 (noc) — KROK 4/L0: NOTEBOOKI SĄ, DRABINA DZIAŁA END-TO-END
+## STAN NA DZIŚ — 2026-07-21 — MAKE IT STICK: PLAN 13 + QUICK-WINY MIS NA MAIN, MIGRACJA 0038 NA PRODZIE
+
+### Co się wydarzyło (4 PR-y, wszystkie squash na main)
+
+Darek dostarczył dokument „Od nauki o uczeniu się do produktu" (9 propozycji
+z „Make It Stick" + Paszport 2.0). Analiza vs roadmapa/ADR-y: większość JUŻ
+pokryta (1E.3/1E.4, ADR-014, B5, „jeszcze nie" w item-runnerze) — luki domykają
+pakiety **MIS.1–MIS.8** w nowym **`.agents/plans/13-make-it-stick.md`**.
+
+- **#186 · plan 13 + roadmapa** — sekcja 4-ter, warunek na ścieżce krytycznej:
+  **MIS.1 + naprawa hintDepth PRZED 1E.4**. Decyzje Darka (2026-07-21, wpisane
+  do planu): (1) „najpierw próba" NIE zmienia ADR-014 D1 (worked example
+  zostaje; generacja → pre-testy/powtórki/fading); (2) quick-winy równolegle
+  poza ścieżką krytyczną; (3) Paszport 2.0 **najpierw prywatnie** — publiczny
+  bez zmian do osobnej decyzji po pilotażu.
+- **#187 · MIS.7 mikrocopy** — student widział SUROWY status EN („Status
+  zgłoszenia: rejected") → mapa PL w `submission-status.ts`: „rejected" =
+  „Jeszcze nie zaliczone — sprawdź feedback, popraw i wyślij ponownie";
+  lab-stamp/viva w tym samym tonie. Poza PR-em (świadomie): 4. pytanie
+  refleksji (wymaga migracji — decyzja Darka).
+- **#188 · MIS.1 sonda pewności** — `curriculum_item_answers.confidence`
+  (migracja **0038**, NULL=sprzed flagi) + 3 przyciski przed „Sprawdź"
+  (`FLAG_CONFIDENCE_PROBE`; wymagana SERWEROWO przy ON — 400 bez zapisu;
+  przy OFF wartość z body ignorowana → NULL). Cecha FSRS 1E.4 od dnia 1.
+- **#189 · MIS.3 Paszport 2.0** — `loadVerifiedCompetencyStats`
+  (MAX(verifiedAt)+COUNT(DISTINCT submissionId); ta sama funkcja zasili
+  metrykę transferu MIS.8) + `VerifiedStatsPanel` W WIDOKU PRYWATNYM za
+  `FLAG_PASSPORT_FRESHNESS` (∧ passportVerifiedOnly). Progi: <90 świeża /
+  90–180 starzejąca / >180 do odświeżenia; „ugruntowana" ≥2 konteksty.
+  Świadomie POZA PassportDocument (współdzielony z publicznym). Zero migracji.
+
+### PROD (2026-07-21)
+
+- **Migracja 0038 WYKONANA** wg wzorca: backup **`prod-backup-pre-0038-20260721`**
+  (`br-cool-star-albszb22`), dziennik 38→39, DIRECT; weryfikacja PO: kolumna
+  smallint NULL + CHECK `confidence_range` + 0 wierszy z wartością. Musiała
+  wyprzedzić zapalenie `FLAG_CURRICULUM_PATH` — trasa answer po merge #188
+  ZAWSZE pisze kolumnę confidence (przy OFF trasy = 404, więc okna 500 nie było).
+- Smoke: `/` 200, `/login` 200, `/api/curriculum` **404** (flaga curriculum
+  nadal OFF — akcje Darka bez zmian). ⚠ **PUŁAPKA URL:**
+  `skill-bridge-ai.vercel.app` to OBCA aplikacja (create-react-app, kolizja
+  nazw vercel.app) — prod to **`skill-bridge-ai-seven.vercel.app`**
+  (czytać z `NEXT_PUBLIC_APP_URL` w `.env.prod`, nie z nazwy projektu).
+- Nowe flagi `FLAG_CONFIDENCE_PROBE` / `FLAG_PASSPORT_FRESHNESS`: **OFF
+  wszędzie** (env nieustawione = default false). Zapalenie = env + REDEPLOY.
+
+### NASTĘPNE (kolejność)
+1. **Akcje Darka do flagi L0** (bez zmian: screenshoty, seans wideo, test ≤15
+   min) → flaga=1 + redeploy. Migracja 0038 już NIE blokuje. Przy zapalaniu
+   curriculum rozważyć od razu `FLAG_CONFIDENCE_PROBE=1` (dane kalibracji od
+   pierwszego dnia realnych studentów) i `FLAG_PASSPORT_FRESHNESS=1`.
+2. **Notebooki F1 (7 szt.)** i dalej kolejka bez zmian (dług 6 labów → 1E.3 →
+   **naprawa hintDepth** → 1E.4 → …).
+3. **MIS wg planu 13:** MIS.2 + MIS.8-A po ~2 tyg. danych z sondy; MIS.4 przy
+   1E.3 (wspólna migracja `assessment_sessions.kind`); MIS.3b/MIS.5/MIS.6/
+   MIS.8-B po 1E.4.
+4. Tor równoległy bez zmian; **UWAGA: równolegle żyje cudza gałąź
+   `fix/b0-turn-ailight`** (tura czatu na aiLight) — nie moja, nie ruszałem.
+
+### Baseline `main` po tej sesji
+Pełna bramka CI zielona na KAŻDYM z #186–#189 (build, tsc, Biome, vitest,
+integration, gitleaks, deps-scan). Per gałąź: unit 1285 (MIS.7) / 1284 (MIS.1)
+/ 1284 (MIS.3), integration 176; suma na main ≈ **1289 unit / 178 integration**
+— potwierdzi nocny tor. Konflikt #188↔#189 (flags.ts/.env.example) rozwiązany
+merge'em main do gałęzi przed merge.
+
+## STAN POPRZEDNI — 2026-07-14 (noc) — KROK 4/L0: NOTEBOOKI SĄ, DRABINA DZIAŁA END-TO-END
 
 ### Co się wydarzyło (PR #182, squash na main)
 
