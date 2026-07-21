@@ -11,7 +11,59 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-21 (noc) — NOTEBOOKI F1+F2+F3 I SPŁATA DŁUGU 6 LABÓW NA PRODZIE
+## STAN NA DZIŚ — 2026-07-21 (późna noc) — NOTEBOOKI M-PD NA PRODZIE, KOREKTA INWENTARZA M-*
+
+### Partia 5: notebooki M-PD (8 szt.) — PR #200 (squash `b27fc8e`), **33/58**
+
+⚠ **Korekta inwentarza M-* (jak wcześniej F3=7):** liczby „M-PD=9,
+M-SQL=9, M-ML=9, M-LLM=9" były szacunkiem sprzed finalizacji modułów.
+Realne atomy (bez `*-przeglad`, który notebooka nie dostaje): **M-PD=8,
+M-EDA=4, M-SQL=7, M-ML=7, M-LLM=7** → M-*=33, cel całkowity = **58**
+notebooków (nie 65). Zrobione **33/58** (L0=4, F1=7, F2=7, F3=7,
+M-PD=8); zostaje 25 (M-EDA=4, M-SQL=7, M-ML=7, M-LLM=7).
+
+- Wzorzec F1–F3 + **nowe mechanizmy**: pierwsze notebooki z pandas —
+  **CI job `test` dostał krok `pip install "pandas~=2.2.0"`**
+  (parytet z Colab 2.2.2; harness wykonuje komórki realnym python3;
+  zmiana CI w tym samym PR co testy, które jej wymagają). Pieczątka
+  PD.4: własna maska na `df`, „jedno województwo w `maz`" przez indeksy
+  (`df.loc[maz.index, ...]` — nota inżynierska Sophii), wartości
+  porównywane z pełną tabelą. Pieczątka PD.8: kontrakt wejścia
+  12 wierszy / 2 braki / **odcisk sumy wartości (1003.1)**, widełki len
+  7–12, **pochodzenie wierszy `dane_analiza` multizbiorem rekordów**
+  (niezależne od indeksu — `fillna(0)` dostaje celną odmowę, `reset_index`
+  legalny), niezależne przeliczenie `groupby(...).mean()`.
+- **QG agentem (realne wykonanie, 31 ścieżek): GO Z NOTAMI (0K/4W/8I)**
+  — wszystkie WAŻN wcielone + regresje w kontrakt-teście
+  (`notebooks-mpd.contract.test.ts`, 21 testów): (1) token za `fillna(0)`
+  → check pochodzenia; (2) kontrakt wejścia tylko kształtowy → odcisk
+  wartości; (3) fałszywa liczba w przykładowym zdaniu decyzji PD.5;
+  (4) hint 3 PD.8 cytował „17% roku 2022", braki są w 2020/2021 —
+  poprawka w dokumencie Sophii + repack. Log w `sophia-1e2-mpd-atomy.md`.
+- **Publikacja:** `skillbridge-notebooks` @ `b99a26c` (katalog `mpd/`,
+  raw 8×200).
+- **PROD:** retencja — usunięte 2 przeterminowane gałęzie
+  (pre-0037-20260713, pre-ingest-partia2-20260714); backup
+  **`prod-backup-pre-ingest-krok4-mpd-20260721`**
+  (`br-ancient-moon-al3kt8x1`); ingest ×2 idempotentny (moduły=9,
+  pozycje=70, pytania 129 bez zmian); weryfikacja PO: **33 pozycje
+  z notebookUrl** (4+7+7+7+8 — jedyne w bazie), `pd-przeglad` bez URL-a,
+  0 labów bez checków, poprawiony hint pd-8 na prodzie (stary rok 2022
+  zniknął). Smoke: `/` 200, `/login` 200, `/api/curriculum` 404
+  (flaga OFF — bez zmian, czeka na akcje Darka).
+- ⚠ **Nota:** repo aplikacji przemianowane na GitHubie na
+  **`Danolog/nordsignal-skillbridge`** (push/PR działają przez redirect;
+  lokalne originy wciąż wskazują stary URL — działa, ale przy okazji
+  warto zrobić `git remote set-url`).
+- **Następna partia (M-EDA=4):** wymaga screenshotów UI (akcje Darka —
+  zgłoszone); kontrakty danych M-SQL (listing `przejazdy`/`strefy`)
+  i M-LLM (4 pola-braki parsowalne) przybite w #197.
+
+### Baseline `main` po tej sesji
+build OK · tsc 0 · Biome 0 · unit **1387/1387** · pełna bramka CI
+zielona na #200 · notebooki **33/58** · gałęzie Neona: **9**.
+
+## STAN POPRZEDNI — 2026-07-21 (noc) — NOTEBOOKI F1+F2+F3 I SPŁATA DŁUGU 6 LABÓW NA PRODZIE
 
 ### Część 4: notebooki F3 (7 szt.) — PR #199 (squash `5a9eab1`), **25/65**
 
