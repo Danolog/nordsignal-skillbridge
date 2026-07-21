@@ -38,7 +38,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 		);
 	}
 
-	const rl = await applyRateLimit(rateLimiters.aiHeavy, `user:${studentAuth.userId}`);
+	// aiLight, NIE aiHeavy (rekalibracja 2026-07-21, znalezisko pierwszego realnego
+	// przebiegu nocnego e2e-llm): tura = JEDNO wywołanie modelu „standard", a koszt
+	// sesji i tak tnie twardy cap 9 tur + limiter restartów. aiHeavy (5/min) ścinał
+	// żywego użytkownika: krótkie odpowiedzi („tak", „wolę dane") idą szybciej niż
+	// 12 s/turę — tura 6 w tej samej minucie dostawała 429, rozmowa wisła na 5/9.
+	// aiHeavy zostaje tam, gdzie jest ciężko: /summary (2× premium: podsumowanie+sędzia).
+	const rl = await applyRateLimit(rateLimiters.aiLight, `user:${studentAuth.userId}`);
 	if (!rl.success) return rateLimitResponse(rl.reset);
 
 	const params = ParamsSchema.safeParse(await ctx.params);
