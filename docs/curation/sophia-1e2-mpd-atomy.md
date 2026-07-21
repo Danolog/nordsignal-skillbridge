@@ -994,8 +994,8 @@ to rubryka i viva.
    kind="line", title=..., xlabel=..., ylabel=...)`.
 3. **Pełne rozwiązanie z objaśnieniem:** (w notebooku, zwinięte —
    dno drabinki nie blokuje zaliczenia, R13): przykładowa decyzja
-   „usuwam 2 punktowe braki (17% roku 2022) — akceptowalne, bo analiza
-   dotyczy trendu wieloletniego"; grupowanie i wykres jak w PD.6/PD.7;
+   „usuwam 2 punktowe braki (2 z 12 wierszy, ~17% tabeli; braki w 2020
+   i 2021) — akceptowalne, bo analiza dotyczy trendu wieloletniego"; grupowanie i wykres jak w PD.6/PD.7;
    wniosek wzorcowy: „wartość w mazowieckim rośnie w całym okresie;
    hipoteza: wzrost wiąże się z X — wymaga danych o X". Sprawdzian
    samokontroli przed tokenem: czy każda liczba w Twoich zdaniach
@@ -1300,3 +1300,46 @@ w packerze policzone z danych treści i zweryfikowane przez agenta QG
 realnym pandas — **GO Z NOTAMI** (0 KRYT / przeliczenia w raporcie QG
 sesji 2026-07-21). Nota INFO-5: check C5 PD.4 (`len(maz) ≥ 2`) sprawdza
 minimalnie więcej, niż Zaliczenie obiecuje — świadome, nieszkodliwe.
+
+## Przebieg QG notebooków M-PD (2026-07-21, Krok 4 partia 5)
+
+Recenzja adwersaryjna agentem z REALNYM wykonaniem wszystkich komórek
+(python3, pandas 2.2.3, matplotlib 3.10.1; Colab ma 2.2.2 — zakres wspólny):
+8 notebooków komórka po komórce, pieczątki PD.4/PD.8 na 4 happy path +
+17 ścieżkach adwersaryjnych ponad kontrakt-test (31 ścieżek łącznie),
+serializacja ładunku (wyłącznie czyste int/bool — zero numpy.int64/bool_),
+kombinatoryka decyzji PD.8 (drop=10 / zostaw=12 / zawężenie=9 /
+zawężenie+drop=7 — wszystkie wydają token). **Werdykt: GO Z NOTAMI
+(0 KRYT / 4 WAŻN / 8 INFO).** Wcielone przed PR-em:
+
+- **WAŻN-1:** pieczątka PD.8 wydawała token za `dane_analiza = df.fillna(0)`
+  (anty-wzorzec potępiany w PD.5-P3/E12; payload nieodróżnialny od decyzji
+  „zostaw") → nowy lokalny check pochodzenia wierszy: każdy rekord
+  `dane_analiza` musi występować w `df` (porównanie multizbiorem rekordów,
+  NIEZALEŻNE od indeksu — `reset_index` legalny), celna odmowa nazywa
+  fillna po imieniu. Payload bez zmian — parytet z checkami serwerowymi
+  C1–C5 zachowany (lokalne zaostrzenie, wzorzec PD.4).
+- **WAŻN-2:** kontrakt „tabela wejściowa nietknięta" był tylko kształtowy
+  (12 wierszy / 2 braki) — podmiana wartości (`df.loc[0,"wartosc"]=999`)
+  przechodziła → dodany odcisk wartości wejścia
+  (`sum(wartosc) == 1003.1 ± 0.01`); markdown pieczątki doprecyzowany
+  („wartości bez zmian").
+- **WAŻN-3:** przykładowe zdanie decyzji w notebooku PD.5 zawierało
+  fałszywą liczbę („tracę 25% pomiarów roku 2020" — naprawdę 2/3) →
+  przepisane: „2 z 8 wierszy (25% tabeli), oba to pomiary roku 2020 —
+  tracę 2 z 3 pomiarów tego roku".
+- **WAŻN-4:** hint 3 PD.8 (ten dokument + spakowany JSON) cytował
+  „17% roku 2022", a braki notebooka leżą w 2020 i 2021 (rok 2022
+  kompletny) — relikt sprzed przybicia kształtu danych → poprawione
+  na „2 z 12 wierszy, ~17% tabeli; braki w 2020 i 2021" + repack.
+- **INFO-1 wcielone:** diagnoza PD.4 „wartości maz nie pokrywają się"
+  wymienia teraz także przestawienie indeksu (reset_index) jako przyczynę.
+  Pozostałe INFO (świadomie bez zmian): łagodne akceptacje litery
+  kontraktu PD.4 (kolejność kolumn, dublowanie wierszy poza zasięgiem
+  luk — spójne z notą INFO-5 QG 2026-07-21); `srednie_woj` liczone na
+  `df` przy decyzji drop nieodróżnialne matematycznie (NaN pomijane).
+
+Regresje WAŻN-1/WAŻN-2 przybite w
+`tests/unit/ds/notebooks-mpd.contract.test.ts` (scenariusze fillna
+i podmiany wartości). Kontrakt-test po poprawkach: 21/21; strażnik
+składni pieczątek: zielony.

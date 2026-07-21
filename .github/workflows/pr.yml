@@ -68,6 +68,12 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Krok 4 partia 5: kontrakt-testy notebooków M-PD wykonują komórki
+      # realnym python3 (harness ADR-015), a komórki M-PD importują pandas —
+      # wersja jak w Colab (2.2.x, research Sophii 2026-07-11).
+      - run: python3 -m pip install "pandas~=2.2.0"
+        env:
+          PIP_BREAK_SYSTEM_PACKAGES: "1"
       - run: pnpm test:run
 
   integration:

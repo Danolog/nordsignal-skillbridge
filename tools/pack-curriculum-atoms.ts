@@ -734,8 +734,19 @@ const MANIFESTS: ModuleManifest[] = [
 			"grupowanie-agregacja": "Grupowanie: podziel, policz, sklej",
 			"wykresy-opisane": "Wykres, który wspiera wniosek",
 		},
+		// Krok 4 partia 5: KAŻDY atom M-PD ma notebook towarzyszący (jak F1–F3);
+		// pieczątka tylko w labach PD.4/PD.8.
 		overrides: {
-			"PD.4": { checks: CHECKS_PD_4 },
+			"PD.1": { notebookUrl: `${NOTEBOOKS_BASE}/mpd/pd-1-pakiety-import-pip.ipynb` },
+			"PD.2": { notebookUrl: `${NOTEBOOKS_BASE}/mpd/pd-2-dataframe-tabela.ipynb` },
+			"PD.3": { notebookUrl: `${NOTEBOOKS_BASE}/mpd/pd-3-maska-filtrowanie.ipynb` },
+			"PD.4": {
+				checks: CHECKS_PD_4,
+				notebookUrl: `${NOTEBOOKS_BASE}/mpd/pd-4-lab-sito-na-tabeli.ipynb`,
+			},
+			"PD.5": { notebookUrl: `${NOTEBOOKS_BASE}/mpd/pd-5-braki-danych.ipynb` },
+			"PD.6": { notebookUrl: `${NOTEBOOKS_BASE}/mpd/pd-6-grupowanie-describe.ipynb` },
+			"PD.7": { notebookUrl: `${NOTEBOOKS_BASE}/mpd/pd-7-wykresy-opisane.ipynb` },
 			// Lab samodzielny — meta mówi „wszystkie z M-PD" (bez slugów).
 			"PD.8": {
 				concepts: [
@@ -746,6 +757,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "wykresy-opisane" },
 				],
 				checks: CHECKS_PD_8,
+				notebookUrl: `${NOTEBOOKS_BASE}/mpd/pd-8-lab-mini-eda.ipynb`,
 			},
 		},
 		przeglad: {
