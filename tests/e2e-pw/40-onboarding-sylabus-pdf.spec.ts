@@ -126,7 +126,9 @@ async function fillProfileAndGoToSyllabus(page: import("@playwright/test").Page)
 	await expect(combos).toHaveCount(2);
 
 	await page.getByRole("button", { name: /Dalej/i }).click();
-	await expect(page.getByRole("heading", { name: /Wgraj swój sylabus/i })).toBeVisible();
+	// Nagłówek kroku 2 po redesignie „realny rynek" (Partia 4/D4): sylabus jest
+	// OPCJONALNY i adnotuje katalog — stary nagłówek „Wgraj swój sylabus" nie istnieje.
+	await expect(page.getByRole("heading", { name: /Sylabus \(opcjonalny\)/i })).toBeVisible();
 }
 
 /** Wgrywa PDF (bez wpisywania tekstu) i klika „Analizuj sylabus". */
