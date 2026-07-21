@@ -66,10 +66,11 @@ df = pd.DataFrame(dane)
 #
 # Uruchom komórkę poniżej, przepisz **kod atomu** z SkillBridge i przenieś
 # wypisany **token**. Pieczątka sprawdza, że tabela wejściowa jest
-# nietknięta (12 wierszy, 2 braki), `dane_analiza` ma spójny rozmiar
-# (od 7 do 12 wierszy — każda z trzech decyzji o brakach legalna),
-# a `srednie_woj` zgadza się z NIEZALEŻNYM przeliczeniem grupowania na
-# `dane_analiza`. Uwaga (jawny limit): komórek TEKSTOWYCH (uzasadnienie,
+# nietknięta (12 wierszy, 2 braki, wartości bez zmian), `dane_analiza`
+# ma spójny rozmiar (od 7 do 12 wierszy — każda z trzech decyzji
+# o brakach legalna) i wiersze POCHODZĄCE z tabeli wejściowej (wpisywanie
+# wartości w braki to nie decyzja, to fałszowanie — PD.5), a `srednie_woj`
+# zgadza się z NIEZALEŻNYM przeliczeniem grupowania na `dane_analiza`. Uwaga (jawny limit): komórek TEKSTOWYCH (uzasadnienie,
 # wniosek) i wykresu pieczątka nie ocenia — oceń je sam(a) wg drabinki;
 # przy capstonie zrobi to rubryka i viva.
 
@@ -89,12 +90,13 @@ def _zbierz_wyniki():
         or list(df.columns) != ["rok", "wojewodztwo", "wartosc"]
         or len(df) != 12
         or int(df["wartosc"].isna().sum()) != 2
+        or abs(float(df["wartosc"].sum()) - 1003.1) >= 0.01
     ):
         raise RuntimeError(
             "Tabela wejściowa `df` wygląda na zmienioną (kontrakt: 12 "
-            "wierszy, kolumny rok/wojewodztwo/wartosc, 2 braki w wartosc). "
-            'Analizę rób na KOPIACH — przywróć komórkę „Dane" i uruchom '
-            "notebook od góry."
+            "wierszy, kolumny rok/wojewodztwo/wartosc, 2 braki w wartosc, "
+            "wartości bez zmian). Analizę rób na KOPIACH — przywróć komórkę "
+            '„Dane" i uruchom notebook od góry.'
         )
     if "dane_analiza" not in g:
         raise RuntimeError(
@@ -123,6 +125,36 @@ def _zbierz_wyniki():
             "Legalne decyzje: usuń braki, zostaw wszystko albo zawęź lata "
             "(np. do 3 ostatnich, nie węziej) — także łącznie z dropna."
         )
+    # Wiersze `dane_analiza` muszą POCHODZIĆ z tabeli wejściowej (porównanie
+    # rekordów, niezależne od indeksu) — fillna/podmiana wartości nie jest
+    # żadną z trzech decyzji kroku 2.
+    pozostale = []
+    for i in range(len(df)):
+        w = df.iloc[i]
+        pozostale.append(
+            (
+                int(w["rok"]),
+                str(w["wojewodztwo"]),
+                None if pd.isna(w["wartosc"]) else round(float(w["wartosc"]), 6),
+            )
+        )
+    for i in range(len(dane_analiza)):
+        w = dane_analiza.iloc[i]
+        rekord = (
+            int(w["rok"]),
+            str(w["wojewodztwo"]),
+            None if pd.isna(w["wartosc"]) else round(float(w["wartosc"]), 6),
+        )
+        if rekord in pozostale:
+            pozostale.remove(rekord)
+        else:
+            raise RuntimeError(
+                "wartości w `dane_analiza` nie pochodzą z tabeli wejściowej — "
+                "wpisywanie wartości w braki (np. fillna(0)) FAŁSZUJE wskaźnik "
+                "ciągły i nie jest decyzją z kroku 2 (PD.5): usuń braki, "
+                "zostaw je albo zawęź lata; wróć do kroku 2 i uruchom "
+                "komórki ponownie."
+            )
     if "srednie_woj" not in g:
         raise RuntimeError(
             "Nie widzę `srednie_woj` — tak (dokładnie) nazwij wynik "

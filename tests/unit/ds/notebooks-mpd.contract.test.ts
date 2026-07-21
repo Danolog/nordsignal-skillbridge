@@ -314,6 +314,32 @@ describe("symulacja sesji studenta M-PD: komórki → token → checki z prodowe
 			message: /wygląda na zmienioną/,
 		},
 		{
+			// Regresja WAŻN-1 (QG M-PD): fillna(0) na wskaźniku ciągłym nie jest
+			// decyzją z kroku 2 — wiersze dane_analiza muszą POCHODZIĆ z df.
+			name: "pd-8: dane_analiza = df.fillna(0) — pieczątka odmawia (fałszowanie wskaźnika)",
+			slug: "pd-8",
+			replacements: [
+				[
+					"# Twoja analiza — pisz tutaj:",
+					'dane_analiza = df.fillna(0)\nsrednie_woj = dane_analiza.groupby("wojewodztwo")["wartosc"].mean()',
+				],
+			],
+			message: /nie pochodzą z tabeli wejściowej[\s\S]*fillna/,
+		},
+		{
+			// Regresja WAŻN-2 (QG M-PD): kontrakt wejścia to też WARTOŚCI, nie
+			// tylko kształt 12/2 — podmiana wartości przed pieczątką odmawia.
+			name: "pd-8: wartość w df podmieniona przed pieczątką — kontrakt wejścia odmawia",
+			slug: "pd-8",
+			replacements: [
+				[
+					"# Twoja analiza — pisz tutaj:",
+					'df.loc[0, "wartosc"] = 999.0\ndane_analiza = df.dropna()\nsrednie_woj = dane_analiza.groupby("wojewodztwo")["wartosc"].mean()',
+				],
+			],
+			message: /wygląda na zmienioną/,
+		},
+		{
 			name: "pd-8: tabela po decyzji nazwana inaczej niż dane_analiza — pieczątka odmawia",
 			slug: "pd-8",
 			replacements: [

@@ -59,6 +59,7 @@ print(len(_luka_))        # luka C: ile wierszy zostało?
 
 # %% [markdown]
 # Krok trzeci — ZAPISZ decyzję: jedno zdanie w komórce tekstowej
-# (dodaj ją tu: **+ Tekst**), np. „usuwam 2 wiersze punktowych braków,
-# tracę 25% pomiarów roku 2020 — akceptowalne, bo…". Rubryka ocenia
-# uzasadnienie, nie samo wywołanie.
+# (dodaj ją tu: **+ Tekst**), np. „usuwam 2 z 8 wierszy (25% tabeli) —
+# oba to pomiary roku 2020, tracę 2 z 3 pomiarów tego roku —
+# akceptowalne, bo…". Rubryka ocenia uzasadnienie, nie samo wywołanie —
+# i każda liczba w zdaniu ma pochodzić z komórki wyżej, nie z pamięci.

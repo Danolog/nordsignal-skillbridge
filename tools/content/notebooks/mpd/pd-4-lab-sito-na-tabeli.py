@@ -152,8 +152,9 @@ def _zbierz_wyniki():
     if rozjazd:
         raise RuntimeError(
             "wartości `maz` nie pokrywają się z pełną tabelą `df` — nie "
-            "przepisuj danych ręcznie, zbuduj `maz` sitem z kroku 3 "
-            "i uruchom komórkę ponownie."
+            "przepisuj danych ręcznie i nie przestawiaj indeksu (np. "
+            "reset_index); zbuduj `maz` sitem z kroku 3 i uruchom komórkę "
+            "ponownie."
         )
     return {
         "rok2020_wiersze": int(len(rok2020)),

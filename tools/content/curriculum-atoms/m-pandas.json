@@ -884,7 +884,7 @@
 			"hints": [
 				"**Koncepcyjny:** To sekwencja czterech atomów w kolejności, w jakiej je przeszedłeś(-aś): obejrzyj → braki (policz-zrozum-zdecyduj-zapisz) → pogrupuj → narysuj i podpisz. Każdy krok masz przećwiczony; nowa jest tylko samodzielność złożenia.",
 				"**Szkielet:** komórka 1: `df.head(12)`, `len(df)`, `df.info()`; komórka 2: `df.isna().sum()` → decyzja → `czysta = ...` → `len(czysta)`; komórka 3: `czysta.groupby(______)[______].mean()`; komórka 4: sito na jedno województwo + `.plot(x=..., y=..., kind=\"line\", title=..., xlabel=..., ylabel=...)`.",
-				"**Pełne rozwiązanie z objaśnieniem:** (w notebooku, zwinięte — dno drabinki nie blokuje zaliczenia, R13): przykładowa decyzja „usuwam 2 punktowe braki (17% roku 2022) — akceptowalne, bo analiza dotyczy trendu wieloletniego\"; grupowanie i wykres jak w PD.6/PD.7; wniosek wzorcowy: „wartość w mazowieckim rośnie w całym okresie; hipoteza: wzrost wiąże się z X — wymaga danych o X\". Sprawdzian samokontroli przed tokenem: czy każda liczba w Twoich zdaniach pochodzi z komórki wyżej (nie z pamięci)?"
+				"**Pełne rozwiązanie z objaśnieniem:** (w notebooku, zwinięte — dno drabinki nie blokuje zaliczenia, R13): przykładowa decyzja „usuwam 2 punktowe braki (2 z 12 wierszy, ~17% tabeli; braki w 2020 i 2021) — akceptowalne, bo analiza dotyczy trendu wieloletniego\"; grupowanie i wykres jak w PD.6/PD.7; wniosek wzorcowy: „wartość w mazowieckim rośnie w całym okresie; hipoteza: wzrost wiąże się z X — wymaga danych o X\". Sprawdzian samokontroli przed tokenem: czy każda liczba w Twoich zdaniach pochodzi z komórki wyżej (nie z pamięci)?"
 			],
 			"config": {
 				"estimated": "25–30 min",
