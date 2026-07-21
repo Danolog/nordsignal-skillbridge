@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import { loginWithPassword } from "./helpers/auth";
 import { driveChatToSummaryCta } from "./helpers/b0-chat";
+import { resetOnboardingState } from "./helpers/db-reset";
 import { dbWriteTest as test } from "./helpers/guards";
 import { fillSurveyAndContinue } from "./helpers/survey";
 
@@ -131,6 +132,10 @@ test.describe("@dbwrite @llm Pomocnik jako Krok 0 onboardingu (#5, nowy student)
 	}) => {
 		test.setTimeout(300_000); // Krok 0 = ~9 wywołań modelu (czat) + podsumowanie.
 		// Konto "b4": onboardingCompleted=FALSE → /onboarding wpuszcza w wizard od Kroku 0.
+		// Reset stanu PRZED wejściem: specy 10/20/40 współdzielą konto b4, a każdy
+		// zakłada Krok 0 — bez resetu pierwszy przebieg zostawia wizard dalej
+		// i sesję Pomocnika (modal wznowienia). Znalezisko biegu nr 3 nocnego toru.
+		await resetOnboardingState("b4");
 		await loginWithPassword(page, "b4");
 		await page.goto("/onboarding");
 

@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import { loginWithPassword } from "./helpers/auth";
 import { driveChatToSummaryCta } from "./helpers/b0-chat";
+import { resetOnboardingState } from "./helpers/db-reset";
 import { dbWriteTest as test } from "./helpers/guards";
 import { fillSurveyAndContinue } from "./helpers/survey";
 
@@ -60,6 +61,9 @@ test.describe("@dbwrite @llm B4 Samoocena (onboarding krok 4 z 5)", () => {
 		// Wizard woła model TRZY razy (Krok 0 czat + syllabus parse + Skill Map przy
 		// zapisie). Krok 0 to ~9 wywołań modelu — podnosimy budżet czasu całego testu.
 		test.setTimeout(360_000);
+		// Samowystarczalność specu: konto b4 współdzielone ze specami 10/40 —
+		// reset przywraca wizard na Krok 0 i czyści sesje Pomocnika (db-reset.ts).
+		await resetOnboardingState("b4");
 		await loginWithPassword(page, "b4");
 		await page.goto("/onboarding");
 
