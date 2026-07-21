@@ -261,4 +261,48 @@ dBack("1E.1d/e/f · curriculum: prereq 403, zapis postępu, streak (realna baza)
 		expect(withFlag.dates.length).toBe(2);
 		expect(withoutFlag.dates.length).toBe(0);
 	});
+
+	// MIS.1 — sonda pewności (flaga confidenceProbe). Blok idzie PO teście
+	// streaka: dokłada wiersze odpowiedzi, a streak liczy dokładnie 2 ślady.
+	it("MIS.1 flaga ON: brak confidence → 400 bez zapisu; z confidence → wiersz z wartością", async () => {
+		process.env.FLAG_CONFIDENCE_PROBE = "1";
+		try {
+			const missing = await answerPOST(
+				answerRequest({ questionItemId: questionB, answer: { selected: 2 } }),
+				{ params: Promise.resolve({ id: itemB }) },
+			);
+			expect(missing.status).toBe(400);
+			const rowsAfter400 = await db.execute(
+				sql`SELECT id FROM curriculum_item_answers
+			    WHERE student_id = ${studentId} AND item_id = ${itemB}`,
+			);
+			expect(rowsAfter400.rows.length).toBe(0);
+
+			const withConfidence = await answerPOST(
+				answerRequest({ questionItemId: questionB, answer: { selected: 2 }, confidence: 3 }),
+				{ params: Promise.resolve({ id: itemB }) },
+			);
+			expect(withConfidence.status).toBe(200);
+			const rows = await db.execute(
+				sql`SELECT confidence FROM curriculum_item_answers
+			    WHERE student_id = ${studentId} AND item_id = ${itemB} ORDER BY answered_at`,
+			);
+			expect(rows.rows.map((r: { confidence: number | null }) => r.confidence)).toEqual([3]);
+		} finally {
+			delete process.env.FLAG_CONFIDENCE_PROBE;
+		}
+	});
+
+	it("MIS.1 flaga OFF: confidence z body ignorowane — zapis NULL (zachowanie jak dziś)", async () => {
+		const res = await answerPOST(
+			answerRequest({ questionItemId: questionB, answer: { selected: 2 }, confidence: 2 }),
+			{ params: Promise.resolve({ id: itemB }) },
+		);
+		expect(res.status).toBe(200);
+		const rows = await db.execute(
+			sql`SELECT confidence FROM curriculum_item_answers
+		    WHERE student_id = ${studentId} AND item_id = ${itemB} ORDER BY answered_at`,
+		);
+		expect(rows.rows.map((r: { confidence: number | null }) => r.confidence)).toEqual([3, null]);
+	});
 });

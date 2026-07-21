@@ -33,6 +33,9 @@ interface ItemRunnerProps {
 	hints: string[];
 	/** Status pozycji przy wejściu (completed → od razu panel „zaliczona"). */
 	initialStatus: string;
+	/** MIS.1 — flaga confidenceProbe czytana w server component (deploy ≠ release);
+	 *  true = przed „Sprawdź" obowiązkowa deklaracja pewności (1–3). */
+	confidenceProbeEnabled: boolean;
 }
 
 interface AnswerFeedback {
@@ -50,6 +53,7 @@ export function ItemRunner({
 	answeredCorrectQuestionIds,
 	hints,
 	initialStatus,
+	confidenceProbeEnabled,
 }: ItemRunnerProps) {
 	const solved = new Set(answeredCorrectQuestionIds);
 	const pending = questions.filter((q) => !solved.has(q.id));
@@ -59,6 +63,8 @@ export function ItemRunner({
 	const [feedback, setFeedback] = useState<AnswerFeedback | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 	const [hintDepth, setHintDepth] = useState(0);
+	// MIS.1 — pewność deklarowana PRZED sprawdzeniem; null = jeszcze nie wybrana.
+	const [confidence, setConfidence] = useState<1 | 2 | 3 | null>(null);
 	const [completed, setCompleted] = useState(
 		initialStatus === "completed" || initialStatus === "skipped_by_placement",
 	);
@@ -73,7 +79,9 @@ export function ItemRunner({
 		((question.type === "single_choice" && draft.selected !== undefined) ||
 			(question.type === "multi_choice" && (draft.selectedMulti?.length ?? 0) > 0) ||
 			((question.type === "numeric" || question.type === "short_text") &&
-				(draft.value ?? "").trim() !== ""));
+				(draft.value ?? "").trim() !== "")) &&
+		// MIS.1: bez deklaracji pewności „Sprawdź" nie rusza (obowiązkowa przy fladze).
+		(!confidenceProbeEnabled || confidence !== null);
 
 	function updateDraft(next: Draft) {
 		setDraft(next);
@@ -95,7 +103,12 @@ export function ItemRunner({
 			const res = await fetch(`/api/curriculum/items/${itemId}/answer`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ questionItemId: question.id, answer, hintDepth }),
+				body: JSON.stringify({
+					questionItemId: question.id,
+					answer,
+					hintDepth,
+					...(confidenceProbeEnabled && confidence !== null ? { confidence } : {}),
+				}),
 			});
 			if (res.status === 403) {
 				toast.error("Ta pozycja jest zablokowana.");
@@ -128,6 +141,7 @@ export function ItemRunner({
 		setFeedback(null);
 		setDraft({});
 		setHintDepth(0);
+		setConfidence(null);
 		setIndex((i) => i + 1);
 	}
 
@@ -278,6 +292,44 @@ export function ItemRunner({
 						</Button>
 					)}
 				</div>
+			)}
+
+			{confidenceProbeEnabled && (
+				// MIS.1 — sonda pewności PRZED sprawdzeniem (3 przyciski zamiast
+				// suwaka: mniejsze tarcie na mobile, jednoznaczne progi do analiz).
+				// Wybór można zmienić do momentu „Sprawdź"; przy kolejnej próbie
+				// tego samego pytania deklaracja zostaje — student może ją poprawić.
+				<fieldset className="mt-4">
+					<legend className="text-sm font-medium text-foreground">
+						Jak pewny(-a) jesteś tej odpowiedzi?
+					</legend>
+					<div className="mt-2 flex flex-wrap gap-2">
+						{(
+							[
+								[1, "Zgaduję"],
+								[2, "Chyba wiem"],
+								[3, "Jestem pewny(-a)"],
+							] as const
+						).map(([value, label]) => (
+							<button
+								key={value}
+								type="button"
+								aria-pressed={confidence === value}
+								onClick={() => setConfidence(value)}
+								className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+									confidence === value
+										? "border-emerald-400 bg-emerald-50 font-medium text-emerald-900"
+										: "border-border bg-background text-foreground hover:border-emerald-200"
+								}`}
+							>
+								{label}
+							</button>
+						))}
+					</div>
+					<p className="mt-1 text-xs text-muted-foreground">
+						Szczera odpowiedź pomaga Ci skalibrować, co już umiesz — nie wpływa na wynik.
+					</p>
+				</fieldset>
 			)}
 
 			{feedback && (

@@ -267,6 +267,13 @@
       "when": 1783967926695,
       "tag": "0037_crazy_lockheed",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1784628255496,
+      "tag": "0038_black_absorbing_man",
+      "breakpoints": true
     }
   ]
 }

@@ -1825,6 +1825,10 @@ export const curriculumItemAnswers = pgTable(
 		// Głębokość drabinki hintów w momencie odpowiedzi (0 = bez hintu,
 		// 3 = pełne rozwiązanie) — sygnał D11 i adaptacyjnego fadingu D5.
 		hintDepth: smallint("hint_depth").notNull().default(0),
+		// MIS.1 — pewność deklarowana PRZED odpowiedzią (1 = zgaduję, 2 = chyba
+		// wiem, 3 = jestem pewny). Cecha FSRS (1E.4) i wsad kalibracji (MIS.2).
+		// NULL = odpowiedź sprzed flagi confidenceProbe (nie zgadujemy wstecz).
+		confidence: smallint("confidence"),
 		answeredAt: timestamp("answered_at", { withTimezone: true }).defaultNow().notNull(),
 	},
 	(table) => [
@@ -1832,6 +1836,10 @@ export const curriculumItemAnswers = pgTable(
 		index("idx_curriculum_item_answers_tenant_id").on(table.tenantId),
 		index("idx_curriculum_item_answers_item_id").on(table.itemId),
 		check("curriculum_item_answers_hint_depth_range", sql`${table.hintDepth} BETWEEN 0 AND 3`),
+		check(
+			"curriculum_item_answers_confidence_range",
+			sql`${table.confidence} IS NULL OR ${table.confidence} BETWEEN 1 AND 3`,
+		),
 	],
 );
 

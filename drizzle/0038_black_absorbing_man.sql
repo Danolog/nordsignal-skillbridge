@@ -1,0 +1,2 @@
+ALTER TABLE "curriculum_item_answers" ADD COLUMN "confidence" smallint;--> statement-breakpoint
+ALTER TABLE "curriculum_item_answers" ADD CONSTRAINT "curriculum_item_answers_confidence_range" CHECK ("curriculum_item_answers"."confidence" IS NULL OR "curriculum_item_answers"."confidence" BETWEEN 1 AND 3);
