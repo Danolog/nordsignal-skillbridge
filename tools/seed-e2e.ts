@@ -30,6 +30,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
+import jobMarketArtifact from "../src/lib/db/data/job-market-justjoinit.json";
 import * as schema from "../src/lib/db/schema";
 import { assertTestDb } from "./assert-test-db";
 
@@ -270,6 +271,28 @@ async function main() {
 			status: "verified",
 		},
 	]);
+
+	// ── Katalog rynku (jobMarketData) — z TEGO SAMEGO artefaktu co db:seed ──────
+	// Krok 3 wizarda (kompetencje z rynku) czyta jobMarketData; świeża baza CI
+	// jej nie ma (db:seed to seed DEMO, nie biega w e2e) → krok 3 uczciwie
+	// blokował „Zatwierdź" nawet dla realnej ścieżki (bieg nr 7 nocnego toru).
+	// Idempotentnie i tylko-gdy-pusto: nie nadpisujemy bazy deweloperskiej,
+	// na której db:seed już był.
+	const marketCount = await db.$count(schema.jobMarketData);
+	if (marketCount === 0) {
+		const marketRows = jobMarketArtifact.data.flatMap((entry) =>
+			entry.competencies.map((comp) => ({
+				careerGoal: entry.careerGoal,
+				competencyName: comp.name,
+				demandPercentage: comp.demandPercentage,
+				category: comp.category,
+			})),
+		);
+		await db.insert(schema.jobMarketData).values(marketRows);
+		console.log(
+			`  jobMarketData: +${marketRows.length} rekordów (${jobMarketArtifact.data.length} ścieżek — artefakt JustJoinIT)`,
+		);
+	}
 
 	console.log("seed-e2e OK:");
 	console.log(`  tenant: ${TENANT_SLUG} (${tenantId})`);
