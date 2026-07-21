@@ -11,6 +11,7 @@ import type { ProjectBrief } from "@/lib/ai/generate-brief";
 import type { ProjectSourceLink } from "./project-source-links";
 import { ProjectSourceLinks } from "./project-source-links";
 import { SubmissionForm } from "./submission-form";
+import { submissionStatusLabel } from "./submission-status";
 import { TutorPanel } from "./tutor-panel";
 import { VivaPanel } from "./viva-panel";
 
@@ -249,7 +250,7 @@ export function ProjectDetail({
 
 			{submission && submission.status !== "in_progress" && (
 				<div className={`proj-submission-status proj-status-${submission.status}`}>
-					<h3>Status zgłoszenia: {submission.status}</h3>
+					<h3>Status zgłoszenia: {submissionStatusLabel(submission.status)}</h3>
 					{submission.score !== null && <p>Wynik: {submission.score}/100</p>}
 				</div>
 			)}
