@@ -155,6 +155,12 @@ token     = base64(canonical(wyniki)) + "." + HMAC(kod_atomu, canonical(wyniki))
 Dzięki temu zmiana decyzji o formacie tokenu = **podmiana jednego bloku**, a nie przepisywanie treści.
 To jedyny powód, dla którego notebooki czekały na ten ADR.
 
+> **Doprecyzowanie (Krok 4 partia 2, 2026-07-21):** komórkę-pieczątkę mają wyłącznie
+> notebooki pozycji `lab` (zaliczenie tokenem). Od F1 istnieją też notebooki
+> TOWARZYSZĄCE ćwiczeń (WE + brudnopisy, `config.notebookUrl` przy `kind="exercise"`)
+> — świadomie **bez pieczątki**: atom `exercise` zalicza się pytaniami. Inwentarz
+> „66 notebooków" obejmuje obie klasy; kontrakt tego ADR dotyczy klasy labowej.
+
 ## 8. Konsekwencje
 
 **Pozytywne:** drabina staje się przechodnia (L0 → F1 → …); 66 notebooków odblokowanych; zero

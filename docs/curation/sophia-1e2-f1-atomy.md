@@ -430,8 +430,9 @@ Który zapis zadziała?**
    Zabrakło (1) → klamry widać w wyniku; zabrakło (2) → nazwa wypisuje się
    jako słowo. Wynik czytasz tak: tekst zostaje, klamry znikają, w ich miejsce
    wchodzą obliczone wartości.
-2. **Szkielet:** Uzupełnij w notebooku F1.3: `print(f"Razem: {___} zł")` —
-   w luce postaw najpierw nazwę `tydzien`, uruchom; potem podmień lukę na
+2. **Szkielet:** Uzupełnij w notebooku F1.3 komórkę
+   `print(f"Bilety kosztują mnie {_luka_} zł na tydzień.")` — w miejsce
+   `_luka_` postaw najpierw nazwę `tydzien`, uruchom; potem podmień lukę na
    wyrażenie `przejazdy * bilet`, uruchom znowu. Wynik ma być identyczny —
    zobacz na własne oczy regułę „klamra przyjmuje i nazwę, i wyrażenie".
 3. **Pełne rozwiązanie z objaśnieniem:**
@@ -1000,7 +1001,10 @@ obowiązuje wszędzie:
    `if`/`else` (F1.6); komunikat mówi wprost, czego oczekiwał Python.
 3. **`IndentationError: expected an indented block`** → po linii
    z dwukropkiem musi stać co najmniej jedna WCIĘTA linia (4 spacje / Tab) —
-   to ona jest treścią gałęzi (F1.6).
+   to ona jest treścią gałęzi (F1.6). Wariant **`unexpected indent`** to
+   sytuacja odwrotna: linia jest wcięta, choć żaden nagłówek z dwukropkiem
+   nie otworzył gałęzi (np. gotowe printy zadania F1.6, zanim dopiszesz
+   `if`/`else`) — dopisz brakujący nagłówek albo usuń wcięcie.
 4. **`SyntaxError: invalid syntax. Maybe you meant '==' …?`** → pojedynczy
    `=` w nagłówku `if`; Python sam podpowiada poprawkę: porównanie to `==`
    (F1.5). (Ta sama pomyłka wewnątrz `print(...)` daje mniej pomocny
@@ -1104,3 +1108,35 @@ dociągnięte do ≥300 przy obu metodach; pomiary dopisane do notatek),
 w pełni przetłumaczony (HTTP 200, grep treści), wideo PL wybrane
 (eB3r2NQwNi4, rozdziały pokrywają F1 1:1), CC BY 4.0 `deed.pl` istnieje
 (notatka pod inne moduły).
+
+## Przebieg QG notebooków F1 (2026-07-21, Krok 4 partia 2)
+
+7 źródeł percent (`tools/content/notebooks/f1/`) + build deterministyczny →
+**agent QG (Fable 5, adwersaryjnie, z realnym wykonaniem komórek python3):
+GO Z NOTAMI (0 KRYT / 3 WAŻN / 5 INFO)** — wszystkie WAŻN wcielone przed PR-em:
+
+- **WAŻN-1:** hint 2 atomu F1.3 cytował nieistniejącą komórkę
+  (`print(f"Razem: {___} zł")`) i zawierał dokładnie `___` — w IPythonie
+  zmienna historii, więc przepisany dosłownie wykonywał się PO CICHU (ta sama
+  klasa co WAŻN-1 z QG L0). Hint przepisany na realną komórkę notebooka
+  z `_luka_`; repack JSON.
+- **WAŻN-2:** pieczątka F1.7 brała ostatnią komórkę z `koszt_tygodnia`
+  (`kandydaci[-1]`) — kontrolny print PO programie dawał fałszywą odmowę
+  „dopisz if/else". Poprawka: preferowany OSTATNI kandydat zawierający
+  `if` i `else`; odmowa dopiero, gdy żaden go nie ma.
+- **WAŻN-3:** F1.5 — odkomentowanie luk operatorowych bez podmiany `_luka_`
+  dawało NIEZAPOWIEDZIANY `SyntaxError` (luka w pozycji operatora nie może
+  być NameError). Dopisana zapowiedź w markdownie komórki.
+- **INFO wcielone:** wariant `IndentationError: unexpected indent` dopisany do
+  „Pierwszej pomocy F1" poz. 3 (student widzi go w zadaniu F1.6).
+- **Świadome redakcje (bez zmian):** komentarz luki 3 w F1.4 „nazwa albo
+  wyrażenie" (precyzyjniejszy niż doc, zgodny z Wymaganiami); F1.5 WE-luka
+  `# → przewidź wynik` zamiast zdradzania odpowiedzi w komentarzu.
+- **Limity zadeklarowane (bez akcji):** trywialny bypass F1.7 (zera + `# if
+  else` w komentarzu) = klasa limitu ADR-015 §5 (lab bramkuje postęp, nie
+  kredencjał); token F1.7 z pełnym `_zrodlo` ≈ 700 znaków (guard 2500 znaków
+  źródła działa) — obserwować w telemetrii wklejek.
+
+Parytet Python↔TS i drift buildera przybite testem
+`tests/unit/ds/notebooks-f1.contract.test.ts` (kontrakt: laby z pieczątką ze
+wspólnym blokiem, ćwiczenia bez; happy + odmowy na checkach z prod-JSON-a).

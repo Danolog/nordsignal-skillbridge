@@ -135,13 +135,17 @@ function validateChecks(item: AtomItemInput, where: string): string[] {
 
 /**
  * Krok 4 — `config.notebookUrl` (link „Otwórz notebook w Colab"). Dozwolony
- * wyłącznie przy `kind: "lab"` i wyłącznie jako https na hoście Colaba —
- * literówka w treści dawałaby studentowi martwy przycisk na prodzie.
+ * przy `kind: "lab"` (zaliczenie pieczątką) oraz — od partii F1 — przy
+ * `kind: "exercise"` (notebook towarzyszący: WE + brudnopisy, zaliczenie
+ * nadal pytaniami). Wyłącznie https na hoście Colaba — literówka w treści
+ * dawałaby studentowi martwy przycisk na prodzie.
  */
 function validateNotebookUrl(item: AtomItemInput, where: string): string[] {
 	const raw = (item.config as { notebookUrl?: unknown } | undefined)?.notebookUrl;
 	if (raw === undefined) return [];
-	if (item.kind !== "lab") return [`${where}: notebookUrl dozwolony tylko przy kind="lab"`];
+	if (item.kind !== "lab" && item.kind !== "exercise") {
+		return [`${where}: notebookUrl dozwolony tylko przy kind="lab" albo "exercise"`];
+	}
 	if (typeof raw !== "string") return [`${where}: notebookUrl musi być stringiem`];
 	try {
 		const url = new URL(raw);
