@@ -1,9 +1,7 @@
 import { expect } from "@playwright/test";
 import { loginWithPassword } from "./helpers/auth";
-import { driveChatToSummaryCta } from "./helpers/b0-chat";
 import { resetOnboardingState } from "./helpers/db-reset";
 import { dbWriteTest as test } from "./helpers/guards";
-import { fillSurveyAndContinue } from "./helpers/survey";
 
 /**
  * @dbwrite — B1 paszport, B4 samoocena, dashboard, projekty.
@@ -62,8 +60,7 @@ test.describe("@dbwrite @llm Onboarding wizard 0→4 (redesign: kompetencje z ry
 	test("Wizard 0→4 (redesign D5): katalog rynku, poziom przy wyborze, Wnioski → pulpit", async ({
 		page,
 	}) => {
-		// Wizard woła model TRZY razy (Krok 0 czat + syllabus parse + Skill Map przy
-		// zapisie). Krok 0 to ~9 wywołań modelu — podnosimy budżet czasu całego testu.
+		// Wizard woła model DWA razy (syllabus parse + Skill Map przy zapisie).
 		test.setTimeout(360_000);
 		// Samowystarczalność specu: konto b4 współdzielone ze specami 10/40 —
 		// reset przywraca wizard na Krok 0 i czyści sesje Pomocnika (db-reset.ts).
@@ -71,27 +68,16 @@ test.describe("@dbwrite @llm Onboarding wizard 0→4 (redesign: kompetencje z ry
 		await loginWithPassword(page, "b4");
 		await page.goto("/onboarding");
 
-		// Krok 0 — Cel kariery (Pomocnik osadzony, strumień E / #5). Ustala careerGoal
-		// w pamięci przez realny przepływ ankieta→czat→podsumowanie→wybór ścieżki.
+		// Krok 0 — Cel kariery przez DETERMINISTYCZNY picker 23 realnych ścieżek
+		// („lub wybierz z listy", D1). Świadomie NIE przez czat Pomocnika:
+		//  1. pętlę czatu pokrywa spec 10 (dwukrotnie, w tym tryb osadzony),
+		//  2. LLM proponuje ścieżki także SPOZA katalogu rynku (bieg nr 5 nocnego
+		//     toru: „Backend Developer" → krok 3 uczciwie blokuje Zatwierdź) — a ten
+		//     test potrzebuje realnej ścieżki, żeby dojechać do katalogu i Wniosków.
 		await expect(page.getByRole("heading", { name: /Zacznijmy od celu/i })).toBeVisible({
 			timeout: 15_000,
 		});
-		await fillSurveyAndContinue(page);
-		await expect(page.getByRole("heading", { name: /krok 2 z 3: rozmowa/i })).toBeVisible({
-			timeout: 45_000,
-		});
-		await driveChatToSummaryCta(page);
-		await page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i }).click();
-		await expect(
-			page
-				.getByText(/Co rozumiem z naszej rozmowy/i)
-				.or(page.getByText(/Przygotuję to za chwilę/i)),
-		).toBeVisible({ timeout: 150_000 });
-		await page
-			.getByText(/Wybieram tę ścieżkę/i)
-			.first()
-			.click();
-		await page.getByRole("button", { name: /Idź dalej do samooceny/i }).click();
+		await page.getByRole("button", { name: "Data Analyst", exact: true }).click();
 
 		// Krok 1 — Profil (BEZ celu kariery — przeniesiony do Kroku 0, spec §3.2).
 		// Etykiety NIE są powiązane (htmlFor) z polami, więc celujemy po placeholderze
