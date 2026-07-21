@@ -128,6 +128,15 @@ export const FLAGS = {
 			"Off = UI i API answer jak dotąd, kolumna zostaje NULL.",
 		defaultValue: false,
 	},
+	passportFreshness: {
+		envVar: "FLAG_PASSPORT_FRESHNESS",
+		description:
+			"MIS.3 (plan 13): prywatny panel świeżości i kontekstów kredencjałów w paszporcie " +
+			"studenta (MAX(verifiedAt) + COUNT(DISTINCT submissionId) z verified_competencies; " +
+			"„ugruntowana” przy ≥2 kontekstach). Sensowna tylko przy passportVerifiedOnly=1. " +
+			"PUBLICZNY paszport bez zmian (decyzja Darka 2026-07-21). Off = paszport jak dziś.",
+		defaultValue: false,
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).
