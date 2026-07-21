@@ -123,7 +123,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `cena = float(input(\"Cena biletu (może być z groszami): \"))` — float, bo „z groszami\" znaczy możliwa kropka (`int(\"7.50\")` rzuciłby `ValueError`); `print(f\"Dwa bilety: {round(cena * 2, 2)} zł\")` — mnożysz skonwertowaną `cena`, a `round(..., 2)` obcina ewentualny ogon cyfr float do dwóch miejsc. Test: wpisz `7.50` → `Dwa bilety: 15.0 zł`. Jeśli dostajesz `ValueError` przy poprawnej liczbie — sprawdź, czy nie wpisujesz przecinka zamiast kropki (F1.1 obowiązuje też użytkownika!)."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f2/f2-1-input-i-konwersja.ipynb"
 			},
 			"resources": [
 				{
@@ -261,7 +262,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `oceny[1]` → `5` (indeks 1 = druga wartość). `len(zakupy)` → `4`, ostatni indeks `3` (= 4 − 1). `ceny[3]` → `IndexError: list index out of range`, bo istnieją tylko indeksy 0–2. Gdy w prawdziwym kodzie widzisz `IndexError`, sprawdź dwie rzeczy: (a) czy nie liczysz od jedynki, (b) czy lista na pewno ma tyle elementów, ile zakładasz (`print(len(...))` to najszybsza diagnoza)."
 			],
 			"config": {
-				"estimated": "10–15 min"
+				"estimated": "10–15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f2/f2-2-lista-przegrodki.ipynb"
 			}
 		},
 		{
@@ -387,7 +389,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `for produkt in zakupy:` — trzy obroty: `produkt` przyjmuje `\"chleb\"`, `\"masło\"`, `\"ser\"`; wynik to trzy linie „Do koszyka: …\". Najczęstsze potknięcia: nazwa po `for` inna niż ta w ciele → `NameError` w pierwszym obrocie (Python szuka `produkt`, a Ty dałeś(-aś) np. `p`); brak dwukropka → `SyntaxError: expected ':'` (strażnik znany z F1.6); ciało bez wcięcia → `IndentationError: expected an indented block`."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f2/f2-3-petla-for.ipynb"
 			}
 		},
 		{
@@ -433,7 +436,8 @@
 							"var": "ceny"
 						}
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f2/f2-4-lab-paragon-z-listy.ipynb"
 			}
 		},
 		{
@@ -554,7 +558,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** luka A: `0`; luka B: `suma = suma + ocena`. Przebieg: 0 → 4 → 9 → 12 → 16; średnia `16 / 4` = `4.0`. Samokontrola wzorca przy każdym przyszłym użyciu: (1) zbieracz przed pętlą? (2) w ciele stara wartość + element? (3) odczyt bez wcięcia? Jeśli wynik to „ostatni element zamiast sumy\" — pkt 1 wisi w ciele (pytanie P2); jeśli `NameError` przy `suma` — pkt 1 w ogóle nie istnieje."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f2/f2-5-wzorzec-akumulatora.ipynb"
 			}
 		},
 		{
@@ -675,7 +680,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:**\n```python\ndef podroz(kilometry):\n    return kilometry * 0.85\n```\n`podroz(10)` → w parametrze `kilometry` siedzi 10 → return odsyła `8.5`; `podroz(100)` → `85.0`. Typowe potknięcia: `print` zamiast `return` w ciele — liczby się WYPISZĄ, ale `print(podroz(10))` pokaże dodatkowo `None` (pytanie P3 w akcji: wypisywanie ≠ zwracanie); nazwa parametru w ciele inna niż w nagłówku → `NameError` przy wywołaniu; brak wcięcia ciała → `IndentationError` (strażnik z F1.6 pilnuje też def-a)."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f2/f2-6-funkcja-def-return.ipynb"
 			}
 		},
 		{
@@ -730,7 +736,8 @@
 							"needles": ["input(", "if", "else"]
 						}
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/f2/f2-7-lab-straznik-budzetu.ipynb"
 			}
 		},
 		{

@@ -5,9 +5,11 @@
 # stdin (JSON):
 #   { "mode": "notebook", "notebookPath": "...", "atomCode": "...",
 #     "replacements": [["stary", "nowy"], ...], "skipCells": [0, 1],
-#     "insertCells": [[1, "print(x)"], ...] }
+#     "insertCells": [[1, "print(x)"], ...], "inputs": ["300"] }
 #     (insertCells: dodatkowe komórki studenta wstawiane pod wskazany indeks
-#      PO skip/replacements — symulacja np. komórki diagnostycznej po programie)
+#      PO skip/replacements — symulacja np. komórki diagnostycznej po programie;
+#      inputs: kolejka odpowiedzi na input() programu studenta [FIFO] — po jej
+#      wyczerpaniu input() oddaje atomCode, czyli odpowiedź dla pieczątki)
 #   { "mode": "payload", "stampPath": "...", "atomCode": "...",
 #     "payload": {...}, "floatKeys": ["g"] }
 #     (floatKeys: JSON nie odróżnia 2 od 2.0 — wymusza pythonowy float,
@@ -21,7 +23,8 @@ import sys
 
 req = json.load(sys.stdin)
 captured = io.StringIO()
-ns = {"input": lambda prompt="": req.get("atomCode", "")}
+_inputs = list(req.get("inputs", []))
+ns = {"input": lambda prompt="": _inputs.pop(0) if _inputs else req.get("atomCode", "")}
 
 if req["mode"] == "payload":
     payload = req["payload"]
