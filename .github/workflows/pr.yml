@@ -215,9 +215,36 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      # Rate limiter (przyczyna nocnych padów 07/2026): build produkcyjny
+      # (`next start`) ma boot-guard assertRateLimitConfigured() — bez configu
+      # Upstash serwer NIE WSTAJE (RateLimitMisconfiguredError → timeout 120 s
+      # webServera Playwrighta). Zamiast sekretów prod-Redisa (zanieczyszczanie
+      # produkcyjnych liczników z CI): lokalny redis + SRH (serverless-redis-http)
+      # — endpoint REST zgodny z Upstash na loopbacku. Guard produkcyjny zostaje
+      # nietknięty, limity realnie DZIAŁAJĄ w testach, zero nowych sekretów.
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      srh:
+        image: hiett/serverless-redis-http:latest
+        ports:
+          - 8079:80
+        env:
+          SRH_MODE: env
+          # Token loopbacku CI — nie sekret (para do UPSTASH_REDIS_REST_TOKEN niżej).
+          SRH_TOKEN: e2e-ci-token
+          # Nazwa uslugi `redis` dziala kontener→kontener (wspolna siec uslug joba).
+          SRH_CONNECTION_STRING: "redis://redis:6379"
     env:
       # Auth: placeholder testowy (32 znaki) — nie sekret. Realny prod bierze z Vercela.
       BETTER_AUTH_SECRET: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      # Limiter → SRH (usluga wyzej); z perspektywy joba loopback:8079.
+      UPSTASH_REDIS_REST_URL: http://localhost:8079
+      UPSTASH_REDIS_REST_TOKEN: e2e-ci-token
       BETTER_AUTH_URL: http://127.0.0.1:3000
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
       # Zawor @dbwrite: bez tego testy zapisujace sie pomijaja (helpers/guards.ts).
