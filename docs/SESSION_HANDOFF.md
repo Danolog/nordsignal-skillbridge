@@ -11,7 +11,70 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-21 (po południu) — NOCNY TOR e2e-llm ZIELONY PIERWSZY RAZ W HISTORII
+## STAN NA DZIŚ — 2026-07-21 (wieczór) — KROK 4 PARTIA 2: NOTEBOOKI F1 NA PRODZIE
+
+### Co się wydarzyło (PR #196, squash `4f24f91` na main)
+
+- **7 notebooków Colab F1** wg wzorca L0 (percent + wspólny blok
+  `pieczatka.py`): 5 **notebooków towarzyszących ćwiczeń** (WE + brudnopisy,
+  ŚWIADOMIE BEZ pieczątki — atom `exercise` zalicza się pytaniami; klasa
+  doprecyzowana w ADR-015 §7) + 2 laby **F1.4/F1.7** z pieczątką.
+- **Nowe mechanizmy vs L0:** `config.notebookUrl` dozwolony przy
+  `kind="exercise"` (walidator packera + `item-view` + przycisk Colab
+  w `item-detail`); builder dopuszcza 0-lub-1 pieczątkę (podział
+  lab/ćwiczenie egzekwuje kontrakt-test względem JSON-a modułu); pieczątka
+  F1.7 czyta źródło komórki programu z historii sesji **`In`** i wysyła jako
+  `_zrodlo` (serwerowy check `contains_all if/else`, fragile). Harness
+  testowy emuluje `In` + `insertCells`.
+- **Kontrakt-test** `tests/unit/ds/notebooks-f1.contract.test.ts` (37):
+  warstwy, drift buildera, notebookUrl→istniejący plik, parytet stringów
+  wielolinijkowych, happy+odmowy obu labów na checkach z prod-JSON-a,
+  regresja WAŻN-2.
+- **QG agentem (adwersaryjnie, realne wykonanie komórek): GO Z NOTAMI
+  (0 KRYT / 3 WAŻN / 5 INFO)** — wszystkie WAŻN wcielone przed PR-em, log
+  w `sophia-1e2-f1-atomy.md`: (1) hint 2 F1.3 cytował nieistniejącą komórkę
+  i zawierał `___` (pułapka z QG L0) → przepisany + repack; (2) pieczątka
+  F1.7 brała `kandydaci[-1]` → fałszywa odmowa po komórce diagnostycznej →
+  preferowany ostatni kandydat Z `if`/`else`; (3) F1.5: zapowiedź
+  `SyntaxError` przy niepodmienionej luce operatorowej. INFO wcielone:
+  wariant `IndentationError: unexpected indent` w „Pierwszej pomocy F1".
+- **Publikacja:** `skillbridge-notebooks` @ `861a3e1` (katalog `f1/`
+  + README z podziałem lab/ćwiczenie). Plik raw zweryfikowany 200.
+
+### PROD (czerwona linia wzorcem, 2026-07-21)
+
+- Backup: **`prod-backup-pre-ingest-krok4-f1-20260721`**
+  (`br-twilight-queen-al4kt6ax`). Ingest **×2 idempotentny** (oba biegi:
+  moduły=9, pozycje=70, pytania 129 bez zmian). Weryfikacja PO: **11 pozycji
+  z `notebookUrl`** (4 L0 + 7 F1 — JEDYNE w bazie), `f1-przeglad` bez URL-a,
+  hint f1-3 z `_luka_` i 0 gołych `___`. Smoke: `/` 200, `/login` 200,
+  `/api/curriculum` **404** (flaga OFF — bez zmian).
+- 🔴 `FLAG_CURRICULUM_PATH` NADAL 0 — czeka wyłącznie na akcje Darka
+  (screenshoty 2 etykiet Colab, seans wideo PL, test ≤15 min L0.1).
+- Retencja gałęzi Neona: jest ich 8; kandydaci do delete (przeterminowane,
+  nadpisane nowszymi): `prod-backup-pre-0036-20260713-1712`,
+  `prod-backup-pre-ingest-1er-20260713`.
+
+### Noty
+- Dzisiejszy schedule (05:44) był czerwony, ale SPRZED napraw #194/#195 —
+  **pierwszy miarodajny nocny bieg dziś w nocy** (03:00 UTC ≈ 05:00 PL).
+- Baza :5433 dostała komplet ds-projektów (13) + curriculum ×2 — gotowa do
+  weryfikacji uruchomieniowych.
+- Token F1.7 niesie pełne `_zrodlo` (~700 znaków przy wzorcowym rozwiązaniu;
+  guard 2500 znaków źródła) — obserwować w telemetrii wklejek.
+
+### NASTĘPNE (kolejność — zgodnie z roadmapą §4, potwierdzone przez Darka)
+1. **Akcje Darka do flagi L0** (bez zmian). 2. **Dług treści 6 labów**
+   (PD.4, PD.8, EDA.4, SQL.4, SQL.7, LLM.7) → QG → repack → re-ingest.
+3. **Notebooki F2 (7 szt.)** i dalej F3/M-* (zostało 55/66).
+4. **1E.3** (packer: `exam` w `ITEM_KINDS`). 5. **1E.4** dopiero po
+   naprawie `hintDepth` (MIS.1 już na main). 6. Tor równoległy bez zmian.
+
+### Baseline `main` po tej sesji
+build OK · tsc 0 · Biome 0 · unit **1305/1305** · pełna bramka CI zielona
+na #196 · roadmapa §4: dług notebooków zaktualizowany (11/66).
+
+## STAN POPRZEDNI — 2026-07-21 (po południu) — NOCNY TOR e2e-llm ZIELONY PIERWSZY RAZ W HISTORII
 
 ### Werdykt
 

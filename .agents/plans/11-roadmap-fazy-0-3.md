@@ -231,9 +231,9 @@ kompetencje zespołu); punkty styku z 1.11/1.12 wskazane niżej.
 
 - **1E.2 ✅ WYKONANE — LIVE na prodzie (migracja 0036; PR #164/#169/#170)** ·
   Fundamenty CS/matmy — model + partia 1 DS (A2, P0). Stan: 9 modułów, 70 pozycji,
-  67 konceptów. Otwarty dług treściowy: **66 notebooków Colab** (0 `.ipynb` w repo)
-  — zablokowany kontraktem tokenu z **1E.6b**; plus screenshoty UI i seanse wideo
-  (akcje Darka). Osobny trzon
+  67 konceptów. Otwarty dług treściowy: **66 notebooków Colab — zrobione 11/66**
+  (L0=4 · PR #182, F1=7 · PR #196; oba na prodzie z ingestem); zostają F2=7,
+  F3=8, M-*=40; plus screenshoty UI i seanse wideo (akcje Darka). Osobny trzon
   „Fundamenty" wspólny dla rodzin ścieżek: bank zadań o jednoznacznych
   odpowiedziach (zamknięte/numeryczne/krótka forma) + **deterministyczny
   autograding** (bez LLM — zadania mają jednoznaczne odpowiedzi; koszt ~0).
