@@ -50,7 +50,10 @@ przebiegiem:
   akceptowalne dla non-blocking nocnego toru.
 - ⚠ **Incydent współdzielonego katalogu:** gałąź #190 przemyciła cudzy commit
   (mis3 siedział na lokalnym main w trakcie brancha) — wykryte, gałąź
-  przebudowana; ustawiane są worktree per strumień (decyzja Darka 2026-07-21).
+  przebudowana; worktree per strumień SKONFIGUROWANE (drzewo główne = 1E/CI,
+  `SkillBridge-worktrees/mis` = strumień MIS; runbook:
+  `docs/runbooks/worktree-strumienie.md` — w tym reguła „nikt nie commituje
+  na lokalnym main").
 
 ## STAN POPRZEDNI — 2026-07-21 — MAKE IT STICK: PLAN 13 + QUICK-WINY MIS NA MAIN, MIGRACJA 0038 NA PRODZIE
 
