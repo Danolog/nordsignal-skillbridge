@@ -68,7 +68,7 @@ export function LabStamp({
 			if (res.status === 409) {
 				// Token poprawny, ale praca nie spełnia checków.
 				setFailed((data.results as CheckResult[])?.filter((r) => !r.passed) ?? []);
-				toast.error("Sprawdzenie nie przeszło — popraw pracę i uruchom pieczątkę ponownie.");
+				toast.error("Jeszcze nie — popraw pracę w notebooku i uruchom pieczątkę ponownie.");
 				return;
 			}
 			if (res.status === 400) {

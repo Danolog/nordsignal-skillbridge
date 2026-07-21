@@ -341,7 +341,7 @@ export function VivaPanel({ submissionId }: { submissionId: string }) {
 				<output className="viva-outcome viva-outcome-failed">
 					<Users size={18} />
 					<span>
-						<strong>Obrona niezaliczona</strong>
+						<strong>Obrona jeszcze niezaliczona</strong>
 						{viva.result
 							? ` — ${viva.result.totalPoints}/${viva.result.maxPoints} pkt (próg: ${viva.result.passThreshold})`
 							: ""}
