@@ -296,6 +296,12 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       # Migracja schematu na bazie TESTOWEJ (guard allowlisty hostow testowych).
       - run: pnpm db:migrate:test
+      # Katalog rynku (model kariery, 23 realne ścieżki): bez niego krok 3
+      # wizarda uczciwie blokuje „Zatwierdź" („nie mamy jeszcze katalogu…") —
+      # bieg nr 6 nocnego toru. Lokalne bazy deweloperów zawsze miały ten
+      # ingest za sobą; świeża baza CI musi go dostać jawnie. Idempotentny
+      # (no-op przy aktualnej wersji), guard assertTestDb jak w migracji.
+      - run: pnpm db:ingest-career-model
       # Seed kont testowych (main/b4/resume) + danych — aktualne testy @llm loguja
       # sie na konta seed (loginWithPassword), nie rejestruja od zera. Idempotentny,
       # guardowany allowlista hostow testowych.
