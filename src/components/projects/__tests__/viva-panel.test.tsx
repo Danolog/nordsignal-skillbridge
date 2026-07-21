@@ -255,7 +255,7 @@ describe("VivaPanel — odpowiedź (POST /viva/[sid]/answer)", () => {
 		await user.type(await screen.findByLabelText("Odpowiedź na pytanie obrony"), "Nie wiem.");
 		await user.click(screen.getByRole("button", { name: /Wyślij odpowiedź/ }));
 
-		expect(await screen.findByText(/Obrona niezaliczona/)).toBeInTheDocument();
+		expect(await screen.findByText(/Obrona jeszcze niezaliczona/)).toBeInTheDocument();
 		expect(screen.getByText(/3\/6 pkt \(próg: 4\)/)).toBeInTheDocument();
 		expect(screen.getByText(/recenzji człowieka/)).toBeInTheDocument();
 		expect(routerRefresh).not.toHaveBeenCalled();

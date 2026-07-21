@@ -10,8 +10,11 @@
 // (licznik, nie procent — M10). Blokada zapisu do pozycji zablokowanego
 // modułu / nieodblokowanej pozycji: 403. Flaga off → 404.
 //
-// Body: { questionItemId, answer, hintDepth? } — answer w formacie
-// StudentAnswer per typ pytania (spec A5 §2.3).
+// Body: { questionItemId, answer, hintDepth?, confidence? } — answer w formacie
+// StudentAnswer per typ pytania (spec A5 §2.3). MIS.1: przy fladze
+// confidenceProbe pole confidence (1–3, deklarowane PRZED odpowiedzią) jest
+// OBOWIĄZKOWE — opcjonalna sonda dałaby dziurawe dane kalibracji; przy fladze
+// off jest ignorowane (zapis NULL), więc stary klient niczego nie zauważa.
 // ============================================================================
 
 import { eq } from "drizzle-orm";
@@ -43,6 +46,7 @@ const AnswerSchema = z.object({
 	questionItemId: z.uuid(),
 	answer: z.record(z.string(), z.unknown()),
 	hintDepth: z.number().int().min(0).max(3).optional(),
+	confidence: z.number().int().min(1).max(3).optional(),
 });
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -63,6 +67,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 	}
 	const parsed = AnswerSchema.safeParse(raw);
 	if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+
+	// MIS.1: pewność zbieramy tylko za flagą i wtedy wymagamy jej twardo —
+	// walidacja serwerowa, bo UI da się obejść, a dziurawe dane psują kalibrację.
+	const confidenceProbe = isFeatureEnabled("confidenceProbe");
+	if (confidenceProbe && parsed.data.confidence === undefined) {
+		return NextResponse.json({ error: "Confidence required" }, { status: 400 });
+	}
 
 	try {
 		const student = await db.query.students.findFirst({
@@ -127,6 +138,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 				questionItemId: question.id,
 				isCorrect,
 				hintDepth: parsed.data.hintDepth ?? 0,
+				// Flaga off → NULL nawet gdy klient przysłał wartość (nie mieszamy
+				// danych zbieranych bez UI sondy z danymi zbieranymi z sondą).
+				confidence: confidenceProbe ? (parsed.data.confidence ?? null) : null,
 			});
 			await recordAttempt(student.id, student.tenantId, item.id, tx);
 

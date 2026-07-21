@@ -11,6 +11,12 @@
 > (checki labów + kontrakt tokenu)**, dopisanie **1E.R/1E.R2** (ADR-014 D7),
 > aktualizacja kręgosłupa w §7 i wpisu 0.13. Oznaczone **[AKTUALIZACJA 2026-07-14]**.
 > Statusy Fazy 0/1/AG zweryfikowane w kodzie (plik + commit + test + flaga), nie w opisach.
+>
+> **[AKTUALIZACJA 2026-07-21] Pakiety MIS („Make It Stick").** Dokument Darka
+> z propozycjami ulepszeń porównany z tym planem — większość propozycji już
+> pokryta (1E.3/1E.4, ADR-014, B5); luki domykają pakiety **MIS.1–MIS.8**
+> w `13-make-it-stick.md` (sekcja 4-ter niżej). Jedyny twardy warunek
+> kolejności: **MIS.1 (sonda pewności) przed 1E.4**.
 
 ---
 
@@ -253,6 +259,9 @@ kompetencje zespołu); punkty styku z 1.11/1.12 wskazane niżej.
   powtórki" + zaległości wpięte w check-iny 1.18. Dowód: test — poprawna
   odpowiedź wydłuża interwał, błędna skraca (golden test przeciw referencyjnej
   implementacji FSRS); powtórka nie generuje wywołania LLM.
+  **[AKTUALIZACJA 2026-07-21] Warunek wstępny: MIS.1 (sonda pewności) + naprawa
+  długu hintDepth PRZED startem 1E.4** — FSRS ma konsumować `confidence`
+  i wiarygodny `hintDepth` jako cechy od dnia 1 (patrz `13-make-it-stick.md`).
 
 - **1E.5 · Kuracja treści zewnętrznych na całe curriculum DS (A4, P1)** —
   obniża koszt A1: nie piszemy wykładów, sekwencjonujemy najlepsze darmowe
@@ -443,6 +452,38 @@ założeniach P&L.
 
 ---
 
+## 4-ter. **[NOWE 2026-07-21]** Pakiety MIS — „Make It Stick"
+
+> Szczegóły, decyzje Darka i pełne mapowanie 9 propozycji: `13-make-it-stick.md`.
+> Pakiety pokrywają wyłącznie LUKI względem tego planu; nic z 1E.3/1E.4 nie dublują.
+
+- **MIS.1 · Sonda pewności przed odpowiedzią (P1, PRZED 1E.4)** — kolumna
+  `confidence` (1–3) w `curriculum_item_answers` + 3 przyciski w item-runner;
+  flaga `FLAG_CONFIDENCE_PROBE`. Cecha FSRS od dnia 1.
+- **MIS.2 · Wskaźnik rozjazdu pewność–wynik (P2)** — czysta agregacja (0 LLM),
+  widget prywatny; ta sama flaga; po ~2 tyg. danych z MIS.1.
+- **MIS.3 · Paszport 2.0: świeżość + konteksty (P1)** — ekspozycja
+  `MAX(verifiedAt)` i `COUNT(DISTINCT submissionId)` z `verified_competencies`
+  w PRYWATNYM widoku paszportu (decyzja Darka: publiczny bez zmian do pilotażu);
+  flaga `FLAG_PASSPORT_FRESHNESS`; zero migracji.
+- **MIS.4 · Pre-test przed projektem (P2, spięte z 1E.3)** — quiz 5–8 pytań
+  z konceptów projektu przed briefem (informacyjny, nie bramkujący); reuse
+  silnika assessment; `kind='project_pretest'` w TEJ SAMEJ migracji co
+  `'module_exam'` z 1E.3; flaga `FLAG_PROJECT_PRETEST`.
+- **MIS.5 · Przeplatanie w doborze projektów (P3, po 1E.4)** — deterministyczny
+  bonus scoringu za 1–2 kompetencje potwierdzone obok nowych; flaga
+  `FLAG_INTERLEAVED_PROJECTS`.
+- **MIS.6 · Tryb Feynmana (P3, po 1E.4)** — wariant promptu tutora C11
+  „wyjaśnij początkującemu"; flaga `FLAG_FEYNMAN_MODE`.
+- **MIS.7 · Audyt mikrocopy growth-mindset (P2, od zaraz)** — sweep komunikatów
+  negatywnych do tonu „jeszcze nie + następny krok" (ADR-014 R17, D6 pkt 8).
+- **MIS.8 · Metryki uczenia** — transza A (kalibracja+transfer, po MIS.1+MIS.3),
+  transza B (retencja 30/90, po 1E.4); skrypt raportowy, bez UI.
+
+**Rozstrzygnięcie „najpierw próba" (propozycja #4 dokumentu):** ADR-014 D1
+zostaje (worked example przed pierwszym pytaniem nowicjusza); efekt generowania
+idzie w MIS.4, powtórki 1E.4 i fading D5 — decyzja Darka 2026-07-21.
+
 ## 5. FAZA 2 — Horyzont 2 „Sygnał ma popyt"
 
 Wejście: Faza 1 zielona (dla E2.D dodatkowo: bramka 1E dla DS).
@@ -502,6 +543,9 @@ dojrzałych, receipty w ≥2 ATS.
    dokładanie egzaminów do drabiny, której student nie widzi i nie może przejść,
    nie ma sensu. **1E.6b odblokowuje 66 notebooków Colab** (dług treściowy 1E.2).
    **1E.R** (ADR-014 D7) biegło równolegle z 1E.1/1E.2 — wykonane; następca **1E.R2** otwarty.
+   **[AKTUALIZACJA 2026-07-21]** Przed 1E.4 obowiązkowo: **MIS.1** (sonda
+   pewności) + naprawa długu hintDepth; pozostałe pakiety MIS poza kręgosłupem
+   (sekcja 4-ter, `13-make-it-stick.md`).
 4. **1.11 i 1E.2 projektować RAZEM** (wspólny bank pytań) — zrobione osobno
    wymuszą bolesną migrację scalającą.
 5. 1E (pilotaż DS) → E2.C → rollout curriculum na kolejne ścieżki. Nie odwrotnie.

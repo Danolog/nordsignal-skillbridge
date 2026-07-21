@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ReviewResult } from "@/lib/ai/pipeline/types";
+import { submissionStatusLabel } from "./submission-status";
 
 interface SubmissionFormProps {
 	projectId: string;
@@ -54,7 +55,9 @@ export function SubmissionForm({ projectId }: SubmissionFormProps) {
 
 				<div className={`proj-review-score proj-score-${status}`}>
 					<span className="proj-review-score-value">{review.score}/100</span>
-					<span className="proj-review-status-badge">{status}</span>
+					<span className="proj-review-status-badge">
+						{status ? submissionStatusLabel(status) : ""}
+					</span>
 				</div>
 
 				<div className="proj-review-feedback">

@@ -119,6 +119,15 @@ export const FLAGS = {
 			"reconcile idą na ciemno od merge'a C2. Off = paszport z deklaracji, jak dziś.",
 		defaultValue: false,
 	},
+	confidenceProbe: {
+		envVar: "FLAG_CONFIDENCE_PROBE",
+		description:
+			"MIS.1 (plan 13): sonda pewności przed odpowiedzią w drabinie curriculum — student " +
+			"deklaruje 1–3 (zgaduję/chyba wiem/jestem pewny) przed „Sprawdź”; zapis do " +
+			"curriculum_item_answers.confidence (cecha FSRS 1E.4, wsad kalibracji MIS.2). " +
+			"Off = UI i API answer jak dotąd, kolumna zostaje NULL.",
+		defaultValue: false,
+	},
 	passportFreshness: {
 		envVar: "FLAG_PASSPORT_FRESHNESS",
 		description:

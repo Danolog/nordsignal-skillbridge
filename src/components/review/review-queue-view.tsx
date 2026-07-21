@@ -157,7 +157,9 @@ export function ReviewQueueView({ reviewerKind }: { reviewerKind: string }) {
 				return;
 			}
 			toast.success(
-				decision === "approved" ? "Zatwierdzono — receipt zweryfikowany." : "Odrzucono.",
+				decision === "approved"
+					? "Zatwierdzono — receipt zweryfikowany."
+					: "Odrzucono — student zobaczy przy projekcie „jeszcze nie zaliczone” z następnym krokiem.",
 			);
 			setQueue((q) => (q ?? []).filter((item) => item.submissionId !== submissionId));
 		} catch {

@@ -21,7 +21,14 @@ import { ITEM_STATUS_LABEL, itemKindLabel, statusBadgeClass } from "@/components
 import { TheoryMarkdown } from "@/components/skillbridge/b3/TheoryMarkdown";
 import type { CurriculumItemView } from "@/lib/curriculum/item-view";
 
-export function ItemDetail({ view }: { view: CurriculumItemView }) {
+export function ItemDetail({
+	view,
+	confidenceProbeEnabled,
+}: {
+	view: CurriculumItemView;
+	/** MIS.1 — flaga confidenceProbe czytana w server component (page.tsx). */
+	confidenceProbeEnabled: boolean;
+}) {
 	const { item, module: module_, questions, answeredCorrectQuestionIds, resources } = view;
 	const isLab = item.kind === "lab";
 
@@ -135,6 +142,7 @@ export function ItemDetail({ view }: { view: CurriculumItemView }) {
 					answeredCorrectQuestionIds={answeredCorrectQuestionIds}
 					hints={item.hints}
 					initialStatus={item.status}
+					confidenceProbeEnabled={confidenceProbeEnabled}
 				/>
 			)}
 

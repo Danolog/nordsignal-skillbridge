@@ -73,5 +73,7 @@ export default async function CurriculumItemPage({ params }: PageProps) {
 		);
 	}
 
-	return <ItemDetail view={result.view} />;
+	return (
+		<ItemDetail view={result.view} confidenceProbeEnabled={isFeatureEnabled("confidenceProbe")} />
+	);
 }
