@@ -74,8 +74,9 @@ export interface CurriculumItemView {
 		hasChecks: boolean;
 		/**
 		 * Krok 4 — link „Otwórz notebook w Colab" (config_json.notebookUrl).
-		 * Tylko https na colab.research.google.com (walidowane też w packerze);
-		 * null dla pozycji bez notebooka.
+		 * Laby (zaliczenie pieczątką) i — od partii F1 — ćwiczenia z notebookiem
+		 * towarzyszącym (WE + brudnopisy). Tylko https na colab.research.google.com
+		 * (walidowane też w packerze); null dla pozycji bez notebooka.
 		 */
 		notebookUrl: string | null;
 	};
@@ -229,7 +230,10 @@ export async function getItemView(studentId: string, itemId: string): Promise<It
 					item.kind === "lab" && isLabTokenConfigured() ? atomCode(studentId, item.id) : null,
 				hasChecks:
 					item.kind === "lab" && isLabTokenConfigured() && parseChecks(item.configJson).length > 0,
-				notebookUrl: item.kind === "lab" ? notebookUrlFromConfig(item.configJson) : null,
+				notebookUrl:
+					item.kind === "lab" || item.kind === "exercise"
+						? notebookUrlFromConfig(item.configJson)
+						: null,
 			},
 			questions,
 			answeredCorrectQuestionIds: answered.map((a) => a.questionItemId),

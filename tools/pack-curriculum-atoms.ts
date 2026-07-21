@@ -349,12 +349,24 @@ const MANIFESTS: ModuleManifest[] = [
 			"porownanie-bool": "Porównanie i wartości logiczne (bool)",
 			"decyzja-if-else": "Decyzja: if / else",
 		},
+		// Krok 4 partia 2: KAŻDY atom F1 ma notebook towarzyszący (zasada modułu
+		// Sophii: WE + brudnopisy; hinty odsyłają do komórek notebooka). Pieczątka
+		// tylko w labach F1.4/F1.7 — ćwiczenia zalicza się pytaniami.
 		overrides: {
-			"F1.4": { checks: CHECKS_F1_4 },
+			"F1.1": { notebookUrl: `${NOTEBOOKS_BASE}/f1/f1-1-kazda-wartosc-ma-typ.ipynb` },
+			"F1.2": { notebookUrl: `${NOTEBOOKS_BASE}/f1/f1-2-wyrazenie-python-liczy.ipynb` },
+			"F1.3": { notebookUrl: `${NOTEBOOKS_BASE}/f1/f1-3-f-string-budowanie-tekstu.ipynb` },
+			"F1.4": {
+				checks: CHECKS_F1_4,
+				notebookUrl: `${NOTEBOOKS_BASE}/f1/f1-4-lab-paragon.ipynb`,
+			},
+			"F1.5": { notebookUrl: `${NOTEBOOKS_BASE}/f1/f1-5-porownanie-true-false.ipynb` },
+			"F1.6": { notebookUrl: `${NOTEBOOKS_BASE}/f1/f1-6-decyzja-if-else.ipynb` },
 			// Lab samodzielny — meta bez slugów; koncepty domykane treścią zadania.
 			"F1.7": {
 				concepts: [{ slug: "porownanie-bool" }, { slug: "decyzja-if-else" }],
 				checks: CHECKS_F1_7,
+				notebookUrl: `${NOTEBOOKS_BASE}/f1/f1-7-lab-program-ktory-decyduje.ipynb`,
 			},
 		},
 		// Zasady modułu F1: „Przegląd przed egzaminem (D6.3, czysty reuse)" — 11 pytań.

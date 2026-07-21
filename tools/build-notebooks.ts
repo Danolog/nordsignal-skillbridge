@@ -15,6 +15,11 @@
  *                       (def _zbierz_wyniki), do której builder dokleja
  *                       wspólny blok pieczątki
  *
+ * Pieczątka jest wymagana w notebookach LABÓW (zaliczenie tokenem), a notebooki
+ * towarzyszące ćwiczeń (od F1: brudnopisy/WE — zaliczenie pytaniami w SkillBridge)
+ * świadomie jej NIE mają: builder dopuszcza 0 albo 1 komórkę pieczątki, a podział
+ * lab/ćwiczenie egzekwuje kontrakt-test względem spakowanego JSON-a modułu.
+ *
  * Output jest DETERMINISTYCZNY (stałe id komórek, stały porządek kluczy) —
  * kontrakt-test przebudowuje źródła i porównuje bajt w bajt z notebooks/.
  */
@@ -95,12 +100,15 @@ export function buildNotebook(sourcePath: string, slug: string): string {
 	}
 
 	const stampCells = rawCells.filter((c) => c.kind === "pieczatka");
-	if (stampCells.length !== 1) {
+	if (stampCells.length > 1) {
 		throw new Error(
-			`${sourcePath}: oczekiwano dokładnie 1 komórki „${STAMP_MARKER}", jest ${stampCells.length}`,
+			`${sourcePath}: oczekiwano najwyżej 1 komórki „${STAMP_MARKER}", jest ${stampCells.length}`,
 		);
 	}
-	if (!stampCells[0].lines.some((l) => l.startsWith("def _zbierz_wyniki"))) {
+	if (
+		stampCells.length === 1 &&
+		!stampCells[0].lines.some((l) => l.startsWith("def _zbierz_wyniki"))
+	) {
 		throw new Error(`${sourcePath}: komórka pieczątki nie definiuje _zbierz_wyniki()`);
 	}
 

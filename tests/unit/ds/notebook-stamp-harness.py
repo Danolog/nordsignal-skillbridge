@@ -4,7 +4,10 @@
 #
 # stdin (JSON):
 #   { "mode": "notebook", "notebookPath": "...", "atomCode": "...",
-#     "replacements": [["stary", "nowy"], ...], "skipCells": [0, 1] }
+#     "replacements": [["stary", "nowy"], ...], "skipCells": [0, 1],
+#     "insertCells": [[1, "print(x)"], ...] }
+#     (insertCells: dodatkowe komórki studenta wstawiane pod wskazany indeks
+#      PO skip/replacements — symulacja np. komórki diagnostycznej po programie)
 #   { "mode": "payload", "stampPath": "...", "atomCode": "...",
 #     "payload": {...}, "floatKeys": ["g"] }
 #     (floatKeys: JSON nie odróżnia 2 od 2.0 — wymusza pythonowy float,
@@ -35,10 +38,18 @@ else:
     cells = [c for i, c in enumerate(cells) if i not in skip]
     for old, new in req.get("replacements", []):
         cells = [c.replace(old, new) for c in cells]
+    for pos, src in sorted(req.get("insertCells", []), key=lambda x: x[0], reverse=True):
+        cells.insert(pos, src)
+
+# Emulacja historii sesji IPython/Colab: `In` to lista źródeł wykonanych
+# komórek (In[0] = "", bieżąca komórka jest w liście już w trakcie wykonania).
+# Pieczątka F1.7 czyta z niej źródło komórki programu (check `_zrodlo`).
+ns["In"] = [""]
 
 error = None
 with contextlib.redirect_stdout(captured):
     for cell in cells:
+        ns["In"].append(cell)
         try:
             exec(compile(cell, "<komórka>", "exec"), ns)  # noqa: S102 — harness testowy
         except Exception as e:  # noqa: BLE001

@@ -82,9 +82,10 @@ export function ItemDetail({
 			{/*
 			 * Krok 4: checklist laba zaczyna się od „Otwórz notebook … linkiem z tej
 			 * pozycji" — przycisk stoi więc PRZED teorią, żeby obietnica z treści
-			 * miała pokrycie na pierwszym ekranie.
+			 * miała pokrycie na pierwszym ekranie. Od partii F1 przycisk mają też
+			 * ćwiczenia z notebookiem towarzyszącym (hinty odsyłają do brudnopisów).
 			 */}
-			{isLab && item.notebookUrl && (
+			{item.notebookUrl && (
 				<a
 					href={item.notebookUrl}
 					target="_blank"
