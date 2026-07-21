@@ -717,7 +717,7 @@
 			"position": 70,
 			"kind": "lab",
 			"title": "LAB Tabela ewaluacji (samodzielny finał drabiny)",
-			"contentMd": "### Cel\n\nOstatni lab całej ścieżki: z 8 zapisanych trójek (tekst ogłoszenia,\nodpowiedź modelu, ground truth) zbudujesz kompletną tabelę ewaluacji —\ndokładnie artefakt, którego rubryka capstone'u żąda za 30%.\n\n### Zadanie (notebook LLM.7 — lista `przypadki` (8 trójek, w tym\n1 odpowiedź złamana i 2 halucynacje) + pusta komórka „Twoja ewaluacja\"\n+ pieczątka)\n\n1. Parsowanie z ochroną (LLM.3/LLM.4): odpowiedzi → rekordy;\n   odsetek zgodnych ze schematem → **`zgodnosc`**.\n2. Trafność per pole (LLM.5) na przypadkach ZGODNYCH → słownik\n   **`trafnosc`** (pole → ułamek).\n3. Wskaźnik halucynacji (LLM.5) → **`halucynacje_wskaznik`**.\n4. Tabela wyników: DataFrame (PD.2!) z wierszami per pole + wydruk —\n   to Twoja „tabela ewaluacji w repozytorium\".\n5. Komórka tekstowa: 2 zdania wniosków (które pole kuleje? co byś\n   zmienił(a) w prompcie? — wzorzec EDA.3) + 1 zdanie Ograniczeń\n   (ML.6: „8 przykładów to za mało, by…\").\n\nNazwy pogrubione = część specyfikacji (pieczątka wie, gdzie patrzeć).\n\n**Zaliczenie:** komórka-pieczątka: przelicza ewaluację niezależnie\n(dane zapisane ⇒ wynik jedyny) i porównuje `zgodnosc`, `trafnosc`,\n`halucynacje_wskaznik` — token przy zgodności (tolerancja float\nz F3). Komórki tekstowe poza checkiem — ocenia je rubryka capstone'u.",
+			"contentMd": "### Cel\n\nOstatni lab całej ścieżki: z 8 zapisanych trójek (tekst ogłoszenia,\nodpowiedź modelu, ground truth) zbudujesz kompletną tabelę ewaluacji —\ndokładnie artefakt, którego rubryka capstone'u żąda za 30%.\n\n### Zadanie (notebook LLM.7 — lista `przypadki` (8 trójek, w tym\n1 odpowiedź złamana i 2 halucynacje; prawda zawiera **dokładnie\n4 pola-braki** `null` — kształt danych jest częścią kontraktu pieczątki)\n+ pusta komórka „Twoja ewaluacja\" + pieczątka)\n\n1. Parsowanie z ochroną (LLM.3/LLM.4): odpowiedzi → rekordy;\n   odsetek zgodnych ze schematem **jako ułamek 0–1** → **`zgodnosc`**\n   (odsetek, nie licznik — do tabeli wchodzi liczba porównywalna\n   między wersjami promptu).\n2. Trafność per pole (LLM.5) na przypadkach ZGODNYCH → słownik\n   **`trafnosc`** (pole → ułamek).\n3. Wskaźnik halucynacji (LLM.5: wypełnione pola-braki / wszystkie\n   pola-braki w prawdzie, ułamek 0–1) → **`halucynacje_wskaznik`**.\n4. Tabela wyników: DataFrame (PD.2!) z wierszami per pole + wydruk —\n   to Twoja „tabela ewaluacji w repozytorium\".\n5. Komórka tekstowa: 2 zdania wniosków (które pole kuleje? co byś\n   zmienił(a) w prompcie? — wzorzec EDA.3) + 1 zdanie Ograniczeń\n   (ML.6: „8 przykładów to za mało, by…\").\n\nNazwy pogrubione = część specyfikacji (pieczątka wie, gdzie patrzeć).\n\n**Zaliczenie:** komórka-pieczątka: przelicza ewaluację niezależnie\n(dane zapisane ⇒ wynik jedyny: `zgodnosc` 0.875, `halucynacje_wskaznik`\n0.5) i porównuje `zgodnosc`, `trafnosc` (pieczątka odczytuje słownik\njako listę ułamków w kolejności `POLA`), `halucynacje_wskaznik` —\ntoken przy zgodności (tolerancja float z F3).\nKomórki tekstowe poza checkiem — ocenia je rubryka capstone'u.",
 			"concepts": [
 				{
 					"slug": "prompt-specyfikacja",
@@ -735,11 +735,61 @@
 			"hints": [
 				"**Koncepcyjny:** To LLM.4 + LLM.5 sklejone + tabela z PD.2 na wierzchu. Kolejność: parsuj-z-ochroną → waliduj → licz TYLKO na zgodnych → tabela → słowa. Ostatni raz na ścieżce: buduj przyrostowo, uruchamiaj po każdym kroku (L0.4 — od pierwszego dnia do ostatniego).",
 				"**Szkielet:** krok 1 = pętla z LLM.4 (bez luk, z pamięci); krok 2–3 = pętla z LLM.5 z filtrem `if rekord is not None` na wejściu; krok 4: `pd.DataFrame([{\"pole\": p, \"trafnosc\": trafnosc[p]} for p in POLA])` — albo zwykłą pętlą z F3.1, jak wolisz.",
-				"**Pełne rozwiązanie z objaśnieniem:** (w notebooku, zwinięte) — wartości kontrolne: `zgodnosc` 7/8; trafność liczona na 7 zgodnych; 2 halucynacje. Najczęstsze potknięcie finału: liczenie trafności także na przypadku złamanym (None) — filtr z kroku 2 jest po to, żeby porażka parsowania nie udawała porażki EKSTRAKCJI: to dwie różne miary (zgodność vs trafność), rubryka chce obu OSOBNO."
+				"**Pełne rozwiązanie z objaśnieniem:** (w notebooku, zwinięte) — wartości kontrolne: `zgodnosc` 0.875 (7 z 8 — jedna odpowiedź celowo złamana); trafność liczona na 7 zgodnych; halucynacje: 2 wypełnione z 4 pól-braków → `halucynacje_wskaznik` 0.5. Najczęstsze potknięcie finału: liczenie trafności także na przypadku złamanym (None) — filtr z kroku 2 jest po to, żeby porażka parsowania nie udawała porażki EKSTRAKCJI: to dwie różne miary (zgodność vs trafność), rubryka chce obu OSOBNO."
 			],
 			"config": {
 				"estimated": "30 min",
-				"checks": []
+				"checks": [
+					{
+						"id": "C1",
+						"kind": "value",
+						"note": "8 przypadków z utrwalonego zbioru",
+						"var": "przypadki_liczba",
+						"expect": 8
+					},
+					{
+						"id": "C2",
+						"kind": "value",
+						"note": "`zgodnosc` = 0.875 (7 z 8 — jedna odpowiedź celowo złamana; ODSETEK, nie licznik)",
+						"var": "zgodnosc",
+						"expect": 0.875
+					},
+					{
+						"id": "C3",
+						"kind": "value",
+						"note": "`halucynacje_wskaznik` = 0.5 (2 wypełnione z 4 pól-braków w prawdzie — definicja LLM.5)",
+						"var": "halucynacje_wskaznik",
+						"expect": 0.5
+					},
+					{
+						"id": "C4",
+						"kind": "predicate",
+						"note": "`trafnosc` spłaszczona do listy 3 ułamków w kolejności POLA (ładunek nie przenosi słowników)",
+						"rule": {
+							"op": "len_eq",
+							"var": "trafnosc_wartosci",
+							"n": 3
+						}
+					},
+					{
+						"id": "C5",
+						"kind": "predicate",
+						"note": "`trafnosc_wartosci` to liczby",
+						"rule": {
+							"op": "all_numbers",
+							"var": "trafnosc_wartosci"
+						}
+					},
+					{
+						"id": "C6",
+						"kind": "predicate",
+						"note": "`trafnosc` == niezależne przeliczenie pieczątki na zgodnych przypadkach",
+						"rule": {
+							"op": "is_true",
+							"var": "trafnosc_zgodna"
+						}
+					}
+				]
 			}
 		},
 		{

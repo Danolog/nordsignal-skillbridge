@@ -820,14 +820,18 @@ odpowiedź modelu, ground truth) zbudujesz kompletną tabelę ewaluacji —
 dokładnie artefakt, którego rubryka capstone'u żąda za 30%.
 
 ### Zadanie (notebook LLM.7 — lista `przypadki` (8 trójek, w tym
-1 odpowiedź złamana i 2 halucynacje) + pusta komórka „Twoja ewaluacja"
-+ pieczątka)
+1 odpowiedź złamana i 2 halucynacje; prawda zawiera **dokładnie
+4 pola-braki** `null` — kształt danych jest częścią kontraktu pieczątki)
++ pusta komórka „Twoja ewaluacja" + pieczątka)
 
 1. Parsowanie z ochroną (LLM.3/LLM.4): odpowiedzi → rekordy;
-   odsetek zgodnych ze schematem → **`zgodnosc`**.
+   odsetek zgodnych ze schematem **jako ułamek 0–1** → **`zgodnosc`**
+   (odsetek, nie licznik — do tabeli wchodzi liczba porównywalna
+   między wersjami promptu).
 2. Trafność per pole (LLM.5) na przypadkach ZGODNYCH → słownik
    **`trafnosc`** (pole → ułamek).
-3. Wskaźnik halucynacji (LLM.5) → **`halucynacje_wskaznik`**.
+3. Wskaźnik halucynacji (LLM.5: wypełnione pola-braki / wszystkie
+   pola-braki w prawdzie, ułamek 0–1) → **`halucynacje_wskaznik`**.
 4. Tabela wyników: DataFrame (PD.2!) z wierszami per pole + wydruk —
    to Twoja „tabela ewaluacji w repozytorium".
 5. Komórka tekstowa: 2 zdania wniosków (które pole kuleje? co byś
@@ -837,9 +841,11 @@ dokładnie artefakt, którego rubryka capstone'u żąda za 30%.
 Nazwy pogrubione = część specyfikacji (pieczątka wie, gdzie patrzeć).
 
 **Zaliczenie:** komórka-pieczątka: przelicza ewaluację niezależnie
-(dane zapisane ⇒ wynik jedyny) i porównuje `zgodnosc`, `trafnosc`,
-`halucynacje_wskaznik` — token przy zgodności (tolerancja float
-z F3). Komórki tekstowe poza checkiem — ocenia je rubryka capstone'u.
+(dane zapisane ⇒ wynik jedyny: `zgodnosc` 0.875, `halucynacje_wskaznik`
+0.5) i porównuje `zgodnosc`, `trafnosc` (pieczątka odczytuje słownik
+jako listę ułamków w kolejności `POLA`), `halucynacje_wskaznik` —
+token przy zgodności (tolerancja float z F3).
+Komórki tekstowe poza checkiem — ocenia je rubryka capstone'u.
 
 ### Drabinka hintów
 
@@ -853,8 +859,9 @@ z F3). Komórki tekstowe poza checkiem — ocenia je rubryka capstone'u.
    krok 4: `pd.DataFrame([{"pole": p, "trafnosc": trafnosc[p]} for p
    in POLA])` — albo zwykłą pętlą z F3.1, jak wolisz.
 3. **Pełne rozwiązanie z objaśnieniem:** (w notebooku, zwinięte) —
-   wartości kontrolne: `zgodnosc` 7/8; trafność liczona na 7 zgodnych;
-   2 halucynacje. Najczęstsze potknięcie finału: liczenie trafności
+   wartości kontrolne: `zgodnosc` 0.875 (7 z 8 — jedna odpowiedź celowo
+   złamana); trafność liczona na 7 zgodnych; halucynacje: 2 wypełnione
+   z 4 pól-braków → `halucynacje_wskaznik` 0.5. Najczęstsze potknięcie finału: liczenie trafności
    także na przypadku złamanym (None) — filtr z kroku 2 jest po to,
    żeby porażka parsowania nie udawała porażki EKSTRAKCJI: to dwie
    różne miary (zgodność vs trafność), rubryka chce obu OSOBNO.
@@ -1156,6 +1163,12 @@ Sedno M-LLM w całości w polskiej teorii atomów (D4).
      deterministyczne); pary odpowiedzi do LLM.1 hint 2 wygenerować
      na żywym API RAZ przy budowie i utrwalić (jawny wyjątek od
      strategii determinizmu — deklaracja wyżej).
+     ⚠ Konstrukcja zbioru LLM.7 (QG 2026-07-21, INFO-2): wszystkie
+     **4 pola-braki prawdy muszą leżeć w przypadkach PARSOWALNYCH**
+     (nie w złamanej odpowiedzi) — pętla wzorcowa z LLM.5 czyta
+     `przypadek["model"][pole]`, a dla złamanego rekordu to `None`
+     i „wypełnione" byłoby nieokreślone; kontrakt 0.5 = 2/4 liczy
+     braki wyłącznie na zgodnych.
   2. Seanse kontrolne wideo PL (Robert Sikora ~30 min; Marszałkowski
      ~11 min) — składnia SDK, free tier, Colab Secrets zweryfikowane
      researchem 2026-07-11 (szczegóły w zasobach i pierwszej pomocy).
@@ -1188,3 +1201,12 @@ pierwsza pomoc odsyła do AI Studio), Colab Secrets potwierdzone
 (panel/`userdata.get`/przełącznik per notatnik; etykiety EN + opis PL
 — wzorzec GitHub), wideo PL: Robert Sikora (30 min, 2024)
 + Marszałkowski (11 min, 2024).
+
+## Przebieg QG spłaty długu labu LLM.7 (2026-07-21)
+
+Semantyka `zgodnosc` rozstrzygnięta: ODSETEK 0–1 (0.875 = 7 z 8), nie
+licznik; przybite „dokładnie 4 pola-braki" w prawdzie → `halucynacje_wskaznik`
+0.5 = 2/4 (definicja LLM.5, arytmetyka zweryfikowana przez agenta QG na
+spójność z LLM.4/LLM.5); `trafnosc` odczytywana przez pieczątkę jako lista
+ułamków w kolejności `POLA`. INFO-2 wcielone jako nota konstrukcyjna zbioru
+w TODO (wszystkie 4 braki w przypadkach parsowalnych). **GO Z NOTAMI.**

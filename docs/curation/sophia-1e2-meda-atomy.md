@@ -496,7 +496,8 @@ print(len(df))                            # luka 3 (w głowie): ile rekordów oc
 
 # --- rytuał i pierwszy obraz (M-PD) ---
 df.head()
-df.groupby(______)[______].mean()         # luki 4–5: średnia stopa per rok
+srednie_rok = df.groupby(______)[______].mean()   # luki 4–5: średnia stopa per rok
+srednie_rok                               # nazwa w ostatniej linii = pokaż wynik
 ```
 
 Na koniec dorysuj wykres: stopa w czasie dla JEDNEGO województwa
@@ -505,10 +506,12 @@ pobierzesz więcej lat).
 
 **Zaliczenie:** komórka-pieczątka: sprawdza, że `df` istnieje, ma
 3 kolumny i 32 wiersze (16 województw × 2 lata), `rok` jest liczbą
-(konwersja wykonana!), a średnie per rok zgadzają się z niezależnym
-przeliczeniem — i liczy token. Jawny limit: pieczątka NIE odpytuje API
-ponownie (tokenu nie blokuje chwilowa niedostępność BDL — liczy się stan
-sesji po Twoim udanym pobraniu).
+(konwersja wykonana!), status udanego pobrania w sesji to 200,
+a `srednie_rok` zgadza się z niezależnym przeliczeniem grupowania na
+`df` (nazwa `srednie_rok` jest częścią specyfikacji — pieczątka musi
+wiedzieć, gdzie patrzeć) — i liczy token. Jawny limit: pieczątka NIE
+odpytuje API ponownie (tokenu nie blokuje chwilowa niedostępność BDL —
+liczy się stan sesji po Twoim udanym pobraniu).
 
 ### Drabinka hintów
 
@@ -520,8 +523,8 @@ sesji po Twoim udanym pobraniu).
    luka 2: klucz z wartością pomiaru (nie rokiem); luka 3: 16 × 2 = ?;
    luki 4–5: `groupby("rok")["stopa"]`.
 3. **Pełne rozwiązanie z objaśnieniem:** luka 1: `"name"`; luka 2:
-   `"val"`; len → `32`; `df.groupby("rok")["stopa"].mean()` → dwie
-   linie (2022 i 2023), wartości ~5–6% (sprawdź rząd wielkości: to
+   `"val"`; len → `32`; `srednie_rok = df.groupby("rok")["stopa"].mean()`
+   → dwie linie (2022 i 2023), wartości ~5–6% (sprawdź rząd wielkości: to
    stopy procentowe). Zwróć uwagę na `int(pomiar["year"])` — API oddało
    rok jako tekst `"2022"` (cudzysłów w podejrzanym JSON-ie!), a bez
    konwersji oś czasu na wykresie zachowa się dziwnie — to konwersja
@@ -709,3 +712,12 @@ checkbox private repos przy otwieraniu (nie zapisie), GitHub EN-only,
 **docs.github.com/pl nie istnieje (404) — usunięte z zasobów**, limity
 BDL 100/15 min anonimowo (dokumentacja), dwa wideo PL z obowiązkową
 adnotacją „terminal-first".
+
+## Przebieg QG spłaty długu labu EDA.4 (2026-07-21)
+
+Kotwica `srednie_rok` dopisana do zadania (bez niej „porównanie średnich"
+nie miało czego porównywać); Zaliczenie rozszerzone o status 200 i nazwę
+w specyfikacji. Kontrakt CHECKS_EDA_4 zweryfikowany przez agenta QG na
+ŻYWYM API BDL (2026-07-21): HTTP 200, 16 jednostek × 2 lata = 32 rekordy
+płaskie, klucze `name`/`val`, `year` wraca jako string (konwersja int
+potrzebna — dokładnie jak uczy treść), średnie ~5–6%. **GO Z NOTAMI.**
