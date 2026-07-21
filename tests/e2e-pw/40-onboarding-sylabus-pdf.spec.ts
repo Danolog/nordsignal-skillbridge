@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import { loginWithPassword } from "./helpers/auth";
 import { driveChatToSummaryCta } from "./helpers/b0-chat";
+import { resetOnboardingState } from "./helpers/db-reset";
 import { dbWriteTest as test } from "./helpers/guards";
 import { fillSurveyAndContinue } from "./helpers/survey";
 
@@ -159,6 +160,8 @@ test.describe("@dbwrite @llm Onboarding — Krok 0 + upload sylabusa PDF (błęd
 		page,
 	}) => {
 		test.setTimeout(240_000); // Krok 0 to ~9 wywołań modelu (czat) + podsumowanie.
+		// Konto b4 współdzielone ze specami 10/20 — reset przywraca Krok 0 (db-reset.ts).
+		await resetOnboardingState("b4");
 		await loginWithPassword(page, "b4");
 		await page.goto("/onboarding");
 
@@ -190,6 +193,8 @@ test.describe("@dbwrite @llm Onboarding — Krok 0 + upload sylabusa PDF (błęd
 		// realna analiza PDF bywają wolne.
 		test.setTimeout(300_000);
 
+		// Jak wyżej: samowystarczalność wobec współdzielonego konta b4.
+		await resetOnboardingState("b4");
 		await loginWithPassword(page, "b4");
 		await page.goto("/onboarding");
 
