@@ -636,11 +636,22 @@ const MANIFESTS: ModuleManifest[] = [
 			"wzorzec-akumulatora": "Wzorzec akumulatora",
 			"funkcja-def-return": "Funkcja: def i return",
 		},
+		// Krok 4 partia 3: KAŻDY atom F2 ma notebook towarzyszący (jak F1);
+		// pieczątka tylko w labach F2.4/F2.7.
 		overrides: {
-			"F2.4": { checks: CHECKS_F2_4 },
+			"F2.1": { notebookUrl: `${NOTEBOOKS_BASE}/f2/f2-1-input-i-konwersja.ipynb` },
+			"F2.2": { notebookUrl: `${NOTEBOOKS_BASE}/f2/f2-2-lista-przegrodki.ipynb` },
+			"F2.3": { notebookUrl: `${NOTEBOOKS_BASE}/f2/f2-3-petla-for.ipynb` },
+			"F2.4": {
+				checks: CHECKS_F2_4,
+				notebookUrl: `${NOTEBOOKS_BASE}/f2/f2-4-lab-paragon-z-listy.ipynb`,
+			},
+			"F2.5": { notebookUrl: `${NOTEBOOKS_BASE}/f2/f2-5-wzorzec-akumulatora.ipynb` },
+			"F2.6": { notebookUrl: `${NOTEBOOKS_BASE}/f2/f2-6-funkcja-def-return.ipynb` },
 			"F2.7": {
 				concepts: [{ slug: "wzorzec-akumulatora" }, { slug: "funkcja-def-return" }],
 				checks: CHECKS_F2_7,
+				notebookUrl: `${NOTEBOOKS_BASE}/f2/f2-7-lab-straznik-budzetu.ipynb`,
 			},
 		},
 		// Zasady modułu F2: 10 pytań reuse.

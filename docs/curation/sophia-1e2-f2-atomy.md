@@ -1097,3 +1097,32 @@ wideo dla wszystkich tematów F2 (input 0:08:38, for 1:56:01, listy 2:13:53,
 funkcje 2:56:02, return 3:07:39), znana usterka input() w Colab
 (colabtools #3318) wciągnięta do pierwszej pomocy poz. 1 i TODO budowy
 notebooków.
+
+## Przebieg QG notebooków F2 (2026-07-21, Krok 4 partia 3)
+
+7 źródeł percent (`tools/content/notebooks/f2/`) + build deterministyczny →
+**agent QG (Fable 5, adwersaryjnie, realne wykonanie komórek python3
+i WSZYSTKICH ścieżek odmów obu pieczątek): GO Z NOTAMI (0 KRYT / 0 WAŻN /
+7 INFO)** — zero błędów niezapowiedzianych, WE bajt w bajt z tym
+dokumentem, payloady pokrywają 1:1 checki serwerowe.
+
+- **Zweryfikowane twierdzenia mechanizmu:** w `_luka_(input(...))` (F2.1)
+  `NameError` pada PRZED pojawieniem się pola input (kolejność ewaluacji
+  wywołania); pieczątki odmawiają PRZED wywołaniem `input()`; sonda F2.7
+  z funkcją liczącą globalną listę zwraca 284.99 → komunikat trafnie
+  wskazuje pętlę po parametrze; komórka diagnostyczna po programie nie
+  przesłania `_zrodlo` (lekcja F1.7 odrobiona — ostatni kandydat
+  z KOMPLETEM `input(`/`if`/`else`).
+- **INFO wcielone:** odmowa F2.7 przy braku zmiennych wylicza, CZEGO
+  brakuje (wzorzec F1.7).
+- **Limity zadeklarowane (bez akcji):** student może wstawić `input()` DO
+  `suma_wydatkow` — sonda transytywnie go wywoła (INFO-1; obserwować
+  w telemetrii); program rozbity na ≥3 komórki → fałszywa odmowa kompletu
+  igieł (INFO-2 — notebook każe pisać w jednej komórce; C3 `fragile`);
+  igła `input(` nie łapie `input (` ze spacją (INFO-3); bypass `_zrodlo`
+  komentarzem z igłami (INFO-6) — klasa limitu ADR-015 §5. INFO-7:
+  drabinki cytują luki jako `______` (≥4 podkreślenia — bezpieczne, nie
+  są zmienną historii IPythona; stan tożsamy z F1).
+
+Parytet Python↔TS pod testem `tests/unit/ds/notebooks-f2.contract.test.ts`
+(13 testów; harness z kolejką `inputs` dla programów interaktywnych).
