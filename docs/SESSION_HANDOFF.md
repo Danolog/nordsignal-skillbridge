@@ -11,7 +11,37 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-21 (wieczór) — NOTEBOOKI F1+F2, SPŁATA DŁUGU 6 LABÓW — WSZYSTKO NA PRODZIE
+## STAN NA DZIŚ — 2026-07-21 (noc) — NOTEBOOKI F1+F2+F3 I SPŁATA DŁUGU 6 LABÓW NA PRODZIE
+
+### Część 4: notebooki F3 (7 szt.) — PR #199 (squash `5a9eab1`), **25/65**
+
+⚠ **Korekta inwentarza:** F3 ma **7 atomów, nie 8** (szacunek „F3=8"
+z 2026-07-13 był sprzed finalizacji modułów) → łączny cel = **65**
+notebooków, zrobione 25 (L0=4, F1=7, F2=7, F3=7); zostają M-*=40.
+
+- Wzorzec F1/F2 + **nowe mechanizmy**: pieczątka mini-projektu F3.7
+  z kamieniami K1/K2/K3 — **sonda WIELOFUNKCYJNA** (trzy funkcje studenta
+  na próbnej tabeli, `ref_*` własnymi pętlami) + K3 spójność sum
+  z kategoriami wyprowadzonymi z DANYCH studenta; payload spłaszczony
+  (lista kwot — kanonizacja nie przenosi słowników). F3.4: pieczątka
+  przelicza sito własną pętlą → relacje serwerowe `ref_*`.
+- **STRAŻNIK TRWAŁY** `notebooks-stamp-syntax.contract.test.ts`:
+  kompiluje python3-em każdą komórkę-pieczątkę każdego zbudowanego
+  notebooka — klasa błędu „ASCII `"` po polskim cudzysłowie" (wracała
+  w F1/F2/F3) już nie przejdzie builda.
+- **QG agentem: ZATWIERDZONE (0K/1W/5I)** — WAŻN wcielone + test
+  regresyjny (pieczątka F3.7 nie weryfikowała lokalnie KWOTY rekordu
+  z `najdrozszy` — token wychodził lokalnie, serwer odrzucał bez
+  wskazówki); INFO-1 wcielone (strażnik niepustej listy F3.4).
+  Log w `sophia-1e2-f3-atomy.md`. (Nota operacyjna: QG padło 2× —
+  wygasły login + 522 Cloudflare — trzeci bieg czysty.)
+- **Publikacja:** `skillbridge-notebooks` @ `478b2ac` (katalog `f3/`,
+  raw zweryfikowany 200).
+- **PROD:** backup **`prod-backup-pre-ingest-krok4-f3-20260721`**
+  (`br-round-dawn-alzx7bli`); ingest ×2 idempotentny; weryfikacja PO:
+  **25 pozycji z notebookUrl** (pełne fundamenty L0→F3), 0 labów bez
+  checków, `f3-przeglad` bez URL-a. Smoke: `/` 200, `/login` 200,
+  `/api/curriculum` 404 (flaga OFF).
 
 ### Część 3: notebooki F2 (7 szt.) — PR #198 (squash `884bc4f`), 18/66
 
@@ -118,18 +148,18 @@ checków** (kontrakt-test pilnuje 19/19 — dług nie wróci po cichu).
   guard 2500 znaków źródła) — obserwować w telemetrii wklejek.
 
 ### NASTĘPNE (kolejność — zgodnie z roadmapą §4, potwierdzone przez Darka)
-1. **Akcje Darka do flagi L0** (bez zmian). 2. ~~Dług treści 6 labów~~ —
-   **SPŁACONY** (#197). 3. ~~Notebooki F2~~ — **ZROBIONE** (#198).
-4. **Notebooki F3 (8 szt.)** i dalej M-* (zostało 48/66; dla M-SQL/M-LLM
-   kontrakty danych już przybite — listing `przejazdy`/`strefy`, nota
-   o 4 polach-brakach).
-5. **1E.3** (packer: `exam` w `ITEM_KINDS`). 6. **1E.4** dopiero po
-   naprawie `hintDepth` (MIS.1 już na main). 7. Tor równoległy bez zmian.
+1. **Akcje Darka do flagi L0** (bez zmian). 2. ~~Dług 6 labów~~ (#197).
+3. ~~Notebooki F2~~ (#198). 4. ~~Notebooki F3~~ (#199).
+5. **Notebooki M-*** (zostało 40/65: M-PD=9, M-EDA=4, M-SQL=9, M-ML=9,
+   M-LLM=9; kontrakty danych M-SQL/M-LLM już przybite — listing
+   `przejazdy`/`strefy`, nota o 4 polach-brakach; przy M-EDA/M-LLM
+   screenshoty UI = akcje Darka).
+6. **1E.3** (packer: `exam` w `ITEM_KINDS`). 7. **1E.4** dopiero po
+   naprawie `hintDepth` (MIS.1 już na main). 8. Tor równoległy bez zmian.
 
 ### Baseline `main` po tej sesji
-build OK · tsc 0 · Biome 0 · unit **1318/1318** · pełna bramka CI zielona
-na #196/#197/#198 · roadmapa §4: dług notebooków 18/66 · gałęzie Neona: 9
-(po retencji).
+build OK · tsc 0 · Biome 0 · unit **1358/1358** · pełna bramka CI zielona
+na #196/#197/#198/#199 · dług notebooków **25/65** · gałęzie Neona: 10.
 
 ## STAN POPRZEDNI — 2026-07-21 (po południu) — NOCNY TOR e2e-llm ZIELONY PIERWSZY RAZ W HISTORII
 
