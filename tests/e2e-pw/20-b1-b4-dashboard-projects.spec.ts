@@ -47,7 +47,9 @@ test.describe("@dbwrite B1 Paszport kompetencji", () => {
  * Seed (tools/seed-e2e.ts) dla konta "b4": profil + ≥5 kompetencji już w bazie,
  * onboardingCompleted=FALSE. Test przechodzi wizard 0→1→2(AI)→3→4 i ocenia ≥5.
  */
-test.describe("@dbwrite @llm B4 Samoocena (onboarding krok 4 z 5)", () => {
+// Dawniej „B4 Samoocena (krok 4 z 5)" — redesign D5 zniósł osobny krok samooceny
+// (poziom deklaruje się PRZY wyborze kompetencji z katalogu rynku, krok 3).
+test.describe("@dbwrite @llm Onboarding wizard 0→4 (redesign: kompetencje z rynku)", () => {
 	// LLM dostępny po stronie SERWERA (klucz w env serwera dev/preview, nie w
 	// transkrypcie Playwright). Sygnalizujemy to flagą E2E_LLM_AVAILABLE=1 LUB
 	// obecnością ANTHROPIC_API_KEY w procesie Playwright. Bez żadnej — skip.
@@ -57,7 +59,9 @@ test.describe("@dbwrite @llm B4 Samoocena (onboarding krok 4 z 5)", () => {
 			"tylko przez krok 2 'Sylabus' (woła model). Ustaw E2E_LLM_AVAILABLE=1, gdy serwer ma klucz.",
 	);
 
-	test("Wizard 0→4: oceń ≥5 kompetencji, advance odblokowuje się po progu", async ({ page }) => {
+	test("Wizard 0→4 (redesign D5): katalog rynku, poziom przy wyborze, Wnioski → pulpit", async ({
+		page,
+	}) => {
 		// Wizard woła model TRZY razy (Krok 0 czat + syllabus parse + Skill Map przy
 		// zapisie). Krok 0 to ~9 wywołań modelu — podnosimy budżet czasu całego testu.
 		test.setTimeout(360_000);
@@ -108,8 +112,10 @@ test.describe("@dbwrite @llm B4 Samoocena (onboarding krok 4 z 5)", () => {
 		await expect(dalej).toBeEnabled({ timeout: 10_000 });
 		await dalej.click();
 
-		// Krok 2 — Sylabus. Wklej ≥100 znaków i odpal analizę AI (krok 2→3).
-		await expect(page.getByRole("heading", { name: /Wgraj swój sylabus/i })).toBeVisible();
+		// Krok 2 — Sylabus (opcjonalny). Po redesignie „realny rynek" (Partia 4/D4)
+		// sylabus ADNOTUJE katalog rynku flagą „w programie studiów" — nie generuje
+		// listy kompetencji. Wklej ≥100 znaków i odpal analizę AI (krok 2→3).
+		await expect(page.getByRole("heading", { name: /Sylabus \(opcjonalny\)/i })).toBeVisible();
 		await page
 			.getByPlaceholder(/Wklej tutaj treść sylabusa/i)
 			.fill(
@@ -119,33 +125,39 @@ test.describe("@dbwrite @llm B4 Samoocena (onboarding krok 4 z 5)", () => {
 			);
 		await page.getByRole("button", { name: /Analizuj sylabus/i }).click();
 
-		// Krok 3 — Kompetencje (po analizie AI). Zatwierdź (≥5 z analizy/seeda).
+		// Krok 3 — Kompetencje + poziom z KATALOGU RYNKU (redesign D5: scalenie
+		// wyboru z poziomem ZNIOSŁO osobny krok samooceny — poprzednia wersja tego
+		// testu pokrywała krok, którego już nie ma).
 		await expect(page.getByRole("heading", { name: /Twoje kompetencje/i })).toBeVisible({
 			timeout: 60_000,
 		});
-		await page.getByRole("button", { name: /Zatwierdź i przejdź dalej/i }).click();
+		const zatwierdz = page.getByRole("button", { name: /Zatwierdź i przejdź dalej/i });
+		// Anty-regresja D5: próg „min 5" ZNIESIONY — przycisk aktywny bez żadnego
+		// zaznaczenia (0 OK, „możesz zacząć od zera"), gdy tylko katalog się doładuje.
+		await expect(zatwierdz).toBeEnabled({ timeout: 30_000 });
 
-		// Krok 4 — Samoocena. Po „Zatwierdź" leci POST /api/onboarding (zapis +
-		// generacja Skill Map = drugie wołanie modelu, do ~60 s) → ekran
-		// „Analizujemy Twój profil…", potem krok 4. Callout potwierdza B4.
-		await expect(page.getByText(/To Twoja własna deklaracja, nie ocena/i)).toBeVisible({
-			timeout: 90_000,
-		});
-		const advance = page.getByRole("button", { name: /^Idź dalej$/ });
-		await expect(advance).toBeDisabled();
-
-		// Oceń 5 pierwszych kompetencji — w każdej radiogroup wybierz „znam".
-		// RatingScale renderuje natywny input[type=radio] jako sr-only, a widoczna
-		// jest <label> (segment), która przechwytuje kliknięcia. Dlatego check()
-		// z force:true na ukrytym inpucie (interakcja realna idzie i tak na grupę).
-		const groups = page.getByRole("radiogroup");
-		const count = Math.min(5, await groups.count());
-		for (let i = 0; i < count; i++) {
-			await groups.nth(i).getByRole("radio", { name: /^znam/i }).first().check({ force: true });
-			await page.waitForTimeout(700); // autosave debounce 400 ms + zapis
+		// Zaznacz poziom dla 2 pierwszych kompetencji: fieldset per kompetencja,
+		// przyciski poziomów z aria-pressed ([0] = „Brak", [1] = pierwszy poziom;
+		// etykiety to czasowniki per rodzaj — celujemy pozycyjnie, nie po tekście).
+		const fieldsets = page.locator("li fieldset");
+		await expect(fieldsets.first()).toBeVisible({ timeout: 15_000 });
+		for (let i = 0; i < 2; i++) {
+			const poziom = fieldsets.nth(i).getByRole("button").nth(1);
+			await poziom.click();
+			await expect(poziom).toHaveAttribute("aria-pressed", "true");
 		}
+		await zatwierdz.click();
 
-		await expect(advance).toBeEnabled({ timeout: 15_000 });
+		// Krok 4 — Wnioski (ekran domykający). Po „Zatwierdź" leci zapis + generacja
+		// Skill Map (drugie wołanie modelu) — budżet do 120 s.
+		await expect(
+			page.getByRole("heading", { name: /Masz plan\. Zobacz, od czego zacząć\./i }),
+		).toBeVisible({ timeout: 120_000 });
+		await page
+			.getByRole("button", { name: /Przejdź do pulpitu/i })
+			.first()
+			.click();
+		await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
 	});
 });
 
