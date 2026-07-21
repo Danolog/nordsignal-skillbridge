@@ -39,6 +39,7 @@ function renderRunner(overrides: Partial<React.ComponentProps<typeof ItemRunner>
 			answeredCorrectQuestionIds={[]}
 			hints={["Podpowiedź pierwsza", "Podpowiedź druga"]}
 			initialStatus="available"
+			confidenceProbeEnabled={false}
 			{...overrides}
 		/>,
 	);
@@ -136,5 +137,40 @@ describe("ItemRunner", () => {
 		renderRunner({ initialStatus: "completed" });
 		expect(screen.getByText("Pozycja zaliczona")).toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Sprawdź" })).not.toBeInTheDocument();
+	});
+
+	// MIS.1 — sonda pewności (za flagą confidenceProbe, przekazywaną propsem).
+	it("sonda pewności: bez deklaracji „Sprawdź” nie rusza; wybór idzie do serwera", async () => {
+		const user = userEvent.setup();
+		const fetchMock = mockAnswer({ correct: true });
+		vi.stubGlobal("fetch", fetchMock);
+
+		renderRunner({ confidenceProbeEnabled: true });
+		await user.click(screen.getByLabelText("Wypisuje na ekran"));
+		// Odpowiedź wybrana, pewność nie — przycisk zablokowany.
+		expect(screen.getByRole("button", { name: "Sprawdź" })).toBeDisabled();
+
+		await user.click(screen.getByRole("button", { name: "Chyba wiem" }));
+		expect(screen.getByRole("button", { name: "Sprawdź" })).toBeEnabled();
+		await user.click(screen.getByRole("button", { name: "Sprawdź" }));
+
+		await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+		const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+		expect(body).toMatchObject({ questionItemId: "q-1", confidence: 2 });
+	});
+
+	it("flaga off: sonda nie istnieje w drzewie, body bez pola confidence", async () => {
+		const user = userEvent.setup();
+		const fetchMock = mockAnswer({ correct: true });
+		vi.stubGlobal("fetch", fetchMock);
+
+		renderRunner();
+		expect(screen.queryByText(/Jak pewny/)).not.toBeInTheDocument();
+		await user.click(screen.getByLabelText("Wypisuje na ekran"));
+		await user.click(screen.getByRole("button", { name: "Sprawdź" }));
+
+		await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+		const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+		expect(body).not.toHaveProperty("confidence");
 	});
 });
