@@ -11,7 +11,37 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-21 (wieczór) — KROK 4 PARTIA 2: NOTEBOOKI F1 NA PRODZIE
+## STAN NA DZIŚ — 2026-07-21 (wieczór) — NOTEBOOKI F1 + SPŁATA DŁUGU 6 LABÓW NA PRODZIE
+
+### Część 2: dług treści 6 labów SPŁACONY (PR #197, squash `9509007`)
+
+Dług z 1E.6b (PD.4/PD.8/EDA.4/SQL.4/SQL.7/LLM.7 — niesprawdzalna treść,
+uczciwe 501) domknięty; **wszystkie 19 labów ścieżki ma realny kontrakt
+checków** (kontrakt-test pilnuje 19/19 — dług nie wróci po cichu).
+
+- **Poprawki treści:** PD.4 — Zaliczenie bez sprzeczności (pieczątka
+  porównuje wartości `maz` z pełną tabelą); PD.8 — kształt danych przybity
+  (12 wierszy / 2 braki, widełki `len` 7–12); EDA.4 — kotwica
+  `srednie_rok` + status 200; SQL.4/SQL.7 — wyniki pod `z1`–`z3` przez
+  `.df()` (SQL.1), nazwy częścią specyfikacji; LLM.7 — `zgodnosc` =
+  ODSETEK (0.875), `halucynacje_wskaznik` 0.5 = 2/4 pól-braków (przybite
+  w treści), `trafnosc` czytana jako lista w kolejności `POLA`.
+- **QG agentem (realne przeliczenia): GO Z NOTAMI (0K/2W/5I)** — agent
+  przeliczył WSZYSTKIE `expect` niezależnie (pandas, DuckDB, ŻYWE API BDL,
+  26 symulacji ładunków przez `evaluateChecks`). WAŻN wcielone:
+  (1) **kanoniczny listing `przejazdy`/`strefy`** przybity w „Notatkach
+  dla Olivera" msql (wartości były rozsypane po hintach 5 atomów —
+  budowniczy notebooków M-SQL mógłby zbudować dane niezgodne z checkami);
+  (2) kontrakt SQL.4 rozszerzony o `z1_wiersze=5`. Logi QG w 4 dokumentach.
+- **Nota dla budowniczego notebooków M-LLM:** wszystkie 4 pola-braki
+  prawdy w przypadkach PARSOWALNYCH (TODO w mllm — inaczej wskaźnik 2/4
+  nieokreślony).
+- **PROD:** backup **`prod-backup-pre-ingest-dlug6labow-20260721`**
+  (`br-ancient-heart-al1kqhq4`); ingest ×2 idempotentny (9/70, pytania
+  bez zmian); weryfikacja PO: 19/19 labów z checkami (5–6 per lab),
+  `z1_wiersze` w sql-4, 0 przecieków listingu do contentMd, `0.875`
+  w llm-7, `srednie_rok` w eda-4. Smoke: `/` 200, `/login` 200,
+  `/api/curriculum` 404 (flaga OFF).
 
 ### Co się wydarzyło (PR #196, squash `4f24f91` na main)
 
@@ -64,15 +94,17 @@
   guard 2500 znaków źródła) — obserwować w telemetrii wklejek.
 
 ### NASTĘPNE (kolejność — zgodnie z roadmapą §4, potwierdzone przez Darka)
-1. **Akcje Darka do flagi L0** (bez zmian). 2. **Dług treści 6 labów**
-   (PD.4, PD.8, EDA.4, SQL.4, SQL.7, LLM.7) → QG → repack → re-ingest.
+1. **Akcje Darka do flagi L0** (bez zmian). 2. ~~Dług treści 6 labów~~ —
+   **SPŁACONY** (#197, część 2 wyżej).
 3. **Notebooki F2 (7 szt.)** i dalej F3/M-* (zostało 55/66).
 4. **1E.3** (packer: `exam` w `ITEM_KINDS`). 5. **1E.4** dopiero po
    naprawie `hintDepth` (MIS.1 już na main). 6. Tor równoległy bez zmian.
 
 ### Baseline `main` po tej sesji
 build OK · tsc 0 · Biome 0 · unit **1305/1305** · pełna bramka CI zielona
-na #196 · roadmapa §4: dług notebooków zaktualizowany (11/66).
+na #196 i #197 · roadmapa §4: dług notebooków zaktualizowany (11/66) ·
+gałęzie Neona: 10 (kandydaci do delete: pre-0036 i pre-ingest-1er
+z 2026-07-13).
 
 ## STAN POPRZEDNI — 2026-07-21 (po południu) — NOCNY TOR e2e-llm ZIELONY PIERWSZY RAZ W HISTORII
 
