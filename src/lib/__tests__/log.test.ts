@@ -65,7 +65,7 @@ describe("extractValidationIssues — wyciąg metadanych walidacji z realnego b�
 	it("PII-safe: nie zwraca surowej WARTOŚCI treści studenta — tylko metadane reguły", async () => {
 		// Sekretna treść studenta, która łamie regułę (zła struktura). Wartość NIE
 		// może pojawić się w żadnym polu zwróconych issues (path/code/message).
-		const secret = "TAJNY-CEL-KARIERY-STUDENTA-XYZ-123";
+		const secret = "TAJNY-CEL-KARIERY-STUDENTA-XYZ-123"; // gitleaks:allow — rekwizyt testu, nie sekret
 		const err = await realNoObjectError(
 			JSON.stringify({ summaryText: secret, careerPaths: secret }), // careerPaths zły typ
 		);
