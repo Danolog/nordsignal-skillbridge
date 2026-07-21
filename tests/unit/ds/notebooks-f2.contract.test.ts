@@ -289,7 +289,7 @@ describe("symulacja sesji studenta F2: komórki → token → checki z prodowego
 			slug: "f2-7",
 			replacements: [["# Twój program — pisz tutaj:", PROGRAM_GLOBALNA_LISTA]],
 			inputs: ["300"],
-			message: /powinna zwrócić 6.*globalnej/s,
+			message: /powinna zwrócić 6[\s\S]*globalnej/,
 		},
 		{
 			name: "f2-7: program bez input() i if/else — pieczątka odmawia punktami specyfikacji",
