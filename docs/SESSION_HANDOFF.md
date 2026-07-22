@@ -59,6 +59,19 @@ M-PD=8); zostaje 25 (M-EDA=4, M-SQL=7, M-ML=7, M-LLM=7).
   zgłoszone); kontrakty danych M-SQL (listing `przejazdy`/`strefy`)
   i M-LLM (4 pola-braki parsowalne) przybite w #197.
 
+### Dopisek 2026-07-22 (rano): nocny bieg + naprawa deps-scan (PR #202)
+
+- **Nocny tor e2e-llm ZIELONY ZE SCHEDULE pierwszy raz** (run 29894578830,
+  05:43 UTC: 9 testów w 10m41s) — poprzedni zielony (#195) był z ręcznego
+  workflow_dispatch; to pierwszy miarodajny bieg automatyczny.
+- W tym samym biegu **padł deps-scan**: 3 nowe HIGH z nocnych advisories —
+  2× `fast-uri` (GHSA-4c8g-83qw-93j6, GHSA-v2hh-gcrm-f6hx; łańcuch dev
+  `shadcn>@modelcontextprotocol/sdk>ajv`) i `sharp <0.35.0` (libvips CVE,
+  ścieżka `next>sharp`). Naprawa wzorcem #184 (`pnpm.overrides`):
+  `fast-uri ^3.1.4` (podbicie istniejącego), `sharp ^0.35.0` (nowy) —
+  PR #202. Po zmianie: 0 high (7 low / 15 moderate — nieblokujące);
+  build + unit 1387/1387 zielone z sharp 0.35.3.
+
 ### Baseline `main` po tej sesji
 build OK · tsc 0 · Biome 0 · unit **1387/1387** · pełna bramka CI
 zielona na #200 · notebooki **33/58** · gałęzie Neona: **9**.
