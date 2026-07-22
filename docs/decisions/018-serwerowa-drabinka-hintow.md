@@ -15,6 +15,19 @@
 - **Wykonanie:** Max (cały PR end-to-end), Jack (review kroku 6), Leo (review wg 14 domen),
   Ryan (nota do macierzy RLS — bez sign-offu, patrz D1), Ethan (scalenie, migracja prod,
   wdrożenie, obserwacja).
+- **Aktualizacja 2026-07-22 wieczór (po review Leo i sign-offie Ryana) — trzy poprawki,
+  wszystkie PRZED startem Maxa:**
+  **(A1)** dwie migracje `0039` + `0040` zamiast jednej — **potwierdzone wykonaniem**
+  generatora, żadnego wyjątku od reguły „migracje tylko-do-dopisywania" (D3, sekcja
+  „Jak to wychodzi z generatora");
+  **(A2)** niezmiennik trwały to **`at.length ≤ d`**, nie równość — wybór zapisany jawnie,
+  nie domyślny (D1);
+  **(A3)** osłabione twierdzenie o odtwarzalności odczytu „per podejście" — dane dają je
+  wyłącznie dla **pierwszego** odsłonięcia na danej głębokości (D2, argument 2). Decyzja
+  bez zmian; zmienia się to, na czym wolno oprzeć cechę FSRS w 1E.4.
+  Sign-off domeny ryzyka: `docs/security/hint-reveals-retencja-signoff.md` (GO warunkowe,
+  8 warunków W-1..W-8 dla Maxa) — **żaden z warunków nie koliduje z tym ADR-em**, weryfikacja
+  w sekcji 6.
 
 > **Słowniczek** (żargon rozwinięty przy pierwszym użyciu): **podpowiedź / hint** — kolejny
 > poziom pomocy przy pytaniu (0 = żadnej, 3 = pełne rozwiązanie); **głębokość / `hint_depth`** —
@@ -52,9 +65,32 @@ curriculum_item_progress + hints_revealed_json jsonb NOT NULL DEFAULT '{}'::json
 { "<question_item_id>": { "d": 0..3, "at": ["<iso8601>", …] } }
                           ^ maksymalna przyznana głębokość
                                       ^ znacznik czasu KAŻDEGO przyznania;
-                                        dokładnie `d` wpisów, dopisywany
+                                        NAJWYŻEJ `d` wpisów, dopisywany
                                         WYŁĄCZNIE gdy głębokość rośnie
 ```
+
+**Niezmiennik wiążący: `at.length ≤ d` (A2, poprawka 2026-07-22).** Pierwsza wersja tego ADR-a
+mówiła „dokładnie `d` wpisów". Leo zauważył, że nic tego nie egzekwuje, a Ryan rozstrzygnął to
+od strony swojej domeny: retencja 12-miesięczna dla `at[]` (sign-off §2) **usuwa znaczniki
+i zostawia `d`**, więc równość przestaje być prawdziwa dla wierszy starszych niż rok. Przyjmuję
+jego sprostowanie i zapisuję wybór jawnie, zamiast zostawiać go domyślnym:
+
+- **W chwili zapisu** (`grantNextHint`) obowiązuje **równość** — każdy wzrost głębokości dopisuje
+  dokładnie jeden znacznik. To jest testowane (§5 pkt 6) i to jest kontrakt pisarza.
+- **Jako niezmiennik trwały** obowiązuje **`at.length ≤ d`**. Krótsza lista to stan legalny
+  (przycięcie retencyjne), **nigdy** błąd — czytelnik nie ma prawa jej odrzucić ani uznać za
+  uszkodzoną. `d` pozostaje jedynym źródłem głębokości; `at` jest cechą pomocniczą o krótszym
+  życiu niż wartość, którą opisuje.
+- **Egzekwowanie: kod, nie komentarz.** Schemat Zod w `hints.ts` (jedyny pisarz i jedyny czytelnik,
+  D3/D5) odrzuca `at.length > d` przy **zapisie i odczycie**; test jednostkowy: `{d:1, at:[t1,t2]}`
+  → wyjątek, `{d:3, at:[]}` → przechodzi. Zapytanie wykrywające rozjazd na produkcji — §9
+  sign-offu Ryana (wzorzec do skopiowania z `NOT IN ('d','at')`).
+- **Świadomie BEZ ograniczenia `CHECK` w bazie.** Sprawdzenie „dla każdego klucza mapy" wymaga
+  iteracji po kluczach JSONB, a `CHECK` w PostgreSQL nie przyjmuje podzapytań ani agregatów —
+  zrobienie tego wymagałoby własnej funkcji `IMMUTABLE` w schemacie i utrzymywania jej przez
+  migracje. Cena wyższa niż korzyść przy **jednym** pisarzu; bramką pozostaje `CHECK
+  (jsonb_typeof(...) = 'object')` z D5 plus schemat Zod. Nazywam to tu wprost, żeby przyszły
+  czytelnik nie odkrył tego jako niespodzianki.
 
 **Dlaczego nie B.** Jedynym realnym argumentem za B był sygnał czasowy („ile trwało do pierwszej
 podpowiedzi") dla FSRS/D5 — sam Leo tak to postawił: *„jeśli 1E.4 ma w planie cechę czasową,
@@ -96,10 +132,34 @@ dałoby się zrobić uczciwie, gdyby serwer trzymał granicę podejścia. Rozstr
    bo odsłonięcie „się nie liczyło". Kosztem pierwszego błędu jest zmarnowana minuta studenta;
    kosztem drugiego — kompetencja uznana za posiadaną, której nie ma. Przy produkcie, którego
    wyjściem jest dowód kompetencji, tylko jeden z tych błędów wolno nam popełniać.
-2. **Sticky + `at` jest ściśle bogatsze niż reset.** Mając znaczniki czasu przyznań, analityka
-   odtwarza odczyt „per podejście" (czy w oknie tego podejścia padło jakiekolwiek odsłonięcie
-   i ile), a z zapisu zresetowanego nie odtworzy historii nigdy. Wybieramy reprezentację, która
-   zachowuje **oba** odczyty, i zostawiamy definicję cechy FSRS otwartą do 1E.4.
+2. **Sticky + `at` jest bogatsze niż reset** — ale nie tak bogate, jak napisałem w pierwszej wersji.
+   **Poprawka A3 (Leo, 2026-07-22).** Twierdzenie „analityka odtwarza odczyt »per podejście«"
+   było **za mocne** i wycofuję je w tym kształcie. Skoro `at` dopisujemy **wyłącznie przy wzroście
+   głębokości** (D1), to student, który wraca do materiału i odsłania podpowiedź, którą już
+   kiedyś widział, **nie generuje żadnego wpisu** — z punktu widzenia danych to podejście wygląda
+   na przebyte bez pomocy. Co `at` daje naprawdę:
+
+   - **daje:** moment **pierwszego** odsłonięcia na każdej głębokości (0→1, 1→2, 2→3), czyli
+     „kiedy student po raz pierwszy potrzebował pomocy tego poziomu" i odstęp od poprzedniego;
+   - **nie daje:** liczby ani czasu **powtórnych** odsłonięć tej samej podpowiedzi, więc pytanie
+     „czy w oknie TEGO podejścia padło jakiekolwiek odsłonięcie" ma odpowiedź pewną tylko
+     wtedy, gdy w tym oknie głębokość **wzrosła**. W przeciwnym razie odpowiedź brzmi
+     „nie wiem", a nie „nie padło".
+
+   **Decyzji to nie zmienia** — broni jej argument 1 (asymetria kosztu błędu), który stoi
+   samodzielnie. Zmienia natomiast to, **na czym wolno oprzeć cechę FSRS w 1E.4**: cecha
+   „czy w tym podejściu korzystał z pomocy" **nie ma pokrycia w danych** i nie wolno jej
+   zaplanować bez wcześniejszej zmiany reguły zapisu. Cechy z pokryciem: `d` (maksymalna
+   przyznana głębokość — sticky, zawsze) oraz „czas od pierwszego odsłonięcia danego poziomu".
+   Zapisuję to tutaj, bo dokładnie ten typ cichego założenia kosztuje później przeprojektowanie
+   modelu: 1E.4 przeczyta ADR, nie pamięć zespołu.
+
+   **Gdyby 1E.4 uznało, że potrzebuje pełnej historii kliknięć** — to jest zmiana reguły zapisu
+   („dopisuj `at` przy każdym odsłonięciu"), która **znosi ograniczenie rozmiaru mapy** będące
+   fundamentem odrzucenia wariantu B (D1) i unieważnia podstawę sign-offu Ryana (minimalizacja
+   przy zbiorze domkniętym od góry). Wtedy właściwą odpowiedzią jest **wariant B z osobną tabelą
+   i własną retencją**, a nie rozpychanie JSONB-a. To jest jedyny warunek, przy którym D1 się
+   otwiera — nazwany, żeby nikt nie musiał go odkrywać po fakcie.
 
 Skutek uboczny z §3 planu Leo (odsłonięcie sprzed miesiąca podbija dzisiejszą odpowiedź)
 **akceptuję świadomie** — jest ceną punktu 1.
@@ -122,7 +182,43 @@ ALTER TABLE curriculum_item_answers
   ALTER COLUMN hint_depth_source DROP DEFAULT;                   -- od teraz: deklaruj jawnie
 ```
 
-Uzasadnienie: `NOT NULL` **bez** domyślnej wartości zmusza każdego przyszłego pisarza do
+**Jak to wychodzi z generatora — A1, zweryfikowane wykonaniem 2026-07-22 (Ethan).**
+Leo słusznie zauważył, że **dwa polecenia `ALTER` na jednej kolumnie nie wyjdą z jednego przebiegu
+`pnpm db:generate`** (generator porównuje schemat z migawką — w jednym porównaniu kolumna albo ma
+domyślną wartość, albo jej nie ma), a ręczna edycja pliku migracji jest zablokowana hookiem
+(`.claude/settings.json`, `deny`, „migracje są tylko-do-dopisywania" — incydent dziennika
+2026-07-02). Jego propozycja: **dwie migracje, `0039` i `0040`**. Nie potwierdził jej jednak
+wykonaniem — a wisiało na niej pytanie, czy generator w ogóle **emituje `DROP DEFAULT`** przy
+usunięciu `.default()` ze schematu. Sprawdziłem to na izolowanej kopii (drizzle-kit **0.31.9**,
+ta sama wersja co w repo; osobny katalog `out`, dziennik repo nietknięty):
+
+| Krok | Schemat | Wygenerowany SQL |
+|---|---|---|
+| 0 | tabela bez kolumny | `CREATE TABLE …` (punkt odniesienia) |
+| **1** | `text("hint_depth_source").notNull().default("client")` | `ALTER TABLE "curriculum_item_answers" ADD COLUMN "hint_depth_source" text DEFAULT 'client' NOT NULL;` |
+| **2** | `.default("client")` **usunięte** ze schematu | `ALTER TABLE "curriculum_item_answers" ALTER COLUMN "hint_depth_source" DROP DEFAULT;` |
+
+**Rozstrzygnięcie: propozycja Leo działa, wyjątku od reguły append-only NIE ma i nie będzie.**
+Max wykonuje `pnpm db:generate` **dwa razy** — najpierw ze schematem z domyślną wartością (`0039`),
+potem po jej usunięciu ze schematu (`0040`) — i **nie tyka ręcznie żadnego pliku migracji**.
+Numeracja: dziennik kończy się na `idx: 38`, więc `0039` i `0040` to kolejne wolne numery.
+
+**Czy `DROP DEFAULT` nie zablokuje się o bramkę — sprawdzone, nie założone.** Fraza zawiera słowo
+`DROP`, więc pytanie jest zasadne. (a) Hook komend Bash w repo nadrzędnym (`hooks/guard-bash.py`)
+łapie wyłącznie wzorzec `DROP (TABLE|DATABASE|SCHEMA|INDEX)` — `ALTER COLUMN … DROP DEFAULT` **nie
+pasuje** i nie wywoła pauzy. (b) `pnpm db:migrate` (`tools/db-guard-migrate.ts`) bramkuje **host**
+(zdalny wymaga `CONFIRM_PROD_DB=1`), a nie treść SQL. Wniosek: migracja `0040` przechodzi normalną
+ścieżką, bez obchodzenia czegokolwiek. Gdyby któraś bramka jednak zareagowała — **eskalacja, nie
+obejście** (`CLAUDE.md` v1.12).
+
+Sprawdziłem też wariant przeciwny (kolumna dodana od razu jako `NOT NULL` bez domyślnej wartości,
+jedna migracja): generator emituje `ADD COLUMN "hint_depth_source" text NOT NULL`, co na tabeli
+z jakimikolwiek wierszami kończy się błędem PostgreSQL („column contains null values"). Na
+produkcji przeszłoby dziś przypadkiem (0 wierszy), a wywaliłoby się na bazie lokalnej i w CI —
+i **nie oznaczyłoby historii**, czyli straciłoby cały sens D3. Ten wariant jest odrzucony
+dowodem, nie przeczuciem.
+
+Uzasadnienie poprawki: `NOT NULL` **bez** domyślnej wartości zmusza każdego przyszłego pisarza do
 zadeklarowania źródła — pominięcie kończy się błędem zapisu (głośno, natychmiast), a nie cichym
 oznaczeniem świeżego pomiaru serwerowego jako `'client'`. Zostawiony `DEFAULT 'client'` to pułapka
 z opóźnionym zapłonem: pierwszy zauważy ją ktoś, kto za pół roku policzy krzywą zapominania na
@@ -244,3 +340,53 @@ tylko-do-dopisywania).
 8. `pnpm tsx tools/k3-validate.ts` zielone bez zmian w listach (wariant A nie dodaje tabeli).
 9. `expect(JSON.stringify(body)).not.toContain(<tekst nieodsłoniętej podpowiedzi>)` na
    `GET /api/curriculum/items/[id]` — dowód zamknięcia wycieku (krok 4 Leo, bez zmian).
+10. **(A2)** `{ d: 1, at: [t1, t2] }` → schemat Zod **rzuca** (niezmiennik `at.length ≤ d`);
+    `{ d: 3, at: [t1] }` (stan po przycięciu retencyjnym) → **przechodzi**. Dwa testy, nie jeden —
+    pierwszy pilnuje niezmiennika, drugi pilnuje, że przycięcie NIE jest traktowane jak awaria.
+11. **(A1)** `drizzle/0039_*.sql` zawiera `ADD COLUMN … DEFAULT 'client' NOT NULL`, a
+    `drizzle/0040_*.sql` — `ALTER COLUMN … DROP DEFAULT`. Oba pliki **wygenerowane**
+    (`pnpm db:generate` ×2), żaden nie edytowany ręcznie; `drizzle/meta/_journal.json` ma
+    `idx: 39` i `idx: 40` w kolejności.
+
+---
+
+## 6. Warunki Ryana (sign-off retencji) — sprawdzenie kolizji z tym ADR-em
+
+Przeszedłem osiem warunków W-1..W-8 z `docs/security/hint-reveals-retencja-signoff.md` §6 pod
+kątem sprzeczności z decyzjami D1–D5. **Kolizji nie ma — trzy warunki zawężają to, co ADR
+zostawiał szerzej, i te zawężenia przyjmuję jako wiążące.** Max wykonuje jedno i drugie; przy
+rozbieżności wygrywa wersja węższa.
+
+| Warunek | Relacja do ADR-018 | Rozstrzygnięcie |
+|---|---|---|
+| **W-1** ciało `POST /hint` `.strict()`, znacznik wyłącznie z zegara serwera | dokłada się do D5 (walidacja kształtu) | przyjęty; spójny z sensem całego PR-a — nie przyjmujemy od klienta ani liczby, ani czasu |
+| **W-2** UTC, pełne sekundy, bez milisekund | **zawęża** D1 (`<iso8601>` było szersze) | **wiążący format W-2**; ADR nie miał tu preferencji, sign-off ma uzasadnienie (minimalizacja precyzji) |
+| **W-3** jeden schemat Zod, `.strict()`, `.max(3)`, `at.length ≤ d` w `refine` | **to jest maszynowe wykonanie A2** | przyjęty w całości; §5 pkt 10 to jego kryterium odbioru |
+| **W-4** komentarz-wyzwalacz przy kolumnie | dokłada się do D1 | przyjęty; ADR jest w nim cytowany jako podstawa ograniczoności struktury |
+| **W-5** zero wpisów do `audit_log` | ADR nie żądał audytu; W-5 czyni zakaz jawnym | przyjęty bez zastrzeżeń — argument o nieusuwalności wiersza `audit_log` jest mocny |
+| **W-6** znaczniki nie opuszczają serwera + nota do macierzy RLS | **zawęża** D1 („zero nowej powierzchni RLS" → plus zakaz wynoszenia wartości) | przyjęty; kontrakt tras Leo (§4–§5 planu) już tego nie łamie |
+| **W-7** jedyny czytelnik kolumny w `src/lib/curriculum/hints.ts` | **rozszerza** helper z D3 (filtr `'server'`) na cały dostęp do kolumny | przyjęty; jeden czytelnik zamiast dwóch reguł to upraszczenie, nie koszt |
+| **W-8** wiersze w rejestrze retencji + zdanie dla studenta w `item-runner.tsx` | **rozszerza zakres PR-a** poza to, co ADR §4 pkt 3 zapisał jako „kroki 3–8 bez zmian" | przyjęty — **to jedyna realna zmiana zakresu**: dochodzą dwa wiersze w `docs/data/retention.md` i jedno zdanie w UI (treść: Sophia; jeśli nie zdąży, wchodzi wersja z §4.2 sign-offu). Krok 6 (review Jacka, dostępność) obejmuje też to zdanie i jego `aria-live`. |
+
+**Skutek retencji dla 1E.4 — nazywam wprost, bo wynika ze złożenia A3 i W-8a:** znaczniki `at`
+żyją **12 miesięcy**, a `d` bezterminowo (do końca życia konta). Cecha „czas od pierwszego
+odsłonięcia" jest więc dostępna **wyłącznie w oknie rocznym**; model powtórek nie może na niej
+polegać dla materiału starszego. `d` takiego ograniczenia nie ma i pozostaje cechą podstawową.
+
+**Eskalacja E-1 z sign-offu (brak klauzuli informacyjnej art. 13) NIE blokuje tego PR-a** —
+jest sprawą Darka i zakresu produktu, nie warunkiem wykonania serwerowej drabinki. Odnotowuję
+ją tutaj wyłącznie po to, żeby nie zniknęła między dokumentami.
+
+---
+
+## 7. Stan startowy dla Maxa
+
+**Max może zaczynać.** Wszystkie trzy pytania, które wisiały przed kodowaniem (A1 kształt migracji,
+A2 niezmiennik, A3 siła twierdzenia o odtwarzalności), są rozstrzygnięte tym dokumentem, a warunki
+domeny ryzyka sprawdzone pod kątem kolizji (sekcja 6). Wejście: plan Leo
+(`docs/2026-07-22-dlug-hintdepth-plan-naprawy.md`, kroki 1–8) czytany **razem** z sekcją 4 tego
+ADR-a i §6 sign-offu Ryana. Kolejność: migracje `0039`+`0040` (dwa przebiegi generatora, zero
+ręcznej edycji plików migracji) → `hints.ts` → trasy → UI → testy.
+
+Bramka przed scaleniem bez zmian: `SELECT count(*) FROM curriculum_item_answers` na produkcji,
+liczba w opisie PR-a; wykonuję ją ja (delegacja `CLAUDE.md` v1.12).

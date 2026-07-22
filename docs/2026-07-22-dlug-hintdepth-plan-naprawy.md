@@ -9,6 +9,13 @@ wartości** (obiekt `{d, at[]}` zamiast liczby), semantyka **sticky przyjęta**,
 `hint_depth_source` przyjęty **z poprawką** (po backfillu `DROP DEFAULT`), plus reguły upsertu
 wiersza postępu (ADR-018 D4). Treść tego planu pozostaje bez zmian — ADR-018 §4 wylicza, co
 konkretnie zmienia w krokach 1–2. Wykonanie odblokowane.
+**Domknięcie 2026-07-22 wieczór (Ethan, po review Leo i sign-offie Ryana):** ADR-018 dostał trzy
+poprawki przed startem Maxa — **A1** dwie migracje `0039`+`0040` **potwierdzone wykonaniem
+generatora** (żadnej ręcznej edycji pliku migracji, żadnego wyjątku od reguły append-only),
+**A2** niezmiennik trwały `at.length ≤ d` zapisany jawnie, **A3** osłabione twierdzenie
+o odtwarzalności odczytu „per podejście". Warunki Ryana W-1..W-8 sprawdzone pod kątem kolizji
+z planem i ADR-em (ADR-018 §6): **kolizji brak**, zakres kroku 6 rośnie o zdanie informacyjne
+przy drabince (W-8b) i dwa wiersze w rejestrze retencji (W-8a).
 **Blokuje:** **1E.4** (powtórki rozłożone w czasie / FSRS) — ścieżka krytyczna,
 `.agents/plans/11-roadmap-fazy-0-3.md` §7 pkt 3 + `.agents/plans/13-make-it-stick.md` §4
 **Powiązane:** ADR-014 (D5 fading, D11 instrumentacja), MIS.1 (migracja `0038`, kolumna

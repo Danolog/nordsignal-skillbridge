@@ -11,53 +11,158 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-22 — FLAGI ZAPALONE + NOTEBOOKI M-SQL NA PRODZIE (40/58)
+## STAN NA DZIŚ — 2026-07-22 (noc) — NOTEBOOKI M-EDA NA MAIN I OPUBLIKOWANE (44/58); INGEST ZABLOKOWANY BRAMKĄ ŚRODOWISKA
 
-### Partia 6: notebooki M-SQL (7 szt.) — PR #205 (squash `f7a8f39`), **40/58**
+### Partia 7: notebooki M-EDA (4 szt.) — PR #206 (squash `ee07e11`), **44/58**
 
-Praca rozdzielona między persony (polecenie Darka): **Ethan** — kontrakt budowy
-(3 kluczowe twierdzenia zweryfikowane niezależnie przed użyciem), **Sophia** —
-5 notebooków ćwiczeniowych, **Oliver** — 2 laby z pieczątkami + prod, **Quinn** —
-kontrakt-test (22 testy, zweryfikowany na duckdb 1.3.2 ORAZ 1.5.4).
+- **Zakres:** EDA.1–EDA.3 ćwiczenia (bez pieczątki — nie mają czego bramkować),
+  **EDA.4 lab** z pieczątką (5 checków C1–C5). `eda-przeglad` bez notebooka.
+- **CI dostał `requests~=2.32.0`** obok pandas/duckdb — harness wykonuje realny
+  `import requests` (EDA.1/EDA.4 wołają API GUS BDL; test podmienia samo
+  wywołanie). **Pierwszy realny przebieg zmienionego kroku pip przez Actions —
+  zielony za pierwszym razem**, pip zaciągnął pandas 2.2.3 / duckdb 1.3.2 /
+  requests 2.32.5.
+- **Defekt klasy „pieczątka podpisuje złe rozwiązanie" — znaleziony i domknięty.**
+  Bramka EDA.4 pytała o KSZTAŁT wartości (najpierw typ kolumny, po pierwszej
+  naprawie: litery w wartościach), więc przepuszczała **pięć** złych wejść
+  z tokenem bit w bit identycznym jak poprawne: luka 1 = `values`, cały rekord,
+  `values[0]`, `str(rekord)`; luka 2 = `attrId`. Naprawa strukturalna: bramka pyta
+  o **POCHODZENIE** — `wojewodztwo` musi należeć do nazw z `dane["results"]`,
+  `stopa` do wartości `val` z tych samych rekordów. Zero fałszywych alarmów
+  sprawdzone wykonaniem (`val=null`, `val` całkowite w JSON); token poprawnego
+  przebiegu bez zmian.
+- **⚠ NAUKA METODYCZNA (najważniejsza rzecz z tej partii):** mutacja („cofnij
+  naprawę, policz czerwone") mierzy, czy **test trzyma naprawę**, a NIE czy
+  **naprawa domyka klasę błędów**. Partia 7 mutację przeszła i mimo to wypuszczała
+  pięć złych wejść. Pytanie, które znalazło defekt: *„jakie JESZCZE wejście
+  przechodzi przez tę bramkę?"* — zadane harnessowi (przejazd przez wszystkie pola
+  rekordu API: 14 wejść luki 1, 5 luki 2), nie rozumowaniu. Do wzorca pieczątek.
+- **Znaleziska QG:** WAŻN-1 pułapka „Zapisz kopię w usłudze GitHub **jako plik
+  Gist**" (Gist ≠ repozytorium z README/`requirements.txt` — student mógł oblać
+  rubrykę w dobrej wierze); WAŻN-2 błędna luka 2 wywala komórkę średniej
+  (`TypeError: agg function failed`, `dtype->object`) zanim dojdzie do pieczątki;
+  WAŻN-3 legalny `groupby(as_index=False)` dostawał fałszywą diagnozę.
+  Log w `docs/curation/sophia-1e2-meda-atomy.md`.
+- **Review:** Leo **ACCEPT z uwagami** (R1–R5 nieblokujące; R1/R3 = notatki do
+  wzorca, nie dług; R4 = gałąź Evy osobną rundą).
+- **CI PR #206: 7/7 zielonych** — test 1450/1450 (134 pliki), build, integration,
+  lint, typecheck, secret-scan, deps-scan; e2e-llm pominięty wg reguły ścieżek.
+- **Publikacja:** `skillbridge-notebooks` @ **`c3c206f`** (katalog `meda/`),
+  4× raw **200**, pliki bajt w bajt identyczne z `notebooks/meda/`, ścieżki zgodne
+  z `notebookUrl` w spakowanym `m-eda.json`.
+- **PROD: NIETKNIĘTY.** Backupu nie robiono, ingestu nie było — patrz bramka niżej.
+  Stan prod bez zmian od partii 6: **40 pozycji z notebookUrl**, moduły 9,
+  pozycje 70, pytania 129.
 
-- **CI dostał `pip install "duckdb~=1.3.2"`** obok pandas (job `test`) — harness
-  wykonuje komórki labów realnym python3, a te importują duckdb; bez tego partia
-  byłaby czerwona. Wersja pinowana do **Colaba**, nie do maszyny dev (1.5.x).
-  Składnia notebooków ograniczona do ANSI obecnego w obu.
-- **Pieczątki** wzorcem PD.4/PD.8: odcisk danych wejściowych (sumy 168.0/91) →
-  kontrola typu (brak `.df()` = diagnoza „to DuckDBPyRelation") → WŁASNA kopia
-  zapytań referencyjnych → payload z rzutowaniem `int()`/`float()`/`str()`.
-  SQL.7 rozpoznaje kolumnę rankingu **po semantyce** (rozkład miejsc
-  `[1,1,1,2,3]`), bo treść nie przybija jej nazwy.
-- **Znaleziska QG (log na końcu `sophia-1e2-msql-atomy.md`):**
-  1. 🔴 **KRYT: luki `______` dają `Binder Error`, NIE `Parser Error`** — DuckDB
-     traktuje je jako NAZWĘ KOLUMNY. Pierwsza wersja nagłówka SQL.4 obiecywała
-     Parser Error → student szukałby błędu składni zamiast luki. Poprawione;
-     dołożony trzeci człon podziału ról (Catalog=TABELA, Parser=SKŁADNIA,
-     **Binder=KOLUMNA**). Znalazła to Sophia, weryfikując pracę Olivera.
-  2. 🟠 pusta komórka SQL.7 → `AttributeError: 'NoneType'` (`duckdb.sql()` bez
-     zapytania zwraca None) — zapowiedziane i wytłumaczone.
-  3. 🟠 rozjazd tytułu modułu; źródło prawdy (prod) = **„SQL: analiza danych
-     w bazie"**. Ujednolicone w 7 notebookach.
-  4. ⚪ **INFO — otwarta decyzja treściowa:** w mini-świecie **minuty i kwota są
-     idealnie skorelowane**, więc `ORDER BY kwota DESC` daje tę samą kolejność co
-     po minutach → check SQL.4 C3 tego NIE odróżni (analogicznie okno w SQL.7);
-     student z błędną kolumną porządkującą dostanie token. Danych NIE zmieniano
-     (listing przybity QG 21.07, wszystkie checki z niego policzone). Lekarstwo
-     przy następnej iteracji: przejazd „długi, a tani" + przeliczenie kontraktu.
-- **Stabilność CI:** `notebooks-mpd.contract.test.ts` dostał jawny
-  `HARNESS_TIMEOUT_MS` (30 s). Projekt `unit` NIE ustawia `testTimeout` →
-  domyślne **5 s**, a zimny start pythona z pandas na świeżej maszynie CI
-  potrafi je przekroczyć (zmierzone 9,3 s). Objaw: pierwszy test z harnessem
-  czerwony, reszta i kolejne biegi zielone — **to prawdopodobne wyjaśnienie
-  jednorazowego czerwonego `test:run` odnotowanego przy #204.**
-- **Publikacja:** `skillbridge-notebooks` @ `3364c44` (katalog `msql/`, raw 200).
-- **PROD:** backup **`prod-backup-pre-ingest-krok4-msql-20260722`**
-  (`br-little-thunder-aljuiup4`); ingest ×2 idempotentny (moduły=9, pozycje=70,
-  pytania 129 bez zmian, 0 downgrade'ów progresu); weryfikacja PO: **40 pozycji
-  z notebookUrl** (7 M-SQL), 2 laby SQL z checkami, `sql-przeglad` bez URL-a,
-  **0 wycieków logu QG do contentMd**. Smoke: `/` 200, `/login` 200,
-  `/api/curriculum` 401, `/curriculum` 307.
+### 🔴 BRAMKA ŚRODOWISKA (ADR-016 D3) — ZAMKNIĘTA, CZEKA NA SONDĘ DARKA
+
+- `tools/content/notebooks/srodowisko-colab.json` → **`ostatnia_sonda: null`**.
+  Wersji **Pythona** i **`requests`** w Colabie **nikt u nas nie zmierzył** —
+  `zaobserwowano: null` w obu. Pin `requests` dotyczy wyłącznie CI.
+- Konsekwencja: **packer i ingest odmawiają modułów `M-*` (w tym `m-eda`)** do
+  czasu pierwszej sondy. Treść M-EDA czeka w kolejce; notebooki są już publiczne,
+  więc po ingest student zobaczy komplet.
+- **Odblokowuje ją wyłącznie Darek**: uruchomienie sondy w Colabie wg runbooka
+  `docs/runbooks/sonda-srodowiska-colab.md` (runbook + kod bramki siedzą na gałęzi
+  Evy — patrz niżej). Furtki `PACK_WERYFIKACJA=1` w packerze **ingest nie honoruje
+  i tak ma zostać** — obejście bramki jest zakazane.
+- ⚠ Na `main` bramka jest dziś **deklaracją, nie kodem**: `main` ma sam plik
+  deklaracji środowiska, a egzekucja (packer/ingest/sonda) leży na gałęzi Evy.
+  Do czasu jej scalenia bramkę trzyma dyscyplina, nie maszyna.
+
+### Gałąź Evy `feat/adr016-wersje-silnikow-ci` — NIE SCALONA (osobna runda)
+
+Leo zażądał dla niej osobnego review (uwaga R4). Zawiera: odczyt pinów z pliku
+w CI (dziś w `pr.yml` jest **kopia** wersji, rozjazd wywala kontrakt-test M-EDA),
+tablicę cytatów silników, skaner inwentarza, notebook sondy + `tools/zapisz-sonde.ts`,
+bramki publikacji, 50 testów kontraktu środowiska, runbook sondy. Kolizja do
+rozwiązania przy scalaniu: `.github/workflows/pr.yml` i notebook `eda-4` (na `main`
+jest wersja z naprawą U1 — **to `main` ma rację**).
+
+### Nowe ADR-y i sign-offy (weszły z partią 7, zero zmian w kodzie produkcyjnym)
+
+- **ADR-016** `docs/decisions/016-wersje-silnikow-w-tresci.md` — wersje silników jako
+  przedmiot reweryfikacji: `srodowisko-colab.json` jedynym źródłem prawdy (D1),
+  bramka sondy (D3), zakaz cytowania numerów wersji w treści studenta (D5.3).
+- **ADR-017** `docs/decisions/017-korelacja-minuty-kwota-msql.md` — domknięcie
+  INFO-4 z partii 6 (`ORDER BY` nieodróżnialny w mini-świecie M-SQL).
+- **ADR-018** `docs/decisions/018-serwerowa-drabinka-hintow.md` — serwerowa drabinka
+  podpowiedzi: wariant A z kształtem `{d, at[]}`, semantyka sticky, dyskryminator
+  `hint_depth_source` bez domyślnej wartości po backfillu. **Zaktualizowany wieczorem
+  o A1/A2/A3 (niżej).**
+- **Sign-off Ryana #1** `docs/security/rate-limit-ailight-signoff.md` — limit tury
+  czatu aiLight (#190).
+- **Sign-off Ryana #2** `docs/security/hint-reveals-retencja-signoff.md` — retencja
+  i minimalizacja znaczników `at[]`: **GO warunkowe**, 8 warunków W-1..W-8 dla Maxa,
+  2 warunki poza PR-em (R-1 skrypt egzekucji retencji dla całego rejestru, R-2 okres
+  dla kont nieaktywnych), **retencja `at[]` = 12 miesięcy**, eskalacja informacyjna
+  **E-1 do Darka** (brak klauzuli informacyjnej art. 13 wobec obietnicy złożonej
+  uczelniom — nie blokuje).
+
+### Plan naprawy `hintDepth` — GOTOWY DO STARTU, Max może zaczynać
+
+Diagnoza Leo: `docs/2026-07-22-dlug-hintdepth-plan-naprawy.md` (cała drabinka
+podpowiedzi jedzie do przeglądarki, `hint_depth` to deklaracja klienta, **czytelnika
+w kodzie produkcyjnym dziś nie ma**). Trzy rzeczy rozstrzygnięte wieczorem przed
+startem Maxa (ADR-018 §5–§7):
+
+- **A1 — kształt migracji, POTWIERDZONY WYKONANIEM.** Dwa `ALTER` na jednej kolumnie
+  nie wyjdą z jednego `pnpm db:generate`, a ręczna edycja pliku migracji jest
+  blokowana hookiem. Sprawdziłem generator (drizzle-kit 0.31.9, izolowana kopia):
+  schemat **z** domyślną wartością → `ADD COLUMN … DEFAULT 'client' NOT NULL`;
+  po usunięciu `.default()` ze schematu → **`ALTER COLUMN … DROP DEFAULT`**.
+  Czyli **`0039` + `0040`, dwa przebiegi generatora, zero ręcznej edycji, żadnego
+  wyjątku od reguły append-only.** Wariant jednomigracyjny (`NOT NULL` bez default)
+  odrzucony dowodem — wywala się na każdej bazie z wierszami i nie oznacza historii.
+- **A2 — niezmiennik `at.length ≤ d`** (nie równość) zapisany jawnie: równość
+  obowiązuje w chwili zapisu, krótsza lista po przycięciu retencyjnym jest **stanem
+  legalnym**. Egzekwowanie: Zod w `hints.ts` przy zapisie i odczycie + dwa testy.
+  Świadomie **bez** `CHECK` w bazie (iteracja po kluczach JSONB wymagałaby własnej
+  funkcji `IMMUTABLE`) — powód zapisany w ADR-ze.
+- **A3 — osłabione twierdzenie o odtwarzalności „per podejście".** Skoro `at`
+  dopisujemy tylko przy WZROŚCIE głębokości, student powtarzający materiał nie
+  generuje wpisu. Decyzji to nie zmienia (broni jej asymetria kosztu błędu), ale
+  **1E.4 nie może zaplanować cechy „czy w tym podejściu korzystał z pomocy"** — nie
+  ma pokrycia w danych. Cechy z pokryciem: `d` (bezterminowo) i „czas od pierwszego
+  odsłonięcia" (**tylko w oknie 12 miesięcy**, po tym retencja tnie `at`).
+- **Warunki Ryana vs ADR: kolizji brak** (ADR-018 §6). Trzy warunki zawężają ADR
+  i wygrywają (W-2 format UTC bez milisekund, W-6 zakaz wynoszenia znaczników poza
+  serwer, W-7 jedyny czytelnik kolumny). **Zakres kroku 6 rośnie** o zdanie
+  informacyjne przy drabince (W-8b, treść: Sophia) i dwa wiersze w rejestrze
+  retencji (W-8a).
+- Obsada bez zmian: **Max** prowadzi cały PR, Jack review kroku 6, Leo review wg
+  14 domen, Ethan scalenie + migracja prod + wdrożenie.
+
+### DŁUGI OTWARTE (jawne)
+
+1. **`marketPercentage` przyjmowany z ciała żądania klienta** (`onboarding/route.ts:38,289`)
+   i agregowany do panelu uczelni (`faculty/dashboard/route.ts:106`). **Wyższa stawka
+   na jednostkę pracy niż `hintDepth`** — to liczba, którą pokazujemy UCZELNI jako dowód
+   dopasowania programu do rynku, a jest deklaracją przeglądarki. Wzorzec serwerowy już
+   w repo istnieje (`passport-verified.ts:122`, `demandByName`). Naprawa prawdopodobnie
+   czysto aplikacyjna, zero migracji. **Kolejka: zaraz po drabince hintów, przed 1E.4.**
+2. **Brak skryptu egzekucji retencji** — rejestr `docs/data/retention.md` deklaruje
+   okresy, których nic nie wykonuje (R-1 u Ryana; dotyczy też vivy od 2026-07-09).
+3. **Zrzuty `meda-5` / `meda-6`** (menu Plik we własnej kopii Colaba; formularz
+   „Create new file") — INFO-6 partii 7, treść działa bez nich.
+4. **Test labu EDA.4 na świeżym koncie** — autoryzacja Colab↔GitHub od zera.
+
+### CZEKA NA DARKA
+
+1. **Sonda środowiska w Colabie** — jedyny klucz do bramki ADR-016 D3, blokuje ingest
+   M-EDA (i każdego kolejnego modułu `M-*`) na produkcję. Runbook:
+   `docs/runbooks/sonda-srodowiska-colab.md` (po scaleniu gałęzi Evy).
+2. **E-1 (Ryan)** — decyzja o klauzuli informacyjnej art. 13 wobec obietnicy złożonej
+   uczelniom. Nie blokuje drabinki hintów.
+3. **Zrzuty `meda-5` i `meda-6`** + test labu EDA.4 na świeżym koncie (pkt 3–4 długów).
+4. Starsze, wciąż otwarte pozycje — sekcja **„Otwarte zaległości (akcje Darka, nie kod)"**
+   na końcu tego pliku (tokeny 0.7-sekret, CSP 0.13, baza testowa `:5433`, Dependabot).
+   Nie przepisuję ich tutaj, żeby nie mnożyć wersji prawdy.
+
+### Baseline `main` po tej sesji
+
+`ee07e11` (partia 7) + commit dokumentacyjny tej sesji. Publikacja notebooków:
+`skillbridge-notebooks` @ `c3c206f`. Prod bez zmian (40/58 na produkcji, 44/58 w repo).
 
 ## Poprzednio tego dnia — 🔴→🟢 FLAGI ZAPALONE NA PRODZIE; ETYKIETY UI ZWERYFIKOWANE ZRZUTAMI
 
