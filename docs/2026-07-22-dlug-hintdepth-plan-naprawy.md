@@ -3,6 +3,12 @@
 **Założony:** 2026-07-14 (przegląd bezpieczeństwa 1E.6a) · **Plan:** 2026-07-22
 **Autor planu:** Leo (Tech Lead, Engineering) · **Owner decyzji:** Ethan (CTO)
 **Status:** OTWARTY — diagnoza gotowa, wykonanie nie ruszyło
+**Decyzje zastrzeżone dla Ethana (§3: wariant A/B, semantyka, dyskryminator) — ROZSTRZYGNIĘTE
+2026-07-22:** `docs/decisions/018-serwerowa-drabinka-hintow.md`. Wariant **A z bogatszym kształtem
+wartości** (obiekt `{d, at[]}` zamiast liczby), semantyka **sticky przyjęta**, dyskryminator
+`hint_depth_source` przyjęty **z poprawką** (po backfillu `DROP DEFAULT`), plus reguły upsertu
+wiersza postępu (ADR-018 D4). Treść tego planu pozostaje bez zmian — ADR-018 §4 wylicza, co
+konkretnie zmienia w krokach 1–2. Wykonanie odblokowane.
 **Blokuje:** **1E.4** (powtórki rozłożone w czasie / FSRS) — ścieżka krytyczna,
 `.agents/plans/11-roadmap-fazy-0-3.md` §7 pkt 3 + `.agents/plans/13-make-it-stick.md` §4
 **Powiązane:** ADR-014 (D5 fading, D11 instrumentacja), MIS.1 (migracja `0038`, kolumna
