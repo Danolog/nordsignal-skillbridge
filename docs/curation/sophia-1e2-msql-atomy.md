@@ -1222,3 +1222,62 @@ realnym DuckDB — 10+ punktów kontrolnych SQL.2–SQL.7 spójnych z jednym
 zbiorem). **WAŻN-2:** kontrakt SQL.4 rozszerzony o `z1_wiersze=5`
 (Zaliczenie obiecuje porównanie `z1`–`z3` — teraz sprawdzane w komplecie).
 **GO Z NOTAMI.**
+
+## Przebieg QG notebooków M-SQL (2026-07-22, Krok 4 partia 6)
+
+Notebooki (7 szt., katalog `msql/`) zbudowane wg kontraktu ADR-015: 5 ćwiczeń
+bez pieczątki (Sophia) + laby SQL.4/SQL.7 z pieczątką (Oliver). Weryfikacja:
+każde zapytanie wykonane realnym DuckDB na kanonicznym mini-świecie; pieczątki
+uruchomione ze wzorcowym rozwiązaniem i z 15 wariantami błędnymi.
+
+**Znaleziska wcielone przed PR-em:**
+
+1. **KRYT — luki `______` dają `Binder Error`, NIE `Parser Error`.** DuckDB
+   traktuje `______` jako poprawny **identyfikator kolumny**, więc każda
+   nieuzupełniona luka kończy się
+   `Binder Error: Referenced column "______" not found in FROM clause!`
+   (zweryfikowane dla wszystkich 5 kształtów luk SQL.4: `LIMIT`, `WHERE`,
+   `ORDER BY`, `______ AS liczba`, `______ AS suma_kwot`). Pierwsza wersja
+   nagłówka SQL.4 zapowiadała `Parser Error` — student szukałby błędu
+   składni zamiast luki. Poprawione: nagłówek cytuje prawdziwy komunikat
+   i dokłada trzeci człon do podziału ról z SQL.1 (*Catalog* = nie znam
+   TABELI, *Parser* = nie rozumiem SKŁADNI, ***Binder* = nie znam KOLUMNY**).
+2. **WAŻN — pusta komórka SQL.7 daje `AttributeError`, nie błąd SQL.** Komórki
+   „Twój raport" zawierają sam komentarz `--`, a `duckdb.sql()` zwraca wtedy
+   `None` → `AttributeError: 'NoneType' object has no attribute 'df'`.
+   Komunikat niskopoziomowy i mylący („usterka notebooka?"). Poprawione:
+   nagłówek SQL.7 zapowiada go i tłumaczy przyczynę.
+3. **WAŻN — rozjazd tytułu modułu.** Laby miały „SQL: pytania do danych";
+   źródło prawdy (`curriculum_modules.title` na prodzie) to
+   **„SQL: analiza danych w bazie"**. Ujednolicone we wszystkich 7.
+
+**Znalezisko INFO — świadomy limit checków (BEZ zmiany danych):**
+
+W kanonicznym mini-świecie **minuty i kwota są idealnie skorelowane**
+(12→23.5, 35→61.0, 7→14.0, 22→41.5, 15→28.0 — im dłużej, tym drożej).
+Skutek: `ORDER BY kwota DESC` daje identyczną kolejność co `ORDER BY minuty
+DESC` (oba: id 2, 4, 5, 1), więc **check SQL.4 C3 (`z2_pierwszy_id`) nie
+odróżnia porządku po minutach od porządku po kwocie**; analogicznie w SQL.7
+Z3 okno po `minuty` zamiast po `kwota` daje ten sam ranking miejsc, więc
+check C5 (`z3_miejsca_1`) tego nie łapie. Student z błędną kolumną
+porządkującą dostanie token.
+
+Świadomie **nie zmieniam danych** — listing jest przybity (QG 2026-07-21
+WAŻN-1), a wszystkie checki obu labów są z niego policzone; zmiana jednej
+kwoty wymaga przeliczenia kontraktu i re-ingestu. Ryzyko jest ograniczone:
+lab bramkuje postęp, nie wystawia kredencjału (ADR-015), a pozostałe klauzule
+(WHERE, GROUP BY, agregaty, JOIN, obecność okna) są egzekwowane. **Do decyzji
+przy następnej iteracji treści:** rozerwać korelację (np. przejazd długi, ale
+tani — realistyczne dla korka) i przeliczyć checki.
+
+**Pozostałe noty (bez zmian w treści):** kolejność grup bez `ORDER BY` jest
+przypadkowa (silnik niczego nie obiecuje — opisane wprost w SQL.3);
+`AVG(kwota)` strefy 10 = `21.833333333333332` (długi ogon float — opisany,
+żeby nie wyglądał na usterkę); `Catalog Error` dokleja absurdalne
+„Did you mean `pg_prepared_statements`?" — rytuał czytania błędu z L0.3
+doprecyzowany w SQL.1 (prawdę mówi linia z nazwą błędu NAD podpowiedzią).
+
+**CI:** job `test` dostał `pip install "duckdb~=1.3.2"` obok pandas — harness
+wykonuje komórki labów realnym python3, a te importują duckdb. Wersja pinowana
+do **Colaba (1.3.2)**, nie do maszyny dev (1.5.x): student ma dostać to, co
+przetestowane. Składnia notebooków ograniczona do ANSI obecnego w obu.
