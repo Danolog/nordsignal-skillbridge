@@ -131,9 +131,11 @@ srednie_rok                               # nazwa w ostatniej linii = pokaż wyn
 # wypisany **token** do pola „Pieczątka".
 #
 # Pieczątka sprawdza stan Twojej sesji: status udanego pobrania, kształt
-# `df` (3 kolumny, 32 wiersze), typ kolumny `rok` (konwersja wykonana!)
-# i zgodność `srednie_rok` z **niezależnym przeliczeniem** grupowania na
-# Twoim `df`.
+# `df` (3 kolumny, 32 wiersze), typ kolumny `rok` (konwersja wykonana!),
+# zgodność `srednie_rok` z **niezależnym przeliczeniem** grupowania na
+# Twoim `df` — oraz to, czy kolumny `wojewodztwo` i `stopa` naprawdę
+# pochodzą z odpowiedzi API: porównuje je z zawartością `dane`. Zły klucz
+# w luce 1 albo 2 wychodzi na jaw nawet wtedy, gdy tabela ma dobry kształt.
 #
 # Jawne limity: pieczątka **NIE odpytuje API ponownie** (chwilowa
 # niedostępność BDL nie blokuje Ci tokenu — liczy się stan sesji po
@@ -143,7 +145,7 @@ srednie_rok                               # nazwa w ostatniej linii = pokaż wyn
 # %% [pieczatka]
 def _zbierz_wyniki():
     g = globals()
-    brak = [n for n in ("pd", "odpowiedz", "df", "srednie_rok") if n not in g]
+    brak = [n for n in ("pd", "odpowiedz", "dane", "df", "srednie_rok") if n not in g]
     if brak:
         raise RuntimeError(
             "Nie widzę w tej sesji: " + ", ".join(brak) + ". "
@@ -152,6 +154,7 @@ def _zbierz_wyniki():
         )
     pd = g["pd"]
     odpowiedz = g["odpowiedz"]
+    dane = g["dane"]
     df = g["df"]
     srednie_rok = g["srednie_rok"]
 
@@ -201,20 +204,59 @@ def _zbierz_wyniki():
         )
 
     # 3) Luki 1-2: czy w kolumnach są WŁAŚCIWE pola JSON-a.
-    # Uwaga: `id` jednostki w BDL też jest TEKSTEM (np. 011200000000), więc sam
-    # typ kolumny nie odróżnia nazwy od identyfikatora — szukamy liter.
-    nazwy = [str(w) for w in df["wojewodztwo"].tolist()]
-    if not any(any(znak.isalpha() for znak in n) for n in nazwy):
+    # Nie pytamy „czy wartość WYGLĄDA na nazwę" (litery, długość, typ), tylko
+    # skąd POCHODZI: ma się znaleźć wśród nazw z odpowiedzi API, którą student
+    # ma w sesji jako `dane`. Heurystyka na kształcie wartości zamyka jeden zły
+    # klucz naraz — `id` to same cyfry, ale `values` (lista pomiarów) ma
+    # w środku litery i przechodziła. Przynależność do zbioru zamyka KAŻDE
+    # pole rekordu poza `name` jednym warunkiem.
+    wyniki_api = dane.get("results") if isinstance(dane, dict) else None
+    nazwy_api = {
+        str(r["name"]) for r in wyniki_api or [] if isinstance(r, dict) and "name" in r
+    }
+    if not nazwy_api:
         raise RuntimeError(
-            "kolumna `wojewodztwo` nie zawiera nazw, tylko identyfikatory "
-            "(pierwsza wartość: " + nazwy[0] + ") — w luce 1 podaj klucz "
-            "z NAZWĄ województwa, nie z numerem jednostki; obejrzyj rekord "
+            "nie widzę w `dane` odpowiedzi API z nazwami województw "
+            "(dane['results'], a w każdym rekordzie pole name) — zostaw "
+            "dane = odpowiedz.json() w pierwszej komórce, nie nadpisuj nazwy "
+            "`dane` i uruchom komórki od góry (L0.3); pieczątka porównuje "
+            "kolumnę `wojewodztwo` z nazwami wprost z odpowiedzi."
+        )
+    obce = [str(w) for w in df["wojewodztwo"].tolist() if str(w) not in nazwy_api]
+    if obce:
+        podejrzana = obce[0] if len(obce[0]) <= 60 else obce[0][:57] + "..."
+        raise RuntimeError(
+            "w kolumnie `wojewodztwo` są wartości spoza nazw województw "
+            "z odpowiedzi API (pierwsza taka: " + podejrzana + ") — w luce 1 "
+            "podaj klucz z NAZWĄ województwa: nie numer jednostki (id to TEKST "
+            "z samych cyfr) i nie listę pomiarów (values); obejrzyj rekord "
             "komórką dane['results'][0]."
         )
     if not pd.api.types.is_numeric_dtype(df["stopa"]):
         raise RuntimeError(
             "kolumna `stopa` nie jest liczbą — w luce 2 podaj klucz "
             "z WARTOŚCIĄ pomiaru, nie z rokiem (rok już masz w osobnej kolumnie)."
+        )
+    # Ta sama zasada pochodzenia dla luki 2: sam typ liczbowy nie odróżnia
+    # wartości pomiaru od innego liczbowego pola pomiaru (attrId = 1 dawał
+    # token identyczny z poprawnym). Wartości puste (brak danych w BDL wraca
+    # jako null) pomijamy — nie są winą studenta.
+    wartosci_api = set()
+    for rekord in wyniki_api or []:
+        for pomiar in (rekord.get("values") or []) if isinstance(rekord, dict) else []:
+            if isinstance(pomiar, dict) and isinstance(pomiar.get("val"), (int, float)):
+                wartosci_api.add(float(pomiar["val"]))
+    obce_stopy = [
+        float(v)
+        for v in df["stopa"].tolist()
+        if not pd.isna(v) and float(v) not in wartosci_api
+    ]
+    if wartosci_api and obce_stopy:
+        raise RuntimeError(
+            "w kolumnie `stopa` są liczby spoza wartości pomiarów z odpowiedzi "
+            "API (pierwsza taka: " + str(obce_stopy[0]) + ") — w luce 2 podaj "
+            "klucz z WARTOŚCIĄ pomiaru (val), nie inne liczbowe pole pomiaru; "
+            "obejrzyj pomiar komórką dane['results'][0]['values'][0]."
         )
     if not pd.api.types.is_numeric_dtype(df["rok"]):
         raise RuntimeError(

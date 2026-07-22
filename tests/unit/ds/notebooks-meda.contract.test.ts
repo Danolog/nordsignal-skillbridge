@@ -31,12 +31,24 @@
  *     dać identyczny token — jeśli kiedyś ładunek zacznie nieść dane, ten test
  *     zrobi się czerwony i będzie trzeba wrócić po żywy przebieg.
  *
- *  4. Dwie regresje na defektach z kontroli jakości partii 7
+ *  4. Regresje na defektach z kontroli jakości partii 7
  *     (`docs/curation/sophia-1e2-meda-atomy.md`, sekcja „Znaleziska"):
  *       • KRYT-1 — `id` jednostki w BDL jest TEKSTEM, więc kontrola typu
  *         kolumny nie odróżniała nazwy od identyfikatora i student z błędną
  *         luką 1 dostawał ten sam token co poprawny. Test: luka 1 = `"id"`
- *         NIE MOŻE dać tokenu i musi cytować pierwszą wartość.
+ *         NIE MOŻE dać tokenu i musi cytować pierwszą obcą wartość.
+ *       • U1 (blokada Leo, 2026-07-22) — pierwsza naprawa KRYT-1 ZASTĄPIŁA
+ *         kontrolę typu szukaniem liter w wartościach, więc zamknęła objaw,
+ *         a nie klasę: `values` (lista pomiarów) ma w środku litery i dalej
+ *         dawała token bit w bit ten sam co poprawna luka 1. Pomiar
+ *         wykonaniem na WSZYSTKICH polach rekordu pokazał cztery wejścia
+ *         przechodzące przez bramkę (`values`, cały rekord, `values[0]`,
+ *         `str(rekord)`) oraz piąte w luce 2 (`attrId` — liczba, więc
+ *         kontrola typu ją przepuszczała). Pieczątka pyta teraz o
+ *         POCHODZENIE, nie o kształt: wartości kolumn muszą należeć do
+ *         zbiorów z odpowiedzi API (`dane`). Regresje niżej trzymają po
+ *         jednym reprezentancie każdej klasy (lista, słownik, obca liczba)
+ *         + ścieżkę „`dane` nadpisane".
  *       • WAŻN-3 — trzy równoważne zapisy grupowania (kanoniczny,
  *         `as_index=False`, `mean(numeric_only=True)`) muszą dać IDENTYCZNY
  *         token. Zasada z M-SQL: sprawdzamy WYNIK, nie sposób zapisu.
@@ -459,6 +471,13 @@ describe("odcięcie od żywego API BDL — atrapa, strażnik i niezależność �
 					mode: "notebook",
 					notebookPath: notebookPath(slug),
 					atomCode: atomCode(STUDENT_ID, itemIdFor(slug)),
+					// Strażnik sieci także tutaj. Dziś te źródła nie importują
+					// `requests`, więc komórka jest nadmiarowa — ale EDA.2 jest
+					// o Gicie i GitHubie i pierwsza rewizja, która dołoży
+					// zapytanie do API GitHuba, zamieniłaby ten test w cichy
+					// ruch do internetu: zielony, dopóki sieć działa. Strażnik
+					// robi z tego AssertionError zamiast pogody w CI.
+					insertCells: [[0, atrapaBdl(WARTOSCI_REALNE)]],
 				});
 				expect(result.error, `${slug}: wykonanie od góry do dołu`).toBeNull();
 				expect(tokenFrom(result.stdout), `${slug}: brak tokenu`).toBeNull();
@@ -551,12 +570,47 @@ describe("symulacja sesji studenta EDA.4: komórki → token → checki z prodow
 	}[] = [
 		{
 			// REGRESJA KRYT-1 — sedno defektu: `id` jednostki BDL to TEKST
-			// ("011200000000"), więc kontrola `is_string_dtype` przepuszczała
+			// ("011200000000"), więc kontrola typu kolumny przepuszczała
 			// błędną lukę 1 i wystawiała token identyczny z poprawnym.
-			// Ten test jest jedyną rzeczą, która trzyma naprawę na miejscu.
 			name: "eda-4 (KRYT-1): luka 1 = `id` zamiast `name` — ZERO tokenu, odmowa cytuje wartość",
 			replacements: [["wojewodztwo[______]", 'wojewodztwo["id"]'], LUKA_2, LUKI_45],
-			message: /kolumna `wojewodztwo` nie zawiera nazw, tylko identyfikatory[\s\S]*011200000000/,
+			message: /wartości spoza nazw województw z odpowiedzi API[\s\S]*011200000000/,
+		},
+		{
+			// REGRESJA U1 (1/3) — defekt, który przeszedł przez pierwszą naprawę
+			// KRYT-1: `values` to lista słowników, więc „są w tym litery" mówiło
+			// TAK. Kształt tabeli się zgadza (3 kolumny, 32 wiersze), ładunek
+			// niesie tylko kształt — token wychodził bit w bit ten sam co
+			// poprawny, na labie, którego CELEM jest spłaszczenie JSON-a.
+			name: "eda-4 (U1): luka 1 = `values` — lista pomiarów zamiast nazwy, ZERO tokenu",
+			replacements: [["wojewodztwo[______]", 'wojewodztwo["values"]'], LUKA_2, LUKI_45],
+			message: /wartości spoza nazw województw z odpowiedzi API[\s\S]*'year': '2022'/,
+		},
+		{
+			// REGRESJA U1 (2/3) — cały rekord zamiast pola. Też przechodziło:
+			// w reprezentacji słownika są litery. Klasa: „wartość kolumny nie
+			// pochodzi ze zbioru nazw z `dane`".
+			name: "eda-4 (U1): luka 1 bez klucza — cały rekord w kolumnie, ZERO tokenu",
+			replacements: [["wojewodztwo[______]", "wojewodztwo"], LUKA_2, LUKI_45],
+			message: /wartości spoza nazw województw z odpowiedzi API[\s\S]*MAŁOPOLSKIE/,
+		},
+		{
+			// REGRESJA U1 (3/3) — ta sama klasa w luce 2: `attrId` jest LICZBĄ,
+			// więc kontrola typu ją przepuszczała, a średnie liczone na tym
+			// samym `df` zgadzały się same ze sobą. Znalezione pomiarem
+			// wszystkich pól rekordu pomiaru, nie zgadywaniem.
+			name: "eda-4 (U1): luka 2 = `attrId` — liczba spoza pomiarów, ZERO tokenu",
+			replacements: [LUKA_1, ["pomiar[______]", 'pomiar["attrId"]'], LUKI_45],
+			message: /w kolumnie `stopa` są liczby spoza wartości pomiarów z odpowiedzi API[\s\S]*1\.0/,
+		},
+		{
+			// Nowa ścieżka odmowy wprowadzona naprawą U1: pieczątka czyta teraz
+			// `dane`, więc nadpisanie tej nazwy musi dać KOMUNIKAT, nie
+			// KeyError/AttributeError z wnętrza pieczątki.
+			name: "eda-4 (U1): `dane` nadpisane w sesji — odmowa mówi, co przywrócić",
+			replacements: LUKI_WZORCOWE,
+			insertCells: [[6, 'dane = "moje notatki"\n']],
+			message: /nie widzę w `dane` odpowiedzi API z nazwami województw/,
 		},
 		{
 			// WAŻN-2: błędna luka 2 nie dociera do pieczątki — wywala się
