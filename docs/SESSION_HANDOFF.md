@@ -11,7 +11,55 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-22 — 🔴→🟢 FLAGI ZAPALONE NA PRODZIE; ETYKIETY UI ZWERYFIKOWANE ZRZUTAMI
+## STAN NA DZIŚ — 2026-07-22 — FLAGI ZAPALONE + NOTEBOOKI M-SQL NA PRODZIE (40/58)
+
+### Partia 6: notebooki M-SQL (7 szt.) — PR #205 (squash `f7a8f39`), **40/58**
+
+Praca rozdzielona między persony (polecenie Darka): **Ethan** — kontrakt budowy
+(3 kluczowe twierdzenia zweryfikowane niezależnie przed użyciem), **Sophia** —
+5 notebooków ćwiczeniowych, **Oliver** — 2 laby z pieczątkami + prod, **Quinn** —
+kontrakt-test (22 testy, zweryfikowany na duckdb 1.3.2 ORAZ 1.5.4).
+
+- **CI dostał `pip install "duckdb~=1.3.2"`** obok pandas (job `test`) — harness
+  wykonuje komórki labów realnym python3, a te importują duckdb; bez tego partia
+  byłaby czerwona. Wersja pinowana do **Colaba**, nie do maszyny dev (1.5.x).
+  Składnia notebooków ograniczona do ANSI obecnego w obu.
+- **Pieczątki** wzorcem PD.4/PD.8: odcisk danych wejściowych (sumy 168.0/91) →
+  kontrola typu (brak `.df()` = diagnoza „to DuckDBPyRelation") → WŁASNA kopia
+  zapytań referencyjnych → payload z rzutowaniem `int()`/`float()`/`str()`.
+  SQL.7 rozpoznaje kolumnę rankingu **po semantyce** (rozkład miejsc
+  `[1,1,1,2,3]`), bo treść nie przybija jej nazwy.
+- **Znaleziska QG (log na końcu `sophia-1e2-msql-atomy.md`):**
+  1. 🔴 **KRYT: luki `______` dają `Binder Error`, NIE `Parser Error`** — DuckDB
+     traktuje je jako NAZWĘ KOLUMNY. Pierwsza wersja nagłówka SQL.4 obiecywała
+     Parser Error → student szukałby błędu składni zamiast luki. Poprawione;
+     dołożony trzeci człon podziału ról (Catalog=TABELA, Parser=SKŁADNIA,
+     **Binder=KOLUMNA**). Znalazła to Sophia, weryfikując pracę Olivera.
+  2. 🟠 pusta komórka SQL.7 → `AttributeError: 'NoneType'` (`duckdb.sql()` bez
+     zapytania zwraca None) — zapowiedziane i wytłumaczone.
+  3. 🟠 rozjazd tytułu modułu; źródło prawdy (prod) = **„SQL: analiza danych
+     w bazie"**. Ujednolicone w 7 notebookach.
+  4. ⚪ **INFO — otwarta decyzja treściowa:** w mini-świecie **minuty i kwota są
+     idealnie skorelowane**, więc `ORDER BY kwota DESC` daje tę samą kolejność co
+     po minutach → check SQL.4 C3 tego NIE odróżni (analogicznie okno w SQL.7);
+     student z błędną kolumną porządkującą dostanie token. Danych NIE zmieniano
+     (listing przybity QG 21.07, wszystkie checki z niego policzone). Lekarstwo
+     przy następnej iteracji: przejazd „długi, a tani" + przeliczenie kontraktu.
+- **Stabilność CI:** `notebooks-mpd.contract.test.ts` dostał jawny
+  `HARNESS_TIMEOUT_MS` (30 s). Projekt `unit` NIE ustawia `testTimeout` →
+  domyślne **5 s**, a zimny start pythona z pandas na świeżej maszynie CI
+  potrafi je przekroczyć (zmierzone 9,3 s). Objaw: pierwszy test z harnessem
+  czerwony, reszta i kolejne biegi zielone — **to prawdopodobne wyjaśnienie
+  jednorazowego czerwonego `test:run` odnotowanego przy #204.**
+- **Publikacja:** `skillbridge-notebooks` @ `3364c44` (katalog `msql/`, raw 200).
+- **PROD:** backup **`prod-backup-pre-ingest-krok4-msql-20260722`**
+  (`br-little-thunder-aljuiup4`); ingest ×2 idempotentny (moduły=9, pozycje=70,
+  pytania 129 bez zmian, 0 downgrade'ów progresu); weryfikacja PO: **40 pozycji
+  z notebookUrl** (7 M-SQL), 2 laby SQL z checkami, `sql-przeglad` bez URL-a,
+  **0 wycieków logu QG do contentMd**. Smoke: `/` 200, `/login` 200,
+  `/api/curriculum` 401, `/curriculum` 307.
+
+## Poprzednio tego dnia — 🔴→🟢 FLAGI ZAPALONE NA PRODZIE; ETYKIETY UI ZWERYFIKOWANE ZRZUTAMI
 
 ### 🔑 ZMIANA ZAŁOŻENIA, KTÓRA ODBLOKOWAŁA WSZYSTKO
 
@@ -83,16 +131,17 @@ potem repack.**
   `/curriculum` 307.
 
 ### Baseline `main` po tej sesji
-build OK · tsc 0 · Biome 0 · unit **1387/1387** · pełna bramka CI zielona
-na #204 · notebooki **33/58** · gałęzie Neona: **8**.
+build OK · tsc 0 · Biome 0 · unit **1416/1416** · pełna bramka CI zielona
+na #204 i #205 · notebooki **40/58** · gałęzie Neona: **9**.
 ⚠ Nota: jeden bieg `test:run` w trakcie prac był czerwony (1 failed), kolejnych
 6 zielonych przy stabilnym diffie — nie odtworzony, nie zidentyfikowany.
 Obserwować w CI.
 
 ### NASTĘPNE (kolejność)
-1. **Notebooki M-SQL (7)** — nieblokowane (kontrakt danych `przejazdy`/`strefy`
-   przybity w #197). Potem M-ML (7), M-LLM (7), **M-EDA (4) — screenshoty już
-   są**, więc partia odblokowana. Cel: **58/58**.
+1. ~~Notebooki M-SQL (7)~~ — ZROBIONE (#205). Zostaje **18/58**: **M-ML (7)**,
+   **M-LLM (7)** (nota: 4 pola-braki prawdy w przypadkach parsowalnych),
+   **M-EDA (4)** — screenshoty dostarczone 2026-07-22, partia odblokowana.
+   Cel: **58/58**.
 2. **Test przebiegu ≤15 min L0.1** (D10) — akcja Darka, teraz wykonalna na
    żywym prodzie z zapalonej flagi (czyste konto Google, stoper).
 3. **1E.3** (packer: `exam` w `ITEM_KINDS`) → **naprawa `hintDepth`** → **1E.4**.
