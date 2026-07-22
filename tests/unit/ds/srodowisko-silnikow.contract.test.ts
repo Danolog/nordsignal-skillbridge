@@ -41,6 +41,12 @@ import {
 	wiekSondyDni,
 	zakresPasuje,
 } from "../../../tools/srodowisko-colab";
+import {
+	ocenSonde,
+	sprawdzPochodzenie,
+	type WynikSondy,
+	wyjmijWynik,
+} from "../../../tools/zapisz-sonde";
 
 const ROOT = process.cwd();
 const HARNESS = join(ROOT, "tests", "unit", "ds", "silniki-harness.py");
@@ -292,6 +298,90 @@ describe("ADR-016 D3 — sonda Colab mierzy DOKŁADNIE to, co asertuje CI", () =
 			.map((c) => c.source.join(""))
 			.join("\n");
 		expect(kod).not.toMatch(/[!%]pip|subprocess|pip install/);
+	});
+});
+
+describe("ADR-016 D3 — powrót wyniku sondy do repo liczony kanonicznie", () => {
+	const wynikSondy = (
+		cytaty: WynikSondy["cytaty"],
+		wersje: Record<string, string> = { python: "3.12.1" },
+	): WynikSondy => ({
+		data: "2026-07-22",
+		srodowisko: { colab: true, colab_release_tag: "release-colab-2026-07", platforma: "Linux" },
+		wersje,
+		cytaty,
+		rozjazd_cytatow: cytaty.filter((c) => !c.zgodny).length,
+		bdl: { osiagalne: true, rozjazdy: [] },
+	});
+
+	it("wynik spoza sesji Colab jest ODRZUCANY (przebieg lokalny to podgląd, nie pomiar)", () => {
+		// Bez tego bezpiecznika przebieg na laptopie wpisałby do deklaracji nasze
+		// wersje jako „zaobserwowano w Colabie" i otworzył bramkę na 100 dni.
+		const lokalny = { ...wynikSondy([]), srodowisko: { colab: false, platforma: "macOS-15" } };
+		expect(() => sprawdzPochodzenie(lokalny)).toThrow(/NIE pochodzi z sesji Colab/);
+		const stary = { ...wynikSondy([]), srodowisko: undefined };
+		expect(() => sprawdzPochodzenie(stary)).toThrow(/NIE pochodzi z sesji Colab/);
+		expect(() => sprawdzPochodzenie(wynikSondy([]))).not.toThrow();
+	});
+
+	it("Colab zszedł z pinu ⇒ rozjazd, nawet gdy wszystkie cytaty się zgadzają", () => {
+		// ADR-016 D4: „idziemy za Colabem czy zostajemy" to decyzja Ethana,
+		// nie skryptu — więc sam zjazd z pinu zamyka bramkę i wymusza rozstrzygnięcie.
+		const ocena = ocenSonde(wynikSondy([], { duckdb: "1.9.0", pandas: "2.2.2" }));
+		expect(ocena.rozjazdWersji).toHaveLength(1);
+		expect(ocena.rozjazdWersji[0]).toContain("duckdb");
+		expect(ocena.rozjazdy).toEqual([]);
+	});
+
+	it("brak biblioteki w Colabie jest rozjazdem (treść M-SQL obiecuje preinstalację)", () => {
+		const ocena = ocenSonde(wynikSondy([], { duckdb: "BRAK (ModuleNotFoundError)" }));
+		expect(ocena.rozjazdWersji[0]).toMatch(/duckdb.*NIE MA/);
+	});
+
+	it("werdykt liczy repo z surowego pomiaru, nie przepisuje flagi z sondy", () => {
+		// Gdyby narzędzie ufało polu `zgodny`, bramka publikacji opierałaby się
+		// na arytmetyce notebooka, nad którym nie mamy kontroli wersji w Colabie.
+		const ocena = ocenSonde(
+			wynikSondy([
+				{
+					id: "PY-11",
+					cytat: "nieistotne — repo bierze cytat z tablicy",
+					faktyczny: "ZeroDivisionError: division by zero",
+					zgodny: false, // sonda skłamała/pomyliła się…
+				},
+			]),
+		);
+		expect(ocena.rozjazdy).toEqual([]); // …a repo widzi zgodność
+		expect(ocena.niezgodnosciWerdyktu).toHaveLength(1);
+	});
+
+	it("realny rozjazd brzmienia jest wykrywany i opisany obiema stronami", () => {
+		const ocena = ocenSonde(
+			wynikSondy([
+				{
+					id: "PY-11",
+					cytat: "ZeroDivisionError: division by zero",
+					faktyczny: "ZeroDivisionError: dzielenie przez zero",
+					zgodny: true,
+				},
+			]),
+		);
+		expect(ocena.rozjazdy).toHaveLength(1);
+		expect(ocena.rozjazdy[0].faktyczny).toContain("dzielenie");
+		expect(ocena.niezgodnosciWerdyktu).toHaveLength(1);
+	});
+
+	it("cytat spoza dzisiejszej tablicy (stara sonda) jest raportowany, nie ignorowany", () => {
+		const ocena = ocenSonde(
+			wynikSondy([{ id: "XX-99", cytat: "Stary Error: coś", faktyczny: "…", zgodny: true }]),
+		);
+		expect(ocena.nieznane).toHaveLength(1);
+	});
+
+	it("blok maszynowy wyjmowany z wklejonego wydruku; brak bloku = czytelny błąd", () => {
+		const wydruk = `=== WERSJE ===\npython 3.12.1\n--- WYNIK MASZYNOWY (JSON) ---\n{"data":"2026-07-22"}`;
+		expect(wyjmijWynik(wydruk).data).toBe("2026-07-22");
+		expect(() => wyjmijWynik("sam wydruk bez bloku")).toThrow(/WYNIK MASZYNOWY/);
 	});
 });
 

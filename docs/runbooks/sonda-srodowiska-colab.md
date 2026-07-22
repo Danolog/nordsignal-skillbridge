@@ -30,6 +30,9 @@ skąd wziąć wartości tej flagi.
 3. **Uruchom wszystko.** *Środowisko wykonawcze → Uruchom wszystko*. Nic nie
    klikaj po drodze; ostatnia komórka kończy się linią
    `--- WYNIK MASZYNOWY (JSON) ---` i blokiem JSON.
+   Pierwsza komórka wypisuje `colab True` — jeśli widzisz `colab False`,
+   notebook biegnie poza Colabem i wynik **zostanie odrzucony** przy zapisie
+   (to celowy bezpiecznik: pomiar z laptopa nie jest pomiarem Colaba).
 4. **Skopiuj CAŁE wyjście** czterech komórek kodu (od `=== WERSJE SILNIKÓW…`
    do końca bloku JSON).
 5. **Wklej do repozytorium** jako nowy plik:
@@ -58,7 +61,8 @@ skąd wziąć wartości tej flagi.
 
 | Wynik sondy | Co się dzieje | Kto działa |
 |---|---|---|
-| Wszystkie cytaty `ZGODNY`, kontrakt BDL `ZGODNY` | `rozjazd: false`, bramka otwarta na 100 dni od daty sondy | nikt, koniec |
+| Wszystkie cytaty `ZGODNY`, kontrakt BDL `ZGODNY`, wersje w granicach pinu | `rozjazd: false`, bramka otwarta na 100 dni od daty sondy | nikt, koniec |
+| Wersja w Colabie wyszła poza nasz pin (np. duckdb 1.4) | `rozjazd: true` — **nawet gdy wszystkie cytaty się zgadzają** | Ethan: podbicie pinu (idziemy za Colabem) albo świadome „zostajemy" z uzasadnieniem. To rozstrzygnięcie z ADR-016 D4, nie decyzja skryptu |
 | Choć jeden cytat `ROZJAZD` | `rozjazd: true` → packer i ingest odmawiają modułów M-\* | ticket Linear `[Ethan] rozjazd wersji Colab`; Ethan decyduje: idziemy za Colabem (podbicie pinu + poprawka treści przez Sophię) albo zostajemy z uzasadnieniem i datą przeglądu |
 | Rozjazd kontraktu API GUS/BDL | jw. — `rozjazd: true` | Ethan + Sophia: notebooki M-EDA wołają żywe API, więc zmiana po stronie GUS wywraca lab studenta, mimo zielonego CI (testy jadą na atrapie) |
 | API BDL nieosiągalne (sieć, limit 429) | **nie** ustawia rozjazdu | powtórz sondę; jeśli powtarzalne — zgłoś Ethanowi |

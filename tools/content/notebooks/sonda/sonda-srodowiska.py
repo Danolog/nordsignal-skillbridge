@@ -27,9 +27,37 @@
 # (treść M-SQL twierdzi, że DuckDB jest w Colabie preinstalowany).
 
 # %%
+import importlib.util
 import json
+import os
 import platform
 import sys
+
+# GDZIE to biegnie. Sonda ma wartość WYŁĄCZNIE uruchomiona w Colabie —
+# przebieg na laptopie mierzy nasze środowisko, nie środowisko studenta.
+# Narzędzie zapisu w repo ODRZUCA wynik spoza Colaba, żeby pomiar lokalny
+# nie otworzył bramki publikacji na 100 dni fałszywą liczbą.
+def _czy_colab():
+    # find_spec("google.colab") importuje pakiet nadrzędny google — poza
+    # Colabem potrafi rzucić ModuleNotFoundError. Sonda nie ma prawa paść
+    # na sprawdzaniu, GDZIE biegnie.
+    try:
+        return importlib.util.find_spec("google.colab") is not None
+    except Exception:
+        return False
+
+
+SRODOWISKO = {
+    "colab": _czy_colab(),
+    "colab_release_tag": os.environ.get("COLAB_RELEASE_TAG"),
+    "platforma": platform.platform(),
+}
+print("=== GDZIE BIEGNIE SONDA ===")
+print("colab      %s" % SRODOWISKO["colab"])
+print("release    %s" % (SRODOWISKO["colab_release_tag"] or "—"))
+print("platforma  %s" % SRODOWISKO["platforma"])
+if not SRODOWISKO["colab"]:
+    print("!! To NIE jest sesja Colab. Wynik nadaje się do podglądu, NIE do repo.")
 
 WERSJE = {"python": platform.python_version()}
 for _nazwa in ("pandas", "duckdb", "requests"):
@@ -197,6 +225,7 @@ import datetime
 
 _PODSUMOWANIE = {
     "data": datetime.date.today().isoformat(),
+    "srodowisko": SRODOWISKO,
     "wersje": WERSJE,
     "cytaty": WYNIKI_CYTATOW,
     "rozjazd_cytatow": len(_ROZJAZDY),
