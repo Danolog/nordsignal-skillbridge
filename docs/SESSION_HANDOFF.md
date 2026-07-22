@@ -11,7 +11,96 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-21 (późna noc) — NOTEBOOKI M-PD NA PRODZIE, KOREKTA INWENTARZA M-*
+## STAN NA DZIŚ — 2026-07-22 — 🔴→🟢 FLAGI ZAPALONE NA PRODZIE; ETYKIETY UI ZWERYFIKOWANE ZRZUTAMI
+
+### 🔑 ZMIANA ZAŁOŻENIA, KTÓRA ODBLOKOWAŁA WSZYSTKO
+
+**Darek (2026-07-22): aplikacja NIE MA żadnych realnych studentów** — wszystkie
+konta na prodzie (w tym „27 studentów" z handoffów 2026-07-13/14) to konta
+testowe/jego własne. Cała racja trzymania `FLAG_CURRICULUM_PATH=0` (ochrona
+realnych studentów przed ślepym zaułkiem „notebook bez linku") **przestała
+obowiązywać**. Polecenie: zapalać flagi i prowadzić implementację do końca.
+⚠ Założenie wygasa z chwilą pierwszej realnej rejestracji.
+
+### FLAGI ZAPALONE (Production + redeploy, 2026-07-22)
+
+- `FLAG_CURRICULUM_PATH=1`, `FLAG_CONFIDENCE_PROBE=1`, `FLAG_PASSPORT_FRESHNESS=1`
+  (redeploy `skill-bridge-qdatxdjy5…`, aliased na `skill-bridge-ai-seven.vercel.app`).
+- **Dowód funkcjonalny (nie deklaracja):** `/api/curriculum` **401** (było **404**
+  przy fladze OFF — trasa istnieje, wymaga tylko logowania), `/curriculum` 307
+  na login, `/` i `/login` 200. ⚠ `vercel env pull` MASKUJE wartości
+  (pokazuje `""` nawet dla flag na pewno zapalonych) — weryfikacja MUSI być
+  funkcjonalna, nie przez odczyt env.
+- **Drabina L0→M-PD jest odtąd WIDOCZNA i PRZECHODNIA dla zalogowanego konta.**
+
+### Screenshoty kontrolne UI — TODO z QG domknięte (PR #204, squash `eeed503`)
+
+Darek dostarczył 6 zrzutów (w repo: `docs/curation/screenshots/*-20260722.png`)
+— dowód dla kwartalnej reweryfikacji `verifiedAt` (D4).
+
+- **L0 — ZERO korekt, treść potwierdzona litera-w-literę.** Ostrzeżenie:
+  „Ostrzeżenie: Google nie jest autorem tego notatnika" + przycisk „Uruchom
+  mimo to" (cytat L0.1 zgodny); nazwa kopii: „Kopia notatnika `<plik>`"
+  (L0.2 i hint 2 trafione). Ostrożna redakcja Sophii się obroniła.
+- **M-EDA (EDA.2) — 3 rozjazdy, poprawione:** (1) GitHub NIE MA przycisku
+  „New repository" — jest „New" → formularz „Create a new repository"
+  („Repository name"/„Description"/„Choose visibility"→„Public") → przycisk
+  „Create repository"; (2) okno zapisu z Colab to „**Kopiuj do GitHuba**",
+  a pole opisu commita ma etykietę „**Komunikat zatwierdzenia**"; (3)
+  **ZNALEZISKO DYDAKTYCZNE:** Colab wstawia domyślne „Utworzono za pomocą
+  Colab" — bez nadpisania student buduje historię identycznych, pustych
+  commitów, czyli **oblewa kryterium rubryki „sensowna historia commitów"**;
+  treść i hint 2 dostały jawny nakaz nadpisania.
+- Potwierdzone bez zmian: „Add file"→„Create new file"; brak pozycji „Zapisz
+  kopię w usłudze GitHub" w menu **podglądu cudzego notebooka** — dokładnie
+  jak przewidywał hint 3 (zrzut `meda-1` potwierdza realnym UI).
+- **Werdykt wideo PL (wlRT_MZOvBE): Darek ZATWIERDZA jako zasób L0** (seans
+  kontrolny odbyty 2026-07-22).
+
+### ⚠ PUŁAPKA ARCHITEKTONICZNA (kosztowała pół godziny — nie powtarzać)
+
+**`tools/content/curriculum-atoms/*.json` to ARTEFAKTY GENEROWANE** przez
+`tools/pack-curriculum-atoms.ts` z dokumentów `docs/curation/sophia-1e2-*-atomy.md`.
+Ręczna edycja JSON-a **znika bez śladu**: test `curriculum-atoms.contract.test.ts`
+→ „DETERMINIZM: packer odtwarza commitowane JSON-y 1:1" URUCHAMIA packer
+w trakcie biegu i nadpisuje plik. Objaw mylący: „hook Biome cofnął mi zmiany"
+(Biome jest niewinny — sprawdzone empirycznie) + „pierwszy bieg testu czerwony,
+drugi zielony". **Poprawki treści nanosić WYŁĄCZNIE w `docs/curation/*.md`,
+potem repack.**
+
+### PROD — ingest etykiet (czerwona linia wzorcem)
+
+- Backup: **`prod-backup-pre-ingest-etykiety-eda2-20260722`**
+  (`br-steep-glitter-alizh8ow`). Gałęzi Neona: **8** (nic przeterminowane —
+  wszystkie backupy z 21–22.07).
+- Ingest ×2 idempotentny (oba biegi: moduły=9, pozycje=70, prereqi=8,
+  pytania 129 bez zmian, 0 downgrade'ów progresu).
+- **Weryfikacja PO:** stara etykieta „New repository" **0 wystąpień w całej
+  bazie**; „Komunikat zatwierdzenia" 1×, „Utworzono za pomocą Colab" 1×,
+  „Create a new repository" 1× (wszystko w eda-2); 33 pozycje z `notebookUrl`
+  (bez zmian); **0 wycieków notatek/errat do `contentMd`** (znany incydent QG L0).
+- Smoke po ingeście: `/` 200, `/login` 200, `/api/curriculum` **401**,
+  `/curriculum` 307.
+
+### Baseline `main` po tej sesji
+build OK · tsc 0 · Biome 0 · unit **1387/1387** · pełna bramka CI zielona
+na #204 · notebooki **33/58** · gałęzie Neona: **8**.
+⚠ Nota: jeden bieg `test:run` w trakcie prac był czerwony (1 failed), kolejnych
+6 zielonych przy stabilnym diffie — nie odtworzony, nie zidentyfikowany.
+Obserwować w CI.
+
+### NASTĘPNE (kolejność)
+1. **Notebooki M-SQL (7)** — nieblokowane (kontrakt danych `przejazdy`/`strefy`
+   przybity w #197). Potem M-ML (7), M-LLM (7), **M-EDA (4) — screenshoty już
+   są**, więc partia odblokowana. Cel: **58/58**.
+2. **Test przebiegu ≤15 min L0.1** (D10) — akcja Darka, teraz wykonalna na
+   żywym prodzie z zapalonej flagi (czyste konto Google, stoper).
+3. **1E.3** (packer: `exam` w `ITEM_KINDS`) → **naprawa `hintDepth`** → **1E.4**.
+4. Otwarte drobiazgi: sign-off Ryana za `aiLight` (#190), UX 429 tury czatu,
+   `git remote set-url` (repo = `Danolog/nordsignal-skillbridge`), rotacja
+   `GITHUB_TOKEN` (0.7-sekret), SageMaker free plan, 1E.R2.
+
+## STAN POPRZEDNI — 2026-07-21 (późna noc) — NOTEBOOKI M-PD NA PRODZIE, KOREKTA INWENTARZA M-*
 
 ### Partia 5: notebooki M-PD (8 szt.) — PR #200 (squash `b27fc8e`), **33/58**
 
