@@ -241,6 +241,75 @@ describe("1E.2 · trzon DS (M-PD / M-EDA / M-SQL / M-ML / M-LLM) — PR #170", (
 	});
 });
 
+describe("ADR-016 D4 · niezmiennik bramki: granica M-*/nie-M-* jest nieprzecinalna (uwaga F1 Leo)", () => {
+	// PO CO TO JEST. Bramka środowiska pomija moduły `M-*` przy pakowaniu i ingeście,
+	// a resztę przepuszcza. Jest to bezpieczne WYŁĄCZNIE dopóty, dopóki oba zbiory są
+	// rozłączne po koncepcie i po pytaniu — `syncQuestionBank` (tools/ingest-curriculum.ts)
+	// wygasza (`status='retired'`) każde AKTYWNE pytanie konceptu, którego nie ma
+	// w przekazanych plikach. Koncept dzielony przez moduł bramkowany i niebramkowany
+	// pojawiłby się więc w wejściu (przez moduł niebramkowany) BEZ swoich pytań
+	// z modułu M-* — i te pytania poszłyby na produkcji do wygaszenia, cicho.
+	// Dziś takich konceptów jest zero, ale to własność DZISIEJSZEJ TREŚCI, nie
+	// konstrukcja kodu. Ten test zamienia zbieg okoliczności w niezmiennik.
+	const bramkowany = (moduleSlug: string) => /^m-/.test(moduleSlug);
+
+	/**
+	 * Jawne wyjątki dla kierunku NIEBEZPIECZNEGO (moduł niebramkowany sięga po pytanie
+	 * z modułu M-*). Pusty i taki ma zostać — wpis wymaga uzasadnienia w recenzji,
+	 * bo przy zamkniętej bramce ingest dostanie `questionRef` bez właściciela.
+	 */
+	const WYJATKI_NIEBRAMKOWANY_SIEGA_DO_M: string[] = [];
+
+	it("żaden koncept nie należy jednocześnie do modułu bramkowanego i niebramkowanego", () => {
+		const modulyKonceptu = new Map<string, Set<string>>();
+		for (const c of contents) {
+			for (const item of c.items) {
+				for (const concept of item.concepts ?? []) {
+					const zbior = modulyKonceptu.get(concept.slug) ?? new Set<string>();
+					zbior.add(c.moduleSlug);
+					modulyKonceptu.set(concept.slug, zbior);
+				}
+			}
+		}
+		const przecinajace = [...modulyKonceptu.entries()]
+			.filter(([, m]) => [...m].some(bramkowany) && [...m].some((x) => !bramkowany(x)))
+			.map(([slug, m]) => `${slug}: ${[...m].sort().join(" + ")}`);
+		expect(przecinajace, "koncept dzielony przez granicę bramki = ciche wygaszenie pytań").toEqual(
+			[],
+		);
+	});
+
+	it("żaden moduł niebramkowany nie sięga po pytanie z modułu M-* (kierunek odwrotny wolno)", () => {
+		const wlascicielRefu = new Map<string, string>();
+		for (const c of contents) {
+			for (const item of c.items) {
+				for (const q of item.questions ?? []) wlascicielRefu.set(q.ref, c.moduleSlug);
+			}
+		}
+		const naruszenia: string[] = [];
+		for (const c of contents) {
+			for (const item of c.items) {
+				for (const ref of item.questionRefs ?? []) {
+					const wlasciciel = wlascicielRefu.get(ref);
+					expect(
+						wlasciciel,
+						`${c.moduleSlug}/${item.slug}: ref '${ref}' bez właściciela`,
+					).toBeDefined();
+					// Kierunek M-* → nie-M-* (np. przegląd M-PD reużywa pytań F3) jest
+					// bezpieczny z konstrukcji: przy zamkniętej bramce znika KONSUMENT,
+					// a właściciel pytań jedzie ingestem normalnie. Odwrotny — nie jest.
+					if (!bramkowany(c.moduleSlug) && bramkowany(wlasciciel as string)) {
+						naruszenia.push(`${c.moduleSlug}/${item.slug} → ${ref} (właściciel: ${wlasciciel})`);
+					}
+				}
+			}
+		}
+		expect(
+			naruszenia.filter((n) => !WYJATKI_NIEBRAMKOWANY_SIEGA_DO_M.some((w) => n.includes(w))),
+		).toEqual([]);
+	});
+});
+
 function keyConceptCount(moduleSlug: string): number {
 	return new Set(
 		itemsOf(moduleSlug).flatMap((i) => (i.concepts ?? []).filter((x) => x.key).map((x) => x.slug)),
