@@ -1,11 +1,14 @@
 # 1E.2 · Moduł M-EDA „EDA: od API do repozytorium" — treść atomów + rampa capstone'u
 
 **Autor:** Sophia (PO, kuracja + autoring) · **Data:** 2026-07-11 ·
+**Ostatnia zmiana:** 2026-07-22 (partia 7 — notebooki Colab M-EDA,
+korekta „jako plik Gist" w EDA.2, dwie nowe pozycje pierwszej pomocy;
+log i brama T1–T5 na końcu dokumentu) ·
 **Status:** **ZATWIERDZONY (Darek, 2026-07-11)** — po przeglądzie QG
 (2 agentów Fable 5: zgodność z ADR-014 z checkami na ŻYWYM API BDL +
 research UI Colab/GitHub i zasobów; przebieg na końcu dokumentu);
-przed ingest 1E.2: TODO z notatek (screenshoty UI, notebooki, test
-autoryzacji od zera).
+przed ingest 1E.2 zostaje: test autoryzacji Colab↔GitHub od zera
+i dwa zrzuty uzupełniające (INFO-6 w logu partii 7).
 **Podstawa:** ADR-014 D1/D3/D5/D6.5 + **audyt pojemności D10**
 (`sophia-1e2-audyt-pojemnosci-m-eda.md`): moduł odchudzony po wydzieleniu
 M-PD; pokrywa R7 (API/JSON), R14 (Git/GitHub — decyzja Darka pkt 9
@@ -238,8 +241,12 @@ Twój obieg pracy — trzy ruchy, wszystkie klikane:
    (Passport linkuje do publicznych prac); zatwierdza przycisk
    „Create repository" na dole. GitHub mówi wyłącznie po angielsku —
    etykiety podajemy dosłownie, z polskim opisem, co robią.
-2. **Notebook wysyłasz z Colab**: menu **Plik → Zapisz kopię w usłudze GitHub**
-   — Colab poprosi (raz) o połączenie kont, a potem otworzy okno
+2. **Notebook wysyłasz z Colab**: menu **Plik → Zapisz kopię w usłudze GitHub**.
+   ⚠ Tuż obok siedzi myląco podobna pozycja **„Zapisz kopię w usłudze GitHub
+   jako plik Gist"** — to NIE to samo: *Gist* jest pojedynczą notatką, a nie
+   repozytorium z README i `requirements.txt`, których żąda rubryka. Wybieraj
+   pozycję BEZ dopisku „jako plik Gist".
+   Colab poprosi (raz) o połączenie kont, a potem otworzy okno
    **„Kopiuj do GitHuba"**: wybierasz repo („Repozytorium") i gałąź
    („Gałąź": `main`), a opis commita wpisujesz w polu
    **„Komunikat zatwierdzenia"**. ⚠ Colab wstawia tam z góry
@@ -336,9 +343,10 @@ notebook?**
    i `requirements.txt`, a zakładka historii pokazuje listę migawek
    z opisami. Typowe blokady: Colab nie widzi repo → autoryzacja
    nie objęła repozytoriów (powtórz „Zapisz kopię w usłudze GitHub" i zaznacz
-   zgodę) albo repo założone na innym koncie; „Zapisz kopię w usłudze GitHub"
-   nie widać w menu → jesteś w podglądzie cudzego notebooka, nie we
-   własnej kopii (L0.2). Pełna lista — pierwsza pomoc modułu.
+   zgodę) albo repo założone na innym koncie; w menu widzisz WYŁĄCZNIE
+   pozycję z dopiskiem „jako plik Gist" → oglądasz cudzy notebook
+   w podglądzie, nie własną kopię (L0.2) — i uwaga, sam Gist repozytorium
+   nie zastąpi. Pełna lista — pierwsza pomoc modułu.
 
 ---
 
@@ -614,12 +622,24 @@ błędu" w eskalacji — D5c):
    zapis), repo jest na INNYM koncie (sprawdź awatar na github.com)
    albo repo jest prywatne — checkbox „Include private repos" dotyczy
    OTWIERANIA notatników; dla capstone'u repo i tak ma być publiczne.
-8. **„Zapisz kopię w usłudze GitHub" nie ma w menu Plik** → oglądasz cudzy
-   notebook w podglądzie — najpierw własna kopia (L0.2).
+8. **„Zapisz kopię w usłudze GitHub" nie ma w menu Plik** (jest tylko
+   pozycja z dopiskiem „jako plik Gist") → oglądasz cudzy notebook
+   w podglądzie — najpierw własna kopia (L0.2). Gist to nie repozytorium:
+   nie zmieścisz w nim README ani `requirements.txt` w formie z rubryki.
 9. **Commit „poszedł", ale na GitHubie go nie widać** → zapisałeś(-aś)
    do INNEGO repo albo innej gałęzi — otwórz repo w przeglądarce
    i sprawdź listę plików + historię; w razie czego powtórz zapis,
    uważnie czytając okno wyboru.
+10. **`TypeError: agg function failed …` przy liczeniu średniej** →
+    uśredniasz kolumnę, w której siedzi TEKST (w szczegółach błędu
+    zobaczysz `dtype->object`). Najczęstsza przyczyna w tym module:
+    przy spłaszczaniu wzięte zostało pole z rokiem zamiast pola
+    z wartością pomiaru (EDA.4, luka 2). Sprawdź `df.dtypes` i wróć do
+    spłaszczania.
+11. **Pieczątka EDA.4 mówi „kolumna `wojewodztwo` nie zawiera nazw"** →
+    w luce 1 wzięte zostało pole z identyfikatorem jednostki (same cyfry),
+    nie z nazwą. Obejrzyj rekord komórką `dane["results"][0]` i porównaj
+    klucze.
 
 ---
 
@@ -708,8 +728,9 @@ błędu" w eskalacji — D5c):
   chwilowej dostępności BDL — uczciwość checku przy zewnętrznej
   zależności); kamień K1 capstone'u analogicznie (stan sesji, nie
   ponowny fetch).
-- **Budżety słów (D1, zmierzone po poprawkach QG):** EDA.1 = 500/456
-  (z kodem/bez), EDA.2 = 316/316, EDA.3 = 326/326 — w widełkach przy obu
+- **Budżety słów (D1, zmierzone ponownie 2026-07-22 po korekcie etykiet UI
+  z #204 i po korekcie „jako plik Gist"):** EDA.1 = 500/456 (z kodem/bez),
+  EDA.2 = 443/443, EDA.3 = 326/326 — w widełkach 300–600 przy obu
   metodach. EDA.2/EDA.3 nie mają kroków fadingu (wiedza operacyjna/
   metodyczna) — jawne odstępstwo do oceny w standardzie QG-5; retrieval,
   „przewidź" i drabinki są.
@@ -723,8 +744,12 @@ błędu" w eskalacji — D5c):
      SCREENSHOTACH" wyżej. Wideo PL: brak materiału „bez terminala"
      na rynku — dwa kandydaty z obowiązkową adnotacją (tabela zasobów);
      seans kontrolny przed ingest.
-  2. Budowa 4 notebooków + strona pierwszej pomocy; test labu EDA.4 na
-     świeżym koncie (autoryzacja Colab↔GitHub od zera).
+  2. ✅ **WYKONANE (2026-07-22)** — 4 notebooki Colab (partia 7): źródła
+     w `tools/content/notebooks/meda/`, zbudowane do `notebooks/meda/`,
+     `notebookUrl` w manifeście packera dla EDA.1–EDA.4. Log przebiegu
+     na końcu dokumentu. **Zostaje:** strona pierwszej pomocy jako
+     artefakt aplikacji (tu jest jej treść) oraz test labu EDA.4 na
+     świeżym koncie — autoryzacja Colab↔GitHub od zera (akcja Darka).
   3. Rampy briefingu capstone'u wg mapy luk audytu partii 1 (pozycja
      `ds-eda` ~10 h — zadanie 1E.R, wycena tam; ten moduł zdejmuje
      większość luk „BLOKUJE-POCZĄTKUJĄCEGO" przez atomy, briefing
@@ -759,3 +784,190 @@ w specyfikacji. Kontrakt CHECKS_EDA_4 zweryfikowany przez agenta QG na
 ŻYWYM API BDL (2026-07-21): HTTP 200, 16 jednostek × 2 lata = 32 rekordy
 płaskie, klucze `name`/`val`, `year` wraca jako string (konwersja int
 potrzebna — dokładnie jak uczy treść), średnie ~5–6%. **GO Z NOTAMI.**
+
+---
+
+# Przebieg QG partii 7 — notebooki Colab M-EDA (2026-07-22)
+
+Autor: Sophia (PO). Zakres: 4 notebooki (`tools/content/notebooks/meda/`
+→ `notebooks/meda/`), `notebookUrl` dla EDA.1–EDA.4 w manifeście packera,
+korekta treści EDA.2 (pułapka Gist) i dwie nowe pozycje pierwszej pomocy.
+
+**Podział lab/ćwiczenie (ADR-015 §7):** pieczątkę ma **wyłącznie EDA.4**
+(`kind: lab`, kontrakt `CHECKS_EDA_4`). EDA.1–EDA.3 to `kind: exercise` —
+zaliczane pytaniami w SkillBridge, więc **świadomie bez pieczątki**:
+notebook, który nie ma czego bramkować, nie ma prawa wystawić tokenu.
+EDA.2 i EDA.3 nie mają zadań kodowych ocenianych automatem (wiedza
+operacyjna i metodyczna) — ich notebooki są odpowiednio **materiałem do
+wysłania do repozytorium** (na czymś trzeba przećwiczyć ruch 2)
+i **arkuszem oceny trzech zdań** z drabinki hintów.
+
+## Co zostało wykonane, a nie przeczytane
+
+| Twierdzenie | Sposób weryfikacji | Wynik |
+|---|---|---|
+| API BDL żyje, kontrakt danych bez zmian | `requests.get` na żywo, 2026-07-22 | 200; `totalRecords` 16; 16 rekordów; **każdy po 2 pomiary** |
+| 16 × 2 = 32 płaskie rekordy | spłaszczenie wykonane, `len(df)` | **32** |
+| klucze rekordu | `dane["results"][0].keys()` | `id`, `name`, `values` |
+| `year` wraca jako TEKST | `type(...)` | `str` → konwersja `int()` konieczna |
+| średnie „~5–6%" z drabinki | `df.groupby("rok")["stopa"].mean()` | 2022 = **5,9**; 2023 = **5,7875** |
+| bez `page-size` przychodzi pierwsza strona | to samo zapytanie bez parametru | **10** rekordów przy `totalRecords` 16 |
+| `results[0]["name"]` z teorii EDA.1 | odczyt | `MAŁOPOLSKIE` |
+| zły adres daje 404, nie wyjątek sieci | literówka `by-variabl` | **404**, odpowiedź JSON z kluczem `errors` |
+| nieuzupełniona luka daje `NameError` | wykonanie komórki | `NameError: name '______' is not defined` |
+| parytet tokenu Python ↔ serwer | harness + `signToken` (TS) | **identyczny token** `…4e3562f800ba` |
+| checki serwerowe z `m-eda.json` | `evaluateChecks` na ładunku z sesji | **5/5 pass**; kontrola negatywna (20 wierszy) **fail** |
+| determinizm packera | `pnpm content:pack-curriculum` + kontrakt-test ×2 | zielony dwukrotnie, diff = tylko `notebookUrl` |
+| składnia wszystkich komórek | `compile()` realnym python3 | 20 komórek kodu, 0 błędów |
+| pełny bieg jednostkowy | `pnpm test:run` | **1420/1420** |
+
+Przejazd pieczątki EDA.4: **16 scenariuszy** (1 wzorcowy, 3 równoważne
+warianty grupowania, 12 ścieżek błędnych), każdy uruchomiony realnym
+python3 na żywym API.
+
+## Znaleziska
+
+**🔴 KRYT-1 — pieczątka wystawiała token za błędną lukę 1.** Pierwsza
+wersja sprawdzała kolumnę `wojewodztwo` przez `is_string_dtype`. To nie
+odróżnia niczego: identyfikator jednostki w BDL (`id`) też jest
+**tekstem** (`"011200000000"`), więc student, który w luce 1 wziął `id`
+zamiast `name`, dostawał **ten sam token co poprawne rozwiązanie**.
+Naprawa: check szuka liter w wartościach kolumny i odmawia, cytując
+pierwszą wartość („pierwsza wartość: 011200000000"). To ta sama klasa,
+co limit `ORDER BY` z M-SQL — z tą różnicą, że tu dało się ją zamknąć
+bez ruszania danych.
+
+**🟠 WAŻN-1 — pułapka „jako plik Gist" (znalezisko ze zrzutu meda-1).**
+Zrzut menu **Plik** (podgląd cudzego notebooka) pokazuje pozycję
+**„Zapisz kopię w usłudze GitHub jako plik Gist"**. Dotąd treść
+zakładała, że w podglądzie po prostu NIE MA pozycji zapisu do GitHuba —
+a jest pozycja myląco podobna, prowadząca do *Gista*, czyli notatki,
+a nie repozytorium z `README.md` i `requirements.txt`. Student mógł
+kliknąć ją w dobrej wierze i **oblać kryterium rubryki „reprodukowalne
+repozytorium"**, nie rozumiejąc dlaczego. Poprawione w trzech miejscach
+treści (ruch 2, hint 3, pierwsza pomoc poz. 8) i w notebooku EDA.2.
+To druga z rzędu partia, w której zrzut ekranu okazał się znaleziskiem
+**dydaktycznym**, nie kosmetycznym (poprzednio: domyślne „Utworzono za
+pomocą Colab").
+
+**🟠 WAŻN-2 — błędna luka 2 nie dociera do pieczątki.** Gdy student
+w luce 2 weźmie pole z rokiem, kolumna `stopa` jest tekstem i wywala się
+**komórka średniej**, nie pieczątka: `TypeError: agg function failed …`.
+Komunikat jest dla początkującego nieczytelny, a treść go nie
+zapowiadała. Dopisane: ostrzeżenie przy luce 4–5 w notebooku (z
+objaśnieniem, że `dtype->object` = kolumna nieliczbowa) + **pozycja 10
+pierwszej pomocy**. Check pieczątki na typ `stopa` zostaje jako siatka
+na wypadek ścieżki, która go ominie.
+
+**🟠 WAŻN-3 — legalny wariant dostawał fałszywą diagnozę.**
+`df.groupby("rok", as_index=False)["stopa"].mean()` oddaje TABELĘ
+z indeksem 0…n, więc pieczątka mówiła „grupy to ['0','1'] — grupujesz po
+złej kolumnie", choć student zrobił dobrze. Pieczątka przyjmuje teraz
+trzy równoważne zapisy (`as_index=False`, `mean(numeric_only=True)`,
+zapis kanoniczny) — wszystkie dają **identyczny token**. Zasada z M-SQL
+utrzymana: sprawdzamy WYNIK, nie sposób zapisu.
+
+**⚪ INFO-1 — numeracja luk.** Pierwsza wersja notebooka numerowała luki
+1–4, a treść atomu (i hinty w SkillBridge) mówią: 1, 2, **3 „w głowie"**,
+4, 5. Rozjazd wyłapany przed oddaniem; notebook idzie za treścią.
+
+**⚪ INFO-2 — uczciwa siła checku C1 (status 200).** Checku nie da się
+obalić „od dołu": przy statusie ≠ 200 BDL oddaje JSON z kluczem `errors`,
+więc notebook pada wcześniej na `KeyError: 'results'`. Realna wartość C1
+to inny scenariusz, zweryfikowany osobno: student ponawia pobranie,
+dostaje **429**, ale ma w pamięci `df` z poprzedniego, udanego biegu —
+wtedy pieczątka odmawia zamiast podpisać nieaktualne pobranie. Limit
+zostaje świadomie.
+
+**⚪ INFO-3 — hałaśliwa odmowa.** Diagnoza przy grupowaniu po
+województwie wypisywała wszystkie 16 nazw. Skrócona do „16 grup
+(DOLNOŚLĄSKIE, KUJAWSKO-POMORSKIE, ...)".
+
+**⚪ INFO-4 — odmiana liczebnika.** „ma 4 kolumn", „ma 22 wierszy" —
+komunikaty przepisane na formę odporną: „liczba kolumn w `df` to 4,
+a ma być 3".
+
+**⚪ INFO-5 — konwencja ADR-016 D5 zastosowana od pierwszego dnia.**
+Cytat pandas skrócony do **prefiksu** `TypeError: agg function failed …`,
+a ogon (`[how->mean,dtype->object]`) **opisany**, nie obiecany — dokładnie
+wzorzec, który ADR-016 wskazuje jako poprawny (SQL.1). Dwa kształty
+komunikatów użyte w tej partii (`NameError`, `TypeError`) mieszczą się
+w inwentarzu 16 asercji z ADR-016 §3 — **nie dokładam nowych cytatów
+verbatim**, więc partia nie zwiększa długu tablicy asercji. Numer wersji
+pandas w treści studenta: **0 wystąpień** (D5.3).
+
+**⚪ INFO-6 — dwie etykiety bez zrzutu (dług, nie blokada).** Brak
+zrzutu dla (a) pozycji menu „Zapisz kopię w usłudze GitHub" **bez**
+dopisku „jako plik Gist" — meda-1 dokumentuje menu podglądu cudzego
+notebooka, a nie własnej kopii; (b) przycisku zatwierdzającego formularz
+„Create new file". Rozstrzygnięcie na tę partię: notebook EDA.2 cytuje
+(a) jako „pozycja zaczynająca się od…" (to zrzut potwierdza w 100%)
+i opisuje (b) **funkcjonalnie** („zielony przycisk zatwierdzenia na dole
+formularza"). TODO: zrzuty `meda-5` (menu Plik we własnej kopii)
+i `meda-6` (formularz Create new file) — akcja Darka.
+
+## Brama przed oddaniem — część A (`skills/product/tresci-edukacyjne.md`)
+
+| Test | Werdykt | Uzasadnienie |
+|---|---|---|
+| **T1 — źródło i determinizm** | **PASS** | Wszystkie poprawki w tym dokumencie i w źródłach `.py`; `pnpm content:pack-curriculum` uruchomiony; `git diff` na `m-eda.json` to wyłącznie 4 pola `notebookUrl` (+ korekta EDA.2 przepisana z markdownu); kontrakt-test determinizmu zielony w **dwóch biegach**. Zero ręcznej edycji JSON-a. |
+| **T2 — czystość widoku studenta** | **PASS** | Grep spakowanego `m-eda.json` na „errata", „QG", „WAŻN", „KRYT", „INFO-", „TODO", „nota", „poprawione po", imiona ról: **0 trafień w `contentMd` i hintach**. Jedyne trafienie („QG-5") siedzi w polu `notes` zasobu — a `curriculum_item_resources` **nie ma takiej kolumny** i ingest jej nie przenosi (sprawdzone w `schema.ts` i `ingest-curriculum.ts`), więc do studenta nie dociera. Cały ten log i notatki leżą poza sekcjami atomów. |
+| **T3 — liczby policzone** | **PASS** | Tabela „Co zostało wykonane" wyżej: 14 twierdzeń, każde z metodą i wynikiem. Liczby w notebookach (16, 10, 32, 200, 404, 5,9 / 5,7875) pochodzą z uruchomień z 2026-07-22, nie z pamięci. |
+| **T4 — błędy zapowiedziane i placeholdery** | **PASS** | Oba zapowiadane błędy wykonane: `NameError: name '______' is not defined` (luki) i `TypeError: agg function failed …` (luka 2 → średnia). Grep `___` (dokładnie trzy podkreślenia) w źródłach `meda/`: **0**. Polski cudzysłów wewnątrz stringu kodu: **0**. Wszystkie 20 komórek kodu kompilują się realnym python3. |
+| **T5 — cudze UI** | **PASS z jawnym długiem** | Każda etykieta cytowana dosłownie w notebooku EDA.2 ma pokrycie w zrzutach z 2026-07-22: „New" / „Create a new repository" / „1 General" / „Owner \*" / „Repository name \*" / „Description" / „2 Configuration" / „Choose visibility \*" / „Public" / „Add README" / „Add .gitignore" / „Add license" / „Create repository" (meda-3); „Add file" / „Create new file" / „Upload files" (meda-4); „Kopiuj do GitHuba" / „Repozytorium" / „Gałąź" / „Ścieżka pliku\*" / „Komunikat zatwierdzenia" / „Utworzono za pomocą Colab" / „Podaj link do Colab" / „OK" / „Anuluj" (meda-2); „Zapisz kopię w usłudze GitHub jako plik Gist" (meda-1). Dwie etykiety bez zrzutu — patrz INFO-6: jedna cytowana jako prefiks potwierdzony zrzutem, druga przepisana funkcjonalnie. |
+
+## Brama — część B (self-critique)
+
+Rola: instruktor kursu dla literalnych zer, po wieczorze, w którym pół
+grupy utknęło na jednym kroku. Pięć słabości i co z nimi zrobiłam:
+
+1. **„Pieczątka mówi »nie zgadza się«, a ja nie wiem, w której luce
+   siedzi błąd".** Każda odmowa wskazuje teraz **numer luki** i czynność
+   („w luce 4 grupujesz po kolumnie rok"), nie tylko objaw.
+2. **Komórka „Twoja kolej" w EDA.1 była pustym polem.** Literalne zero
+   nie wie, od czego zacząć — wstawiony szkielet dwóch linii
+   z komentarzem-podpowiedzią (wzorzec M-PD).
+3. **Odmowa przy 32 wierszach nie mówiła, DLACZEGO wyszło inaczej.**
+   Dopisana diagnostyka dwóch najczęstszych liczb: **16** = brak pętli
+   wewnętrznej, **20** = brak `page-size` (dwie różne lekcje, dwa różne
+   powroty).
+4. **Atom uczył jednego konceptu, ale notebook EDA.2 groził przemyceniem
+   drugiego** (Gist obok repozytorium). Rozstrzygnięcie: Gist wchodzi
+   wyłącznie jako **ostrzeżenie**, bez tłumaczenia, czym jest i do czego
+   służy — jeden koncept na atom zostaje.
+5. **Sekcja „Zaliczenie" obiecywała więcej, niż check umie.** Ujednolicone
+   z rzeczywistością: pieczątka nie ocenia wykresu ani komórek tekstowych
+   i **nie odpytuje API ponownie** — oba limity wypisane w notebooku przy
+   pieczątce, nie tylko w dokumencie.
+
+## Co zostaje przed PR-em (nie moja warstwa)
+
+1. **Kontrakt-test `notebooks-meda.contract.test.ts` — Quinn.** Wzorzec:
+   `notebooks-msql.contract.test.ts`. Trzy rzeczy specyficzne dla tej
+   partii: (a) **notebook wychodzi do sieci** — scenariusze happy/odmów
+   trzeba odciąć od żywego BDL, podstawiając atrapę odpowiedzi
+   (`insertCells` z obiektem mającym `status_code` i `.json()`
+   + `replacements` na linii `odpowiedz = requests.get(url, params=parametry)`);
+   ładunek jest **niezależny od wartości stóp**, więc atrapa daje token
+   identyczny z żywym API (zweryfikowane). (b) **CI potrzebuje
+   `requests`** — dziś krok pipa instaluje tylko `pandas` i `duckdb`;
+   dopisanie pakietu należy do tego samego PR-a co test, który go wymaga
+   (wzorzec duckdb z partii 6), a wersje czyta się z
+   `srodowisko-colab.json` (ADR-016 D1). (c) regresje z tego logu:
+   luka 1 = `id` **nie może** dać tokenu (KRYT-1), trzy warianty
+   grupowania **muszą** dać ten sam token (WAŻN-3).
+2. **Publikacja do `skillbridge-notebooks`** (katalog `meda/`) + weryfikacja
+   `raw` 4×200 — Oliver/Ethan.
+3. **Ingest na prod — CZERWONA LINIA (ADR-010).** Backup gałęzią Neona,
+   bieg ×2 idempotentny, weryfikacja PO: **44 pozycje z `notebookUrl`**
+   (40 + 4 M-EDA), `eda-przeglad` bez URL-a, 1 lab M-EDA z checkami,
+   **0 wycieków logu QG do `contentMd`**. Wykonuje Ethan (mandat
+   `CLAUDE.md` v1.12), nie ja.
+4. **Sonda środowiska (ADR-016 D3)** przed ingestem — wyzwalacz „przed
+   każdym ingestem nowej partii notebooków" dotyczy tej partii wprost.
+5. **Zrzuty meda-5 i meda-6** (INFO-6) — akcja Darka; do reweryfikacji
+   `verifiedAt`.
+
+**Werdykt partii 7: GO Z NOTAMI** — 1 KRYT i 3 WAŻN znalezione **przed**
+oddaniem i wcielone, 6 INFO opisanych (2 zostawione świadomie jako limity
+z uzasadnieniem, 1 jako dług zrzutów).

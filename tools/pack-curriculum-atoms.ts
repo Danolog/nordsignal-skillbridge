@@ -786,8 +786,18 @@ const MANIFESTS: ModuleManifest[] = [
 		// Moduł 4-atomowy (podział M-EDA wg audytu pojemności D10). BEZ egzaminu MC —
 		// bramką jest capstone, więc zasady modułu definiują „przegląd przed capstone'em"
 		// (nie „przed egzaminem" jak M-PD/M-SQL/M-ML/M-LLM); pozycja przeglądu ta sama.
+		// Krok 4 partia 7: KAŻDY atom M-EDA ma notebook towarzyszący (jak F1–F3,
+		// M-PD, M-SQL); pieczątka tylko w labie EDA.4. Przegląd bez notebooka.
+		// EDA.2 jest atomem OPERACYJNYM — jego notebook jest zarazem materiałem,
+		// na którym student ćwiczy wysyłkę do repozytorium (ruch 2).
 		overrides: {
-			"EDA.4": { checks: CHECKS_EDA_4 },
+			"EDA.1": { notebookUrl: `${NOTEBOOKS_BASE}/meda/eda-1-api-json-bdl.ipynb` },
+			"EDA.2": { notebookUrl: `${NOTEBOOKS_BASE}/meda/eda-2-git-github-commit.ipynb` },
+			"EDA.3": { notebookUrl: `${NOTEBOOKS_BASE}/meda/eda-3-metoda-hipotezy.ipynb` },
+			"EDA.4": {
+				checks: CHECKS_EDA_4,
+				notebookUrl: `${NOTEBOOKS_BASE}/meda/eda-4-lab-pierwsze-pobranie-bdl.ipynb`,
+			},
 		},
 		przeglad: {
 			refs: [
