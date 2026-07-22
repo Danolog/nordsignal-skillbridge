@@ -11,7 +11,12 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-22 (noc) — NOTEBOOKI M-EDA NA MAIN I OPUBLIKOWANE (44/58); INGEST ZABLOKOWANY BRAMKĄ ŚRODOWISKA
+## STAN NA DZIŚ — 2026-07-22 (noc) — M-EDA (44/58) + ADR-016 NA MAIN; BRAMKA ŚRODOWISKA EGZEKWOWANA MASZYNOWO, SONDA OPUBLIKOWANA — CZEKA NA DARKA
+
+**Jednym zdaniem:** wszystko, co dało się zrobić bez człowieka, jest zrobione —
+notebooki M-EDA na produkcyjnym repo notebooków, bramka środowiska jest już kodem
+(nie deklaracją) i zwraca „zamknięta", sonda leży pod dosłownym adresem w runbooku.
+**Następny ruch należy do Darka: uruchomić sondę w Colabie.**
 
 ### Partia 7: notebooki M-EDA (4 szt.) — PR #206 (squash `ee07e11`), **44/58**
 
@@ -54,30 +59,68 @@
   Stan prod bez zmian od partii 6: **40 pozycji z notebookUrl**, moduły 9,
   pozycje 70, pytania 129.
 
-### 🔴 BRAMKA ŚRODOWISKA (ADR-016 D3) — ZAMKNIĘTA, CZEKA NA SONDĘ DARKA
+### ADR-016 SCALONY — PR #207 (squash `79efee2`) + PR #208 (squash `da1f703`)
 
-- `tools/content/notebooks/srodowisko-colab.json` → **`ostatnia_sonda: null`**.
-  Wersji **Pythona** i **`requests`** w Colabie **nikt u nas nie zmierzył** —
-  `zaobserwowano: null` w obu. Pin `requests` dotyczy wyłącznie CI.
-- Konsekwencja: **packer i ingest odmawiają modułów `M-*` (w tym `m-eda`)** do
-  czasu pierwszej sondy. Treść M-EDA czeka w kolejce; notebooki są już publiczne,
-  więc po ingest student zobaczy komplet.
-- **Odblokowuje ją wyłącznie Darek**: uruchomienie sondy w Colabie wg runbooka
-  `docs/runbooks/sonda-srodowiska-colab.md` (runbook + kod bramki siedzą na gałęzi
-  Evy — patrz niżej). Furtki `PACK_WERYFIKACJA=1` w packerze **ingest nie honoruje
-  i tak ma zostać** — obejście bramki jest zakazane.
-- ⚠ Na `main` bramka jest dziś **deklaracją, nie kodem**: `main` ma sam plik
-  deklaracji środowiska, a egzekucja (packer/ingest/sonda) leży na gałęzi Evy.
-  Do czasu jej scalenia bramkę trzyma dyscyplina, nie maszyna.
+Gałąź Evy `feat/adr016-wersje-silnikow-ci` po `rebase --onto main`, review **Leo:
+ACCEPT z uwagami**. Co weszło:
 
-### Gałąź Evy `feat/adr016-wersje-silnikow-ci` — NIE SCALONA (osobna runda)
+- **D1 — deklaracja jedynym źródłem wersji.** Krok pip w CI **czyta piny z pliku**
+  (`pnpm tsx tools/srodowisko-colab.ts --piny`) zamiast trzymać własną kopię.
+  Pierwszy realny przebieg przez Actions zielony: „Piny z deklaracji:
+  `duckdb~=1.3.2 pandas~=2.2.0 requests~=2.32.0`". Dopisanie biblioteki = wpis
+  w deklaracji, **nie** edycja workflow.
+- **D2 — tablica cytatów + skaner inwentarza.** Test **wykonuje** kod produkujący
+  komunikat i sprawdza, czy cytat z treści jest jego prefiksem; skaner wymaga, by
+  każdy kształt `NazwaBłędu: tekst` z artefaktów studenta miał wiersz w tablicy.
+- **D3 — sonda Colab** (notebook + `pnpm srodowisko:zapisz-sonde`, która sama liczy
+  flagę `rozjazd`; pomiar spoza Colaba odrzucany).
+- **D4 — bramka publikacji jest KODEM**, wpięta w packerze **i w ingeście**
+  (wzmocnienie Evy: spakowane JSON-y leżą w repo, ingest wziąłby je bez repacku).
+- **#208 — uwagi Leo F1/F2/F4/F6** (opis niżej).
 
-Leo zażądał dla niej osobnego review (uwaga R4). Zawiera: odczyt pinów z pliku
-w CI (dziś w `pr.yml` jest **kopia** wersji, rozjazd wywala kontrakt-test M-EDA),
-tablicę cytatów silników, skaner inwentarza, notebook sondy + `tools/zapisz-sonde.ts`,
-bramki publikacji, 50 testów kontraktu środowiska, runbook sondy. Kolizja do
-rozwiązania przy scalaniu: `.github/workflows/pr.yml` i notebook `eda-4` (na `main`
-jest wersja z naprawą U1 — **to `main` ma rację**).
+Bieg CI obu PR-ów: 7/7 zielonych; test **1507/1507** (#207), **1511/1511** (#208).
+
+### 🔴 BRAMKA ŚRODOWISKA (ADR-016 D4) — ZAMKNIĘTA I EGZEKWOWANA MASZYNOWO
+
+- `pnpm srodowisko:bramka` → **`❌ ZAMKNIĘTA [brak-sondy]`, kod wyjścia 1**
+  (sprawdzone na `main` po scaleniu). Powód: `srodowisko-colab.json` →
+  `ostatnia_sonda: null` — wersji **Pythona** i **`requests`** w Colabie nikt
+  u nas nie zmierzył.
+- Konsekwencja: **packer i ingest odmawiają modułów `M-*` (w tym `m-eda`)**.
+  To już nie jest dyscyplina, tylko kod — poprzedni wpis („bramka jest deklaracją,
+  nie kodem") **jest nieaktualny**.
+- Reszta modułów (L0/F1–F3) przechodzi świadomie: dług treści musi dać się naprawić
+  mimo starej sondy. To **kompromis operacyjny**, nie stwierdzenie, że moduły F nie
+  cytują silników — cytują (`IndentationError`, `SyntaxError`) i tam ten dług powstał.
+- Furtka `PACK_WERYFIKACJA=1` istnieje **wyłącznie** w teście determinizmu packera
+  (żeby PR-y nie czerwieniły się od stanu Colaba). **Ingest jej nie honoruje i tak
+  ma zostać** — obejście bramki jest zakazane.
+- **Odblokowuje ją wyłącznie Darek** — sonda w Colabie, patrz „CZEKA NA DARKA".
+
+### Sonda opublikowana i wykonalna (uwaga F6 Leo)
+
+Scalenie kładło notebook sondy tylko w `main` — Darek dostałby **404** przy
+pierwszym kroku runbooka. Domknięte:
+
+- **Publikacja:** `skillbridge-notebooks` @ **`32eb909`**, katalog `sonda/`.
+- **Dowód:** adres wzięty **dosłownie z kroku 1 runbooka** → Colab **200**,
+  `raw` **200**, plik **bajt w bajt** zgodny z `notebooks/sonda/sonda-srodowiska.ipynb`
+  z `main`.
+- Runbook dostał ostrzeżenie o kolejności `content:build-sonda` →
+  `content:build-notebooks` → **publikacja** przy każdej zmianie źródła sondy
+  (inaczej mierzy się starą wersję notebooka).
+- W README publicznego repo nota, że `sonda/` to narzędzie utrzymania, nie materiał
+  studenta (leży tam wyłącznie dlatego, że Colab otwiera tylko repo publiczne).
+
+### Uwagi Leo do ADR-016 — status
+
+| # | Rzecz | Status |
+|---|---|---|
+| **F1** | bramka była bezpieczna **właściwością dzisiejszej treści**, nie kodem: `syncQuestionBank` wygasza pytania konceptu nieobecnego w plikach, więc koncept po obu stronach granicy `M-*`/nie-`M-*` poszedłby cicho do wygaszenia na produkcji | **ZROBIONE** (#208): dwa testy niezmiennika. Zmierzony stan: **0** konceptów dzielonych, **0** konceptów w >1 module, **4** przecięcia `questionRef` — wszystkie `m-pandas`→`f3` (kierunek bezpieczny). Kierunek M-*→F dopuszczony **regułą z uzasadnieniem** (przy zamkniętej bramce znika KONSUMENT, właściciel jedzie normalnie), nie listą 4 refów. **Testy zweryfikowane mutacją** — po wstrzyknięciu naruszenia obie asercje czerwone z celną diagnozą |
+| **F2** | komentarz twierdził „bramka stoi tam, gdzie stoi ryzyko — przy `M-*`" | **ZROBIONE** — fałszywa klauzula skasowana w 2 miejscach, został prawdziwy powód zakresu |
+| **F4** | `${PIP_PINY}` rozwija się bez cudzysłowów → pin ze znakiem większości powłoka wykona jako przekierowanie, a pip zainstaluje pakiet **bez** ograniczenia wersji, na zielono | **ZROBIONE** — `sprawdzSpec()` w czytniku rzuca na operatorze spoza `~=`/`==` i na znaku spoza `[A-Za-z0-9._-]`; awaria wypada w kroku, który wartość produkuje |
+| **F3** | `/^m-/` to proxy po nazwie na własność „cytuje silnik" | **NOTA, bez akcji** — gdyby zawężać precyzyjniej, sterować inwentarzem cytatów, nie prefiksem nazwy modułu |
+| **F6** | runbook kazał szukać sondy zamiast podać adres | **ZROBIONE** — patrz wyżej |
 
 ### Nowe ADR-y i sign-offy (weszły z partią 7, zero zmian w kodzie produkcyjnym)
 
@@ -149,9 +192,18 @@ startem Maxa (ADR-018 §5–§7):
 
 ### CZEKA NA DARKA
 
-1. **Sonda środowiska w Colabie** — jedyny klucz do bramki ADR-016 D3, blokuje ingest
-   M-EDA (i każdego kolejnego modułu `M-*`) na produkcję. Runbook:
-   `docs/runbooks/sonda-srodowiska-colab.md` (po scaleniu gałęzi Evy).
+1. **🔴 SONDA ŚRODOWISKA W COLABIE — jedyna rzecz blokująca zaciąg M-EDA na produkcję.**
+   Wszystko po naszej stronie gotowe: notebook opublikowany, runbook z dosłownym adresem,
+   narzędzie zapisu wyniku, bramka egzekwowana kodem. Ok. 15 minut, wymaga zalogowanej
+   sesji przeglądarki (CI tego nie zrobi).
+   - Runbook: `docs/runbooks/sonda-srodowiska-colab.md`
+   - Adres sondy: `https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/sonda/sonda-srodowiska.ipynb`
+   - Po wykonaniu: wklej wynik do `docs/curation/sondy/sonda-srodowiska-RRRRMMDD.txt`,
+     potem `pnpm srodowisko:zapisz-sonde <plik>` (narzędzie **samo** liczy flagę
+     `rozjazd` — nie ustawiaj jej ręcznie) i `pnpm srodowisko:bramka`.
+   - **Kolejność do końca (wiążąca, rekomendacja Leo):** scalenie ✅ → publikacja
+     notebooków partii 7 ✅ i sondy ✅ → **sonda Darka** ⬅ *tu jesteśmy* →
+     `pnpm srodowisko:zapisz-sonde` → backup gałęzią Neona → **zaciąg M-EDA** (Ethan).
 2. **E-1 (Ryan)** — decyzja o klauzuli informacyjnej art. 13 wobec obietnicy złożonej
    uczelniom. Nie blokuje drabinki hintów.
 3. **Zrzuty `meda-5` i `meda-6`** + test labu EDA.4 na świeżym koncie (pkt 3–4 długów).
@@ -161,8 +213,14 @@ startem Maxa (ADR-018 §5–§7):
 
 ### Baseline `main` po tej sesji
 
-`ee07e11` (partia 7) + commit dokumentacyjny tej sesji. Publikacja notebooków:
-`skillbridge-notebooks` @ `c3c206f`. Prod bez zmian (40/58 na produkcji, 44/58 w repo).
+`da1f703` — trzy scalenia tej sesji: `ee07e11` (partia 7 M-EDA, #206), `79efee2`
+(ADR-016, #207), `da1f703` (uwagi Leo F1/F2/F4/F6, #208) + commity dokumentacyjne.
+CI zielone na wszystkich trzech; unit **1511/1511** (135 plików), tsc 0, Biome 0.
+Publikacja notebooków: `skillbridge-notebooks` @ **`32eb909`** (`meda/` z `c3c206f`
++ `sonda/`). Wdrożenie produkcyjne po każdym scaleniu **success**; smoke prod
+zgodny z bazą: `/` 200, `/login` 200, `/api/curriculum` 401, `/curriculum` 307.
+**Baza produkcyjna nietknięta** — backupu nie robiono, ingestu nie było
+(40/58 na produkcji, 44/58 w repo). Bramka: **ZAMKNIĘTA `[brak-sondy]`**.
 
 ## Poprzednio tego dnia — 🔴→🟢 FLAGI ZAPALONE NA PRODZIE; ETYKIETY UI ZWERYFIKOWANE ZRZUTAMI
 
