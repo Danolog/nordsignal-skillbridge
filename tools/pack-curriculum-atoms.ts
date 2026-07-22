@@ -40,6 +40,7 @@ import type {
 	AtomQuestionInput,
 	AtomResourceInput,
 } from "./content-curriculum-atoms";
+import { MODULY_BRAMKOWANE, sprawdzBramkeSrodowiska } from "./srodowisko-colab";
 
 const CURATION_DIR = join(process.cwd(), "docs", "curation");
 const OUT_DIR = join(process.cwd(), "tools", "content", "curriculum-atoms");
@@ -1221,7 +1222,44 @@ function packModule(manifest: ModuleManifest): AtomModuleContent {
 
 function main(): void {
 	mkdirSync(OUT_DIR, { recursive: true });
-	for (const manifest of MANIFESTS) {
+	// ── ADR-016 D4 — bramka publikacji treści ────────────────────────────────
+	// Dryf wersji silnika szkodzi dokładnie w chwili, w której treść trafia do
+	// studenta — więc stop stoi TU, a nie na PR-ze (czerwone CI, którego autor
+	// PR-a o froncie nie może naprawić, uczy zespół ignorować czerwone CI).
+	// Blokujemy WYŁĄCZNIE moduły M-* (te cytują silniki); L0/F1–F3 pakują się
+	// dalej, żeby dług treści (ADR-016 §2) dało się naprawić mimo starej sondy.
+	//
+	// PACK_WERYFIKACJA=1 — tryb SPRAWDZENIA DETERMINIZMU (kontrakt-test
+	// `curriculum-atoms.contract.test.ts`), nie publikacji. Pakuje wszystko
+	// i nie zwraca kodu błędu, ale KOMUNIKAT bramki i tak wypisuje. Ta furtka
+	// istnieje wyłącznie po to, żeby PR-y NIE robiły się czerwone od stanu
+	// sondy Colaba (ADR-016 D4 — czerwone CI, którego autor PR-a nie może
+	// naprawić, uczy zespół ignorować czerwone CI). Ingest jej NIE honoruje:
+	// tam bramka jest bezwarunkowa, bo tam kończy się produkcja.
+	const weryfikacja = process.env.PACK_WERYFIKACJA === "1";
+	const bramka = sprawdzBramkeSrodowiska();
+	const zablokowane = MANIFESTS.filter((m) => MODULY_BRAMKOWANE.test(m.moduleSlug));
+	const doSpakowania =
+		bramka.ok || weryfikacja
+			? MANIFESTS
+			: MANIFESTS.filter((m) => !MODULY_BRAMKOWANE.test(m.moduleSlug));
+	if (!bramka.ok && weryfikacja) {
+		console.error(
+			`\n⚠ BRAMKA ŚRODOWISKA ZAMKNIĘTA [${bramka.powod}] — ADR-016 D4\n` +
+				`   ${bramka.komunikat}\n` +
+				"   Tryb PACK_WERYFIKACJA=1: pakuję mimo to (sprawdzenie determinizmu).\n" +
+				"   PUBLIKACJA modułów M-* pozostaje zablokowana — ingest tego nie przepuści.\n",
+		);
+	}
+	if (!bramka.ok && !weryfikacja) {
+		console.error(`\n❌ BRAMKA ŚRODOWISKA ZAMKNIĘTA [${bramka.powod}] — ADR-016 D4`);
+		console.error(`   ${bramka.komunikat}`);
+		console.error(
+			`   NIE spakowano ${zablokowane.length} modułów: ` +
+				`${zablokowane.map((m) => m.moduleSlug).join(", ")}.\n`,
+		);
+	}
+	for (const manifest of doSpakowania) {
 		const content = packModule(manifest);
 		const outPath = join(OUT_DIR, `${manifest.moduleSlug}.json`);
 		writeFileSync(outPath, `${JSON.stringify(content, null, "\t")}\n`);
@@ -1233,6 +1271,9 @@ function main(): void {
 	// Format kanoniczny = Biome (lint bramkuje te pliki; determinizm testu
 	// kontraktowego porównuje wynik packera z commitowanym stanem).
 	execFileSync("pnpm", ["exec", "biome", "format", "--write", OUT_DIR], { stdio: "pipe" });
+	// Kod wyjścia 1 PO zapakowaniu reszty: automat (repack → ingest) zatrzymuje
+	// się, a kurator dalej ma świeże moduły spoza bramki.
+	if (!bramka.ok && !weryfikacja) process.exit(1);
 }
 
 const isDirectRun =

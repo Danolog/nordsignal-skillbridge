@@ -135,6 +135,12 @@ describe("1E.2 · kontrakt treści atomów — cały zestaw (9 modułów)", () =
 		execFileSync("pnpm", ["exec", "tsx", "tools/pack-curriculum-atoms.ts"], {
 			cwd: process.cwd(),
 			stdio: "pipe",
+			// PACK_WERYFIKACJA=1 — ten test sprawdza DETERMINIZM przekształcenia,
+			// nie gotowość do publikacji. Bez tego bramka środowiska (ADR-016 D4:
+			// stara/brakująca sonda Colaba) czerwieniłaby każdy PR — a to jest
+			// dokładnie ten skutek uboczny, którego ADR-016 D4 zakazuje.
+			// Bramka publikacji stoi w ingeście i jest bezwarunkowa.
+			env: { ...process.env, PACK_WERYFIKACJA: "1" },
 		});
 		for (const m of MODULES) {
 			const regenerated = readFileSync(join(ATOMS_DIR, `${m}.json`), "utf8");

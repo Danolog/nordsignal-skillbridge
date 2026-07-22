@@ -51,6 +51,7 @@ import {
 	validateContentSet,
 } from "./content-curriculum-atoms";
 import { itemContentHash } from "./ingest-question-bank";
+import { MODULY_BRAMKOWANE, sprawdzBramkeSrodowiska } from "./srodowisko-colab";
 
 /** Kanoniczny JSON (klucze sortowane rekurencyjnie) — porównania niezależne
  * od kolejności kluczy JSONB Postgresa (jsonb sortuje klucze po swojemu). */
@@ -577,7 +578,27 @@ export async function runCurriculumIngest(
 async function main(): Promise<void> {
 	assertTestDb(process.env.DATABASE_URL, "DATABASE_URL");
 	const ladder = JSON.parse(readFileSync(LADDER_PATH, "utf8")) as Ladder;
-	const contents = readContentFiles();
+	const wszystkie = readContentFiles();
+	// ── ADR-016 D4 — bramka publikacji, druga (i skuteczniejsza) połowa ──────
+	// ADR zakłada, że odmowa PAKOWANIA blokuje ingest. Blokuje tylko wtedy, gdy
+	// ktoś przed ingestem repakuje — a spakowane JSON-y leżą w repo i ingest
+	// weźmie je nawet bez repacku. Dlatego ta sama bramka stoi TU, przy jedynym
+	// kroku, który naprawdę dotyka produkcji (świadome wzmocnienie, Eva 2026-07-22).
+	const bramka = sprawdzBramkeSrodowiska();
+	const wstrzymane = wszystkie.filter((c) => MODULY_BRAMKOWANE.test(c.moduleSlug));
+	const contents = bramka.ok
+		? wszystkie
+		: wszystkie.filter((c) => !MODULY_BRAMKOWANE.test(c.moduleSlug));
+	if (!bramka.ok) {
+		console.error(`\n❌ BRAMKA ŚRODOWISKA ZAMKNIĘTA [${bramka.powod}] — ADR-016 D4`);
+		console.error(`   ${bramka.komunikat}`);
+		console.error(
+			`   WSTRZYMANE moduły (${wstrzymane.length}): ` +
+				`${wstrzymane.map((c) => c.moduleSlug).join(", ")}\n` +
+				"   Pozostałe moduły ingest przetwarza normalnie (dług treści musi dać się " +
+				"naprawić mimo starej sondy). Kod wyjścia 1 — automat się zatrzymuje.\n",
+		);
+	}
 	const stats = await runCurriculumIngest(process.env.DATABASE_URL as string, ladder, contents);
 	console.log(
 		`✅ Ingest curriculum OK: ścieżka '${ladder.path}', moduły=${stats.modules}, ` +
@@ -586,6 +607,13 @@ async function main(): Promise<void> {
 			`   treść: pliki=${stats.contentFiles}, recompute module_progress: ` +
 			`${stats.downgraded} downgrade(ów) completed→in_progress`,
 	);
+	if (!bramka.ok) {
+		console.error(
+			`\n⚠ Ingest ZAKOŃCZONY CZĘŚCIOWO: moduły M-* pominięte (bramka ADR-016 D4: ` +
+				`${bramka.powod}). Treść tych modułów na produkcji pozostaje w poprzedniej wersji.`,
+		);
+		process.exit(1);
+	}
 }
 
 const isDirectRun =
