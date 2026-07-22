@@ -1,0 +1,30 @@
+{
+	"_opis": "ADR-016 — JEDYNE źródło prawdy o środowisku wykonawczym, pod które napisana i zweryfikowana jest treść notebooków. Czytają: krok pip w .github/workflows/pr.yml, kontrakt-test srodowisko-silnikow. NIE wpisuj wersji nigdzie indziej.",
+	"_legenda": {
+		"pin": "co instalujemy w CI (nasza decyzja)",
+		"zaobserwowano": "co realnie stoi w Colabie (pomiar sondą, fakt zewnętrzny)",
+		"zweryfikowano": "data pomiaru; null = nigdy nie mierzone",
+		"rozjazd": "true = Colab rozjechał się z pinem; blokuje pakowanie modułów M-* do czasu decyzji Ethana (ADR-016 D4)"
+	},
+	"python": {
+		"pin": null,
+		"zakres": "3.11 - 3.13",
+		"zaobserwowano": null,
+		"zweryfikowano": null,
+		"nota": "Wersji Pythona w Colabie NIKT u nas nie zmierzył (przeszukanie repo 2026-07-22: zero wystapien). Zakres jest zalozeniem, nie pomiarem - pierwsza sonda (ADR-016 D3) go zastapi liczba."
+	},
+	"pandas": {
+		"pin": "~=2.2.0",
+		"zaobserwowano": "2.2.2",
+		"zweryfikowano": "2026-07-11",
+		"zrodlo": "research Sophii 2026-07-11 (Colab backend-info)"
+	},
+	"duckdb": {
+		"pin": "~=1.3.2",
+		"zaobserwowano": "1.3.2",
+		"zweryfikowano": "2026-07-11",
+		"zrodlo": "research Sophii 2026-07-11 (Colab backend-info); maszyna dev ma 1.5.x - pin celowo do COLABA, nie do dev (partia 6, PR #205)"
+	},
+	"rozjazd": false,
+	"ostatnia_sonda": null
+}
