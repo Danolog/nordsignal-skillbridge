@@ -68,12 +68,16 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Krok 4 partia 5+6: kontrakt-testy notebooków M-PD/M-SQL wykonują komórki
-      # realnym python3 (harness ADR-015). M-PD importuje pandas, laby M-SQL
-      # dodatkowo duckdb — wersje jak w Colab (pandas 2.2.x, duckdb 1.3.2;
-      # research Sophii 2026-07-11). Pinujemy do wersji COLABA, nie lokalnej
-      # (maszyna dev ma duckdb 1.5.x) — student ma dostać to, co przetestowane.
-      - run: python3 -m pip install "pandas~=2.2.0" "duckdb~=1.3.2"
+      # Krok 4 partia 5+6+7: kontrakt-testy notebooków M-PD/M-SQL/M-EDA wykonują
+      # komórki realnym python3 (harness ADR-015). M-PD importuje pandas, laby
+      # M-SQL dodatkowo duckdb, a M-EDA — requests (EDA.1/EDA.4 wychodzą do API
+      # GUS BDL; test podmienia samo WYWOŁANIE na atrapę, więc `import requests`
+      # wykonuje się naprawdę). Pinujemy do wersji COLABA, nie lokalnej (maszyna
+      # dev ma duckdb 1.5.x) — student ma dostać to, co przetestowane.
+      # ⚠ ŹRÓDŁO PRAWDY WERSJI: tools/content/notebooks/srodowisko-colab.json
+      # (ADR-016 D1). Ta linia jest jego kopią do czasu wpięcia odczytu z pliku;
+      # rozjazd kopii z deklaracją wywala test notebooks-meda.contract.test.ts.
+      - run: python3 -m pip install "pandas~=2.2.0" "duckdb~=1.3.2" "requests~=2.32.0"
         env:
           PIP_BREAK_SYSTEM_PACKAGES: "1"
       - run: pnpm test:run
