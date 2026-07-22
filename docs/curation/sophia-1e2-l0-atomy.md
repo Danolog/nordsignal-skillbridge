@@ -774,12 +774,28 @@ wyłącznie pogłębienie (EN poza ścieżką krytyczną; wideo — polskie).
   jednej wartości → L0.4 completion z lukami (rozgrzewka) → L0.4 zadanie
   samodzielne. L0 realizuje backward fading zanim jeszcze zacznie się F1.
 - **TODO przed ingest 1E.2 (z przeglądu QG):**
-  1. Screenshot kontrolny dwóch etykiet UI, których nie dało się potwierdzić
-     litera-w-literę web-researchem: pełny tytuł ostrzeżenia o cudzym
-     notebooku i dokładny format nazwy kopii („Kopia…") — treść pisana
-     ostrożnie, więc korekta będzie kosmetyczna.
-  2. Seans kontrolny wideo PL (YouTube wlRT_MZOvBE, ~22 min) przed
-     zatwierdzeniem go jako trzeciej funkcji QG-5.
+  1. ✅ **WYKONANE (2026-07-22) — ZERO KOREKT, treść potwierdzona.**
+     Zrzuty Darka: `docs/curation/screenshots/l0-a1-ostrzezenie-cudzy-notatnik-20260722.png`
+     i `l0-a2-nazwa-kopii-20260722.png`.
+     - **Ostrzeżenie o cudzym notebooku:** pełny tytuł brzmi
+       „**Ostrzeżenie: Google nie jest autorem tego notatnika**", treść:
+       „Ten notatnik został wczytany ze strony GitHub. Może on wymagać
+       dostępu do Twoich danych przechowywanych w Google lub odczytu
+       informacji i danych uwierzytelniających z innych sesji. Sprawdź kod
+       źródłowy w tym notatniku przed jego uruchomieniem.", przyciski
+       „Anuluj" / „**Uruchom mimo to**". Cytat w L0.1 („kliknij «Uruchom
+       mimo to»", „to standardowe ostrzeżenie przy każdym cudzym
+       notebooku") jest **dosłownie zgodny** — a uprzedzenie studenta, że
+       ostrzeżenie jest normalne, okazuje się tym cenniejsze, że realny
+       dialog mówi o „dostępie do danych" i „danych uwierzytelniających".
+     - **Format nazwy kopii:** realnie „**Kopia notatnika** l0-1-komputer-wykonal-moj-kod.ipynb".
+       L0.2 mówi „jej nazwa zaczyna się od «Kopia…»" i cytuje w hincie 2
+       kartę „Kopia notatnika…" — **trafione litera-w-literę**, ostrożna
+       redakcja się obroniła.
+  2. ✅ **WYKONANE (2026-07-22) — seans kontrolny odbyty, werdykt Darka:
+     ZATWIERDZAM jako zasób L0** (YouTube wlRT_MZOvBE, ~22 min). Wpis
+     w tabeli zasobów zostaje; `verifiedAt` = 2026-07-11 (metadane),
+     seans potwierdzony 2026-07-22.
   3. Zbudowanie 4 notebooków L0 (komórki wg checklist + komórka-pieczątka)
      i test przebiegu ≤15 min dla L0.1 na czystym koncie Google.
 

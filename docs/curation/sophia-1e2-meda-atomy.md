@@ -232,13 +232,20 @@ rubryka.
 
 Twój obieg pracy — trzy ruchy, wszystkie klikane:
 
-1. **Repo zakładasz na GitHubie** (przycisk „New repository"): nazwa
-   projektu, opis jednym zdaniem, widoczność publiczna (Passport
-   linkuje do publicznych prac). GitHub mówi wyłącznie po angielsku —
+1. **Repo zakładasz na GitHubie** (zielony przycisk „New" → formularz
+   „Create a new repository"): „Repository name" — nazwa projektu,
+   „Description" — opis jednym zdaniem, „Choose visibility" — „Public"
+   (Passport linkuje do publicznych prac); zatwierdza przycisk
+   „Create repository" na dole. GitHub mówi wyłącznie po angielsku —
    etykiety podajemy dosłownie, z polskim opisem, co robią.
 2. **Notebook wysyłasz z Colab**: menu **Plik → Zapisz kopię w usłudze GitHub**
-   — Colab poprosi (raz) o połączenie kont, potem wskazujesz repo
-   i wpisujesz **opis commita**. Każde takie zapisanie = nowy commit;
+   — Colab poprosi (raz) o połączenie kont, a potem otworzy okno
+   **„Kopiuj do GitHuba"**: wybierasz repo („Repozytorium") i gałąź
+   („Gałąź": `main`), a opis commita wpisujesz w polu
+   **„Komunikat zatwierdzenia"**. ⚠ Colab wstawia tam z góry
+   „Utworzono za pomocą Colab" — **nadpisz to**, inaczej cała Twoja
+   historia będzie ciągiem identycznych zdań, które nie mówią nic
+   (a rubryka żąda sensownej historii). Każde takie zapisanie = nowy commit;
    pracujesz etapami, więc zapisujesz PO KAŻDYM domkniętym etapie,
    z opisem mówiącym CO się zmieniło.
 3. **Pliki tekstowe dodajesz w GitHubie** (przycisk „Add file" →
@@ -314,11 +321,14 @@ notebook?**
    → commit z Colab (wielokrotnie, po każdym etapie) → README/requirements
    (raz, w GitHubie). Zgubisz się w klikaniu — wróć do pytania „który
    z trzech ruchów robię?".
-2. **Szkielet:** Ruch 1: github.com → „New repository" → nazwa np.
-   `eda-bdl-bezrobocie` → Public → Create. Ruch 2: w Colab **Plik →
-   Zapisz kopię w usłudze GitHub** → przy pierwszym razie okno
-   „Authorize" (zatwierdź) → w oknie zapisu wybierz repo i wpisz opis
-   commita → OK; wejdź na GitHub i ZOBACZ swój commit na liście. Ruch 3:
+2. **Szkielet:** Ruch 1: github.com → przycisk „New" → w formularzu
+   „Create a new repository": „Repository name" np. `eda-bdl-bezrobocie`
+   → „Choose visibility" na „Public" → „Create repository". Ruch 2:
+   w Colab **Plik → Zapisz kopię w usłudze GitHub** → przy pierwszym
+   razie okno autoryzacji GitHuba (zatwierdź) → w oknie „Kopiuj do
+   GitHuba" wybierz repo, a w polu „Komunikat zatwierdzenia" ZAMIEŃ
+   domyślne „Utworzono za pomocą Colab" na swój opis → OK; wejdź na
+   GitHub i ZOBACZ swój commit na liście. Ruch 3:
    w repo „Add file" → „Create new file" → nazwa `README.md` → treść →
    „Commit changes" (to też commit!).
 3. **Pełne rozwiązanie z objaśnieniem:** Po trzech ruchach Twoje repo ma:
@@ -659,6 +669,32 @@ błędu" w eskalacji — D5c):
   Screenshot kontrolny przy budowie notebooków (konwencja L0);
   reweryfikacja kwartalna verifiedAt (D4) obejmuje ten atom w pierwszej
   kolejności.
+- **⚠ KOREKTA PO SCREENSHOTACH KONTROLNYCH (Darek, 2026-07-22)** —
+  zrzuty w `docs/curation/screenshots/meda-1..4-*-20260722.png`. Research
+  z 2026-07-11 zgadzał się co do MECHANIZMÓW, ale trzy etykiety nie
+  istnieją dosłownie w dzisiejszym UI — treść poprawiona:
+  1. **GitHub nie ma przycisku „New repository"** — jest przycisk „New",
+     który otwiera formularz **„Create a new repository"** (sekcje
+     „1 General" / „2 Configuration": „Repository name", „Description",
+     „Choose visibility" → „Public", toggle „Add README") zatwierdzany
+     przyciskiem **„Create repository"**. Formularz przeprojektowany
+     względem opisu w docs.github.com.
+  2. **Okno zapisu z Colab nazywa się „Kopiuj do GitHuba"**, a pole opisu
+     commita ma etykietę **„Komunikat zatwierdzenia"** (nie „opis
+     commita" — to był termin funkcjonalny, nie etykieta). Pola: repo,
+     „Gałąź", „Ścieżka pliku", checkbox „Podaj link do Colab" (checkbox
+     „Include private repos" faktycznie NIE występuje przy zapisie —
+     research trafny).
+  3. **ZNALEZISKO DYDAKTYCZNE (nie kosmetyka):** Colab wstawia do pola
+     „Komunikat zatwierdzenia" domyślne **„Utworzono za pomocą Colab"**.
+     Student, który go nie nadpisze, zbuduje historię identycznych,
+     pustych znaczeniowo commitów — czyli dokładnie to, co atom piętnuje
+     („update", „final") i co oblewa kryterium rubryki „sensowna historia
+     commitów". Treść ruchu 2 i hint 2 dostały jawny nakaz nadpisania.
+  Potwierdzone bez zmian: „Add file" → „Create new file" (dosłownie);
+  brak pozycji „Zapisz kopię w usłudze GitHub" w menu **podglądu cudzego
+  notebooka** — dokładnie jak przewiduje hint 3 („jesteś w podglądzie,
+  nie we własnej kopii"), zrzut meda-1 to potwierdza realnym UI.
 - **Kamienie capstone'u:** propozycja K1–K4 wyżej (4 szt., widełki D3);
   K3 wymaga checku HTTP po linku repo (deterministyczny, bez sandboxa);
   definicja finalna + implementacja przy 1E.6. SLA vivy + ochrona
@@ -681,10 +717,12 @@ błędu" w eskalacji — D5c):
   anonimowo 5/s, 100/15 min, 1000/12 h; klucz (rejestracja, nagłówek
   X-ClientId) podwaja i więcej — pierwsza pomoc poz. 1 cytuje 100/15 min.
 - **TODO przed ingest 1E.2:**
-  1. Screenshoty kontrolne UI Colab↔GitHub przy budowie notebooków
-     (etykiety zweryfikowane researchem — patrz wyżej). Wideo PL: brak
-     materiału „bez terminala" na rynku — dwa kandydaty z obowiązkową
-     adnotacją (tabela zasobów); seans kontrolny przed ingest.
+  1. ✅ **WYKONANE (2026-07-22)** — screenshoty kontrolne UI Colab↔GitHub
+     dostarczone przez Darka (4 zrzuty w `docs/curation/screenshots/`);
+     trzy rozjazdy etykiet wcielone do treści, patrz „KOREKTA PO
+     SCREENSHOTACH" wyżej. Wideo PL: brak materiału „bez terminala"
+     na rynku — dwa kandydaty z obowiązkową adnotacją (tabela zasobów);
+     seans kontrolny przed ingest.
   2. Budowa 4 notebooków + strona pierwszej pomocy; test labu EDA.4 na
      świeżym koncie (autoryzacja Colab↔GitHub od zera).
   3. Rampy briefingu capstone'u wg mapy luk audytu partii 1 (pozycja
