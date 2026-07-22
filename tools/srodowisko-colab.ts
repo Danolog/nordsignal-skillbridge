@@ -30,6 +30,23 @@ export const MAX_WIEK_SONDY_DNI = 100;
 /** Moduły, których dotyczy bramka publikacji (ADR-016 D4: „moduły M-*"). */
 export const MODULY_BRAMKOWANE = /^m-/;
 
+/**
+ * Operatory dopuszczone w pinie deklaracji.
+ *
+ * Powód, dla którego walidacja siedzi TUTAJ, a nie w teście (uwaga F4 Leo):
+ * wynik `pinySpec()` trafia do `pip install ${PIP_PINY}` **bez cudzysłowów**
+ * (celowo — jedna zmienna niesie wiele specyfikacji). Znak spoza tej listy
+ * powłoka zinterpretuje ZANIM cokolwiek zdąży go odrzucić: pin z `>` zrobi
+ * przekierowanie do pliku, a krok pip zainstaluje pakiet bez ograniczenia
+ * wersji i przejdzie na zielono. Kontrakt-test biegnie dopiero PO instalacji,
+ * więc jako bramka jest spóźniony. Awaria ma wypaść w kroku, który tę wartość
+ * produkuje.
+ */
+export const OPERATORY_PINU = ["~=", "=="] as const;
+
+/** Nazwa pakietu i wersja: wyłącznie znaki bezpieczne dla powłoki (PEP 508 i tak węższy). */
+const BEZPIECZNY_CZLON = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
 export type PakietDeklaracja = {
 	pin?: string | null;
 	zakres?: string | null;
@@ -78,8 +95,36 @@ export function zapiszSrodowisko(
 export function pinySpec(srodowisko: Srodowisko = czytajSrodowisko()): string[] {
 	return Object.entries(srodowisko.pakiety)
 		.filter(([, p]) => typeof p.pin === "string" && p.pin.length > 0)
-		.map(([nazwa, p]) => `${nazwa}${p.pin}`)
+		.map(([nazwa, p]) => sprawdzSpec(nazwa, p.pin as string))
 		.sort();
+}
+
+/**
+ * Waliduje pojedynczą specyfikację i zwraca ją w postaci gotowej dla pipa.
+ * Rzuca na wszystkim, czego powłoka mogłaby użyć inaczej niż jako tekst
+ * (operator spoza `OPERATORY_PINU`, znak spoza `BEZPIECZNY_CZLON`) — patrz
+ * komentarz przy `OPERATORY_PINU`.
+ */
+export function sprawdzSpec(nazwa: string, pin: string): string {
+	const operator = OPERATORY_PINU.find((op) => pin.startsWith(op));
+	if (!operator) {
+		throw new Error(
+			`srodowisko-colab.json: pakiet „${nazwa}" ma pin „${pin}" z nieobsługiwanym ` +
+				`operatorem. Dozwolone: ${OPERATORY_PINU.join(", ")}. Wartość idzie do ` +
+				"`pip install` bez cudzysłowów — inny operator (np. znak większości) powłoka " +
+				"wykona jako przekierowanie, " +
+				"zamiast przekazać go pipowi.",
+		);
+	}
+	const wersja = pin.slice(operator.length);
+	if (!BEZPIECZNY_CZLON.test(nazwa) || !BEZPIECZNY_CZLON.test(wersja)) {
+		throw new Error(
+			`srodowisko-colab.json: specyfikacja „${nazwa}${pin}" zawiera znak spoza ` +
+				"[A-Za-z0-9._-]. Ta wartość jest rozwijana przez powłokę w kroku pip — " +
+				"nie przepuszczam znaków, które powłoka mogłaby zinterpretować.",
+		);
+	}
+	return `${nazwa}${operator}${wersja}`;
 }
 
 /**
@@ -137,9 +182,12 @@ export type WynikBramki = { ok: true } | { ok: false; powod: string; komunikat: 
  *  2. sonda starsza niż 100 dni albo nigdy nie uruchomiona — bez tego flaga
  *     `rozjazd` zostałaby `false` na zawsze i cała bramka byłaby martwa.
  *
- * ŚWIADOMIE NIE blokuje modułów L0/F1–F3: kurator musi móc naprawić dług treści
- * (ADR-016 §2) nawet wtedy, gdy sonda jest przeterminowana. Bramka stoi tam,
- * gdzie stoi ryzyko — przy treści cytującej silniki (moduły M-*).
+ * ŚWIADOMIE NIE blokuje modułów L0/F1–F3 — i to jest kompromis, nie własność
+ * ryzyka. Moduły F **też** cytują silniki (`IndentationError`, `SyntaxError`),
+ * a dług z ADR-016 §2 mieszka właśnie tam; zakres `M-*` wybraliśmy dlatego, że
+ * kurator musi móc naprawić ten dług nawet wtedy, gdy sonda jest przeterminowana
+ * albo jej nie ma. Nie czytaj tego jako „moduły F nie cytują silników" — to
+ * przekonanie wpuściło ten dług na produkcję (uwaga F2 Leo).
  */
 export function sprawdzBramkeSrodowiska(
 	srodowisko: Srodowisko = czytajSrodowisko(),

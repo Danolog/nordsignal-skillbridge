@@ -1226,8 +1226,11 @@ function main(): void {
 	// Dryf wersji silnika szkodzi dokładnie w chwili, w której treść trafia do
 	// studenta — więc stop stoi TU, a nie na PR-ze (czerwone CI, którego autor
 	// PR-a o froncie nie może naprawić, uczy zespół ignorować czerwone CI).
-	// Blokujemy WYŁĄCZNIE moduły M-* (te cytują silniki); L0/F1–F3 pakują się
-	// dalej, żeby dług treści (ADR-016 §2) dało się naprawić mimo starej sondy.
+	// Blokujemy WYŁĄCZNIE moduły M-*, a L0/F1–F3 pakują się dalej — żeby dług
+	// treści (ADR-016 §2) dało się naprawić mimo starej sondy. To kompromis
+	// operacyjny, NIE stwierdzenie, że moduły F nie cytują silników: cytują
+	// (`IndentationError`, `SyntaxError`) i właśnie tam ten dług powstał
+	// (uwaga F2 Leo).
 	//
 	// PACK_WERYFIKACJA=1 — tryb SPRAWDZENIA DETERMINIZMU (kontrakt-test
 	// `curriculum-atoms.contract.test.ts`), nie publikacji. Pakuje wszystko

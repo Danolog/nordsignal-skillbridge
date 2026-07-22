@@ -21,9 +21,21 @@ skąd wziąć wartości tej flagi.
 
 ## Krok po kroku
 
-1. **Otwórz sondę w Colabie.** Notebook: `notebooks/sonda/sonda-srodowiska.ipynb`
-   (publikowany do publicznego repo notebooków razem z resztą — link „Otwórz
-   w Colab" jak przy każdym labie).
+1. **Otwórz sondę w Colabie — ten adres, nic więcej do szukania:**
+
+   ```
+   https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/sonda/sonda-srodowiska.ipynb
+   ```
+
+   (Źródło w repo aplikacji: `notebooks/sonda/sonda-srodowiska.ipynb`; publikacja
+   do publicznego `Danolog/skillbridge-notebooks`, katalog `sonda/` — Colab otwiera
+   notebooki wyłącznie z repozytoriów publicznych, a repo aplikacji jest prywatne.
+   Weryfikacja adresu: publikacja `32eb909`, odpowiedź 200, plik bajt w bajt zgodny
+   z zbudowanym w repo.)
+
+   ⚠ **Sonda musi być opublikowana po każdej zmianie jej źródła** — inaczej mierzysz
+   starą wersję notebooka. Kolejność: `pnpm content:build-sonda` →
+   `pnpm content:build-notebooks` → publikacja `.ipynb` do repo notebooków.
 2. **Świeża sesja.** Menu: *Środowisko wykonawcze → Uruchom ponownie sesję*.
    Chodzi o to, żeby zmierzyć czyste środowisko Colaba, a nie stan po czyichś
    wcześniejszych instalacjach.

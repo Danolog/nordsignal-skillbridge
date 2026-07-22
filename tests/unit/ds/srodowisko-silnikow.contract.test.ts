@@ -38,6 +38,7 @@ import {
 	pinPasuje,
 	pinySpec,
 	sprawdzBramkeSrodowiska,
+	sprawdzSpec,
 	wiekSondyDni,
 	zakresPasuje,
 } from "../../../tools/srodowisko-colab";
@@ -135,6 +136,24 @@ describe("ADR-016 poziom 1 — deklaracja środowiska jest jedynym źródłem we
 		expect(piny.length).toBeGreaterThanOrEqual(3);
 		for (const spec of piny) expect(spec).toMatch(/^[a-z][\w-]*(~=|==)\d/);
 		expect([...piny].sort()).toEqual(piny); // stabilna kolejność = stabilny cache CI
+	});
+
+	// Uwaga F4 Leo: `${PIP_PINY}` rozwija się w workflow BEZ cudzysłowów (celowo —
+	// jedna zmienna niesie wiele specyfikacji), więc znak, który powłoka rozumie,
+	// zostanie wykonany, zanim jakikolwiek regex zdąży go odrzucić: pin ze znakiem
+	// większości zrobi przekierowanie do pliku, a pip zainstaluje pakiet BEZ
+	// ograniczenia wersji i krok przejdzie na zielono. Dlatego bramka siedzi
+	// w czytniku, czyli w kroku, który tę wartość produkuje.
+	it("czytnik ODRZUCA pin z operatorem spoza listy — awaria wypada przed instalacją", () => {
+		expect(() => sprawdzSpec("pandas", ">=2.2.0")).toThrow(/nieobsługiwanym operatorem/);
+		expect(() => sprawdzSpec("pandas", "2.2.0")).toThrow(/nieobsługiwanym operatorem/);
+	});
+
+	it("czytnik ODRZUCA znak, który powłoka mogłaby zinterpretować", () => {
+		expect(() => sprawdzSpec("pandas", "~=2.2.0; rm -rf /")).toThrow(/znak spoza/);
+		expect(() => sprawdzSpec("pandas", "~=$(id)")).toThrow(/znak spoza/);
+		expect(() => sprawdzSpec("pan das", "~=2.2.0")).toThrow(/znak spoza/);
+		expect(sprawdzSpec("pandas", "~=2.2.0")).toBe("pandas~=2.2.0"); // kontrola dodatnia
 	});
 
 	it("zainstalowane wersje zgadzają się z pinami deklaracji (TWARDE w CI, ostrzeżenie lokalnie)", () => {
