@@ -814,8 +814,18 @@ const MANIFESTS: ModuleManifest[] = [
 			"sql-join-ziarno": "JOIN i ziarno wiersza",
 			"sql-funkcje-okna": "Funkcje okna: agregat, który nie zjada wierszy",
 		},
+		// Krok 4 partia 6: KAŻDY atom M-SQL ma notebook towarzyszący (jak F1–F3,
+		// M-PD); pieczątka tylko w labach SQL.4/SQL.7. Przegląd bez notebooka.
 		overrides: {
-			"SQL.4": { checks: CHECKS_SQL_4 },
+			"SQL.1": { notebookUrl: `${NOTEBOOKS_BASE}/msql/sql-1-zapytanie-select.ipynb` },
+			"SQL.2": { notebookUrl: `${NOTEBOOKS_BASE}/msql/sql-2-where-order-by.ipynb` },
+			"SQL.3": { notebookUrl: `${NOTEBOOKS_BASE}/msql/sql-3-group-by-agregaty.ipynb` },
+			"SQL.4": {
+				checks: CHECKS_SQL_4,
+				notebookUrl: `${NOTEBOOKS_BASE}/msql/sql-4-lab-godziny-szczytu.ipynb`,
+			},
+			"SQL.5": { notebookUrl: `${NOTEBOOKS_BASE}/msql/sql-5-join-ziarno.ipynb` },
+			"SQL.6": { notebookUrl: `${NOTEBOOKS_BASE}/msql/sql-6-funkcje-okna.ipynb` },
 			// Lab samodzielny — meta mówi „wszystkie z M-SQL" (bez slugów).
 			"SQL.7": {
 				concepts: [
@@ -824,6 +834,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "sql-funkcje-okna" },
 				],
 				checks: CHECKS_SQL_7,
+				notebookUrl: `${NOTEBOOKS_BASE}/msql/sql-7-lab-raport-stref.ipynb`,
 			},
 		},
 		przeglad: {

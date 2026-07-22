@@ -33,6 +33,18 @@ const HARNESS = join(ROOT, "tests", "unit", "ds", "notebook-stamp-harness.py");
 const STUDENT_ID = "student-parytet-mpd-fixture";
 const itemIdFor = (slug: string) => `item-${slug}-fixture`;
 
+/**
+ * Limit dla testów odpalających harness (osobny proces python3 importujący
+ * pandas). Na świeżej maszynie CI — biblioteki dopiero co zainstalowane
+ * pipem, zero cache'u `.pyc` — pierwszy import potrafi zająć kilka sekund,
+ * a projekt `unit` nie ustawia `testTimeout`, więc obowiązuje domyślne 5 s
+ * Vitesta. Objaw: PIERWSZY test z harnessem czerwony („Test timed out in
+ * 5000ms"), wszystkie kolejne zielone po ~0,3 s — i zielone przy każdym
+ * następnym biegu, bo cache jest już ciepły. Limit hojny celowo: ma łapać
+ * zawieszkę, nie zimny start. (Ten sam wzorzec w notebooks-msql.)
+ */
+const HARNESS_TIMEOUT_MS = 30_000;
+
 type HarnessResult = { stdout: string; error: string | null };
 
 function runHarness(req: Record<string, unknown>): HarnessResult {
@@ -223,32 +235,36 @@ describe("symulacja sesji studenta M-PD: komórki → token → checki z prodowe
 	];
 
 	for (const scenario of HAPPY) {
-		it(scenario.name, () => {
-			const itemId = itemIdFor(scenario.slug);
-			const code = atomCode(STUDENT_ID, itemId);
-			const result = runHarness({
-				mode: "notebook",
-				notebookPath: notebookPath(scenario.slug),
-				atomCode: code,
-				replacements: scenario.replacements,
-			});
-			expect(result.error).toBeNull();
-			const token = tokenFrom(result.stdout);
-			expect(token, `token w stdout:\n${result.stdout}`).not.toBeNull();
-			// Python i TS produkują IDENTYCZNY token…
-			expect(token).toBe(signToken(code, scenario.expectPayload));
+		it(
+			scenario.name,
+			() => {
+				const itemId = itemIdFor(scenario.slug);
+				const code = atomCode(STUDENT_ID, itemId);
+				const result = runHarness({
+					mode: "notebook",
+					notebookPath: notebookPath(scenario.slug),
+					atomCode: code,
+					replacements: scenario.replacements,
+				});
+				expect(result.error).toBeNull();
+				const token = tokenFrom(result.stdout);
+				expect(token, `token w stdout:\n${result.stdout}`).not.toBeNull();
+				// Python i TS produkują IDENTYCZNY token…
+				expect(token).toBe(signToken(code, scenario.expectPayload));
 
-			const parsed = parseToken(STUDENT_ID, itemId, token as string);
-			expect(parsed.ok).toBe(true);
-			if (!parsed.ok) return;
+				const parsed = parseToken(STUDENT_ID, itemId, token as string);
+				expect(parsed.ok).toBe(true);
+				if (!parsed.ok) return;
 
-			// …i serwerowe checki z m-pandas.json przechodzą.
-			const checks = checksBySlug.get(scenario.slug);
-			expect(checks, `checki ${scenario.slug} w m-pandas.json`).toBeDefined();
-			expect(checks?.length).toBeGreaterThan(0);
-			const verdict = evaluateChecks(checks ?? [], parsed.payload);
-			expect(verdict.passed, JSON.stringify(verdict.results)).toBe(true);
-		});
+				// …i serwerowe checki z m-pandas.json przechodzą.
+				const checks = checksBySlug.get(scenario.slug);
+				expect(checks, `checki ${scenario.slug} w m-pandas.json`).toBeDefined();
+				expect(checks?.length).toBeGreaterThan(0);
+				const verdict = evaluateChecks(checks ?? [], parsed.payload);
+				expect(verdict.passed, JSON.stringify(verdict.results)).toBe(true);
+			},
+			HARNESS_TIMEOUT_MS,
+		);
 	}
 
 	const REFUSALS: {
@@ -381,18 +397,22 @@ describe("symulacja sesji studenta M-PD: komórki → token → checki z prodowe
 	];
 
 	for (const scenario of REFUSALS) {
-		it(scenario.name, () => {
-			const result = runHarness({
-				mode: "notebook",
-				notebookPath: notebookPath(scenario.slug),
-				atomCode: atomCode(STUDENT_ID, itemIdFor(scenario.slug)),
-				replacements: scenario.replacements ?? [],
-				skipCells: scenario.skipCells ?? [],
-			});
-			expect(result.error).toBeNull();
-			expect(tokenFrom(result.stdout)).toBeNull();
-			expect(result.stdout).toMatch(scenario.message);
-		});
+		it(
+			scenario.name,
+			() => {
+				const result = runHarness({
+					mode: "notebook",
+					notebookPath: notebookPath(scenario.slug),
+					atomCode: atomCode(STUDENT_ID, itemIdFor(scenario.slug)),
+					replacements: scenario.replacements ?? [],
+					skipCells: scenario.skipCells ?? [],
+				});
+				expect(result.error).toBeNull();
+				expect(tokenFrom(result.stdout)).toBeNull();
+				expect(result.stdout).toMatch(scenario.message);
+			},
+			HARNESS_TIMEOUT_MS,
+		);
 	}
 
 	it("token pd-4 wklejony w pd-8 jest odrzucany (bad_signature)", () => {

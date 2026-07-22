@@ -124,7 +124,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `SELECT id, minuty FROM przejazdy LIMIT 2` → 2 wiersze, 2 kolumny. `Catalog Error: Table with name przejazdyy does not exist!` — silnik mówi wprost: nie zna takiej tabeli (literówka albo DataFrame nie istnieje w sesji — sprawdź, czy komórka z danymi się wykonała, L0.3). Drugi błąd-strażnik: `Parser Error: syntax error at or near \"SELCT\"` — literówka w SŁOWIE KLUCZOWYM; silnik wskazuje miejsce, w którym przestał rozumieć."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/msql/sql-1-zapytanie-select.ipynb"
 			},
 			"resources": [
 				{
@@ -301,7 +302,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `SELECT id, kwota FROM przejazdy WHERE strefa_id = 10 ORDER BY kwota DESC` → trzy przejazdy strefy 10, od najdroższego (28.0, 23.5, 14.0). `Binder Error` z nazwą w komunikacie → tekst w podwójnych cudzysłowach (zamień na apostrofy) albo literówka kolumny; wynik pusty → warunek nie pasuje do danych (sprawdź wartości: `SELECT DISTINCT strefa_id FROM przejazdy` — odpowiednik `unique()` z M-PD, gotowy przepis diagnostyczny)."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/msql/sql-2-where-order-by.ipynb"
 			}
 		},
 		{
@@ -427,7 +429,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** trzy grupy; suma dla 8 → 23.5+61.0 = 84.5, dla 17 → 41.5+28.0 = 69.5, dla 9 → 14.0; ranking: 84.5, 69.5, 14.0. Błąd „must appear in the GROUP BY clause\" → kolumna luzem (P2); wynik ma za dużo wierszy → grupujesz po zbyt szczegółowej kolumnie (np. po id — każdy wiersz własną grupą). Nota do budowy notebooka: w P2 opcję D doprecyzować, by nie sugerowała, że ORDER BY bywa obowiązkowy."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/msql/sql-3-group-by-agregaty.ipynb"
 			}
 		},
 		{
@@ -500,7 +503,8 @@
 						"var": "z3_top_suma",
 						"expect": 84.5
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/msql/sql-4-lab-godziny-szczytu.ipynb"
 			}
 		},
 		{
@@ -626,7 +630,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** COUNT przed = 5, po JOIN = 5 — ziarno zachowane. Przećwicz też antyprzykład: `FROM przejazdy, strefy` (bez ON) → COUNT = 15 = 5×3 — obejrzany na własne oczy kartezjan przestaje być teorią. Wynik JOIN-a MNIEJSZY niż tabela lewa? Część wierszy nie znalazła pary w słowniku (np. przejazd ze strefą spoza słownika — w naszych mini-danych to nie występuje; na prawdziwych danych to sygnał do zbadania, nie do zignorowania)."
 			],
 			"config": {
-				"estimated": "15–20 min"
+				"estimated": "15–20 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/msql/sql-5-join-ziarno.ipynb"
 			}
 		},
 		{
@@ -752,7 +757,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `PARTITION BY strefa_id ORDER BY minuty DESC` — strefa 10 dostaje miejsca 1–3 (15, 12, 7 minut), strefy 20 i 30 po miejscu 1. Autokontrola okna: liczba wierszy wyniku = liczba wierszy tabeli (nic nie zjedzone). Do uzasadnienia w capstonie przećwicz zdanie: „okno, bo potrzebuję rankingu WEWNĄTRZ grupy przy zachowaniu wierszy — GROUP BY zwinąłby przejazdy\"."
 			],
 			"config": {
-				"estimated": "15–20 min"
+				"estimated": "15–20 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/msql/sql-6-funkcje-okna.ipynb"
 			}
 		},
 		{
@@ -818,7 +824,8 @@
 						"var": "z3_miejsca_1",
 						"expect": 3
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/msql/sql-7-lab-raport-stref.ipynb"
 			}
 		},
 		{
