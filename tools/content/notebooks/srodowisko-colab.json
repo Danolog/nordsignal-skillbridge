@@ -25,6 +25,13 @@
 		"zweryfikowano": "2026-07-11",
 		"zrodlo": "research Sophii 2026-07-11 (Colab backend-info); maszyna dev ma 1.5.x - pin celowo do COLABA, nie do dev (partia 6, PR #205)"
 	},
+	"requests": {
+		"pin": "~=2.32.0",
+		"zaobserwowano": null,
+		"zweryfikowano": null,
+		"zrodlo": "partia 7 (M-EDA): EDA.1 i EDA.4 wolaja API GUS BDL. Colab preinstaluje requests od zawsze - student NICZEGO nie instaluje, wiec pin dotyczy wylacznie CI (harness wykonuje realny `import requests`).",
+		"nota": "zaobserwowano=null SWIADOMIE: wersji requests w Colabie nikt u nas nie zmierzyl - pierwsza sonda (ADR-016 D3) ma ja dopisac razem z Pythonem. Pin ~=2.32.0 (linia stabilna od 2024-05, zgodna z maszyna dev 2.32.5). Ekspozycja na wersje jest minimalna: notebooki uzywaja wylacznie requests.get(url, params=...), .status_code i .json() - powierzchni niezmiennej od 1.x. Zadna tresc nie cytuje komunikatu ani wersji requests (ADR-016 D5.3), wiec ta biblioteka nie dokłada wierszy do tablicy asercji K1."
+	},
 	"rozjazd": false,
 	"ostatnia_sonda": null
 }
