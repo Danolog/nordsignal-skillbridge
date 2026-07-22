@@ -31,6 +31,11 @@
 		"db:ingest-career-model": "tsx tools/ingest-career-model.ts",
 		"content:pack-curriculum": "tsx tools/pack-curriculum-atoms.ts",
 		"content:build-notebooks": "tsx tools/build-notebooks.ts",
+		"content:build-sonda": "tsx tools/build-sonda-srodowiska.ts",
+		"srodowisko:piny": "tsx tools/srodowisko-colab.ts --piny",
+		"srodowisko:bramka": "tsx tools/srodowisko-colab.ts --bramka",
+		"srodowisko:zapisz-sonde": "tsx tools/zapisz-sonde.ts",
+		"srodowisko:inwentarz": "tsx tools/content/notebooks/inwentarz-cytatow.ts",
 		"db:ingest-curriculum": "tsx tools/ingest-curriculum.ts",
 		"db:ingest-question-bank": "tsx tools/ingest-question-bank.ts"
 	},
