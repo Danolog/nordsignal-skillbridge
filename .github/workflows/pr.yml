@@ -74,10 +74,20 @@ jobs:
       # GUS BDL; test podmienia samo WYWOŁANIE na atrapę, więc `import requests`
       # wykonuje się naprawdę). Pinujemy do wersji COLABA, nie lokalnej (maszyna
       # dev ma duckdb 1.5.x) — student ma dostać to, co przetestowane.
-      # ⚠ ŹRÓDŁO PRAWDY WERSJI: tools/content/notebooks/srodowisko-colab.json
-      # (ADR-016 D1). Ta linia jest jego kopią do czasu wpięcia odczytu z pliku;
-      # rozjazd kopii z deklaracją wywala test notebooks-meda.contract.test.ts.
-      - run: python3 -m pip install "pandas~=2.2.0" "duckdb~=1.3.2" "requests~=2.32.0"
+      #
+      # ⚠ ŻADNEJ WERSJI W TYM PLIKU (ADR-016 D1). Jedyne źródło prawdy to
+      # tools/content/notebooks/srodowisko-colab.json; ten krok tylko je czyta.
+      # Dopisanie biblioteki = wpis w deklaracji, nie edycja workflow.
+      - name: Piny środowiska z deklaracji (ADR-016 D1 — jedyne źródło prawdy)
+        run: |
+          PINY="$(pnpm tsx tools/srodowisko-colab.ts --piny | tail -n 1)"
+          if [ -z "${PINY}" ]; then
+            echo "::error::Deklaracja srodowisko-colab.json nie oddała żadnego pinu — krok pip nie ma czego instalować."
+            exit 1
+          fi
+          echo "Piny z deklaracji: ${PINY}"
+          echo "PIP_PINY=${PINY}" >> "$GITHUB_ENV"
+      - run: python3 -m pip install ${PIP_PINY}
         env:
           PIP_BREAK_SYSTEM_PACKAGES: "1"
       - run: pnpm test:run

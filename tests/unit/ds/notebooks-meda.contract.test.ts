@@ -54,10 +54,11 @@
  *         token. Zasada z M-SQL: sprawdzamy WYNIK, nie sposób zapisu.
  *
  *  5. CI: harness wykonuje `import requests` REALNIE (podmieniamy dopiero
- *     wywołanie), więc job `test` musi mieć ten pakiet — dopisany do kroku pip
- *     w tym samym PR-ze co ten test. Wersja pochodzi z `srodowisko-colab.json`
- *     (ADR-016 D1: jedno źródło prawdy o środowisku), a osobny test niżej
- *     pilnuje, że kopia w workflow się z nim nie rozjedzie.
+ *     wywołanie), więc job `test` musi mieć ten pakiet. Wersja pochodzi
+ *     z `srodowisko-colab.json` (ADR-016 D1: jedno źródło prawdy o środowisku)
+ *     — workflow ją STAMTĄD CZYTA, więc nie ma już dwóch kopii do porównywania.
+ *     Bramka pomostowa, która tu stała, zastąpiona kontraktem środowiska:
+ *     `tests/unit/ds/srodowisko-silnikow.contract.test.ts` (ADR-016 D2).
  */
 
 import { execFileSync } from "node:child_process";
@@ -717,28 +718,5 @@ describe("symulacja sesji studenta EDA.4: komórki → token → checki z prodow
 		const token = signToken(atomCode(STUDENT_ID, itemIdFor("eda-4")), PAYLOAD_EDA4);
 		const parsed = parseToken(STUDENT_ID, itemIdFor("eda-1"), token);
 		expect(parsed).toEqual({ ok: false, reason: "bad_signature" });
-	});
-});
-
-describe("środowisko wykonawcze (ADR-016 D1) — workflow nie rozjeżdża się z deklaracją", () => {
-	it("krok pip w pr.yml instaluje DOKŁADNIE piny z srodowisko-colab.json", () => {
-		// Bramka pomostowa do czasu wpięcia odczytu z pliku wprost w workflow
-		// (ADR-016 D1, wykonanie: Eva). Dopóki wersja żyje w dwóch miejscach,
-		// niech przynajmniej rozjazd będzie czerwony, a nie cichy — dokładnie
-		// ta klasa awarii, którą ADR-016 §1 opisuje jako „nic tego nie wykrywa".
-		const srodowisko = JSON.parse(
-			readFileSync(join(SRC_DIR, "srodowisko-colab.json"), "utf8"),
-		) as Record<string, { pin?: string | null }>;
-		const oczekiwane = Object.entries(srodowisko)
-			.filter(([klucz, wartosc]) => !klucz.startsWith("_") && typeof wartosc?.pin === "string")
-			.map(([klucz, wartosc]) => `${klucz}${wartosc.pin}`)
-			.sort();
-		expect(oczekiwane).toContain("requests~=2.32.0");
-
-		const workflow = readFileSync(join(ROOT, ".github", "workflows", "pr.yml"), "utf8");
-		const krok = workflow.match(/python3 -m pip install ([^\n]+)/);
-		expect(krok, "krok pip w .github/workflows/pr.yml").not.toBeNull();
-		const zainstalowane = [...(krok?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]).sort();
-		expect(zainstalowane).toEqual(oczekiwane);
 	});
 });
