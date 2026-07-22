@@ -61,6 +61,17 @@ metryki najpierw jako skrypt raportowy (bez UI); Feynman jako wariant tutora C11
   `confidence` + `hintDepth` jako cechy).
 
 ### MIS.2 · Wskaźnik rozjazdu pewność–wynik (#7b) — P2, po MIS.1 + ~2 tyg. danych
+
+> **[KOREKTA WARUNKU 2026-07-22 — czeka na DANE, nie na CZAS.]** „~2 tygodnie"
+> zakładało, że sonda zbiera odpowiedzi od realnych studentów. Stan faktyczny
+> na prodzie (zmierzony 2026-07-22, tuż po zapaleniu `FLAG_CONFIDENCE_PROBE`):
+> `curriculum_item_answers` = **0 wierszy**, z sondą = **0**, studentów
+> w ścieżce = **0** (27 kont istnieje, ale wszystkie testowe — nikt nie ruszył
+> drabiny; flaga była OFF do dziś). Próg uruchomienia widgetu to **≥20
+> odpowiedzi z `confidence`**, więc kalendarz nie tyka sam z siebie.
+> **Warunek startu MIS.2 = ≥20 realnych odpowiedzi w bazie**, nie upływ
+> dwóch tygodni. To samo dotyczy MIS.8-A (kalibracja liczy się z tej samej
+> tabeli). Pierwsze dane pojawią się z testu D10 Darka i/lub pilotażu.
 - **Zakres:** czysta funkcja agregująca (0 LLM): accuracy per poziom pewności;
   rozjazd = odsetek błędnych wśród „Jestem pewny" + poprawnych wśród „Zgaduję".
   Widget w widoku drabiny/dashboardu (prywatny; mikrocopy w duchu ADR-014 D6
@@ -180,7 +191,7 @@ metryki najpierw jako skrypt raportowy (bez UI); Feynman jako wariant tutora C11
 
 ```
 RÓWNOLEGLE OD ZARAZ:      MIS.7 → MIS.1 → MIS.3   (3 małe PR-y + naprawa hintów po MIS.1)
-PO ~2 TYG. DANYCH MIS.1:  MIS.2, MIS.8-A
+PO ≥20 ODPOWIEDZIACH:     MIS.2, MIS.8-A   [2026-07-22: w bazie 0 — patrz korekta przy MIS.2]
 PRZY 1E.3:                MIS.4 (wspólna migracja assessment_sessions.kind)
 PO 1E.4:                  MIS.3b, MIS.8-B, MIS.5, MIS.6
 ```
