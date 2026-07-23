@@ -30,6 +30,7 @@ import {
 	questionIdsFromConfig,
 	recordAttempt,
 } from "@/lib/curriculum/completion";
+import { getGrantedDepths } from "@/lib/curriculum/hints";
 import { getModuleItems, isModuleUnlocked } from "@/lib/curriculum/ladder";
 import { isUuid } from "@/lib/curriculum/params";
 import { db } from "@/lib/db";
@@ -42,10 +43,12 @@ import {
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 
+// ADR-018 D3/krok 5 — `hintDepth` USUNIĘTE ze schematu: głębokość liczy serwer
+// z magazynu drabinki (nie klient). Stary klient, który wciąż wysyła `hintDepth`,
+// przechodzi bez błędu (Zod odcina nieznane pola — zgodność wstecz w oknie wdrożenia).
 const AnswerSchema = z.object({
 	questionItemId: z.uuid(),
 	answer: z.record(z.string(), z.unknown()),
-	hintDepth: z.number().int().min(0).max(3).optional(),
 	confidence: z.number().int().min(1).max(3).optional(),
 });
 
@@ -131,13 +134,19 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 		// transakcji — częściowy fail nie zostawi „poprawnej odpowiedzi bez
 		// postępu" (a przy okazji mniej round-tripów).
 		const { itemCompleted, moduleCompleted } = await db.transaction(async (tx) => {
+			// ADR-018 krok 5 — głębokość SERWEROWA z magazynu drabinki, w TEJ SAMEJ
+			// transakcji co wstawienie odpowiedzi; `hint_depth_source: 'server'` znaczy
+			// wiersz jako zmierzony (D3). Wartość `hintDepth` od klienta jest ignorowana
+			// (usunięta ze schematu) — to jest naprawa dokładnie tego długu.
+			const grantedDepths = await getGrantedDepths(student.id, item.id, tx);
 			await tx.insert(curriculumItemAnswers).values({
 				studentId: student.id,
 				tenantId: student.tenantId,
 				itemId: item.id,
 				questionItemId: question.id,
 				isCorrect,
-				hintDepth: parsed.data.hintDepth ?? 0,
+				hintDepth: grantedDepths.get(question.id) ?? 0,
+				hintDepthSource: "server",
 				// Flaga off → NULL nawet gdy klient przysłał wartość (nie mieszamy
 				// danych zbieranych bez UI sondy z danymi zbieranymi z sondą).
 				confidence: confidenceProbe ? (parsed.data.confidence ?? null) : null,

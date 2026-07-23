@@ -16,6 +16,7 @@
 
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { questionIdsFromConfig } from "@/lib/curriculum/completion";
+import { getGrantedDepths, MAX_HINT_DEPTH } from "@/lib/curriculum/hints";
 import { parseChecks } from "@/lib/curriculum/lab-checks";
 import { atomCode, isLabTokenConfigured } from "@/lib/curriculum/lab-token";
 import { getModuleItems, isModuleUnlocked, type LadderItem } from "@/lib/curriculum/ladder";
@@ -59,8 +60,20 @@ export interface CurriculumItemView {
 		contentMd: string | null;
 		/** Szacowany czas z config_json.estimated (np. „10–15 min"). */
 		estimatedTime: string | null;
-		/** Drabinka podpowiedzi (config_json.hints) — odsłaniana krok po kroku. */
-		hints: string[];
+		/**
+		 * ADR-018 — podpowiedzi JUŻ PRZYZNANE studentowi serwerową drabinką, per
+		 * pytanie. NIE zawiera podpowiedzi nieodsłoniętych (zamknięcie wycieku:
+		 * cała lista już nie jedzie do przeglądarki). Pusty klucz = zero przyznań.
+		 */
+		hintsByQuestion: Record<string, string[]>;
+		/** Liczba dostępnych podpowiedzi do napisu „(2/3)" — liczba, nie treść. */
+		hintsTotal: number;
+		/**
+		 * Jawnie PUBLICZNA lista podpowiedzi dla pozycji `lab` (§8a planu — laby nie
+		 * mają pętli pytań, więc niczego tu nie mierzymy). Osobne pole pilnuje, żeby
+		 * nikt nie pomylił jej z drabinką MIERZONĄ (`hintsByQuestion`). `[]` poza labem.
+		 */
+		labHints: string[];
 		/**
 		 * 1E.6b (ADR-015) — kod atomu dla pozycji `lab`: student przepisuje go do
 		 * komórki-pieczątki w notebooku, a pieczątka podpisuje nim ładunek.
@@ -91,7 +104,7 @@ export type ItemViewResult =
 	| { ok: false; reason: "not_found" | "module_locked" | "item_locked" };
 
 /** Podpowiedzi z config_json (tablica stringów markdown; brak → []). */
-function hintsFromConfig(configJson: unknown): string[] {
+export function hintsFromConfig(configJson: unknown): string[] {
 	if (typeof configJson !== "object" || configJson === null) return [];
 	const hints = (configJson as { hints?: unknown }).hints;
 	if (!Array.isArray(hints)) return [];
@@ -209,6 +222,20 @@ export async function getItemView(studentId: string, itemId: string): Promise<It
 			.orderBy(asc(curriculumItemResources.position)),
 	]);
 
+	// ADR-018 — zamknięcie wycieku: do klienta wychodzą WYŁĄCZNIE podpowiedzi
+	// przyznane serwerowo (per pytanie), a nie cała lista z config_json. Dla labów
+	// (bez pętli mierzonej) cała lista jest jawnie publiczna osobnym polem (§8a).
+	const isLab = item.kind === "lab";
+	const allHints = hintsFromConfig(item.configJson);
+	const grantedDepths = isLab
+		? new Map<string, number>()
+		: await getGrantedDepths(studentId, item.id);
+	const hintsByQuestion: Record<string, string[]> = {};
+	for (const qid of questionIds) {
+		const depth = grantedDepths.get(qid) ?? 0;
+		if (depth > 0) hintsByQuestion[qid] = allHints.slice(0, depth);
+	}
+
 	return {
 		ok: true,
 		view: {
@@ -222,7 +249,9 @@ export async function getItemView(studentId: string, itemId: string): Promise<It
 				status: state.status,
 				contentMd: item.contentMd,
 				estimatedTime: estimatedFromConfig(item.configJson),
-				hints: hintsFromConfig(item.configJson),
+				hintsByQuestion,
+				hintsTotal: Math.min(allHints.length, MAX_HINT_DEPTH),
+				labHints: isLab ? allHints : [],
 				// 1E.6b: kod atomu tylko dla labów — student przepisuje go do pieczątki.
 				// Brak LAB_TOKEN_SECRET ⇒ null (fail-closed: lab niekompletowalny),
 				// ale strona nadal się renderuje — teoria i instrukcja są do przeczytania.

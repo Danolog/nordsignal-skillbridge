@@ -61,6 +61,11 @@ export const rateLimiters = {
 	// B7/1.16a (ADR-013): dzienny cap odpowiedzi vivy per student — koszt sędziego
 	// pod kontrolą (viva ma stały koszt 4 wywołań, cap tnie farmę restartów).
 	vivaDaily: makeLimiter(Ratelimit.slidingWindow(30, "1 d"), "viva-daily"),
+	// ADR-018 D5: serwerowa drabinka podpowiedzi. Trasa NIE woła modelu, ale jest
+	// zapisem do bazy wyzwalanym kliknięciem w pętli — bez limitera pojedyncza pętla
+	// `for` zamienia się we wzmocnienie zapisu na wierszu postępu. Poprawność
+	// gwarantuje idempotencja (D2: kliknięcie na suficie nic nie przyrasta), nie limiter.
+	hintReveal: makeLimiter(Ratelimit.slidingWindow(60, "1 m"), "hint-reveal"),
 };
 
 export type RateLimitResult = {

@@ -117,13 +117,13 @@ export function ItemDetail({
 				/>
 			)}
 
-			{isLab && item.hints.length > 0 && (
+			{isLab && item.labHints.length > 0 && (
 				<details className="rounded-xl border border-border bg-card p-5">
 					<summary className="cursor-pointer text-sm font-semibold text-foreground">
-						Podpowiedzi ({item.hints.length})
+						Podpowiedzi ({item.labHints.length})
 					</summary>
 					<div className="mt-3 flex flex-col gap-2">
-						{item.hints.map((hint) => (
+						{item.labHints.map((hint) => (
 							<div
 								key={hint}
 								className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
@@ -141,7 +141,8 @@ export function ItemDetail({
 					moduleId={module_.id}
 					questions={questions}
 					answeredCorrectQuestionIds={answeredCorrectQuestionIds}
-					hints={item.hints}
+					hintsByQuestion={item.hintsByQuestion}
+					hintsTotal={item.hintsTotal}
 					initialStatus={item.status}
 					confidenceProbeEnabled={confidenceProbeEnabled}
 				/>

@@ -209,7 +209,12 @@ dBack("1E.6a · GET /api/curriculum/items/[id] — treść bez klucza odpowiedzi
 			contentMd: "### Teoria 1E.6a",
 			estimatedTime: "10–15 min",
 		});
-		expect(body.item.hints).toEqual(["Podpowiedź 1", "Podpowiedź 2"]);
+		// ADR-018 — cała lista podpowiedzi już NIE wychodzi: klient dostaje liczbę
+		// (do napisu „n/total") i mapę WYŁĄCZNIE przyznanych (tu pusta — brak odsłonięć).
+		expect(body.item.hintsTotal).toBe(2);
+		expect(body.item.hintsByQuestion).toEqual({});
+		expect(body.item.labHints).toEqual([]);
+		expect(body.item).not.toHaveProperty("hints");
 		expect(body.module.slug).toBe("t-1e6a-a");
 		expect(body.questions).toEqual([
 			{
@@ -246,6 +251,10 @@ dBack("1E.6a · GET /api/curriculum/items/[id] — treść bez klucza odpowiedzi
 		expect(raw).not.toContain(SECRET_EXPLANATION);
 		expect(raw).not.toContain(SECRET_FEEDBACK);
 		expect(raw).not.toContain("questionItemIds");
+		// ADR-018 krok 4 — dowód zamknięcia wycieku drabinki: treść NIEODSŁONIĘTYCH
+		// podpowiedzi nie pojawia się w surowym JSON-ie (asercja na treści, nie na polu).
+		expect(raw).not.toContain("Podpowiedź 1");
+		expect(raw).not.toContain("Podpowiedź 2");
 	});
 
 	it("pytania zaliczone wracają jako answeredCorrectQuestionIds (pętla ich nie powtarza)", async () => {

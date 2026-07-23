@@ -37,7 +37,8 @@ function renderRunner(overrides: Partial<React.ComponentProps<typeof ItemRunner>
 			moduleId="m-1"
 			questions={questions}
 			answeredCorrectQuestionIds={[]}
-			hints={["Podpowiedź pierwsza", "Podpowiedź druga"]}
+			hintsByQuestion={{}}
+			hintsTotal={2}
 			initialStatus="available"
 			confidenceProbeEnabled={false}
 			{...overrides}
@@ -56,6 +57,41 @@ function mockAnswer(body: Record<string, unknown>) {
 			moduleCompleted: false,
 			...body,
 		}),
+	});
+}
+
+/**
+ * ADR-018 — runner woła DWA endpointy: `/answer` (ocena) i `/hint` (odsłonięcie).
+ * Mock routuje po URL-u: `/hint` zwraca serwerową głębokość + treść, `/answer`
+ * zwraca `answerBody`. `hintStatus` pozwala wymusić 429.
+ */
+function mockRoutedFetch(opts: {
+	answerBody?: Record<string, unknown>;
+	hintStatus?: number;
+	hintBody?: { depth: number; hints: string[]; hasMore: boolean };
+}) {
+	return vi.fn().mockImplementation((url: string, _init?: RequestInit) => {
+		if (String(url).endsWith("/hint")) {
+			const status = opts.hintStatus ?? 200;
+			return Promise.resolve({
+				ok: status >= 200 && status < 300,
+				status,
+				json: async () =>
+					opts.hintBody ?? { depth: 1, hints: ["Podpowiedź pierwsza"], hasMore: true },
+			});
+		}
+		return Promise.resolve({
+			ok: true,
+			status: 200,
+			json: async () => ({
+				correct: false,
+				explanationMd: null,
+				optionFeedbackMd: null,
+				itemCompleted: false,
+				moduleCompleted: false,
+				...opts.answerBody,
+			}),
+		});
 	});
 }
 
@@ -115,21 +151,56 @@ describe("ItemRunner", () => {
 		expect(mockRefresh).toHaveBeenCalled();
 	});
 
-	it("podpowiedzi: odsłaniane po jednej, głębokość idzie do serwera", async () => {
+	it("ADR-018: klik → POST /hint, render treści z serwera; ciało /answer BEZ hintDepth", async () => {
 		const user = userEvent.setup();
-		const fetchMock = mockAnswer({ correct: false });
+		const fetchMock = mockRoutedFetch({});
 		vi.stubGlobal("fetch", fetchMock);
 
 		renderRunner();
 		await user.click(screen.getByRole("button", { name: /Pokaż podpowiedź \(1\/2\)/ }));
-		expect(screen.getByText("Podpowiedź pierwsza")).toBeInTheDocument();
-		expect(screen.queryByText("Podpowiedź druga")).not.toBeInTheDocument();
 
+		// Treść przyszła z serwera (`/hint`), nie z propsów pełnej listy.
+		await waitFor(() => expect(screen.getByText("Podpowiedź pierwsza")).toBeInTheDocument());
+		const hintCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/hint"));
+		expect(hintCall).toBeDefined();
+		expect(JSON.parse(hintCall?.[1].body)).toEqual({ questionItemId: "q-1" });
+
+		// Odpowiedź: ciało NIE zawiera hintDepth (głębokość liczy serwer).
 		await user.click(screen.getByLabelText("Wypisuje na ekran"));
 		await user.click(screen.getByRole("button", { name: "Sprawdź" }));
-		await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-		const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-		expect(body).toMatchObject({ questionItemId: "q-1", hintDepth: 1, answer: { selected: 0 } });
+		await waitFor(() =>
+			expect(fetchMock.mock.calls.some((c) => String(c[0]).endsWith("/answer"))).toBe(true),
+		);
+		const answerCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/answer"));
+		const body = JSON.parse(answerCall?.[1].body);
+		expect(body).toMatchObject({ questionItemId: "q-1", answer: { selected: 0 } });
+		expect(body).not.toHaveProperty("hintDepth");
+	});
+
+	it("ADR-018: 429 z /hint → komunikat po polsku (nie cicha cisza)", async () => {
+		const user = userEvent.setup();
+		const fetchMock = mockRoutedFetch({ hintStatus: 429 });
+		vi.stubGlobal("fetch", fetchMock);
+
+		renderRunner();
+		await user.click(screen.getByRole("button", { name: /Pokaż podpowiedź \(1\/2\)/ }));
+		await waitFor(() => expect(screen.getByText(/Za dużo podpowiedzi naraz/)).toBeInTheDocument());
+	});
+
+	it("ADR-018 (W-8b): zdanie o zapisie odsłonięć obecne przy pierwszym renderze, w aria-live", () => {
+		vi.stubGlobal("fetch", mockRoutedFetch({}));
+		renderRunner();
+		const note = screen.getByText(/Odsłonięcie podpowiedzi zapisujemy/);
+		expect(note).toBeInTheDocument();
+		expect(note.closest("[aria-live]")).not.toBeNull();
+	});
+
+	it("ADR-018: już przyznane podpowiedzi (hintsByQuestion) widoczne bez klikania", () => {
+		vi.stubGlobal("fetch", mockRoutedFetch({}));
+		renderRunner({ hintsByQuestion: { "q-1": ["Podpowiedź pierwsza"] } });
+		expect(screen.getByText("Podpowiedź pierwsza")).toBeInTheDocument();
+		// Zostaje jeszcze 1 z 2 do odsłonięcia.
+		expect(screen.getByRole("button", { name: /Pokaż podpowiedź \(2\/2\)/ })).toBeInTheDocument();
 	});
 
 	it("pozycja już zaliczona: od razu panel zaliczenia, bez pytań", () => {

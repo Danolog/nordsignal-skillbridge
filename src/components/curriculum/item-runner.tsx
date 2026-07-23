@@ -8,8 +8,9 @@
  *    natychmiast (feedback wybranej opcji + wyjaśnienie z trasy `answer`),
  *  - zaliczenie pozycji = WSZYSTKIE pytania odpowiedziane poprawnie (licznik,
  *    nie procent) — liczy to serwer i zwraca `itemCompleted`,
- *  - podpowiedzi odsłaniane krok po kroku; głębokość leci do serwera
- *    (`hintDepth`) jako cecha instrumentacji, nie kara.
+ *  - podpowiedzi odsłaniane krok po kroku PRZEZ SERWER (ADR-018): przycisk woła
+ *    `POST …/hint`, głębokość i znacznik czasu stawia serwer; klient renderuje
+ *    tylko to, co wróciło. Głębokość NIE jest już stanem komponentu.
  *
  * Klient NIE zna klucza odpowiedzi — ocena jest po stronie serwera.
  */
@@ -30,7 +31,10 @@ interface ItemRunnerProps {
 	questions: CurriculumQuestion[];
 	/** Pytania już zaliczone — pętla ich nie powtarza. */
 	answeredCorrectQuestionIds: string[];
-	hints: string[];
+	/** ADR-018 — podpowiedzi JUŻ przyznane serwerowo, per pytanie (po wejściu/odświeżeniu). */
+	hintsByQuestion: Record<string, string[]>;
+	/** Liczba dostępnych podpowiedzi do napisu „(n/total)". */
+	hintsTotal: number;
 	/** Status pozycji przy wejściu (completed → od razu panel „zaliczona"). */
 	initialStatus: string;
 	/** MIS.1 — flaga confidenceProbe czytana w server component (deploy ≠ release);
@@ -51,7 +55,8 @@ export function ItemRunner({
 	moduleId,
 	questions,
 	answeredCorrectQuestionIds,
-	hints,
+	hintsByQuestion,
+	hintsTotal,
 	initialStatus,
 	confidenceProbeEnabled,
 }: ItemRunnerProps) {
@@ -62,7 +67,11 @@ export function ItemRunner({
 	const [draft, setDraft] = useState<Draft>({});
 	const [feedback, setFeedback] = useState<AnswerFeedback | null>(null);
 	const [submitting, setSubmitting] = useState(false);
-	const [hintDepth, setHintDepth] = useState(0);
+	// ADR-018 — odsłonięte podpowiedzi per pytanie (start = przyznane serwerowo).
+	// Głębokość liczy serwer; klient trzyma tylko TREŚĆ do wyświetlenia.
+	const [revealed, setRevealed] = useState<Record<string, string[]>>(hintsByQuestion);
+	const [hintLoading, setHintLoading] = useState(false);
+	const [hintError, setHintError] = useState<string | null>(null);
 	// MIS.1 — pewność deklarowana PRZED sprawdzeniem; null = jeszcze nie wybrana.
 	const [confidence, setConfidence] = useState<1 | 2 | 3 | null>(null);
 	const [completed, setCompleted] = useState(
@@ -106,7 +115,7 @@ export function ItemRunner({
 				body: JSON.stringify({
 					questionItemId: question.id,
 					answer,
-					hintDepth,
+					// ADR-018: głębokość NIE jedzie już z klienta — liczy ją serwer z magazynu.
 					...(confidenceProbeEnabled && confidence !== null ? { confidence } : {}),
 				}),
 			});
@@ -140,9 +149,41 @@ export function ItemRunner({
 	function nextQuestion() {
 		setFeedback(null);
 		setDraft({});
-		setHintDepth(0);
+		setHintError(null);
 		setConfidence(null);
 		setIndex((i) => i + 1);
+	}
+
+	// ADR-018 — odsłonięcie kolejnej podpowiedzi: serwer inkrementuje głębokość
+	// i zwraca treść do przyznanego poziomu. 429 → osobny komunikat po polsku
+	// (nie cicha cisza); klient nie liczy głębokości sam.
+	async function revealHint(questionId: string) {
+		if (hintLoading) return;
+		setHintLoading(true);
+		setHintError(null);
+		try {
+			const res = await fetch(`/api/curriculum/items/${itemId}/hint`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ questionItemId: questionId }),
+			});
+			if (res.status === 429) {
+				setHintError("Za dużo podpowiedzi naraz — poczekaj chwilę i spróbuj ponownie.");
+				return;
+			}
+			if (res.status === 403) {
+				toast.error("Ta pozycja jest zablokowana.");
+				router.refresh();
+				return;
+			}
+			if (!res.ok) throw new Error("hint_failed");
+			const data = (await res.json()) as { depth: number; hints: string[]; hasMore: boolean };
+			setRevealed((prev) => ({ ...prev, [questionId]: data.hints }));
+		} catch {
+			setHintError("Nie udało się wczytać podpowiedzi. Spróbuj ponownie.");
+		} finally {
+			setHintLoading(false);
+		}
 	}
 
 	if (questions.length === 0) return null;
@@ -179,19 +220,11 @@ export function ItemRunner({
 		);
 	}
 
-	// ⚠ DŁUG ZNANY (przegląd bezpieczeństwa 1E.6a) — `hintDepth` NIE JEST POMIAREM.
-	// Cała drabinka hintów (łącznie z hintem 3 = „pełne rozwiązanie", schema.ts)
-	// jedzie w propsach do klienta, więc siedzi w payloadzie RSC/HTML. Ten `slice`
-	// jest filtrem WYŁĄCZNIE prezentacyjnym: student może przeczytać wszystkie
-	// podpowiedzi z podglądu źródła, a do serwera i tak poleci `hintDepth: 0`.
-	//
-	// Dla R13 to nieszkodliwe (hinty są z założenia darmowe, bez kary). SZKODZI
-	// natomiast instrumentacji: `hintDepth` to jedna z cech wejściowych FSRS
-	// (1E.4) i sygnał fadingu D5/D11 — zaniżalny bez wysiłku.
-	//
-	// Właściwa naprawa (przed 1E.4): serwować treść hintu N na żądanie z trasy,
-	// która zapisuje głębokość serwerowo, zamiast wysyłać komplet z góry.
-	const visibleHints = hints.slice(0, hintDepth);
+	// ADR-018 — do klienta docierają WYŁĄCZNIE podpowiedzi już odsłonięte serwerowo
+	// (z propsa `hintsByQuestion` + dopisane przez `revealHint`); nieodsłonięte
+	// nie ma prawa być w payloadzie strony. Głębokość liczy serwer, nie ten komponent.
+	const visibleHints = revealed[question.id] ?? [];
+	const revealedCount = visibleHints.length;
 
 	return (
 		<section className="rounded-xl border border-border bg-card p-5">
@@ -270,8 +303,16 @@ export function ItemRunner({
 				/>
 			)}
 
-			{hints.length > 0 && (
-				<div className="mt-4">
+			{hintsTotal > 0 && (
+				// aria-live: podpowiedź pojawia się asynchronicznie (po odpowiedzi serwera),
+				// więc czytnik ekranu ma ją ogłosić — inaczej pojawiłaby się bez zapowiedzi.
+				<div className="mt-4" aria-live="polite">
+					{/* W-8b (Ryan) — informacja o zapisie odsłonięć: obecna od pierwszego
+					    renderu przycisku. Treść: Sophia (PO); do czasu jej wersji — z §4.2 sign-offu. */}
+					<p className="mb-2 text-xs text-muted-foreground">
+						Odsłonięcie podpowiedzi zapisujemy — służy do doboru powtórek, nie do oceny. Wykładowca
+						tego nie widzi.
+					</p>
 					{visibleHints.map((hint) => (
 						<div
 							key={hint}
@@ -280,17 +321,19 @@ export function ItemRunner({
 							<TheoryMarkdown source={hint} />
 						</div>
 					))}
-					{hintDepth < Math.min(hints.length, 3) && (
+					{revealedCount < hintsTotal && (
 						<Button
 							type="button"
 							variant="ghost"
 							size="sm"
-							onClick={() => setHintDepth((d) => d + 1)}
+							disabled={hintLoading}
+							onClick={() => revealHint(question.id)}
 						>
 							<Lightbulb aria-hidden className="size-4" />
-							Pokaż podpowiedź ({hintDepth + 1}/{Math.min(hints.length, 3)})
+							{hintLoading ? "Wczytuję…" : `Pokaż podpowiedź (${revealedCount + 1}/${hintsTotal})`}
 						</Button>
 					)}
+					{hintError && <p className="mt-1 text-xs text-rose-700">{hintError}</p>}
 				</div>
 			)}
 
