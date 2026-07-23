@@ -3,8 +3,9 @@
  *
  * Nowości względem F1 (i po co ten test jest osobny):
  *  1. Pieczątka F2.7 WYWOŁUJE funkcję studenta na próbnej liście
- *     ([1,2,3] → 6, serwerowy check value `sonda_suma_wydatkow`) — łapie
- *     funkcję liczącą globalną listę zamiast parametru.
+ *     ([2,5,10] → 17, serwerowy check value `sonda_suma_wydatkow`) — łapie
+ *     funkcję liczącą globalną listę zamiast parametru (i iloczyn/len·2/max·2:
+ *     próbka asymetryczna, bo na [1,2,3] suma=iloczyn=len·2=max·2=6).
  *  2. Program F2.7 używa input() — harness dostał kolejkę `inputs`
  *     (odpowiedzi programu studenta), a pieczątka NIE wywołuje input
  *     ponownie (nota Sophii: token bez interakcji z pieczątką).
@@ -205,7 +206,7 @@ describe("symulacja sesji studenta F2: komórki → token → checki z prodowego
 			inputs: ["300"],
 			expectPayload: {
 				wydatki: [45.5, 120, 33.2, 18.99, 67.3],
-				sonda_suma_wydatkow: 6,
+				sonda_suma_wydatkow: 17,
 				_zrodlo: PROGRAM_F2_7,
 			},
 			expectStdout: /W budżecie\. Zostaje 15\.01 zł/,
@@ -220,7 +221,7 @@ describe("symulacja sesji studenta F2: komórki → token → checki z prodowego
 			insertCells: [[1, "print(suma_wydatkow([10, 20]))"]],
 			expectPayload: {
 				wydatki: [45.5, 120, 33.2, 18.99, 67.3],
-				sonda_suma_wydatkow: 6,
+				sonda_suma_wydatkow: 17,
 				_zrodlo: PROGRAM_F2_7,
 			},
 		},
@@ -285,11 +286,11 @@ describe("symulacja sesji studenta F2: komórki → token → checki z prodowego
 		},
 		{
 			// Komórki kodu f2-7: 0=program, 1=pieczątka.
-			name: "f2-7: funkcja liczy globalną listę zamiast parametru — sonda [1,2,3] to wykrywa",
+			name: "f2-7: funkcja liczy globalną listę zamiast parametru — sonda [2,5,10] to wykrywa",
 			slug: "f2-7",
 			replacements: [["# Twój program — pisz tutaj:", PROGRAM_GLOBALNA_LISTA]],
 			inputs: ["300"],
-			message: /powinna zwrócić 6[\s\S]*globalnej/,
+			message: /powinna zwrócić 17[\s\S]*globalnej/,
 		},
 		{
 			name: "f2-7: program bez input() i if/else — pieczątka odmawia punktami specyfikacji",

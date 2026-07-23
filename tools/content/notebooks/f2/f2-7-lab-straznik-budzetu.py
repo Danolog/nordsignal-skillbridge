@@ -66,21 +66,21 @@ def _zbierz_wyniki():
             "(punkt 2 specyfikacji) i uruchom komórkę programu ponownie."
         )
     try:
-        sonda = g["suma_wydatkow"]([1, 2, 3])
+        sonda = g["suma_wydatkow"]([2, 5, 10])
     except Exception as blad:  # noqa: BLE001 — komunikat dla studenta
         raise RuntimeError(
-            "Wywołanie suma_wydatkow([1, 2, 3]) zatrzymało się błędem: "
+            "Wywołanie suma_wydatkow([2, 5, 10]) zatrzymało się błędem: "
             + str(blad)
             + " — funkcja ma liczyć sumę KAŻDEJ podanej listy."
         ) from None
     if sonda is None:
         raise RuntimeError(
-            "suma_wydatkow([1, 2, 3]) zwróciła None — w funkcji został "
+            "suma_wydatkow([2, 5, 10]) zwróciła None — w funkcji został "
             "print zamiast `return` (F2.6). Dopisz return i uruchom ponownie."
         )
-    if isinstance(sonda, bool) or not isinstance(sonda, (int, float)) or abs(sonda - 6) >= 0.01:
+    if isinstance(sonda, bool) or not isinstance(sonda, (int, float)) or abs(sonda - 17) >= 0.01:
         raise RuntimeError(
-            "suma_wydatkow([1, 2, 3]) powinna zwrócić 6, a zwróciła "
+            "suma_wydatkow([2, 5, 10]) powinna zwrócić 17, a zwróciła "
             + repr(sonda)
             + ". Najczęstsza przyczyna: pętla w funkcji idzie po globalnej "
             "liście `wydatki` zamiast po PARAMETRZE (hint 3 drabinki)."
