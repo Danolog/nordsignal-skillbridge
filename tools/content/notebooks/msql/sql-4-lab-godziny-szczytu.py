@@ -27,8 +27,8 @@ import duckdb
 import pandas as pd
 
 przejazdy = pd.DataFrame([
-    {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 23.5, "godzina": 8},
-    {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 61.0, "godzina": 8},
+    {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 50.0, "godzina": 8},
+    {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 22.0, "godzina": 8},
     {"id": 3, "strefa_id": 10, "minuty": 7,  "kwota": 14.0, "godzina": 9},
     {"id": 4, "strefa_id": 30, "minuty": 22, "kwota": 41.5, "godzina": 17},
     {"id": 5, "strefa_id": 10, "minuty": 15, "kwota": 28.0, "godzina": 17},
@@ -127,10 +127,10 @@ def _zbierz_wyniki():
             "— przywróć komórkę 'Dane' do pierwotnej postaci (checki są policzone "
             "z tych pięciu przejazdów)."
         )
-    if abs(float(przejazdy["kwota"].sum()) - 168.0) >= 0.01 or int(przejazdy["minuty"].sum()) != 91:
+    if abs(float(przejazdy["kwota"].sum()) - 155.5) >= 0.01 or int(przejazdy["minuty"].sum()) != 91:
         raise RuntimeError(
             "wartości w `przejazdy` nie zgadzają się z oryginałem (suma kwot ma "
-            "wynosić 168.0, suma minut 91) — przywróć komórkę 'Dane'."
+            "wynosić 155.5, suma minut 91) — przywróć komórkę 'Dane'."
         )
 
     # 2) Typy wyników — czy student pamiętał o `.df()`.

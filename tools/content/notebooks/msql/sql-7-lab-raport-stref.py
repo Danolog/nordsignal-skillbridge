@@ -30,8 +30,8 @@ import duckdb
 import pandas as pd
 
 przejazdy = pd.DataFrame([
-    {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 23.5, "godzina": 8},
-    {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 61.0, "godzina": 8},
+    {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 50.0, "godzina": 8},
+    {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 22.0, "godzina": 8},
     {"id": 3, "strefa_id": 10, "minuty": 7,  "kwota": 14.0, "godzina": 9},
     {"id": 4, "strefa_id": 30, "minuty": 22, "kwota": 41.5, "godzina": 17},
     {"id": 5, "strefa_id": 10, "minuty": 15, "kwota": 28.0, "godzina": 17},
@@ -135,10 +135,10 @@ def _zbierz_wyniki():
             "jest " + str(len(przejazdy)) + " i " + str(len(strefy))
             + ") — przywróć komórkę 'Dane', bo z niej policzone są checki."
         )
-    if abs(float(przejazdy["kwota"].sum()) - 168.0) >= 0.01:
+    if abs(float(przejazdy["kwota"].sum()) - 155.5) >= 0.01:
         raise RuntimeError(
             "wartości w `przejazdy` nie zgadzają się z oryginałem (suma kwot ma "
-            "wynosić 168.0) — przywróć komórkę 'Dane'."
+            "wynosić 155.5) — przywróć komórkę 'Dane'."
         )
 
     # 2) Typy wyników — czy student pamiętał o `.df()`.
@@ -244,10 +244,40 @@ def _zbierz_wyniki():
             "i nazwij tę kolumnę przez AS."
         )
 
+    # Sam licznik miejsc 1 jest niezmiennikiem podziału na strefy — nie zależy od
+    # kolumny ani kierunku sortowania w oknie, więc nie odróżnia rankingu po KWOCIE
+    # od rankingu po minutach czy odwróconego. Do rozróżnienia potrzeba, KTÓRE
+    # przejazdy stoją na miejscu 1; a do tego kolumny `id`.
+    if "id" not in [str(k) for k in z3.columns]:
+        raise RuntimeError(
+            "`z3` nie ma kolumny `id` — to po niej rozpoznaję, KTÓRY przejazd zajął "
+            "miejsce 1 w swojej strefie; dołóż `p.id` do listy SELECT."
+        )
+
+    # Zbiór identyfikatorów przejazdów z miejscem 1 musi wskazywać NAJDROŻSZY przejazd
+    # każdej strefy (ranking po kwocie malejąco). Zła kolumna (minuty) lub odwrócony
+    # kierunek (kwota rosnąco = najtańsi) dają inny zbiór id, mimo tej samej liczby miejsc.
+    z3_miejsca1_ids = sorted(
+        int(i) for i, m in zip(z3["id"], z3[kolumna_miejsca]) if int(m) == 1
+    )
+    ref3_miejsca1_ids = sorted(
+        int(i) for i, m in zip(ref3["id"], ref3["miejsce"]) if int(m) == 1
+    )
+    if z3_miejsca1_ids != ref3_miejsca1_ids:
+        raise RuntimeError(
+            "miejsce 1 w swojej strefie zajmują u Ciebie przejazdy o id "
+            + str(z3_miejsca1_ids) + ", a powinny " + str(ref3_miejsca1_ids)
+            + " — ranking ma iść po KWOCIE malejąco (ORDER BY p.kwota DESC wewnątrz "
+            "OVER(...)). Sprawdź kolumnę i kierunek w oknie: sortowanie po `minuty` "
+            "albo `kwota` rosnąco (ASC = najtańsi zamiast najdroższych) stawia na "
+            "czele inne przejazdy."
+        )
+
     return {
         "z1_wiersze": int(len(z1)),
         "z2_top_nazwa": str(z2["nazwa"].iloc[0]),
         "z2_top_liczba": int(z2["liczba"].iloc[0]),
         "z2_top_suma": float(z2["suma_kwot"].iloc[0]),
         "z3_miejsca_1": int(sum(1 for v in z3[kolumna_miejsca] if int(v) == 1)),
+        "z3_miejsca1_ids": z3_miejsca1_ids,
     }

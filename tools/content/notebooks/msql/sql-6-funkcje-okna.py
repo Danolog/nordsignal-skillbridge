@@ -19,8 +19,8 @@ import duckdb
 import pandas as pd
 
 przejazdy = pd.DataFrame([
-    {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 23.5, "godzina": 8},
-    {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 61.0, "godzina": 8},
+    {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 50.0, "godzina": 8},
+    {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 22.0, "godzina": 8},
     {"id": 3, "strefa_id": 10, "minuty": 7,  "kwota": 14.0, "godzina": 9},
     {"id": 4, "strefa_id": 30, "minuty": 22, "kwota": 41.5, "godzina": 17},
     {"id": 5, "strefa_id": 10, "minuty": 15, "kwota": 28.0, "godzina": 17},
@@ -38,7 +38,7 @@ strefy = pd.DataFrame([
 # zjadając wierszy.
 #
 # **Przewidź, zanim uruchomisz:** ile wierszy będzie miał wynik i co
-# stanie w `suma_strefy` przy trzech przejazdach strefy 10 (kwoty 23.5,
+# stanie w `suma_strefy` przy trzech przejazdach strefy 10 (kwoty 50.0,
 # 14.0, 28.0)?
 
 # %%
@@ -54,7 +54,7 @@ duckdb.sql("""
 
 # %% [markdown]
 # **Pięć wierszy — wszystkie** — a przy każdym przejeździe strefy 10 ta
-# sama wartość `65.5` (suma jego grupy). Powtórzona liczba to nie usterka,
+# sama wartość `92.0` (suma jego grupy). Powtórzona liczba to nie usterka,
 # tylko definicja okna partycyjnego.
 #
 # Czytaj składnię od słowa **OVER**: „policz `SUM(kwota)` PONAD oknem",

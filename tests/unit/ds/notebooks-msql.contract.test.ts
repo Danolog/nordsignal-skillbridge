@@ -195,7 +195,7 @@ describe("symulacja sesji studenta M-SQL: komórki → token → checki z prodow
 		z2_pierwszy_id: 2,
 		z3_grupy: 3,
 		z3_top_godzina: 8,
-		z3_top_suma: 84.5,
+		z3_top_suma: 72.0,
 	};
 
 	// SQL.7 nie ma luk — student pisze zapytania sam, więc podmieniamy
@@ -221,8 +221,9 @@ describe("symulacja sesji studenta M-SQL: komórki → token → checki z prodow
 		z1_wiersze: 5,
 		z2_top_nazwa: "Manhattan",
 		z2_top_liczba: 3,
-		z2_top_suma: 65.5,
+		z2_top_suma: 92.0,
 		z3_miejsca_1: 3,
+		z3_miejsca1_ids: [1, 2, 4],
 	};
 
 	const HAPPY: {
@@ -406,6 +407,24 @@ describe("symulacja sesji studenta M-SQL: komórki → token → checki z prodow
 			message: /luka 5 ma sumować kolumnę kwota/,
 		},
 		{
+			// REGRESJA ADR-017 (D1): zła KOLUMNA porządkująca w luce 3.
+			// Na starym, skorelowanym mini-świecie `kwota DESC` dawało tę samą
+			// kolejność id co `minuty DESC` (oba [2,4,5,1]) i przechodziło —
+			// fałszywe zaliczenie. Po rozerwaniu korelacji (id1 50.0, id2 22.0)
+			// `kwota DESC` stawia na czele id=1, a powinien id=2 (najdłuższy).
+			name: "sql-4: zła kolumna w luce 3 (ORDER BY kwota DESC) — pieczątka odmawia (regresja ADR-017)",
+			slug: "sql-4",
+			replacements: [
+				SQL4_LUKA1,
+				SQL4_LUKA2,
+				[SQL4_LUKA3[0], "ORDER BY kwota DESC"],
+				SQL4_LUKA4,
+				SQL4_LUKA5,
+			],
+			message:
+				/na czele `z2` stoi przejazd id=1[\s\S]*Sprawdź lukę 3: porządkujesz po kolumnie minuty/,
+		},
+		{
 			// Klasyk SQL.1: samo `duckdb.sql(...)` zwraca relację, nie tabelę.
 			name: "sql-4: brak `.df()` przy Z2 — pieczątka odmawia i przypomina o metodzie",
 			slug: "sql-4",
@@ -516,6 +535,50 @@ describe("symulacja sesji studenta M-SQL: komórki → token → checki z prodow
 			],
 			skipCells: [1],
 			message: /Nie widzę w tej sesji: z1/,
+		},
+		{
+			// REGRESJA ADR-017 (D2): zła KOLUMNA w oknie rankingu. Ranking ma iść
+			// po KWOCIE; po `minuty DESC` miejsce 1 zajmują id [2,4,5] zamiast
+			// [1,2,4]. Sam licznik miejsc (z3_miejsca_1 = 3) tego NIE łapał —
+			// dopiero zbiór identyfikatorów z miejscem 1 odróżnia kolumnę.
+			name: "sql-7: zła kolumna w oknie Z3 (ORDER BY minuty DESC) — pieczątka odmawia (regresja ADR-017)",
+			slug: "sql-7",
+			replacements: [
+				[SQL7_Z1_PUSTE, SQL7_Z1_OK],
+				[SQL7_Z2_PUSTE, SQL7_Z2_OK],
+				[
+					SQL7_Z3_PUSTE,
+					[
+						"    SELECT p.id, s.nazwa, p.kwota,",
+						"           ROW_NUMBER() OVER (PARTITION BY s.nazwa ORDER BY p.minuty DESC) AS miejsce",
+						"    FROM przejazdy AS p JOIN strefy AS s ON p.strefa_id = s.strefa_id",
+					].join("\n"),
+				],
+			],
+			message:
+				/miejsce 1 w swojej strefie zajmują u Ciebie przejazdy o id \[2, 4, 5\][\s\S]*po KWOCIE malejąco/,
+		},
+		{
+			// REGRESJA ADR-017 (D2): ODWRÓCONY kierunek w oknie. `kwota ASC` daje
+			// ranking NAJTAŃSZYCH zamiast najdroższych — odwrotność zadania —
+			// a mimo to licznik miejsc = 3. Zbiór id z miejscem 1 to [2,3,4]
+			// zamiast [1,2,4]: to jedyny sygnał, który tę pomyłkę widzi.
+			name: "sql-7: odwrócony kierunek w oknie Z3 (ORDER BY kwota ASC) — pieczątka odmawia (regresja ADR-017)",
+			slug: "sql-7",
+			replacements: [
+				[SQL7_Z1_PUSTE, SQL7_Z1_OK],
+				[SQL7_Z2_PUSTE, SQL7_Z2_OK],
+				[
+					SQL7_Z3_PUSTE,
+					[
+						"    SELECT p.id, s.nazwa, p.kwota,",
+						"           ROW_NUMBER() OVER (PARTITION BY s.nazwa ORDER BY p.kwota ASC) AS miejsce",
+						"    FROM przejazdy AS p JOIN strefy AS s ON p.strefa_id = s.strefa_id",
+					].join("\n"),
+				],
+			],
+			message:
+				/miejsce 1 w swojej strefie zajmują u Ciebie przejazdy o id \[2, 3, 4\][\s\S]*po KWOCIE malejąco/,
 		},
 	];
 
