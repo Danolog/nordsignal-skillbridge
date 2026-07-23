@@ -218,7 +218,9 @@ Kolejność:
    (mapa znorm. nazwa → popyt, dedup `max`). Zrefaktoruj `computeDemandCoverage`, żeby jej używała
    (zachowaj obecną semantykę i testy).
 2. **`src/lib/passport-verified.ts`** — `buildVerifiedPassportCompetencies` używa `buildDemandByName`
-   zamiast inline mapy (`:116-118`). Zachowanie bez zmian (`?? null`).
+   zamiast inline mapy (`:116-118`). Zachowanie bez zmian dla katalogu bez duplikatów nazw; dla
+   duplikatów znormalizowanych nazw ujednolica paszport na `Math.max` (świadoma semantyka
+   `computeDemandCoverage`, wcześniejszy last-wins w passport-verified był przypadkowy) (`?? null`).
 3. **`src/app/api/onboarding/route.ts`**:
    - usuń `marketPercentage` z `SelectedCompetencySchema` (`:38`);
    - załaduj `loadMarketCatalog(careerGoal)` raz przed budową wierszy, zbuduj `demandByName`;
