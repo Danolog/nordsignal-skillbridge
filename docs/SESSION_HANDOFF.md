@@ -11,7 +11,55 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-23 — M-EDA NA PRODUKCJI (44/58); SONDA WYKONANA, BRAMKA OTWARTA; NEXT 16.2.11 (4 highy)
+## STAN NA DZIŚ — 2026-07-23 — M-EDA NA PRODUKCJI (44/58); STRAŻNICY SEKRETÓW + AUDIT-LOG NA MAIN; DWIE ŁATKI DEPS (Next 16.2.11, PostCSS 8.5.22)
+
+**Jednym zdaniem:** partia 7 (M-EDA) jest na produkcji (**44/58**), a repo produktu
+ma wreszcie **własne bezpieczniki** (guard-secrets + audit-log) aktywne na `main`;
+po drodze dwie fale advisory (Next.js, PostCSS) zdjęte osobnymi łatkami deps.
+
+### 🔒 Bezpieczniki w repo produktu — NA MAIN (#213, squash `bfca8d7`)
+
+Luka z audytu Ryana: sesja startująca z katalogu produktu nie miała `guard-secrets`
+ani audit-logu (nadrzędne repo je ma, zagnieżdżone nie). Domknięte:
+
+- **`hooks/guard-secrets.py`** (PreToolUse Write|Edit **i** Bash) + **`hooks/audit-log.py`**
+  (PostToolUse) — **kopie 1:1** z repo nadrzędnego (`diff -q` potwierdzony przed pushem
+  i **po rebase** — asekuracja Leo), samowystarczalne, tylko biblioteka standardowa.
+- Rejestracja w `.claude/settings.json`: guard-secrets dołożony do wpisu `Write|Edit`
+  (po guardzie drizzle) + nowy matcher `Bash`; audit-log bez matchera. **Biome i guard
+  migracji drizzle nietknięte.**
+- Commit **ludzką ręką Darka** (`a5f29f2`→squash `bfca8d7`, przez `!`), sign-off Plan
+  Mode 2026-07-23 (plan `steady-wibbling-riddle`). Weryfikacja: Ryan 4/4, Leo ACCEPT
+  z uwagami, Ethan — deny na `sk-`/`AKIA` dowiedziony żywcem (nadrzędny strażnik
+  zablokował komendę testową).
+- **U2 (#215, squash `2e15aeb`):** jawny `logs/` w `.gitignore` — dziennik audytu
+  `logs/audit/*.jsonl` był ignorowany dotąd tylko INCYDENTALNIE przez `audit/` (l.52);
+  zakotwiczenie tamtego do `/audit/` przepuściłoby log do repo. `git check-ignore` po
+  zmianie → przez jawny `logs/`. Autor Ethan, mandat na trywialny gitignore.
+- **U1 → Ryan (nie Ethan):** czy pominięcie `SubagentStart/Stop` w audit-logu produktu
+  to zakres czy przeoczenie (atrybucja kosztu per-pilot opiera się na tych zdarzeniach).
+  Właściciel `audit-log.py` = Ryan, jego decyzja. OTWARTE.
+- **U3 → nota, później:** `guard-secrets` nie pokrywa `NotebookEdit` (tak samo w
+  nadrzędnym, teoretyczne) — do wspólnego guarda w przyszłości.
+
+### Dwie łatki bezpieczeństwa deps (blokowały deps-scan na całym main)
+
+- **Next.js 16.2.9 → 16.2.11** (#210, `c1b6f9a`) — 4 wysokie advisory App Router
+  (bypass middleware, DoS, 2× SSRF), `>=16.0.0 <16.2.11`. Nota N1 (niżej): u nas bypass
+  pośrednika to utwardzenie, bo autoryzacja żyje w trasach/RSC, nie w middleware.
+- **PostCSS override `^8.5.22`** (#214, `345b08f`) — GHSA-6g55-p6wh-862q „arbitrary
+  file read", `<=8.5.11`, opublikowane 2026-07-23 po łatce Next. Transitive (via
+  `@tailwindcss/postcss`/next), override wzorcem undici/fast-uri/sharp. **Wzorzec dnia:
+  nocne/dzienne advisory czerwienią deps-scan na main niezależnie od pracy — diagnoza,
+  osobny wąski PR z override/bumpem, nie obchodzenie.**
+
+**Baza po tych zmianach:** `main` = `2e15aeb`; strażnicy aktywni; deps-scan zielony.
+Hooki to warstwa dev-time + config — **nie dotykają aplikacji**, smoke prod bez zmian
+(`/` 200, `/login` 200, `/api/curriculum` 401, `/curriculum` 307). Produkcja nadal 44/58.
+
+---
+
+## STAN POPRZEDNI (ten sam dzień) — M-EDA NA PRODUKCJI (44/58); SONDA WYKONANA, BRAMKA OTWARTA
 
 **Jednym zdaniem:** partia 7 (M-EDA) jest na produkcji — sonda środowiska
 wykonana przez Darka odblokowała bramkę, zaciąg przeszedł, **produkcja = 44/58**.
