@@ -1,10 +1,12 @@
 # 1E.2 · Moduł M-EDA „EDA: od API do repozytorium" — treść atomów + rampa capstone'u
 
 **Autor:** Sophia (PO, kuracja + autoring) · **Data:** 2026-07-11 ·
-**Ostatnia zmiana:** 2026-07-23 (przegląd zrzutów meda-5/meda-6 — dług
-INFO-6: pułapka Gist potwierdzona realnym UI, ale ujawniony potencjalny
-rozjazd etykiety „Zapisz kopię w usłudze GitHub"; addendum na końcu
-dokumentu — prod BEZ zmian) · **Poprzednia:** 2026-07-22 (partia 7 —
+**Ostatnia zmiana:** 2026-07-23 (zrzut meda-7 — dług **INFO-6 ZAMKNIĘTY**:
+pozycja „Zapisz kopię w usłudze GitHub" potwierdzona w stanie studenta
+EDA.2 [notatnik z Dysku], rozjazd z meda-5 okazał się pozorny [stan
+powiązany z GitHubem]; treść EDA.2 poprawna, **prod BEZ zmian, bez
+re-ingestu**; addendum na końcu dokumentu) · **Poprzednia:** 2026-07-22
+(partia 7 —
 notebooki Colab M-EDA, korekta „jako plik Gist" w EDA.2, dwie nowe pozycje
 pierwszej pomocy; log i brama T1–T5 na końcu dokumentu) ·
 **Status:** **ZATWIERDZONY (Darek, 2026-07-11)** — po przeglądzie QG
@@ -908,12 +910,16 @@ notebooka, a nie własnej kopii; (b) przycisku zatwierdzającego formularz
 i opisuje (b) **funkcjonalnie** („zielony przycisk zatwierdzenia na dole
 formularza"). TODO: zrzuty `meda-5` (menu Plik we własnej kopii)
 i `meda-6` (formularz Create new file) — akcja Darka.
-**ROZSTRZYGNIĘCIE 2026-07-23:** zrzuty dostarczone — **NIE zamykają długu
-czysto**: meda-5 potwierdza etykietę Gist verbatim, ale ujawnia stan menu
-BEZ osobnej pozycji „Zapisz kopię w usłudze GitHub" (potencjalny rozjazd
-ruchu 2); meda-6 pokazuje rozwinięte MENU „Add file", nie sam formularz
-„Create new file" (przycisk zatwierdzenia nadal bez zrzutu). Szczegóły
-i rekomendacja — addendum na końcu dokumentu.
+**ROZSTRZYGNIĘCIE 2026-07-23 (dwa kroki):** (1) meda-5/meda-6 nie zamknęły
+długu czysto — meda-5 ujawnił stan menu BEZ pozycji „Zapisz kopię w usłudze
+GitHub" (potencjalny rozjazd ruchu 2). (2) **meda-7 ZAMKNĄŁ INFO-6(a):**
+menu Plik notatnika z **Dysku** (stan studenta EDA.2) MA pozycję „Zapisz
+kopię w usłudze GitHub" obok wariantu Gist — rozjazd okazał się pozorny
+(meda-5 był notatnikiem powiązanym z GitHubem, inny stan). Treść ruchu 2
+poprawna, bez korekty. **INFO-6(b)** (formularz „Create new file" z
+przyciskiem „Commit changes") — świadomie NIE blokuje zamknięcia: opis
+funkcjonalny wystarcza, zrzut formularza został jako osobny drobny TODO.
+Szczegóły — addendum na końcu dokumentu.
 
 ## Brama przed oddaniem — część A (`skills/product/tresci-edukacyjne.md`)
 
@@ -923,7 +929,7 @@ i rekomendacja — addendum na końcu dokumentu.
 | **T2 — czystość widoku studenta** | **PASS** | Grep spakowanego `m-eda.json` na „errata", „QG", „WAŻN", „KRYT", „INFO-", „TODO", „nota", „poprawione po", imiona ról: **0 trafień w `contentMd` i hintach**. Jedyne trafienie („QG-5") siedzi w polu `notes` zasobu — a `curriculum_item_resources` **nie ma takiej kolumny** i ingest jej nie przenosi (sprawdzone w `schema.ts` i `ingest-curriculum.ts`), więc do studenta nie dociera. Cały ten log i notatki leżą poza sekcjami atomów. |
 | **T3 — liczby policzone** | **PASS** | Tabela „Co zostało wykonane" wyżej: 14 twierdzeń, każde z metodą i wynikiem. Liczby w notebookach (16, 10, 32, 200, 404, 5,9 / 5,7875) pochodzą z uruchomień z 2026-07-22, nie z pamięci. |
 | **T4 — błędy zapowiedziane i placeholdery** | **PASS** | Oba zapowiadane błędy wykonane: `NameError: name '______' is not defined` (luki) i `TypeError: agg function failed …` (luka 2 → średnia). Grep `___` (dokładnie trzy podkreślenia) w źródłach `meda/`: **0**. Polski cudzysłów wewnątrz stringu kodu: **0**. Wszystkie 20 komórek kodu kompilują się realnym python3. |
-| **T5 — cudze UI** | **PASS z jawnym długiem** | Każda etykieta cytowana dosłownie w notebooku EDA.2 ma pokrycie w zrzutach z 2026-07-22: „New" / „Create a new repository" / „1 General" / „Owner \*" / „Repository name \*" / „Description" / „2 Configuration" / „Choose visibility \*" / „Public" / „Add README" / „Add .gitignore" / „Add license" / „Create repository" (meda-3); „Add file" / „Create new file" / „Upload files" (meda-4); „Kopiuj do GitHuba" / „Repozytorium" / „Gałąź" / „Ścieżka pliku\*" / „Komunikat zatwierdzenia" / „Utworzono za pomocą Colab" / „Podaj link do Colab" / „OK" / „Anuluj" (meda-2); „Zapisz kopię w usłudze GitHub jako plik Gist" (meda-1). Dwie etykiety bez zrzutu — patrz INFO-6: jedna cytowana jako prefiks potwierdzony zrzutem, druga przepisana funkcjonalnie. **Aktualizacja 2026-07-23 (addendum):** meda-5 dokłada zrzut etykiety „Zapisz kopię w usłudze GitHub jako plik Gist" (verbatim ✓); meda-6 — „Add file" / „Create new file" / „Upload files" (verbatim ✓, redundantnie z meda-4). ALE meda-5 pokazuje menu Plik BEZ osobnej pozycji „Zapisz kopię w usłudze GitHub" → **T5 dla tej jednej etykiety NIE PASS**, dług INFO-6 otwarty (wymaga meda-7 — menu Plik notatnika z Dysku). |
+| **T5 — cudze UI** | **PASS z jawnym długiem** | Każda etykieta cytowana dosłownie w notebooku EDA.2 ma pokrycie w zrzutach z 2026-07-22: „New" / „Create a new repository" / „1 General" / „Owner \*" / „Repository name \*" / „Description" / „2 Configuration" / „Choose visibility \*" / „Public" / „Add README" / „Add .gitignore" / „Add license" / „Create repository" (meda-3); „Add file" / „Create new file" / „Upload files" (meda-4); „Kopiuj do GitHuba" / „Repozytorium" / „Gałąź" / „Ścieżka pliku\*" / „Komunikat zatwierdzenia" / „Utworzono za pomocą Colab" / „Podaj link do Colab" / „OK" / „Anuluj" (meda-2); „Zapisz kopię w usłudze GitHub jako plik Gist" (meda-1). Dwie etykiety bez zrzutu — patrz INFO-6: jedna cytowana jako prefiks potwierdzony zrzutem, druga przepisana funkcjonalnie. **Aktualizacja 2026-07-23 (addendum):** meda-5 dokłada zrzut etykiety „Zapisz kopię w usłudze GitHub jako plik Gist" (verbatim ✓); meda-6 — „Add file" / „Create new file" / „Upload files" (verbatim ✓, redundantnie z meda-4). meda-5 pokazywał menu Plik BEZ osobnej pozycji „Zapisz kopię w usłudze GitHub" (notatnik powiązany z GitHubem) → **meda-7 rozstrzygnął: T5 dla tej etykiety PASS** — menu Plik notatnika z Dysku (stan studenta EDA.2) MA tę pozycję obok Gista, verbatim ✓. Dług INFO-6(a) ZAMKNIĘTY; zostaje drobny TODO: zrzut samego formularza „Create new file" z przyciskiem „Commit changes" (INFO-6 b — niepilne, opis funkcjonalny wystarcza). |
 
 ## Brama — część B (self-critique)
 
@@ -974,12 +980,13 @@ grupy utknęło na jednym kroku. Pięć słabości i co z nimi zrobiłam:
    `CLAUDE.md` v1.12), nie ja.
 4. **Sonda środowiska (ADR-016 D3)** przed ingestem — wyzwalacz „przed
    każdym ingestem nowej partii notebooków" dotyczy tej partii wprost.
-5. **Zrzuty meda-5 i meda-6** (INFO-6) — ✅ dostarczone 2026-07-23, ale
-   dług **NIE zamknięty czysto** (addendum na końcu): potrzebny **meda-7**
-   (menu Plik notatnika z **Dysku** — stan studenta EDA.2) do rozstrzygnięcia
-   potencjalnego rozjazdu ruchu 2; opcjonalnie zrzut samego formularza
-   „Create new file" z przyciskiem „Commit changes". Akcja Darka; do
-   reweryfikacji `verifiedAt`.
+5. **Zrzuty meda-5/6/7** (INFO-6) — ✅ **ZAMKNIĘTE 2026-07-23** (addendum na
+   końcu): meda-7 potwierdził pozycję „Zapisz kopię w usłudze GitHub" w menu
+   Plik notatnika z Dysku (stan studenta EDA.2) — treść ruchu 2 poprawna,
+   bez korekty, bez re-ingestu. `verifiedAt` EDA.2 do odświeżenia na
+   2026-07-23. **Drobny TODO (niepilny, nieblokujący):** zrzut samego
+   formularza „Create new file" z przyciskiem „Commit changes" (INFO-6 b) —
+   opis funkcjonalny wystarcza do czasu.
 
 **Werdykt partii 7: GO Z NOTAMI** — 1 KRYT i 3 WAŻN znalezione **przed**
 oddaniem i wcielone, 6 INFO opisanych (2 zostawione świadomie jako limity
@@ -1048,42 +1055,60 @@ changes" jest standardowa, opis funkcjonalny wystarcza jako rozwiązanie
 interim — jak zapisano w INFO-6), ale T5 verbatim dla tej etykiety wciąż
 niespełniony.
 
-## Status długu INFO-6 po zrzutach
+## meda-7 — menu Plik (notebook `l0-3-…ipynb`, KOPIA na Dysku — stan studenta EDA.2)
 
-- **(a) „Zapisz kopię w usłudze GitHub" (bez Gista):** NIE zamknięty.
-  Etykieta Gist — verbatim potwierdzona ✓. Istnienie pozycji BEZ Gista —
-  **podważone** na stanie powiązanym; wymaga zrzutu menu Plik notatnika
-  z Dysku (stan EDA.2).
-- **(b) przycisk formularza „Create new file":** NIE zamknięty. meda-6 =
-  menu, nie formularz. Opis funkcjonalny stoi (interim); T5 verbatim
-  otwarty.
+**Werdykt: ROZSTRZYGA na korzyść treści — rozjazd z meda-5 był POZORNY.**
+Zrzut `meda-7-plik-menu-notatnik-dysku-20260723.png` (akcja Darka,
+2026-07-23), obejrzany osobiście.
 
-## Rekomendacja (do Olivera)
+Co widać:
+- tytuł **„Kopia notatnika l0-3-sesja-ma-pamiec.ipynb"** z **ikoną Dysku
+  Google** (kolorowy trójkąt) + status zapisu na Dysku, **bez ikony
+  GitHub** — czyli własna kopia z Dysku, dokładnie **stan studenta EDA.2**
+  (kopia z L0), niepowiązana z repo. Pozycje „Znajdź na Dysku", „Przenieś
+  do kosza", „Zapisz i przypnij wersję" potwierdzają notatnik dyskowy;
+- w menu Plik **TRZY** pozycje zapisu w kolejności: „Zapisz kopię na
+  Dysku" → „Zapisz kopię w usłudze GitHub **jako plik Gist**" (pułapka) →
+  **„Zapisz kopię w usłudze GitHub"** (bez dopisku) — **istnieje**,
+  verbatim, tuż pod Gistem.
 
-1. **Bez repacku i bez re-ingestu TERAZ.** Nie mam ustalonej korekty do
-   naniesienia — jedna pozycja podważona, druga to brak zrzutu. Repack na
-   domysł złamałby zasadę „nie zgaduj cudzego UI" (brama T5). **Treść na
-   prodzie nie jest błędna:** ostrzega przed pułapką Gist (teraz
-   potwierdzoną realnym UI), a hint 3 i pierwsza pomoc poz. 8 kierują
-   studenta bez własnej kopii z powrotem do L0.2. Najgorszy realny skutek
-   dziś to zagubienie przy dosłownym szukaniu etykiety — nie błędna nauka.
-2. **Potrzebny jeden dodatkowy zrzut — akcja Darka:** menu **Plik**
-   **własnego notatnika z Dysku** (NIE powiązanego z GitHubem — stan
-   studenta EDA.2), robocza nazwa
-   `meda-7-plik-menu-notatnik-dysku-2026MMDD.png`. Rozstrzyga „jest / nie
-   ma" pozycji „Zapisz kopię w usłudze GitHub".
-3. **Warunkowo:** jeśli meda-7 pokaże, że pozycji NIE MA także dla
-   notatnika z Dysku → **rozjazd potwierdzony** → korekta ruchu 2 / hint 2
-   / hint 3 EDA.2 na afordancję „Zapisz w GitHubie, aby zachować zmiany"
-   przy tytule → repack → **re-ingest na prod (Ethan, mandat CLAUDE.md
-   v1.12; ADR-010 czerwona linia)**. Jeśli pozycja JEST → meda-5 był stanem
-   powiązanym, treść poprawna, INFO-6(a) zamykam zrzutem meda-7, bez
-   re-ingestu.
-4. **INFO-6(b):** przy okazji meda-7 albo osobno — zrzut **formularza**
-   „Create new file" z widocznym przyciskiem „Commit changes"; niepilne,
-   nie blokuje.
+Wniosek: dla notatnika z Dysku (stan EDA.2) pozycja z ruchu 2 EDA.2 jest
+obecna, obok pułapki Gist — **dokładnie tak, jak zakłada treść** (ruch 2
+l. 244 + ostrzeżenie „BEZ dopisku «jako plik Gist»" l. 248). meda-5 nie
+pokazywał jej **tylko** dlatego, że był z notatnika **powiązanego
+z GitHubem** — inny stan Colaba, w którym zapis kopii przeniósł się do
+afordancji przy tytule. Hipoteza z poprzedniego addendum potwierdzona;
+kierunku korekty słusznie nie zgadywałam — korekty nie ma.
 
-**Werdykt addendum:** meda-5 = POTWIERDZA (Gist verbatim) + ZNALEZISKO
-(rozjazd możliwy); meda-6 = POTWIERDZA (menu Add file), NIE zamyka (b).
-Dług INFO-6 **otwarty**; jeden zrzut od Darka (meda-7) rozstrzyga kierunek;
-**prod bez zmian do czasu rozstrzygnięcia.**
+## Status długu INFO-6 — ZAMKNIĘTY
+
+- **(a) „Zapisz kopię w usłudze GitHub" (bez Gista):** ✅ **ZAMKNIĘTY**
+  zrzutem meda-7 — pozycja istnieje w stanie studenta EDA.2 (notatnik
+  z Dysku), etykieta verbatim; T5 dla niej PASS. Etykieta Gist —
+  potwierdzona meda-5 (verbatim ✓).
+- **(b) przycisk formularza „Create new file":** świadomie NIE blokuje
+  zamknięcia INFO-6. meda-6 potwierdził menu „Add file/Create new file/
+  Upload files" (verbatim ✓); sam przycisk „Commit changes" formularza
+  pozostaje opisany funkcjonalnie (interim wg zasady INFO-6) → **osobny
+  drobny, niepilny TODO** (zrzut formularza przy okazji).
+
+## Rekomendacja (do Olivera) — zaktualizowana po meda-7
+
+1. **Bez re-ingestu, prod bez zmian — jednoznacznie.** meda-7 potwierdza,
+   że ruch 2 EDA.2 kieruje do pozycji, która realnie istnieje w stanie
+   studenta. Treść na prodzie jest poprawna; nie było i nie ma korekty do
+   naniesienia. `m-eda.json` nietknięty, packer nieuruchamiany.
+2. **`verifiedAt` atomu EDA.2** do odświeżenia na 2026-07-23 (potwierdzenie
+   realnym UI trzech etykiet zapisu) — przy najbliższej edycji manifestu,
+   nieblokujące.
+3. **Drobny TODO (niepilny):** zrzut samego **formularza** „Create new
+   file" z przyciskiem „Commit changes" — domyka T5 verbatim dla jednej
+   etykiety opisanej dziś funkcjonalnie. Nie blokuje ani PR-a, ani prod.
+
+**Werdykt addendum (finalny):** meda-5 = POTWIERDZA Gist (verbatim) +
+ujawnił pozorny rozjazd; meda-6 = POTWIERDZA menu „Add file"; **meda-7 =
+ZAMYKA INFO-6(a)** — pozycja „Zapisz kopię w usłudze GitHub" istnieje
+w stanie studenta EDA.2, treść poprawna. **Dług INFO-6 zamknięty**
+(zostaje 1 drobny niepilny TODO na formularz). **Prod bez zmian, bez
+re-ingestu.** Gałąź `docs/curation-meda-info6-zrzuty` = czysta
+dokumentacja, gotowa do scalenia.
