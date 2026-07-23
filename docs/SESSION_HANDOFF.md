@@ -11,216 +11,101 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-22 (noc) — M-EDA (44/58) + ADR-016 NA MAIN; BRAMKA ŚRODOWISKA EGZEKWOWANA MASZYNOWO, SONDA OPUBLIKOWANA — CZEKA NA DARKA
+## STAN NA DZIŚ — 2026-07-23 — M-EDA NA PRODUKCJI (44/58); SONDA WYKONANA, BRAMKA OTWARTA; NEXT 16.2.11 (4 highy)
 
-**Jednym zdaniem:** wszystko, co dało się zrobić bez człowieka, jest zrobione —
-notebooki M-EDA na produkcyjnym repo notebooków, bramka środowiska jest już kodem
-(nie deklaracją) i zwraca „zamknięta", sonda leży pod dosłownym adresem w runbooku.
-**Następny ruch należy do Darka: uruchomić sondę w Colabie.**
+**Jednym zdaniem:** partia 7 (M-EDA) jest na produkcji — sonda środowiska
+wykonana przez Darka odblokowała bramkę, zaciąg przeszedł, **produkcja = 44/58**.
+Po drodze security-patch Next.js (4 wysokie advisory z App Router) wszedł osobnym
+PR-em, bo blokował deps-scan na całym main.
 
-### Partia 7: notebooki M-EDA (4 szt.) — PR #206 (squash `ee07e11`), **44/58**
+### Produkcja: zaciąg M-EDA (44/58) — WYKONANY 2026-07-23 (Ethan, mandat v1.12)
 
-- **Zakres:** EDA.1–EDA.3 ćwiczenia (bez pieczątki — nie mają czego bramkować),
-  **EDA.4 lab** z pieczątką (5 checków C1–C5). `eda-przeglad` bez notebooka.
-- **CI dostał `requests~=2.32.0`** obok pandas/duckdb — harness wykonuje realny
-  `import requests` (EDA.1/EDA.4 wołają API GUS BDL; test podmienia samo
-  wywołanie). **Pierwszy realny przebieg zmienionego kroku pip przez Actions —
-  zielony za pierwszym razem**, pip zaciągnął pandas 2.2.3 / duckdb 1.3.2 /
-  requests 2.32.5.
-- **Defekt klasy „pieczątka podpisuje złe rozwiązanie" — znaleziony i domknięty.**
-  Bramka EDA.4 pytała o KSZTAŁT wartości (najpierw typ kolumny, po pierwszej
-  naprawie: litery w wartościach), więc przepuszczała **pięć** złych wejść
-  z tokenem bit w bit identycznym jak poprawne: luka 1 = `values`, cały rekord,
-  `values[0]`, `str(rekord)`; luka 2 = `attrId`. Naprawa strukturalna: bramka pyta
-  o **POCHODZENIE** — `wojewodztwo` musi należeć do nazw z `dane["results"]`,
-  `stopa` do wartości `val` z tych samych rekordów. Zero fałszywych alarmów
-  sprawdzone wykonaniem (`val=null`, `val` całkowite w JSON); token poprawnego
-  przebiegu bez zmian.
-- **⚠ NAUKA METODYCZNA (najważniejsza rzecz z tej partii):** mutacja („cofnij
-  naprawę, policz czerwone") mierzy, czy **test trzyma naprawę**, a NIE czy
-  **naprawa domyka klasę błędów**. Partia 7 mutację przeszła i mimo to wypuszczała
-  pięć złych wejść. Pytanie, które znalazło defekt: *„jakie JESZCZE wejście
-  przechodzi przez tę bramkę?"* — zadane harnessowi (przejazd przez wszystkie pola
-  rekordu API: 14 wejść luki 1, 5 luki 2), nie rozumowaniu. Do wzorca pieczątek.
-- **Znaleziska QG:** WAŻN-1 pułapka „Zapisz kopię w usłudze GitHub **jako plik
-  Gist**" (Gist ≠ repozytorium z README/`requirements.txt` — student mógł oblać
-  rubrykę w dobrej wierze); WAŻN-2 błędna luka 2 wywala komórkę średniej
-  (`TypeError: agg function failed`, `dtype->object`) zanim dojdzie do pieczątki;
-  WAŻN-3 legalny `groupby(as_index=False)` dostawał fałszywą diagnozę.
-  Log w `docs/curation/sophia-1e2-meda-atomy.md`.
-- **Review:** Leo **ACCEPT z uwagami** (R1–R5 nieblokujące; R1/R3 = notatki do
-  wzorca, nie dług; R4 = gałąź Evy osobną rundą).
-- **CI PR #206: 7/7 zielonych** — test 1450/1450 (134 pliki), build, integration,
-  lint, typecheck, secret-scan, deps-scan; e2e-llm pominięty wg reguły ścieżek.
-- **Publikacja:** `skillbridge-notebooks` @ **`c3c206f`** (katalog `meda/`),
-  4× raw **200**, pliki bajt w bajt identyczne z `notebooks/meda/`, ścieżki zgodne
-  z `notebookUrl` w spakowanym `m-eda.json`.
-- **PROD: NIETKNIĘTY.** Backupu nie robiono, ingestu nie było — patrz bramka niżej.
-  Stan prod bez zmian od partii 6: **40 pozycji z notebookUrl**, moduły 9,
-  pozycje 70, pytania 129.
+- **Backup przed zaciągiem:** gałąź Neona **`prod-backup-pre-ingest-krok4-meda-20260723`**
+  (`br-solitary-river-alkdbxgl`), zero-kopiowy snapshot `main` (`br-proud-sun-al3aezrj`).
+  Punkt przywracania: Neon Console → Branches → main → Restore z tej gałęzi.
+- **Zaciąg** `CONFIRM_PROD_DB=1 pnpm db:ingest-curriculum` na **DIRECT** (bez poolera),
+  transakcyjny (`BEGIN…COMMIT`, upsert + `DELETE WHERE`+`INSERT`, **nigdy** `db:seed`),
+  **×2 idempotentny** — oba biegi identyczne: moduły=9, pozycje=70, prereqi=8;
+  bank koncepty=43, pytania **+0** / 129 bez zmian / **0 retired**; **0 downgrade**
+  module_progress.
+- **⚠ 0 retired to dowód, nie szczęście** — niezmiennik F1 (żaden koncept ani
+  `questionRef` nie przecina granicy `M-*`/nie-`M-*`) trzyma: gdyby przeciął,
+  `syncQuestionBank` wygasiłby cicho pytania na prodzie. Bramkuje to test z #208.
+- **Weryfikacja PO (odczyt z prod):** notebookUrl **40 → 44** ✅; m-eda:
+  eda-1/2/3 `url=true, checks=false`, **eda-4** `lab, url=true, checks=true`
+  (1 lab z checkami), **eda-przeglad bez URL-a**, capstone bez zmian;
+  **0 wycieków logu QG do `content_md`** (grep markerów WAŻN/KRYT/INFO-/errata/
+  TODO/imion ról → 0).
+- **Smoke prod:** `/` 200, `/login` 200, `/api/curriculum` 401, `/curriculum` 307;
+  notebook `eda-4` raw **200** (student otworzy). **Produkcja: 44/58.**
 
-### ADR-016 SCALONY — PR #207 (squash `79efee2`) + PR #208 (squash `da1f703`)
+### Sonda środowiska Colab — WYKONANA (ADR-016 D3) — PR #209 (squash `1bc5bce`)
 
-Gałąź Evy `feat/adr016-wersje-silnikow-ci` po `rebase --onto main`, review **Leo:
-ACCEPT z uwagami**. Co weszło:
+Darek uruchomił sondę 2026-07-23. `pnpm srodowisko:zapisz-sonde` **przeliczył
+werdykt w repo z surowego `faktyczny`** (zabezpieczenie Evy — nie ufa polu `zgodny`
+z notebooka):
+- **cytaty 35/35 zgodne**, `niezgodnosciWerdyktu: 0`. DB-01 z ogonem
+  `Did you mean "pg_prepared_statements"?` i K2-02/03 w nawiasach listy —
+  **zgodne** pod dopasowaniem prefiksowym (ADR-016 D5), przeliczenie potwierdziło.
+- **python 3.12.13** — pierwszy realny pomiar, w zakresie 3.11–3.13 (zastąpił `null`);
+  pandas 2.2.2, duckdb 1.3.2, requests 2.32.4 — wszystkie w pinie; BDL 200,
+  kontrakt rekordu bez zmian.
+- `rozjazd: false`, `ostatnia_sonda: 2026-07-23`. **`pnpm srodowisko:bramka` →
+  OTWARTA (exit 0)** na 100 dni od daty sondy. Dowód sondy:
+  `docs/curation/sondy/sonda-srodowiska-20260723.txt`.
+- Noty `python`/`requests` w deklaracji przepisane z „nikt nie zmierzył" na czas
+  przeszły (plik nie może twierdzić czegoś, co sonda obaliła).
 
-- **D1 — deklaracja jedynym źródłem wersji.** Krok pip w CI **czyta piny z pliku**
-  (`pnpm tsx tools/srodowisko-colab.ts --piny`) zamiast trzymać własną kopię.
-  Pierwszy realny przebieg przez Actions zielony: „Piny z deklaracji:
-  `duckdb~=1.3.2 pandas~=2.2.0 requests~=2.32.0`". Dopisanie biblioteki = wpis
-  w deklaracji, **nie** edycja workflow.
-- **D2 — tablica cytatów + skaner inwentarza.** Test **wykonuje** kod produkujący
-  komunikat i sprawdza, czy cytat z treści jest jego prefiksem; skaner wymaga, by
-  każdy kształt `NazwaBłędu: tekst` z artefaktów studenta miał wiersz w tablicy.
-- **D3 — sonda Colab** (notebook + `pnpm srodowisko:zapisz-sonde`, która sama liczy
-  flagę `rozjazd`; pomiar spoza Colaba odrzucany).
-- **D4 — bramka publikacji jest KODEM**, wpięta w packerze **i w ingeście**
-  (wzmocnienie Evy: spakowane JSON-y leżą w repo, ingest wziąłby je bez repacku).
-- **#208 — uwagi Leo F1/F2/F4/F6** (opis niżej).
+### Next.js 16.2.9 → 16.2.11 — PR #210 (squash `c1b6f9a`) — cztery wysokie advisory
 
-Bieg CI obu PR-ów: 7/7 zielonych; test **1507/1507** (#207), **1511/1511** (#208).
+Nocny deps-scan zczerwieniał na main (bieg 05:48, `b4e528d` był zielony o 21:59) —
+cztery advisory Next.js z 2026-07-23, zakres `>=16.0.0 <16.2.11`: bypass
+middleware w App Router (GHSA-6gpp-xcg3-4w24), DoS (GHSA-m99w-x7hq-7vfj), dwa SSRF
+(GHSA-89xv-2m56-2m9x, GHSA-p9j2-gv94-2wf4). Patch bump domyka wszystkie cztery.
+Blokował merge sondy i każdy inny — dlatego wszedł pierwszy, sonda rebase'owana na
+zielony main. Review Leo: ACCEPT bez uwag blokujących.
 
-### 🔴 BRAMKA ŚRODOWISKA (ADR-016 D4) — ZAMKNIĘTA I EGZEKWOWANA MASZYNOWO
+### 🔒 Nota architektoniczna N1 (Leo, do utrwalenia — reguła, nie przypadek)
 
-- `pnpm srodowisko:bramka` → **`❌ ZAMKNIĘTA [brak-sondy]`, kod wyjścia 1**
-  (sprawdzone na `main` po scaleniu). Powód: `srodowisko-colab.json` →
-  `ostatnia_sonda: null` — wersji **Pythona** i **`requests`** w Colabie nikt
-  u nas nie zmierzył.
-- Konsekwencja: **packer i ingest odmawiają modułów `M-*` (w tym `m-eda`)**.
-  To już nie jest dyscyplina, tylko kod — poprzedni wpis („bramka jest deklaracją,
-  nie kodem") **jest nieaktualny**.
-- Reszta modułów (L0/F1–F3) przechodzi świadomie: dług treści musi dać się naprawić
-  mimo starej sondy. To **kompromis operacyjny**, nie stwierdzenie, że moduły F nie
-  cytują silników — cytują (`IndentationError`, `SyntaxError`) i tam ten dług powstał.
-- Furtka `PACK_WERYFIKACJA=1` istnieje **wyłącznie** w teście determinizmu packera
-  (żeby PR-y nie czerwieniły się od stanu Colaba). **Ingest jej nie honoruje i tak
-  ma zostać** — obejście bramki jest zakazane.
-- **Odblokowuje ją wyłącznie Darek** — sonda w Colabie, patrz „CZEKA NA DARKA".
+**Autoryzacja żyje w trasach i layoutach RSC, nie w pośredniku (middleware) —
+świadomie.** 68 sprawdzeń sesji w 57 trasach + layout RSC czyta sesję serwerowo;
+pośrednik NIE jest u nas granicą autoryzacji. Dlatego cała klasa CVE „obejście
+pośrednika" (jak GHSA-6gpp-xcg3-4w24) jest dla nas **utwardzeniem, nie incydentem**
+— grunt pod autoryzacją się nie przesuwa. **Gdyby ktoś przeniósł decyzję
+autoryzacyjną do pośrednika** (kuszące dla wydajności), ta odporność znika.
+Trzymać autoryzację w trasach/RSC to intencjonalna reguła bezpieczeństwa.
 
-### Sonda opublikowana i wykonalna (uwaga F6 Leo)
+### Stan sekwencji Kroku 4 (notebooki)
 
-Scalenie kładło notebook sondy tylko w `main` — Darek dostałby **404** przy
-pierwszym kroku runbooka. Domknięte:
+44/58 na produkcji. Pozostałe do 58: moduły `M-ML` i `M-LLM` (po 7 notebooków
+wg inwentarza) + ewentualne dogrywki. Każda kolejna partia M-* przed zaciągiem
+wymaga **świeżej sondy** (ADR-016 D3: bramka bezwarunkowa dla M-*, ważność 100 dni
+— sonda z 2026-07-23 pokrywa okno do ~2026-10-31).
 
-- **Publikacja:** `skillbridge-notebooks` @ **`32eb909`**, katalog `sonda/`.
-- **Dowód:** adres wzięty **dosłownie z kroku 1 runbooka** → Colab **200**,
-  `raw` **200**, plik **bajt w bajt** zgodny z `notebooks/sonda/sonda-srodowiska.ipynb`
-  z `main`.
-- Runbook dostał ostrzeżenie o kolejności `content:build-sonda` →
-  `content:build-notebooks` → **publikacja** przy każdej zmianie źródła sondy
-  (inaczej mierzy się starą wersję notebooka).
-- W README publicznego repo nota, że `sonda/` to narzędzie utrzymania, nie materiał
-  studenta (leży tam wyłącznie dlatego, że Colab otwiera tylko repo publiczne).
+### CZEKA NA DARKA (nie blokuje 44/58)
 
-### Uwagi Leo do ADR-016 — status
+1. **E-1 (Ryan)** — decyzja o klauzuli informacyjnej art. 13 wobec obietnicy
+   złożonej uczelniom (sign-off `hint-reveals-retencja-signoff.md`). Nie blokuje
+   drabinki hintów ani niczego na prodzie.
+2. **Zrzuty `meda-5`/`meda-6`** + test labu EDA.4 na świeżym koncie (autoryzacja
+   Colab↔GitHub od zera) — treść działa bez nich.
+3. Starsze zaległości — sekcja „Otwarte zaległości (akcje Darka, nie kod)" na końcu
+   pliku (tokeny 0.7-sekret, CSP 0.13, baza testowa `:5433`, Dependabot).
 
-| # | Rzecz | Status |
-|---|---|---|
-| **F1** | bramka była bezpieczna **właściwością dzisiejszej treści**, nie kodem: `syncQuestionBank` wygasza pytania konceptu nieobecnego w plikach, więc koncept po obu stronach granicy `M-*`/nie-`M-*` poszedłby cicho do wygaszenia na produkcji | **ZROBIONE** (#208): dwa testy niezmiennika. Zmierzony stan: **0** konceptów dzielonych, **0** konceptów w >1 module, **4** przecięcia `questionRef` — wszystkie `m-pandas`→`f3` (kierunek bezpieczny). Kierunek M-*→F dopuszczony **regułą z uzasadnieniem** (przy zamkniętej bramce znika KONSUMENT, właściciel jedzie normalnie), nie listą 4 refów. **Testy zweryfikowane mutacją** — po wstrzyknięciu naruszenia obie asercje czerwone z celną diagnozą |
-| **F2** | komentarz twierdził „bramka stoi tam, gdzie stoi ryzyko — przy `M-*`" | **ZROBIONE** — fałszywa klauzula skasowana w 2 miejscach, został prawdziwy powód zakresu |
-| **F4** | `${PIP_PINY}` rozwija się bez cudzysłowów → pin ze znakiem większości powłoka wykona jako przekierowanie, a pip zainstaluje pakiet **bez** ograniczenia wersji, na zielono | **ZROBIONE** — `sprawdzSpec()` w czytniku rzuca na operatorze spoza `~=`/`==` i na znaku spoza `[A-Za-z0-9._-]`; awaria wypada w kroku, który wartość produkuje |
-| **F3** | `/^m-/` to proxy po nazwie na własność „cytuje silnik" | **NOTA, bez akcji** — gdyby zawężać precyzyjniej, sterować inwentarzem cytatów, nie prefiksem nazwy modułu |
-| **F6** | runbook kazał szukać sondy zamiast podać adres | **ZROBIONE** — patrz wyżej |
+### Otwarte w kolejce Engineeringu (nie na prodzie)
 
-### Nowe ADR-y i sign-offy (weszły z partią 7, zero zmian w kodzie produkcyjnym)
-
-- **ADR-016** `docs/decisions/016-wersje-silnikow-w-tresci.md` — wersje silników jako
-  przedmiot reweryfikacji: `srodowisko-colab.json` jedynym źródłem prawdy (D1),
-  bramka sondy (D3), zakaz cytowania numerów wersji w treści studenta (D5.3).
-- **ADR-017** `docs/decisions/017-korelacja-minuty-kwota-msql.md` — domknięcie
-  INFO-4 z partii 6 (`ORDER BY` nieodróżnialny w mini-świecie M-SQL).
-- **ADR-018** `docs/decisions/018-serwerowa-drabinka-hintow.md` — serwerowa drabinka
-  podpowiedzi: wariant A z kształtem `{d, at[]}`, semantyka sticky, dyskryminator
-  `hint_depth_source` bez domyślnej wartości po backfillu. **Zaktualizowany wieczorem
-  o A1/A2/A3 (niżej).**
-- **Sign-off Ryana #1** `docs/security/rate-limit-ailight-signoff.md` — limit tury
-  czatu aiLight (#190).
-- **Sign-off Ryana #2** `docs/security/hint-reveals-retencja-signoff.md` — retencja
-  i minimalizacja znaczników `at[]`: **GO warunkowe**, 8 warunków W-1..W-8 dla Maxa,
-  2 warunki poza PR-em (R-1 skrypt egzekucji retencji dla całego rejestru, R-2 okres
-  dla kont nieaktywnych), **retencja `at[]` = 12 miesięcy**, eskalacja informacyjna
-  **E-1 do Darka** (brak klauzuli informacyjnej art. 13 wobec obietnicy złożonej
-  uczelniom — nie blokuje).
-
-### Plan naprawy `hintDepth` — GOTOWY DO STARTU, Max może zaczynać
-
-Diagnoza Leo: `docs/2026-07-22-dlug-hintdepth-plan-naprawy.md` (cała drabinka
-podpowiedzi jedzie do przeglądarki, `hint_depth` to deklaracja klienta, **czytelnika
-w kodzie produkcyjnym dziś nie ma**). Trzy rzeczy rozstrzygnięte wieczorem przed
-startem Maxa (ADR-018 §5–§7):
-
-- **A1 — kształt migracji, POTWIERDZONY WYKONANIEM.** Dwa `ALTER` na jednej kolumnie
-  nie wyjdą z jednego `pnpm db:generate`, a ręczna edycja pliku migracji jest
-  blokowana hookiem. Sprawdziłem generator (drizzle-kit 0.31.9, izolowana kopia):
-  schemat **z** domyślną wartością → `ADD COLUMN … DEFAULT 'client' NOT NULL`;
-  po usunięciu `.default()` ze schematu → **`ALTER COLUMN … DROP DEFAULT`**.
-  Czyli **`0039` + `0040`, dwa przebiegi generatora, zero ręcznej edycji, żadnego
-  wyjątku od reguły append-only.** Wariant jednomigracyjny (`NOT NULL` bez default)
-  odrzucony dowodem — wywala się na każdej bazie z wierszami i nie oznacza historii.
-- **A2 — niezmiennik `at.length ≤ d`** (nie równość) zapisany jawnie: równość
-  obowiązuje w chwili zapisu, krótsza lista po przycięciu retencyjnym jest **stanem
-  legalnym**. Egzekwowanie: Zod w `hints.ts` przy zapisie i odczycie + dwa testy.
-  Świadomie **bez** `CHECK` w bazie (iteracja po kluczach JSONB wymagałaby własnej
-  funkcji `IMMUTABLE`) — powód zapisany w ADR-ze.
-- **A3 — osłabione twierdzenie o odtwarzalności „per podejście".** Skoro `at`
-  dopisujemy tylko przy WZROŚCIE głębokości, student powtarzający materiał nie
-  generuje wpisu. Decyzji to nie zmienia (broni jej asymetria kosztu błędu), ale
-  **1E.4 nie może zaplanować cechy „czy w tym podejściu korzystał z pomocy"** — nie
-  ma pokrycia w danych. Cechy z pokryciem: `d` (bezterminowo) i „czas od pierwszego
-  odsłonięcia" (**tylko w oknie 12 miesięcy**, po tym retencja tnie `at`).
-- **Warunki Ryana vs ADR: kolizji brak** (ADR-018 §6). Trzy warunki zawężają ADR
-  i wygrywają (W-2 format UTC bez milisekund, W-6 zakaz wynoszenia znaczników poza
-  serwer, W-7 jedyny czytelnik kolumny). **Zakres kroku 6 rośnie** o zdanie
-  informacyjne przy drabince (W-8b, treść: Sophia) i dwa wiersze w rejestrze
-  retencji (W-8a).
-- Obsada bez zmian: **Max** prowadzi cały PR, Jack review kroku 6, Leo review wg
-  14 domen, Ethan scalenie + migracja prod + wdrożenie.
-
-### DŁUGI OTWARTE (jawne)
-
-1. **`marketPercentage` przyjmowany z ciała żądania klienta** (`onboarding/route.ts:38,289`)
-   i agregowany do panelu uczelni (`faculty/dashboard/route.ts:106`). **Wyższa stawka
-   na jednostkę pracy niż `hintDepth`** — to liczba, którą pokazujemy UCZELNI jako dowód
-   dopasowania programu do rynku, a jest deklaracją przeglądarki. Wzorzec serwerowy już
-   w repo istnieje (`passport-verified.ts:122`, `demandByName`). Naprawa prawdopodobnie
-   czysto aplikacyjna, zero migracji. **Kolejka: zaraz po drabince hintów, przed 1E.4.**
-2. **Brak skryptu egzekucji retencji** — rejestr `docs/data/retention.md` deklaruje
-   okresy, których nic nie wykonuje (R-1 u Ryana; dotyczy też vivy od 2026-07-09).
-3. **Zrzuty `meda-5` / `meda-6`** (menu Plik we własnej kopii Colaba; formularz
-   „Create new file") — INFO-6 partii 7, treść działa bez nich.
-4. **Test labu EDA.4 na świeżym koncie** — autoryzacja Colab↔GitHub od zera.
-
-### CZEKA NA DARKA
-
-1. **🔴 SONDA ŚRODOWISKA W COLABIE — jedyna rzecz blokująca zaciąg M-EDA na produkcję.**
-   Wszystko po naszej stronie gotowe: notebook opublikowany, runbook z dosłownym adresem,
-   narzędzie zapisu wyniku, bramka egzekwowana kodem. Ok. 15 minut, wymaga zalogowanej
-   sesji przeglądarki (CI tego nie zrobi).
-   - Runbook: `docs/runbooks/sonda-srodowiska-colab.md`
-   - Adres sondy: `https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/sonda/sonda-srodowiska.ipynb`
-   - Po wykonaniu: wklej wynik do `docs/curation/sondy/sonda-srodowiska-RRRRMMDD.txt`,
-     potem `pnpm srodowisko:zapisz-sonde <plik>` (narzędzie **samo** liczy flagę
-     `rozjazd` — nie ustawiaj jej ręcznie) i `pnpm srodowisko:bramka`.
-   - **Kolejność do końca (wiążąca, rekomendacja Leo):** scalenie ✅ → publikacja
-     notebooków partii 7 ✅ i sondy ✅ → **sonda Darka** ⬅ *tu jesteśmy* →
-     `pnpm srodowisko:zapisz-sonde` → backup gałęzią Neona → **zaciąg M-EDA** (Ethan).
-2. **E-1 (Ryan)** — decyzja o klauzuli informacyjnej art. 13 wobec obietnicy złożonej
-   uczelniom. Nie blokuje drabinki hintów.
-3. **Zrzuty `meda-5` i `meda-6`** + test labu EDA.4 na świeżym koncie (pkt 3–4 długów).
-4. Starsze, wciąż otwarte pozycje — sekcja **„Otwarte zaległości (akcje Darka, nie kod)"**
-   na końcu tego pliku (tokeny 0.7-sekret, CSP 0.13, baza testowa `:5433`, Dependabot).
-   Nie przepisuję ich tutaj, żeby nie mnożyć wersji prawdy.
+- **Serwerowa drabinka hintów** (ADR-018, plan naprawy `hintDepth`) — rozstrzygnięte
+  A1/A2/A3, Max może zaczynać; potem `marketPercentage` (dług wyższej wagi —
+  deklaracja klienta pokazywana uczelni), potem 1E.4 (FSRS).
+- **Gałąź backupu** `prod-backup-pre-ingest-krok4-meda-20260723` — zostawić kilka
+  dni, potem skasować (oszczędność compute), jak poprzednie.
 
 ### Baseline `main` po tej sesji
 
-`da1f703` — trzy scalenia tej sesji: `ee07e11` (partia 7 M-EDA, #206), `79efee2`
-(ADR-016, #207), `da1f703` (uwagi Leo F1/F2/F4/F6, #208) + commity dokumentacyjne.
-CI zielone na wszystkich trzech; unit **1511/1511** (135 plików), tsc 0, Biome 0.
-Publikacja notebooków: `skillbridge-notebooks` @ **`32eb909`** (`meda/` z `c3c206f`
-+ `sonda/`). Wdrożenie produkcyjne po każdym scaleniu **success**; smoke prod
-zgodny z bazą: `/` 200, `/login` 200, `/api/curriculum` 401, `/curriculum` 307.
-**Baza produkcyjna nietknięta** — backupu nie robiono, ingestu nie było
-(40/58 na produkcji, 44/58 w repo). Bramka: **ZAMKNIĘTA `[brak-sondy]`**.
+`1bc5bce` (sonda #209) na bazie `c1b6f9a` (Next 16.2.11 #210) i `ee07e11`
+(partia 7 #206). Publikacja notebooków: `skillbridge-notebooks` @ `32eb909`
+(`meda/` + `sonda/`). **Produkcja: 44/58**, backup `br-solitary-river-alkdbxgl`.
+Bramka środowiska: **OTWARTA** (sonda 2026-07-23, ważna ~100 dni).
 
 ## Poprzednio tego dnia — 🔴→🟢 FLAGI ZAPALONE NA PRODZIE; ETYKIETY UI ZWERYFIKOWANE ZRZUTAMI
 
