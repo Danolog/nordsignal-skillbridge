@@ -32,6 +32,13 @@
 		"zrodlo": "partia 7 (M-EDA): EDA.1 i EDA.4 wolaja API GUS BDL. Colab preinstaluje requests od zawsze - student NICZEGO nie instaluje, wiec pin dotyczy wylacznie CI (harness wykonuje realny `import requests`).",
 		"nota": "Sonda z 2026-07-23 (ADR-016 D3) zmierzyla 2.32.4 - w pinie ~=2.32.0 (linia stabilna od 2024-05, zgodna z maszyna dev 2.32.5). Pin dotyczy wylacznie CI - Colab preinstaluje requests, student niczego nie instaluje. Ekspozycja na wersje minimalna: notebooki uzywaja wylacznie requests.get(url, params=...), .status_code i .json() - powierzchni niezmiennej od 1.x. Zadna tresc nie cytuje komunikatu ani wersji requests (ADR-016 D5.3), wiec ta biblioteka nie dokłada wierszy do tablicy asercji K1."
 	},
+	"scikit-learn": {
+		"pin": "~=1.6.1",
+		"zaobserwowano": "1.6.1",
+		"zweryfikowano": "2026-07-11",
+		"zrodlo": "research Sophii 2026-07-11 (Colab backend-info: scikit-learn 1.6.1 preinstalowany). Partia 8 (M-ML): laby ML.4/ML.7 wolaja sklearn (train_test_split, DecisionTreeClassifier, DummyClassifier, metryki) w harnessie ADR-015 — pin dotyczy wylacznie CI (student niczego nie instaluje, Colab preinstaluje sklearn).",
+		"nota": "Tresc M-ML wykonana i zweryfikowana przez Sophie w scikit-learn 1.6.1 (Colab) ORAZ 1.9.0 (najnowszy) — wszystkie liczby identyczne, deterministyczne przez random_state (test_ids [0,8,9,11,16,18], wektor pomylki id=18, macierz [[1,1],[0,4]], korelacje). Pin ~=1.6.1 do wersji Colaba (jak duckdb do Colaba, nie do dev). Powierzchnia API waska i stabilna (fit/predict/train_test_split/confusion_matrix) — 1.6 i 1.9 zgodne. Zadna tresc nie cytuje wersji sklearn (ADR-016 D5.3); ml-1 cytuje NotFittedError i ValueError, ktore sa w tablicy cytatow (poziom 2a)."
+	},
 	"rozjazd": false,
 	"ostatnia_sonda": "2026-07-23"
 }
