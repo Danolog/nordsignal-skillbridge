@@ -124,8 +124,8 @@ dBack("1E.1a · curriculum: RLS K-INT + odczyt K-PUB (realna baza)", () => {
 			);
 			await db.execute(
 				sql`INSERT INTO curriculum_item_answers
-			      (student_id, tenant_id, item_id, question_item_id, is_correct, hint_depth)
-			    VALUES (${sid}, ${tenantId}, ${itemId}, ${questionItemId}, true, 0)`,
+			      (student_id, tenant_id, item_id, question_item_id, is_correct, hint_depth, hint_depth_source)
+			    VALUES (${sid}, ${tenantId}, ${itemId}, ${questionItemId}, true, 0, 'client')`,
 			);
 			await db.execute(
 				sql`INSERT INTO curriculum_module_progress (student_id, tenant_id, module_id, status)
@@ -160,8 +160,8 @@ dBack("1E.1a · curriculum: RLS K-INT + odczyt K-PUB (realna baza)", () => {
 				async (tx: any) =>
 					tx.execute(
 						sql`INSERT INTO curriculum_item_answers
-					      (student_id, tenant_id, item_id, question_item_id, is_correct, hint_depth)
-					    VALUES (${studentIds[USER_B]}, ${tenantId}, ${itemId}, ${questionItemId}, true, 0)`,
+					      (student_id, tenant_id, item_id, question_item_id, is_correct, hint_depth, hint_depth_source)
+					    VALUES (${studentIds[USER_B]}, ${tenantId}, ${itemId}, ${questionItemId}, true, 0, 'server')`,
 					),
 			),
 		).rejects.toSatisfy(isPermissionDenied);

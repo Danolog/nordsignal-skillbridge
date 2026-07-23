@@ -1,0 +1,4 @@
+ALTER TABLE "curriculum_item_answers" ADD COLUMN "hint_depth_source" text DEFAULT 'client' NOT NULL;--> statement-breakpoint
+ALTER TABLE "curriculum_item_progress" ADD COLUMN "hints_revealed_json" jsonb DEFAULT '{}'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "curriculum_item_answers" ADD CONSTRAINT "curriculum_item_answers_hint_depth_source_values" CHECK ("curriculum_item_answers"."hint_depth_source" IN ('client','server'));--> statement-breakpoint
+ALTER TABLE "curriculum_item_progress" ADD CONSTRAINT "curriculum_item_progress_hints_revealed_json_object" CHECK (jsonb_typeof("curriculum_item_progress"."hints_revealed_json") = 'object');

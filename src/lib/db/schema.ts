@@ -1789,6 +1789,17 @@ export const curriculumItemProgress = pgTable(
 		attempts: integer("attempts").notNull().default(0),
 		lastAnswerAt: timestamp("last_answer_at", { withTimezone: true }),
 		completedAt: timestamp("completed_at", { withTimezone: true }),
+		// ADR-018 D1 — serwerowa drabinka podpowiedzi: mapa
+		// question_item_id → { d: maks. przyznana głębokość 0..3, at: znaczniki
+		// czasu przyznań, UTC pełne sekundy }. Ograniczenie rozmiaru (≤ 3 wpisy
+		// `at` na pytanie) wynika z semantyki NIEMALEJĄCEJ głębokości (ADR-018 D2),
+		// a nie z typu kolumny. Porzucenie „sticky" na rzecz resetu per podejście
+		// zamienia to pole w nieograniczony dziennik zachowania — zmiana klasy
+		// danych, nie optymalizacja. Wymaga ponownego przeglądu domeny ryzyka
+		// (Ryan) PRZED zmianą. Retencja `at[]`: 12 miesięcy (docs/data/retention.md
+		// + docs/security/hint-reveals-retencja-signoff.md). Jedyny pisarz
+		// i czytelnik: src/lib/curriculum/hints.ts (W-7).
+		hintsRevealedJson: jsonb("hints_revealed_json").notNull().default({}),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
@@ -1800,6 +1811,10 @@ export const curriculumItemProgress = pgTable(
 		check(
 			"curriculum_item_progress_status_values",
 			sql`${table.status} IN ('locked','available','in_progress','completed','skipped_by_placement')`,
+		),
+		check(
+			"curriculum_item_progress_hints_revealed_json_object",
+			sql`jsonb_typeof(${table.hintsRevealedJson}) = 'object'`,
 		),
 	],
 );
@@ -1825,6 +1840,14 @@ export const curriculumItemAnswers = pgTable(
 		// Głębokość drabinki hintów w momencie odpowiedzi (0 = bez hintu,
 		// 3 = pełne rozwiązanie) — sygnał D11 i adaptacyjnego fadingu D5.
 		hintDepth: smallint("hint_depth").notNull().default(0),
+		// ADR-018 D3 — źródło wartości hint_depth: 'server' = zmierzone serwerową
+		// drabinką (FSRS/analityka czytają WYŁĄCZNIE to przez readMeasuredHintDepths
+		// z src/lib/curriculum/hints.ts), 'client' = wiersze SPRZED naprawy
+		// (głębokość nieznana, NIGDY zero). Po backfillu domyślną wartością
+		// 'client' (migracja 0039) usuwamy DEFAULT (migracja 0040 DROP DEFAULT) —
+		// każdy przyszły pisarz deklaruje źródło jawnie, pominięcie = błąd zapisu.
+		// Patrz docs/decisions/018-serwerowa-drabinka-hintow.md.
+		hintDepthSource: text("hint_depth_source").notNull(),
 		// MIS.1 — pewność deklarowana PRZED odpowiedzią (1 = zgaduję, 2 = chyba
 		// wiem, 3 = jestem pewny). Cecha FSRS (1E.4) i wsad kalibracji (MIS.2).
 		// NULL = odpowiedź sprzed flagi confidenceProbe (nie zgadujemy wstecz).
@@ -1836,6 +1859,10 @@ export const curriculumItemAnswers = pgTable(
 		index("idx_curriculum_item_answers_tenant_id").on(table.tenantId),
 		index("idx_curriculum_item_answers_item_id").on(table.itemId),
 		check("curriculum_item_answers_hint_depth_range", sql`${table.hintDepth} BETWEEN 0 AND 3`),
+		check(
+			"curriculum_item_answers_hint_depth_source_values",
+			sql`${table.hintDepthSource} IN ('client','server')`,
+		),
 		check(
 			"curriculum_item_answers_confidence_range",
 			sql`${table.confidence} IS NULL OR ${table.confidence} BETWEEN 1 AND 3`,
