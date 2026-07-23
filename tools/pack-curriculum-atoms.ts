@@ -458,9 +458,9 @@ const CHECKS_SQL_4: Check[] = [
 	{
 		id: "C6",
 		kind: "value",
-		note: "Z3: suma kwot godziny 8 = 84.5",
+		note: "Z3: suma kwot godziny 8 = 72.0",
 		var: "z3_top_suma",
-		expect: 84.5,
+		expect: 72.0,
 	},
 ];
 
@@ -490,16 +490,23 @@ const CHECKS_SQL_7: Check[] = [
 	{
 		id: "C4",
 		kind: "value",
-		note: "Z2: suma kwot Manhattanu 65.5",
+		note: "Z2: suma kwot Manhattanu 92.0",
 		var: "z2_top_suma",
-		expect: 65.5,
+		expect: 92.0,
 	},
 	{
 		id: "C5",
 		kind: "value",
-		note: "Z3: dokładnie 3 wiersze z miejscem 1 (po jednym na strefę)",
+		note: "Z3: dokładnie 3 wiersze z miejscem 1 (po jednym na strefę) — diagnostyka",
 		var: "z3_miejsca_1",
 		expect: 3,
+	},
+	{
+		id: "C6",
+		kind: "value",
+		note: "Z3: miejsce 1 w każdej strefie po KWOCIE malejąco (po minutach dałoby [2,4,5], rosnąco [2,3,4])",
+		var: "z3_miejsca1_ids",
+		expect: [1, 2, 4],
 	},
 ];
 

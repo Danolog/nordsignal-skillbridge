@@ -20,8 +20,8 @@ import duckdb
 import pandas as pd
 
 przejazdy = pd.DataFrame([
-    {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 23.5, "godzina": 8},
-    {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 61.0, "godzina": 8},
+    {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 50.0, "godzina": 8},
+    {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 22.0, "godzina": 8},
     {"id": 3, "strefa_id": 10, "minuty": 7,  "kwota": 14.0, "godzina": 9},
     {"id": 4, "strefa_id": 30, "minuty": 22, "kwota": 41.5, "godzina": 17},
     {"id": 5, "strefa_id": 10, "minuty": 15, "kwota": 28.0, "godzina": 17},
@@ -104,7 +104,7 @@ duckdb.sql("""
 duckdb.sql("SELECT COUNT(*) AS wierszy, SUM(kwota) AS suma FROM przejazdy, strefy")
 
 # %% [markdown]
-# 15 wierszy zamiast 5 (bo 5 × 3) i suma 504.0 zamiast 168.0 — każda
+# 15 wierszy zamiast 5 (bo 5 × 3) i suma 466.5 zamiast 155.5 — każda
 # kwota weszła do sumy TRZY razy. Wynik wygląda wiarygodnie i jest
 # fałszywy: najgroźniejsze błędy nie mają komunikatu. Rytuał `COUNT`
 # przed/po łapie to w dwie sekundy.
