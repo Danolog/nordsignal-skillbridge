@@ -20,8 +20,8 @@ import duckdb
 import pandas as pd
 
 przejazdy = pd.DataFrame([
-    {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 23.5, "godzina": 8},
-    {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 61.0, "godzina": 8},
+    {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 50.0, "godzina": 8},
+    {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 22.0, "godzina": 8},
     {"id": 3, "strefa_id": 10, "minuty": 7,  "kwota": 14.0, "godzina": 9},
     {"id": 4, "strefa_id": 30, "minuty": 22, "kwota": 41.5, "godzina": 17},
     {"id": 5, "strefa_id": 10, "minuty": 15, "kwota": 28.0, "godzina": 17},
@@ -60,7 +60,7 @@ duckdb.sql("""
 # - **Kolejność grup jest przypadkowa** — nie ma tu `ORDER BY`, więc
 #   silnik niczego nie obiecał (SQL.2). Chcesz stałego porządku? Dopisz
 #   `ORDER BY strefa_id`.
-# - **`srednia_kwota` dla strefy 10 to 21.833333333333332** — surowa
+# - **`srednia_kwota` dla strefy 10 to 30.666666666666668** — surowa
 #   liczba zmiennoprzecinkowa z długim ogonem (F1.4). W raporcie ją
 #   zaokrąglisz; tutaj patrzysz na wynik bez upiększeń.
 # - **Aliasy `AS` robią robotę** — bez nich kolumny nazywałyby się

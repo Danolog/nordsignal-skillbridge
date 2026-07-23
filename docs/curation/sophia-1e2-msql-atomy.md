@@ -225,10 +225,10 @@ duckdb.sql("""
 """)
 ```
 
-**Przewidź:** kwoty w `przejazdy` to 23.5, 61.0, 14.0, 41.5, 28.0.
+**Przewidź:** kwoty w `przejazdy` to 50.0, 22.0, 14.0, 41.5, 28.0.
 Które wiersze wrócą i w jakiej kolejności?
 
-Trzy wiersze: 61.0, 41.5, 28.0 — przesiane warunkiem, ułożone malejąco.
+Trzy wiersze: 50.0, 41.5, 28.0 — przesiane warunkiem, ułożone malejąco.
 Zasady klauzul:
 
 - Warunki `WHERE` wyglądają znajomo: `>`, `<`, `>=`, `<=`, `<>` (różne;
@@ -316,7 +316,7 @@ z funkcją okna, gdy top-N ma być „w każdej strefie osobno".
    w SQL.5 — zapamiętaj ten zgrzyt, to on uzasadnia JOIN-y.)
 3. **Pełne rozwiązanie z objaśnieniem:**
    `SELECT id, kwota FROM przejazdy WHERE strefa_id = 10 ORDER BY kwota
-   DESC` → trzy przejazdy strefy 10, od najdroższego (28.0, 23.5, 14.0).
+   DESC` → trzy przejazdy strefy 10, od najdroższego (50.0, 28.0, 14.0).
    `Binder Error` z nazwą w komunikacie → tekst w podwójnych
    cudzysłowach (zamień na apostrofy) albo literówka kolumny; wynik
    pusty → warunek nie pasuje do danych (sprawdź wartości: `SELECT
@@ -456,8 +456,8 @@ strefa_id` kończy się błędem?**
 2. **Szkielet:** luka: `GROUP BY godzina`. Godziny w danych to 8, 8, 9,
    17, 17 — ile grup oczekujesz? Która wygra ranking sumy?
 3. **Pełne rozwiązanie z objaśnieniem:** trzy grupy; suma dla 8 →
-   23.5+61.0 = 84.5, dla 17 → 41.5+28.0 = 69.5, dla 9 → 14.0; ranking:
-   84.5, 69.5, 14.0. Błąd „must appear in the GROUP BY clause" →
+   50.0+22.0 = 72.0, dla 17 → 41.5+28.0 = 69.5, dla 9 → 14.0; ranking:
+   72.0, 69.5, 14.0. Błąd „must appear in the GROUP BY clause" →
    kolumna luzem (P2); wynik ma za dużo wierszy → grupujesz po zbyt
    szczegółowej kolumnie (np. po id — każdy wiersz własną grupą).
    Nota do budowy notebooka: w P2 opcję D doprecyzować, by nie
@@ -516,7 +516,7 @@ komórce, a nazwa w jej ostatniej linii pokazuje tabelę.
 
 **Zaliczenie:** komórka-pieczątka: wykonuje trzy zapytania kontrolne
 własną kopią SQL-a i porównuje z Twoimi `z1`–`z3` (Z2: 4 wiersze,
-pierwszy id=2; Z3: 3 grupy, na czele godzina 8 z sumą 84.5) — token
+pierwszy id=2; Z3: 3 grupy, na czele godzina 8 z sumą 72.0) — token
 przy zgodności. Limity klasy L0 obowiązują.
 
 ### Drabinka hintów
@@ -529,7 +529,7 @@ przy zgodności. Limity klasy L0 obowiązują.
    4–5: `COUNT(*)` i `SUM(kwota)`.
 3. **Pełne rozwiązanie z objaśnieniem:** Z2: `WHERE minuty > 10 ORDER BY
    minuty DESC` → 4 wiersze (35, 22, 15, 12 minut; id 2, 4, 5, 1).
-   Z3: godziny 8/17/9, sumy 84.5/69.5/14.0. Jeśli Z3 zwraca błąd „must
+   Z3: godziny 8/17/9, sumy 72.0/69.5/14.0. Jeśli Z3 zwraca błąd „must
    appear in the GROUP BY" — któraś kolumna stoi luzem (SQL.3-P2);
    jeśli Z2 puste — kierunek znaku w warunku.
 
@@ -708,10 +708,10 @@ duckdb.sql("""
 ```
 
 **Przewidź:** ile wierszy ma wynik? I co stoi w `suma_strefy` przy
-trzech przejazdach strefy 10 (kwoty 23.5, 14.0, 28.0)?
+trzech przejazdach strefy 10 (kwoty 50.0, 14.0, 28.0)?
 
 **Pięć wierszy — wszystkie!** — a przy każdym przejeździe strefy 10 ta
-sama wartość `65.5` (suma jego grupy). Czytaj składnię od słowa **OVER**:
+sama wartość `92.0` (suma jego grupy). Czytaj składnię od słowa **OVER**:
 „policz SUM(kwota) PONAD oknem" — a okno definiuje nawias:
 `PARTITION BY strefa_id` = „oknem są wiersze tej samej strefy". Okno to
 jakby GROUP BY, który zagląda przez ramię każdemu wierszowi, zamiast
@@ -860,9 +860,9 @@ specyfikacji, jak w PD.8: pieczątka musi wiedzieć, gdzie patrzeć:
    z SQL.6 — rubryka!).
 
 **Zaliczenie:** komórka-pieczątka: wykonuje własne wersje Z1–Z3
-i porównuje z Twoimi `z1`–`z3` (Z1: 5 wierszy; Z2: Manhattan 3/65.5 na
-czele? sprawdź — Brooklyn ma 61.0 jednym kursem!; Z3: miejsca 1 w trzech
-strefach) — token przy zgodności. Zdania w komórkach tekstowych poza
+i porównuje z Twoimi `z1`–`z3` (Z1: 5 wierszy; Z2: Manhattan 3/92.0 na
+czele? sprawdź — Brooklyn ma najdłuższy kurs (35 min) i najniższą sumę
+(22.0)!; Z3: miejsca 1 w trzech strefach) — token przy zgodności. Zdania w komórkach tekstowych poza
 checkiem (jawny limit klasy L0) — oceni je rubryka capstone'u, tu
 ćwiczysz formę.
 
@@ -883,13 +883,13 @@ checkiem (jawny limit klasy L0) — oceni je rubryka capstone'u, tu
    ```
 
 3. **Pełne rozwiązanie z objaśnieniem:** Z2: `GROUP BY s.nazwa ORDER BY
-   suma_kwot DESC` → Manhattan 3 przejazdy/65.5, Brooklyn 1/61.0,
-   Queens 1/41.5 — zwróć uwagę, jak blisko Manhattanu jest Brooklyn
-   JEDNYM kursem: to jest obserwacja do raportu („suma myli bez
-   liczby kursów — porównaj AVG"), dokładnie w duchu kryterium
-   „wnioski z danych". Z3: `ROW_NUMBER() OVER (PARTITION BY s.nazwa
-   ORDER BY p.kwota DESC)`. Suma w Z2 zawyżona ×3? Kartezjan — wróć
-   do rytuału SQL.5.
+   suma_kwot DESC` → Manhattan 3 przejazdy/92.0, Queens 1/41.5,
+   Brooklyn 1/22.0 — zwróć uwagę, że Brooklyn ma najdłuższy kurs
+   (35 min), a mimo to najniższą sumę: najdłuższy kurs dał najniższy
+   przychód — czas nie jest przychodem. To jest obserwacja do raportu,
+   dokładnie w duchu kryterium „wnioski z danych". Z3: `ROW_NUMBER()
+   OVER (PARTITION BY s.nazwa ORDER BY p.kwota DESC)`. Suma w Z2
+   zawyżona ×3? Kartezjan — wróć do rytuału SQL.5.
 
 ---
 
@@ -1163,8 +1163,8 @@ Sedno M-SQL w całości w polskiej teorii atomów (D4).
 
   ```python
   przejazdy = pd.DataFrame([
-      {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 23.5, "godzina": 8},
-      {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 61.0, "godzina": 8},
+      {"id": 1, "strefa_id": 10, "minuty": 12, "kwota": 50.0, "godzina": 8},
+      {"id": 2, "strefa_id": 20, "minuty": 35, "kwota": 22.0, "godzina": 8},
       {"id": 3, "strefa_id": 10, "minuty": 7,  "kwota": 14.0, "godzina": 9},
       {"id": 4, "strefa_id": 30, "minuty": 22, "kwota": 41.5, "godzina": 17},
       {"id": 5, "strefa_id": 10, "minuty": 15, "kwota": 28.0, "godzina": 17},
@@ -1177,9 +1177,9 @@ Sedno M-SQL w całości w polskiej teorii atomów (D4).
   ```
 
   Punkty kontrolne (muszą się zgadzać po każdej edycji danych): SQL.4
-  Z2 → 4 wiersze, pierwszy id=2; Z3 → (8, 84.5), (17, 69.5), (9, 14.0);
-  SQL.7 Z1 → 5 wierszy; Z2 → Manhattan 3/65.5, Brooklyn 1/61.0,
-  Queens 1/41.5; kartezjan bez ON → 15.
+  Z2 → 4 wiersze, pierwszy id=2; Z3 → (8, 72.0), (17, 69.5), (9, 14.0);
+  SQL.7 Z1 → 5 wierszy; Z2 → Manhattan 3/92.0, Queens 1/41.5,
+  Brooklyn 1/22.0; kartezjan bez ON → 15.
 - **TODO przed ingest 1E.2:**
   1. Budowa 9 notebooków M-SQL (DuckDB 1.3.2; test `duckdb.sql` na
      DataFrame'ach w Colab — smoke na świeżej sesji).
@@ -1251,28 +1251,35 @@ uruchomione ze wzorcowym rozwiązaniem i z 15 wariantami błędnymi.
    źródło prawdy (`curriculum_modules.title` na prodzie) to
    **„SQL: analiza danych w bazie"**. Ujednolicone we wszystkich 7.
 
-**Znalezisko INFO — świadomy limit checków (BEZ zmiany danych):**
+**Znalezisko INFO — świadomy limit checków → ROZWIĄZANE 2026-07-22 (ADR-017):**
 
-W kanonicznym mini-świecie **minuty i kwota są idealnie skorelowane**
-(12→23.5, 35→61.0, 7→14.0, 22→41.5, 15→28.0 — im dłużej, tym drożej).
-Skutek: `ORDER BY kwota DESC` daje identyczną kolejność co `ORDER BY minuty
-DESC` (oba: id 2, 4, 5, 1), więc **check SQL.4 C3 (`z2_pierwszy_id`) nie
-odróżnia porządku po minutach od porządku po kwocie**; analogicznie w SQL.7
-Z3 okno po `minuty` zamiast po `kwota` daje ten sam ranking miejsc, więc
-check C5 (`z3_miejsca_1`) tego nie łapie. Student z błędną kolumną
-porządkującą dostanie token.
+Pierwotnie zanotowano tu świadomy limit checków bez zmiany danych: w mini-świecie
+**minuty i kwota były idealnie skorelowane** (12→23.5, 35→61.0, 7→14.0, 22→41.5,
+15→28.0 — im dłużej, tym drożej). Skutek: `ORDER BY kwota DESC` dawało identyczną
+kolejność co `ORDER BY minuty DESC` (oba: id 2, 4, 5, 1), więc check SQL.4 C3
+(`z2_pierwszy_id`) nie odróżniał porządku po minutach od porządku po kwocie;
+w SQL.7 licznik miejsc C5 (`z3_miejsca_1`) był niezmiennikiem podziału na strefy —
+nie zależał ani od kolumny, ani od kierunku sortowania (`kwota ASC` dawało ranking
+najtańszych zamiast najdroższych i również przechodziło). Student z błędną kolumną
+lub odwróconym kierunkiem dostawał token.
 
-Świadomie **nie zmieniam danych** — listing jest przybity (QG 2026-07-21
-WAŻN-1), a wszystkie checki obu labów są z niego policzone; zmiana jednej
-kwoty wymaga przeliczenia kontraktu i re-ingestu. Ryzyko jest ograniczone:
-lab bramkuje postęp, nie wystawia kredencjału (ADR-015), a pozostałe klauzule
-(WHERE, GROUP BY, agregaty, JOIN, obecność okna) są egzekwowane. **Do decyzji
-przy następnej iteracji treści:** rozerwać korelację (np. przejazd długi, ale
-tani — realistyczne dla korka) i przeliczyć checki.
+**Rozwiązane w ADR-017 (2026-07-22) dwoma niezależnymi zmianami:**
+1. **Dane (D1):** rozerwana korelacja — dwie kwoty zmienione (id 1: 23.5→50.0,
+   id 2: 61.0→22.0), `minuty` nietknięte. Teraz `ORDER BY kwota DESC` w SQL.4 daje
+   inną kolejność niż po minutach (na czele id=1 zamiast id=2) → C3 łapie złą kolumnę.
+2. **Ładunek (D2):** SQL.7 dostał nowy check `z3_miejsca1_ids` (posortowana lista
+   identyfikatorów z miejscem 1) zamiast samego licznika. Rozróżnia: kwota malejąco
+   `[1,2,4]` ✔, minuty malejąco `[2,4,5]` ✘, kwota rosnąco `[2,3,4]` ✘. Pieczątka
+   SQL.7 odmawia przed emisją tokenu, z diagnozą wskazującą kolumnę i kierunek.
+
+Koszt, warianty odrzucone i tabela rozróżnialności zweryfikowana wykonaniem:
+`docs/decisions/017-korelacja-minuty-kwota-msql.md`. Wartości oczekiwane w kontrakcie
+przeliczone (SQL.4 C6 `z3_top_suma` 84.5→72.0; SQL.7 C4 `z2_top_suma` 65.5→92.0;
+nowy SQL.7 C6 `z3_miejsca1_ids` `[1,2,4]`).
 
 **Pozostałe noty (bez zmian w treści):** kolejność grup bez `ORDER BY` jest
 przypadkowa (silnik niczego nie obiecuje — opisane wprost w SQL.3);
-`AVG(kwota)` strefy 10 = `21.833333333333332` (długi ogon float — opisany,
+`AVG(kwota)` strefy 10 = `30.666666666666668` (długi ogon float — opisany,
 żeby nie wyglądał na usterkę); `Catalog Error` dokleja absurdalne
 „Did you mean `pg_prepared_statements`?" — rytuał czytania błędu z L0.3
 doprecyzowany w SQL.1 (prawdę mówi linia z nazwą błędu NAD podpowiedzią).

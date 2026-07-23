@@ -244,4 +244,42 @@ describe("ItemRunner", () => {
 		const body = JSON.parse(fetchMock.mock.calls[0][1].body);
 		expect(body).not.toHaveProperty("confidence");
 	});
+
+	// D-a11y-1 — po asynchronicznym odsłonięciu fokus przenosi się na nową
+	// podpowiedź (tabIndex={-1} + ref), inaczej spadłby na <body>.
+	it("D-a11y-1: po odsłonięciu podpowiedzi fokus trafia na nową podpowiedź (tabIndex -1)", async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal("fetch", mockRoutedFetch({}));
+
+		renderRunner();
+		await user.click(screen.getByRole("button", { name: /Pokaż podpowiedź \(1\/2\)/ }));
+
+		const hint = await screen.findByText("Podpowiedź pierwsza");
+		const hintBox = hint.closest("[tabindex]");
+		expect(hintBox).not.toBeNull();
+		expect(hintBox).toHaveAttribute("tabindex", "-1");
+		await waitFor(() => expect(hintBox).toHaveFocus());
+	});
+
+	// D-a11y-1 — region podpowiedzi niesie aria-busy (po odsłonięciu = false).
+	it("D-a11y-1: region podpowiedzi ma aria-busy", () => {
+		vi.stubGlobal("fetch", mockRoutedFetch({}));
+		renderRunner();
+		const note = screen.getByText(/Odsłonięcie podpowiedzi zapisujemy/);
+		expect(note.closest("[aria-busy]")).not.toBeNull();
+	});
+
+	// D-a11y-2 — błąd hinta to przerwanie: role="alert" (assertive), a nie polite,
+	// i wyjęty z regionu aria-live="polite", który go tłumił.
+	it("D-a11y-2: błąd hinta (429) ogłaszany role=alert, poza regionem polite", async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal("fetch", mockRoutedFetch({ hintStatus: 429 }));
+
+		renderRunner();
+		await user.click(screen.getByRole("button", { name: /Pokaż podpowiedź \(1\/2\)/ }));
+
+		const alert = await screen.findByRole("alert");
+		expect(alert).toHaveTextContent(/Za dużo podpowiedzi naraz/);
+		expect(alert.closest('[aria-live="polite"]')).toBeNull();
+	});
 });
