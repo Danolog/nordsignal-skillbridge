@@ -164,6 +164,50 @@ describe("symulacja sesji studenta F2: komórki → token → checki z prodowego
 		"    for kwota in wydatki:",
 	);
 
+	// Mutacje adwersaryjne sondy (f2-7): każdy z tych błędnych operatorów
+	// zwracał 6 na STAREJ próbce [1,2,3] i przechodził przez pieczątkę
+	// (poczwórna kolizja: suma=iloczyn=len·2=max·2=6). Nowa próbka [2,5,10]→17
+	// rozrywa całą klasę — dowód, że asymetryczna próbka domyka klasę, nie
+	// tylko zmienia liczbę:
+	//   operator  [1,2,3]  [2,5,10]     werdykt na [2,5,10]
+	//   suma           6        17      TOKEN (poprawna)
+	//   iloczyn        6       100      ODMOWA (≠17)
+	//   len·2          6         6      ODMOWA (≠17)
+	//   max·2          6        20      ODMOWA (≠17)
+	// Ciało funkcji podmieniane w miejscu — reszta programu (input, if/else)
+	// nietknięta, więc odmowa pochodzi wprost z sondy, nie z braku specyfikacji.
+	const FUNKCJA_SUMA_POPRAWNA = [
+		"def suma_wydatkow(lista):",
+		"    suma = 0",
+		"    for kwota in lista:          # pętla po PARAMETRZE, nie po globalnej liście",
+		"        suma = suma + kwota",
+		"    return suma                  # return PO pętli, bez wcięcia pętli",
+	].join("\n");
+
+	// Iloczyn zamiast sumy: 1·2·5·10 = 100 ≠ 17 (na [1,2,3] dawał 6 → przechodził).
+	const PROGRAM_ILOCZYN = PROGRAM_F2_7.replace(
+		FUNKCJA_SUMA_POPRAWNA,
+		[
+			"def suma_wydatkow(lista):",
+			"    wynik = 1",
+			"    for kwota in lista:",
+			"        wynik = wynik * kwota",
+			"    return wynik",
+		].join("\n"),
+	);
+
+	// len(lista)·2 = 3·2 = 6 ≠ 17 (na [1,2,3] TEŻ dawał 6 → kolizja z sumą, przechodził).
+	const PROGRAM_LEN_RAZY_2 = PROGRAM_F2_7.replace(
+		FUNKCJA_SUMA_POPRAWNA,
+		["def suma_wydatkow(lista):", "    return len(lista) * 2"].join("\n"),
+	);
+
+	// max(lista)·2 = 10·2 = 20 ≠ 17 (na [1,2,3] dawał 6 → przechodził).
+	const PROGRAM_MAX_RAZY_2 = PROGRAM_F2_7.replace(
+		FUNKCJA_SUMA_POPRAWNA,
+		["def suma_wydatkow(lista):", "    return max(lista) * 2"].join("\n"),
+	);
+
 	// Wariant bez input() i bez decyzji — do odmowy kompletu specyfikacji.
 	const PROGRAM_BEZ_INPUT_IF = [
 		"wydatki = [45.50, 120.00, 33.20, 18.99, 67.30]",
@@ -291,6 +335,30 @@ describe("symulacja sesji studenta F2: komórki → token → checki z prodowego
 			replacements: [["# Twój program — pisz tutaj:", PROGRAM_GLOBALNA_LISTA]],
 			inputs: ["300"],
 			message: /powinna zwrócić 17[\s\S]*globalnej/,
+		},
+		{
+			// Mutacja: iloczyn zamiast sumy. [1,2,3]→6 (przechodził), [2,5,10]→100.
+			name: "f2-7: funkcja liczy ILOCZYN zamiast sumy — sonda [2,5,10] odmawia (100 ≠ 17)",
+			slug: "f2-7",
+			replacements: [["# Twój program — pisz tutaj:", PROGRAM_ILOCZYN]],
+			inputs: ["300"],
+			message: /powinna zwrócić 17, a zwróciła 100\b/,
+		},
+		{
+			// Mutacja: len·2. [1,2,3]→6 (kolizja z sumą, przechodził), [2,5,10]→6.
+			name: "f2-7: funkcja zwraca len·2 zamiast sumy — sonda [2,5,10] odmawia (6 ≠ 17)",
+			slug: "f2-7",
+			replacements: [["# Twój program — pisz tutaj:", PROGRAM_LEN_RAZY_2]],
+			inputs: ["300"],
+			message: /powinna zwrócić 17, a zwróciła 6\b/,
+		},
+		{
+			// Mutacja: max·2. [1,2,3]→6 (przechodził), [2,5,10]→20.
+			name: "f2-7: funkcja zwraca max·2 zamiast sumy — sonda [2,5,10] odmawia (20 ≠ 17)",
+			slug: "f2-7",
+			replacements: [["# Twój program — pisz tutaj:", PROGRAM_MAX_RAZY_2]],
+			inputs: ["300"],
+			message: /powinna zwrócić 17, a zwróciła 20\b/,
 		},
 		{
 			name: "f2-7: program bez input() i if/else — pieczątka odmawia punktami specyfikacji",
