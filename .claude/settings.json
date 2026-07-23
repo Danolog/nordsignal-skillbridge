@@ -47,6 +47,28 @@
 					}
 				]
 			}
+		],
+		"SubagentStart": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "python3 \"$CLAUDE_PROJECT_DIR/hooks/audit-log.py\"",
+						"statusMessage": "Audyt startu subagenta (model, rola)"
+					}
+				]
+			}
+		],
+		"SubagentStop": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "python3 \"$CLAUDE_PROJECT_DIR/hooks/audit-log.py\"",
+						"statusMessage": "Audyt zakończenia subagenta (koszt per agent)"
+					}
+				]
+			}
 		]
 	}
 }
