@@ -14,8 +14,12 @@
  *                   Niezmiennik wiążący to at.length <= d (ADR-018, §8 signoffu):
  *                   po przycięciu at.length < d jest STANEM POPRAWNYM, nie błędem.
  *   2. viva-content — viva_answers (surowa odpowiedź studenta): usuwa wiersze
- *                   odpowiedzi, których sesja została rozstrzygnięta
- *                   (viva_sessions.completed_at) wcześniej niż 12 miesięcy temu.
+ *                   odpowiedzi 12 miesięcy po PRAWOMOCNYM rozstrzygnięciu sesji.
+ *                   Kotwica zegara (W-viva, odbiór Ryan): passed (AI-final) →
+ *                   viva_sessions.completed_at; eskalacja (inconclusive/failed) →
+ *                   data decyzji człowieka w submission_reviews. NIGDY nie kasuje
+ *                   treści spod trwającej recenzji człowieka (needs_human_review
+ *                   bez wiersza decyzji). Szczegóły przy VIVA_RESOLUTION_AT niżej.
  *                   „Co zostaje" wg rejestru = viva_sessions.result_json (punkty
  *                   + uzasadnienia sędziego, bez surowego tekstu) — leży na INNEJ
  *                   tabeli, więc kasowanie wierszy viva_answers jej nie dotyka.
@@ -45,7 +49,13 @@
  * [CZERWONA LINIA gdy prod] — na bazie produkcyjnej to nieodwracalna modyfikacja
  *   realnych danych osobowych. Uruchamia się po kopii zapasowej gałęzią Neona,
  *   ścieżką operacyjną Ethana (delegacja v1.12), NIE z tego skryptu bez pełnej
- *   świadomości. Guard nie przepuści produkcyjnego DSN nawet z CONFIRM_PROD_DB=1.
+ *   świadomości. UWAGA na zakres ochrony guarda: bezwarunkowe ODMÓWIENIE
+ *   produkcyjnego DSN (nawet z CONFIRM_PROD_DB=1) działa WYŁĄCZNIE dzięki
+ *   dopasowaniu fragmentu hard-deny "skill-bridge-ai" w assert-test-db.ts — to
+ *   nie jest ogólna reguła „guard nigdy nie tknie prod". Każdy inny zdalny host
+ *   BEZ tego fragmentu przechodzi po ustawieniu CONFIRM_PROD_DB=1. Przy zmianie
+ *   nazwy bazy produkcyjnej trzeba zaktualizować HARD_DENY_FRAGMENTS, inaczej ta
+ *   linia obrony znika po cichu.
  *
  * Użycie:
  *   pnpm exec tsx tools/enforce-retention.ts                 (dry-run, lokalna baza)
@@ -65,6 +75,38 @@ config({ path: ".env" });
 const RETENTION_INTERVAL = "12 months";
 
 /**
+ * Data PRAWOMOCNEGO rozstrzygnięcia sesji vivy = kotwica zegara retencji
+ * (docs/data/retention.md:12, ADR-013 D3). NIE samo completed_at:
+ *   - eskalacja do człowieka (sr istnieje) → decyzja człowieka = data w
+ *     submission_reviews.created_at (człowiek ma ostatnie słowo, ADR-008);
+ *   - AI-final passed (bez człowieka) → viva_sessions.completed_at;
+ *   - w każdym innym stanie (inconclusive/failed bez decyzji, pending,
+ *     in_progress, expired) → NULL = nie kwalifikuje się do kasowania.
+ * completed_at przy inconclusive/failed jest ustawiane przez AI-close
+ * (session-store.ts:99/137/186) PRZED decyzją człowieka — użycie go jako
+ * kotwicy podcinałoby bramkę HITL nad kredencjałem.
+ */
+const VIVA_RESOLUTION_AT = `
+	CASE
+		WHEN sr.id IS NOT NULL THEN sr.created_at
+		WHEN vs.status = 'passed' THEN vs.completed_at
+		ELSE NULL
+	END`;
+
+/**
+ * WSPÓLNY predykat retencji vivy (count i apply MUSZĄ go współdzielić dosłownie).
+ * Dwie części:
+ *   (1) Twarde wykluczenie HITL: nigdy nie kasuj odpowiedzi, gdy zgłoszenie
+ *       czeka na recenzję człowieka (needs_human_review = true) i decyzja
+ *       jeszcze nie zapadła (brak wiersza submission_reviews). Konserwatywnie
+ *       trzyma CAŁĄ treść takiego zgłoszenia — może tylko kasować MNIEJ.
+ *   (2) Zegar: prawomocne rozstrzygnięcie starsze niż okres retencji.
+ */
+const VIVA_RETENTION_PREDICATE = `
+	NOT (ps.needs_human_review = true AND sr.id IS NULL)
+	AND (${VIVA_RESOLUTION_AT}) < now() - interval '${RETENTION_INTERVAL}'`;
+
+/**
  * Reguła egzekucji retencji = jeden wiersz rejestru docs/data/retention.md.
  *
  *  - countSql: zwraca kolumnę `n` = ile wierszy MA cokolwiek do przycięcia.
@@ -81,7 +123,7 @@ type RetentionRule = {
 	applySql: string;
 };
 
-const RULES: RetentionRule[] = [
+export const RULES: RetentionRule[] = [
 	{
 		id: "hints-at",
 		description:
@@ -142,27 +184,42 @@ const RULES: RetentionRule[] = [
 	{
 		id: "viva-content",
 		description:
-			"viva_answers (surowa odpowiedź studenta) dla sesji rozstrzygniętych " +
-			`wcześniej niż ${RETENTION_INTERVAL} temu (zostaje viva_sessions.result_json)`,
+			"viva_answers (surowa odpowiedź studenta) — 12 mies. od PRAWOMOCNEGO " +
+			"rozstrzygnięcia (passed → completed_at; eskalacja → decyzja człowieka " +
+			"w submission_reviews); zostaje viva_sessions.result_json",
 		countSql: `
 			SELECT count(*)::int AS n
 			  FROM viva_answers va
 			  JOIN viva_sessions vs ON vs.id = va.session_id
-			 WHERE vs.completed_at IS NOT NULL
-			   AND vs.completed_at < now() - interval '${RETENTION_INTERVAL}'`,
+			  JOIN project_submissions ps ON ps.id = vs.submission_id
+			  LEFT JOIN submission_reviews sr ON sr.submission_id = vs.submission_id
+			 WHERE ${VIVA_RETENTION_PREDICATE}`,
 		// DELETE (nie NULL): content jest NOT NULL, a ADR-013 D3 / komentarz
 		// schematu mówią „kasowanie zostawia resultJson sesji". result_json leży
 		// na viva_sessions, więc usunięcie wierszy odpowiedzi go nie rusza.
+		//
+		// W-viva (odbiór Ryan): kotwica zegara = PRAWOMOCNE rozstrzygnięcie, nie
+		// samo completed_at. completed_at jest ustawiane też przy inconclusive/
+		// failed (AI-close, session-store.ts:99/137/186) ZANIM człowiek rozstrzygnie
+		// — kasowanie od tej daty (a) przycinałoby przedwcześnie i (b) usuwałoby
+		// surową odpowiedź SPOD trwającej recenzji człowieka (review-queue czyta
+		// va.content). Predykat VIVA_RETENTION_PREDICATE jest WSPÓLNY dla count
+		// i apply (jedno źródło zawężenia → dowód idempotencji się nie rozjedzie).
+		//
+		// Łączenie DELETE…USING z dodatkowymi JOIN-ami (ps, sr) jest legalne
+		// w Postgresie; UNIQUE(submission_id) na submission_reviews gwarantuje,
+		// że LEFT JOIN nie zwielokrotni wierszy va.
 		applySql: `
 			DELETE FROM viva_answers va
 			 USING viva_sessions vs
+			 JOIN project_submissions ps ON ps.id = vs.submission_id
+			 LEFT JOIN submission_reviews sr ON sr.submission_id = vs.submission_id
 			 WHERE vs.id = va.session_id
-			   AND vs.completed_at IS NOT NULL
-			   AND vs.completed_at < now() - interval '${RETENTION_INTERVAL}'`,
+			   AND ${VIVA_RETENTION_PREDICATE}`,
 	},
 ];
 
-async function countRule(client: PoolClient | Pool, rule: RetentionRule): Promise<number> {
+export async function countRule(client: PoolClient | Pool, rule: RetentionRule): Promise<number> {
 	const { rows } = await client.query<{ n: number }>(rule.countSql);
 	return rows[0]?.n ?? 0;
 }
@@ -245,7 +302,13 @@ async function main(): Promise<void> {
 	}
 }
 
-main().catch((err) => {
-	console.error("[enforce-retention] FAILED:", err instanceof Error ? err.message : String(err));
-	process.exit(1);
-});
+// Uruchom CLI tylko gdy plik wykonywany bezpośrednio (nie przy imporcie RULES
+// w teście integracyjnym) — inaczej import odpaliłby main()/połączenie z bazą.
+const invokedDirectly =
+	typeof process.argv[1] === "string" && process.argv[1].includes("enforce-retention");
+if (invokedDirectly) {
+	main().catch((err) => {
+		console.error("[enforce-retention] FAILED:", err instanceof Error ? err.message : String(err));
+		process.exit(1);
+	});
+}
