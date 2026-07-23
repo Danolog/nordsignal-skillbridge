@@ -54,3 +54,25 @@ Sprzątanie po zamknięciu strumienia:
 `strumien/<x>` to tylko miejsce postoju HEAD-a worktree (dwa worktree nie mogą
 trzymać tej samej gałęzi, więc `main` zostaje w drzewie głównym). Pracy się na
 niej NIE prowadzi — feature-gałęzie zawsze z `origin/main` (reguła 1).
+
+## Serializacja operacji prod między sesjami (ingest / deploy / migracja)
+
+Gdy dwie sesje żyją równolegle, **tylko jedna może wykonywać operację prod naraz**
+(zaciąg danych NEON, deploy, migracja schemy). Build i bramki (review, testy, repack)
+wolno równolegle — serializuje się **wyłącznie sam ingest/deploy/migrację**.
+
+**Przed KAŻDĄ operacją prod — sprawdź, czy druga sesja nie zaciąga:**
+
+1. `git fetch && git log origin/main -5` — czy main ruszył (druga sesja scaliła).
+2. ⚠ **Backupy NEON to gałęzie Neona, NIE git.** `git branch -r | grep prod-backup`
+   ZAWSZE zwróci false-negative — backupy nie są w repozytorium. Jedyny wiarygodny
+   sprawdzian to **Neon API `GET /projects/{id}/branches`**, filtrowany po
+   `prod-backup-pre-ingest-*` i świeżości `created_at`: świeży backup drugiej domeny
+   (`*msql*`/`*mml*` itp.) = druga sesja właśnie zaciąga.
+3. „STAN NA DZIŚ" w obu handoffach — marker zaciągu w toku.
+
+Jeśli druga sesja zaciąga → **ZATRZYMAJ operację prod**, zbuduj tylko PR do bramki
+i poczekaj/zsynchronizuj. To jedyna realna bariera serializacji między sesjami prod
+(operacje na wierszach rozłącznych i tak są bezpieczne, ale model backup/restore
+Neona wymaga jednego pisarza prod naraz). Ustalenie techniczne: Ethan (CTO), przy
+f2-7 2026-07-23 — check `git branch -r` z wcześniejszej definicji pre-flightu był błędny.
