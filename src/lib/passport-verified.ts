@@ -16,6 +16,7 @@ import { db } from "@/lib/db";
 import { passports, students, verifiedCompetencies } from "@/lib/db/schema";
 import { logError } from "@/lib/log";
 import {
+	buildDemandByName,
 	computeDemandCoverage,
 	type MarketCatalogItem,
 	normCompetencyName,
@@ -113,9 +114,7 @@ export function buildVerifiedPassportCompetencies(
 	verifiedNames: string[],
 	catalog: Pick<MarketCatalogItem, "competencyName" | "demandPercentage">[],
 ): VerifiedPassportCompetency[] {
-	const demandByName = new Map(
-		catalog.map((c) => [normCompetencyName(c.competencyName), c.demandPercentage]),
-	);
+	const demandByName = buildDemandByName(catalog);
 	return verifiedNames.map((name) => ({
 		name,
 		status: "acquired" as const,

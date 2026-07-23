@@ -253,6 +253,25 @@ export interface DemandCoveragePossessed {
 }
 
 /**
+ * Mapa: znormalizowana nazwa kompetencji → popyt (%). Duplikat nazwy → wygrywa
+ * wyższy popyt (dedup `max` — nie zaniżamy licznika, gdy katalog powtórzy nazwę).
+ *
+ * JEDNO źródło prawdy dla wyszukania popytu po nazwie (D2, ADR-021) — reużywane
+ * przez `computeDemandCoverage`, `buildVerifiedPassportCompetencies` (paszport)
+ * i onboarding (stemplowanie `competencies.marketPercentage` z pochodzenia).
+ */
+export function buildDemandByName(
+	catalog: Pick<MarketCatalogItem, "competencyName" | "demandPercentage">[],
+): Map<string, number> {
+	const demandByName = new Map<string, number>();
+	for (const item of catalog) {
+		const key = normCompetencyName(item.competencyName);
+		demandByName.set(key, Math.max(demandByName.get(key) ?? 0, item.demandPercentage));
+	}
+	return demandByName;
+}
+
+/**
  * % pokrycia ważonego popytem (D3): Σ popytu pozycji posiadanych (× waga) ÷
  * Σ popytu całego katalogu roli, zaokrąglone do liczby całkowitej 0–100.
  */
@@ -263,13 +282,9 @@ export function computeDemandCoverage(
 	const totalDemand = catalog.reduce((sum, item) => sum + item.demandPercentage, 0);
 	if (totalDemand <= 0) return 0;
 
-	const demandByName = new Map<string, number>();
-	for (const item of catalog) {
-		const key = normCompetencyName(item.competencyName);
-		// Duplikat w katalogu (nie powinien wystąpić) — pierwsze wystąpienie wygrywa,
-		// ale mianownik już policzył oba; trzymamy max, żeby nie zaniżać licznika.
-		demandByName.set(key, Math.max(demandByName.get(key) ?? 0, item.demandPercentage));
-	}
+	// Mianownik liczy cały katalog (także duplikaty); mapa dedupuje przez max,
+	// żeby nie zaniżać licznika przy powtórzonej nazwie (D2 — wspólny helper).
+	const demandByName = buildDemandByName(catalog);
 
 	// Duplikaty nazw po stronie posiadanych: liczone raz, wygrywa najwyższa waga.
 	const weightByName = new Map<string, number>();
@@ -392,7 +407,9 @@ export function annotateWithSyllabus(
 // ── Kontrakt wyboru kompetencji (front → POST /api/onboarding) ──────────────
 //
 // Scalony krok wysyła TYLKO zaznaczone kompetencje (Brak = nieobecne = luka).
-// Każda niesie poziom (2/3/4), realny % popytu (z katalogu) i flagę „w programie".
+// Każda niesie poziom (2/3/4) i flagę „w programie". `marketPercentage` NIE jest
+// już w kontrakcie (ADR-021, D4): popyt wyprowadza serwer z katalogu po nazwie —
+// nie z ciała żądania (kredencjał ≠ deklaracja klienta, CLAUDE.md §7).
 export interface SelectedCompetency {
 	name: string;
 	/**
@@ -401,6 +418,5 @@ export interface SelectedCompetency {
 	 * (kontrakt POST /api/onboarding; bez sesji brak poziomu = 400).
 	 */
 	level?: PossessionLevel;
-	marketPercentage: number;
 	inSyllabus: boolean;
 }

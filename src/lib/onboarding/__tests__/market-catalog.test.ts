@@ -12,6 +12,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	annotateWithSyllabus,
+	buildDemandByName,
 	computeDemandCoverage,
 	computeMarketCoverage,
 	coverageWeight,
@@ -293,6 +294,33 @@ describe("computeDemandCoverage — pokrycie WAŻONE POPYTEM (Blok C, D3)", () =
 
 	it("waga 0.5 (in_progress) daje połowę popytu pozycji", () => {
 		expect(computeDemandCoverage(catalog, [{ name: "SQL", weight: 0.5 }])).toBe(20);
+	});
+
+	describe("buildDemandByName — wspólna mapa nazwa→popyt (D2, ADR-021)", () => {
+		it("mapuje po znormalizowanej nazwie (trim + lower)", () => {
+			const m = buildDemandByName([
+				{ competencyName: "Python", demandPercentage: 55 },
+				{ competencyName: "SQL", demandPercentage: 40 },
+			]);
+			expect(m.get("python")).toBe(55);
+			expect(m.get("sql")).toBe(40);
+			// nazwa spoza katalogu → undefined (wołający robi `?? null`, nie `?? 0`).
+			expect(m.get("haskell")).toBeUndefined();
+		});
+
+		it("dedup duplikatu nazwy → wygrywa WYŻSZY popyt (nie zaniża licznika)", () => {
+			const m = buildDemandByName([
+				{ competencyName: "Python", demandPercentage: 30 },
+				{ competencyName: "python", demandPercentage: 55 },
+				{ competencyName: " PYTHON ", demandPercentage: 12 },
+			]);
+			expect(m.size).toBe(1);
+			expect(m.get("python")).toBe(55);
+		});
+
+		it("pusty katalog → pusta mapa (własny cel spoza katalogu → same null u wołającego)", () => {
+			expect(buildDemandByName([]).size).toBe(0);
+		});
 	});
 
 	it("własność: monotoniczność — dodanie pozycji z katalogu nigdy nie obniża wyniku", () => {

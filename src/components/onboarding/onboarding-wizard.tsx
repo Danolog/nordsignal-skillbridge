@@ -34,8 +34,9 @@ import { StepWnioski } from "./step-wnioski";
  *   4 Wnioski — POST /api/onboarding/complete + redirect na pulpit.
  *
  * Kontrakt front↔back zmieniony jedną gałęzią (lekcja split-frontend-backend):
- *   POST /api/onboarding niesie competencies jako { name, level, marketPercentage, inSyllabus }[]
- *   (poziom = samoocena 2/3/4), min 0. Patrz src/lib/onboarding/market-catalog.ts.
+ *   POST /api/onboarding niesie competencies jako { name, level, inSyllabus }[]
+ *   (poziom = samoocena 2/3/4), min 0. `marketPercentage` wyprowadza serwer z katalogu
+ *   (ADR-021, D4) — klient go nie wysyła. Patrz src/lib/onboarding/market-catalog.ts.
  *
  * UI minimalne/funkcjonalne — Jack restyluje wg makiet Mili (Partia 5).
  */
@@ -451,7 +452,6 @@ export function OnboardingWizard({
 					? [
 							{
 								name,
-								marketPercentage: item.demandPercentage,
 								inSyllabus: Boolean(item.inSyllabus),
 							},
 						]
@@ -465,7 +465,6 @@ export function OnboardingWizard({
 								{
 									name,
 									level,
-									marketPercentage: item.demandPercentage,
 									inSyllabus: Boolean(item.inSyllabus),
 								},
 							]
@@ -479,7 +478,6 @@ export function OnboardingWizard({
 				.map((item) => ({
 					name: item.competencyName,
 					level: selections[item.competencyName],
-					marketPercentage: item.demandPercentage,
 					inSyllabus: Boolean(item.inSyllabus),
 				}));
 		}

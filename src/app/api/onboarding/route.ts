@@ -18,7 +18,8 @@ import { withTenantContext } from "@/lib/db/tenant-context";
 import { resolveTenantId } from "@/lib/db/tenant-mapping";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
-import { persistMarketGaps } from "@/lib/onboarding/market-gaps";
+import { buildDemandByName, normCompetencyName } from "@/lib/onboarding/market-catalog";
+import { loadMarketCatalog, persistMarketGaps } from "@/lib/onboarding/market-gaps";
 import { applyRateLimit, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 import { levelToStatus } from "@/lib/self-assessment";
 
@@ -32,10 +33,13 @@ export const maxDuration = 60;
 // = „zmierzone testem": serwer bierze poziom (1–4, w tym 1!) z result_json UKOŃCZONEJ
 // sesji diagnozy, klientowi nie ufa. Bez sesji brak poziomu = 400 (walidacja niżej).
 // Poziom 1 nigdy nie przychodzi od klienta — wchodzi wyłącznie ścieżką pomiaru.
+// ADR-021 (D4): `marketPercentage` USUNIĘTY z kontraktu — popyt wyprowadza serwer
+// z katalogu (kredencjał ≠ deklaracja klienta, CLAUDE.md §7). Brak `.strict()`:
+// domyślny obiekt Zod stripuje nieznane klucze, więc stary klient wysyłający pole
+// przechodzi walidację (back-compat), a wartość jest po cichu odcięta i nieczytana.
 const SelectedCompetencySchema = z.object({
 	name: z.string().min(1).max(200),
 	level: z.union([z.literal(2), z.literal(3), z.literal(4)]).optional(),
-	marketPercentage: z.number().int().min(0).max(100),
 	inSyllabus: z.boolean().optional().default(false),
 });
 
@@ -171,6 +175,20 @@ export async function POST(req: Request) {
 		return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
 	}
 
+	// ADR-021 (D1): popyt (`marketPercentage`) wyprowadza SERWER z katalogu ścieżki,
+	// nie z ciała żądania. Katalog ładujemy RAZ przed budową wierszy — `job_market_data`
+	// ma grant SELECT poza kontekstem RLS studenta, więc wolno przed withTenantContext.
+	// `careerGoal` może być własnym stringiem spoza katalogu (edytor profilu) → mapa
+	// pusta → wszystkie popyty `null` (D3, poprawne — off-catalog to niewiadoma, nie 0).
+	let demandByName: Map<string, number>;
+	try {
+		const marketCatalog = await loadMarketCatalog(careerGoal);
+		demandByName = buildDemandByName(marketCatalog);
+	} catch (err) {
+		logError("onboarding", err, { phase: "loadMarketCatalog", userId });
+		return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+	}
+
 	// §8 #1 Phase 2 (issue #19b): cała persystencja onboarding przez
 	// withTenantContext({role: "student"}). Po ops-step (#25) runtime łączy się
 	// jako app_runtime (NOBYPASSRLS) — student-policies RLS egzekwują się
@@ -286,7 +304,9 @@ export async function POST(req: Request) {
 						measured !== undefined || carryover !== undefined
 							? ("diagnostic" as const)
 							: ("self" as const),
-					marketPercentage: c.marketPercentage,
+					// ADR-021 (D1/D3): popyt z katalogu po znorm. nazwie; spoza katalogu → null
+					// (uczciwa niewiadoma, kolumna nullowalna schema.ts:183), NIE 0 (fałszywy pomiar).
+					marketPercentage: demandByName.get(normCompetencyName(c.name)) ?? null,
 				};
 			});
 			if (rows.length > 0) {
