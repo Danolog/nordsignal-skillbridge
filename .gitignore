@@ -51,6 +51,12 @@ tests/evals/reports/
 # Security audit reports (private)
 audit/
 
+# Dziennik audytu hooka (logs/audit/*.jsonl) + wszelkie logi runtime.
+# Jawny wpis: dotąd logs/audit/ łapał tylko INCYDENTALNIE wzorzec `audit/`
+# (dla prywatnych raportów). Zakotwiczenie tamtego do `/audit/` przepuściłoby
+# dziennik z treścią komend do repo (uwaga Leo U2). `logs/` odcina tę klasę.
+logs/
+
 # Local skill-creator state
 skills-lock.json
 
