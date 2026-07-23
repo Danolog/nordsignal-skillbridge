@@ -1,11 +1,22 @@
 # ADR-020 — Nowy kontrakt checków dla M-ML: wektor predykcji, pochodzenie podziału i bramka przecieku zamiast gołej metryki
 
-- **Status:** PROPOZYCJA — czeka na przegląd domenowy Sophii (produkt) + moją finalizację.
-  Bramka PROJEKTOWA przed budową pieczątek M-ML. Podstawa mandatu: `CLAUDE.md` v1.11 §5
-  (decyzja techniczna odwracalna w domenie Engineering — projekt kontraktu, bez sign-offu
-  Darka). Ten dokument **nie** buduje pieczątek, **nie** dotyka `m-ml.json` i **nie** rusza
-  produkcji — patrz §5 (runbook następczy) i §6 (granice).
+- **Wersja:** v1.1 · 2026-07-23 — **ZAAKCEPTOWANY** po przeglądzie domenowym Sophii (PO,
+  produkt = sign-off §8 QA `CLAUDE.md`). Wcielono 4 zmiany przeglądu Sophii i uzgodniono wektor
+  referencyjny z realnym zbiorem Aneksu (charakterystyczna pomyłka modelu na próbce **id=18**,
+  nie na próbce 9 z atrapy drafta). Changelog na dole nagłówka.
+- **Status:** **ZAAKCEPTOWANY** (2026-07-23) — przegląd domenowy Sophii = sign-off produktu
+  (§8 QA `CLAUDE.md`); finalizacja: Ethan (CTO, autor). Bramka PROJEKTOWA **zamknięta**; następny
+  krok = budowa pieczątek M-ML (runbook §5). Podstawa mandatu: `CLAUDE.md` v1.11 §5 (decyzja
+  techniczna odwracalna w domenie Engineering — projekt kontraktu, bez sign-offu Darka). Ten
+  dokument **nie** buduje pieczątek, **nie** dotyka `m-ml.json` i **nie** rusza produkcji —
+  patrz §5 (runbook następczy) i §6 (granice).
 - **Data:** 2026-07-23 · **Autor:** Ethan (CTO) · **Zlecenie:** Oliver (COO), brief 2026-07-23
+- **Źródło prawdy payloadów:** `mml-content/docs/curation/sophia-1e2-mml-atomy.md`, sekcja
+  „Kontrakt checków M-ML (ADR-020) — payloady referencyjne". Sophia (PO) zmaterializowała
+  i zweryfikowała wykonaniem realny zbiór Aneksu (scikit-learn 1.9.0, 2026-07-23). **Liczby
+  w tym ADR są ilustracyjne, ale uzgodnione 1:1 z realnym zbiorem** — builder liczy `expect`
+  z FINALNEGO notebooka, nie z tego dokumentu. W repo nie ma już drugiego, sprzecznego wektora
+  (atrapa id=9 zastąpiona realnym id=18 we wszystkich payloadach — §D1, §2.5, §7).
 - **Uruchamia:** znalezisko §4 przeglądu `docs/curation/przeglad-bledne-drogi-16-labow-20260723.md`
   — naiwny scaffold `m-ml.json` niesie wyłącznie checki `value` na skalarnych metrykach ML
   (accuracy, precyzja, czułość) i jest **najgorszym profilem kolizji w całym programie**.
@@ -18,8 +29,27 @@
   token postępu vs Verified Project Receipt), `CLAUDE.md` §7 (rozdział wagi oceny formującej
   vs kredencjału).
 - **Wykonanie (runbook następczy, NIE ten ADR):** Sophia (treść M-ML: dane produkujące
-  rozróżnialny artefakt + kanoniczny zbiór), builder pieczątek M-ML (implementacja checków
-  z tego kontraktu), Quinn/Eva (kontrakt-testy regresyjne na cztery błędne drogi).
+  rozróżnialny artefakt + kanoniczny zbiór) — **dostarczone i zweryfikowane wykonaniem
+  2026-07-23** (patrz „Źródło prawdy payloadów"); builder pieczątek M-ML (implementacja checków
+  z tego kontraktu), Quinn/Eva (kontrakt-testy regresyjne na cztery błędne drogi) — **do zrobienia**.
+
+**Changelog v1.0 → v1.1 (2026-07-23, finalizacja po przeglądzie domenowym Sophii):**
+1. **Status** PROPOZYCJA → **ZAAKCEPTOWANY**.
+2. **Wektor referencyjny uzgodniony z realnym zbiorem Aneksu** — charakterystyczna pomyłka
+   modelu przeniesiona z próbki 9 (atrapa drafta) na **id=18** we WSZYSTKICH payloadach
+   ilustracyjnych (§D1, §2.5, §7). Discriminator degeneracji: **id=11** (był 8); przecieku:
+   **id=18** (był 9). Znika drugi, sprzeczny wektor w repo.
+3. **D1 wzmocniony do warunku KONTRAKT-TESTU** — z „model myli ≥1 próbkę" na „każdy rozsądny
+   pipeline myli TĘ SAMĄ próbkę": parytet stabilności wektora między wersjami scikit-learn
+   (wzór parytetu DuckDB w M-SQL, ADR-017). Dowód wykonaniem Sophii: 6 pipeline'ów (drzewo
+   głęb. 1/2/bez limitu, kNN k=3/5, regresja logistyczna) daje identyczny wektor i myli
+   DOKŁADNIE **id=18**.
+4. **D3 na capstonie** zapisany jako **ostrzeżenie diagnostyczne, nie twarda bramka** (na labie
+   świat zafiksowany — D3 to obrona nadmiarowa; na capstonie fałszywa odmowa blokowałaby realny
+   projekt, a człowiek jest siatką przez vivę — `CLAUDE.md` §7).
+5. **Dom dydaktyczny D3** = ml-7 + capstone; na ml-4 (pozycja 40, przed ml-6 na 60) D3 **milczy**.
+6. **Dwa styki nazwane jako decyzje produktowe Sophii (PO)** — próbka pomyłki **id=18** i próg
+   D3 = **0.98** (§2.6).
 
 > **Słowniczek** (żargon rozwinięty przy pierwszym użyciu, `CLAUDE.md` §3): **check** —
 > maszynowa reguła, którą serwer sprawdza po zaliczeniu laba; **pieczątka** (ang. *stamp*) —
@@ -131,29 +161,44 @@ i dają, co pokazuje tabela rozróżnialności w §2.5 (zmierzona wykonaniem).
 testowego, nie samo `acc_model`:
 
 ```
-"y_pred_test": [[0, 1], [8, 0], [9, 1], [11, 1], [16, 1], [18, 1]]
+"y_pred_test": [[0, 1], [8, 1], [9, 1], [11, 0], [16, 1], [18, 1]]
                  ^id     ^predykcja modelu dla tej konkretnej próbki
 ```
 
 To jest odpowiednik `z3_miejsca1_ids` z ADR-017 D2, podniesiony o jeden poziom: nie „ile
 trafień", lecz „**co dokładnie przewidział model dla której próbki**". Kluczowa własność
-(zmierzona, §7): wektor referencyjny koduje **charakterystyczną pomyłkę** poprawnego modelu —
-naiwne drzewo myli próbkę 9 (przewiduje 1, prawda 0; stąd macierz [[1,1],[0,4]] z jednym
-fałszywym alarmem). Każda droga, która tej pomyłki **nie** powtarza albo popełnia **inną**,
-daje inny wektor:
+(zmierzona na realnym zbiorze Aneksu, §7): wektor referencyjny koduje **charakterystyczną
+pomyłkę** poprawnego modelu — model myli próbkę **id=18** (przewiduje 1, prawda 0; graniczny
+kurs 19 zł tuż pod progiem napiwku — stąd macierz [[1,1],[0,4]] z jednym fałszywym alarmem).
+Każda droga, która tej pomyłki **nie** powtarza albo popełnia **inną**, daje inny wektor:
 
-- **Wszystko pozytywne / klasa większościowa** → wektor stały `[…,1],[…,1],…` — różni się
-  od wzorca na próbce 8 (wzorzec: 0). **Złapane.**
-- **Przeciek etykiety** (cecha = cel, accuracy 1.0) → wektor `[[0,1],[8,0],[9,0],…]` —
-  poprawnie przewiduje próbkę 9, której wzorzec NIE trafia. Różni się na próbce 9.
+- **Wszystko pozytywne / klasa większościowa** → wektor stały `[[…,1]×6]` — różni się
+  od wzorca na próbce **id=11** (tani kurs 11 zł; wzorzec przewiduje 0, degeneracja 1).
+  **Złapane.**
+- **Przeciek etykiety** (cecha = cel, accuracy 1.0) → wektor `[[0,1],[8,1],[9,1],[11,0],[16,1],[18,0]]` —
+  poprawnie przewiduje próbkę **id=18**, której wzorzec NIE trafia. Różni się na próbce id=18.
   **Złapane** — i to jest mocne: wektor referencyjny jest „za słaby" celowo (ma pomyłkę),
   więc bezbłędny przeciek go zdradza.
 - **Inny/błędny model** trafiający te same 5/6, ale mylący inną próbkę → inny wektor.
   **Złapane.**
 
-Zysk uboczny: wektor **weryfikuje wynik (predykcje per próbka), nie metodę**. Zmierzone (§7):
-drzewo o innej głębokości, kNN, regresja logistyczna — wszystkie poprawne pipeline'y —
-dają **ten sam** wektor. Kontrakt nie odrzuca legalnych alternatyw; odrzuca błędne drogi.
+Zysk uboczny: wektor **weryfikuje wynik (predykcje per próbka), nie metodę**. Zmierzone
+wykonaniem przez Sophię (§7): drzewo głęb. 1/2/bez limitu, kNN k=3/5, regresja logistyczna —
+sześć poprawnych pipeline'ów — dają **ten sam** wektor. Kontrakt nie odrzuca legalnych
+alternatyw; odrzuca błędne drogi.
+
+**Warunek KONTRAKT-TESTU dla D1 (wzmocnienie z przeglądu Sophii).** D1 ma moc tylko wtedy,
+gdy wektor referencyjny jest **stabilny między pipeline'ami i wersjami biblioteki** — inaczej
+poprawny student z legalnym innym modelem albo inną wersją scikit-learn dostałby fałszywą
+odmowę. Dlatego warunek nie brzmi już miękko „model myli ≥1 próbkę", lecz twardo: **każdy
+rozsądny pipeline (drzewo głęb. 1–2, kNN, regresja logistyczna) musi mylić DOKŁADNIE TĘ SAMĄ
+próbkę i dawać identyczny wektor.** To jest parytet analogiczny do **parytetu DuckDB** z M-SQL
+(ADR-017: ta sama liczba na różnych silnikach SQL) — tu: ta sama lista `y_pred_test` na różnych
+algorytmach ML i wersjach sklearn. Kontrakt-test regresyjny (Quinn/Eva, §5) egzekwuje ten
+parytet jako warunek konieczny, nie życzenie. **Dowód wykonaniem (Sophia, zbiór Aneksu):**
+6 pipeline'ów → identyczny wektor `[[0,1],[8,1],[9,1],[11,0],[16,1],[18,1]]`, wszystkie mylą
+DOKŁADNIE **id=18** (tabela w źródle prawdy payloadów). Ten dowód **zastępuje wektor-atrapę
+drafta** (który mylił próbkę 9 na roboczym zbiorze).
 
 ### D2 · Check pochodzenia podziału (split-provenance)
 
@@ -181,29 +226,47 @@ Pieczątka liczy — na **danych treningowych** — czy któraś cecha jest (nie
 funkcją celu, i wystawia to jako check:
 
 ```
-"max_corr_cecha_cel": 0.0 …             # |korelacja| najsilniejszej cechy z celem na treningu
-# odmowa / brak tokenu, gdy przekracza próg (np. 0.98) — cecha „zna odpowiedź"
+"max_corr_cecha_cel": 0.705 …           # |korelacja| Pearsona najsilniejszej cechy z celem na treningu
+# realny zbiór: legalne cechy ≤ 0.705 (kwota); minuty 0.695, godzina 0.475; deterministyczny
+# przeciek (cecha = cel) = 1.0. Próg = 0.98 (§2.6, decyzja Sophii) — leży bezpiecznie między
+# 0.705 (legalna korelacja) a 1.0 (przeciek). Sygnał, gdy cecha „zna odpowiedź".
 ```
 
-Rola tej bramki jest **podwójna i trzeba ją nazwać uczciwie**:
+Rola tej bramki jest **podwójna i trzeba ją nazwać uczciwie** — a jej **waga różni się między
+labem a capstonem**:
 
 - **Na labie z zafiksowanym mini-światem** przeciek łapie już D1 (bezbłędny przeciek daje
-  inny wektor — zmierzone). Bramka D3 jest tu **defense-in-depth + dydaktyka**: zamiast
-  niemej odmowy „zły wektor" student dostaje **celną diagnozę** — „cecha `X` jest funkcją
-  celu, to przeciek (ml-6 grzech 3)". To zamienia odrzucenie w naukę.
+  inny wektor — zmierzone). Bramka D3 jest tu **obroną nadmiarową (defense-in-depth) + dydaktyką**:
+  zamiast niemej odmowy „zły wektor" student dostaje **celną diagnozę** — „cecha `X` jest funkcją
+  celu, to przeciek (ml-6 grzech 3)". To zamienia odrzucenie w naukę. Tu D3 **może odmawiać** —
+  świat jest zafiksowany, fałszywy alarm jest niemożliwy (cechy laba to minuty/kwota/godzina,
+  wszystkie ≤ 0.705, próg 0.98 ich nie tyka).
 - **Na capstonie** (dane realne, brak wektora referencyjnego, bo zbiór nie jest kanoniczny)
-  D1 nie działa — **D3 jest jedyną maszynową obroną przed przeciekiem.** Dlatego projektujemy
-  ją teraz jako część kontraktu M-ML, nie jako łatkę per lab.
+  D1 nie działa — **D3 jest jedyną maszynową obroną przed przeciekiem, ale działa jako
+  OSTRZEŻENIE DIAGNOSTYCZNE, nie twarda bramka.** Powód (przegląd Sophii, `CLAUDE.md` §7):
+  na realnych danych korelacja bliska progowi bywa **legalna** (silny, uczciwy predyktor), a
+  fałszywa odmowa **zablokowałaby prawdziwy projekt studenta**. Na capstonie siatką bezpieczeństwa
+  jest **człowiek przez vivę** (ostatnie słowo — kredencjał wysokiej stawki, §7), nie maszyna.
+  Dlatego D3 na capstonie **sygnalizuje ryzyko** („cecha `X` ma korelację 0.99 z celem —
+  sprawdź, czy to nie przeciek") i wpuszcza sprawę do oceny człowieka, zamiast odmawiać tokenu.
+  Projektujemy ją teraz jako część kontraktu M-ML, nie jako łatkę per lab.
 
-**Uczciwa granica (zmierzona, §7):** bramka celuje w **deterministyczny / bliski-deterministyczny**
+**Sekwencja dydaktyczna — dom D3 to ml-7 + capstone, na ml-4 D3 milczy (przegląd Sophii).**
+Copy odmowy „przeciek / ml-6 grzech 3" **nie może wypłynąć na ml-4** (pozycja 40 w drabinie,
+**przed** ml-6 na pozycji 60, gdzie leakage jest dopiero wprowadzany — diagnoza przecieku
+byłaby pedagogicznie przedwczesna). Strukturalnie i tak nie wypłynie: na ml-4 cechy są
+zablokowane do minuty/kwota/godzina (żadna nie przekracza progu), więc D3 nie ma czego złapać.
+Ale zapisujemy to **wprost jako regułę**: **dom dydaktyczny D3 to ml-7 (pozycja po ml-6) +
+capstone; na ml-4 D3 jest cicha** — check się liczy, lecz nigdy nie emituje diagnozy przecieku.
+
+**Uczciwa granica (zmierzona, §2.6/§7):** bramka celuje w **deterministyczny / bliski-deterministyczny**
 przeciek (korelacja → 1, accuracy → 1.0 „100% wygląda jak sukces") — czyli w klasyczny,
 groźny przypadek. Zaszumiony częściowy przeciek, który przypadkiem odtwarza **dokładnie**
 poprawne predykcje wzorca, jest wynikowo nieodróżnialny od poprawnego modelu (ta sama lista
-`y_pred_test`) — i nie jest „oszustwem" w sensie, który ma znaczenie dla oceny formującej,
-bo output jest poprawny. Progu nie ustawiamy agresywnie w dół (fałszywe odmowy legalnych,
-silnie skorelowanych cech kosztują więcej niż łapią). Próg i dokładna definicja korelacji
-(Pearson dla cech liczbowych; osobno cechy kategoryczne) → do domknięcia w runbooku z Sophią,
-bo zależą od finalnych cech treści.
+`y_pred_test`) — i **świadomie NIE jest ścigany**: output jest poprawny, a fałszywe odmowy
+legalnych, silnie skorelowanych cech kosztują więcej niż łapią. Próg **0.98** (decyzja Sophii,
+§2.6) nie jest ustawiany agresywnie w dół. Korelacja: Pearson dla cech liczbowych; zbiór M-ML
+nie ma cech kategorycznych (kodowanie kategorii dotyka dopiero capstone'u — prowadzi briefing).
 
 ### D4 · Rozkład predykcji jako szybki dyskryminator degeneracji
 
@@ -226,18 +289,40 @@ Cztery błędne drogi vs cztery bramki. „✔ przechodzi" = wygląda jak dobra 
 
 | Droga | `acc` (naiwny skalar) | D1 wektor `y_pred_test` | D2 provenance `test_ids` | D3 bramka przecieku | D4 `predykcja_stala` | Werdykt kontraktu |
 |---|---|---|---|---|---|---|
-| **Dobra droga** | 0.833 ✔ | `[[0,1],[8,0],[9,1],[11,1],[16,1],[18,1]]` ✔ | `[0,8,9,11,16,18]` ✔ | ~0 ✔ | fałsz ✔ | **TOKEN** ✔ |
-| Zły podział (rs=5) | **0.833 ✔** (przechodzi!) | inny wektor ✘ | `[2,17,18,19,20,23]` **✘ ODMOWA** | ~0 | fałsz | **ODMOWA** (D2) |
-| Ocena na treningu | 1.0 | 18 wpisów, obce klucze ✘ | 18 identyfikatorów **✘ ODMOWA** | ~0 | fałsz | **ODMOWA** (D1+D2) |
-| Klasa większościowa | 0.667 | `[[…,1]×6]` **✘ ODMOWA** | `[0,8,9,11,16,18]` ✔ | ~0 | **prawda ✘ ODMOWA** | **ODMOWA** (D1+D4) |
-| Wszystko pozytywne | 0.667; **`rec`=1.0 ✔** | `[[…,1]×6]` **✘ ODMOWA** | ✔ | ~0 | **prawda ✘ ODMOWA** | **ODMOWA** (D1+D4) |
-| Przeciek etykiety | 1.0 | `[[0,1],[8,0],[9,0],…]` **✘ ODMOWA** | ✔ | **wysoka ✘ ODMOWA** | fałsz | **ODMOWA** (D1+D3) |
+| **Dobra droga** | 0.833 ✔ | `[[0,1],[8,1],[9,1],[11,0],[16,1],[18,1]]` ✔ | `[0,8,9,11,16,18]` ✔ | 0.705 ✔ | fałsz ✔ | **TOKEN** ✔ |
+| Zły podział (rs=5) | **0.833 ✔** (przechodzi!) | inny wektor ✘ | `[2,17,18,19,20,23]` **✘ ODMOWA** | 0.705 | fałsz | **ODMOWA** (D2) |
+| Ocena na treningu | 1.0 | 18 wpisów, obce klucze ✘ | 18 identyfikatorów **✘ ODMOWA** | 0.705 | fałsz | **ODMOWA** (D1+D2) |
+| Klasa większościowa | 0.667 | `[[…,1]×6]` różni się na **id=11 ✘ ODMOWA** | `[0,8,9,11,16,18]` ✔ | 0.705 | **prawda ✘ ODMOWA** | **ODMOWA** (D1+D4) |
+| Wszystko pozytywne | 0.667; **`rec`=1.0 ✔** | `[[…,1]×6]` różni się na **id=11 ✘ ODMOWA** | ✔ | 0.705 | **prawda ✘ ODMOWA** | **ODMOWA** (D1+D4) |
+| Przeciek etykiety | 1.0 | `[[0,1],[8,1],[9,1],[11,0],[16,1],[18,0]]` różni się na **id=18 ✘ ODMOWA** | ✔ | **1.0 ✘ ODMOWA** | fałsz | **ODMOWA** (D1+D3) |
 
 **Każda z czterech błędnych dróg daje inny ładunek niż dobra droga** — a większość jest łapana
 przez ≥2 bramki (obrona nadmiarowa). Odmowa pada z **diagnozą wskazującą przyczynę**, nie sam
 fakt (wzór ADR-017): „oceniasz na treningu — masz 18 predykcji zamiast 6" / „inny podział niż
 zafiksowany `random_state=42`" / „model przewiduje zawsze jedną klasę" / „cecha `X` jest funkcją
 celu — przeciek".
+
+### 2.6 Dwa styki produktowe — decyzje Sophii (PO, ownership jawny)
+
+Kontrakt techniczny (D1–D4) jest mój (Ethan, CTO). Dwa parametry są jednak **decyzjami
+produktowymi** — dotyczą tego, co student widzi i czego się uczy — więc ich właścicielem jest
+**Sophia (PO)**, rozstrzygnięte w przeglądzie domenowym 2026-07-23 i zmierzone wykonaniem na
+realnym zbiorze Aneksu:
+
+- **Styk 1 — która próbka niesie charakterystyczną pomyłkę: `id=18`** (minuty 10, kwota 19,0 zł,
+  godzina 22, napiwek 0). To **graniczny fałszywy alarm tuż pod progiem napiwku ~20 zł**: w danych
+  najdroższy kurs bez napiwku to 19 zł, najtańszy z napiwkiem 21 zł — id=18 leży dokładnie na
+  granicy klas, więc każdy sensowny model obstawia napiwek. Wyjaśnialny graniczny przypadek
+  (wzór ADR-017 „35 min w korku — długo a tanio"), **nie artefakt drzewa** — potwierdzone, że
+  6 różnych konfiguracji modeli myli DOKŁADNIE tę próbkę (dowód D1). Zostaje id=18, bez zmiany
+  danych. **Ownership: Sophia.**
+- **Styk 2 — próg D3 = `0.98`.** Leży między legalną korelacją cechy `kwota` (**0,705**)
+  a przeciekiem deterministycznym cecha=cel (**1,0**). Linia rozstrzygnięta świadomie: **D3 ściga
+  wyłącznie deterministyczny / bliski-deterministyczny przeciek** (korelacja → 1, „100% wygląda
+  jak sukces"); **zaszumiony częściowy przeciek**, który przypadkiem odtwarza dokładnie wektor
+  wzorca, jest wynikowo nieodróżnialny (ta sama lista `y_pred_test`) i **świadomie NIE jest
+  ścigany** — output jest poprawny, a fałszywe odmowy legalnych silnie skorelowanych cech kosztują
+  więcej, niż łapią. **Ownership: Sophia.**
 
 ---
 
@@ -258,7 +343,7 @@ Ten ADR to **projekt kontraktu** — jego własny koszt to przeliczenia z §7 (z
 Dla skali: to mniej niż dwa nowe atomy. Zero nowej infrastruktury — mechanizm token/pieczątka
 z ADR-015 unosi struktury bez zmian (StampValue dopuszcza listy; ADR-017 przećwiczył listę
 `[1,2,4]`). **Jedno do potwierdzenia przez buildera:** czy `evalValue`/`_norm` normalizują
-**listy zagnieżdżone** `[[0,1],[8,0]]` tak samo jak płaskie. Jeśli nie — fallback bez zmian
+**listy zagnieżdżone** `[[0,1],[8,1]]` tak samo jak płaskie. Jeśli nie — fallback bez zmian
 w kodzie pieczątki: dwie równoległe listy płaskie `y_pred_ids` + `y_pred_vals` (ta sama moc
 rozróżniania, koszt: jeden check więcej).
 
@@ -285,19 +370,26 @@ rozróżniania, koszt: jeden check więcej).
 Kolejność wiążąca: **treść → builder pieczątek → packer → kontrakt-testy**. Ten ADR kończy
 się na projekcie; poniższe to osobne zadania po przeglądzie Sophii i mojej finalizacji.
 
-### Sophia (treść M-ML) — warunek konieczny, żeby checki miały moc
+### Sophia (treść M-ML) — warunek konieczny, żeby checki miały moc — ✅ DOSTARCZONE 2026-07-23
 
-- **Kanoniczny zbiór z charakterystyczną pomyłką modelu.** Dane muszą być takie, by poprawny
-  naiwny model **mylił się na ≥1 próbce testowej** (jak wzorcowa macierz [[1,1],[0,4]] z jednym
-  fałszywym alarmem). To jest fundament D1: gdyby model trafiał 6/6, wektor referencyjny byłby
-  identyczny z przeciekiem i D1 straciłby moc. Zbiór zafiksowany ziarnami (`random_state=42`
-  wszędzie), policzalny w pamięci (rząd 20–30 wierszy, jak dziś).
-- **Cechy bez przypadkowego przecieku.** Żadna cecha treści (minuty/kwota/godzina) nie może
-  być funkcją celu — inaczej D3 odrzuci poprawną drogę. To ustala próg D3.
+Zbiór Aneksu **NIE wymagał przeprojektowania** — spełnia wszystkie warunki poniżej bez zmiany
+danych ani ziaren (materializacja + weryfikacja wykonaniem: „Źródło prawdy payloadów").
+
+- **Kanoniczny zbiór z charakterystyczną pomyłką modelu — parytet wektora (warunek KONTRAKT-TESTU,
+  wzmocniony w przeglądzie).** Dane muszą być takie, by **każdy rozsądny pipeline (drzewo głęb.
+  1–2, kNN, regresja logistyczna) mylił DOKŁADNIE TĘ SAMĄ próbkę testową i dawał identyczny
+  wektor** — nie tylko „≥1 próbkę". To jest fundament D1 (parytet jak DuckDB w M-SQL): gdyby
+  model trafiał 6/6, wektor referencyjny byłby identyczny z przeciekiem i D1 straciłby moc; gdyby
+  różne pipeline'y myliły różne próbki, D1 dawałby fałszywe odmowy. **Zweryfikowane:** 6 pipeline'ów
+  → identyczny wektor, pomyłka DOKŁADNIE na **id=18**. Zbiór zafiksowany ziarnami (`random_state=42`
+  wszędzie), 24 wiersze.
+- **Cechy bez przypadkowego przecieku.** Żadna cecha treści (minuty/kwota/godzina) nie jest
+  funkcją celu — **zmierzone:** max |corr| = 0,705 (`kwota`), poniżej progu D3 = 0,98, więc D3
+  nie odrzuca poprawnej drogi.
 - **Treść, która prowokuje błędne drogi świadomie** (jak M-SQL fading) — po to, by check
   je łapał; ml-2/ml-3/ml-6 już to robią narracyjnie.
-- **Nota:** to NIE jest zmiana istniejącej produkcji — M-ML jeszcze nie zbudowane. Sophia
-  pisze treść od zera pod ten kontrakt.
+- **Nota:** to NIE była zmiana istniejącej produkcji — M-ML dopiero powstaje. Diagnozy odmów
+  (4 polskie stringi 1:1 na grzechy modułu) Sophia też dostarczyła w źródle prawdy payloadów.
 
 ### Builder pieczątek M-ML
 
@@ -311,8 +403,9 @@ się na projekcie; poniższe to osobne zadania po przeglądzie Sophii i mojej fi
 ### Packer + kontrakt-testy (Ethan; Quinn/Eva)
 
 - `pack-curriculum-atoms.ts`: checki `value` na strukturach dla ml-4/ml-7; `expect` wyliczone
-  z **finalnego** notebooka Sophii (jak ADR-017 liczył `expect` z finalnych danych — wartości
-  z §7 są ze zbioru-atrapy, nie z produkcji).
+  z **finalnego** notebooka Sophii (jak ADR-017 liczył `expect` z finalnych danych — liczby
+  ilustracyjne z §7/źródła prawdy payloadów są uzgodnione z realnym zbiorem Aneksu, ale wiążący
+  jest zawsze finalny notebook).
 - Kontrakt-test: 4 scenariusze odmowy (§2.5) + dobra droga jako regresja na dokładnie ten defekt.
 
 ---
@@ -331,9 +424,9 @@ się na projekcie; poniższe to osobne zadania po przeglądzie Sophii i mojej fi
 
 | Ryzyko | Waga | Obsługa |
 |---|---|---|
-| Zbiór-atrapa z §7 ≠ finalny zbiór Sophii — konkretne `expect` (wektor, `test_ids`) się zmienią | pewne, wbudowane | wartości liczy builder z **finalnego** notebooka; §7 dowodzi **własności** (rozróżnialność), nie konkretnych liczb produkcyjnych |
-| Model trafia 6/6 → wektor referencyjny = przeciek, D1 traci moc | średnia | warunek treści dla Sophii (§5): model MUSI mylić ≥1 próbkę; kontrakt-test to sprawdza |
-| Próg D3 za ostry → fałszywe odmowy legalnych silnie skorelowanych cech | średnia | próg dobrany na finalnych cechach; domyślnie konserwatywny (0.98), celuje w deterministyczny przeciek |
+| Liczby ilustracyjne ADR ≠ finalny notebook — konkretne `expect` się rozjadą | niska (rozbrojone) | zbiór Aneksu **zmaterializowany i uzgodniony** (id=18); builder liczy `expect` z FINALNEGO notebooka Sophii (źródło prawdy payloadów), nie z tego ADR — jak ADR-017 liczył z finalnych danych |
+| Model trafia 6/6 → wektor referencyjny = przeciek, D1 traci moc | rozbrojone | warunek KONTRAKT-TESTU (§D1/§5): parytet wektora między pipeline'ami; **zweryfikowane** — 6 pipeline'ów myli DOKŁADNIE id=18, żaden nie trafia 6/6 |
+| Próg D3 za ostry → fałszywe odmowy legalnych silnie skorelowanych cech | niska (rozbrojone) | próg **0,98 zmierzony** na realnych cechach — margines do legalnej `kwota` (0,705) szeroki; na capstonie D3 i tak tylko **ostrzega**, nie odmawia (§D3) |
 | Listy zagnieżdżone nienormalizowane przez `evalValue` | niska | fallback dwóch list płaskich (§3), zero zmian w pieczątce |
 | Token podrabialny (student zna funkcję) | akceptowane | jak ADR-015 D3 — laby nie wystawiają kredencjału; bramki celują w **przypadkową** błędną drogę (uczciwy student), nie w zdeterminowanego oszusta |
 
@@ -344,40 +437,46 @@ przed budową.
 
 ## 7. Weryfikacja wykonaniem (scikit-learn 1.9.0, 2026-07-23)
 
-**Uczciwe zastrzeżenie o statusie danych.** M-ML nie ma jeszcze notebooków — kanoniczny zbiór
-„napiwki" jest tylko **cytowany** w treści scaffoldu, nie zmaterializowany. Do weryfikacji
-zbudowałem **zbiór-atrapę** (24 wiersze, ziarno generatora 17), dobrany tak, by **odtworzyć
-opublikowane liczby modułu**: baseline 0.6667 (4/6), model 0.8333 (5/6), macierz [[1,1],[0,4]],
-precyzja 0.8, czułość 1.0. Zbiór-atrapa zastępuje finalny zbiór Sophii wyłącznie po to, by
-**własność rozróżnialności** dało się zmierzyć, a nie tylko opisać. Rozróżnialność jest
-**strukturalna** (niezależna od konkretnego zbioru); konkretne wartości `expect` policzy builder
-z finalnego notebooka (§5) — dokładnie jak ADR-017 liczył `expect` z finalnych danych.
+**Status danych — zaktualizowany (finalizacja v1.1).** Draft v1.0 weryfikował **własność
+rozróżnialności** na **zbiorze-atrapie** (24 wiersze, ziarno generatora 17), który odtwarzał
+opublikowane liczby modułu (baseline 0.6667, model 0.8333, macierz [[1,1],[0,4]], prec 0.8,
+rec 1.0), ale mylił próbkę **9**. Atrapa była protezą, bo M-ML nie miało jeszcze notebooków.
+**Od 2026-07-23 to nieaktualne:** Sophia (PO) zmaterializowała i zweryfikowała wykonaniem
+**realny zbiór Aneksu** (źródło prawdy payloadów) — ten sam podział `random_state=42`, ale
+charakterystyczna pomyłka pada na **id=18**. **Zbiór-atrapa jest tym samym zastąpiona; wszystkie
+liczby poniżej to realny zbiór Aneksu.** Rozróżnialność pozostaje **strukturalna** (niezależna
+od konkretnego zbioru), a konkretne `expect` builder liczy z FINALNEGO notebooka (§5) — jak
+ADR-017 liczył z finalnych danych.
 
-**Zmierzone (nie wywnioskowane):**
+**Zmierzone na zbiorze Aneksu (scikit-learn 1.9.0, 2026-07-23; nie wywnioskowane):**
 
-- **Punkt odniesienia** (drzewo `random_state=42`, ocena na teście `random_state=42`):
-  `acc_model`=0.8333, macierz [[1,1],[0,4]], `prec`=0.8, `rec`=1.0, `test_ids`=[0,8,9,11,16,18],
-  wektor `[[0,1],[8,0],[9,1],[11,1],[16,1],[18,1]]`. Model myli próbkę 9 (fałszywy alarm).
+- **Punkt odniesienia** (podział i ocena `random_state=42`): `acc_model`=0.8333, macierz
+  [[1,1],[0,4]], `prec`=0.8, `rec`=1.0, `test_ids`=[0,8,9,11,16,18], wektor
+  `[[0,1],[8,1],[9,1],[11,0],[16,1],[18,1]]`. Model myli próbkę **id=18** (fałszywy alarm:
+  graniczny kurs 19 zł, przewiduje napiwek, prawda 0).
+- **Parytet wektora (warunek D1) — 6 pipeline'ów:** drzewo głęb. 1/2/bez limitu, kNN k=3/5,
+  regresja logistyczna → **identyczny wektor**, wszystkie mylą DOKŁADNIE **id=18**. Kontrakt
+  weryfikuje wynik, nie metodę — parytet jak DuckDB w M-SQL (ADR-017).
 - **Zły podział** `random_state=5`: `acc_model`=0.8333 (**przechodzi naiwny skalar**), zestaw
-  testowy [2,17,18,19,20,23] ≠ wzorzec → **provenance odrzuca**.
-- **Ocena na treningu**: `acc`=1.0, 18 predykcji, klucze [1,2,3,4,5,6,7,10,…] → **D1+D2 odrzucają**.
+  testowy [2,17,18,19,20,23] ≠ wzorzec → **provenance (D2) odrzuca**.
+- **Ocena na treningu**: `acc`=1.0, 18 predykcji, obce klucze → **D1+D2 odrzucają**.
 - **Klasa większościowa** i **wszystko pozytywne**: obie `acc`=0.6667, obie `rec`=**1.0**
-  (kolizja z dobrą drogą na czułości), wektor stały `[…,1]×6`, `predykcja_stala`=prawda,
-  macierz [0,2,0,4] ≠ [1,1,0,4] → **D1+D4 odrzucają; macierz rozdziela oś czułości**.
-- **Przeciek etykiety** (cecha = cel): `acc`=1.0, wektor `[[0,1],[8,0],[9,0],[11,1],[16,1],[18,1]]`
-  (poprawnie trafia próbkę 9, której wzorzec NIE trafia) → **D1 odrzuca**; korelacja cechy z celem
-  na treningu ≈ 1.0 → **D3 odrzuca** z diagnozą.
-- **Brak nadmiarowego odrzucania**: drzewo o innej głębokości (1, 2), kNN (k=3, 5), regresja
-  logistyczna — wszystkie poprawne — dają **identyczny wektor** co wzorzec. Kontrakt weryfikuje
-  wynik, nie metodę.
+  (kolizja z dobrą drogą na czułości), wektor stały `[[…,1]×6]`, `predykcja_stala`=prawda,
+  różnią się od wzorca na próbce **id=11** (tani kurs 11 zł; wzorzec 0, degeneracja 1) →
+  **D1+D4 odrzucają; macierz rozdziela oś czułości**.
+- **Przeciek etykiety** (cecha = cel): `acc`=1.0, wektor `[[0,1],[8,1],[9,1],[11,0],[16,1],[18,0]]`
+  (poprawnie trafia próbkę **id=18**, której wzorzec NIE trafia) → **D1 odrzuca** na id=18;
+  korelacja cechy z celem na treningu = **1.0** → **D3 odrzuca** z diagnozą.
+- **Próg D3 zmierzony:** legalne cechy |corr| ≤ **0,705** (`kwota`; minuty 0,695, godzina 0,475),
+  przeciek deterministyczny **1,0** → próg **0,98** rozdziela bezpiecznie (§2.6).
 
-**Na papierze (niezweryfikowane wykonaniem):** dokładny próg D3 i traktowanie cech
-kategorycznych (zbiór-atrapa ma tylko cechy liczbowe); normalizacja list zagnieżdżonych przez
-`evalValue`/`_norm` (§3 — do potwierdzenia przez buildera na realnym harnessie, jak ADR-018
-sprawdził generator migracji); zachowanie na finalnym zbiorze Sophii (inne konkretne liczby,
-ta sama struktura).
+**Na papierze (niezweryfikowane wykonaniem, do domknięcia w budowie):** normalizacja list
+zagnieżdżonych `[[0,1],[8,1]]` przez `evalValue`/`_norm` (§3 — do potwierdzenia przez buildera
+na realnym harnessie, jak ADR-018 sprawdził generator migracji; fallback: dwie listy płaskie);
+traktowanie cech kategorycznych (zbiór M-ML ma tylko cechy liczbowe — dotknie dopiero capstone'u).
 
-Skrypty weryfikacyjne (zbiór-atrapa + sześć dróg + tabela rozróżnialności) uruchomione lokalnie
-w izolowanym środowisku; nie wchodzą do repo (jak przeliczenia DuckDB w ADR-017). Reprodukcja:
-`train_test_split(test_size=0.25, random_state=42)`, `DecisionTreeClassifier(random_state=42)`,
-`DummyClassifier(strategy="most_frequent" | constant=1)`, scikit-learn 1.9.0.
+Skrypty weryfikacyjne (zbiór Aneksu + sześć dróg + parytet 6 pipeline'ów + tabela rozróżnialności)
+uruchomione lokalnie w izolowanym środowisku po stronie Sophii; nie wchodzą do repo (jak
+przeliczenia DuckDB w ADR-017). Reprodukcja: `train_test_split(test_size=0.25, random_state=42)`,
+`DecisionTreeClassifier(random_state=42)`, `DummyClassifier(strategy="most_frequent" | constant=1)`,
+scikit-learn 1.9.0.
