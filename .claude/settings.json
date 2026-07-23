@@ -10,6 +10,15 @@
 						"statusMessage": "Biome formatuje edytowany plik"
 					}
 				]
+			},
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "python3 \"$CLAUDE_PROJECT_DIR/hooks/audit-log.py\"",
+						"statusMessage": "Dziennik audytu (append-only, hash-chain)"
+					}
+				]
 			}
 		],
 		"PreToolUse": [
@@ -20,6 +29,21 @@
 						"type": "command",
 						"command": "jq -r '.tool_input.file_path' | grep -q '/drizzle/[0-9].*\\.sql$' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Migracje drizzle sa append-only (incydent dziennika 2026-07-02) - zmiana schematu = edycja schema.ts + pnpm db:generate, nigdy edycja istniejacego pliku migracji.\"}}' || true",
 						"statusMessage": "Guard migracji drizzle"
+					},
+					{
+						"type": "command",
+						"command": "python3 \"$CLAUDE_PROJECT_DIR/hooks/guard-secrets.py\"",
+						"statusMessage": "Strażnik sekretów (Write/Edit)"
+					}
+				]
+			},
+			{
+				"matcher": "Bash",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "python3 \"$CLAUDE_PROJECT_DIR/hooks/guard-secrets.py\"",
+						"statusMessage": "Strażnik sekretów (Bash)"
 					}
 				]
 			}
