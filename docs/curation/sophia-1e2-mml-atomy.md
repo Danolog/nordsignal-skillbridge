@@ -1144,6 +1144,168 @@ dane = [
 ]
 ```
 
+## Kontrakt checków M-ML (ADR-020) — payloady referencyjne i model-agnostyczność
+
+**Sekcja dla buildera pieczątek M-ML (nie idzie do widoku studenta — packer
+czyta wyłącznie bloki `## Atom`).** Materializuje wejście, którego wymaga
+runbook ADR-020 §5: dane produkujące rozróżnialny artefakt. Wartości zmierzone
+wykonaniem na **zbiorze Aneksu** (nie na zbiorze-atrapie z ADR-020 §7),
+scikit-learn 1.9.0, 2026-07-23. Skrypty w izolowanym venv, poza repo (wzorzec
+przeliczeń DuckDB z ADR-017).
+
+**Zbiór Aneksu NIE wymaga przeprojektowania.** Spełnia warunek treści z ADR-020
+§5 (model myli ≥1 próbkę testową) i — co ADR weryfikował tylko na atrapie —
+**model-agnostyczność wektora predykcji**. Bez zmiany danych ani ziaren.
+
+### Payload referencyjny dobrej drogi (ml-4 / ml-7)
+
+Zafiksowany podział `train_test_split(test_size=0.25, random_state=42)` na 24
+wierszach daje zestaw testowy **niezależny od wartości cech** (permutacja
+indeksów zależy tylko od `n=24` i ziarna) — stąd `test_ids` są deterministyczne
+i serwer zna je z góry.
+
+| Ładunek | Wartość referencyjna (zbiór Aneksu) | Bramka ADR-020 |
+|---|---|---|
+| `test_ids` | `[0, 8, 9, 11, 16, 18]` | D2 (pochodzenie podziału) |
+| `y_pred_test` (pary `[id, pred]`) | `[[0,1],[8,1],[9,1],[11,0],[16,1],[18,1]]` | D1 (wektor predykcji) |
+| `macierz` `[TN,FP,FN,TP]` | `[1, 1, 0, 4]` | D4 + check `value` ml-7 C5 |
+| `predykcja_stala` | `false` (fałsz — model daje obie klasy) | D4 |
+| `max_corr_cecha_cel` (Pearson, trening) | `≈ 0.705` (najsilniejsza: `kwota`) | D3 (anty-przeciek) |
+| próbka z pomyłką (fałszywy alarm) | **id=18** — minuty 10, kwota 19.0, godzina 22, napiwek 0 | rdzeń D1 |
+
+> ⚠ **Handoff dla buildera:** wektor referencyjny Aneksu myli **próbkę 18**;
+> wektor atrapowy w treści ADR-020 (§D1/§2.5/§7) myli **próbkę 9**
+> (`[[0,1],[8,0],[9,1],…]`) — to inny, roboczy zbiór. Wiążący jest payload
+> z tej tabeli (liczony z FINALNEGO notebooka, ADR-020 §5). ADR §6 tę rozbieżność
+> zapowiada („test_ids i wektor się zmienią”).
+
+### Model-agnostyczność — dowód wykonaniem (nie „na papierze”)
+
+Warunek D1: poprawny student z **legalnym innym modelem** nie może dostać
+fałszywej odmowy. Sześć poprawnych pipeline'ów wytrenowanych na tym samym
+podziale (rs=42) daje **identyczny** `y_pred_test` co wzorzec — i wszystkie mylą
+**dokładnie próbkę 18**:
+
+| Model | `y_pred_test` | myli |
+|---|---|---|
+| drzewo głęb. 1 | `[[0,1],[8,1],[9,1],[11,0],[16,1],[18,1]]` | 18 |
+| drzewo głęb. 2 | identyczny | 18 |
+| drzewo bez limitu (model treści) | identyczny | 18 |
+| kNN k=3 | identyczny | 18 |
+| kNN k=5 | identyczny | 18 |
+| regresja logistyczna | identyczny | 18 |
+
+Wynik: **model-agnostyczność = TAK**. Kontrakt weryfikuje wynik (predykcje per
+próbka), nie metodę — nie odrzuca legalnych alternatyw, odrzuca błędne drogi.
+
+### Cztery diagnozy odmów (ADR-020) — stringi dla buildera, 1:1 na grzechy modułu
+
+Pełne polskie zdania „co jest × co powinno być × co zrobić” z odesłaniem do
+drabiny (skill `tresci-edukacyjne.md` reguła 4). Odmowa pada **przed** emisją
+tokenu. Każda zmierzona wykonaniem na zbiorze Aneksu (payloady niżej w tabeli
+rozróżnialności).
+
+1. **Zły podział → `random_state=42`** (bramka D2):
+   „Twój zestaw testowy to przejazdy {test_ids}, a zafiksowany podział
+   `random_state=42` daje [0, 8, 9, 11, 16, 18]. Zmieniłeś(-aś) ziarno
+   w `train_test_split` — inny podział to inny sprawdzian (ML.2). Wróć do
+   `random_state=42` w linii podziału.”
+2. **Ocena na treningu → 18 zamiast 6** (ML.6 grzech 1; bramki D1+D2):
+   „Oceniasz model na 18 przejazdach zamiast na 6 testowych — to ocena na
+   treningu (grzech nr 1 z ML.6), a trafność 1.0 to iluzja sprawdzianu ze
+   znanymi odpowiedziami. Policz metrykę na `X_te`/`y_te`, nie na `X_tr`
+   (najczęstsza literówka `X_tr` zamiast `X_te`).”
+3. **Strzelec większościowy / „wszystko pozytywne” → nauczony model** (ML.3;
+   bramki D1+D4):
+   „Twój model przewiduje napiwek dla KAŻDEGO z 6 przejazdów testowych — to
+   strzelec «zawsze najczęstsza klasa» / «wszystko pozytywne», nie nauczony
+   model (ML.3). Czułość 1.0 dostaje za darmo, ale tani przejazd id=11 (11 zł)
+   powinien dostać «bez napiwku». Wytrenuj `DecisionTreeClassifier`, nie
+   `DummyClassifier`, i zestaw wynik z baseline'em.”
+4. **Przeciek etykiety → cecha = funkcja celu** (ML.6 grzech 3; bramki D1+D3):
+   „Wśród cech masz kolumnę, która jest funkcją celu «napiwek» (korelacja
+   z celem ≈ 1.0) — to przeciek etykiety (ML.6 grzech 3). Model «zna odpowiedź»,
+   więc trafia nawet graniczny przejazd id=18 (19 zł), który uczciwy model myli.
+   Zostaw w X wyłącznie minuty/kwota/godzina; usuń kolumnę niosącą wynik.”
+
+### Tabela rozróżnialności — zmierzona wykonaniem na zbiorze Aneksu
+
+Potwierdza strukturę z ADR-020 §2.5 na REALNYCH danych (nie na atrapie).
+Każda błędna droga daje inny ładunek niż dobra droga.
+
+| Droga | `acc` (naiwny skalar) | `test_ids` | `y_pred_test` różni się na | `predykcja_stala` | `max_corr` | Werdykt |
+|---|---|---|---|---|---|---|
+| **Dobra droga** | 0.833 ✔ | `[0,8,9,11,16,18]` ✔ | — (wzorzec) | fałsz | ~0.705 ✔ | **TOKEN** ✔ |
+| Zły podział (rs=5) | **0.833 ✔** (przechodzi skalar!) | `[2,17,18,19,20,23]` **✘** | n/d (inny zestaw) | fałsz | — | **ODMOWA** (D2) |
+| Ocena na treningu | 1.0 | 18 obcych kluczy **✘** | 18 wpisów | fałsz | — | **ODMOWA** (D1+D2) |
+| Klasa większościowa | 0.667 | ✔ | próbka 11 (0→1) **✘** | **prawda ✘** | — | **ODMOWA** (D1+D4) |
+| Wszystko pozytywne | 0.667; `rec`=1.0 | ✔ | próbka 11 (0→1) **✘** | **prawda ✘** | — | **ODMOWA** (D1+D4) |
+| Przeciek etykiety | 1.0 | ✔ | próbka 18 (1→0) **✘** | fałsz | **1.0 ✘** | **ODMOWA** (D1+D3) |
+
+Uwaga zgodna z ADR-020 §1.4: zły podział rs=5 daje 0.833 i **przechodzi naiwny
+check `value`** — dowód, że goły skalar nie broni; provenance (D2) go łapie.
+
+### Dwa styki produktowe (ADR-020) — rozstrzygnięcia
+
+**Styk 1 — która próbka niesie pomyłkę (graniczna, wyjaśnialna).** Fałszywy
+alarm to **id=18: minuty 10, kwota 19.0, godzina 22, napiwek 0** — krótki nocny
+kurs za 19 zł. W danych napiwki zaczynają się od progu ~20 zł (najdroższy kurs
+bez napiwku to 19 zł, najtańszy z napiwkiem to 21 zł); ten jeden przejazd leży
+tuż pod granicą klas, a wszystkie droższe dawały napiwek — więc każdy model
+(drzewo, kNN, regresja) obstawia napiwek. To jest wyjaśnialny graniczny przypadek
+(wzorzec ADR-017 „35 min w korku — długo a tanio”), **nie artefakt drzewa**:
+potwierdzone, że sześć różnych konfiguracji modeli myli DOKŁADNIE tę próbkę.
+Rozstrzygnięcie: zostaje id=18, bez zmiany danych.
+
+**Styk 2 — próg D3 i linia „przeciek deterministyczny vs zaszumiony”.**
+Zmierzone na treningu: legalne cechy mają |corr| ≤ **0.705** (`kwota`; minuty
+0.695, godzina 0.475), deterministyczny przeciek (cecha = cel) = **1.0**. Próg
+D3 = **0.98** (konserwatywny z ADR-020 §2 D3) leży bezpiecznie między nimi:
+nie odrzuci legalnej `kwota` (0.705), złapie deterministyczny przeciek (1.0).
+Linia rozstrzygnięta: D3 celuje w **deterministyczny / bliski-deterministyczny**
+przeciek (korelacja→1, „100% wygląda jak sukces”); **zaszumiony częściowy
+przeciek**, który przypadkiem odtwarza dokładnie wektor wzorca, jest wynikowo
+nieodróżnialny (ta sama lista `y_pred_test`) i D3 świadomie go NIE ściga — output
+jest poprawny, a fałszywe odmowy legalnych silnie skorelowanych cech kosztują
+więcej, niż łapią. Korelacja: Pearson dla cech liczbowych; zbiór M-ML nie ma
+cech kategorycznych (kwestia kodowania kategorii dotknie dopiero capstone'u —
+briefing prowadzi). Rozstrzygnięcie moje (Sophia): trzymamy 0.98, cechy treści
+bezpieczne.
+
+### Co zostaje do budowy pieczątek (po finalizacji ADR-020 przez Ethana)
+
+- Builder liczy w warstwie treści pieczątki ml-4/ml-7: `y_pred_test`, `test_ids`,
+  `max_corr_cecha_cel`, `predykcja_stala`, `macierz` (payloady z tabeli wyżej,
+  z finalnego notebooka — ADR-020 §5).
+- Packer: checki `value` na strukturach dla ml-4/ml-7 w rejestrze
+  `pack-curriculum-atoms.ts` (dziś naiwne skalary `acc_base`/`acc_model` —
+  wymiana przez Ethana/buildera, nie przeze mnie).
+- Kontrakt-testy (Quinn/Eva): 4 scenariusze odmowy + dobra droga.
+- **Do potwierdzenia przez buildera** (ADR-020 §3): czy `evalValue`/`_norm`
+  normalizują listy zagnieżdżone `[[0,1],[8,1]]` — inaczej fallback dwóch list
+  płaskich `y_pred_ids` + `y_pred_vals`.
+- **Blocker: brak.** Zbiór gotowy, model-agnostyczność dowiedziona, próg D3
+  ustalony. Budowa pieczątek czeka wyłącznie na finalizację kontraktu ADR-020
+  przez Ethana (czerwona linia — nie moja domena).
+
+### Brama przed oddaniem treści — ta dostawa (ADR-020: dane + weryfikacja + diagnozy)
+
+Zakres bramy: sekcje dodane 2026-07-23 (payloady, model-agnostyczność, diagnozy,
+styki). Atomy ML.1–ML.7, egzamin i capstone bez zmian względem zatwierdzenia
+2026-07-11 — ich brama przeszła wtedy (log niżej).
+
+**Część A — kontrola mechaniczna (pass/fail):**
+
+| Test | Wynik | Dowód |
+|---|---|---|
+| **T1 źródło i determinizm** | PASS | Zmiany wyłącznie w `sophia-1e2-mml-atomy.md` (sekcje poza blokami `## Atom` — packer ich nie czyta); `content:pack-curriculum` uruchomiony, `git diff` na `m-ml.json` pusty; kontrakt-test determinizmu zielony ×2. |
+| **T2 czystość widoku studenta** | PASS | Payloady, diagnozy i meta są w sekcjach builder-facing i logu QG, nie w Cel/Teoria/Zadanie/Pytania/Drabinka żadnego atomu; grep meta-znaczników w blokach `## Atom` bez trafień z tej dostawy. |
+| **T3 liczby policzone** | PASS | Każda liczba (test_ids, wektor, macierz, korelacje, acc czterech dróg) wykonana w sklearn 1.9.0 2026-07-23 — tabele payloadu i rozróżnialności są tabelą weryfikacji. |
+| **T4 błędy zapowiedziane / placeholdery** | PASS (n/d) | Ta dostawa nie zapowiada studentowi nowych komunikatów błędu ani nie dodaje komórek notebooka; `___` (trzy podkreślenia) i polskie cudzysłowy w stringach kodu — 0 wystąpień w dodanych sekcjach. |
+| **T5 cudze UI** | PASS (n/d) | Zero nowych cytatów etykiet cudzego UI. |
+
+**Część B — self-critique:** poniżej, w nowym wpisie logu QG (2026-07-23).
+
 ## Przebieg QG tego dokumentu (2026-07-11)
 
 Draft → cały przepływ liczbowy wykonany przez autora w sklearn 1.6.1
@@ -1166,3 +1328,65 @@ wstęp pystart, macierz DATAcademy; kanały poprzednich modułów bez
 materiałów ML (sprawdzone); UCI Online Retail: zip bez rejestracji,
 xlsx wymaga openpyxl, **~25% pustych CustomerID wbrew deklaracji
 strony** (hak do briefingu 1E.R); StatQuest aktywny.
+
+## Przebieg QG — weryfikacja pod ADR-020 (2026-07-23)
+
+Zlecenie: fundament treści M-ML pod nowy kontrakt checków (ADR-020) — dane
+produkujące rozróżnialny artefakt + weryfikacja model-agnostyczności wykonaniem
++ cztery diagnozy odmów + dwa styki produktowe. NIE budowa pieczątek (builder/Ethan
+po finalizacji ADR-020).
+
+**Co wykonano** (scikit-learn 1.9.0, izolowany venv poza repo, 2026-07-23):
+
+1. **Zbiór Aneksu przetestowany, NIE przeprojektowany.** Publikowane liczby
+   odtworzone co do joty (baseline 0.6667, model 0.8333, macierz [[1,1],[0,4]],
+   precyzja 0.8, czułość 1.0, test_ids [0,8,9,11,16,18]).
+2. **Model-agnostyczność = TAK** — sześć poprawnych pipeline'ów (drzewo głęb.
+   1/2/bez limitu, kNN k=3/5, regresja logistyczna) dają identyczny `y_pred_test`
+   i mylą DOKŁADNIE próbkę id=18. Dowód wykonaniem, nie „na papierze”. Zmiana 1
+   do ADR (weryfikacja wykonaniem, nie tylko na atrapie) — zamknięta bez blockera.
+3. **Cztery błędne drogi zmierzone na REALNYM zbiorze** (nie na atrapie z ADR §7):
+   zły podział rs=5 (0.833, przechodzi skalar, `test_ids` [2,17,18,19,20,23]),
+   ocena na treningu (1.0, 18 kluczy), klasa większościowa i wszystko pozytywne
+   (0.667, recall 1.0, `predykcja_stala`=prawda, różnią się na próbce 11),
+   przeciek (1.0, różni się na próbce 18, korelacja 1.0). Każda daje inny ładunek
+   niż dobra droga — zgodnie z tabelą rozróżnialności ADR-020 §2.5.
+4. **Cztery diagnozy odmów** napisane jako pełne polskie zdania z odesłaniem do
+   drabiny, nazywające próbkę/cechę (id=11, id=18, test_ids, korelacja).
+5. **Dwa styki rozstrzygnięte:** próbka pomyłki = id=18 (graniczny, wyjaśnialny);
+   próg D3 = 0.98 (między 0.705 legalnej `kwota` a 1.0 przecieku).
+
+**Znaleziska:**
+
+- **INFO-1 (handoff):** wektor referencyjny realnego zbioru myli próbkę **18**,
+  a wektor-atrapa w treści ADR-020 (§D1/§2.5/§7) myli próbkę **9**. Rozbieżność
+  zapowiedziana w ADR §6 — builder liczy payload z finalnego notebooka. Wpisane
+  jawnie w sekcję „Handoff dla buildera”, żeby nie skopiowano wektora atrapy.
+- **INFO-2:** zbiór jest niemal separowalny po `kwota` (korelacja 0.705) — to
+  ustawia próg D3 nisko-ryzykownie; potwierdzone, że 0.98 nie generuje fałszywej
+  odmowy legalnej cechy. Zero KRYT, zero WAŻN.
+
+**Część B — self-critique** (rola: instruktor kursu dla literalnych zer, po
+wieczorze, w którym pół grupy utknęło na jednym kroku). Pięć słabości + naprawy:
+
+1. *Diagnoza odmowy „strzelca” mogła zostać przy ogólniku „model przewiduje
+   zawsze jedną klasę”.* — Dodałam konkret: nazwany tani przejazd **id=11 (11 zł)**,
+   który powinien dostać „bez napiwku”. Student widzi KTÓRY przejazd zdradza
+   strzelca, nie tylko że coś jest nie tak.
+2. *Diagnoza przecieku groziła abstrakcją „usuń przeciekową cechę”.* — Wskazałam
+   sygnał wykonalny: model „trafia nawet graniczny id=18, który uczciwy myli”, +
+   nakaz „zostaw w X wyłącznie minuty/kwota/godzina”. Diagnoza mówi CO ZROBIĆ.
+3. *Styk 2 mógł podać sam próg 0.98 bez uzasadnienia — student/inżynier nie wie,
+   czemu nie 0.8.* — Dopisałam zmierzone korelacje wszystkich trzech cech i linię
+   „deterministyczny vs zaszumiony”, żeby próg był decyzją z dowodem, nie liczbą
+   z sufitu.
+4. *Ryzyko sprzeczności: „fałszywy alarm na id=18” kontra „model-agnostyczność”.*
+   — Zweryfikowałam, że to NIE sprzeczność, lecz sedno: wszystkie modele mylą tę
+   samą próbkę, więc wektor wzorca „za słaby” (z pomyłką) celowo zdradza bezbłędny
+   przeciek (D1). Ujęte w sekcji model-agnostyczności i w styku 1.
+5. *Handoff mógł milcząco zostawić rozbieżność wektor-atrapa (myli 9) vs realny
+   (myli 18) — builder skopiowałby złą liczbę.* — Wyniesione do jawnego ostrzeżenia
+   „⚠ Handoff dla buildera” w tabeli payloadu.
+
+Werdykt: **gotowe do oddania Oliverowi**; budowa pieczątek po finalizacji ADR-020
+przez Ethana (jego domena, czerwona linia ingestu). Zero blockerów.

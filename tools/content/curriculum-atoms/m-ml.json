@@ -461,8 +461,30 @@
 						"note": "model na zafiksowanym podziale: 5/6",
 						"var": "acc_model",
 						"expect": 0.8333333333333334
+					},
+					{
+						"id": "C3",
+						"kind": "value",
+						"note": "D2 pochodzenie podziału: zestaw testowy random_state=42 = [0,8,9,11,16,18] (zły podział → inne id; ocena na treningu → 18 kluczy)",
+						"var": "test_ids",
+						"expect": [0, 8, 9, 11, 16, 18]
+					},
+					{
+						"id": "C4",
+						"kind": "value",
+						"note": "D1 wektor predykcji [id,pred]: uczciwy model myli WYŁĄCZNIE id=18 (graniczne 19 zł); degeneracja różni się na id=11, przeciek na id=18",
+						"var": "y_pred_test",
+						"expect": [[0, 1], [8, 1], [9, 1], [11, 0], [16, 1], [18, 1]]
+					},
+					{
+						"id": "C5",
+						"kind": "value",
+						"note": "D4 rozkład predykcji: fałsz = model daje obie klasy (strzelec/«wszystko pozytywne» → prawda)",
+						"var": "predykcja_stala",
+						"expect": false
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-4-lab-napiwki-pelna-sciezka.ipynb"
 			}
 		},
 		{
@@ -783,8 +805,37 @@
 						"note": "macierz pomyłek [[1,1],[0,4]] spłaszczona do listy",
 						"var": "macierz",
 						"expect": [1, 1, 0, 4]
+					},
+					{
+						"id": "C6",
+						"kind": "value",
+						"note": "D2 pochodzenie podziału: zestaw testowy random_state=42 = [0,8,9,11,16,18]",
+						"var": "test_ids",
+						"expect": [0, 8, 9, 11, 16, 18]
+					},
+					{
+						"id": "C7",
+						"kind": "value",
+						"note": "D1 wektor predykcji [id,pred]: uczciwy model myli WYŁĄCZNIE id=18; przeciek trafia id=18, degeneracja różni się na id=11",
+						"var": "y_pred_test",
+						"expect": [[0, 1], [8, 1], [9, 1], [11, 0], [16, 1], [18, 1]]
+					},
+					{
+						"id": "C8",
+						"kind": "value",
+						"note": "D4 rozkład predykcji: fałsz = model daje obie klasy",
+						"var": "predykcja_stala",
+						"expect": false
+					},
+					{
+						"id": "C9",
+						"kind": "value",
+						"note": "D3 anty-przeciek: |corr| najsilniejszej cechy (kwota) z celem na treningu ≈ 0.705 (przeciek deterministyczny = 1.0 > próg 0.98)",
+						"var": "max_corr_cecha_cel",
+						"expect": 0.7049356271704668
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-7-lab-raport-modelu.ipynb"
 			}
 		},
 		{

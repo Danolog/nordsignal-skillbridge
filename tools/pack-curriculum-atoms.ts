@@ -257,7 +257,21 @@ const CHECKS_F3_7: Check[] = [
 	},
 ];
 
-/** M-ML: dane i ziarna ZAFIKSOWANE w treści → wartości znane z góry (checki MOCNE). */
+// ── M-ML (ADR-020) — kontrakt struktur zamiast gołego skalara metryki ──
+// Metryka na 6-elementowym teście przyjmuje ~7 wartości, więc kolizja (różne
+// drogi na tej samej liczbie) jest tu REGUŁĄ, nie wyjątkiem (ADR-020 §1). Dlatego
+// ładunek niesie STRUKTURĘ Z TOŻSAMOŚCIĄ PRÓBKI (wzór `z3_miejsca1_ids`, ADR-017):
+//   D1 `y_pred_test`  — posortowane pary [id, predykcja]; koduje charakterystyczną
+//                       pomyłkę uczciwego modelu (id=18) → bezbłędny przeciek i
+//                       degeneracja dają INNY wektor (zmierzone, zbiór Aneksu);
+//   D2 `test_ids`     — pochodzenie podziału (zły `random_state` / ocena na treningu);
+//   D3 `max_corr…`    — anty-przeciek (ml-7 + capstone; na ml-4 CICHY, ADR-020 §D3);
+//   D4 `predykcja_stala` — degeneracja do jednej klasy (strzelec / „wszystko pozytywne").
+// Dane i ziarna ZAFIKSOWANE treścią → wszystkie wartości znane z góry (checki MOCNE).
+// Źródło prawdy payloadów: docs/curation/sophia-1e2-mml-atomy.md; liczby zmierzone
+// wykonaniem (scikit-learn 1.6.1 i 1.9.0 — identyczne, deterministyczne przez ziarno).
+
+/** ML.4 (pozycja 40, przed ml-6) — D1/D2/D4; D3 CICHY (leakage dopiero w ml-6). */
 const CHECKS_ML_4: Check[] = [
 	{
 		id: "C1",
@@ -273,8 +287,37 @@ const CHECKS_ML_4: Check[] = [
 		var: "acc_model",
 		expect: 0.8333333333333334,
 	},
+	{
+		id: "C3",
+		kind: "value",
+		note: "D2 pochodzenie podziału: zestaw testowy random_state=42 = [0,8,9,11,16,18] (zły podział → inne id; ocena na treningu → 18 kluczy)",
+		var: "test_ids",
+		expect: [0, 8, 9, 11, 16, 18],
+	},
+	{
+		id: "C4",
+		kind: "value",
+		note: "D1 wektor predykcji [id,pred]: uczciwy model myli WYŁĄCZNIE id=18 (graniczne 19 zł); degeneracja różni się na id=11, przeciek na id=18",
+		var: "y_pred_test",
+		expect: [
+			[0, 1],
+			[8, 1],
+			[9, 1],
+			[11, 0],
+			[16, 1],
+			[18, 1],
+		],
+	},
+	{
+		id: "C5",
+		kind: "value",
+		note: "D4 rozkład predykcji: fałsz = model daje obie klasy (strzelec/«wszystko pozytywne» → prawda)",
+		var: "predykcja_stala",
+		expect: false,
+	},
 ];
 
+/** ML.7 (pozycja 70, po ml-6) — pełny kontrakt D1/D2/D3/D4 + macierz/precyzja/czułość. */
 const CHECKS_ML_7: Check[] = [
 	{ id: "C1", kind: "value", note: "baseline", var: "acc_base", expect: 0.6666666666666666 },
 	{ id: "C2", kind: "value", note: "model", var: "acc_model", expect: 0.8333333333333334 },
@@ -286,6 +329,41 @@ const CHECKS_ML_7: Check[] = [
 		note: "macierz pomyłek [[1,1],[0,4]] spłaszczona do listy",
 		var: "macierz",
 		expect: [1, 1, 0, 4],
+	},
+	{
+		id: "C6",
+		kind: "value",
+		note: "D2 pochodzenie podziału: zestaw testowy random_state=42 = [0,8,9,11,16,18]",
+		var: "test_ids",
+		expect: [0, 8, 9, 11, 16, 18],
+	},
+	{
+		id: "C7",
+		kind: "value",
+		note: "D1 wektor predykcji [id,pred]: uczciwy model myli WYŁĄCZNIE id=18; przeciek trafia id=18, degeneracja różni się na id=11",
+		var: "y_pred_test",
+		expect: [
+			[0, 1],
+			[8, 1],
+			[9, 1],
+			[11, 0],
+			[16, 1],
+			[18, 1],
+		],
+	},
+	{
+		id: "C8",
+		kind: "value",
+		note: "D4 rozkład predykcji: fałsz = model daje obie klasy",
+		var: "predykcja_stala",
+		expect: false,
+	},
+	{
+		id: "C9",
+		kind: "value",
+		note: "D3 anty-przeciek: |corr| najsilniejszej cechy (kwota) z celem na treningu ≈ 0.705 (przeciek deterministyczny = 1.0 > próg 0.98)",
+		var: "max_corr_cecha_cel",
+		expect: 0.7049356271704668,
 	},
 ];
 
@@ -889,6 +967,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "baseline-punkt-odniesienia" },
 				],
 				checks: CHECKS_ML_4,
+				notebookUrl: `${NOTEBOOKS_BASE}/mml/ml-4-lab-napiwki-pelna-sciezka.ipynb`,
 			},
 			// Lab samodzielny — meta mówi „wszystkie z M-ML".
 			"ML.7": {
@@ -899,6 +978,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "leakage-uczciwosc-ewaluacji" },
 				],
 				checks: CHECKS_ML_7,
+				notebookUrl: `${NOTEBOOKS_BASE}/mml/ml-7-lab-raport-modelu.ipynb`,
 			},
 		},
 		przeglad: {

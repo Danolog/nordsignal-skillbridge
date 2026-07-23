@@ -355,16 +355,12 @@ const PYTHON: WierszCytatu[] = [
 		silnik: "sklearn",
 		cytat: "NotFittedError: This DecisionTreeClassifier instance is not fitted yet…",
 		rodzaj: "komunikat",
-		kod: null,
+		// Aktywowane z partią M-ML (ADR-020): scikit-learn wszedł do
+		// srodowisko-colab.json (pin ~=1.6.1) razem z labami ML.4/ML.7, więc CI ma
+		// teraz sklearn i cytat wykonuje się naprawdę (koniec odroczenia „silnik-poza-pinem").
+		// Komunikat identyczny w 1.6.1 i 1.9.0 (zweryfikowane wykonaniem).
+		kod: "from sklearn.tree import DecisionTreeClassifier\nDecisionTreeClassifier().predict([[1, 2, 3]])\n",
 		gdzie: "ML.1 (hint 3) — `predict` przed `fit`",
-		odroczono: {
-			powod: "silnik-poza-pinem",
-			odnosnik:
-				"scikit-learn NIE jest w srodowisko-colab.json — moduł M-ML nie ma jeszcze " +
-				"notebooków ani labów w CI, a wciągnięcie sklearn+scipy+numpy do jobu `test` " +
-				"kosztuje ~1 min na każdy przebieg za JEDEN cytat. Asercja wchodzi razem " +
-				"z notebookami M-ML (partia M-ML) — wtedy pin sklearn i tak będzie potrzebny.",
-		},
 	},
 ];
 
