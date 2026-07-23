@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * POST /api/onboarding — kontrakt walidacji po Partii 4 i kasacji legacy (AG.2).
  *
- * Kontrakt `competencies` to JEDNA forma (AG.2, 2026-07-07): tablica obiektów
- * { name, level∈{2,3,4}, marketPercentage, inSyllabus? }. 0 zaznaczeń dozwolone
+ * Kontrakt `competencies` to JEDNA forma (AG.2, 2026-07-07; ADR-021 2026-07-23):
+ * tablica obiektów { name, level∈{2,3,4}, inSyllabus? }. `marketPercentage` USUNIĘTY
+ * z kontraktu — popyt wyprowadza serwer z katalogu (D4); stary klient wysyłający
+ * pole przechodzi (Zod stripuje nieznane klucze — back-compat). 0 zaznaczeń dozwolone
  * (pusta tablica → 0% pokrycia = uczciwy start, D5). Luki liczone
  * DETERMINISTYCZNIE (persistMarketGaps), NIE modelem. Gałąź LEGACY (string[]
  * → generateGaps) USUNIĘTA — stary kontrakt pada na walidacji (400).
@@ -53,9 +55,13 @@ vi.mock("@/lib/db/tenant-context", () => ({
 }));
 
 // Ścieżka DETERMINISTYCZNA (nowy kontrakt) — zapis luk + pokrycia. Mock na granicy DB.
+// ADR-021: route ładuje też loadMarketCatalog (serwerowe źródło popytu) — mock zwraca
+// domyślnie pusty katalog; testy stemplowania (niżej) nadpisują go per-case.
 const mockPersistMarketGaps = vi.fn(async (..._a: unknown[]) => undefined);
+const mockLoadMarketCatalog = vi.fn(async (..._a: unknown[]) => [] as unknown[]);
 vi.mock("@/lib/onboarding/market-gaps", () => ({
 	persistMarketGaps: (...a: unknown[]) => mockPersistMarketGaps(...a),
+	loadMarketCatalog: (...a: unknown[]) => mockLoadMarketCatalog(...a),
 }));
 
 const mockGenerateSkillMap = vi.fn(async () => undefined);
@@ -64,6 +70,7 @@ vi.mock("@/lib/ai/generate-skill-map", () => ({ generateSkillMap: () => mockGene
 const mockLogError = vi.fn();
 vi.mock("@/lib/log", () => ({ logError: (...a: unknown[]) => mockLogError(...a) }));
 
+import { competencies as competenciesTable } from "@/lib/db/schema";
 import { POST } from "../route";
 
 const VALID_PROFILE = {
@@ -157,15 +164,19 @@ describe("POST /api/onboarding — kontrakt Partii 4 (próg min-5 zniesiony)", (
 		expect(mockWithTenant).not.toHaveBeenCalled();
 	});
 
-	it("% popytu poza zakresem 0–100 → 400 (kontrakt marketPercentage)", async () => {
+	it("ADR-021 back-compat: stary klient wysyłający marketPercentage (nawet 150) → 200, pole ignorowane", async () => {
+		// Pole NIE jest już w kontrakcie (D4). Zod stripuje nieznane klucze → brak
+		// twardego 400 na starym kliencie (sesje w trakcie kreatora nie padają przy
+		// deployu). Własność bezpieczeństwa („klient nie ustawia tej liczby") osiągamy
+		// przez NIECZYTANIE wartości, nie przez odrzucanie żądania.
 		const res = await POST(
 			makeReq({
 				...VALID_PROFILE,
 				competencies: [{ name: "SQL", level: 3, marketPercentage: 150 }],
 			}),
 		);
-		expect(res.status).toBe(400);
-		expect(mockWithTenant).not.toHaveBeenCalled();
+		expect(res.status).toBe(200);
+		expect(mockWithTenant).toHaveBeenCalledOnce();
 	});
 
 	it("F2 — własny cel spoza 23 (edytor profilu) NADAL przechodzi (brak bramki katalogowej tu)", async () => {
@@ -204,5 +215,119 @@ describe("POST /api/onboarding — kontrakt Partii 4 (próg min-5 zniesiony)", (
 		const json = (await res.json()) as { success: boolean; aiGenerationFailed?: boolean };
 		expect(json.success).toBe(true);
 		expect(json.aiGenerationFailed).toBe(true);
+	});
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADR-021 — stemplowanie `competencies.marketPercentage` z SERWEROWEGO katalogu.
+//
+// Ten blok URUCHAMIA callback withTenantContext z atrapą transakcji i przechwytuje
+// WIERSZE wstawiane do `competencies`. Dowodzi rdzenia naprawy (D1/D3):
+//   • wartość z ciała żądania jest IGNOROWANA — zapisany popyt == katalogowy;
+//   • nazwa spoza katalogu → `null` (NIE 0, NIE wartość klienta).
+//
+// PUNKT ZACZEPIENIA DLA QUINNA (mutacja §6): to jednostkowy dowód nadpisania
+// klienta serwerem na granicy zapisu (DB zamockowana). Adwersaryjny wariant
+// end-to-end na powierzchni WYCHODZĄCEJ (GET /api/passport/[id] publiczny → popyt
+// katalogowy albo nieobecny, NIGDY liczba z ciała) dokłada Quinn na bazie testowej.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Atrapa tx: nowy student (findFirst→undefined), przechwytuje wiersze competencies. */
+function makeFakeTx(captured: { competencyRows: Record<string, unknown>[] }) {
+	const insert = (table: unknown) => ({
+		values: (v: unknown) => {
+			if (table === competenciesTable) {
+				captured.competencyRows = v as Record<string, unknown>[];
+			}
+			// Prawdziwy Promise (awaitowalny: `await …values(rows)`) z doczepionym
+			// `.returning` (ścieżka insertu studenta: `…values(...).returning(...)`).
+			const p = Promise.resolve(undefined) as Promise<undefined> & {
+				returning: () => Promise<{ id: string }[]>;
+			};
+			p.returning = async () => [{ id: "student-new" }];
+			return p;
+		},
+	});
+	return {
+		query: {
+			students: { findFirst: async () => undefined },
+			passports: { findFirst: async () => undefined },
+			competencies: { findMany: async () => [] },
+		},
+		insert,
+		update: (_t: unknown) => ({ set: (_v: unknown) => ({ where: async () => undefined }) }),
+		delete: (_t: unknown) => ({ where: async () => undefined }),
+	};
+}
+
+describe("POST /api/onboarding — ADR-021: popyt z katalogu, nie z ciała żądania", () => {
+	it("kliencki marketPercentage=99 IGNOROWANY — zapis == wartość katalogowa (55)", async () => {
+		const captured = { competencyRows: [] as Record<string, unknown>[] };
+		mockLoadMarketCatalog.mockResolvedValueOnce([
+			{ competencyName: "Python", demandPercentage: 55, category: "Język i framework" },
+		]);
+		mockWithTenant.mockImplementationOnce((_ctx: unknown, fn: (tx: unknown) => Promise<unknown>) =>
+			fn(makeFakeTx(captured)),
+		);
+
+		const res = await POST(
+			makeReq({
+				...VALID_PROFILE,
+				careerGoal: "Data Analyst",
+				// klient wysyła zafałszowaną liczbę (99) — serwer musi ją zignorować
+				competencies: [{ name: "Python", level: 3, marketPercentage: 99 }],
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(captured.competencyRows).toHaveLength(1);
+		const row = captured.competencyRows[0];
+		expect(row.name).toBe("Python");
+		expect(row.marketPercentage).toBe(55); // katalog, NIE 99 z ciała
+	});
+
+	it("nazwa spoza katalogu → marketPercentage null (D3 — niewiadoma, nie 0/nie klient)", async () => {
+		const captured = { competencyRows: [] as Record<string, unknown>[] };
+		// katalog zawiera Python; „UnknownSkill" nie występuje → off-catalog
+		mockLoadMarketCatalog.mockResolvedValueOnce([
+			{ competencyName: "Python", demandPercentage: 55, category: "Język i framework" },
+		]);
+		mockWithTenant.mockImplementationOnce((_ctx: unknown, fn: (tx: unknown) => Promise<unknown>) =>
+			fn(makeFakeTx(captured)),
+		);
+
+		const res = await POST(
+			makeReq({
+				...VALID_PROFILE,
+				careerGoal: "Data Analyst",
+				competencies: [
+					{ name: "Python", level: 3, marketPercentage: 99 },
+					{ name: "UnknownSkill", level: 2, marketPercentage: 99 },
+				],
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(captured.competencyRows).toHaveLength(2);
+		const byName = new Map(captured.competencyRows.map((r) => [r.name, r.marketPercentage]));
+		expect(byName.get("Python")).toBe(55);
+		expect(byName.get("UnknownSkill")).toBeNull(); // NIE 0, NIE 99
+	});
+
+	it("dopasowanie katalogu po znorm. nazwie (różna wielkość liter/spacje)", async () => {
+		const captured = { competencyRows: [] as Record<string, unknown>[] };
+		mockLoadMarketCatalog.mockResolvedValueOnce([
+			{ competencyName: "Python", demandPercentage: 55, category: "x" },
+		]);
+		mockWithTenant.mockImplementationOnce((_ctx: unknown, fn: (tx: unknown) => Promise<unknown>) =>
+			fn(makeFakeTx(captured)),
+		);
+
+		const res = await POST(
+			makeReq({
+				...VALID_PROFILE,
+				competencies: [{ name: "  python ", level: 4, marketPercentage: 99 }],
+			}),
+		);
+		expect(res.status).toBe(200);
+		expect(captured.competencyRows[0].marketPercentage).toBe(55);
 	});
 });

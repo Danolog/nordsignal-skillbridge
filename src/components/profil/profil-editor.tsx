@@ -207,7 +207,6 @@ export function ProfilEditor({ initial }: ProfilEditorProps) {
 			.map((item) => ({
 				name: item.competencyName,
 				level: selections[item.competencyName],
-				marketPercentage: item.demandPercentage,
 				inSyllabus: Boolean(item.inSyllabus),
 			}));
 
