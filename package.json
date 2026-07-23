@@ -41,7 +41,7 @@
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^3.0.58",
-		"@ai-sdk/react": "^3.0.118",
+		"@ai-sdk/react": "^4.0.39",
 		"@rollup/rollup-linux-x64-gnu": "^4.58.0",
 		"@tailwindcss/oxide-linux-x64-gnu": "^4.2.0",
 		"@upstash/ratelimit": "^2.0.8",
