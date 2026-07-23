@@ -11,6 +11,34 @@
 
 ---
 
+## RÓWNOLEGLE 2026-07-23 (sesja Oliver, COO — SPŁATA DŁUGU, obok kręgosłupa M-SQL/M-ML)
+
+Cztery pozycje długu wykonane i na `main` (`566c35c`), model v1.12 (Ethan scala pod bramkami Leo),
+autor commitów = Darek, każda gałąź z `origin/main` w osobnym worktree. Pełny zapis + follow-upy:
+handoff firmowy `Danolog/nordsignal-operating-system` @ `bfc96bc`.
+
+1. **D-a11y-1/2** — drabinka podpowiedzi: fokus po async reveal (`tabIndex`/`ref` + `aria-busy`), `hintError`
+   `role="alert"` zamiast polite. ff `620295c`, prod Ready, +3 testy. (Jack→Leo→Ethan)
+2. **R-1 `tools/enforce-retention.ts`** — jeden skrypt cały rejestr retencji; `at[]` w SQL zostawia `d`
+   (`at.length ≤ d`), viva delete-row (ADR-013 D3). **Ryan złapał W-viva:** kotwica zegara = `submission_reviews`
+   dla eskalacji + guard HITL (stara wersja kasowała spod trwającej recenzji człowieka). Test integracyjny 7/7
+   na :5433. Scalone `4e70e1e`, **`--execute` NIE uruchamiany na prod** (egzekucja post-1. rejestracja).
+   ⚠ Otwarte dla Ethan+Ryan: hard-deny `skill-bridge-ai` blokuje skrypt też na gałęzi backupu Neona — ścieżka
+   egzekucji do nazwania przed 1. realną egzekucją. (Max→Ryan+Leo)
+3. **f2-7 „Strażnik budżetu"** — sonda `[1,2,3]→6` miała poczwórną kolizję (suma=iloczyn=len·2=max·2), iloczyn
+   dostawał token → `[2,5,10]→17`. Quinn mutacja: 3 błędne operatory padają. **Prod re-ingest ×2 idempotentny,
+   0 retired** (F1), notebook opublikowany (raw 200), backup `br-quiet-bread-al2nduqo`. **Prod nadal 44/58**
+   (f2-7 był labem — zmiana treści C2, nie liczby). (Sophia→Quinn→Leo→Ethan)
+4. **marketPercentage (ADR-021)** — `competencies.marketPercentage` szedł z ciała żądania → paszport PUBLICZNY
+   (employer-facing, §7). Serwer wyprowadza popyt z `loadMarketCatalog` (`buildDemandByName`), off-catalog→null,
+   pole usunięte ze schematu. Quinn: body 99→zapis 55, `leaked=[]` na :5433. Zero migracji. Scalone `566c35c`,
+   prod Ready. Follow-up: brak unikalnego indeksu `(career_goal, competency_name)` na `job_market_data`.
+   (Ethan ADR→Max→Quinn→Leo→Ethan)
+
+⚠ **Runbook pre-flightu serializacji prod BŁĘDNY** (ustalił Ethan przy f2-7): backupy Neona to gałęzie **Neona**,
+nie git — `git branch -r` daje false-negative. Poprawny check: Neon API `/branches` po `prod-backup-pre-ingest-*(msql|mml)*`
++ świeżość. Jedyna realna bariera serializacji między sesjami prod. #218 M-SQL potwierdzony na prodzie (17:59).
+
 ## STAN NA DZIŚ — 2026-07-23 — M-EDA NA PRODUKCJI (44/58); STRAŻNICY SEKRETÓW + AUDIT-LOG NA MAIN; DWIE ŁATKI DEPS (Next 16.2.11, PostCSS 8.5.22)
 
 **Jednym zdaniem:** partia 7 (M-EDA) jest na produkcji (**44/58**), a repo produktu
