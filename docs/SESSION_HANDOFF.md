@@ -35,6 +35,11 @@ handoff firmowy `Danolog/nordsignal-operating-system` @ `bfc96bc`.
    prod Ready. Follow-up: brak unikalnego indeksu `(career_goal, competency_name)` na `job_market_data`.
    (Ethan ADR→Max→Quinn→Leo→Ethan)
 
+5. **U1 — parytet audit-log** — `SubagentStart`/`SubagentStop` → `audit-log.py` w `.claude/settings.json`
+   (Ethan `90b7d47`, prod Ready). Darek autoryzował Ethana do edycji `.claude/settings.json` (rozszerzenie v1.12).
+   Funkcjonalnie potwierdzone (rekord `model`+`NORDSIGNAL_ROLE`+hash-chain) → audyt kosztu per-agent działa
+   w produkcie. CLAUDE.md v1.14 (zapis autoryzacji) czeka na `!` Darka. (Ethan)
+
 ⚠ **Runbook pre-flightu serializacji prod BŁĘDNY** (ustalił Ethan przy f2-7): backupy Neona to gałęzie **Neona**,
 nie git — `git branch -r` daje false-negative. Poprawny check: Neon API `/branches` po `prod-backup-pre-ingest-*(msql|mml)*`
 + świeżość. Jedyna realna bariera serializacji między sesjami prod. #218 M-SQL potwierdzony na prodzie (17:59).
