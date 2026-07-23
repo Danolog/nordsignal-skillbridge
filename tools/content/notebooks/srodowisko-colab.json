@@ -9,29 +9,29 @@
 	"python": {
 		"pin": null,
 		"zakres": "3.11 - 3.13",
-		"zaobserwowano": null,
-		"zweryfikowano": null,
-		"nota": "Wersji Pythona w Colabie NIKT u nas nie zmierzył (przeszukanie repo 2026-07-22: zero wystapien). Zakres jest zalozeniem, nie pomiarem - pierwsza sonda (ADR-016 D3) go zastapi liczba."
+		"zaobserwowano": "3.12.13",
+		"zweryfikowano": "2026-07-23",
+		"nota": "Do 2026-07-23 zakres byl zalozeniem, nie pomiarem. Pierwsza sonda (ADR-016 D3, 2026-07-23) zmierzyla 3.12.13 - miesci sie w zakresie 3.11-3.13. Pin zostaje null (interpretera nie instalujemy), bramkuje zakres."
 	},
 	"pandas": {
 		"pin": "~=2.2.0",
 		"zaobserwowano": "2.2.2",
-		"zweryfikowano": "2026-07-11",
+		"zweryfikowano": "2026-07-23",
 		"zrodlo": "research Sophii 2026-07-11 (Colab backend-info)"
 	},
 	"duckdb": {
 		"pin": "~=1.3.2",
 		"zaobserwowano": "1.3.2",
-		"zweryfikowano": "2026-07-11",
+		"zweryfikowano": "2026-07-23",
 		"zrodlo": "research Sophii 2026-07-11 (Colab backend-info); maszyna dev ma 1.5.x - pin celowo do COLABA, nie do dev (partia 6, PR #205)"
 	},
 	"requests": {
 		"pin": "~=2.32.0",
-		"zaobserwowano": null,
-		"zweryfikowano": null,
+		"zaobserwowano": "2.32.4",
+		"zweryfikowano": "2026-07-23",
 		"zrodlo": "partia 7 (M-EDA): EDA.1 i EDA.4 wolaja API GUS BDL. Colab preinstaluje requests od zawsze - student NICZEGO nie instaluje, wiec pin dotyczy wylacznie CI (harness wykonuje realny `import requests`).",
-		"nota": "zaobserwowano=null SWIADOMIE: wersji requests w Colabie nikt u nas nie zmierzyl - pierwsza sonda (ADR-016 D3) ma ja dopisac razem z Pythonem. Pin ~=2.32.0 (linia stabilna od 2024-05, zgodna z maszyna dev 2.32.5). Ekspozycja na wersje jest minimalna: notebooki uzywaja wylacznie requests.get(url, params=...), .status_code i .json() - powierzchni niezmiennej od 1.x. Zadna tresc nie cytuje komunikatu ani wersji requests (ADR-016 D5.3), wiec ta biblioteka nie dokłada wierszy do tablicy asercji K1."
+		"nota": "Sonda z 2026-07-23 (ADR-016 D3) zmierzyla 2.32.4 - w pinie ~=2.32.0 (linia stabilna od 2024-05, zgodna z maszyna dev 2.32.5). Pin dotyczy wylacznie CI - Colab preinstaluje requests, student niczego nie instaluje. Ekspozycja na wersje minimalna: notebooki uzywaja wylacznie requests.get(url, params=...), .status_code i .json() - powierzchni niezmiennej od 1.x. Zadna tresc nie cytuje komunikatu ani wersji requests (ADR-016 D5.3), wiec ta biblioteka nie dokłada wierszy do tablicy asercji K1."
 	},
 	"rozjazd": false,
-	"ostatnia_sonda": null
+	"ostatnia_sonda": "2026-07-23"
 }
