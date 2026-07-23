@@ -18,7 +18,7 @@
 import { CheckCircle2, Lightbulb, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TheoryMarkdown } from "@/components/skillbridge/b3/TheoryMarkdown";
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,14 @@ export function ItemRunner({
 	const [revealed, setRevealed] = useState<Record<string, string[]>>(hintsByQuestion);
 	const [hintLoading, setHintLoading] = useState(false);
 	const [hintError, setHintError] = useState<string | null>(null);
+	// D-a11y-1 — po asynchronicznym odsłonięciu podpowiedzi fokus musi trafić na
+	// nową treść, inaczej spada na <body> (przycisk znika przy ostatniej podpowiedzi
+	// albo jest `disabled` w trakcie ładowania). `lastHintRef` celuje w ostatnią
+	// podpowiedź; `hintRevealTick` inkrementuje się TYLKO po udanym `revealHint` i jest
+	// sygnałem dla efektu (start 0 = brak fokusu na pierwszym renderze z podpowiedziami
+	// przyznanymi serwerowo, ani przy zmianie pytania).
+	const lastHintRef = useRef<HTMLDivElement | null>(null);
+	const [hintRevealTick, setHintRevealTick] = useState(0);
 	// MIS.1 — pewność deklarowana PRZED sprawdzeniem; null = jeszcze nie wybrana.
 	const [confidence, setConfidence] = useState<1 | 2 | 3 | null>(null);
 	const [completed, setCompleted] = useState(
@@ -179,12 +187,26 @@ export function ItemRunner({
 			if (!res.ok) throw new Error("hint_failed");
 			const data = (await res.json()) as { depth: number; hints: string[]; hasMore: boolean };
 			setRevealed((prev) => ({ ...prev, [questionId]: data.hints }));
+			// D-a11y-1: dopiero udane dociągnięcie zbija tick, który uruchamia efekt
+			// przenoszący fokus — po tym jak React domontuje nową podpowiedź do DOM.
+			setHintRevealTick((t) => t + 1);
 		} catch {
 			setHintError("Nie udało się wczytać podpowiedzi. Spróbuj ponownie.");
 		} finally {
 			setHintLoading(false);
 		}
 	}
+
+	// D-a11y-1 — wariant (A): po udanym odsłonięciu (tick > 0) przenieś fokus na nową
+	// podpowiedź. W efekcie, bo dopiero po commit DOM ma zamontowany nowy węzeł.
+	// Wybór (A) nad (B) [utrzymanie przycisku]: (A) aktywnie ogłasza NOWĄ treść i
+	// oddaje ją klawiaturze, więc naprawia oba przypadki naraz — przycisk `disabled`
+	// w locie ORAZ jego zniknięcie przy ostatniej podpowiedzi; (B) tylko powstrzymuje
+	// utratę fokusu, ale zostawia użytkownika na przycisku, nie na nowej podpowiedzi.
+	useEffect(() => {
+		if (hintRevealTick === 0) return;
+		lastHintRef.current?.focus();
+	}, [hintRevealTick]);
 
 	if (questions.length === 0) return null;
 
@@ -304,37 +326,56 @@ export function ItemRunner({
 			)}
 
 			{hintsTotal > 0 && (
-				// aria-live: podpowiedź pojawia się asynchronicznie (po odpowiedzi serwera),
-				// więc czytnik ekranu ma ją ogłosić — inaczej pojawiłaby się bez zapowiedzi.
-				<div className="mt-4" aria-live="polite">
-					{/* W-8b (Ryan) — informacja o zapisie odsłonięć: obecna od pierwszego
-					    renderu przycisku. Treść: Sophia (PO); do czasu jej wersji — z §4.2 sign-offu. */}
-					<p className="mb-2 text-xs text-muted-foreground">
-						Odsłonięcie podpowiedzi zapisujemy — służy do doboru powtórek, nie do oceny. Wykładowca
-						tego nie widzi.
-					</p>
-					{visibleHints.map((hint) => (
-						<div
-							key={hint}
-							className="mb-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
-						>
-							<TheoryMarkdown source={hint} />
-						</div>
-					))}
-					{revealedCount < hintsTotal && (
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							disabled={hintLoading}
-							onClick={() => revealHint(question.id)}
-						>
-							<Lightbulb aria-hidden className="size-4" />
-							{hintLoading ? "Wczytuję…" : `Pokaż podpowiedź (${revealedCount + 1}/${hintsTotal})`}
-						</Button>
+				<>
+					{/* aria-live polite: podpowiedź pojawia się asynchronicznie (po odpowiedzi
+					    serwera), więc czytnik ekranu ma ją ogłosić — inaczej pojawiłaby się bez
+					    zapowiedzi. D-a11y-1: aria-busy sygnalizuje trwające dociąganie, żeby
+					    czytnik wiedział, że operacja jest w toku. */}
+					<div className="mt-4" aria-live="polite" aria-busy={hintLoading}>
+						{/* W-8b (Ryan) — informacja o zapisie odsłonięć: obecna od pierwszego
+						    renderu przycisku. Treść: Sophia (PO); do czasu jej wersji — z §4.2 sign-offu. */}
+						<p className="mb-2 text-xs text-muted-foreground">
+							Odsłonięcie podpowiedzi zapisujemy — służy do doboru powtórek, nie do oceny.
+							Wykładowca tego nie widzi.
+						</p>
+						{visibleHints.map((hint, i) => (
+							// D-a11y-1: ostatnia podpowiedź dostaje ref + tabIndex={-1}, żeby po
+							// udanym revealHint móc na nią przenieść fokus (patrz useEffect wyżej).
+							// focus-visible ring: sighted keyboard user widzi, dokąd trafił fokus.
+							<div
+								key={hint}
+								ref={i === visibleHints.length - 1 ? lastHintRef : undefined}
+								tabIndex={-1}
+								className="mb-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+							>
+								<TheoryMarkdown source={hint} />
+							</div>
+						))}
+						{revealedCount < hintsTotal && (
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								disabled={hintLoading}
+								onClick={() => revealHint(question.id)}
+							>
+								<Lightbulb aria-hidden className="size-4" />
+								{hintLoading
+									? "Wczytuję…"
+									: `Pokaż podpowiedź (${revealedCount + 1}/${hintsTotal})`}
+							</Button>
+						)}
+					</div>
+					{/* D-a11y-2: błąd hinta (429 / sieć) to przerwanie, nie status. Wyjęty z
+					    regionu aria-live="polite" (który go tłumił — polite czeka na koniec
+					    bieżącego odczytu) do własnego role="alert" = assertive + aria-atomic,
+					    ogłaszany natychmiast. */}
+					{hintError && (
+						<p role="alert" className="mt-1 text-xs text-rose-700">
+							{hintError}
+						</p>
 					)}
-					{hintError && <p className="mt-1 text-xs text-rose-700">{hintError}</p>}
-				</div>
+				</>
 			)}
 
 			{confidenceProbeEnabled && (
