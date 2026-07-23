@@ -1,0 +1,67 @@
+--- WYNIK MASZYNOWY (JSON) ---
+{
+ "data": "2026-07-23",
+ "srodowisko": {
+  "colab": true,
+  "colab_release_tag": "release-colab-external-images_20260721-060051_RC00",
+  "platforma": "Linux-6.6.122+-x86_64-with-glibc2.35"
+ },
+ "wersje": {
+  "python": "3.12.13",
+  "pandas": "2.2.2",
+  "duckdb": "1.3.2",
+  "requests": "2.32.4"
+ },
+ "cytaty": [
+  { "id": "DB-01", "cytat": "Catalog Error: Table with name przejazdyy does not exist!", "faktyczny": "Catalog Error: Table with name przejazdyy does not exist!\nDid you mean \"pg_prepared_statements\"?", "zgodny": true },
+  { "id": "DB-02", "cytat": "Parser Error: syntax error at or near \"SELCT\"", "faktyczny": "Parser Error: syntax error at or near \"SELCT\"", "zgodny": true },
+  { "id": "DB-03", "cytat": "Parser Error: syntax error at end of input", "faktyczny": "Parser Error: syntax error at end of input", "zgodny": true },
+  { "id": "DB-04", "cytat": "Binder Error: Referenced column \"Manhattan\" not found in FROM clause!", "faktyczny": "Binder Error: Referenced column \"Manhattan\" not found in FROM clause!\nCandidate bindings: \"nazwa\"", "zgodny": true },
+  { "id": "DB-05", "cytat": "Binder Error: Referenced column \"Manhattan\" not found", "faktyczny": "Binder Error: Referenced column \"Manhattan\" not found in FROM clause!\nCandidate bindings: \"nazwa\"", "zgodny": true },
+  { "id": "DB-06", "cytat": "Binder Error: Referenced column \"______\" not found in FROM clause!", "faktyczny": "Binder Error: Referenced column \"______\" not found in FROM clause!\nCandidate bindings: \"strefa_id\"", "zgodny": true },
+  { "id": "DB-07", "cytat": "Binder Error: column \"minuty\" must appear in the GROUP BY clause or must be part of an aggregate function", "faktyczny": "Binder Error: column \"minuty\" must appear in the GROUP BY clause or must be part of an aggregate function.\nEither add it to the GROUP BY list, or use \"ANY_VALUE(minuty)\" if the exact value of \"minuty\" is not important.", "zgodny": true },
+  { "id": "DB-08", "cytat": "Binder Error: Ambiguous reference to column name \"strefa_id\"", "faktyczny": "Binder Error: Ambiguous reference to column name \"strefa_id\" (use: \"przejazdy.strefa_id\" or \"strefy.strefa_id\")", "zgodny": true },
+  { "id": "PY-01", "cytat": "NameError: name 'kawa' is not defined", "faktyczny": "NameError: name 'kawa' is not defined", "zgodny": true },
+  { "id": "PY-02", "cytat": "NameError: name 'pd' is not defined", "faktyczny": "NameError: name 'pd' is not defined", "zgodny": true },
+  { "id": "PY-03", "cytat": "NameError: name '_luka_' is not defined", "faktyczny": "NameError: name '_luka_' is not defined", "zgodny": true },
+  { "id": "PY-04", "cytat": "NameError: name '______' is not defined", "faktyczny": "NameError: name '______' is not defined", "zgodny": true },
+  { "id": "PY-05", "cytat": "NameError: name 'podroz' is not defined", "faktyczny": "NameError: name 'podroz' is not defined", "zgodny": true },
+  { "id": "PY-06", "cytat": "NameError: name '…' is not defined", "faktyczny": "NameError: name 'dowolna_nieistniejaca_nazwa' is not defined", "zgodny": true },
+  { "id": "PY-07", "cytat": "SyntaxError: expected ':'", "faktyczny": "SyntaxError: expected ':'", "zgodny": true },
+  { "id": "PY-08", "cytat": "IndentationError: expected an indented block", "faktyczny": "IndentationError: expected an indented block after 'if' statement on line 1", "zgodny": true },
+  { "id": "PY-09", "cytat": "Maybe you meant '=='", "faktyczny": "SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?", "zgodny": true },
+  { "id": "PY-10", "cytat": "IndexError: list index out of range", "faktyczny": "IndexError: list index out of range", "zgodny": true },
+  { "id": "PY-11", "cytat": "ZeroDivisionError: division by zero", "faktyczny": "ZeroDivisionError: division by zero", "zgodny": true },
+  { "id": "PY-12", "cytat": "KeyError: 'cena'", "faktyczny": "KeyError: 'cena'", "zgodny": true },
+  { "id": "PY-13", "cytat": "KeyError: 'Danie'", "faktyczny": "KeyError: 'Danie'", "zgodny": true },
+  { "id": "PY-14", "cytat": "KeyError: 'Kategoria'", "faktyczny": "KeyError: 'Kategoria'", "zgodny": true },
+  { "id": "PY-15", "cytat": "KeyError: 'Nazwa'", "faktyczny": "KeyError: 'Nazwa'", "zgodny": true },
+  { "id": "PY-16", "cytat": "KeyError: 'results'", "faktyczny": "KeyError: 'results'", "zgodny": true },
+  { "id": "PY-17", "cytat": "ModuleNotFoundError: No module named 'nieistniejacy_pakiet'", "faktyczny": "ModuleNotFoundError: No module named 'nieistniejacy_pakiet'", "zgodny": true },
+  { "id": "PY-18", "cytat": "ModuleNotFoundError: No module named 'wykresy_pro'", "faktyczny": "ModuleNotFoundError: No module named 'wykresy_pro'", "zgodny": true },
+  { "id": "PY-19", "cytat": "ModuleNotFoundError: No module named '…'", "faktyczny": "ModuleNotFoundError: No module named 'dowolny_brakujacy_pakiet'", "zgodny": true },
+  { "id": "PY-20", "cytat": "AttributeError: 'NoneType' object has no attribute 'append'", "faktyczny": "AttributeError: 'NoneType' object has no attribute 'append'", "zgodny": true },
+  { "id": "PY-21", "cytat": "AttributeError: 'NoneType' object has no attribute 'df'", "faktyczny": "AttributeError: 'NoneType' object has no attribute 'df'", "zgodny": true },
+  { "id": "PY-22", "cytat": "TypeError: agg function failed …", "faktyczny": "TypeError: agg function failed [how->mean,dtype->object]", "zgodny": true },
+  { "id": "PY-23", "cytat": "ValueError: could not convert string to float", "faktyczny": "ValueError: could not convert string to float: 'brak danych'", "zgodny": true },
+  { "id": "K2-01", "cytat": "21.833333333333332", "faktyczny": "21.833333333333332", "zgodny": true },
+  { "id": "K2-02", "cytat": "count_star()", "faktyczny": "['count_star()']", "zgodny": true },
+  { "id": "K2-03", "cytat": "avg(kwota)", "faktyczny": "['avg(kwota)']", "zgodny": true },
+  { "id": "K2-04", "cytat": "16.200000000000003", "faktyczny": "16.200000000000003", "zgodny": true }
+ ],
+ "rozjazd_cytatow": 0,
+ "bdl": {
+  "osiagalne": true,
+  "obserwacje": {
+   "status": 200,
+   "totalRecords": 16,
+   "kluczeOdpowiedzi": ["aggregateId","lastUpdate","measureUnitId","results","totalRecords","variableId"],
+   "kluczeRekordu": ["id","name","values"],
+   "typId": "str",
+   "typRok": "str",
+   "typWartosc": "float",
+   "liczbaRekordow": 16
+  },
+  "rozjazdy": []
+ }
+}
