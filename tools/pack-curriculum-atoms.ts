@@ -207,9 +207,9 @@ const CHECKS_F2_7: Check[] = [
 	{
 		id: "C2",
 		kind: "value",
-		note: "SONDA: pieczątka WYWOŁUJE funkcję studenta `suma_wydatkow` na WŁASNEJ próbce [1,2,3] → musi zwrócić 6. Łapie funkcję czytającą dane globalne zamiast parametru — najmocniejszy check tego modułu.",
+		note: "SONDA: pieczątka WYWOŁUJE funkcję studenta `suma_wydatkow` na WŁASNEJ próbce [2,5,10] → musi zwrócić 17. Próbka asymetryczna (na [1,2,3] suma=iloczyn=len·2=max·2=6 — poczwórna kolizja przepuszczała iloczyn). Łapie funkcję czytającą dane globalne zamiast parametru ORAZ liczącą iloczyn/len·2/max·2 — najmocniejszy check tego modułu.",
 		var: "sonda_suma_wydatkow",
-		expect: 6,
+		expect: 17,
 	},
 	{
 		id: "C3",

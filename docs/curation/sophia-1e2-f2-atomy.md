@@ -800,7 +800,7 @@ odpowiedź na input — kod bez zmian).
 
 **Zaliczenie:** komórka-pieczątka: sprawdza, że `wydatki` to lista ≥5 liczb,
 że funkcja `suma_wydatkow` istnieje i wywołana na PRÓBNEJ liście pieczątki
-(np. `[1, 2, 3]`) zwraca poprawną sumę `6` — czyli że działa dla dowolnych
+(np. `[2, 5, 10]`) zwraca poprawną sumę `17` — czyli że działa dla dowolnych
 danych, nie tylko Twoich — oraz że w komórce programu występują `input(`,
 `if`/`else` (introspekcja tekstu jak w F1.7); wtedy liczy token. Wywołanie
 funkcji studenta przez pieczątkę na próbnej liście jest deterministyczne
@@ -1126,3 +1126,19 @@ dokumentem, payloady pokrywają 1:1 checki serwerowe.
 
 Parytet Python↔TS pod testem `tests/unit/ds/notebooks-f2.contract.test.ts`
 (13 testów; harness z kolejką `inputs` dla programów interaktywnych).
+
+### Errata 2026-07-23 — sonda F2.7 asymetryczna (`[2, 5, 10]` → `17`)
+
+Sonda pieczątki F2.7 wywoływała funkcję studenta na `[1, 2, 3]` i wymagała
+wyniku `6`. Na tej próbce zachodzi **poczwórna kolizja**: suma = iloczyn =
+`len·2` = `max·2` = 6. Funkcja licząca iloczyn (albo `len·2`, albo `max·2`)
+zamiast sumy przechodziła sondę i dostawała token mimo błędu. Podniesione do
+`[2, 5, 10]` → `17`: tylko suma daje 17 (iloczyn = 100, `len·2` = 6,
+`max·2` = 20 — wszystkie ≠ 17). **Dlaczego asymetryczna:** próbka o różnych,
+niepowtarzalnych składnikach rozrywa kolizję suma = iloczyn = `len·2` =
+`max·2`, którą ma każda próbka postaci `[1, 2, 3]`; wzorzec potwierdzony
+w kamieniu K2 modułu F3. Poprawka wyłącznie w wewnętrznej próbie sondy —
+kontrakt zadania dla studenta (punkty 1–6, sekcja „Zaliczenie" co do faktu)
+bez zmian. Repack curriculum + notebook, kontrakt-test zaktualizowany 6 → 17,
+pozytywne przypadki (pełne rozwiązanie) dalej zielone. Mutacja negatywna
+(funkcja licząca iloczyn MUSI padać) — osobna bramka Quinna po tej erracie.

@@ -689,7 +689,7 @@
 			"position": 70,
 			"kind": "lab",
 			"title": "LAB Strażnik budżetu (samodzielny finał F2)",
-			"contentMd": "### Cel\n\nNapiszesz od zera kompletny, interaktywny program: funkcja z akumulatorem\nliczy sumę z listy, `input()` pobiera budżet, decyzja if/else wydaje\nwerdykt. Wszystko, co umiesz po L0–F2, w jednym pliku.\n\n### Zadanie (notebook F2.7 — pusta komórka „Twój program\" + pieczątka)\n\nNapisz **program porównujący wydatki z budżetem**:\n\n1. Lista `wydatki` z co najmniej pięcioma kwotami (mogą być z kropką).\n2. Funkcja `suma_wydatkow(lista)` — wzorzec akumulatora w ciele, `return`\n   sumy (żadnych printów w funkcji).\n3. Pobranie budżetu od użytkownika: `input()` + właściwa konwersja\n   (kwota może mieć grosze — który typ?).\n4. Wywołanie funkcji, zapamiętanie wyniku w zmiennej.\n5. Decyzja: wydatki w budżecie → f-string „ile zostaje\"; przekroczony →\n   f-string „ile brakuje\"; obie kwoty liczone w klamrze i zaokrąglone\n   `round(..., 2)`.\n6. Po decyzji, bez wcięcia: podsumowanie z sumą wydatków i liczbą pozycji\n   (`len`).\n\nPrzetestuj dwa przebiegi: budżet powyżej i poniżej sumy (zmieniasz tylko\nodpowiedź na input — kod bez zmian).\n\n**Zaliczenie:** komórka-pieczątka: sprawdza, że `wydatki` to lista ≥5 liczb,\nże funkcja `suma_wydatkow` istnieje i wywołana na PRÓBNEJ liście pieczątki\n(np. `[1, 2, 3]`) zwraca poprawną sumę `6` — czyli że działa dla dowolnych\ndanych, nie tylko Twoich — oraz że w komórce programu występują `input(`,\n`if`/`else` (introspekcja tekstu jak w F1.7); wtedy liczy token. Wywołanie\nfunkcji studenta przez pieczątkę na próbnej liście jest deterministyczne\n(czysta arytmetyka, 0 LLM). Limity klasy L0 obowiązują.",
+			"contentMd": "### Cel\n\nNapiszesz od zera kompletny, interaktywny program: funkcja z akumulatorem\nliczy sumę z listy, `input()` pobiera budżet, decyzja if/else wydaje\nwerdykt. Wszystko, co umiesz po L0–F2, w jednym pliku.\n\n### Zadanie (notebook F2.7 — pusta komórka „Twój program\" + pieczątka)\n\nNapisz **program porównujący wydatki z budżetem**:\n\n1. Lista `wydatki` z co najmniej pięcioma kwotami (mogą być z kropką).\n2. Funkcja `suma_wydatkow(lista)` — wzorzec akumulatora w ciele, `return`\n   sumy (żadnych printów w funkcji).\n3. Pobranie budżetu od użytkownika: `input()` + właściwa konwersja\n   (kwota może mieć grosze — który typ?).\n4. Wywołanie funkcji, zapamiętanie wyniku w zmiennej.\n5. Decyzja: wydatki w budżecie → f-string „ile zostaje\"; przekroczony →\n   f-string „ile brakuje\"; obie kwoty liczone w klamrze i zaokrąglone\n   `round(..., 2)`.\n6. Po decyzji, bez wcięcia: podsumowanie z sumą wydatków i liczbą pozycji\n   (`len`).\n\nPrzetestuj dwa przebiegi: budżet powyżej i poniżej sumy (zmieniasz tylko\nodpowiedź na input — kod bez zmian).\n\n**Zaliczenie:** komórka-pieczątka: sprawdza, że `wydatki` to lista ≥5 liczb,\nże funkcja `suma_wydatkow` istnieje i wywołana na PRÓBNEJ liście pieczątki\n(np. `[2, 5, 10]`) zwraca poprawną sumę `17` — czyli że działa dla dowolnych\ndanych, nie tylko Twoich — oraz że w komórce programu występują `input(`,\n`if`/`else` (introspekcja tekstu jak w F1.7); wtedy liczy token. Wywołanie\nfunkcji studenta przez pieczątkę na próbnej liście jest deterministyczne\n(czysta arytmetyka, 0 LLM). Limity klasy L0 obowiązują.",
 			"concepts": [
 				{
 					"slug": "wzorzec-akumulatora",
@@ -721,9 +721,9 @@
 					{
 						"id": "C2",
 						"kind": "value",
-						"note": "SONDA: pieczątka WYWOŁUJE funkcję studenta `suma_wydatkow` na WŁASNEJ próbce [1,2,3] → musi zwrócić 6. Łapie funkcję czytającą dane globalne zamiast parametru — najmocniejszy check tego modułu.",
+						"note": "SONDA: pieczątka WYWOŁUJE funkcję studenta `suma_wydatkow` na WŁASNEJ próbce [2,5,10] → musi zwrócić 17. Próbka asymetryczna (na [1,2,3] suma=iloczyn=len·2=max·2=6 — poczwórna kolizja przepuszczała iloczyn). Łapie funkcję czytającą dane globalne zamiast parametru ORAZ liczącą iloczyn/len·2/max·2 — najmocniejszy check tego modułu.",
 						"var": "sonda_suma_wydatkow",
-						"expect": 6
+						"expect": 17
 					},
 					{
 						"id": "C3",
