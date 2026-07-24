@@ -300,7 +300,7 @@
 			"position": 30,
 			"kind": "exercise",
 			"title": "Od odpowiedzi do danych: parsuj, waliduj, obsłuż porażkę",
-			"contentMd": "### Cel\n\nSparsujesz tekst odpowiedzi do słownika (`json.loads`), zwalidujesz\npola i — nową składnią `try/except` — obsłużysz odpowiedź w złym\nformacie tak, żeby jedna zepsuta nie zatrzymała całego pipeline'u.\n\n### Teoria\n\nModel zwraca TEKST (LLM.1) — nawet gdy ten tekst wygląda jak JSON.\nŻeby na nim liczyć, zamieniasz go w prawdziwy słownik (F3.3) modułem\n`json`:\n\n```python\nimport json\n\nodpowiedz = '{\"stanowisko\": \"Analityk danych\", \"miasto\": \"Radom\", \"widelki_min\": 8000}'\nrekord = json.loads(odpowiedz)        # tekst → słownik (loads = \"load string\")\nprint(rekord[\"stanowisko\"])           # dalej: znany świat F3.3\n```\n\n**Przewidź:** co wypisze print? I co by się stało, gdyby model\nodpowiedział `Oto wynik: {\"stanowisko\": \"Analityk\"` — uciętym,\nobudowanym prozą tekstem?\n\n`Analityk danych` — a w drugim przypadku `json.loads` zatrzyma się\nbłędem **`JSONDecodeError`** (spotkałeś go w pierwszej pomocy M-EDA —\nteraz rozumiesz mechanizm: tekst nie jest poprawnym JSON-em). I tu\nzaczyna się inżynieria: przy 30 ogłoszeniach JEDNA zepsuta odpowiedź\nnie może wywracać całej pętli. Poznaj **`try/except`** — nową składnię\n(ostatnią na tej ścieżce!):\n\n```python\ntry:                                   # SPRÓBUJ wykonać blok...\n    rekord = json.loads(odpowiedz)\nexcept json.JSONDecodeError:           # ...a JEŚLI poleci ten błąd — zrób to:\n    rekord = None                      # oznacz porażkę, pętla idzie dalej\n```\n\nCzytaj: „spróbuj sparsować; jeśli się nie da — zapisz `None` i żyj\ndalej\". Mechanika bloków znana z `if`/`for`: dwukropki, wcięcia. Zasada\nhigieny: łap KONKRETNY błąd (`json.JSONDecodeError`), nie „wszystko\" —\ninne błędy mają dalej głośno krzyczeć (L0.3: błąd to informacja).\n\nCo dalej z `None`? To świadoma decyzja pipeline'u, nie śmieć: rekordy-\nporażki LICZYSZ w odsetku zgodności (rubryka!), a WYKLUCZASZ z pomiaru\ntrafności (LLM.5/LLM.7) — porażka parsowania i porażka ekstrakcji to\ndwie różne miary. Skąd w ogóle złamane odpowiedzi przy dobrym prompcie?\nModele formatują „dla człowieka\" (proza wokół JSON-a, płotek markdown —\nzdejmiesz go metodami tekstu w LLM.4), a resztka niedeterminizmu\n(LLM.1) zostaje nawet przy temperaturze 0 — parser z ochroną to pas\nbezpieczeństwa, który zakładasz zawsze, nie tylko gdy pada deszcz.\n\nParsowanie to połowa pracy; druga to **walidacja** — czy słownik ma\nkomplet pól ze schematu (głębsza walidacja typów wartości — np. czy\n`widelki_min` to na pewno liczba — wchodzi w capstonie, briefing\nprowadzi). Zanim spojrzysz na kod: poznasz w nim dwa ZAPISY SKRÓCONE,\nktórych drabina dotąd nie używała. **`all(pytanie for element in\nlista)`** to skrócona pętla-pytanie — czyta się jak zdanie: „czy dla\nKAŻDEGO elementu listy odpowiedź brzmi tak?\"; samo **`all`** to kuzyn\n`sum` z F3.6, tylko dla True/False: zwraca True, gdy wszystkie\nodpowiedzi na tak. Pełna pętla z bramką (F3.2) zrobiłaby to samo\nw czterech liniach — skrót jest po to, że warunek mieści się w jednym\nspojrzeniu:\n\n```python\nPOLA = [\"stanowisko\", \"miasto\", \"widelki_min\"]\npoprawny = rekord is not None and all(______ in rekord for pole in POLA)   # luka!\n```\n\nRubryka każe raportować **odsetek odpowiedzi zgodnych ze schematem** —\nlicznik poprawnych przez liczbę wszystkich odpowiedzi (wzorzec\nzliczania z F3.2, nic zupełnie nowego). Częsty\nprzypadek z życia: model opakowuje JSON w płotek markdown\n(` ```json … ``` `) — zdejmiesz go metodami tekstu przed parsowaniem\n(gotowy przepis w notebooku; to kosmetyka, nie nowa idea).",
+			"contentMd": "### Cel\n\nSparsujesz tekst odpowiedzi do słownika (`json.loads`), zwalidujesz\npola i — nową składnią `try/except` — obsłużysz odpowiedź w złym\nformacie tak, żeby jedna zepsuta nie zatrzymała całego pipeline'u.\n\n### Teoria\n\nModel zwraca TEKST (LLM.1) — nawet gdy ten tekst wygląda jak JSON.\nŻeby na nim liczyć, zamieniasz go w prawdziwy słownik (F3.3) modułem\n`json`:\n\n```python\nimport json\n\nodpowiedz = '{\"stanowisko\": \"Analityk danych\", \"miasto\": \"Radom\", \"widelki_min\": 8000}'\nrekord = json.loads(odpowiedz)        # tekst → słownik (loads = \"load string\")\nprint(rekord[\"stanowisko\"])           # dalej: znany świat F3.3\n```\n\n**Przewidź:** co wypisze print? I co by się stało, gdyby model\nodpowiedział `Oto wynik: {\"stanowisko\": \"Analityk\"` — uciętym,\nobudowanym prozą tekstem?\n\n`Analityk danych` — a w drugim przypadku `json.loads` zatrzyma się\nbłędem **`JSONDecodeError`** (spotkałeś go w pierwszej pomocy M-EDA —\nteraz rozumiesz mechanizm: tekst nie jest poprawnym JSON-em). I tu\nzaczyna się inżynieria: przy 30 ogłoszeniach JEDNA zepsuta odpowiedź\nnie może wywracać całej pętli. Poznaj **`try/except`** — nową składnię\n(ostatnią na tej ścieżce!):\n\n```python\ntry:                                   # SPRÓBUJ wykonać blok...\n    rekord = json.loads(odpowiedz)\nexcept json.JSONDecodeError:           # ...a JEŚLI poleci ten błąd — zrób to:\n    rekord = None                      # oznacz porażkę, pętla idzie dalej\n```\n\nCzytaj: „spróbuj sparsować; jeśli się nie da — zapisz `None` i żyj\ndalej\". Mechanika bloków znana z `if`/`for`: dwukropki, wcięcia. Zasada\nhigieny: łap KONKRETNY błąd (`json.JSONDecodeError`), nie „wszystko\" —\ninne błędy mają dalej głośno krzyczeć (L0.3: błąd to informacja).\n\nCo dalej z `None`? To świadoma decyzja pipeline'u, nie śmieć: rekordy-\nporażki LICZYSZ w odsetku zgodności (rubryka!), a WYKLUCZASZ z pomiaru\ntrafności (LLM.5/LLM.7) — porażka parsowania i porażka ekstrakcji to\ndwie różne miary. Skąd w ogóle złamane odpowiedzi przy dobrym prompcie?\nModele formatują „dla człowieka\" (proza wokół JSON-a, płotek markdown —\nzdejmiesz go metodami tekstu w LLM.4), a resztka niedeterminizmu\n(LLM.1) zostaje nawet przy temperaturze 0 — parser z ochroną to pas\nbezpieczeństwa, który zakładasz zawsze, nie tylko gdy pada deszcz.\n\nParsowanie to połowa pracy; druga to **walidacja** — czy słownik ma\nkomplet pól ze schematu (głębsza walidacja typów wartości — np. czy\n`widelki_min` to na pewno liczba — wchodzi w capstonie, briefing\nprowadzi). Zanim spojrzysz na kod: poznasz w nim dwa ZAPISY SKRÓCONE,\nktórych drabina dotąd nie używała. **`all(pytanie for element in\nlista)`** to skrócona pętla-pytanie — czyta się jak zdanie: „czy dla\nKAŻDEGO elementu listy odpowiedź brzmi tak?\"; samo **`all`** to kuzyn\n`sum` z F3.6, tylko dla True/False: zwraca True, gdy wszystkie\nodpowiedzi na tak. Pełna pętla z bramką (F3.2) zrobiłaby to samo\nw czterech liniach — skrót jest po to, że warunek mieści się w jednym\nspojrzeniu:\n\n```python\nPOLA = [\"stanowisko\", \"miasto\", \"widelki_min\"]\npoprawny = rekord is not None and all(______ in rekord for pole in POLA)   # luka!\n```\n\nZwróć uwagę na DWA warunki połączone `and` — i dlaczego oba są\nkonieczne. Odpowiedź może się SPARSOWAĆ (jest poprawnym JSON-em, więc\n`rekord is not None`), a mimo to nie mieć kompletu pól: model zwrócił\n`{\"stanowisko\": \"kurier\", \"miasto\": \"Radom\"}`, gubiąc `widelki_min`.\nTaki rekord przechodzi `is not None`, ale gdy sięgniesz po brakujące\npole — `rekord[\"widelki_min\"]` — dostaniesz **`KeyError`** i pętla\nwybucha. Dlatego **parsowanie ≠ zgodność ze schematem**: to dwie osobne\nbramki, a `rekord is not None` SAM jest za słaby jako warunek dopuszczenia\ndo dalszej pracy. Do liczenia trafności (LLM.5/LLM.7) bierzesz wyłącznie\nrekordy **zgodne ze schematem** — cały `poprawny` powyżej, nie samo\nnie-None — inaczej pierwszy rekord bez kompletu pól wywali Ci `KeyError`\nw środku ewaluacji.\n\nRubryka każe raportować **odsetek odpowiedzi zgodnych ze schematem** —\nlicznik poprawnych przez liczbę wszystkich odpowiedzi (wzorzec\nzliczania z F3.2, nic zupełnie nowego). Częsty\nprzypadek z życia: model opakowuje JSON w płotek markdown\n(` ```json … ``` `) — zdejmiesz go metodami tekstu przed parsowaniem\n(gotowy przepis w notebooku; to kosmetyka, nie nowa idea).",
 			"concepts": [
 				{
 					"slug": "json-parsowanie-walidacja",
@@ -425,8 +425,8 @@
 			"slug": "llm-4",
 			"position": 40,
 			"kind": "lab",
-			"title": "LAB Parser na porażki (5 zapisanych odpowiedzi → odsetek zgodnych)",
-			"contentMd": "### Cel\n\nPrzepuścisz przez parser 5 zapisanych odpowiedzi modelu — w tym jedną\nzłamaną i jedną w płotku markdown — i policzysz odsetek zgodnych ze\nschematem: miniatura kryterium rubryki za 25%.\n\n### Zadanie (notebook LLM.4 — lista `odpowiedzi` (5 tekstów) w komórce\n„Dane\", uzupełnij luki)\n\n```python\nimport json\n\nPOLA = [\"stanowisko\", \"miasto\", \"widelki_min\"]\nrekordy = []\nzgodne = 0\n\nfor tekst in odpowiedzi:\n    czysty = tekst.strip().removeprefix(\"```json\").removesuffix(\"```\").strip()\n    try:\n        rekord = json.loads(______)                      # luka 1: co parsujesz?\n    except ______:                                       # luka 2: który błąd łapiesz?\n        rekord = None\n    if rekord is not None and all(pole in rekord for pole in POLA):\n        zgodne = ______                                  # luka 3: licznik (F3.2!)\n    rekordy.append(rekord)\n\nprint(f\"Zgodne ze schematem: {zgodne}/{len(odpowiedzi)}\")\n```\n\n**Zaliczenie:** komórka-pieczątka: przelicza parsowanie niezależnie\n(dane zapisane ⇒ wynik jedyny: **4/5** — jedna odpowiedź celowo\nzłamana) i porównuje `zgodne` oraz zawartość `rekordy` — token przy\nzgodności. Limity klasy L0 obowiązują.",
+			"title": "LAB Parser na porażki (6 odpowiedzi → parsowanie vs schemat)",
+			"contentMd": "### Cel\n\nPrzepuścisz przez parser 6 zapisanych odpowiedzi modelu — w tym jedną\nzłamaną, jedną w płotku markdown i jedną, która się SPARSUJE, ale nie\nma kompletu pól — i policzysz DWIE różne liczby: ile odpowiedzi w ogóle\nsię sparsowało i ile jest zgodnych ze schematem. To nie to samo, a\nrozróżnienie decyduje o kryterium rubryki za 25%.\n\n### Zadanie (notebook LLM.4 — lista `odpowiedzi` (6 tekstów) w komórce\n„Dane\", uzupełnij luki)\n\n```python\nimport json\n\nPOLA = [\"stanowisko\", \"miasto\", \"widelki_min\"]\nrekordy = []\nsparsowane = 0      # udane parsowania (JSON się wczytał)\nzgodne = 0          # zgodne ze schematem (parsowanie ORAZ komplet pól)\n\nfor tekst in odpowiedzi:\n    czysty = tekst.strip().removeprefix(\"```json\").removesuffix(\"```\").strip()\n    try:\n        rekord = json.loads(______)                      # luka 1: co parsujesz?\n    except ______:                                       # luka 2: który błąd łapiesz?\n        rekord = None\n    if rekord is not None:\n        sparsowane = sparsowane + 1                      # sparsowało się (jeszcze nie „zgodne\"!)\n    if rekord is not None and all(pole in rekord for pole in POLA):\n        zgodne = ______                                  # luka 3: licznik zgodnych (F3.2!)\n    rekordy.append(rekord)\n\nprint(f\"Sparsowane: {sparsowane}/{len(odpowiedzi)}\")\nprint(f\"Zgodne ze schematem: {zgodne}/{len(odpowiedzi)}\")\n```\n\n**Zaliczenie:** komórka-pieczątka: przelicza parsowanie i walidację\nniezależnie (dane zapisane ⇒ wynik jedyny: **sparsowane 5/6, zgodne\n4/6** — jedna odpowiedź celowo złamana [nie sparsuje się], jedna\nsparsowana-ale-niezgodna [brak pola `widelki_min` — sparsuje się, lecz\nwypada ze zgodnych]) i porównuje `sparsowane`, `zgodne` oraz zawartość\n`rekordy` — token przy zgodności. Limity klasy L0 obowiązują.",
 			"concepts": [
 				{
 					"slug": "json-parsowanie-walidacja",
@@ -434,9 +434,9 @@
 				}
 			],
 			"hints": [
-				"**Koncepcyjny:** Trzy luki to trzy atomy w pigułce: parsujesz tekst PO zdjęciu płotka (linia wyżej robi to za Ciebie); łapiesz KONKRETNY błąd z LLM.3; licznik to gest z F3.2.",
+				"**Koncepcyjny:** Trzy luki to trzy atomy w pigułce: parsujesz tekst PO zdjęciu płotka (linia wyżej robi to za Ciebie); łapiesz KONKRETNY błąd z LLM.3; a liczysz DWIE rzeczy osobno — udane parsowania i zgodne ze schematem — bo rekord potrafi się sparsować i mimo to nie mieć kompletu pól (LLM.3: parsowanie ≠ zgodność).",
 				"**Szkielet:** luka 1: `czysty`; luka 2: `json.JSONDecodeError`; luka 3: `zgodne + 1`.",
-				"**Pełne rozwiązanie z objaśnieniem:** wynik `4/5` — odpowiedź nr 4 (ucięta w połowie) ląduje jako `None` i pipeline żyje dalej; odpowiedź nr 2 (w płotku ```json) przechodzi dzięki zdjęciu płotka PRZED parsowaniem. Jeśli masz 3/5 — płotek nie został zdjęty (parsujesz `tekst` zamiast `czysty` — luka 1); jeśli pętla się wywala — łapiesz zły typ błędu albo walidujesz przed try (LLM.3, drabinka)."
+				"**Pełne rozwiązanie z objaśnieniem:** wynik `sparsowane 5/6, zgodne 4/6`. Odpowiedź nr 3 (ucięta, obudowana prozą) ląduje jako `None` — ani sparsowana, ani zgodna; pipeline żyje dalej. Odpowiedź nr 5 (`{\"stanowisko\": …, \"miasto\": …}` bez `widelki_min`) SPARSUJE się — liczy się do `sparsowane` — ale wypada ze `zgodne`, bo brak jej pola ze schematu; to jest dokładnie różnica, której uczy ten lab. Odpowiedź nr 2 (w płotku ```json) przechodzi dzięki zdjęciu płotka PRZED parsowaniem. Jeśli masz `sparsowane 4/6` — płotek nie został zdjęty (parsujesz `tekst` zamiast `czysty` — luka 1); jeśli `zgodne 5/6` — policzyłeś(-aś) rekord bez kompletu pól jako zgodny (pominięte `all(pole in rekord for pole in POLA)`); jeśli pętla się wywala — łapiesz zły typ błędu albo walidujesz przed try (LLM.3, drabinka)."
 			],
 			"config": {
 				"estimated": "20 min",
@@ -444,21 +444,29 @@
 					{
 						"id": "C1",
 						"kind": "predicate",
-						"note": "`rekordy` — 5 przypadków z utrwalonego zbioru",
+						"note": "`rekordy` — 6 odpowiedzi z utrwalonego zbioru (zbiór urósł 5→6 pod D3)",
 						"rule": {
 							"op": "len_eq",
 							"var": "rekordy",
-							"n": 5
+							"n": 6
 						}
 					},
 					{
 						"id": "C2",
 						"kind": "value",
-						"note": "zgodnych z ground truth: 4 z 5 (wynik zafiksowany treścią)",
+						"note": "zgodne ze schematem: 4 z 6 (R3 parse-fail, R5 parsuje-ale-bez-pola wypada)",
 						"var": "zgodne",
 						"expect": 4
+					},
+					{
+						"id": "C3",
+						"kind": "value",
+						"note": "NOWY (D3) — sparsowane (udane parsowania): 5 z 6 (rozdziela parse od schematu)",
+						"var": "sparsowane",
+						"expect": 5
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mllm/llm-4-lab-parser-na-porazki.ipynb"
 			}
 		},
 		{
@@ -466,7 +474,7 @@
 			"position": 50,
 			"kind": "exercise",
 			"title": "Ewaluacja: ground truth, trafność pól i wskaźnik halucynacji",
-			"contentMd": "### Cel\n\nZmierzysz jakość ekstrakcji jak w ML.5 — tylko że „modelem\" jest LLM,\na metrykami: trafność per pole i osobny wskaźnik halucynacji. To\nkryterium za 30% rubryki.\n\n### Teoria\n\n„Model ładnie odpowiada\" to nie pomiar. Pomiar wymaga **ground truth**\n— ręcznie oznaczonych poprawnych odpowiedzi: Ty czytasz ogłoszenie\ni wpisujesz prawdę do słownika. Rubryka chce ~30 sztuk i ta liczba ma\nuzasadnienie, które znasz z ML.2: przy 5 przykładach jedna pomyłka\nzmienia trafność o 20 punktów procentowych — takim wynikiem nie da się\nsterować poprawkami promptu. Oznaczanie bywa nudne i to jest jego\nukryta zaleta: czytając 30 ogłoszeń, poznajesz SWOJE dane (przypadki\nbrzegowe, dziwne zapisy widełek) lepiej niż z niejednego wykresu. Potem\nporównujesz pole po polu — czysta pętla z F3.5, żadnej magii:\n\n```python\nPOLA = [\"stanowisko\", \"miasto\", \"widelki_min\"]\ntrafienia = {pole: 0 for pole in POLA}     # skrócony zapis budowy słownika —\n                                           # pełna pętla z F3.3 zrobiłaby to samo\nhalucynacje = 0\n\nfor przypadek in przypadki:                # przypadek = {\"model\": …, \"prawda\": …}\n    for pole in POLA:\n        if przypadek[\"model\"][pole] == przypadek[\"prawda\"][pole]:\n            trafienia[pole] = trafienia[pole] + 1\n        if przypadek[\"prawda\"][pole] is None and przypadek[\"model\"][______] is not None:\n            halucynacje = halucynacje + 1      # luka wyżej: które pole sprawdzasz?\n```\n\n**Przewidź:** dla 4 przypadków testowych notebooka (każdy z 3 polami)\ntrafienia wychodzą po 3/4 na pole. Co mówi wynik „stanowisko: 0.75\"?\n\nŻe w JEDNYM z czterech przypadków model podał inne stanowisko niż\nprawda (w naszych danych: „Data Scientist\" zamiast „Starszy Data\nScientist\" — ekstrakcja zgubiła seniority). **Trafność per pole** —\nosobna liczba dla każdego pola — mówi, GDZIE pipeline kuleje; jedna\nśrednia by to ukryła (ta sama lekcja co accuracy w ML.5!).\n\n**Wskaźnik halucynacji** to osobna miara z osobnej definicji: pole,\nktóre w prawdzie jest `null` (informacji NIE MA w tekście), a model je\nWYPEŁNIŁ. W naszych 4 przypadkach: prawda ma 4 pola-braki, model\nwypełnił 2 z nich → wskaźnik 2/4 = 0.5 — poważny sygnał (co drugi brak\nmodel zmyśla!). Zauważ asymetrię: pomyłka „Warszawa\" zamiast „Radom\"\npsuje trafność; zmyślenie „Warszawa\" tam, gdzie miasta nie było, to\nhalucynacja — groźniejsza, bo tworzy dane z niczego. Dlatego rubryka\nżąda OSOBNEGO wskaźnika, nie wliczenia w trafność.\n\nWyniki idą do tabeli w repo (rubryka: „tabela ewaluacji\") — trafność\nper pole + wskaźnik halucynacji + odsetek zgodnych ze schematem\n(LLM.4). Trzy liczby, które zamieniają „ładnie odpowiada\" w pomiar —\na gdy zestawisz je dla promptu v1 i v2 (LLM.2), tabela staje się\ndowodem, że Twoje poprawki naprawdę poprawiają, a nie tylko zmieniają.",
+			"contentMd": "### Cel\n\nZmierzysz jakość ekstrakcji jak w ML.5 — tylko że „modelem\" jest LLM,\na metrykami: trafność per pole i osobny wskaźnik halucynacji. To\nkryterium za 30% rubryki.\n\n### Teoria\n\n„Model ładnie odpowiada\" to nie pomiar. Pomiar wymaga **ground truth**\n— ręcznie oznaczonych poprawnych odpowiedzi: Ty czytasz ogłoszenie\ni wpisujesz prawdę do słownika. Rubryka chce ~30 sztuk i ta liczba ma\nuzasadnienie, które znasz z ML.2: przy 5 przykładach jedna pomyłka\nzmienia trafność o 20 punktów procentowych — takim wynikiem nie da się\nsterować poprawkami promptu. Oznaczanie bywa nudne i to jest jego\nukryta zaleta: czytając 30 ogłoszeń, poznajesz SWOJE dane (przypadki\nbrzegowe, dziwne zapisy widełek) lepiej niż z niejednego wykresu. Potem\nporównujesz pole po polu — czysta pętla z F3.5, żadnej magii:\n\n```python\nPOLA = [\"stanowisko\", \"miasto\", \"widelki_min\"]\ntrafienia = {pole: 0 for pole in POLA}     # skrócony zapis budowy słownika —\n                                           # pełna pętla z F3.3 zrobiłaby to samo\nhalucynacje = 0\n\nfor przypadek in przypadki:                # przypadek = {\"model\": …, \"prawda\": …}\n    for pole in POLA:\n        if przypadek[\"model\"][pole] == przypadek[\"prawda\"][pole]:\n            trafienia[pole] = trafienia[pole] + 1\n        if przypadek[\"prawda\"][pole] is None and przypadek[\"model\"][______] is not None:\n            halucynacje = halucynacje + 1      # luka wyżej: które pole sprawdzasz?\n```\n\n**Przewidź:** dla 4 przypadków testowych notebooka (każdy z 3 polami)\ntrafienia wychodzą po 3/4 na pole. Co mówi wynik „stanowisko: 0.75\"?\n\nŻe w JEDNYM z czterech przypadków model podał inne stanowisko niż\nprawda (w naszych danych: „Data Scientist\" zamiast „Starszy Data\nScientist\" — ekstrakcja zgubiła seniority). **Trafność per pole** —\nosobna liczba dla każdego pola — mówi, GDZIE pipeline kuleje; jedna\nśrednia by to ukryła (ta sama lekcja co accuracy w ML.5!).\n\n**Wskaźnik halucynacji** to osobna miara z osobnej definicji: pole,\nktóre w prawdzie jest `null` (informacji NIE MA w tekście), a model je\nWYPEŁNIŁ. W naszych 4 przypadkach: prawda ma 4 pola-braki, model\nwypełnił 2 z nich → wskaźnik 2/4 = 0.5 — poważny sygnał (co drugi brak\nmodel zmyśla!). Zauważ asymetrię: pomyłka „Warszawa\" zamiast „Radom\"\npsuje trafność; zmyślenie „Warszawa\" tam, gdzie miasta nie było, to\nhalucynacja — groźniejsza, bo tworzy dane z niczego. Dlatego rubryka\nżąda OSOBNEGO wskaźnika, nie wliczenia w trafność.\n\nJedno założenie tej pętli warto nazwać wprost: `przypadki` to rekordy\nZGODNE ZE SCHEMATEM. W LLM.7 i w capstonie przychodzą one z parsowania,\ngdzie część może być `None` (parse-fail) albo sparsowana-ale-bez-\nkompletu-pól. Trafność i halucynacje liczysz **tylko** na rekordach\nzgodnych ze schematem — `rekord is not None and all(pole in rekord for\npole in POLA)`, nie na samym „nie-None\". Gdybyś puścił(a) tę pętlę na\nrekordzie bez pola `widelki_min`, `przypadek[\"model\"][\"widelki_min\"]`\nrzuciłoby `KeyError` w środku ewaluacji (LLM.3: parsowanie ≠ zgodność).\nFiltr schema-valid na wejściu jest tarczą przed tym — i pilnuje, byś\nliczył(a) trafność na tych samych przypadkach, na których liczysz\n`zgodnosc`.\n\nWyniki idą do tabeli w repo (rubryka: „tabela ewaluacji\") — trafność\nper pole + wskaźnik halucynacji + odsetek zgodnych ze schematem\n(LLM.4). Trzy liczby, które zamieniają „ładnie odpowiada\" w pomiar —\na gdy zestawisz je dla promptu v1 i v2 (LLM.2), tabela staje się\ndowodem, że Twoje poprawki naprawdę poprawiają, a nie tylko zmieniają.",
 			"concepts": [
 				{
 					"slug": "ewaluacja-halucynacje",
@@ -717,7 +725,7 @@
 			"position": 70,
 			"kind": "lab",
 			"title": "LAB Tabela ewaluacji (samodzielny finał drabiny)",
-			"contentMd": "### Cel\n\nOstatni lab całej ścieżki: z 8 zapisanych trójek (tekst ogłoszenia,\nodpowiedź modelu, ground truth) zbudujesz kompletną tabelę ewaluacji —\ndokładnie artefakt, którego rubryka capstone'u żąda za 30%.\n\n### Zadanie (notebook LLM.7 — lista `przypadki` (8 trójek, w tym\n1 odpowiedź złamana i 2 halucynacje; prawda zawiera **dokładnie\n4 pola-braki** `null` — kształt danych jest częścią kontraktu pieczątki)\n+ pusta komórka „Twoja ewaluacja\" + pieczątka)\n\n1. Parsowanie z ochroną (LLM.3/LLM.4): odpowiedzi → rekordy;\n   odsetek zgodnych ze schematem **jako ułamek 0–1** → **`zgodnosc`**\n   (odsetek, nie licznik — do tabeli wchodzi liczba porównywalna\n   między wersjami promptu).\n2. Trafność per pole (LLM.5) na przypadkach ZGODNYCH → słownik\n   **`trafnosc`** (pole → ułamek).\n3. Wskaźnik halucynacji (LLM.5: wypełnione pola-braki / wszystkie\n   pola-braki w prawdzie, ułamek 0–1) → **`halucynacje_wskaznik`**.\n4. Tabela wyników: DataFrame (PD.2!) z wierszami per pole + wydruk —\n   to Twoja „tabela ewaluacji w repozytorium\".\n5. Komórka tekstowa: 2 zdania wniosków (które pole kuleje? co byś\n   zmienił(a) w prompcie? — wzorzec EDA.3) + 1 zdanie Ograniczeń\n   (ML.6: „8 przykładów to za mało, by…\").\n\nNazwy pogrubione = część specyfikacji (pieczątka wie, gdzie patrzeć).\n\n**Zaliczenie:** komórka-pieczątka: przelicza ewaluację niezależnie\n(dane zapisane ⇒ wynik jedyny: `zgodnosc` 0.875, `halucynacje_wskaznik`\n0.5) i porównuje `zgodnosc`, `trafnosc` (pieczątka odczytuje słownik\njako listę ułamków w kolejności `POLA`), `halucynacje_wskaznik` —\ntoken przy zgodności (tolerancja float z F3).\nKomórki tekstowe poza checkiem — ocenia je rubryka capstone'u.",
+			"contentMd": "### Cel\n\nOstatni lab całej ścieżki: z 8 zapisanych trójek (tekst ogłoszenia,\nodpowiedź modelu, ground truth) zbudujesz kompletną tabelę ewaluacji —\ndokładnie artefakt, którego rubryka capstone'u żąda za 30%.\n\n### Zadanie (notebook LLM.7 — lista `przypadki` (8 trójek, w tym\n1 odpowiedź złamana [parse-fail], 1 sparsowana-ale-niezgodna [słownik\nbez pola `widelki_min`] i 2 halucynacje; prawda zawiera **dokładnie\n4 pola-braki** `null` — WSZYSTKIE w przypadkach zgodnych ze schematem —\nkształt danych jest częścią kontraktu pieczątki) + pusta komórka\n„Twoja ewaluacja\" + pieczątka)\n\n1. Parsowanie z ochroną (LLM.3/LLM.4): odpowiedzi → rekordy; odsetek\n   ZGODNYCH ZE SCHEMATEM (sparsowane ORAZ z kompletem pól) **jako ułamek\n   0–1** → **`zgodnosc`** (odsetek, nie licznik — do tabeli wchodzi\n   liczba porównywalna między wersjami promptu; UWAGA: rekord, który się\n   sparsował, ale nie ma kompletu pól, NIE liczy się do zgodnych).\n2. Trafność per pole (LLM.5) na przypadkach ZGODNYCH ZE SCHEMATEM —\n   filtr `rekord is not None and all(pole in rekord for pole in POLA)`,\n   nie samo „nie-None\" (inaczej rekord bez pola wywali `KeyError`) →\n   słownik **`trafnosc`** (pole → ułamek).\n3. Wskaźnik halucynacji (LLM.5: wypełnione pola-braki / wszystkie\n   pola-braki w prawdzie, liczone TYLKO na zgodnych, ułamek 0–1) →\n   **`halucynacje_wskaznik`**.\n4. Tabela wyników: DataFrame (PD.2!) z wierszami per pole + wydruk —\n   to Twoja „tabela ewaluacji w repozytorium\".\n5. Komórka tekstowa: 2 zdania wniosków (które pole kuleje? co byś\n   zmienił(a) w prompcie? — wzorzec EDA.3) + 1 zdanie Ograniczeń\n   (ML.6: „8 przykładów to za mało, by…\").\n\nNazwy pogrubione = część specyfikacji (pieczątka wie, gdzie patrzeć).\n\n**Zaliczenie:** komórka-pieczątka: przelicza ewaluację niezależnie tym\nsamym filtrem schema-valid (dane zapisane ⇒ wynik jedyny: `zgodnosc`\n**0.75** [6 z 8], `halucynacje_wskaznik` **0.5** [2 z 4], `trafnosc`\nstanowisko ≈ 0.83 / miasto ≈ 0.67 / widelki_min 0.50) i porównuje\n`zgodnosc`, `trafnosc` (pieczątka odczytuje słownik jako listę ułamków\nw kolejności `POLA`), `halucynacje_wskaznik` — token przy zgodności\n(tolerancja float z F3). Komórki tekstowe poza checkiem — ocenia je\nrubryka capstone'u.",
 			"concepts": [
 				{
 					"slug": "prompt-specyfikacja",
@@ -734,37 +742,16 @@
 			],
 			"hints": [
 				"**Koncepcyjny:** To LLM.4 + LLM.5 sklejone + tabela z PD.2 na wierzchu. Kolejność: parsuj-z-ochroną → waliduj → licz TYLKO na zgodnych → tabela → słowa. Ostatni raz na ścieżce: buduj przyrostowo, uruchamiaj po każdym kroku (L0.4 — od pierwszego dnia do ostatniego).",
-				"**Szkielet:** krok 1 = pętla z LLM.4 (bez luk, z pamięci); krok 2–3 = pętla z LLM.5 z filtrem `if rekord is not None` na wejściu; krok 4: `pd.DataFrame([{\"pole\": p, \"trafnosc\": trafnosc[p]} for p in POLA])` — albo zwykłą pętlą z F3.1, jak wolisz.",
-				"**Pełne rozwiązanie z objaśnieniem:** (w notebooku, zwinięte) — wartości kontrolne: `zgodnosc` 0.875 (7 z 8 — jedna odpowiedź celowo złamana); trafność liczona na 7 zgodnych; halucynacje: 2 wypełnione z 4 pól-braków → `halucynacje_wskaznik` 0.5. Najczęstsze potknięcie finału: liczenie trafności także na przypadku złamanym (None) — filtr z kroku 2 jest po to, żeby porażka parsowania nie udawała porażki EKSTRAKCJI: to dwie różne miary (zgodność vs trafność), rubryka chce obu OSOBNO."
+				"**Szkielet:** krok 1 = pętla z LLM.4 (bez luk, z pamięci); krok 2–3 = pętla z LLM.5 z filtrem SCHEMA-VALID na wejściu — `rekord is not None and all(pole in rekord for pole in POLA)`, NIE samo `if rekord is not None` (przypadek nr 8 sparsuje się, ale nie ma pola `widelki_min` — na samym „nie-None\" `przypadek[\"model\"][\"widelki_min\"]` rzuciłoby `KeyError` i wywaliło Ci ewaluację); krok 4: `pd.DataFrame([{\"pole\": p, \"trafnosc\": trafnosc[p]} for p in POLA])` — albo zwykłą pętlą z F3.1, jak wolisz.",
+				"**Pełne rozwiązanie z objaśnieniem:** (w notebooku, zwinięte) — wartości kontrolne: `zgodnosc` 0.75 (6 z 8 — jedna złamana [parse-fail], jedna sparsowana-ale-bez-kompletu-pól [nie liczy się do zgodnych]); trafność liczona na 6 ZGODNYCH: stanowisko 5/6 ≈ 0.83, miasto 4/6 ≈ 0.67, widelki_min 3/6 = 0.50 (od razu widać: ekstrakcja widełek kuleje najmocniej — tam celujesz poprawkę promptu); halucynacje: 2 wypełnione z 4 pól-braków → `halucynacje_wskaznik` 0.5. Najczęstsze potknięcie finału: liczenie trafności na przypadku sparsowanym-ale-niezgodnym (brak pola → `KeyError`) albo na złamanym (None) — filtr SCHEMA-VALID z kroku 2 jest po to, żeby ani porażka parsowania, ani rekord bez kompletu pól nie udawały porażki EKSTRAKCJI: to osobne miary (zgodność vs trafność), rubryka chce obu OSOBNO."
 			],
 			"config": {
 				"estimated": "30 min",
 				"checks": [
 					{
 						"id": "C1",
-						"kind": "value",
-						"note": "8 przypadków z utrwalonego zbioru",
-						"var": "przypadki_liczba",
-						"expect": 8
-					},
-					{
-						"id": "C2",
-						"kind": "value",
-						"note": "`zgodnosc` = 0.875 (7 z 8 — jedna odpowiedź celowo złamana; ODSETEK, nie licznik)",
-						"var": "zgodnosc",
-						"expect": 0.875
-					},
-					{
-						"id": "C3",
-						"kind": "value",
-						"note": "`halucynacje_wskaznik` = 0.5 (2 wypełnione z 4 pól-braków w prawdzie — definicja LLM.5)",
-						"var": "halucynacje_wskaznik",
-						"expect": 0.5
-					},
-					{
-						"id": "C4",
 						"kind": "predicate",
-						"note": "`trafnosc` spłaszczona do listy 3 ułamków w kolejności POLA (ładunek nie przenosi słowników)",
+						"note": "kształt: `trafnosc_wartosci` — 3 ułamki w kolejności POLA (strażnik, nie kotwica)",
 						"rule": {
 							"op": "len_eq",
 							"var": "trafnosc_wartosci",
@@ -772,24 +759,75 @@
 						}
 					},
 					{
-						"id": "C5",
+						"id": "C2",
 						"kind": "predicate",
-						"note": "`trafnosc_wartosci` to liczby",
+						"note": "kształt: `trafnosc_wartosci` to liczby (strażnik, nie kotwica)",
 						"rule": {
 							"op": "all_numbers",
 							"var": "trafnosc_wartosci"
 						}
 					},
 					{
+						"id": "C3",
+						"kind": "value",
+						"note": "8 przypadków z utrwalonego zbioru",
+						"var": "przypadki_liczba",
+						"expect": 8
+					},
+					{
+						"id": "C4",
+						"kind": "value",
+						"note": "D3 `zgodnosc` = 0.75 (6 z 8 schema-valid — C7 parse-fail, C8 parsuje-bez-pola; NIE 0.875)",
+						"var": "zgodnosc",
+						"expect": 0.75
+					},
+					{
+						"id": "C5",
+						"kind": "value",
+						"note": "D1 mianownik: `pola_braki_liczba` = 4 (pola null w prawdzie, na zgodnych)",
+						"var": "pola_braki_liczba",
+						"expect": 4
+					},
+					{
 						"id": "C6",
-						"kind": "predicate",
-						"note": "`trafnosc` == niezależne przeliczenie pieczątki na zgodnych przypadkach",
-						"rule": {
-							"op": "is_true",
-							"var": "trafnosc_zgodna"
-						}
+						"kind": "value",
+						"note": "D1 licznik: `halucynacje_liczba` = 2 (pola-braki, które model wypełnił)",
+						"var": "halucynacje_liczba",
+						"expect": 2
+					},
+					{
+						"id": "C7",
+						"kind": "value",
+						"note": "D1 `halucynacje_wskaznik` = 0.5 (2/4 — czytelny dla człowieka, kotwiczą składniki)",
+						"var": "halucynacje_wskaznik",
+						"expect": 0.5
+					},
+					{
+						"id": "C8",
+						"kind": "value",
+						"note": "D2 trafność `stanowisko` = 5/6 ≈ 0.8333 (value per pole, tolerancja float)",
+						"var": "trafnosc_stanowisko",
+						"expect": 0.8333333333333334,
+						"tolerance": 0.01
+					},
+					{
+						"id": "C9",
+						"kind": "value",
+						"note": "D2 trafność `miasto` = 4/6 ≈ 0.6667 (value per pole, tolerancja float)",
+						"var": "trafnosc_miasto",
+						"expect": 0.6666666666666666,
+						"tolerance": 0.01
+					},
+					{
+						"id": "C10",
+						"kind": "value",
+						"note": "D2 trafność `widelki_min` = 3/6 = 0.5 (value per pole; najsłabsze pole — czytelne)",
+						"var": "trafnosc_widelki_min",
+						"expect": 0.5,
+						"tolerance": 0.01
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mllm/llm-7-lab-tabela-ewaluacji.ipynb"
 			}
 		},
 		{
