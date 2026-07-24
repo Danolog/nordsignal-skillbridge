@@ -7,6 +7,20 @@
 przed ingest 1E.2: TODO z notatek (notebooki z parami LLM.1 z żywego
 API, seanse wideo, screenshot Secrets) + **sign-off Ryana dla materii
 RODO (LLM.6/E15)**.
+**Rewizja treści 2026-07-24 (ADR-022, zmiany 2/3/6 — kuracja Sophia):**
+kanoniczne zbiory LLM.4 i LLM.7 przebudowane, by uczyć różnicy
+**parsowanie ≠ zgodność ze schematem**. Dołożony przypadek
+*sparsowany-ale-niezgodny* (słownik bez pola `widelki_min`): sam
+`rekord is not None` go przepuszcza, a `rekord["widelki_min"]` wywala
+`KeyError` — dlatego uczony filtr trafności zaostrzony do
+**schema-valid** (`rekord is not None and all(pole in rekord for pole
+in POLA)`). Skutek liczbowy: LLM.7 `zgodnosc` 0.875 → **0.75** (6 z 8);
+LLM.4 „4/5" → **parse 5 / schema 4** (6 odpowiedzi). Kontrolne
+zweryfikowane wykonaniem (log QG 2026-07-24). **Pieczątki (kontrakt
+`configJson.checks`) buduje builder po finalizacji ADR-022 przez Ethana
+— TĄ SAMĄ regułą schema-valid** (nota dla buildera w „Notatkach dla
+Olivera"). Rewizja czeka na finalizację ADR-022 i re-sign-off treści.
+
 **Podstawa:** ADR-014 D1/D3/D5/D6.5; prerekwizyt: **M-ML zaliczony**
 (ewaluacja z ground truth to rodzona siostra metryk z ML.5; Git z EDA.2;
 API z EDA.1). OSTATNI moduł drabiny pilotażu.
@@ -418,6 +432,19 @@ POLA = ["stanowisko", "miasto", "widelki_min"]
 poprawny = rekord is not None and all(______ in rekord for pole in POLA)   # luka!
 ```
 
+Zwróć uwagę na DWA warunki połączone `and` — i dlaczego oba są
+konieczne. Odpowiedź może się SPARSOWAĆ (jest poprawnym JSON-em, więc
+`rekord is not None`), a mimo to nie mieć kompletu pól: model zwrócił
+`{"stanowisko": "kurier", "miasto": "Radom"}`, gubiąc `widelki_min`.
+Taki rekord przechodzi `is not None`, ale gdy sięgniesz po brakujące
+pole — `rekord["widelki_min"]` — dostaniesz **`KeyError`** i pętla
+wybucha. Dlatego **parsowanie ≠ zgodność ze schematem**: to dwie osobne
+bramki, a `rekord is not None` SAM jest za słaby jako warunek dopuszczenia
+do dalszej pracy. Do liczenia trafności (LLM.5/LLM.7) bierzesz wyłącznie
+rekordy **zgodne ze schematem** — cały `poprawny` powyżej, nie samo
+nie-None — inaczej pierwszy rekord bez kompletu pól wywali Ci `KeyError`
+w środku ewaluacji.
+
 Rubryka każe raportować **odsetek odpowiedzi zgodnych ze schematem** —
 licznik poprawnych przez liczbę wszystkich odpowiedzi (wzorzec
 zliczania z F3.2, nic zupełnie nowego). Częsty
@@ -491,7 +518,7 @@ przypadek z życia: model opakowuje JSON w płotek markdown
 
 ---
 
-## Atom LLM.4 — LAB „Parser na porażki" (5 zapisanych odpowiedzi → odsetek zgodnych)
+## Atom LLM.4 — LAB „Parser na porażki" (6 odpowiedzi → parsowanie vs schemat)
 
 **Typ:** `lab` · **Czas studenta:** ~20 min · **Koncepty ćwiczone:**
 `json-parsowanie-walidacja` (+ pętle/liczniki F2–F3) · **Krok fadingu:**
@@ -499,11 +526,13 @@ szkielet z lukami
 
 ### Cel
 
-Przepuścisz przez parser 5 zapisanych odpowiedzi modelu — w tym jedną
-złamaną i jedną w płotku markdown — i policzysz odsetek zgodnych ze
-schematem: miniatura kryterium rubryki za 25%.
+Przepuścisz przez parser 6 zapisanych odpowiedzi modelu — w tym jedną
+złamaną, jedną w płotku markdown i jedną, która się SPARSUJE, ale nie
+ma kompletu pól — i policzysz DWIE różne liczby: ile odpowiedzi w ogóle
+się sparsowało i ile jest zgodnych ze schematem. To nie to samo, a
+rozróżnienie decyduje o kryterium rubryki za 25%.
 
-### Zadanie (notebook LLM.4 — lista `odpowiedzi` (5 tekstów) w komórce
+### Zadanie (notebook LLM.4 — lista `odpowiedzi` (6 tekstów) w komórce
 „Dane", uzupełnij luki)
 
 ```python
@@ -511,7 +540,8 @@ import json
 
 POLA = ["stanowisko", "miasto", "widelki_min"]
 rekordy = []
-zgodne = 0
+sparsowane = 0      # udane parsowania (JSON się wczytał)
+zgodne = 0          # zgodne ze schematem (parsowanie ORAZ komplet pól)
 
 for tekst in odpowiedzi:
     czysty = tekst.strip().removeprefix("```json").removesuffix("```").strip()
@@ -519,32 +549,44 @@ for tekst in odpowiedzi:
         rekord = json.loads(______)                      # luka 1: co parsujesz?
     except ______:                                       # luka 2: który błąd łapiesz?
         rekord = None
+    if rekord is not None:
+        sparsowane = sparsowane + 1                      # sparsowało się (jeszcze nie „zgodne"!)
     if rekord is not None and all(pole in rekord for pole in POLA):
-        zgodne = ______                                  # luka 3: licznik (F3.2!)
+        zgodne = ______                                  # luka 3: licznik zgodnych (F3.2!)
     rekordy.append(rekord)
 
+print(f"Sparsowane: {sparsowane}/{len(odpowiedzi)}")
 print(f"Zgodne ze schematem: {zgodne}/{len(odpowiedzi)}")
 ```
 
-**Zaliczenie:** komórka-pieczątka: przelicza parsowanie niezależnie
-(dane zapisane ⇒ wynik jedyny: **4/5** — jedna odpowiedź celowo
-złamana) i porównuje `zgodne` oraz zawartość `rekordy` — token przy
-zgodności. Limity klasy L0 obowiązują.
+**Zaliczenie:** komórka-pieczątka: przelicza parsowanie i walidację
+niezależnie (dane zapisane ⇒ wynik jedyny: **sparsowane 5/6, zgodne
+4/6** — jedna odpowiedź celowo złamana [nie sparsuje się], jedna
+sparsowana-ale-niezgodna [brak pola `widelki_min` — sparsuje się, lecz
+wypada ze zgodnych]) i porównuje `sparsowane`, `zgodne` oraz zawartość
+`rekordy` — token przy zgodności. Limity klasy L0 obowiązują.
 
 ### Drabinka hintów
 
 1. **Koncepcyjny:** Trzy luki to trzy atomy w pigułce: parsujesz tekst
    PO zdjęciu płotka (linia wyżej robi to za Ciebie); łapiesz KONKRETNY
-   błąd z LLM.3; licznik to gest z F3.2.
+   błąd z LLM.3; a liczysz DWIE rzeczy osobno — udane parsowania i
+   zgodne ze schematem — bo rekord potrafi się sparsować i mimo to nie
+   mieć kompletu pól (LLM.3: parsowanie ≠ zgodność).
 2. **Szkielet:** luka 1: `czysty`; luka 2: `json.JSONDecodeError`;
    luka 3: `zgodne + 1`.
-3. **Pełne rozwiązanie z objaśnieniem:** wynik `4/5` — odpowiedź nr 4
-   (ucięta w połowie) ląduje jako `None` i pipeline żyje dalej;
-   odpowiedź nr 2 (w płotku ```json) przechodzi dzięki zdjęciu płotka
-   PRZED parsowaniem. Jeśli masz 3/5 — płotek nie został zdjęty
-   (parsujesz `tekst` zamiast `czysty` — luka 1); jeśli pętla się
-   wywala — łapiesz zły typ błędu albo walidujesz przed try (LLM.3,
-   drabinka).
+3. **Pełne rozwiązanie z objaśnieniem:** wynik `sparsowane 5/6, zgodne
+   4/6`. Odpowiedź nr 3 (ucięta, obudowana prozą) ląduje jako `None` —
+   ani sparsowana, ani zgodna; pipeline żyje dalej. Odpowiedź nr 5
+   (`{"stanowisko": …, "miasto": …}` bez `widelki_min`) SPARSUJE się —
+   liczy się do `sparsowane` — ale wypada ze `zgodne`, bo brak jej pola
+   ze schematu; to jest dokładnie różnica, której uczy ten lab.
+   Odpowiedź nr 2 (w płotku ```json) przechodzi dzięki zdjęciu płotka
+   PRZED parsowaniem. Jeśli masz `sparsowane 4/6` — płotek nie został
+   zdjęty (parsujesz `tekst` zamiast `czysty` — luka 1); jeśli `zgodne
+   5/6` — policzyłeś(-aś) rekord bez kompletu pól jako zgodny (pominięte
+   `all(pole in rekord for pole in POLA)`); jeśli pętla się wywala —
+   łapiesz zły typ błędu albo walidujesz przed try (LLM.3, drabinka).
 
 ---
 
@@ -602,6 +644,18 @@ model zmyśla!). Zauważ asymetrię: pomyłka „Warszawa" zamiast „Radom"
 psuje trafność; zmyślenie „Warszawa" tam, gdzie miasta nie było, to
 halucynacja — groźniejsza, bo tworzy dane z niczego. Dlatego rubryka
 żąda OSOBNEGO wskaźnika, nie wliczenia w trafność.
+
+Jedno założenie tej pętli warto nazwać wprost: `przypadki` to rekordy
+ZGODNE ZE SCHEMATEM. W LLM.7 i w capstonie przychodzą one z parsowania,
+gdzie część może być `None` (parse-fail) albo sparsowana-ale-bez-
+kompletu-pól. Trafność i halucynacje liczysz **tylko** na rekordach
+zgodnych ze schematem — `rekord is not None and all(pole in rekord for
+pole in POLA)`, nie na samym „nie-None". Gdybyś puścił(a) tę pętlę na
+rekordzie bez pola `widelki_min`, `przypadek["model"]["widelki_min"]`
+rzuciłoby `KeyError` w środku ewaluacji (LLM.3: parsowanie ≠ zgodność).
+Filtr schema-valid na wejściu jest tarczą przed tym — i pilnuje, byś
+liczył(a) trafność na tych samych przypadkach, na których liczysz
+`zgodnosc`.
 
 Wyniki idą do tabeli w repo (rubryka: „tabela ewaluacji") — trafność
 per pole + wskaźnik halucynacji + odsetek zgodnych ze schematem
@@ -820,18 +874,24 @@ odpowiedź modelu, ground truth) zbudujesz kompletną tabelę ewaluacji —
 dokładnie artefakt, którego rubryka capstone'u żąda za 30%.
 
 ### Zadanie (notebook LLM.7 — lista `przypadki` (8 trójek, w tym
-1 odpowiedź złamana i 2 halucynacje; prawda zawiera **dokładnie
-4 pola-braki** `null` — kształt danych jest częścią kontraktu pieczątki)
-+ pusta komórka „Twoja ewaluacja" + pieczątka)
+1 odpowiedź złamana [parse-fail], 1 sparsowana-ale-niezgodna [słownik
+bez pola `widelki_min`] i 2 halucynacje; prawda zawiera **dokładnie
+4 pola-braki** `null` — WSZYSTKIE w przypadkach zgodnych ze schematem —
+kształt danych jest częścią kontraktu pieczątki) + pusta komórka
+„Twoja ewaluacja" + pieczątka)
 
-1. Parsowanie z ochroną (LLM.3/LLM.4): odpowiedzi → rekordy;
-   odsetek zgodnych ze schematem **jako ułamek 0–1** → **`zgodnosc`**
-   (odsetek, nie licznik — do tabeli wchodzi liczba porównywalna
-   między wersjami promptu).
-2. Trafność per pole (LLM.5) na przypadkach ZGODNYCH → słownik
-   **`trafnosc`** (pole → ułamek).
+1. Parsowanie z ochroną (LLM.3/LLM.4): odpowiedzi → rekordy; odsetek
+   ZGODNYCH ZE SCHEMATEM (sparsowane ORAZ z kompletem pól) **jako ułamek
+   0–1** → **`zgodnosc`** (odsetek, nie licznik — do tabeli wchodzi
+   liczba porównywalna między wersjami promptu; UWAGA: rekord, który się
+   sparsował, ale nie ma kompletu pól, NIE liczy się do zgodnych).
+2. Trafność per pole (LLM.5) na przypadkach ZGODNYCH ZE SCHEMATEM —
+   filtr `rekord is not None and all(pole in rekord for pole in POLA)`,
+   nie samo „nie-None" (inaczej rekord bez pola wywali `KeyError`) →
+   słownik **`trafnosc`** (pole → ułamek).
 3. Wskaźnik halucynacji (LLM.5: wypełnione pola-braki / wszystkie
-   pola-braki w prawdzie, ułamek 0–1) → **`halucynacje_wskaznik`**.
+   pola-braki w prawdzie, liczone TYLKO na zgodnych, ułamek 0–1) →
+   **`halucynacje_wskaznik`**.
 4. Tabela wyników: DataFrame (PD.2!) z wierszami per pole + wydruk —
    to Twoja „tabela ewaluacji w repozytorium".
 5. Komórka tekstowa: 2 zdania wniosków (które pole kuleje? co byś
@@ -840,12 +900,14 @@ dokładnie artefakt, którego rubryka capstone'u żąda za 30%.
 
 Nazwy pogrubione = część specyfikacji (pieczątka wie, gdzie patrzeć).
 
-**Zaliczenie:** komórka-pieczątka: przelicza ewaluację niezależnie
-(dane zapisane ⇒ wynik jedyny: `zgodnosc` 0.875, `halucynacje_wskaznik`
-0.5) i porównuje `zgodnosc`, `trafnosc` (pieczątka odczytuje słownik
-jako listę ułamków w kolejności `POLA`), `halucynacje_wskaznik` —
-token przy zgodności (tolerancja float z F3).
-Komórki tekstowe poza checkiem — ocenia je rubryka capstone'u.
+**Zaliczenie:** komórka-pieczątka: przelicza ewaluację niezależnie tym
+samym filtrem schema-valid (dane zapisane ⇒ wynik jedyny: `zgodnosc`
+**0.75** [6 z 8], `halucynacje_wskaznik` **0.5** [2 z 4], `trafnosc`
+stanowisko ≈ 0.83 / miasto ≈ 0.67 / widelki_min 0.50) i porównuje
+`zgodnosc`, `trafnosc` (pieczątka odczytuje słownik jako listę ułamków
+w kolejności `POLA`), `halucynacje_wskaznik` — token przy zgodności
+(tolerancja float z F3). Komórki tekstowe poza checkiem — ocenia je
+rubryka capstone'u.
 
 ### Drabinka hintów
 
@@ -855,16 +917,26 @@ Komórki tekstowe poza checkiem — ocenia je rubryka capstone'u.
    przyrostowo, uruchamiaj po każdym kroku (L0.4 — od pierwszego dnia
    do ostatniego).
 2. **Szkielet:** krok 1 = pętla z LLM.4 (bez luk, z pamięci); krok 2–3
-   = pętla z LLM.5 z filtrem `if rekord is not None` na wejściu;
-   krok 4: `pd.DataFrame([{"pole": p, "trafnosc": trafnosc[p]} for p
-   in POLA])` — albo zwykłą pętlą z F3.1, jak wolisz.
+   = pętla z LLM.5 z filtrem SCHEMA-VALID na wejściu — `rekord is not
+   None and all(pole in rekord for pole in POLA)`, NIE samo `if rekord
+   is not None` (przypadek nr 8 sparsuje się, ale nie ma pola
+   `widelki_min` — na samym „nie-None" `przypadek["model"]["widelki_min"]`
+   rzuciłoby `KeyError` i wywaliło Ci ewaluację); krok 4:
+   `pd.DataFrame([{"pole": p, "trafnosc": trafnosc[p]} for p in POLA])`
+   — albo zwykłą pętlą z F3.1, jak wolisz.
 3. **Pełne rozwiązanie z objaśnieniem:** (w notebooku, zwinięte) —
-   wartości kontrolne: `zgodnosc` 0.875 (7 z 8 — jedna odpowiedź celowo
-   złamana); trafność liczona na 7 zgodnych; halucynacje: 2 wypełnione
-   z 4 pól-braków → `halucynacje_wskaznik` 0.5. Najczęstsze potknięcie finału: liczenie trafności
-   także na przypadku złamanym (None) — filtr z kroku 2 jest po to,
-   żeby porażka parsowania nie udawała porażki EKSTRAKCJI: to dwie
-   różne miary (zgodność vs trafność), rubryka chce obu OSOBNO.
+   wartości kontrolne: `zgodnosc` 0.75 (6 z 8 — jedna złamana
+   [parse-fail], jedna sparsowana-ale-bez-kompletu-pól [nie liczy się do
+   zgodnych]); trafność liczona na 6 ZGODNYCH: stanowisko 5/6 ≈ 0.83,
+   miasto 4/6 ≈ 0.67, widelki_min 3/6 = 0.50 (od razu widać: ekstrakcja
+   widełek kuleje najmocniej — tam celujesz poprawkę promptu);
+   halucynacje: 2 wypełnione z 4 pól-braków → `halucynacje_wskaznik` 0.5.
+   Najczęstsze potknięcie finału: liczenie trafności na przypadku
+   sparsowanym-ale-niezgodnym (brak pola → `KeyError`) albo na złamanym
+   (None) — filtr SCHEMA-VALID z kroku 2 jest po to, żeby ani porażka
+   parsowania, ani rekord bez kompletu pól nie udawały porażki
+   EKSTRAKCJI: to osobne miary (zgodność vs trafność), rubryka chce obu
+   OSOBNO.
 
 ---
 
@@ -1062,9 +1134,12 @@ Strony L0–M-ML obowiązują. Przyrost M-LLM:
    sprawdź, czy ground truth w ogóle MA pola-braki (mianownik!);
    ewaluacja bez trudnych przypadków niczego nie mierzy (LLM.5,
    samokontrola z drabinki).
-8. **Trafność liczona na złamanych rekordach (None)** → filtruj
-   zgodne przed liczeniem trafności — zgodność i trafność to dwie
-   OSOBNE miary (LLM.7, hint 3).
+8. **Trafność liczona na złamanych rekordach (None) albo `KeyError`
+   w środku ewaluacji** → filtruj rekordy ZGODNE ZE SCHEMATEM przed
+   liczeniem trafności: `rekord is not None and all(pole in rekord for
+   pole in POLA)`, nie samo „nie-None" (rekord, który się sparsował, ale
+   nie ma pola `widelki_min`, przejdzie „nie-None" i wywali `KeyError`).
+   Zgodność i trafność to dwie OSOBNE miary (LLM.7, hint 3).
 
 ---
 
@@ -1116,6 +1191,112 @@ Sedno M-LLM w całości w polskiej teorii atomów (D4).
   „halucynacja na żywo" z hintu 3 mówiła prawdę. Pierwsze żywe
   wywołanie STUDENTA = capstone. Dzięki temu QG wykonuje każdą liczbę,
   a treść nie zależy od zachowania modelu w czasie.
+- **Kanoniczne zbiory LLM.4 i LLM.7 (ADR-022 zmiany 2/3/6; JEDYNY
+  obowiązujący listing).** Komórki „Dane" notebooków LLM.4/LLM.7 muszą
+  odtworzyć te zbiory co do znaku; pieczątki liczą kontrolne z NICH.
+  Zbiory deterministyczne (spreparowane, nie z żywego API) ⇒ każda
+  kontrolna ma jeden legalny wynik.
+
+  LLM.4 — 6 tekstów odpowiedzi:
+
+  ````python
+  odpowiedzi = [
+      '{"stanowisko": "tester", "miasto": "Kraków", "widelki_min": 8000}',            # R1 zgodna
+      '```json\n{"stanowisko": "analityk", "miasto": "Radom", "widelki_min": 7000}\n```',  # R2 zgodna (płotek)
+      'Oto wynik: {"stanowisko": "kurier", "miasto":',                               # R3 PARSE-FAIL (ucięta)
+      '{"stanowisko": "grafik", "miasto": null, "widelki_min": 5000}',               # R4 zgodna (miasto=null OK)
+      '{"stanowisko": "magazynier", "miasto": "Katowice"}',                          # R5 PARSE-BUT-INVALID (brak widelki_min)
+      '{"stanowisko": "kucharz", "miasto": "Wrocław", "widelki_min": 6000}',         # R6 zgodna
+  ]
+  # kontrolne: sparsowane 5/6 (R3 pada), zgodne 4/6 (R5 parsuje, ale bez pola)
+  ````
+
+  LLM.7 — 8 trójek `(odpowiedz_modelu_TEKST, prawda)`:
+
+  ````python
+  przypadki = [
+      # C1: prawda M=null, W=null; model HALUCYNUJE miasto, W poprawnie null
+      ('{"stanowisko": "tester oprogramowania", "miasto": "Warszawa", "widelki_min": null}',
+       {"stanowisko": "tester oprogramowania", "miasto": None, "widelki_min": None}),
+      # C2: prawda M=null; model M=null (trafienie), W trafia
+      ('{"stanowisko": "kurier", "miasto": null, "widelki_min": 8000}',
+       {"stanowisko": "kurier", "miasto": None, "widelki_min": 8000}),
+      # C3: prawda W=null; model HALUCYNUJE widelki 8000
+      ('{"stanowisko": "analityk danych", "miasto": "Kraków", "widelki_min": 8000}',
+       {"stanowisko": "analityk danych", "miasto": "Kraków", "widelki_min": None}),
+      # C4: model myli miasto (Gdańsk vs Kraków) i widelki (5000 vs 6000) — wartości, nie null
+      ('{"stanowisko": "grafik", "miasto": "Gdańsk", "widelki_min": 5000}',
+       {"stanowisko": "grafik", "miasto": "Kraków", "widelki_min": 6000}),
+      # C5: pełne trafienie (odpowiedź w płotku markdown)
+      ('```json\n{"stanowisko": "kucharz", "miasto": "Wrocław", "widelki_min": 12000}\n```',
+       {"stanowisko": "kucharz", "miasto": "Wrocław", "widelki_min": 12000}),
+      # C6: model gubi seniority (stanowisko) i myli widelki (7000 vs 9000)
+      ('{"stanowisko": "programista", "miasto": "Poznań", "widelki_min": 7000}',
+       {"stanowisko": "starszy programista", "miasto": "Poznań", "widelki_min": 9000}),
+      # C7: PARSE-FAIL (ucięta, obudowana prozą)
+      ('Oto dane: {"stanowisko": "recepcjonista", "miasto": "Łódź"',
+       {"stanowisko": "recepcjonista", "miasto": "Łódź", "widelki_min": 5000}),
+      # C8: PARSE-BUT-INVALID (brak pola widelki_min) — TU siedzi mina KeyError
+      ('{"stanowisko": "magazynier", "miasto": "Katowice"}',
+       {"stanowisko": "magazynier", "miasto": "Katowice", "widelki_min": 4500}),
+  ]
+  # kontrolne (filtr schema-valid!): zgodnosc 0.75 (6/8 — C7 parse-fail, C8 bez pola);
+  # 4 pola-braki w prawdzie: C1.miasto, C1.widelki_min, C2.miasto, C3.widelki_min;
+  # halucynacje 2 (C1.miasto=Warszawa, C3.widelki_min=8000) → halucynacje_wskaznik 0.5;
+  # trafnosc na 6 zgodnych: stanowisko 5/6≈0.83, miasto 4/6≈0.67, widelki_min 3/6=0.50
+  ````
+
+  Zweryfikowane wykonaniem 2026-07-24 (log QG poniżej) — Python stdlib,
+  bez żywego API.
+- **[NOTA DLA BUILDERA — pieczątki M-LLM po finalizacji ADR-022 przez
+  Ethana] Recompute pieczątki MUSI użyć filtra SCHEMA-VALID**, tego
+  samego, co uczy treść: `rekord is not None and all(pole in rekord for
+  pole in POLA)` — **nie** samego `rekord is not None`. Powód: przypadek
+  C8 (LLM.7) / R5 (LLM.4) sparsuje się, ale nie ma pola `widelki_min`;
+  na naiwnym filtrze `przypadek["model"]["widelki_min"]` rzuca `KeyError`
+  i pieczątka pada. Jeśli pieczątka policzy innym filtrem niż student,
+  wyniki się ROZJADĄ (student 0.75, pieczątka 0.875) — parytet Python↔TS
+  na TYM SAMYM filtrze. Docelowy kontrakt `configJson.checks` (do
+  wpisania przez buildera w manifeście packera — dziś jeszcze na starych
+  wartościach):
+  - **LLM.4:** `rekordy` len == **6** (było 5); `zgodne` == **4** (bez
+    zmian wartości, zmiana mianownika 5→6); **NOWY** check parsowania
+    `sparsowane` == **5** (rozdziela parse od schematu — sedno zmiany).
+  - **LLM.7:** `przypadki_liczba` == 8 (bez zmian); `zgodnosc` == **0.75**
+    (było 0.875); `halucynacje_wskaznik` == **0.5** (bez zmian);
+    `trafnosc` — recompute schema-valid daje `[5/6, 4/6, 3/6]` w
+    kolejności `POLA` (predykat `trafnosc_zgodna` liczony na 6 zgodnych,
+    nie na 8).
+- **Komunikaty odmowy pieczątki LLM.7 (treść — do wpięcia przez
+  buildera; wzorzec honest-message G4).** Zbiór jest deterministyczny,
+  więc każda kontrolna ma JEDEN legalny wynik — odmowa nazywa KONKRETNY
+  błąd studenta, nigdy „pipeline zepsuty". Cztery diagnozy:
+  1. **Wcięcia w pętli ewaluacji (LLM.5).** „Twój `halucynacje_wskaznik`
+     wyszedł {x}, a z tego zbioru jedyny wynik to 0.5 (2 z 4). Najczęściej
+     to WCIĘCIE: instrukcja zliczająca halucynację albo sprawdzenie
+     `prawda[pole] is None` stoi o piętro wyżej/niżej, niż trzeba — należy
+     do pętli po POLA i ma dotyczyć TEGO pola z bieżącego obrotu (piętra
+     pętli jak w F3.2-P2). Sprawdź, na którym wcięciu rośnie licznik."
+  2. **Trafność liczona poza zgodnymi (filtr).** „Twoja `trafnosc` nie
+     zgadza się ze wzorcem (stanowisko ≈0.83, miasto ≈0.67, widelki_min
+     0.50). Liczysz ją na WSZYSTKICH 8 przypadkach zamiast na 6 zgodnych
+     ze schematem — złamany (None) i sparsowany-bez-pola wchodzą do
+     mianownika i psują ułamek. Odfiltruj przed liczeniem: `rekord is not
+     None and all(pole in rekord for pole in POLA)`."
+  3. **Parsowanie pomylone ze schematem.** „Twoja `zgodnosc` wyszła 0.875,
+     a jedyny poprawny wynik to 0.75 (6 z 8). Policzyłeś(-aś) SPARSOWANE
+     (7 — w tym odpowiedź, która się wczytała, ale nie ma pola
+     `widelki_min`) zamiast ZGODNYCH ZE SCHEMATEM (6). To dwie bramki
+     (LLM.4): do `zgodnosc` wchodzi tylko rekord z KOMPLETEM pól — dołóż
+     `all(pole in rekord for pole in POLA)`."
+  4. **Licznik/mianownik halucynacji.** „Twój `halucynacje_wskaznik` ≠ 0.5
+     (2 z 4). Sprawdź OBIE liczby osobno: mianownik to pola-braki w
+     PRAWDZIE (`prawda[pole] is None`) liczone TYLKO na zgodnych = 4;
+     licznik to te braki, które model WYPEŁNIŁ (`model[pole] is not
+     None`) = 2. Mianownik ≠ 4 → liczysz braki także na złamanym/
+     niezgodnym przypadku (filtruj wejście); licznik ≠ 2 → mylisz »model
+     wypełnił« z »model trafił« (halucynacja to prawda=null ORAZ
+     model≠null, niezależnie od trafności)."
 - **1 koncept = 1 atom — deklaracje (standard L0.2):** LLM.5 —
   bundling ewaluacja+halucynacje (jedna materia: pomiar jakości
   ekstrakcji wobec prawdy; wskaźnik halucynacji to metryka tej samej
@@ -1163,12 +1344,15 @@ Sedno M-LLM w całości w polskiej teorii atomów (D4).
      deterministyczne); pary odpowiedzi do LLM.1 hint 2 wygenerować
      na żywym API RAZ przy budowie i utrwalić (jawny wyjątek od
      strategii determinizmu — deklaracja wyżej).
-     ⚠ Konstrukcja zbioru LLM.7 (QG 2026-07-21, INFO-2): wszystkie
-     **4 pola-braki prawdy muszą leżeć w przypadkach PARSOWALNYCH**
-     (nie w złamanej odpowiedzi) — pętla wzorcowa z LLM.5 czyta
+     ⚠ Konstrukcja zbioru LLM.7 (QG 2026-07-21 INFO-2, zaostrzone
+     2026-07-24 ADR-022): wszystkie **4 pola-braki prawdy muszą leżeć w
+     przypadkach ZGODNYCH ZE SCHEMATEM** (nie w złamanej odpowiedzi ANI
+     w sparsowanej-bez-kompletu-pól) — pętla wzorcowa z LLM.5 czyta
      `przypadek["model"][pole]`, a dla złamanego rekordu to `None`
-     i „wypełnione" byłoby nieokreślone; kontrakt 0.5 = 2/4 liczy
-     braki wyłącznie na zgodnych.
+     („wypełnione" nieokreślone), zaś dla rekordu bez pola `KeyError`;
+     kontrakt 0.5 = 2/4 liczy braki wyłącznie na 6 zgodnych. W bieżącym
+     zbiorze braki siedzą w C1/C2/C3 (wszystkie schema-valid); C7
+     (parse-fail) i C8 (parse-but-invalid) mają prawdę BEZ `null`.
   2. Seanse kontrolne wideo PL (Robert Sikora ~30 min; Marszałkowski
      ~11 min) — składnia SDK, free tier, Colab Secrets zweryfikowane
      researchem 2026-07-11 (szczegóły w zasobach i pierwszej pomocy).
@@ -1210,3 +1394,82 @@ licznik; przybite „dokładnie 4 pola-braki" w prawdzie → `halucynacje_wskazn
 spójność z LLM.4/LLM.5); `trafnosc` odczytywana przez pieczątkę jako lista
 ułamków w kolejności `POLA`. INFO-2 wcielone jako nota konstrukcyjna zbioru
 w TODO (wszystkie 4 braki w przypadkach parsowalnych). **GO Z NOTAMI.**
+
+## Przebieg QG rewizji zbiorów LLM.4/LLM.7 (2026-07-24, ADR-022 zmiany 2/3/6)
+
+**Kontekst.** Przegląd ADR-022 (kuracja): dołożenie przypadku
+*sparsowany-ale-niezgodny* (słownik bez pola `widelki_min`) rozbija
+dotychczasowy filtr `if rekord is not None` — taki rekord przechodzi
+`is not None`, a `rekord["widelki_min"]` rzuca `KeyError` w kodzie
+STUDENTA. Zmiana 2 (zaostrzenie filtra do schema-valid), zmiana 3
+(kanoniczne zbiory z rozdziałem parse↔schema), zmiana 6 (rekoncyliacja
+liczb). To SUPERSEDUJE semantykę z 2026-07-21 (`zgodnosc` 0.875 → 0.75).
+
+**Wykonanie (Python stdlib, zbiory deterministyczne, bez żywego API).**
+Oba kanoniczne zbiory (listing w „Notatkach dla Olivera") przeliczone
+skryptem weryfikacyjnym:
+
+- **LLM.4** (6 odpowiedzi): `sparsowane` **5/6** (R3 parse-fail pada),
+  `zgodne ze schematem` **4/6** (R5 parsuje, ale bez pola `widelki_min`
+  — wypada). Rozdział parse↔schema policzony, nie deklarowany.
+- **LLM.7** (8 trójek): `zgodnosc` **0.75** (6/8 — C7 parse-fail, C8
+  parse-but-invalid poza zgodnymi); pola-braki w prawdzie **4** (C1.miasto,
+  C1.widelki_min, C2.miasto, C3.widelki_min); halucynacje **2** (C1.miasto,
+  C3.widelki_min) → `halucynacje_wskaznik` **0.5**; `trafnosc` na 6
+  zgodnych: stanowisko **5/6**, miasto **4/6**, widelki_min **3/6**
+  (0.83 / 0.67 / 0.50 — `widelki_min` kuleje najmocniej, czytelne dla
+  studenta). Kontrpróba: naiwny filtr `is not None` → `KeyError:
+  'widelki_min'` na C8 (dowód miny odtworzony).
+
+**Ripple wcielony w prozie (student-facing, VERBATIM):** LLM.3 teoria
+(parsowanie ≠ zgodność + `KeyError`), LLM.4 (cel/zadanie/zaliczenie/
+hinty — dwa liczniki), LLM.5 teoria (filtr schema-valid przed trafnością),
+LLM.7 (zadanie/kroki/zaliczenie/hinty 2–3), Pierwsza pomoc poz. 8.
+Rekoncyliacja 0.875 → 0.75: wszędzie w sekcjach atomów (0.875 pozostaje
+WYŁĄCZNIE w historycznych logach QG 2026-07-11/2026-07-21 jako zapis
+poprzedniej decyzji — nie fałszujemy historii; obowiązuje ten log).
+
+**Granica roli.** To warstwa DYDAKTYCZNA (wartości `expect` policzone z
+treści — styk 1 skilla). Pieczątki / kontrakt `configJson.checks`
+(manifest packera) buduje builder po finalizacji ADR-022 przez Ethana —
+TĄ SAMĄ regułą schema-valid; docelowe wartości checków i nota parytetu
+Python↔TS w „Notatkach dla Olivera". Manifest packera na 2026-07-24
+wciąż na starych wartościach (0.875 / rekordy 5) — to świadomy blocker
+pieczątek, nie przeoczenie.
+
+### Brama przed oddaniem — część A (T1–T5)
+
+| Test | Zakres | Wynik |
+|---|---|---|
+| **T1 — źródło i determinizm** | Poprawki wyłącznie w `docs/curation/sophia-1e2-mllm-atomy.md`; `m-llm.json` regenerowany packerem (`pnpm content:pack-curriculum`), zero ręcznej edycji JSON; kontrakt-test determinizmu zielony dwukrotnie | **PASS** (repack + 2× determinizm — patrz log komend) |
+| **T2 — czystość widoku studenta** | Grep sekcji atomów (Cel/Teoria/Zadanie/Pytania/Drabinka) na „errata/QG/WAŻN/KRYT/INFO-/TODO/nota/poprawione po": 0 trafień. 0.875 tylko w logach QG (poza widokiem studenta) | **PASS** |
+| **T3 — liczby policzone** | Wszystkie kontrolne (LLM.4 sparsowane 5/zgodne 4; LLM.7 zgodnosc 0.75, halucynacje 0.5, trafnosc 5/6·4/6·3/6) policzone wykonaniem Pythona ze zbioru; brak liczby oszacowanej | **PASS** |
+| **T4 — błędy zapowiedziane i placeholdery** | `KeyError` na C8/R5 zapowiedziany treścią i odtworzony wykonaniem (kontrpróba). Grep `___` (dokładnie 3 podkreślenia) w nowej treści = 0; luki ćwiczeniowe to `______` (≥4). Brak `„`/`"` wewnątrz stringów `"…"` w dodanym kodzie | **PASS** |
+| **T5 — cudze UI** | Rewizja nie dotyka etykiet cudzego UI (LLM.6 bez zmian) — brak nowych cytatów do zrzutu | **N/D** |
+
+### Brama część B — self-critique (instruktor zer)
+
+Rola: instruktor kursu dla literalnych zer, wieczór, pół grupy utknęło.
+Pięć słabości bieżącej rewizji + naprawy:
+
+1. *„Dwa liczniki w LLM.4 bez wyjaśnienia, po co ten drugi — student
+   przepisze i nie zrozumie".* → Cel LLM.4 nazywa wprost „DWIE różne
+   liczby… to nie to samo"; hint 1 i hint 3 tłumaczą różnicę na R5.
+2. *„Skąd student ma wiedzieć, że filtr `is not None` jest za słaby,
+   skoro dotąd wystarczał?"* → LLM.3 teoria wprowadza `KeyError` na
+   konkretnym rekordzie bez pola PRZED labami; LLM.5/LLM.7 odwołują się
+   do tej lekcji, nie postulują jej.
+3. *„0.83/0.67/0.50 — czy student odczyta z tego, że to widełki kuleją?"*
+   → hint 3 LLM.7 mówi wprost „widełki kuleją najmocniej — tam celujesz
+   poprawkę promptu" (wzorzec diagnozy, nie wyroku).
+4. *„Komunikat odmowy, który mówi »źle«, ale nie »co zrobić«".* → cztery
+   diagnozy nazywają konkretny mechanizm (wcięcie, filtr, parse-vs-schema,
+   licznik/mianownik) i podają operację naprawczą; żadna nie brzmi
+   „pipeline zepsuty".
+5. *„Czy atom LLM.4 nie przemyca teraz drugiego konceptu?"* → nie:
+   parse-vs-schema to dwie twarze JEDNEGO konceptu (`json-parsowanie-
+   walidacja`) — walidacja była w atomie od początku; rewizja tylko
+   czyni ją policzalną osobno. 1 koncept = 1 atom zachowane.
+
+**GO — treść. Blocker: pieczątki (manifest packera) do przestawienia
+przez buildera po ADR-022.**
