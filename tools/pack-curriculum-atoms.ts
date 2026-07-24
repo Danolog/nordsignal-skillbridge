@@ -1018,6 +1018,9 @@ const MANIFESTS: ModuleManifest[] = [
 			"leakage-uczciwosc-ewaluacji": "Leakage: uczciwość ewaluacji",
 		},
 		overrides: {
+			"ML.1": { notebookUrl: `${NOTEBOOKS_BASE}/mml/ml-1-model-dopasowany-z-danych.ipynb` },
+			"ML.2": { notebookUrl: `${NOTEBOOKS_BASE}/mml/ml-2-uczciwy-sprawdzian-train-test.ipynb` },
+			"ML.3": { notebookUrl: `${NOTEBOOKS_BASE}/mml/ml-3-baseline-punkt-odniesienia.ipynb` },
 			// Meta: „Koncepty ćwiczone: ML.1–ML.3" (bez slugów).
 			"ML.4": {
 				concepts: [
@@ -1028,6 +1031,8 @@ const MANIFESTS: ModuleManifest[] = [
 				checks: CHECKS_ML_4,
 				notebookUrl: `${NOTEBOOKS_BASE}/mml/ml-4-lab-napiwki-pelna-sciezka.ipynb`,
 			},
+			"ML.5": { notebookUrl: `${NOTEBOOKS_BASE}/mml/ml-5-macierz-pomylek-metryki.ipynb` },
+			"ML.6": { notebookUrl: `${NOTEBOOKS_BASE}/mml/ml-6-leakage-trzy-grzechy.ipynb` },
 			// Lab samodzielny — meta mówi „wszystkie z M-ML".
 			"ML.7": {
 				concepts: [

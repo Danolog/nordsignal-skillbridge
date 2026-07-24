@@ -67,6 +67,53 @@ function packedMml(): PackedMml {
 	) as PackedMml;
 }
 
+type NbItem = { slug: string; kind: string; config?: { notebookUrl?: unknown } };
+
+/**
+ * Kontrakt `notebookUrl` dla POJEDYNCZEGO atomu M-ML. Zwraca listę naruszeń
+ * ([] = OK). Jedyny guard używany zarówno przez asercję na realnych danych,
+ * jak i przez testy adwersaryjne — negatyw ma sprawdzać TĘ logikę, nie kopię.
+ *
+ * Reguła (wzór F1, ADR-015): item z notebookiem (5 towarzyszy + 2 laby) MUSI
+ * mieć URL na Colaba wskazujący ISTNIEJĄCY plik, którego nazwa zaczyna się od
+ * sluga atomu. Jedyny item BEZ URL-a to `ml-przeglad` (przegląd bez notebooka).
+ */
+function notebookUrlViolations(item: NbItem, files: Set<string>): string[] {
+	const url = item.config?.notebookUrl;
+	const isPrzeglad = item.slug === "ml-przeglad";
+	if (url === undefined) {
+		return isPrzeglad ? [] : [`${item.slug}: brak notebookUrl (item z notebookiem musi mieć URL)`];
+	}
+	const problems: string[] = [];
+	if (isPrzeglad) problems.push("ml-przeglad: przegląd nie powinien mieć notebookUrl");
+	let file: string;
+	try {
+		const parsed = new URL(url as string);
+		if (parsed.host !== "colab.research.google.com") {
+			problems.push(`${item.slug}: host ${parsed.host} != colab.research.google.com`);
+		}
+		file = parsed.pathname.split("/").at(-1) ?? "";
+	} catch {
+		return [`${item.slug}: notebookUrl nie jest poprawnym URL-em`];
+	}
+	if (!files.has(file)) {
+		problems.push(`${item.slug}: plik ${file} NIE istnieje w notebooks/mml (literówka sluga?)`);
+	}
+	if (!file.startsWith(`${item.slug}-`)) {
+		problems.push(`${item.slug}: nazwa pliku ${file} nie zaczyna się od sluga atomu`);
+	}
+	return problems;
+}
+
+type NbCells = { cells: { cell_type: string; source: string[] }[] };
+
+/** Liczy komórki-pieczątki (emitery tokenu) — jedyny detektor dla asercji realnej i adwersaryjnej. */
+function countStampCells(nb: NbCells): number {
+	return nb.cells.filter(
+		(c) => c.cell_type === "code" && c.source.join("").includes("_pieczatka_token"),
+	).length;
+}
+
 // ── Wzorcowe uzupełnienia ────────────────────────────────────────────────────
 
 // ML.4 — sześć luk (hint 3 dokumentu Sophii). Lewa strona = DOKŁADNY fragment
@@ -140,28 +187,50 @@ describe("notebooki M-ML — warstwy, drift buildera i podział lab/ćwiczenie",
 	const sources = listNotebookSources().filter((s) => s.module === "mml");
 	const items = packedMml().items;
 	const labSlugs = items.filter((i) => i.kind === "lab").map((i) => i.slug);
+	// Atomy z notebookiem = wszystko poza przeglądem (wzór F1: `atoms`). UWAGA:
+	// to NIE jest `kind` — ml-przeglad też jest `exercise`, ale bez notebooka.
+	const atoms = items.filter((i) => i.slug !== "ml-przeglad");
 
-	it("istnieją źródła labów M-ML: ml-4 i ml-7 (pieczątka tylko w labach)", () => {
+	it("istnieje 7 źródeł M-ML — 2 laby (ml-4,ml-7) + 5 towarzyszy (ml-1/2/3/5/6); przegląd bez notebooka", () => {
 		expect(labSlugs).toEqual(["ml-4", "ml-7"]);
+		expect(atoms).toHaveLength(7);
+		expect(sources).toHaveLength(7);
 		const slugi = sources.map((s) => s.slug).sort();
-		expect(slugi).toEqual(["ml-4-lab-napiwki-pelna-sciezka", "ml-7-lab-raport-modelu"]);
+		expect(slugi).toEqual([
+			"ml-1-model-dopasowany-z-danych",
+			"ml-2-uczciwy-sprawdzian-train-test",
+			"ml-3-baseline-punkt-odniesienia",
+			"ml-4-lab-napiwki-pelna-sciezka", // gitleaks:allow — slug rekwizytu testu, nie sekret (generic-api-key FP)
+			"ml-5-macierz-pomylek-metryki",
+			"ml-6-leakage-trzy-grzechy",
+			"ml-7-lab-raport-modelu",
+		]);
+		// Każdy atom z notebookiem ma DOKŁADNIE jeden zbudowany plik od sluga.
+		const files = readdirSync(join(OUT_DIR, "mml")).filter((f) => f.endsWith(".ipynb"));
+		for (const atom of atoms) {
+			const matching = files.filter((f) => f.startsWith(`${atom.slug}-`));
+			expect(matching, `notebook dla ${atom.slug}`).toHaveLength(1);
+		}
 	});
 
-	it("notebookUrl labów M-ML wskazuje Colaba i ISTNIEJĄCY plik; ćwiczenia i przegląd bez URL-a", () => {
+	it("notebookUrl KAŻDEGO atomu z notebookiem (5 towarzyszy + 2 laby = 7) wskazuje Colaba i ISTNIEJĄCY plik od sluga; bez URL tylko ml-przeglad", () => {
 		const files = new Set(readdirSync(join(OUT_DIR, "mml")).filter((f) => f.endsWith(".ipynb")));
+		// Kierunek 1: żaden item (łącznie z przeglądem) nie łamie kontraktu notebookUrl.
+		// Guard łapie towarzysza z URL-em na nieistniejący plik i nazwę spoza sluga.
 		for (const item of items) {
-			const url = item.config?.notebookUrl;
-			if (item.kind === "lab") {
-				expect(typeof url, `${item.slug}: config.notebookUrl`).toBe("string");
-				const parsed = new URL(url as string);
-				expect(parsed.host).toBe("colab.research.google.com");
-				const file = parsed.pathname.split("/").at(-1) ?? "";
-				expect(files.has(file), `${item.slug}: plik ${file} istnieje w notebooks/mml`).toBe(true);
-				expect(file.startsWith(`${item.slug}-`), `${item.slug}: nazwa pliku od sluga`).toBe(true);
-			} else {
-				expect(url, `${item.slug}: ćwiczenie/przegląd bez notebookUrl`).toBeUndefined();
-			}
+			expect(notebookUrlViolations(item, files), `${item.slug}: naruszenia kontraktu URL`).toEqual(
+				[],
+			);
 		}
+		// Kierunek 2: zbiór atomów z URL == dokładnie 7 oczekiwanych (nie mniej, nie więcej).
+		const zUrl = items
+			.filter((i) => i.config?.notebookUrl !== undefined)
+			.map((i) => i.slug)
+			.sort();
+		expect(zUrl).toEqual(["ml-1", "ml-2", "ml-3", "ml-4", "ml-5", "ml-6", "ml-7"]);
+		// Kierunek 3: ml-przeglad to JEDYNY item bez notebookUrl.
+		const bezUrl = items.filter((i) => i.config?.notebookUrl === undefined).map((i) => i.slug);
+		expect(bezUrl).toEqual(["ml-przeglad"]);
 	});
 
 	it("zbudowane .ipynb w repo == świeży rebuild ze źródeł (zero ręcznych edycji)", () => {
@@ -172,20 +241,125 @@ describe("notebooki M-ML — warstwy, drift buildera i podział lab/ćwiczenie",
 		}
 	});
 
-	it("laby M-ML mają DOKŁADNIE jedną pieczątkę ze wspólnym blokiem; blok NIETKNIĘTY", () => {
+	it("laby M-ML (ml-4,ml-7) mają DOKŁADNIE jedną pieczątkę ze wspólnym blokiem; towarzysze (ml-1/2/3/5/6) — ZERO", () => {
 		const shared = sharedStampBlock();
 		for (const src of sources) {
 			const nb = JSON.parse(
 				readFileSync(join(OUT_DIR, src.module, `${src.slug}.ipynb`), "utf8"),
-			) as { cells: { cell_type: string; source: string[] }[] };
+			) as NbCells;
 			const stampCells = nb.cells.filter(
 				(c) => c.cell_type === "code" && c.source.join("").includes("_pieczatka_token"),
 			);
-			expect(stampCells, `${src.slug}: lab ma pieczątkę`).toHaveLength(1);
-			const source = stampCells[0].source.join("");
-			expect(source.endsWith(shared), `${src.slug}: blok wspólny bajt w bajt`).toBe(true);
-			expect(source).toContain("def _zbierz_wyniki");
+			const isLab = labSlugs.some((slug) => src.slug.startsWith(`${slug}-`));
+			if (isLab) {
+				expect(stampCells, `${src.slug}: lab ma DOKŁADNIE jedną pieczątkę`).toHaveLength(1);
+				const source = stampCells[0].source.join("");
+				expect(source.endsWith(shared), `${src.slug}: blok wspólny bajt w bajt`).toBe(true);
+				expect(source).toContain("def _zbierz_wyniki");
+			} else {
+				// Inwariant 0-pieczątek: towarzysz emitujący token przez pomyłkę wypuściłby
+				// niezasłużony kredencjał (ćwiczenie ma zaliczać pytaniami, nie tokenem).
+				expect(
+					countStampCells(nb),
+					`${src.slug}: towarzysz BEZ pieczątki (inwariant 0-stamp)`,
+				).toBe(0);
+			}
 		}
+	});
+});
+
+// ── ADWERSARYJNIE: „co JESZCZE przejdzie przez tę bramkę?" ────────────────────
+// Guard z realnych danych świeci na zielono, gdy nikt nie popełnił wpadki. Te testy
+// wstrzykują wpadki w KOPIE realnych obiektów i wymagają, by guard je ODRZUCIŁ —
+// bronią samego guardu przed cichym osłabieniem (fail-closed, nie fail-open).
+describe("M-ML bramka notebooków — klasy wpadek, które NIE mogą przejść", () => {
+	const files = new Set(readdirSync(join(OUT_DIR, "mml")).filter((f) => f.endsWith(".ipynb")));
+	// Bazowy, POPRAWNY towarzysz — punkt odniesienia; sam w sobie nie ma naruszeń.
+	const bazowy: NbItem = {
+		slug: "ml-5",
+		kind: "exercise",
+		config: {
+			notebookUrl:
+				"https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-5-macierz-pomylek-metryki.ipynb",
+		},
+	};
+
+	it("sanity: poprawny towarzysz (ml-5) nie ma naruszeń — guard nie jest ślepy na zielone", () => {
+		expect(notebookUrlViolations(bazowy, files)).toEqual([]);
+	});
+
+	it("towarzysz → NIEistniejący plik (literówka sluga: pomylki vs pomylek) — ODRZUCONY", () => {
+		// Dokładnie wpadka, którą Ethan złapał ręcznie; test ma ją łapać automatycznie.
+		const zLiterowka: NbItem = {
+			...bazowy,
+			config: {
+				notebookUrl:
+					"https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-5-macierz-pomylki-metryki.ipynb",
+			},
+		};
+		const v = notebookUrlViolations(zLiterowka, files);
+		expect(
+			v.some((m) => m.includes("NIE istnieje")),
+			v.join(" | "),
+		).toBe(true);
+	});
+
+	it("notebookUrl z nazwą pliku niezaczynającą się od sluga atomu (wskazuje plik innego atomu) — ODRZUCONY", () => {
+		// Plik ISTNIEJE (files.has == true), ale należy do ml-4 — startsWith(ml-5-) pada.
+		const obcyPlik: NbItem = {
+			...bazowy,
+			config: {
+				notebookUrl:
+					"https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-4-lab-napiwki-pelna-sciezka.ipynb",
+			},
+		};
+		const v = notebookUrlViolations(obcyPlik, files);
+		expect(
+			v.some((m) => m.includes("nie zaczyna się od sluga")),
+			v.join(" | "),
+		).toBe(true);
+	});
+
+	it("towarzysz BEZ notebookUrl (regres builda — packer nie dopiął URL) — ODRZUCONY", () => {
+		const bezUrl: NbItem = { slug: "ml-5", kind: "exercise", config: {} };
+		const v = notebookUrlViolations(bezUrl, files);
+		expect(
+			v.some((m) => m.includes("brak notebookUrl")),
+			v.join(" | "),
+		).toBe(true);
+	});
+
+	it("ml-przeglad z przypadkowym notebookUrl (przegląd nie ma notebooka) — ODRZUCONY", () => {
+		const przegladZUrl: NbItem = {
+			slug: "ml-przeglad",
+			kind: "exercise",
+			config: {
+				notebookUrl:
+					"https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-przeglad-cokolwiek.ipynb",
+			},
+		};
+		const v = notebookUrlViolations(przegladZUrl, files);
+		expect(
+			v.some((m) => m.includes("nie powinien mieć notebookUrl")),
+			v.join(" | "),
+		).toBe(true);
+	});
+
+	it("pieczątka wstrzyknięta do towarzysza — detektor ją WIDZI (inwariant 0-stamp nie jest pusty)", () => {
+		// Dowód, że asercja „towarzysze = 0 pieczątek" nie przechodzi próżno:
+		// syntetyczny towarzysz z komórką-pieczątką daje licznik > 0.
+		const skazony: NbCells = {
+			cells: [
+				{ cell_type: "code", source: ["# zwykłe obliczenie ćwiczenia\n", "x = 1 + 1\n"] },
+				{
+					cell_type: "code",
+					source: ["_pieczatka_token = _wystaw_token()\n", "print(_pieczatka_token)\n"],
+				},
+			],
+		};
+		expect(countStampCells(skazony)).toBe(1);
+		// …a poprawny towarzysz (bez pieczątki) daje 0.
+		expect(countStampCells({ cells: [{ cell_type: "code", source: ["x = 1\n"] }] })).toBe(0);
 	});
 });
 

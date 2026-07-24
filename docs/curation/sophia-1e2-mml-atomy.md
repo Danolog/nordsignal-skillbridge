@@ -1405,3 +1405,53 @@ wieczorze, w którym pół grupy utknęło na jednym kroku). Pięć słabości +
 
 Werdykt: **gotowe do oddania Oliverowi**; budowa pieczątek po finalizacji ADR-020
 przez Ethana (jego domena, czerwona linia ingestu). Zero blockerów.
+
+---
+
+## Log QG — budowa towarzyszy M-ML 2026-07-24
+
+**Autor:** Sophia (PO) · **Zakres:** 5 notebooków-towarzyszy ćwiczeń M-ML
+(`tools/content/notebooks/mml/ml-{1,2,3,5,6}-*.py`) — worked example + brudnopis,
+świadomie BEZ pieczątki (atomy `exercise` zaliczane pytaniami w SkillBridge, nie
+tokenem). Wzorzec komórek 1:1 z F1 (`tools/content/notebooks/f1/`).
+
+**Co wykonano (realne uruchomienie, scikit-learn 1.9.0 + pandas 2.2.3):** każda
+komórka worked example wykonana w Pythonie, wartości porównane z treścią atomów.
+Zgodność co do joty:
+
+- ML.1 — `predict([{minuty:10, kwota:18.0, godzina:23}])` → `array([0])`;
+  `NotFittedError` (świeży model) — pierwsza linia zacytowana z realnego silnika.
+- ML.2 — trening 1.0, test 0.8333333333333334 (= 0.833); podział `random_state=42`
+  → test `[0, 8, 9, 11, 16, 18]`, 18 trening / 6 test.
+- ML.3 — baseline 0.667, model 0.833, po wypełnieniu luki `roznica` → 0.167.
+- ML.5 — macierz `[[1,1],[0,4]]`; po wypełnieniu luk (FP, FN) precision 0.8,
+  recall 1.0 (F1 0.889 potwierdzone `f1_score`).
+- ML.6 — raport z realnego przepływu: baseline 0.667, model 0.833.
+
+**Znaleziska w dokumencie kuracji:** BRAK errat. Wszystkie liczby w treści atomów
+ML.1/ML.2/ML.3/ML.5/ML.6 potwierdzone wykonaniem — dokument jest czysty
+liczbowo. Reguła twarda 3 („każda liczba POLICZONA") spełniona bez korekt.
+
+**Świadoma decyzja formatowa (nie errata):** w kodzie notebooków placeholder luki
+to `_luka_` (konwencja notebooków, reguła twarda 6 skilla — `___` byłoby zmienną
+historii IPythona), a NIE `______` używane w listingach tego dokumentu jako
+skrót redakcyjny. To adaptacja dokument→notebook zgodna z F1.3/F1.5 (te same
+`_luka_`), nie zmiana treści dydaktycznej. ML.3 completion (`round(______, 3)`)
+→ w notebooku `round(_luka_, 3)`; ML.5 luki A/B (`TP + ______`) → `TP + _luka_`.
+
+**Świadomy limit:** komórka „Dane" (24 przejazdy, 17 z napiwkiem) skopiowana
+bit-w-bit z `ml-4-lab-napiwki-pelna-sciezka.py` do wszystkich 5 towarzyszy —
+spójność ze zafiksowanym podziałem pieczątki labów ml-4/ml-7 (test `[0,8,9,11,16,18]`).
+Weryfikacja identyczności przez porównanie bloku bajt-w-bajt. Komentarz komórki
+przepisany na wariant bez odwołania do pieczątki (towarzysze jej nie mają) —
+sam listing `dane`/`df` bez zmian.
+
+**Brama T1–T5:** T1 pass (źródło = `.py`, brak ręcznej edycji artefaktów packera —
+repack/build należy do Engineeringu po mnie); T2 pass (0 znaczników meta w widoku
+studenta, 0 komórek pieczątki); T3 pass (tabela liczb wyżej); T4 pass (`___` = 0,
+`NameError`/`NotFittedError` zacytowane z realnego silnika, 0 polskich cudzysłowów
+wewnątrz stringów kodu); T5 pass (etykiety Colab „Plik → Zapisz kopię na Dysku"/
+„Kopia…" przejęte verbatim z wzorca F1, bez nowych cytatów cudzego UI).
+
+Werdykt: **5 towarzyszy gotowych do przekazania Engineeringowi** (build notebooków
++ pack — poza moją warstwą). Zero blockerów.
