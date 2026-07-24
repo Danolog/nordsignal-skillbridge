@@ -1273,11 +1273,14 @@ export const questionItems = pgTable(
 // silnikowi i kalibracji banku (owner-side). student_id obok session_id:
 // polityki RLS/przyszłe zapytania bez joinu.
 //
-// kind: CHECK lista miękka — 'module_exam' w 1E.3 = ALTER CHECK (koszt
-// zaakceptowany w spec §3, konwencja repo jak deliverable_type).
-// career_goal NULL-owalne od dnia 1 (egzamin fundamentów nie ma ścieżki).
-// Jedna aktywna sesja per (student, kind): partial unique index (0030,
-// sekcja ręczna — drizzle-kit nie generuje partial unique z WHERE).
+// kind: CHECK lista miękka — 'module_exam' dodane w 1E.3 (ALTER CHECK,
+// migracja 0041; koszt zaakceptowany w spec §3, konwencja repo jak
+// deliverable_type). career_goal NULL-owalne od dnia 1 (egzamin fundamentów
+// nie ma ścieżki). module_id NULL dla diagnostic, ustawiane dla module_exam.
+// Jedna aktywna sesja per (student, kind, module_id): partial unique index
+// (0030 pierwotnie po (student_id, kind); przebudowany w 0041 o module_id —
+// COALESCE(module_id, nil) by NULL diagnostic nie omijał unikalności; sekcja
+// ręczna — drizzle-kit nie generuje partial unique z WHERE).
 // ============================================================================
 
 export const assessmentSessions = pgTable(
@@ -1291,6 +1294,15 @@ export const assessmentSessions = pgTable(
 			.notNull()
 			.references(() => tenants.id),
 		kind: text("kind").notNull(),
+		// 1E.3 (ADR-014 D9): adres modułu dla sesji egzaminu modułowego.
+		// NULL dla 'diagnostic' (diagnoza fundamentów nie ma modułu) — legalne.
+		// onDelete: restrict — module_id jest IDENTYFIKUJĄCE dla 'module_exam'
+		// (nie metadana), więc set null skorumpowałoby sens wiersza egzaminu;
+		// moduł to katalog ingest/system (ADR-010), kasowany rzadko i świadomie.
+		// Blokada usunięcia modułu z historią egzaminów chroni ślad (Built-to-Sell).
+		moduleId: uuid("module_id").references(() => curriculumModules.id, {
+			onDelete: "restrict",
+		}),
 		careerGoal: text("career_goal"),
 		// Odcisk wejścia (careerGoal + posortowana lista kompetencji) — mismatch
 		// przy wznowieniu (student zmienił zaznaczenia w kreatorze) → abandoned.
@@ -1304,7 +1316,17 @@ export const assessmentSessions = pgTable(
 	(table) => [
 		index("idx_assessment_sessions_student_id").on(table.studentId),
 		index("idx_assessment_sessions_tenant_id").on(table.tenantId),
-		check("assessment_sessions_kind_values", sql`${table.kind} IN ('diagnostic')`),
+		index("idx_assessment_sessions_module_id").on(table.moduleId),
+		check("assessment_sessions_kind_values", sql`${table.kind} IN ('diagnostic','module_exam')`),
+		// 1E.3 (nota Leo W-1): egzamin modułowy MUSI mieć adres modułu. Bez tego
+		// niezmiennik indeksu uq_assessment_sessions_active pęka — module_exam z
+		// NULL-owym module_id scala się z innymi NULL-egzaminami w kubełek nil-uuid
+		// (COALESCE(module_id, nil-uuid)), błędnie kolidując lub kryjąc kolizje.
+		// Przy fladze OFF = 0 wierszy module_exam → CHECK zakłada się trywialnie.
+		check(
+			"assessment_sessions_module_exam_requires_module",
+			sql`${table.kind} <> 'module_exam' OR ${table.moduleId} IS NOT NULL`,
+		),
 		check(
 			"assessment_sessions_status_values",
 			sql`${table.status} IN ('in_progress','completed','abandoned')`,
