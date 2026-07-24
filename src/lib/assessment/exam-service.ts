@@ -33,7 +33,7 @@ import {
 	type CorrectivesAtomRow,
 	type CorrectivesPackage,
 } from "./correctives";
-import type { ExamBank, ExamSlot, ExamVariant } from "./exam";
+import { type ExamBank, type ExamSlot, type ExamVariant, parseExamSlotRefs } from "./exam";
 
 /** TTL sesji egzaminu (wzorzec diagnozy) — sprawdzany leniwie przy wznowieniu. */
 export const EXAM_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -70,40 +70,9 @@ export async function loadModuleExamConfig(moduleId: string): Promise<ExamConfig
 	return parseExamConfig(module.examConfigJson);
 }
 
-/** Kształt `config_json.examSlots` pozycji egzaminu — TYLKO refy i ID (bez klucza). */
-interface ExamSlotRef {
-	slotRef: string;
-	conceptSlug: string;
-	variants: { ref: string; variant: string; itemId: string }[];
-}
-
-function parseExamSlotRefs(configJson: unknown): ExamSlotRef[] | null {
-	if (typeof configJson !== "object" || configJson === null) return null;
-	const raw = (configJson as { examSlots?: unknown }).examSlots;
-	if (!Array.isArray(raw) || raw.length === 0) return null;
-	const slots: ExamSlotRef[] = [];
-	for (const s of raw) {
-		if (typeof s !== "object" || s === null) return null;
-		const slot = s as Record<string, unknown>;
-		if (typeof slot.slotRef !== "string" || typeof slot.conceptSlug !== "string") return null;
-		if (!Array.isArray(slot.variants)) return null;
-		const variants: ExamSlotRef["variants"] = [];
-		for (const v of slot.variants) {
-			if (typeof v !== "object" || v === null) return null;
-			const variant = v as Record<string, unknown>;
-			if (
-				typeof variant.ref !== "string" ||
-				typeof variant.variant !== "string" ||
-				typeof variant.itemId !== "string"
-			) {
-				return null;
-			}
-			variants.push({ ref: variant.ref, variant: variant.variant, itemId: variant.itemId });
-		}
-		slots.push({ slotRef: slot.slotRef, conceptSlug: slot.conceptSlug, variants });
-	}
-	return slots;
-}
+// parseExamSlotRefs + ExamSlotRef — WSPÓLNY guard granicy examSlots (read-side tu,
+// write-side w packerze/teście W1). Przeniesiony do exam.ts (czysta logika bez DB),
+// re-eksport niżej dla warstwy serwisowej i tras. Jedna definicja = jeden kontrakt.
 
 /**
  * Bank egzaminacyjny modułu — hydratowany owner-side z question_items po ID
@@ -182,13 +151,18 @@ export async function loadExamBank(moduleId: string, moduleSlug: string): Promis
  * Odczyt owner-side (`db`): curriculum to treść STATYCZNA (niemutowana przez
  * complete), więc czytanie poza transakcją sesji jest bezpieczne — brak
  * zależności od stanu zapisywanego w tej samej transakcji.
+ *
+ * `errorCount` + `maxErrors` sterują WYŁĄCZNIE mikrocopy paczki: N = dystans do
+ * progu = `errorCount − maxErrors` (Sophia nota 3, §5 banku F1). Nie wpływają na
+ * dobór atomów. Wołający (complete route) podaje `result.maxErrors` z gradeExam.
  */
 export async function buildCorrectivesPackage(
 	failedConcepts: readonly string[],
 	errorCount: number,
+	maxErrors: number,
 ): Promise<CorrectivesPackage> {
 	if (failedConcepts.length === 0) {
-		return assembleCorrectives([], errorCount, []);
+		return assembleCorrectives([], errorCount, maxErrors, []);
 	}
 	const rows = await db
 		.select({
@@ -218,9 +192,16 @@ export async function buildCorrectivesPackage(
 			asc(curriculumModules.slug),
 			asc(curriculumModuleItems.position),
 		);
-	return assembleCorrectives(failedConcepts, errorCount, rows as CorrectivesAtomRow[]);
+	return assembleCorrectives(failedConcepts, errorCount, maxErrors, rows as CorrectivesAtomRow[]);
 }
 
 // buildExamQuestionPayload / ExamQuestionPayload — czysta logika payloadu:
 // przeniesione do exam.ts (bez zależności od DB), re-eksport dla tras.
-export { buildExamQuestionPayload, type ExamQuestionPayload } from "./exam";
+// parseExamSlotRefs / ExamSlotRef — wspólny guard granicy examSlots (exam.ts,
+// bez DB); re-eksport, żeby konsumenci serwisu (trasy) mieli jedno wejście.
+export {
+	buildExamQuestionPayload,
+	type ExamQuestionPayload,
+	type ExamSlotRef,
+	parseExamSlotRefs,
+} from "./exam";

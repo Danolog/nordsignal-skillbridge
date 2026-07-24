@@ -37,7 +37,8 @@
 		"srodowisko:zapisz-sonde": "tsx tools/zapisz-sonde.ts",
 		"srodowisko:inwentarz": "tsx tools/content/notebooks/inwentarz-cytatow.ts",
 		"db:ingest-curriculum": "tsx tools/ingest-curriculum.ts",
-		"db:ingest-question-bank": "tsx tools/ingest-question-bank.ts"
+		"db:ingest-question-bank": "tsx tools/ingest-question-bank.ts",
+		"db:ingest-exam-bank": "tsx tools/ingest-exam-bank.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^3.0.58",

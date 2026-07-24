@@ -139,7 +139,7 @@ dBack("P4 buildCorrectivesPackage — realny SQL koncept→atom (baza)", () => {
 	});
 
 	it("R2 KRYTYCZNE: koncept z WYŁĄCZNIE atomem lab → wpis z NAZWĄ + pustą listą (filtr w ON, nie WHERE)", async () => {
-		const pkg = await buildCorrectivesPackage([cLab.slug], 1);
+		const pkg = await buildCorrectivesPackage([cLab.slug], 1, 1);
 		expect(pkg.concepts).toHaveLength(1);
 		const entry = pkg.concepts[0];
 		expect(entry.concept).toBe(cLab.slug);
@@ -150,13 +150,13 @@ dBack("P4 buildCorrectivesPackage — realny SQL koncept→atom (baza)", () => {
 	});
 
 	it("R2: koncept bez żadnego mapowania atomu → wpis z nazwą + pusta lista (LEFT JOIN nie gubi)", async () => {
-		const pkg = await buildCorrectivesPackage([cNomap.slug], 1);
+		const pkg = await buildCorrectivesPackage([cNomap.slug], 1, 1);
 		expect(pkg.concepts[0].atoms).toEqual([]);
 		expect(pkg.concepts[0].conceptName).toBe("Bez atomów");
 	});
 
 	it("przycięcie ≤3 deterministyczne: 5 atomów → dokładnie 3 wg (moduł, pozycja), powtarzalne", async () => {
-		const first = await buildCorrectivesPackage([cTrim.slug], 3);
+		const first = await buildCorrectivesPackage([cTrim.slug], 3, 1);
 		const atoms = first.concepts[0].atoms;
 		expect(atoms).toHaveLength(3);
 		// mod-a (a-p10,a-p20,a-p30) przed mod-b — mimo że b-p05 ma niższą pozycję.
@@ -166,14 +166,14 @@ dBack("P4 buildCorrectivesPackage — realny SQL koncept→atom (baza)", () => {
 			`${PREFIX}a-p30`,
 		]);
 		// Powtórzenie zapytania → ta sama trójka (determinizm sortu, nie przypadek).
-		const second = await buildCorrectivesPackage([cTrim.slug], 3);
+		const second = await buildCorrectivesPackage([cTrim.slug], 3, 1);
 		expect(second.concepts[0].atoms.map((a: { slug: string }) => a.slug)).toEqual(
 			atoms.map((a: { slug: string }) => a.slug),
 		);
 	});
 
 	it("filtr rodzaju: koncept theory+lab → tylko atom theory (lab wycięty), koncept zostaje", async () => {
-		const pkg = await buildCorrectivesPackage([cMixed.slug], 1);
+		const pkg = await buildCorrectivesPackage([cMixed.slug], 1, 1);
 		const atoms = pkg.concepts[0].atoms;
 		expect(atoms).toHaveLength(1);
 		expect(atoms[0].slug).toBe(`${PREFIX}a-mixT`);
@@ -181,7 +181,7 @@ dBack("P4 buildCorrectivesPackage — realny SQL koncept→atom (baza)", () => {
 	});
 
 	it("jeden atom w DWÓCH konceptach → obecny w OBU (dedup jest per-koncept, nie globalny)", async () => {
-		const pkg = await buildCorrectivesPackage([cShareA.slug, cShareB.slug], 2);
+		const pkg = await buildCorrectivesPackage([cShareA.slug, cShareB.slug], 2, 1);
 		expect(pkg.concepts).toHaveLength(2);
 		expect(pkg.concepts[0].atoms.map((a: { slug: string }) => a.slug)).toEqual([
 			`${PREFIX}a-shared`,
@@ -192,7 +192,7 @@ dBack("P4 buildCorrectivesPackage — realny SQL koncept→atom (baza)", () => {
 	});
 
 	it("kolejność konceptów = kolejność failedConcepts (nie kolejność z bazy)", async () => {
-		const pkg = await buildCorrectivesPackage([cLab.slug, cTrim.slug, cNomap.slug], 3);
+		const pkg = await buildCorrectivesPackage([cLab.slug, cTrim.slug, cNomap.slug], 3, 1);
 		expect(pkg.concepts.map((c: { concept: string }) => c.concept)).toEqual([
 			cLab.slug,
 			cTrim.slug,
@@ -201,7 +201,7 @@ dBack("P4 buildCorrectivesPackage — realny SQL koncept→atom (baza)", () => {
 	});
 
 	it("BRAK WYCIEKU: paczka niesie tylko slug/title/kind/moduleSlug — zero klucza/odpowiedzi", async () => {
-		const pkg = await buildCorrectivesPackage([cTrim.slug, cLab.slug], 4);
+		const pkg = await buildCorrectivesPackage([cTrim.slug, cLab.slug], 4, 1);
 		const raw = JSON.stringify(pkg);
 		// Correctives czytają curriculum, NIE question_items — klucza nie ma prawa
 		// być strukturalnie. Guard dokumentuje to i łapie regresję, gdyby ktoś
@@ -217,14 +217,16 @@ dBack("P4 buildCorrectivesPackage — realny SQL koncept→atom (baza)", () => {
 		}
 	});
 
-	it("mikrocopy na realnych danych: N=errorCount, M=liczba failedConcepts, ~15 min", async () => {
-		const pkg = await buildCorrectivesPackage([cTrim.slug, cLab.slug, cNomap.slug], 5);
-		// N=5 (pytań), M=3 koncepty → forma 'pytań' + 'koncepty'.
-		expect(pkg.message).toBe("Zabrakło Ci 5 pytań — 3 koncepty do odświeżenia, ~15 min");
+	it("mikrocopy na realnych danych: N=errorCount−maxErrors, M=liczba failedConcepts, ~15 min", async () => {
+		const pkg = await buildCorrectivesPackage([cTrim.slug, cLab.slug, cNomap.slug], 5, 1);
+		// errorCount=5, maxErrors=1 → N=4 (dystans do progu), M=3 koncepty → 'pytań' + 'koncepty'.
+		expect(pkg.message).toBe(
+			"Zabrakło Ci 4 pytań do zaliczenia — 3 koncepty do odświeżenia, ~15 min",
+		);
 	});
 
 	it("zdany (failedConcepts=[]) → paczka pusta, zero zapytań o atomy", async () => {
-		const pkg = await buildCorrectivesPackage([], 0);
+		const pkg = await buildCorrectivesPackage([], 0, 1);
 		expect(pkg.concepts).toEqual([]);
 	});
 });

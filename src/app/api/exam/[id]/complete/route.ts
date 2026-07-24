@@ -100,6 +100,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 						correctivesPackage: await buildCorrectivesPackage(
 							result.failedConcepts,
 							result.errorCount,
+							result.maxErrors,
 						),
 					}
 				: result;

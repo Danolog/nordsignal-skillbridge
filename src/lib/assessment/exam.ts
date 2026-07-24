@@ -238,6 +238,61 @@ export function buildExamQuestionPayload(
 	return { slotRef, stem: variant.stem, options: variant.options, position, total };
 }
 
+/**
+ * Kształt `config_json.examSlots` pozycji egzaminu — TYLKO refy i UUID itemu
+ * (slotRef/conceptSlug/{ref,variant,itemId}), NIGDY `correct`/`stem`/`options`/
+ * `answer_json`. To jest KONTRAKT GRANICY BEZPIECZEŃSTWA egzaminu: examSlots żyje
+ * pod grantem `SELECT` app_student (dokładnie jak `questionItemIds` atomu), więc
+ * nie może nieść klucza ani treści. Klucz/treść hydratuje owner-side loadExamBank
+ * z `question_items` (tabela DENY).
+ */
+export interface ExamSlotRef {
+	slotRef: string;
+	conceptSlug: string;
+	variants: { ref: string; variant: string; itemId: string }[];
+}
+
+/**
+ * parseExamSlotRefs — WSPÓLNY guard granicy examSlots, używany po OBU stronach:
+ *  - read-side (loadExamBank, owner): odczyt refów przed hydratacją klucza,
+ *  - write-side (packing/ingest + test W1): round-trip pack→examSlots→parse ma
+ *    zwrócić komplet refów, a examSlots NIE może nieść żadnego pola klucza/treści.
+ *
+ * Zwraca `null`, gdy kształt jest niepoprawny albo `examSlots` puste/nieobecne
+ * (jawna degradacja, jak `uncovered` diagnozy). Czysta funkcja — bez DB —
+ * dlatego mieszka w exam.ts (nie w exam-service.ts): test write-side importuje ją
+ * bez pociągania połączenia z bazą. Celowo czyta WYŁĄCZNIE {slotRef, conceptSlug,
+ * ref, variant, itemId}; jeśli packer doklei `correct`/`stem`/`options`, te pola
+ * są tu ignorowane, a test W1 skanuje surowy JSON i wywala się na ich obecności.
+ */
+export function parseExamSlotRefs(configJson: unknown): ExamSlotRef[] | null {
+	if (typeof configJson !== "object" || configJson === null) return null;
+	const raw = (configJson as { examSlots?: unknown }).examSlots;
+	if (!Array.isArray(raw) || raw.length === 0) return null;
+	const slots: ExamSlotRef[] = [];
+	for (const s of raw) {
+		if (typeof s !== "object" || s === null) return null;
+		const slot = s as Record<string, unknown>;
+		if (typeof slot.slotRef !== "string" || typeof slot.conceptSlug !== "string") return null;
+		if (!Array.isArray(slot.variants)) return null;
+		const variants: ExamSlotRef["variants"] = [];
+		for (const v of slot.variants) {
+			if (typeof v !== "object" || v === null) return null;
+			const variant = v as Record<string, unknown>;
+			if (
+				typeof variant.ref !== "string" ||
+				typeof variant.variant !== "string" ||
+				typeof variant.itemId !== "string"
+			) {
+				return null;
+			}
+			variants.push({ ref: variant.ref, variant: variant.variant, itemId: variant.itemId });
+		}
+		slots.push({ slotRef: slot.slotRef, conceptSlug: slot.conceptSlug, variants });
+	}
+	return slots;
+}
+
 /** Rozwiązanie variantRef → wariant banku (owner-side; grading i serwowanie). */
 export function resolveVariant(bank: ExamBank, variantRef: string): ExamVariant | null {
 	for (const slot of bank.slots) {
