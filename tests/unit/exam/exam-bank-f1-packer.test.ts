@@ -1,35 +1,41 @@
 // ============================================================================
-// 1E.3 (ADR-014 D3) — kontrakt packera banku egzaminacyjnego F1 (mastery gate).
-// Test JEDNOSTKOWY (bez DB): parsuje realny plik Sophii i sprawdza strukturę.
+// 1E.3 (ADR-014 D3) — kontrakt packera banku egzaminacyjnego (mastery gate).
+// Test JEDNOSTKOWY (bez DB): parsuje COMMITOWANY fixture i sprawdza strukturę.
 //
-// Pokrycie DoD: packer pytań F1 (15×2, de-dup).
-// ŹRÓDŁO PRAWDY (de-dup, reguła twarda 1): WYŁĄCZNIE sophia-1e3-egzamin-f1-v0.1.md;
-// kondensat w sophia-1e2-f1-atomy.md NIE jest tu otwierany.
+// ODSPRZĘGNIĘCIE OD DRAFTu (Opcja A, sign-off Olivera 2026-07-24):
+//   Unit-kontrakt packera stoi na fixture `fixtures/exam-bank-sample.md` — pliku
+//   commitowanym, syntetycznym, wiernym formatowi §6. Realny bank Sophii
+//   (`docs/curation/sophia-1e3-egzamin-f1-v0.1.md`) jest NIECOMMITOWANYM DRAFTem —
+//   czytanie go w CI dawało ENOENT. Kontrakt (allowlista/nie-wyciek, determinizm,
+//   samozgodność dystraktorów, granica §6, de-dup) egzekwujemy tu na fixture;
+//   zachowana pełna intencja adwersaryjna Quinn, guardy NIE osłabione.
+//
+// TODO(ingest) — samozgodność REALNEGO banku Sophii (E1A=float, klucze policzone
+//   w Pythonie, 15×2, koncepty ⊆ modułu) jest BRAMKĄ INGESTU po QG-GO Sophii, nie
+//   bramką unit-CI (spójne z checklistą flag-enable W1). Test `skip-if-absent`
+//   niżej uruchamia tę walidację LOKALNIE, gdy plik Sophii jest obecny; w CI
+//   (plik untracked → nieobecny) jest pomijany — unit-kontrakt stoi na fixture.
 // ============================================================================
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { gradeAnswer } from "../../../src/lib/assessment/grade";
 import { packExamBankFromMarkdown, validateExamBank } from "../../../tools/content-curriculum-exam";
 
-const F1_CONCEPTS = [
-	"typ-wartosci",
-	"wyrazenie-obliczenie",
-	"f-string-budowanie-tekstu",
-	"porownanie-bool",
-	"decyzja-if-else",
-] as const;
+// Koncepty fixture (allowlista modułu) — 2 koncepty × 3 sloty (równomierne, ADR D1).
+const FIXTURE_CONCEPTS = ["dodawanie", "mnozenie"] as const;
+const SLOT_COUNT = 6;
 
-const SOURCE = join(process.cwd(), "docs/curation/sophia-1e3-egzamin-f1-v0.1.md");
-const markdown = readFileSync(SOURCE, "utf8");
-const bank = packExamBankFromMarkdown(markdown, "f1-python-1");
+const FIXTURE = join(process.cwd(), "tests/unit/exam/fixtures/exam-bank-sample.md");
+const markdown = readFileSync(FIXTURE, "utf8");
+const bank = packExamBankFromMarkdown(markdown, "fx-module-1");
 
-describe("packer banku egzaminacyjnego F1 — 15 slotów × 2 warianty", () => {
-	it("parsuje dokładnie 15 slotów (E1..E15)", () => {
-		expect(bank.slots).toHaveLength(15);
+describe("packer banku egzaminacyjnego (fixture) — 6 slotów × 2 warianty", () => {
+	it("parsuje dokładnie 6 slotów (E1..E6)", () => {
+		expect(bank.slots).toHaveLength(SLOT_COUNT);
 		expect(bank.slots.map((s) => s.slotRef)).toEqual(
-			Array.from({ length: 15 }, (_, i) => `e${i + 1}`),
+			Array.from({ length: SLOT_COUNT }, (_, i) => `e${i + 1}`),
 		);
 	});
 
@@ -44,34 +50,52 @@ describe("packer banku egzaminacyjnego F1 — 15 slotów × 2 warianty", () => {
 		}
 	});
 
-	it("kontrakt validateExamBank czysty (15×2, koncepty ⊆ modułu, samozgodność, de-dup)", () => {
-		expect(validateExamBank(bank, { slotCount: 15, concepts: F1_CONCEPTS })).toEqual([]);
+	it("kontrakt validateExamBank czysty (6×2, koncepty ⊆ modułu, samozgodność, de-dup)", () => {
+		expect(validateExamBank(bank, { slotCount: SLOT_COUNT, concepts: FIXTURE_CONCEPTS })).toEqual(
+			[],
+		);
 	});
 
-	it("pokrycie konceptów: 5 konceptów × 3 sloty (równomierne, ADR D1)", () => {
+	it("allowlista konceptów — walidator ŁAPIE koncept spoza modułu (nie-wyciek)", () => {
+		// Gdyby slot niósł koncept spoza allowlisty modułu, kontrakt MUSI go zgłosić.
+		const leaked = {
+			...bank,
+			slots: [{ ...bank.slots[0], conceptSlug: "koncept-spoza-modulu" }, ...bank.slots.slice(1)],
+		};
+		const problems = validateExamBank(leaked, {
+			slotCount: SLOT_COUNT,
+			concepts: FIXTURE_CONCEPTS,
+		});
+		expect(problems.some((p) => /spoza konceptów modułu/.test(p))).toBe(true);
+	});
+
+	it("pokrycie konceptów: 2 koncepty × 3 sloty (równomierne, ADR D1)", () => {
 		const perConcept = new Map<string, number>();
 		for (const slot of bank.slots) {
 			perConcept.set(slot.conceptSlug, (perConcept.get(slot.conceptSlug) ?? 0) + 1);
 		}
-		for (const c of F1_CONCEPTS) expect(perConcept.get(c)).toBe(3);
+		for (const c of FIXTURE_CONCEPTS) expect(perConcept.get(c)).toBe(3);
 	});
 });
 
 describe("de-dup — jedno źródło prawdy (reguła twarda 1)", () => {
-	it("slotRef globalnie unikalne (E1..E15 raz każdy)", () => {
+	it("slotRef globalnie unikalne (E1..E6 raz każdy)", () => {
 		const refs = bank.slots.map((s) => s.slotRef);
 		expect(new Set(refs).size).toBe(refs.length);
 	});
 
-	it("ref wariantu globalnie unikalny (30 wariantów, zero kolizji)", () => {
+	it("ref wariantu globalnie unikalny (12 wariantów, zero kolizji)", () => {
 		const refs = bank.slots.flatMap((s) => s.variants.map((v) => v.ref));
-		expect(refs).toHaveLength(30);
-		expect(new Set(refs).size).toBe(30);
+		expect(refs).toHaveLength(SLOT_COUNT * 2);
+		expect(new Set(refs).size).toBe(SLOT_COUNT * 2);
 	});
 
 	it("walidator ŁAPIE zduplikowany slot (regresja de-dup, gdyby kondensat wciekł)", () => {
 		const doubled = { ...bank, slots: [...bank.slots, bank.slots[0]] };
-		const problems = validateExamBank(doubled, { slotCount: 15, concepts: F1_CONCEPTS });
+		const problems = validateExamBank(doubled, {
+			slotCount: SLOT_COUNT,
+			concepts: FIXTURE_CONCEPTS,
+		});
 		expect(problems.some((p) => /zduplikowany/.test(p))).toBe(true);
 	});
 });
@@ -79,7 +103,7 @@ describe("de-dup — jedno źródło prawdy (reguła twarda 1)", () => {
 describe("bezpieczeństwo klucza — packer trzyma correct, test pilnuje samozgodności", () => {
 	it("każdy wariant ma poprawny indeks przechodzący przez gradeAnswer", () => {
 		// validateExamBank egzekwuje samozgodność; tu jawnie potwierdzamy brak problemu.
-		const problems = validateExamBank(bank, { slotCount: 15 });
+		const problems = validateExamBank(bank, { slotCount: SLOT_COUNT });
 		expect(problems.filter((p) => /niesamozgodny/.test(p))).toEqual([]);
 	});
 });
@@ -93,7 +117,7 @@ describe("P4 determinizm packera (jak notebooki — 1:1 odtwarzalność)", () =>
 		// re-ingest tego samego markdownu nie może dać innego banku (inne refy →
 		// rozjazd plan_json ↔ config_json.examSlots). Łapie niedeterminizm
 		// wprowadzony np. przez Set/Map z niestabilną kolejnością albo Date/random.
-		const again = packExamBankFromMarkdown(markdown, "f1-python-1");
+		const again = packExamBankFromMarkdown(markdown, "fx-module-1");
 		expect(again).toEqual(bank);
 	});
 
@@ -140,10 +164,18 @@ describe("P4 samozgodność klucza — poprawny ZALICZA, każdy dystraktor NIE",
 
 // ============================================================================
 // P4 ADWERSARYJNIE — granica źródła §6. Packer czyta WYŁĄCZNIE sekcję §6; blok
-// pytania umieszczony w §7 (albo kondensat E1–E15 z pliku atomów, gdyby wciekł)
-// NIE może trafić do banku. Łapie regresję de-dup „jedno źródło prawdy”.
+// pytania umieszczony w §7 NIE może trafić do banku. Łapie regresję de-dup
+// „jedno źródło prawdy”. Fixture NIESIE własny blok E99 w §7 (dowód na realnych
+// danych fixture) + niezależny syntetyczny guard inline (izolacja od źródła).
 // ============================================================================
 describe("P4 granica §6 — pytania spoza sekcji §6 NIE wchodzą do banku", () => {
+	it("blok E99 z §7 fixture jest ignorowany (bank = tylko E1..E6 z §6)", () => {
+		expect(bank.slots.map((s) => s.slotRef)).not.toContain("e99");
+		expect(bank.slots.flatMap((s) => s.variants.map((v) => v.ref))).not.toContain(
+			"fx-module-1-e99-a",
+		);
+	});
+
 	const SYNTH = [
 		"# Test",
 		"## 6. Bank pytań",
@@ -169,9 +201,34 @@ describe("P4 granica §6 — pytania spoza sekcji §6 NIE wchodzą do banku", ()
 		"",
 	].join("\n");
 
-	it("blok E99 z sekcji §7 jest ignorowany (bank = tylko E1, E2 z §6)", () => {
+	it("blok E99 z sekcji §7 (inline) jest ignorowany (bank = tylko E1, E2 z §6)", () => {
 		const synthBank = packExamBankFromMarkdown(SYNTH, "syn");
 		expect(synthBank.slots.map((s) => s.slotRef)).toEqual(["e1", "e2"]);
 		expect(synthBank.slots.flatMap((s) => s.variants.map((v) => v.ref))).not.toContain("syn-e99-a");
 	});
+});
+
+// ============================================================================
+// BRAMKA INGESTU (skip-if-absent) — walidacja REALNEGO banku Sophii. Uruchamia
+// się LOKALNIE, gdy DRAFT jest obecny; w CI (plik untracked/nieobecny) pomijana.
+// To NIE jest unit-kontrakt — to podgląd bramki ingestu (po QG-GO Sophii).
+// ============================================================================
+const SOPHIA_DRAFT = join(process.cwd(), "docs/curation/sophia-1e3-egzamin-f1-v0.1.md");
+const F1_CONCEPTS = [
+	"typ-wartosci",
+	"wyrazenie-obliczenie",
+	"f-string-budowanie-tekstu",
+	"porownanie-bool",
+	"decyzja-if-else",
+] as const;
+
+describe("INGEST (skip-if-absent) — realny bank Sophii F1 (15×2)", () => {
+	it.skipIf(!existsSync(SOPHIA_DRAFT))(
+		"realny bank przechodzi kontrakt 15×2 (bramka ingestu, nie unit-CI)",
+		() => {
+			const real = packExamBankFromMarkdown(readFileSync(SOPHIA_DRAFT, "utf8"), "f1-python-1");
+			expect(real.slots).toHaveLength(15);
+			expect(validateExamBank(real, { slotCount: 15, concepts: F1_CONCEPTS })).toEqual([]);
+		},
+	);
 });
