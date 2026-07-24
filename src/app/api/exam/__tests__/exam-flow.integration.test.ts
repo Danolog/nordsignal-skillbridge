@@ -349,6 +349,191 @@ dBack("W2 · kontrakt tras /api/exam/* na żywej bazie (izolacja, partial-unique
 		expect(JSON.stringify(c2.result.correctivesPackage)).not.toContain('"correct"');
 	});
 
+	// ── P5 e2e: pełny cykl 423 → correctives (częściowe/pełne) → reset (Quinn/QA) ─
+	// Domyka lukę „zielony unit ≠ działający endpoint" dla ścieżki 423 (Ethan ją
+	// nazwał). Rdzeń: /start w S-C zwraca 423 correctives_required + paczkę na REALNYM
+	// endpointcie; correctives ODBYTE liczy backend z curriculum_item_answers (re-
+	// ukończenie PO 2. oblaniu); reset przywraca podejście od 1 (świeży cykl).
+	// Mutacja P1: correctives ODBYTE CZĘŚCIOWO (1 z 2 wymaganych atomów) → NADAL 423
+	// (blokada trzyma, nie odblokowuje przy niepełnym odbyciu).
+	//
+	// Dedykowany moduł qw2-cyc: każdy koncept ma atom correctives (exercise) linkowany
+	// przez curriculum_item_concepts + pytanie retrieval — dopiero to pozwala correctives
+	// REALNIE odbyć (mod-a wyżej celowo ich nie ma → package z pustymi atomami).
+	it("[P5] e2e 423: 2×fail → /start 423 correctives_required → 1/2 atomów NADAL 423 → 2/2 → /start 201 nowy cykl", async () => {
+		await resetSessions();
+		await db.execute(sql`DELETE FROM curriculum_item_answers WHERE student_id = ${studentAId}`);
+
+		const CYC = `${PREFIX}cyc`;
+		// Idempotencja przy powtórnym przebiegu: zdejmij ewentualne pozostałości.
+		await db.execute(sql`DELETE FROM curriculum_modules WHERE slug = ${CYC}`);
+		await db.execute(sql`DELETE FROM question_concepts WHERE slug LIKE ${`${CYC}-%`}`);
+
+		const [module] = await db
+			.insert(schema.curriculumModules)
+			.values({
+				slug: CYC,
+				title: "Egzamin cykl P5",
+				examConfigJson: { questionCount: Q_COUNT, maxErrors: MAX_ERRORS },
+			})
+			.returning({ id: schema.curriculumModules.id });
+		const cycModuleId = module.id as string;
+
+		const examSlots: {
+			slotRef: string;
+			conceptSlug: string;
+			variants: { ref: string; variant: string; itemId: string }[];
+		}[] = [];
+		const atomIdByConcept = new Map<string, string>();
+		const retrievalQByConcept = new Map<string, string>();
+
+		for (let i = 1; i <= Q_COUNT; i++) {
+			const conceptSlug = `${CYC}-c${i}`;
+			const [concept] = await db
+				.insert(schema.questionConcepts)
+				.values({ slug: conceptSlug, name: `Koncept cyc ${i}`, trunk: "foundations" })
+				.returning({ id: schema.questionConcepts.id });
+
+			const variants: { ref: string; variant: string; itemId: string }[] = [];
+			for (const label of ["A", "B"]) {
+				const [item] = await db
+					.insert(schema.questionItems)
+					.values({
+						conceptId: concept.id,
+						difficulty: 1,
+						type: "single_choice",
+						stem: `[cyc/e${i}/${label}] Pytanie ${i}`,
+						optionsJson: ["Odpowiedź 0", "Odpowiedź 1", "Odpowiedź 2"],
+						answerJson: { correct: 0 },
+					})
+					.returning({ id: schema.questionItems.id });
+				variants.push({ ref: `cyc-e${i}-${label.toLowerCase()}`, variant: label, itemId: item.id });
+			}
+			examSlots.push({ slotRef: `e${i}`, conceptSlug, variants });
+
+			// Atom correctives (exercise) uczący konceptu + pytanie retrieval do re-ukończenia.
+			const [atom] = await db
+				.insert(schema.curriculumModuleItems)
+				.values({
+					moduleId: cycModuleId,
+					slug: `${CYC}-atom-${i}`,
+					position: 100 + i,
+					kind: "exercise",
+					title: `Atom cyc ${i}`,
+				})
+				.returning({ id: schema.curriculumModuleItems.id });
+			await db
+				.insert(schema.curriculumItemConcepts)
+				.values({ itemId: atom.id, conceptId: concept.id });
+			const [rq] = await db
+				.insert(schema.questionItems)
+				.values({
+					conceptId: concept.id,
+					difficulty: 1,
+					type: "single_choice",
+					stem: `retrieval atomu ${i}`,
+					optionsJson: ["a", "b"],
+					answerJson: { correct: 0 },
+				})
+				.returning({ id: schema.questionItems.id });
+			atomIdByConcept.set(conceptSlug, atom.id);
+			retrievalQByConcept.set(conceptSlug, rq.id);
+		}
+
+		await db.insert(schema.curriculumModuleItems).values({
+			moduleId: cycModuleId,
+			slug: `${CYC}-exam`,
+			position: 1,
+			kind: "exam",
+			title: "Egzamin modułu",
+			configJson: { examSlots },
+		});
+
+		// Pozycje błędne {3,9} → sloty e4,e10 (orderedSlots sortuje e1..e15 numerycznie)
+		// → 2 RÓŻNE koncepty → 2 wymagane atomy correctives.
+		const wrong = new Set([3, 9]);
+
+		// Podejście 1 (wariant A) → oblane, correctives=false.
+		const s1 = await (await startPOST(startReq(cycModuleId))).json();
+		expect(s1.attempt).toBe(1);
+		await runExam(s1.sessionId, s1.question, wrong);
+		const c1 = await (await completePOST(completeReq(), ctxFor(s1.sessionId))).json();
+		expect(c1.result.passed).toBe(false);
+		expect(c1.result.correctives).toBe(false);
+
+		// Podejście 2 (wariant B) → oblane cap-2, correctives=true.
+		const startRes2 = await startPOST(startReq(cycModuleId));
+		expect(startRes2.status).toBe(201);
+		const s2 = await startRes2.json();
+		expect(s2.attempt).toBe(2);
+		await runExam(s2.sessionId, s2.question, wrong);
+		const c2 = await (await completePOST(completeReq(), ctxFor(s2.sessionId))).json();
+		expect(c2.result.correctives).toBe(true);
+		const failedConcepts = c2.result.failedConcepts as string[];
+		expect(failedConcepts.length).toBe(2); // 2 różne koncepty (pozycje 3,9)
+
+		// S-C: /start ODRZUCA 3. podejście stanem 423 correctives_required + paczka
+		// (REALNY endpoint — nie unit; to jest domknięcie luki 423).
+		const lockedRes = await startPOST(startReq(cycModuleId));
+		expect(lockedRes.status).toBe(423);
+		const locked = await lockedRes.json();
+		expect(locked.state).toBe("correctives_required");
+		expect(locked.correctivesPackage).toBeDefined();
+		assertNoKeyLeak(locked);
+		// ZERO nowej sesji w S-C (blokada twarda, nie wariant B w nieskończoność).
+		const activeInSC = await db
+			.execute(
+				sql`SELECT count(*)::int AS c FROM assessment_sessions
+				    WHERE student_id = ${studentAId} AND module_id = ${cycModuleId} AND status = 'in_progress'`,
+			)
+			.then((r: { rows: { c: number }[] }) => r.rows[0].c);
+		expect(activeInSC).toBe(0);
+
+		// completed_at 2. oblania = granica correctives; re-ukończenie MUSI być PO niej.
+		const [{ completed_at: fail2At }] = await db
+			.execute(sql`SELECT completed_at FROM assessment_sessions WHERE id = ${s2.sessionId}`)
+			.then((r: { rows: { completed_at: string }[] }) => r.rows);
+		const doneAt = new Date(new Date(fail2At).getTime() + 60_000);
+
+		// MUTACJA P1 — correctives odbyte CZĘŚCIOWO (1 z 2 atomów): NADAL S-C (423).
+		const [cA, cB] = failedConcepts;
+		await db.insert(schema.curriculumItemAnswers).values({
+			studentId: studentAId,
+			tenantId,
+			itemId: atomIdByConcept.get(cA),
+			questionItemId: retrievalQByConcept.get(cA),
+			isCorrect: true,
+			hintDepth: 0,
+			hintDepthSource: "server",
+			answeredAt: doneAt,
+		});
+		const stillLocked = await startPOST(startReq(cycModuleId));
+		expect(stillLocked.status).toBe(423); // 1/2 → correctives NIEODBYTE, blokada trzyma
+
+		// Drugi (ostatni) wymagany atom → correctives ODBYTE w komplecie.
+		await db.insert(schema.curriculumItemAnswers).values({
+			studentId: studentAId,
+			tenantId,
+			itemId: atomIdByConcept.get(cB),
+			questionItemId: retrievalQByConcept.get(cB),
+			isCorrect: true,
+			hintDepth: 0,
+			hintDepthSource: "server",
+			answeredAt: doneAt,
+		});
+
+		// S-D → /start 201: świeży cykl, podejście od 1 (cap zresetowany).
+		const freshRes = await startPOST(startReq(cycModuleId));
+		expect(freshRes.status).toBe(201);
+		const fresh = await freshRes.json();
+		expect(fresh.resumed).toBe(false);
+		expect(fresh.attempt).toBe(1); // reset cyklu — nie clampAttempt(3)=2
+		expect(fresh.question.position).toBe(0);
+
+		// Sprzątanie własnych danych (moduł qw2-cyc zdejmie afterAll cleanup LIKE qw2-%).
+		await db.execute(sql`DELETE FROM curriculum_item_answers WHERE student_id = ${studentAId}`);
+	});
+
 	// ── PUNKT 1: izolacja per-student ────────────────────────────────────────
 	it("[1] izolacja: student B na sesji egzaminu studenta A → 404 (answer i complete), nie 403", async () => {
 		await resetSessions();

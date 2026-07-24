@@ -43,6 +43,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { config } from "dotenv";
 import { Pool, type PoolClient } from "pg";
+import { parseExamSlotRefs } from "../src/lib/assessment/exam";
 import { assertTestDb } from "./assert-test-db";
 import {
 	type AtomItemInput,
@@ -114,10 +115,33 @@ function readContentFiles(): AtomModuleContent[] {
  * Bank pytań foundations: upsert konceptów + synchronizacja itemów po hashu
  * treści (niemutowalność). Zwraca mapę ref → question_item_id.
  */
+/**
+ * Id itemów zarejestrowanych w JAKIEJKOLWIEK pozycji egzaminu
+ * (curriculum_module_items kind='exam' → config_json.examSlots). 1E.3 finding W1
+ * (bramka Leo): warianty egzaminu to OSOBNE źródło (tools/ingest-exam-bank →
+ * question_items pod TYM SAMYM concept_id co atomy), więc trafiają do dbByHash
+ * konceptu, a ich treść NIE jest w plikach atomów — retire poniżej zretire'owałby
+ * pytania egzaminu. Zbieramy je raz i wykluczamy z retire.
+ */
+async function loadExamRegisteredItemIds(client: PoolClient): Promise<Set<string>> {
+	const res = await client.query<{ config_json: Record<string, unknown> | null }>(
+		"SELECT config_json FROM curriculum_module_items WHERE kind = 'exam'",
+	);
+	const ids = new Set<string>();
+	for (const row of res.rows) {
+		const slots = parseExamSlotRefs(row.config_json);
+		if (!slots) continue;
+		for (const s of slots) for (const v of s.variants) ids.add(v.itemId);
+	}
+	return ids;
+}
+
 async function syncQuestionBank(
 	client: PoolClient,
 	contents: AtomModuleContent[],
 ): Promise<{ idByRef: Map<string, string>; stats: string }> {
+	// Itemy egzaminu (osobne źródło) — zebrane raz, wykluczone z retire (W1).
+	const examItemIds = await loadExamRegisteredItemIds(client);
 	const conceptNames = new Map<string, string>();
 	const questionsByConcept = new Map<string, AtomQuestionInput[]>();
 	for (const c of contents) {
@@ -239,10 +263,11 @@ async function syncQuestionBank(
 		}
 
 		// Aktywne itemy konceptu nieobecne w treści → retire (poprawka = retire+nowy).
-		// Uwaga 1E.3: warianty egzaminacyjne wejdą do TYCH SAMYCH plików treści —
-		// inaczej ich ingest osobnym torem retire'owałby pytania atomowe (i vice versa).
+		// 1E.3 W1 (bramka Leo): itemy egzaminu dzielą concept_id z atomami, więc
+		// wpadają do dbByHash, a ich treści NIE ma w plikach atomów — retire je pominął
+		// (examItemIds), inaczej ingest treści zretire'owałby pytania egzaminu (i odwrotnie).
 		for (const [hash, row] of dbByHash) {
-			if (!fileHashes.has(hash)) {
+			if (!fileHashes.has(hash) && !examItemIds.has(row.id)) {
 				await client.query(
 					"UPDATE question_items SET status = 'retired', updated_at = now() WHERE id = $1",
 					[row.id],

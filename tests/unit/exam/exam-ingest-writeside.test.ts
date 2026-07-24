@@ -99,6 +99,34 @@ describe("W1 write-side — examSlots niesie WYŁĄCZNIE refy (zero klucza/treś
 		}
 	});
 
+	it("I1 — conceptSlug/ref z podciągiem 'correct'/'options' NIE jest fałszywym alarmem (skan na KLUCZU w cudzysłowie)", () => {
+		// Realny slug konceptu bywa np. 'correctness', 'options-basics'. Stary skan na
+		// gołym podciągu 'correct'/'options' fałszywie by go oflagował i wysadził ingest
+		// poprawnego banku. Skan na '"correct"' (klucz JSON) trafia w klucz, nie w wartość.
+		const legit = {
+			examSlots: [
+				{
+					slotRef: "e1",
+					conceptSlug: "correctness-and-options-basics", // podciąg 'correct' + 'options'
+					variants: [{ ref: "correct-e1-a", variant: "A", itemId: fakeItemId("x") }],
+				},
+			],
+		};
+		expect(leakedKeys(legit)).toEqual([]); // zero fałszywych alarmów
+		// Ale REALNY wyciek klucza '"correct"' (wartość klucza obok refu) nadal łapany —
+		// ta sama funkcja leakedKeys w obu asercjach (guard = ta sama definicja).
+		const leak = {
+			examSlots: [
+				{
+					slotRef: "e1",
+					conceptSlug: "x",
+					variants: [{ ref: "r", variant: "A", itemId: "i", correct: 0 }],
+				},
+			],
+		};
+		expect(leakedKeys(leak)).toContain('"correct"');
+	});
+
 	it("MUTACJA — gdyby packer doklejał 'correct' do wariantu examSlots, skan JEST czerwony", () => {
 		// Symulacja regresji: leaky packer wkleja klucz obok refu. Guard-skan MUSI
 		// to złapać (parseExamSlotRefs sam by to zignorował — dlatego skan to zęby).

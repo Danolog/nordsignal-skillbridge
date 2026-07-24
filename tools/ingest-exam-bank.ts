@@ -295,13 +295,18 @@ export async function runExamBankIngest(
 			throw new Error("Round-trip examSlots niezgodny — parseExamSlotRefs nie odtworzył refów.");
 		}
 		const serialized = JSON.stringify(configJson);
+		// Zakazane KLUCZE w cudzysłowie JSON (parytet z bramką W1 FORBIDDEN_KEYS,
+		// tests/unit/exam/exam-ingest-writeside.test.ts): gołe podciągi "correct"/
+		// "options" trafiałyby fałszywie na wartości pól (np. conceptSlug zawierający
+		// „correct"/„options"). Klucz zawsze serializuje się jako "klucz":.
 		for (const forbidden of [
-			"correct",
+			'"correct"',
 			'"stem"',
-			"options",
-			"answer_json",
-			"answerJson",
-			"feedbackMd",
+			'"options"',
+			'"answer"',
+			'"answer_json"',
+			'"answerJson"',
+			'"feedbackMd"',
 		]) {
 			if (serialized.includes(forbidden)) {
 				throw new Error(

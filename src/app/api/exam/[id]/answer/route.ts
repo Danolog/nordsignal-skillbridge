@@ -32,6 +32,7 @@ import {
 import { gradeAnswer } from "@/lib/assessment/grade";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/pg-error";
 import { assessmentAnswers, assessmentSessions } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
@@ -43,10 +44,6 @@ const AnswerSchema = z.object({
 	slotRef: z.string().min(1).max(40),
 	answer: z.object({ selected: z.number().int().min(0).max(50) }),
 });
-
-function isUniqueViolation(err: unknown): boolean {
-	return typeof err === "object" && err !== null && (err as { code?: string }).code === "23505";
-}
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
 	if (!isFeatureEnabled("masteryGate")) {

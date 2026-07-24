@@ -16,10 +16,12 @@
 // ============================================================================
 
 import { createHash } from "node:crypto";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import { type ExamConfig, parseExamConfig } from "@/lib/curriculum/exam-config";
 import { db } from "@/lib/db";
 import {
+	assessmentSessions,
+	curriculumItemAnswers,
 	curriculumItemConcepts,
 	curriculumModuleItems,
 	curriculumModules,
@@ -33,7 +35,15 @@ import {
 	type CorrectivesAtomRow,
 	type CorrectivesPackage,
 } from "./correctives";
-import { type ExamBank, type ExamSlot, type ExamVariant, parseExamSlotRefs } from "./exam";
+import {
+	clampAttempt,
+	EXAM_MAX_ATTEMPTS,
+	type ExamBank,
+	type ExamResultJson,
+	type ExamSlot,
+	type ExamVariant,
+	parseExamSlotRefs,
+} from "./exam";
 
 /** TTL sesji egzaminu (wzorzec diagnozy) — sprawdzany leniwie przy wznowieniu. */
 export const EXAM_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -193,6 +203,170 @@ export async function buildCorrectivesPackage(
 			asc(curriculumModuleItems.position),
 		);
 	return assembleCorrectives(failedConcepts, errorCount, maxErrors, rows as CorrectivesAtomRow[]);
+}
+
+// ============================================================================
+// MASZYNA STANÓW CYKLU (P5 D1/D2/D4 Sophii) — scoping podejścia do BIEŻĄCEGO
+// cyklu + odmowa 3. próby w S-C. Derywacja z istniejących danych (znaczniki czasu
+// assessment_sessions + curriculum_item_answers), ZERO nowej kolumny / migracji.
+// ============================================================================
+
+/** Stan cyklu egzaminu dla /start (D1/D2). */
+export interface ExamCycleState {
+	/** Liczba oblanych sesji w BIEŻĄCYM cyklu (0..EXAM_MAX_ATTEMPTS). */
+	failedInCycle: number;
+	/** Podejście do zbudowania planu = clampAttempt(failedInCycle + 1) ∈ {1,2}. */
+	attempt: number;
+	/**
+	 * S-C: failedInCycle ≥ EXAM_MAX_ATTEMPTS i correctives bieżącego cyklu NIEODBYTE
+	 * → /start odrzuca (nie tworzy sesji). Niezmiennik: correctives odbyte przesuwają
+	 * granicę cyklu i zerują failedInCycle, więc `failedInCycle ≥ 2` ⟺ correctives
+	 * cyklu nieodbyte — jeden warunek domyka i licznik, i blokadę.
+	 */
+	correctivesRequired: boolean;
+	/**
+	 * Paczka correctives bieżącego (zablokowanego) cyklu — z result_json oblanej
+	 * cap-2 sesji (P4 ją zapisał; ta sama pokazana przy 2. oblaniu). Obecna ⟺
+	 * correctivesRequired.
+	 */
+	correctivesPackage?: CorrectivesPackage;
+}
+
+/**
+ * Id atomów UKOŃCZALNYCH (curriculum_module_items kind ∈ theory/exercise) uczących
+ * danych konceptów — kręgosłup koncept→atom (jak buildCorrectivesPackage). Tylko te
+ * bramkują „correctives odbyte" (D4): lab i koncept-bez-atomu NIE (brak zdarzenia
+ * retrieval do sprawdzenia). Zdeduplikowane.
+ */
+async function loadCompletableCorrectiveItemIds(
+	failedConcepts: readonly string[],
+): Promise<string[]> {
+	if (failedConcepts.length === 0) return [];
+	const rows = await db
+		.select({ itemId: curriculumModuleItems.id })
+		.from(questionConcepts)
+		.innerJoin(curriculumItemConcepts, eq(curriculumItemConcepts.conceptId, questionConcepts.id))
+		.innerJoin(
+			curriculumModuleItems,
+			and(
+				eq(curriculumModuleItems.id, curriculumItemConcepts.itemId),
+				inArray(curriculumModuleItems.kind, [...CORRECTIVES_ATOM_KINDS]),
+			),
+		)
+		.where(inArray(questionConcepts.slug, [...failedConcepts]));
+	return [...new Set(rows.map((r) => r.itemId))];
+}
+
+/**
+ * Moment „correctives odbyte" dla OBLANEJ cap-2 sesji (D4): każdy UKOŃCZALNY atom
+ * paczki ma poprawną odpowiedź retrieval z answered_at PO completed_at tej sesji.
+ * Zwraca czas domknięcia (max po atomach z NAJWCZEŚNIEJSZEJ kwalifikującej
+ * odpowiedzi = moment, w którym padł ostatni brakujący atom) albo null, gdy któryś
+ * wymagany atom nie ma jeszcze re-ukończenia. Pusty zbiór wymaganych atomów (same
+ * koncepty bez atomu / lab) → NIE bramkuje: domknięcie = completed_at sesji
+ * (D4 „koncept bez ukończalnego atomu nie może blokować"). R13: atom ma
+ * nielimitowane próby, więc re-ukończenie zawsze osiągalne — brak ślepego zaułka.
+ */
+async function correctivesDoneAt(
+	studentId: string,
+	failedAt: Date,
+	requiredItemIds: readonly string[],
+): Promise<Date | null> {
+	if (requiredItemIds.length === 0) return failedAt;
+	const rows = await db
+		.select({
+			itemId: curriculumItemAnswers.itemId,
+			firstAt: sql<string>`min(${curriculumItemAnswers.answeredAt})`,
+		})
+		.from(curriculumItemAnswers)
+		.where(
+			and(
+				eq(curriculumItemAnswers.studentId, studentId),
+				eq(curriculumItemAnswers.isCorrect, true),
+				gt(curriculumItemAnswers.answeredAt, failedAt),
+				inArray(curriculumItemAnswers.itemId, [...requiredItemIds]),
+			),
+		)
+		.groupBy(curriculumItemAnswers.itemId);
+	const doneByItem = new Map(rows.map((r) => [r.itemId, new Date(r.firstAt)]));
+	let boundary = failedAt;
+	for (const itemId of requiredItemIds) {
+		const at = doneByItem.get(itemId);
+		if (!at) return null; // wymagany atom bez re-ukończenia → correctives NIEODBYTE
+		if (at.getTime() > boundary.getTime()) boundary = at;
+	}
+	return boundary;
+}
+
+/**
+ * evaluateExamCycle — stan bieżącego cyklu egzaminu (student, moduł) dla /start.
+ *
+ * Granica cyklu = najpóźniejsze DOMKNIĘTE correctives spośród oblanych cap-2 sesji
+ * (result_json.correctives === true). failedInCycle = oblane sesje z completed_at
+ * PO tej granicy → clampAttempt(failedInCycle + 1) naturalnie resetuje podejście do
+ * 1 po correctives. Reszta silnika (buildExamPlan/gradeExam/flaga correctives) bez
+ * zmian — to jedyna zmiana logiki zliczania (D1).
+ *
+ * Niezmiennik blokady (D2): w S-C student nie może wystartować 3. sesji, więc
+ * NIEDOMKNIĘTE correctives mogą dotyczyć tylko OSTATNIEJ cap-2 sesji (cyklu
+ * otwartego). Dlatego max po domkniętych = granica ostatniego zamkniętego cyklu, a
+ * `failedInCycle ≥ EXAM_MAX_ATTEMPTS` jednoznacznie znaczy „correctives cyklu
+ * nieodbyte" (gdyby były odbyte, granica przesunęłaby się i licznik spadłby < 2).
+ */
+export async function evaluateExamCycle(
+	studentId: string,
+	moduleId: string,
+): Promise<ExamCycleState> {
+	const failed = await db
+		.select({
+			completedAt: assessmentSessions.completedAt,
+			resultJson: assessmentSessions.resultJson,
+		})
+		.from(assessmentSessions)
+		.where(
+			and(
+				eq(assessmentSessions.studentId, studentId),
+				eq(assessmentSessions.kind, "module_exam"),
+				eq(assessmentSessions.moduleId, moduleId),
+				eq(assessmentSessions.status, "completed"),
+				sql`(${assessmentSessions.resultJson} ->> 'passed') = 'false'`,
+			),
+		)
+		.orderBy(asc(assessmentSessions.completedAt));
+
+	let lastBoundary: Date | null = null;
+	for (const s of failed) {
+		const result = s.resultJson as ExamResultJson | null;
+		// Tylko oblanie cap-2 (correctives === true) otwiera bramkę correctives.
+		if (!result?.correctives || !s.completedAt) continue;
+		const requiredItemIds = await loadCompletableCorrectiveItemIds(result.failedConcepts ?? []);
+		const doneAt = await correctivesDoneAt(studentId, s.completedAt, requiredItemIds);
+		if (doneAt && (!lastBoundary || doneAt.getTime() > lastBoundary.getTime())) {
+			lastBoundary = doneAt;
+		}
+	}
+
+	const inCycle = failed.filter(
+		(s) => s.completedAt && (!lastBoundary || s.completedAt.getTime() > lastBoundary.getTime()),
+	);
+	const failedInCycle = inCycle.length;
+	const correctivesRequired = failedInCycle >= EXAM_MAX_ATTEMPTS;
+	const attempt = clampAttempt(failedInCycle + 1);
+
+	let correctivesPackage: CorrectivesPackage | undefined;
+	if (correctivesRequired) {
+		// Paczka zablokowanego cyklu = z result_json ostatniej cap-2 sesji w cyklu
+		// (kontrakt D2: ta sama, którą P4 pokazał przy 2. oblaniu).
+		for (let i = inCycle.length - 1; i >= 0; i--) {
+			const result = inCycle[i].resultJson as ExamResultJson | null;
+			if (result?.correctives && result.correctivesPackage) {
+				correctivesPackage = result.correctivesPackage;
+				break;
+			}
+		}
+	}
+
+	return { failedInCycle, attempt, correctivesRequired, correctivesPackage };
 }
 
 // buildExamQuestionPayload / ExamQuestionPayload — czysta logika payloadu:
