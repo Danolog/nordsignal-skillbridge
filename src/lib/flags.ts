@@ -137,6 +137,13 @@ export const FLAGS = {
 			"PUBLICZNY paszport bez zmian (decyzja Darka 2026-07-21). Off = paszport jak dziś.",
 		defaultValue: false,
 	},
+	masteryGate: {
+		envVar: "FLAG_MASTERY_GATE",
+		description:
+			"1E.3 mastery gate — egzamin modułowy (progresja wewnętrzna, ocena formująca §7). " +
+			"Deploy≠release; włączyć świadomie po banku pytań C1 i tutorze 1.13.",
+		defaultValue: false,
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).

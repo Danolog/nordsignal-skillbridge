@@ -57,6 +57,12 @@ describe("feature flags (1.1)", () => {
 		}
 	});
 
+	it("1E.3: masteryGate istnieje, domyślnie OFF i mapuje się na FLAG_MASTERY_GATE", () => {
+		expect(FLAGS.masteryGate.envVar).toBe("FLAG_MASTERY_GATE");
+		expect(FLAGS.masteryGate.defaultValue).toBe(false);
+		expect(isFeatureEnabled("masteryGate")).toBe(false);
+	});
+
 	it("każda flaga jest sterowana NIEZALEŻNIE własną zmienną", () => {
 		process.env[FLAGS.advisorMemory.envVar] = "1";
 		expect(isFeatureEnabled("advisorMemory")).toBe(true);
