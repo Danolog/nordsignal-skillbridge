@@ -123,7 +123,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `NotFittedError: This DecisionTreeClassifier instance is not fitted yet…` — model przed fit to pusta forma; kolejność fit→predict jest bezwzględna. `ValueError: could not convert string to float` przy fit → w X została kolumna tekstowa (drzewo liczy na liczbach; kolumny tekstowe wymagają przygotowania — poznasz je, gdy capstone zapyta, na atomach cechy są liczbowe). Przewidywanie dla Twojego przejazdu może wyjść 0 albo 1 — oba poprawne składniowo; czy im WIERZYĆ, rozstrzygną następne atomy."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-1-model-dopasowany-z-danych.ipynb"
 			},
 			"resources": [
 				{
@@ -291,7 +292,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** przy 24 rekordach każdy inny podział zauważalnie zmienia wynik testu (6 przykładów = 1 pomyłka waży 0.167!) — dlatego przy małych zbiorach wyniku testu nie czyta się co do trzeciego miejsca po przecinku, a capstone (setki+ rekordów) będzie stabilniejszy. Jeśli obie trafności wyszły Ci identyczne i wysokie — sprawdź, czy przypadkiem nie oceniasz dwa razy na tym samym zbiorze (literówka `X_tr` zamiast `X_te` — najczęstszy błąd tego atomu i grzech nr 1 z ML.6)."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-2-uczciwy-sprawdzian-train-test.ipynb"
 			}
 		},
 		{
@@ -417,7 +419,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `print(f\"Model bije baseline o {round(roznica, 3)}\")` → `Model bije baseline o 0.167` (0.833 − 0.667 przy ziarnie 42). Gdyby różnica wyszła ujemna — to nie awaria printa, to informacja z P3: wróć i sprawdź przepływ, zanim cokolwiek raportujesz."
 			],
 			"config": {
-				"estimated": "10–15 min"
+				"estimated": "10–15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-3-baseline-punkt-odniesienia.ipynb"
 			}
 		},
 		{
@@ -610,7 +613,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** precision = 4/5 = 0.8, recall = 4/4 = 1.0 — zgodne z funkcjami sklearn. Rachunek ręczny raz w życiu jest obowiązkowy: od tej pory macierz czytasz, a nie zgadujesz. Metryki per klasa liczone są dla klasy „1\" — gdy zależy Ci na klasie „0\", role pól się odwracają (uwaga przy capstonie z rzadką klasą negatywną)."
 			],
 			"config": {
-				"estimated": "20 min"
+				"estimated": "20 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-5-macierz-pomylek-metryki.ipynb"
 			}
 		},
 		{
@@ -736,7 +740,8 @@
 				"**Pełne rozwiązanie z objaśnieniem (przykładowe):** „Dane: 24 przejazdy, klasa «bez napiwku» ma 7 przypadków — metryki dla niej są niestabilne. Metoda: pojedynczy podział z jednym ziarnem; test ma 6 przykładów, więc jedna pomyłka zmienia trafność o 0.167. Wnioski: model bije baseline na tym zbiorze, ale wynik nie przenosi się automatycznie na inne miasta/okresy — wymaga walidacji na większych danych.\" Trzy zdania, zero asekuracyjnej waty, każde z konsekwencją — to jest forma na capstone."
 			],
 			"config": {
-				"estimated": "15–20 min"
+				"estimated": "15–20 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mml/ml-6-leakage-trzy-grzechy.ipynb"
 			}
 		},
 		{
