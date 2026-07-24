@@ -11,7 +11,7 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-24 (sesja Oliver, COO — KRĘGOSŁUP TOR B) — 58/58 NOTEBOOKÓW + 1E.3 BACKEND EGZAMINU KOMPLETNY (P1–P4, flaga OFF)
+## STAN NA DZIŚ — 2026-07-24 (sesja Oliver, COO — KRĘGOSŁUP TOR B) — 58/58 NOTEBOOKÓW + 1E.3 MASTERY GATE KOMPLETNY END-TO-END (backend+UI+bank na prod, flaga OFF)
 
 **Jednym zdaniem:** dobudowane 10 brakujących notebooków-towarzyszy ćwiczeń
 (M-ML + M-LLM) → **produkcja 58/58, drabina content-complete**; każda liczba
@@ -54,52 +54,48 @@ notebookUrl 53→58, 0 wycieków logu QG do content_md.
 5. **gitleaks FP** na slugu w `notebooks-mml.contract.test.ts:203` (`// gitleaks:allow`,
    zweryfikowany FP) — zgłoszone Ryanowi. ✅ `mllm-atomy.md` l.1437 — ZROBIONE (Sophia).
 
-### ZADANIE 2 — 1E.3 MASTERY GATE (silnik gotowy, flaga OFF)
+### ZADANIE 2 — 1E.3 MASTERY GATE — ZBUDOWANY END-TO-END, flaga OFF (deploy≠release)
 
-Spec: ADR-014 **D3**. Plan: `docs/product/plan-1e3-mastery-gate-v0.1.md` (6 plasterków).
-Wg §7 mastery gate = progresja WEWNĘTRZNA = ocena formująca → maszyna samowystarczalna.
+Spec: ADR-014 **D3**. Plany/decyzje: `plan-1e3-mastery-gate-v0.1.md`, `decyzje-1e3-p5-egzamin-v0.1.md`
+(Sophia), `mila-1e3-p5-egzamin-spec-v0.1.md`. Wg §7 mastery gate = progresja WEWNĘTRZNA = ocena
+formująca → maszyna samowystarczalna (zero human-in-loop dla bramki). **Cały mechanizm na prodzie
+za flagą `FLAG_MASTERY_GATE` OFF** — student NIC nie widzi do świadomego zapłonu. Każdy plasterek:
+Quinn adwersaryjnie + Leo (14 domen), autor commitów = Darek.
 
-**✅ SCALONE (za flagą `FLAG_MASTERY_GATE` OFF — deploy≠release):**
-- **P1** (`ba25e9a`) — scaffold: flaga OFF, Zod `examConfigJson` (próg=licznik błędów
-  ≥90% jako `maxErrors ≤ floor(qc/10)`, `.strict()`), `exam` w ITEM_KINDS. +21 testów.
-- **P2** (`120ee5e`, migracja **0041** na prodzie, backup
-  `prod-backup-pre-0041-mastery-gate-20260724`) — `assessment_sessions`: `module_id`
-  (FK **restrict**), `kind`+`module_exam`, unique per (student,kind,module) z COALESCE,
-  CHECK `module_exam⇒module_id NOT NULL`. Addytywna, zero efektu (4 diagnostic nietknięte).
-- **P3** (`0461dcd`) — silnik: `gradeExam` (licznik błędów vs maxErrors, `failedConcepts`),
-  warianty FNV-1a (cap 2, A→B, anti-wyrocznia sól=seed), sesja wzorcem diagnostic, API
-  `/api/exam/*` (404 przy OFF; **odpowiedzi NIGDY do klienta** — Quinn dowiodła 5 wektorów).
-  **R4:** pytania w `question_items` (DENY), pozycja egzaminu enumeruje ID w
-  `config_json.examSlots` = TYLKO UUID (bez migracji, bez znacznika per-wiersz). Packer
-  na fixture (Opcja A — unit nie zależy od DRAFTu).
-- **P4** (`b713bab`) — correctives: po 2. oblaniu (cap 2) paczka `failedConcepts`→≤3 atomy przez
-  `curriculum_item_concepts` (filtr rodzaju w ON — R2: koncept z samymi labami = nazwa+pusta lista),
-  mikrocopy „Zabrakło Ci N pytań — M konceptów do odświeżenia, ~15 min", ślad aktywności wpięty
-  (`assessment_answers`→streak). Bez migracji (paczka w `result_json`). Quinn: test integracyjny +9.
-- **C1 treść** (Sophia, `docs/curation/sophia-1e3-egzamin-f1-v0.1.md`, DRAFT untracked) —
-  pilot **F1**, 15 pytań × 2 warianty kalibrowane OSOBNO (R1: potwierdzają mastery, nie
-  różnicują), 5 konceptów, `examConfigJson {15,1}`. Wymaga QG adwersaryjnego przed ingestem.
+**✅ SCALONE + na prodzie (flaga OFF):**
+- **P1** `ba25e9a` — scaffold: flaga OFF, Zod `examConfigJson` (próg=licznik błędów ≥90%), `exam` w ITEM_KINDS.
+- **P2** `120ee5e` — migracja **0041** na Neon (`assessment_sessions`: `module_id` FK restrict, `module_exam`,
+  unique per (student,kind,module) z COALESCE, CHECK integralności). Backup `…pre-0041-…`.
+- **P3** `0461dcd` — silnik: `gradeExam` (licznik błędów), warianty FNV-1a (cap 2, anti-wyrocznia), API
+  `/api/exam/*` (404 OFF; **odpowiedzi NIGDY do klienta** — 5 wektorów). R4: pytania w `question_items` DENY,
+  `examSlots`=tylko UUID.
+- **P4** `b713bab` — correctives: paczka `failedConcepts`→≤3 atomy (filtr w ON, R2), ślad aktywności; w `result_json`.
+- **P4.5** `a6579aa` — maszyna stanów cyklu (`evaluateExamCycle`: granica z timestampów, `failedInCycle` scoped,
+  „correctives odbyte" z `curriculum_item_answers`), `/start` w S-C → **HTTP 423 `correctives_required`** (domyka
+  lukę `clampAttempt(3)=2`). + W1 `syncQuestionBank` exam-aware + hoist `pgErrorCode` (4 trasy, naprawia latentny
+  owinięty-23505→500) + I1. Bez migracji.
+- **P5** `63bee3b` — UI: drabina z bramką + „test out", ekran egzaminu (liniowy, ~25 min, pauza/wznowienie),
+  wynik (3 warianty), correctives (koncept→atomy, atom-less→tekst, 4. pod-stan „w toku"), resolver
+  `/curriculum/atom/…`, obsługa 423. Seam `getModuleExamGate`→`evaluateExamCycle` (jedyne źródło S-C, 7/7 na
+  żywej bazie). Design system bez nowych tokenów, a11y RTL.
+- **C1 bank F1 NA PRODZIE** (backup `br-quiet-queen-al8ayk83`, ingest ×2 idempotentny) — 30 pytań
+  (`question_items` DENY), `examSlots` **tylko-UUID** (W1 na prodzie, grep=0 wycieków), `exam_config {15,1}`.
+  Bank v1.0 QG-GO Sophii (30 wariantów re-wykonane w Pythonie 3.12+3.14, zero driftu).
 
-**⏭ ZOSTAJE:** **P5** (drabina UI widoczna-ale-zablokowana + „test out" + ostrzeżenie ~25 min +
-ekran egzaminu + render paczki correctives — frontend Mila/Jack), **ingest C1** (po QG-GO Sophii;
-dane, wzorzec `ingest-curriculum`, czerwona linia).
+**Baseline `main` = `63bee3b`.** Notebooki bez regresji (58). Smoke: `/api/exam/start`→404 (flaga OFF).
 
-**Do P5/Sophii (noty Leo z review P4, nieblokujące):** (a) render konceptu bez klikalnego atomu
-(R2 — sam komunikat/CTA, nie pusty ekran); (b) M-semantyka „M konceptów" liczy WSZYSTKIE oblane,
-w tym atom-less — potwierdzić intencję copy; (c) N=`errorCount` (nie „ile brakło do progu") —
-pytanie o intencję Sophii; (d) czy curriculum ma pokrywać każdy koncept ≥1 atomem theory/exercise.
+**🚦 ZOSTAJE PRZED ZAPŁONEM FLAGI (świadoma decyzja Darka):**
+- ✅ **W1** (write-side examSlots tylko-UUID — na prodzie) · ✅ **W2** (test integr. `/api/exam/*` — złapał realny
+  bug współbieżności Drizzle-wrapped-23505) · ✅ **W3** (koncepty egzaminu nie diagnostic+market+active — na prodzie).
+- ⏳ **Tutor 1.13** gotowy (roadmapa: nie włączać pilotażu przed tutorem).
+- ⏳ **axe a11y** (twardy warunek Leo B): `@axe-core/playwright` + skan kontrast/landmarki na 3 ścieżkach zielony
+  ZANIM flaga zapali się w jakimkolwiek środowisku.
 
-**🚦 CHECKLISTA WŁĄCZENIA FLAGI** (Leo, warunki przed `FLAG_MASTERY_GATE=on` gdziekolwiek):
-1. **W1** — test write-side: ingest/packer emituje do `config_json.examSlots` WYŁĄCZNIE
-   refy (UUID/wariant/koncept), NIGDY `correct`/`stem`/`options` (student ma SELECT na
-   surowym `config_json`). Wyeksportować `parseExamSlotRefs` jako współdzielony guard.
-2. **W2** — test integracyjny `/api/exam/*` na żywej bazie (izolacja per-student, partial
-   unique aktywnej sesji, TTL/inputHash na wznowieniu).
-3. **W3** — ingest NIE podpina pytań egzaminu pod koncept `diagnostic=true`+`trunk=market`
-   +`active` (inaczej `loadDiagnosticBank` je zaciągnie → regresja diagnozy).
-4. Tutor **1.13** gotowy + QG-GO Sophii dla banku C1.
+**🔧 DŁUG 1E.3 (backlog, nieblokujący):** batch `evaluateExamCycle` (N+1 przy wielu cyklach — I Leo); ekstrakcja
+`FORBIDDEN_EXAM_SLOT_KEYS` po 3. konsumencie (I1); test „zero-query przy OFF"; komunikat I3 (423-bez-paczki →
+dedykowany zamiast „network"); lint-boundary `correctives.ts` (0 DB/LLM).
 
-- **1E.4 powtórki FSRS** — po 1E.3 (odblokowane hintDepth #217 + MIS.1).
+- **1E.4 powtórki FSRS** — NASTĘPNA funkcja kręgosłupa po 1E.3 (odblokowane hintDepth #217 + MIS.1).
 
 ---
 
