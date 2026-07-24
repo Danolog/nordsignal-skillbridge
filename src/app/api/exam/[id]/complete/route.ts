@@ -6,8 +6,11 @@
 //    complete → 409 (werdykt zapisany raz),
 //  - werdykt: gradeExam (licznik błędów vs maxErrors z planu) → result_json
 //    {passed, errorCount, failedConcepts, correctives},
-//  - correctives / failedConcepts to WSAD dla P4 — tu tylko sygnał; ZERO
-//    zapisu do curriculum_module_progress (integracja z drabiną = P5).
+//  - P4: po OBLANIU z wyczerpanym cap 2 (correctives=true) dokładamy do
+//    result_json paczkę remediacji (buildCorrectivesPackage: koncept → ≤3
+//    atomy) + mikrocopy. ZERO zapisu do curriculum_module_progress (integracja
+//    z drabiną = P5). Ślad aktywności podejścia jest już wpięty przez
+//    assessment_answers (patrz src/lib/rhythm/activity.ts) — bez zmian tutaj.
 //
 // Wynik wraca do klienta (passed + licznik + koncepty) — dopiero tu student
 // poznaje werdykt (w trakcie egzaminu zero feedbacku).
@@ -19,8 +22,17 @@ import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { type ExamPlan, type ExamSessionAnswer, gradeExam } from "@/lib/assessment/exam";
-import { getStudentByUserId, isExamSessionExpired } from "@/lib/assessment/exam-service";
+import {
+	type ExamPlan,
+	type ExamResultJson,
+	type ExamSessionAnswer,
+	gradeExam,
+} from "@/lib/assessment/exam";
+import {
+	buildCorrectivesPackage,
+	getStudentByUserId,
+	isExamSessionExpired,
+} from "@/lib/assessment/exam-service";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { assessmentAnswers, assessmentSessions } from "@/lib/db/schema";
@@ -79,11 +91,23 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 			if (!result) {
 				return { kind: "incomplete" as const };
 			}
+			// P4: po OBLANIU z wyczerpanym cap 2 (result.correctives) dokładamy paczkę
+			// remediacji (koncept błędnego pytania → ≤3 atomy). Retry PRZED cap 2 i
+			// egzamin zdany → correctives=false → paczki brak (tylko werdykt).
+			const resultJson: ExamResultJson = result.correctives
+				? {
+						...result,
+						correctivesPackage: await buildCorrectivesPackage(
+							result.failedConcepts,
+							result.errorCount,
+						),
+					}
+				: result;
 			await tx
 				.update(assessmentSessions)
-				.set({ status: "completed", resultJson: result, completedAt: new Date() })
+				.set({ status: "completed", resultJson, completedAt: new Date() })
 				.where(and(eq(assessmentSessions.id, id), eq(assessmentSessions.status, "in_progress")));
-			return { kind: "completed" as const, result };
+			return { kind: "completed" as const, result: resultJson };
 		});
 
 		if (outcome.kind === "not_found") {
