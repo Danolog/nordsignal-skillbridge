@@ -1,5 +1,6 @@
-# ADR-021 — Kontrakt checków dla M-LLM: zakotwiczony wskaźnik halucynacji, trafność per pole i rozdział parse/schema zamiast gołego ułamka
+# ADR-022 — Kontrakt checków dla M-LLM: zakotwiczony wskaźnik halucynacji, trafność per pole i rozdział parse/schema zamiast gołego ułamka
 
+- **Wersja:** v1.1 · 2026-07-24 — **renumeracja 021→022:** numer 021 zajęła równoległa sesja (marketPercentage serwerowe, `docs/decisions/021-market-percentage-serwerowe-zrodlo.md`, scalone na main). Treść bez zmian — wyłącznie numer + referencje.
 - **Wersja:** v1.0 · 2026-07-23 — **PROPOZYCJA.** Draft po przeglądzie checków M-LLM
   (`docs/curation/przeglad-checkow-mllm-20260723.md`). Czeka na przegląd domenowy Sophii
   (PO, produkt = sign-off §8 QA `CLAUDE.md`) i finalizację Olivera (COO). Changelog na dole

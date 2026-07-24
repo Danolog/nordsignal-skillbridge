@@ -55,7 +55,7 @@ Uzasadnienie:
 
 4. **Koszt teraz vs po budowie:** 7 notebooków M-LLM (w tym pieczątka LLM.7) buduje się przeciw tym checkom. Zbudowanie ich teraz zabetonuje słaby scaffold w FINALE całej drabiny (ostatni lab ścieżki). Decyzja przed budową jest wielokrotnie tańsza niż przepisywanie pieczątek po.
 
-**Forma:** rekomenduję **własny ADR M-LLM** (np. ADR-021, wzorem ADR-020), a nie samo rozszerzenie ADR-020, bo luki M-LLM są specyficzne (niezakotwiczony mianownik halucynacji; nieweryfikowana serwerowo trafność) i wymagają nazwanych, per-pole kotwic — nie tej samej recepty co macierz pomyłek.
+**Forma:** rekomenduję **własny ADR M-LLM** (ADR-022, wzorem ADR-020), a nie samo rozszerzenie ADR-020, bo luki M-LLM są specyficzne (niezakotwiczony mianownik halucynacji; nieweryfikowana serwerowo trafność) i wymagają nazwanych, per-pole kotwic — nie tej samej recepty co macierz pomyłek.
 
 **Zakres ADR (3 kotwice, wzór ADR-020 „struktura zamiast gołego skalara"):**
 - **A. Anty-degeneracja wskaźnika halucynacji:** rozłóż 0.5 na `pola_braki_liczba==4` (mianownik) + `halucynacje_liczba==2` (licznik) jako osobne `value`.
@@ -69,4 +69,4 @@ Uzasadnienie:
 
 - **Twardego blokera brak.** M-LLM i tak jest po M-ML w kolejności budowy, a jego laby nie wystawiają kredencjału — nie ma żywego 🔴 na prodzie.
 - **Bramka miękka (rekomendowana):** budowa 7 notebooków M-LLM powinna czekać na ADR M-LLM (jak M-ML czekał na ADR-020). Budowa przeciw obecnym C3/`trafnosc` utrwali słaby scaffold w finale drabiny.
-- **Kolejność:** ADR-020 (M-ML) → ADR-021 (M-LLM) → dopiero budowa pieczątek obu modułów przeciw wzmocnionym checkom.
+- **Kolejność:** ADR-020 (M-ML) → ADR-022 (M-LLM) → dopiero budowa pieczątek obu modułów przeciw wzmocnionym checkom.
