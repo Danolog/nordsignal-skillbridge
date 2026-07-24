@@ -1433,9 +1433,10 @@ poprzedniej decyzji — nie fałszujemy historii; obowiązuje ten log).
 treści — styk 1 skilla). Pieczątki / kontrakt `configJson.checks`
 (manifest packera) buduje builder po finalizacji ADR-022 przez Ethana —
 TĄ SAMĄ regułą schema-valid; docelowe wartości checków i nota parytetu
-Python↔TS w „Notatkach dla Olivera". Manifest packera na 2026-07-24
-wciąż na starych wartościach (0.875 / rekordy 5) — to świadomy blocker
-pieczątek, nie przeoczenie.
+Python↔TS w „Notatkach dla Olivera". Manifest packera zaktualizowany
+przez #221 na wartości ADR-022 — pieczątki LLM.4/LLM.7 (sparsowane 5 /
+zgodne 4; zgodnosc 0.75) są na prodzie; to już nie jest blocker
+(log QG „budowa towarzyszy M-LLM 2026-07-24").
 
 ### Brama przed oddaniem — część A (T1–T5)
 
@@ -1473,3 +1474,77 @@ Pięć słabości bieżącej rewizji + naprawy:
 
 **GO — treść. Blocker: pieczątki (manifest packera) do przestawienia
 przez buildera po ADR-022.**
+
+---
+
+## Log QG — budowa towarzyszy M-LLM 2026-07-24
+
+Autor: Sophia (PO, kuracja). Zbudowane 5 towarzyszy ćwiczeń M-LLM
+(worked example + brudnopis, BEZ pieczątki — atomy `exercise` zaliczane
+pytaniami) → domyka partię do 58/58. Pliki: `tools/content/notebooks/mllm/`
+— `llm-1-maszyna-przewidujaca-tekst.py`, `llm-2-prompt-jako-specyfikacja.py`,
+`llm-3-parsuj-waliduj-porazka.py`, `llm-5-ewaluacja-trafnosc-halucynacje.py`,
+`llm-6-klucz-limity-rodo.py`. Laby LLM.4/LLM.7 nietknięte.
+
+**Determinizm i parytet danych.** Komórki „Dane" towarzyszy parsującego
+(LLM.3) i ewaluującego (LLM.5) skopiowane **bit-w-bit** z labów: LLM.3 ←
+`odpowiedzi` z LLM.4 (6 tekstów), LLM.5 ← `przypadki` z LLM.7 (8 trójek).
+Potwierdzone `diff` (listy + linia `POLA` identyczne co do znaku).
+
+**Liczby zweryfikowane realnym wykonaniem Pythona (stdlib `json`, zero
+żywego API):**
+- LLM.1 — demonstracja niedeterminizmu na zapisanych odpowiedziach:
+  „wysoka temp identyczne? False" (jedna odpowiedź halucynuje `widelki_min`
+  8000, druga poprawnie `null`), „temp 0 identyczne? True".
+- LLM.3 — pętla po 6 odpowiedziach: **sparsowane 5/6, zgodne 4/6**
+  (R3 parse-fail; R5 sparsuje się, ale wypada ze zgodnych — brak pola).
+  WE jednoprzykładowy: `json.loads` → „Analityk danych"; ucięta → `None`.
+- LLM.5 — parsowanie+filtr schema-valid na 8 trójkach: **zgodnosc 0.75
+  (6/8)**, **trafnosc 5/6·4/6·3/6 = 0.833/0.667/0.5**, **halucynacje
+  2/4 = 0.5** (`pola_braki` 4). Zgodne z kanonicznym listingiem LLM.7.
+- LLM.2 i LLM.6 — składanie/wypisywanie promptu i checklisty (bez liczb),
+  wykonują się czysto.
+
+Kontrola negatywna: pliki z niewypełnionymi lukami (`_luka_` w LLM.3/LLM.5)
+rzucają `NameError` — błąd zapowiedziany treścią (jak L0.3), zgodny z
+konwencją modułu.
+
+**Erraty / decyzje kuracyjne (nie „ciche poprawki"):**
+1. **LLM.5 — zbiór ewaluacji.** Teoria atomu LLM.5 ilustruje ewaluację na
+   hipotetycznych „4 przypadkach testowych" (trafienia 3/4 na pole) —
+   liczby sprzed ADR-022. Towarzysz LLM.5 (zgodnie z instrukcją ingestu i
+   kontraktem determinizmu) używa **kanonicznego zbioru LLM.7** (8 trójek,
+   filtr schema-valid), więc pokazuje trafnosc 5/6·4/6·3/6 na 6 zgodnych.
+   Niezmienny w obu ujęciach jest sedno atomu: **4 pola-braki, wskaźnik
+   2/4 = 0.5** — i (specyfika M-LLM) wszystkie 4 pola-braki leżą w
+   przypadkach zgodnych ze schematem (C7/C8 mają w prawdzie zero `null`),
+   więc wskaźnik jest jednoznaczny. Errata do rozważenia przy re-sign-off:
+   rewizja liczb „4 przypadki / 3-4" w Teorii LLM.5 na kanoniczne 6/8,
+   albo jawne oznaczenie ich jako mniejszej ilustracji. NIE poprawiam
+   Teorii w tej sesji (poza zakresem zlecenia = 5 towarzyszy).
+2. **LLM.1 — nazwa placeholdera klucza.** Zakomentowany wzór żywego
+   wywołania z Teorii LLM.1 przekazuje klucz argumentem `api_key`. Nazwa
+   placeholdera z dokumentu (`MOJ` + `_KLUCZ`) wyzwalała `guard-secrets`
+   (fałszywy alarm na wzorcu „nazwa kończąca się na API_KEY + wartość 8+
+   znaków"). Zmieniona nazwa zmiennej na `klucz` (spójna z LLM.6, gdzie
+   `klucz` pobierasz z `userdata.get`) — pseudokod pozostaje wierny
+   dydaktycznie, guard przechodzi. Wartość klucza NIGDZIE nie występuje
+   (to zakomentowany wzór, nie żywe wywołanie).
+3. **Komórki „Dane" — komentarz nagłówkowy.** Skopiowano bit-w-bit DANE
+   (listy + `POLA` + komentarze inline R1–R6 / C1–C8). Dwuwierszowy
+   komentarz-ramkę labu („z nich liczona jest pieczątka") zastąpiono w
+   towarzyszu ramką kontekstową („ten sam zbiór, którego użyjesz w labie
+   LLM.4/LLM.7 — NIE zmieniaj") — towarzysz nie ma pieczątki, więc
+   oryginalny komentarz byłby nieprawdziwy dla widoku studenta (T2).
+   Same dane nietknięte → determinizm i przyszły recompute bez zmian.
+
+**Dług l.1437 — zaktualizowany.** Zdanie o manifeście packera „wciąż na
+starych wartościach (0.875 / rekordy 5) — świadomy blocker pieczątek"
+poprawione: #221 przestawił manifest na wartości ADR-022, pieczątki
+LLM.4/LLM.7 (sparsowane 5 / zgodne 4; zgodnosc 0.75) są na prodzie — to
+już nie jest blocker.
+
+**Brama T1–T5 (część A) — towarzysze M-LLM:** PASS (szczegóły w raporcie
+do Olivera). 0 pieczątek, 0 żywych wywołań API w komórkach WE (wszystkie
+wzory żywego API zakomentowane; pierwsze żywe wywołanie studenta =
+capstone). NIE dotykano packera/buildu/produ — zbiera Oliver sekwencyjnie.
