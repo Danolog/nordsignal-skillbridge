@@ -11,6 +11,7 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { type LadderModuleWithProgress, LadderView } from "@/components/curriculum/ladder-view";
 import { auth } from "@/lib/auth/server";
+import { modulesWithExam } from "@/lib/curriculum/exam-gate";
 import { getCompletedItemCounts, getLadder } from "@/lib/curriculum/ladder";
 import { pathKeyForCareerGoal } from "@/lib/curriculum/path-key";
 import { db } from "@/lib/db";
@@ -39,9 +40,15 @@ export default async function CurriculumPage() {
 		student.id,
 		modules.map((m) => m.id),
 	);
+	// 1E.3 · P5: linia bramki egzaminu (E3) tylko przy fladze masteryGate ON —
+	// OFF = zero nowego zapytania, `hasExam` niezdefiniowane, drabina jak dziś.
+	const examModules = isFeatureEnabled("masteryGate")
+		? await modulesWithExam(modules.map((m) => m.id))
+		: null;
 	const withProgress: LadderModuleWithProgress[] = modules.map((m) => ({
 		...m,
 		completedItems: completed.get(m.id) ?? 0,
+		...(examModules ? { hasExam: examModules.has(m.id) } : {}),
 	}));
 
 	return (

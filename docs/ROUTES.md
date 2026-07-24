@@ -26,6 +26,8 @@ OBA: ten plik i mapę `EXPECTED_ROUTES` w teście (test pilnuje, że się nie ro
 | `/curriculum` | `flow` | **1E.6a** — kafelek „Ścieżka nauki" na pulpicie (`dashboard-hub.tsx`), widoczny WYŁĄCZNIE przy fladze `FLAG_CURRICULUM_PATH` (deploy ≠ release). Flaga off → trasa zwraca 404. Brak pozycji w sidebarze, dopóki pilotaż DS jest za flagą. |
 | `/curriculum/[moduleId]` | `child` | widok modułu z drabiny `/curriculum` |
 | `/curriculum/[moduleId]/[itemId]` | `child` | widok pozycji z widoku modułu |
+| `/curriculum/[moduleId]/exam` | `child` | **1E.3 · P5** — egzamin modułowy (mastery gate), za flagą `FLAG_MASTERY_GATE` (deploy ≠ release; off → 404). Wejście z bramki E3 na drabinie / stronie modułu. |
+| `/curriculum/atom/[moduleSlug]/[itemSlug]` | `child` | **1E.3 · P5** — trasa-resolver atomów correctives (slug→UUID→redirect na `/curriculum/[moduleId]/[itemId]`); rozwiązuje niezgodność routingu slug↔UUID bez zmiany kontraktu backendu. Za flagą `FLAG_MASTERY_GATE`. |
 
 ## Reguła osiągalności (egzekwowana testem)
 

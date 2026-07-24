@@ -10,7 +10,7 @@
  * Komponent czysto prezentacyjny (server component — zero interakcji).
  */
 
-import { CheckCircle2, ChevronRight, Clock, Lock } from "lucide-react";
+import { CheckCircle2, ChevronRight, ClipboardCheck, Clock, Lock } from "lucide-react";
 import Link from "next/link";
 import { MODULE_STATUS_LABEL, statusBadgeClass } from "@/components/curriculum/labels";
 import type { LadderModule } from "@/lib/curriculum/ladder";
@@ -18,6 +18,12 @@ import type { LadderModule } from "@/lib/curriculum/ladder";
 export interface LadderModuleWithProgress extends LadderModule {
 	/** Pozycje zaliczone (completed + skipped_by_placement). */
 	completedItems: number;
+	/**
+	 * 1E.3 · P5 — czy moduł ma skonfigurowany egzamin (`exam_config_json`).
+	 * Ustawiane WYŁĄCZNIE gdy flaga masteryGate ON (drabina czyta batch). Gdy
+	 * `undefined` (flaga OFF) — linia bramki E3 się nie renderuje, wiersz jak dziś.
+	 */
+	hasExam?: boolean;
 }
 
 function StatusIcon({ status }: { status: LadderModule["status"] }) {
@@ -31,9 +37,37 @@ function StatusIcon({ status }: { status: LadderModule["status"] }) {
 	return <ChevronRight aria-hidden className="size-5 text-sky-600" />;
 }
 
+/**
+ * Linia bramki egzaminu (E3, Mila 3.1) — renderowana POZA głównym `<Link>`
+ * wiersza (zagnieżdżanie kotwic jest niepoprawne), jako osobna belka CTA.
+ */
+function ExamGateLine({ module: m }: { module: LadderModuleWithProgress }) {
+	return (
+		<div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
+			<ClipboardCheck aria-hidden className="size-4 shrink-0 text-sky-600" />
+			<span className="min-w-0 flex-1 text-sm text-sky-900">
+				Wszystkie pozycje zrobione — zdaj egzamin, by odblokować kolejny moduł
+			</span>
+			<Link
+				href={`/curriculum/${m.id}/exam`}
+				aria-label={`Podejdź do egzaminu modułu ${m.title}`}
+				className="text-sm font-medium text-sky-700 underline underline-offset-2 hover:text-sky-900"
+			>
+				Podejdź do egzaminu →
+			</Link>
+		</div>
+	);
+}
+
 function ModuleRow({ module: m }: { module: LadderModuleWithProgress }) {
 	const clickable = m.status !== "locked" && m.status !== "coming_soon";
 	const percent = m.itemCount > 0 ? Math.round((m.completedItems / m.itemCount) * 100) : 0;
+	// E3: moduł ma egzamin, wszystkie pozycje zrobione, jeszcze nie zaliczony.
+	const showExamGate =
+		m.hasExam === true &&
+		m.status === "in_progress" &&
+		m.itemCount > 0 &&
+		m.completedItems >= m.itemCount;
 
 	const body = (
 		<div className="flex items-start gap-4">
@@ -105,6 +139,7 @@ function ModuleRow({ module: m }: { module: LadderModuleWithProgress }) {
 			>
 				{body}
 			</Link>
+			{showExamGate && <ExamGateLine module={m} />}
 		</li>
 	);
 }

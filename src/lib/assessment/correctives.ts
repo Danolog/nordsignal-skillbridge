@@ -74,7 +74,10 @@ export interface CorrectivesAtomRow {
  *  - reszta (0, ≥2) → „N pytań" (dopełniacz l. mn.: „zabrakło Ci 2 pytań").
  * Uwaga: to NIE mianownik („2 pytania") — „zabrakło" wymusza dopełniacz.
  */
-function pytaniaPoZabraklo(n: number): string {
+// Eksport (P5): W2 (oblany z retry) używa TEJ SAMEJ odmiany i formuły N co W3
+// (correctives), żeby wording „zabrakło Ci N pytań do zaliczenia" był spójny —
+// jedno źródło (Leo nota c / Sophia D5.10.2 sync). Czysta funkcja, bez logiki DB.
+export function pytaniaPoZabraklo(n: number): string {
 	return n === 1 ? `${n} pytania` : `${n} pytań`;
 }
 
@@ -87,7 +90,7 @@ function pytaniaPoZabraklo(n: number): string {
  * więc w praktyce N ≥ 1; clamp jest tylko defensywny (zdany egzamin nie buduje
  * paczki), by nie wypisać liczby ujemnej.
  */
-function distanceToPass(errorCount: number, maxErrors: number): number {
+export function distanceToPass(errorCount: number, maxErrors: number): number {
 	return Math.max(0, errorCount - maxErrors);
 }
 
