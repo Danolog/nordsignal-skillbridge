@@ -79,6 +79,20 @@ export function TutorPanel({ projectId }: { projectId: string }) {
 		if (nearBottom) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
 	}, [messageCount]);
 
+	// A11y (WCAG 2.4.3): po zakończeniu tury (sending: true→false) fokus wraca do
+	// pola, by student pisał dalej z klawiatury bez sięgania po mysz. Fokus MUSI
+	// odpalić się PO commit — textarea jest disabled dopóki sending=true, a
+	// focus() na disabled to no-op (fokus uciekał wtedy do <body>). Efekt biegnie
+	// po przerenderowaniu, więc pole jest już aktywne. Nie odpala na mount ani gdy
+	// pole zniknęło (limit) — wtedy inputRef jest pusty.
+	const wasSending = useRef(false);
+	useEffect(() => {
+		if (wasSending.current && !sending && !limitReached && !crisis) {
+			inputRef.current?.focus();
+		}
+		wasSending.current = sending;
+	}, [sending, limitReached, crisis]);
+
 	const handleSend = useCallback(async () => {
 		const message = input.trim();
 		if (message.length === 0 || sending || limitReached) return;
@@ -151,8 +165,8 @@ export function TutorPanel({ projectId }: { projectId: string }) {
 			toast.error("Tutor chwilowo niedostępny. Spróbuj ponownie za chwilę.");
 		} finally {
 			setSending(false);
-			// Fokus wraca do pola — praca z klawiatury bez myszki (wzorzec Pomocnika).
-			inputRef.current?.focus();
+			// Fokus wraca do pola po commit (useEffect na `sending` wyżej) — focus()
+			// tutaj trafiał w disabled textarea (sending jeszcze true) i uciekał do <body>.
 		}
 	}, [input, sending, limitReached, projectId]);
 

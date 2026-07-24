@@ -4837,7 +4837,14 @@
 	border-radius: 12px;
 	background: rgba(239, 68, 68, 0.08);
 	border: 1px solid rgba(239, 68, 68, 0.2);
-	color: #dc2626;
+	/* #dc2626 dawał 4.35:1 na efektywnym tle #fef0f0 (różowy tint na białym
+	   .proj-detail-section) — pod progiem WCAG AA 4.5:1 dla tekstu 14px normal.
+	   #b91c1c (red-700) → 5.83:1, zapas nad progiem, zostaje wyraźnie czerwony
+	   (alert kryzysowy — sygnał autodestrukcji, C11 a11y). Ten sam odcień już
+	   w użyciu w .viva-outcome-failed (linia ~5042) — brak dedykowanego tokenu
+	   AA-safe dla czerwieni (analog --ed-amber-text nie istnieje), literał
+	   spójny z istniejącym precedensem. */
+	color: #b91c1c;
 	font-size: 14px;
 	margin-bottom: 12px;
 	white-space: pre-wrap;
