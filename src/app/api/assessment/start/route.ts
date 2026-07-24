@@ -36,6 +36,7 @@ import {
 import type { AssessmentPlan } from "@/lib/assessment/types";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/pg-error";
 import { assessmentAnswers, assessmentSessions } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
@@ -51,12 +52,6 @@ const StartSchema = z.object({
 	// eskaluje. Brak pola = wiersz studenta (zgodność wstecz).
 	careerGoal: z.string().trim().min(1).max(200).optional(),
 });
-
-function isUniqueViolation(err: unknown): boolean {
-	return (
-		typeof err === "object" && err !== null && (err as { code?: string }).code === "23505" && true
-	);
-}
 
 export async function POST(req: Request) {
 	if (!isFeatureEnabled("diagnosticAssessment")) {

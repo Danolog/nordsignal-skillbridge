@@ -354,4 +354,121 @@ d("1E.2 · ingest curriculum: atomy + bank + strażnik + recompute (realna baza)
 			/nie istnieje w zestawie/,
 		);
 	});
+
+	// 1E.3 W1 (bramka Leo): item egzaminu = OSOBNE źródło (question_items pod tym
+	// samym concept_id co atomy, treść spoza plików atomów), zarejestrowany w pozycji
+	// kind='exam' → config_json.examSlots. Retire syncQuestionBank MUSI go pominąć,
+	// inaczej ingest treści zretire'owałby pytania egzaminu. Wzorzec „atom przeżywa".
+	it("W1: item egzaminu (examSlots) PRZEŻYWA ingest-curriculum — nie jest retired", async () => {
+		const { rows: moduleRow } = await pool.query(
+			`SELECT id FROM curriculum_modules WHERE slug = $1`,
+			[MODULE],
+		);
+		const moduleId = moduleRow[0].id;
+		const { rows: conceptRow } = await pool.query(
+			`SELECT id FROM question_concepts WHERE slug = $1`,
+			[CONCEPT],
+		);
+		const conceptId = conceptRow[0].id;
+
+		// Item egzaminu: ten sam concept_id co atomy, ale treść (stem) SPOZA plików
+		// atomów — więc jego hash NIE jest w fileHashes i bez wykluczenia examSlots
+		// retire by go zdjął.
+		const { rows: examItem } = await pool.query<{ id: string }>(
+			`INSERT INTO question_items
+			   (concept_id, difficulty, type, stem, options_json, answer_json)
+			 VALUES ($1, 2, 'single_choice', 'PYTANIE EGZAMINU — spoza plikow atomow', $2, $3)
+			 RETURNING id`,
+			[conceptId, JSON.stringify(["a", "b", "c", "d"]), JSON.stringify({ correct: 1 })],
+		);
+		const examItemId = examItem[0].id;
+
+		// Rejestracja pozycji egzaminu (kind='exam') z examSlots wskazującym item.
+		const examSlots = [
+			{
+				slotRef: "e1",
+				conceptSlug: CONCEPT,
+				variants: [{ ref: "t1e2-ex-e1-a", variant: "A", itemId: examItemId }],
+			},
+		];
+		await pool.query(
+			`INSERT INTO curriculum_module_items (module_id, slug, position, kind, title, config_json)
+			 VALUES ($1, 'exam', 900, 'exam', 'Egzamin modułu', $2)
+			 ON CONFLICT (module_id, slug) DO UPDATE SET config_json = EXCLUDED.config_json`,
+			[moduleId, JSON.stringify({ examSlots })],
+		);
+
+		// Ingest treści (idempotentny na v4 — questionItemIds atomów bez zmian).
+		const contents = contentsV3();
+		contents[0].items.push({
+			slug: "a-2",
+			position: 15,
+			kind: "exercise",
+			title: "Atom 2 (dogrywka)",
+			contentMd: "## Cel\nNowa treść.",
+			concepts: [{ slug: CONCEPT, name: "Koncept ingest 1E.2" }],
+			questions: [
+				question("t1e2a-2-p1", "Pytanie 1 atomu 2?"),
+				question("t1e2a-2-p2", "Pytanie 2 atomu 2?"),
+				question("t1e2a-2-p3", "Pytanie 3 atomu 2?"),
+			],
+			hints: ["h1", "h2", "h3"],
+		});
+		await runCurriculumIngest(DATABASE_URL, ladder, contents);
+
+		const { rows: after } = await pool.query<{ status: string }>(
+			`SELECT status FROM question_items WHERE id = $1`,
+			[examItemId],
+		);
+		// Bez poprawki W1 status byłby 'retired' — bramka: item egzaminu żyje.
+		expect(after[0].status).toBe("active");
+	});
+
+	// 1E.3 W1 PRECYZJA (mutacja Quinn/QA): wykluczenie z retire nie może być ZA
+	// SZEROKIE. Przy zarejestrowanym itemie egzaminu (examItemIds ≠ ∅) atom, którego
+	// treść zniknęła z plików, MUSI się nadal zretire'ować. Gdyby fix wykluczał za
+	// dużo (np. wszystkie itemy konceptu), retired=0 → czerwony; gdyby za wąsko (exam
+	// też retiruje), zniknąłby exam item → też czerwony. Guard łapie OBIE strony.
+	it("W1 precyzja: atom NADAL retiruje się mimo examItemIds≠∅ (wykluczenie nie za szerokie)", async () => {
+		const retiredCount = async () => {
+			const { rows } = await pool.query<{ n: number }>(
+				`SELECT count(*)::int AS n FROM question_items q
+				 JOIN question_concepts c ON c.id = q.concept_id
+				 WHERE c.slug = $1 AND q.status = 'retired'`,
+				[CONCEPT],
+			);
+			return rows[0].n;
+		};
+		const before = await retiredCount();
+
+		// Stan bazy = contentsV3 + atom a-2 (z testu W1 wyżej). Zmieniamy stem pytania
+		// a-2/p1 → jego stary item pytania atomu ma się zretire'ować (retire+nowy).
+		const contents = contentsV3();
+		contents[0].items.push({
+			slug: "a-2",
+			position: 15,
+			kind: "exercise",
+			title: "Atom 2 (dogrywka)",
+			contentMd: "## Cel\nNowa treść.",
+			concepts: [{ slug: CONCEPT, name: "Koncept ingest 1E.2" }],
+			questions: [
+				question("t1e2a-2-p1", "Pytanie 1 atomu 2 — ZMIANA (retire+nowy)?"),
+				question("t1e2a-2-p2", "Pytanie 2 atomu 2?"),
+				question("t1e2a-2-p3", "Pytanie 3 atomu 2?"),
+			],
+			hints: ["h1", "h2", "h3"],
+		});
+		const stats = await runCurriculumIngest(DATABASE_URL, ladder, contents);
+		expect(stats.bank).toContain("1 retired"); // atom zretire'owany mimo examItemIds≠∅
+
+		// Dokładnie +1 retired (stary a-2/p1) — NIE +0 (za szerokie wykluczenie) i NIE
+		// +2 (exam item wpadłby do retire — za wąskie). Tożsame liczenie w before/after.
+		expect(await retiredCount()).toBe(before + 1);
+
+		// Item egzaminu z testu W1 dalej aktywny (druga strona guardu).
+		const { rows: exam } = await pool.query<{ status: string }>(
+			`SELECT status FROM question_items WHERE stem = 'PYTANIE EGZAMINU — spoza plikow atomow'`,
+		);
+		expect(exam[0].status).toBe("active");
+	});
 });

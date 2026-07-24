@@ -247,6 +247,73 @@ d("runExamBankIngest — wsad egzaminu na bazie testowej (examSlots czyste)", ()
 		expect(a.rows[0].status).toBe("active");
 	});
 
+	// 1E.3 I1 (mutacja Quinn/QA) — skan zakazanych KLUCZY na runtime runExamBankIngest,
+	// nie tylko na kopii listy w teście write-side. conceptSlug z podciągiem
+	// „correct"/„options" (realny slug, np. „correctness") MUSI przejść: skan trafia
+	// w KLUCZ w cudzysłowie ('"correct"'), nie w wartość pola. Bez fixu (goły podciąg)
+	// serialized.includes("correct") złapałby conceptSlug → fałszywe „WYCIEK" → ten
+	// test byłby czerwony. To wiąże fix z produkcyjną ścieżką, nie z duplikatem listy.
+	it("I1 runtime: conceptSlug z podciągiem 'correct'/'options' przechodzi ingest (skan na kluczu, nie wartości)", async () => {
+		const CSLUG = "t-exam-correctness-and-options"; // podciągi 'correct' + 'options'
+		const CMOD = "t-exam-i1-mod";
+		const wipe = async () => {
+			await pool.query(
+				"DELETE FROM curriculum_module_items WHERE module_id IN (SELECT id FROM curriculum_modules WHERE slug=$1)",
+				[CMOD],
+			);
+			await pool.query("DELETE FROM curriculum_modules WHERE slug=$1", [CMOD]);
+			await pool.query("DELETE FROM question_concepts WHERE slug=$1", [CSLUG]);
+		};
+		await wipe();
+		await pool.query("INSERT INTO curriculum_modules (slug, title) VALUES ($1,$2)", [
+			CMOD,
+			"I1 mod",
+		]);
+		await pool.query(
+			"INSERT INTO question_concepts (slug, name, trunk, diagnostic) VALUES ($1,$2,'foundations',false)",
+			[CSLUG, "Correctness & options (test)"],
+		);
+
+		const md = [
+			"# I1",
+			"## 6. Bank pytań egzaminacyjnych",
+			"",
+			"**E1.** Pytanie e1.",
+			"- **A. Stem e1 A?** — o0 / **o1** / o2 / o3",
+			"- **B. Stem e1 B?** — **o0** / o1 / o2 / o3",
+			`- → \`${CSLUG}\` → F.1`,
+			'- **Feedback studenta (D3):** „R e1."',
+			"",
+			"**E2.** Pytanie e2.",
+			"- **A. Stem e2 A?** — o0 / **o1** / o2 / o3",
+			"- **B. Stem e2 B?** — **o0** / o1 / o2 / o3",
+			`- → \`${CSLUG}\` → F.1`,
+			'- **Feedback studenta (D3):** „R e2."',
+			"",
+			"## 7. Koniec",
+			"",
+		].join("\n");
+
+		await expect(
+			runExamBankIngest(DATABASE_URL, md, {
+				moduleSlug: CMOD,
+				concepts: [CSLUG],
+				slotCount: 2,
+				examConfig: EXAM_CONFIG,
+			}),
+		).resolves.toBeTruthy();
+
+		// conceptSlug round-trippuje do examSlots (wartość z „correct"/„options" nietknięta).
+		const r = await pool.query<{ config_json: { examSlots: { conceptSlug: string }[] } }>(
+			"SELECT config_json FROM curriculum_module_items WHERE module_id=(SELECT id FROM curriculum_modules WHERE slug=$1) AND kind='exam'",
+			[CMOD],
+		);
+		const slots = r.rows[0].config_json.examSlots;
+		expect(slots.length).toBe(2);
+		expect(slots.every((s) => s.conceptSlug === CSLUG)).toBe(true);
+		await wipe();
+	});
+
 	it("guard: koncept rynkowy (trunk='market') → ingest przerwany, kontrakt", async () => {
 		// Podmiana konceptu na rynkowy = kolizja; tool musi odmówić (nie mieszać torów).
 		await pool.query(

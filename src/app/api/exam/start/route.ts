@@ -14,13 +14,12 @@
 // ============================================================================
 
 import { randomUUID } from "node:crypto";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
 	buildExamPlan,
-	clampAttempt,
 	type ExamPlan,
 	type ExamSessionAnswer,
 	expectedExamPosition,
@@ -29,6 +28,7 @@ import {
 import {
 	buildExamQuestionPayload,
 	computeExamInputHash,
+	evaluateExamCycle,
 	getStudentByUserId,
 	isExamSessionExpired,
 	loadExamBank,
@@ -36,30 +36,12 @@ import {
 } from "@/lib/assessment/exam-service";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/pg-error";
 import { assessmentAnswers, assessmentSessions, curriculumModules } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 
 const StartSchema = z.object({ moduleId: z.string().uuid() });
-
-// pg zwraca kod SQLSTATE na .code, ale Drizzle (query builder db.insert().values())
-// OWIJA błąd bazy w Error("Failed query: …") z oryginałem na .cause — wtedy .code
-// jest o poziom niżej. Chodzimy po łańcuchu cause (limit głębokości), żeby wykryć
-// naruszenie unikalności zarówno przy surowym błędzie pg, jak i owiniętym przez Drizzle.
-// Bez tego wyścig startów (23505 z db.insert) leci jako 500 zamiast 409 (finding W2 [2]).
-function pgErrorCode(err: unknown): string | undefined {
-	let cursor: unknown = err;
-	for (let depth = 0; depth < 5 && cursor && typeof cursor === "object"; depth++) {
-		const code = (cursor as { code?: unknown }).code;
-		if (typeof code === "string") return code;
-		cursor = (cursor as { cause?: unknown }).cause;
-	}
-	return undefined;
-}
-
-function isUniqueViolation(err: unknown): boolean {
-	return pgErrorCode(err) === "23505";
-}
 
 export async function POST(req: Request) {
 	if (!isFeatureEnabled("masteryGate")) {
@@ -107,21 +89,25 @@ export async function POST(req: Request) {
 			);
 		}
 
-		// Podejście: 1 + liczba oblanych, ukończonych sesji tego modułu (cap 2).
-		// Pełna orkiestracja retry/correctives = P4; tu tylko odczyt stanu.
-		const priorFailed = await db
-			.select({ id: assessmentSessions.id })
-			.from(assessmentSessions)
-			.where(
-				and(
-					eq(assessmentSessions.studentId, student.id),
-					eq(assessmentSessions.kind, "module_exam"),
-					eq(assessmentSessions.moduleId, moduleId),
-					eq(assessmentSessions.status, "completed"),
-					sql`(${assessmentSessions.resultJson} ->> 'passed') = 'false'`,
-				),
+		// Podejście liczone w obrębie BIEŻĄCEGO cyklu (ADR-014 D3 / decyzje P5 Sophii
+		// D1/D2): cykl = do EXAM_MAX_ATTEMPTS(2) oblań; correctives odbyte resetują
+		// cykl (podejście od 1). evaluateExamCycle derywuje granicę cyklu z istniejących
+		// danych (znaczniki czasu assessment_sessions + curriculum_item_answers) —
+		// zero nowej kolumny, zero migracji.
+		const cycle = await evaluateExamCycle(student.id, moduleId);
+
+		// S-C (2 oblania w cyklu, correctives NIEODBYTE) → /start ODRZUCA utworzenie
+		// sesji stanem `correctives_required` (D2 — domyka lukę clampAttempt(3)=2, brak
+		// wariantu B w nieskończoność). 423 Locked + paczka correctives z result_json
+		// oblanej sesji (ta sama, którą P4 pokazał przy 2. oblaniu) — front renderuje
+		// Ekran 5 także z tej odpowiedzi, nie tylko z ekranu wyniku.
+		if (cycle.correctivesRequired) {
+			return NextResponse.json(
+				{ state: "correctives_required", correctivesPackage: cycle.correctivesPackage },
+				{ status: 423 },
 			);
-		const attempt = clampAttempt(priorFailed.length + 1);
+		}
+		const attempt = cycle.attempt;
 
 		// Aktywna sesja: wznowienie na zamrożonym planie ALBO abandon (mismatch/TTL).
 		const [active] = await db

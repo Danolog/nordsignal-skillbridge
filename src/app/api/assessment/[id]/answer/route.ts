@@ -25,6 +25,7 @@ import {
 import type { AssessmentPlan, QuestionType } from "@/lib/assessment/types";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
+import { isUniqueViolation } from "@/lib/db/pg-error";
 import { assessmentAnswers, assessmentSessions, questionItems } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
@@ -42,10 +43,6 @@ const AnswerSchema = z.object({
 		z.object({ value: z.string().max(500) }),
 	]),
 });
-
-function isUniqueViolation(err: unknown): boolean {
-	return typeof err === "object" && err !== null && (err as { code?: string }).code === "23505";
-}
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
 	if (!isFeatureEnabled("diagnosticAssessment")) {
