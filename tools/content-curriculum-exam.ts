@@ -19,6 +19,7 @@
  *     config_json.examSlots pozycji egzaminu (R4: bez nowej kolumny).
  */
 
+import type { ExamSlotRef } from "../src/lib/assessment/exam";
 import { gradeAnswer } from "../src/lib/assessment/grade";
 
 /** Wariant pytania egzaminacyjnego (z kluczem) — kształt zgodny z ExamVariant. */
@@ -205,4 +206,123 @@ export function validateExamBank(
 		}
 	}
 	return problems;
+}
+
+// ============================================================================
+// WRITE-SIDE — rozdział spakowanego banku na wsad ingestu (P3, R4 Ethana):
+//  (a) question_items (DENY, z KLUCZEM) — jeden wiersz per wariant,
+//  (b) config_json.examSlots pozycji egzaminu — TYLKO refy (bez klucza/treści).
+// Granica bezpieczeństwa examSlots egzekwowana przez parseExamSlotRefs (exam.ts)
+// jako WSPÓLNY guard write/read + test W1.
+// ============================================================================
+
+/**
+ * Difficulty wiersza egzaminacyjnego. Schemat wymusza `question_items.difficulty
+ * ∈ [1,3]` (CHECK), ale egzamin NIE odróżnia się od atomu przez difficulty —
+ * pytania egzaminacyjne są celowo ŁATWIEJSZE (Sophia §10). Odróżnia je REFERENCJA:
+ * atom wskazuje `config_json.questionItemIds`, egzamin `config_json.examSlots`.
+ * Stała 1 (podstawowa) mieści się w CHECK i nie miesza się z doborem atomów
+ * (foundations nie wchodzi do loadDiagnosticBank — filtr diagnostic=true/market).
+ */
+export const EXAM_ITEM_DIFFICULTY = 1;
+
+/** Wiersz `question_items` pytania egzaminacyjnego (z KLUCZEM — tabela DENY). */
+export interface ExamQuestionItemRow {
+	/** Ref wariantu (np. "f1-python-1-e1-a") — klucz idempotencji i rozwiązania itemId. */
+	ref: string;
+	/** Koncept slotu → concept_id (foundations, diagnostic=false — guard W3). */
+	conceptSlug: string;
+	type: "single_choice";
+	difficulty: number;
+	stem: string;
+	options: string[];
+	/** Klucz odpowiedzi → `answer_json`. NIGDY nie wchodzi do examSlots. */
+	answer: { correct: number };
+	/** Kondensat feedbacku (D3) → `explanation_md`; null gdy pusty. */
+	feedbackMd: string | null;
+}
+
+/**
+ * buildExamItemRows — spłaszcza bank (15 slotów × 2 warianty) do 30 wierszy
+ * `question_items`. To JEDYNE miejsce, gdzie klucz (`correct`) i treść (`stem`,
+ * `options`) opuszczają packer — do tabeli DENY. Do examSlots nie idzie stąd nic.
+ */
+export function buildExamItemRows(bank: PackedExamBank): ExamQuestionItemRow[] {
+	const rows: ExamQuestionItemRow[] = [];
+	for (const slot of bank.slots) {
+		for (const v of slot.variants) {
+			rows.push({
+				ref: v.ref,
+				conceptSlug: slot.conceptSlug,
+				type: "single_choice",
+				difficulty: EXAM_ITEM_DIFFICULTY,
+				stem: v.stem,
+				options: v.options,
+				answer: { correct: v.correct },
+				feedbackMd: v.feedbackMd.trim().length > 0 ? v.feedbackMd : null,
+			});
+		}
+	}
+	return rows;
+}
+
+/**
+ * buildExamSlots — buduje `config_json.examSlots` pozycji egzaminu. Emituje
+ * WYŁĄCZNIE {slotRef, conceptSlug, variants:[{ref, variant, itemId}]} — ZERO
+ * `correct`/`stem`/`options`/`answer`. `itemIdForRef` mapuje ref wariantu na UUID
+ * wiersza `question_items` (dostępny dopiero PO insercie — jak `idByRef` w
+ * ingest-curriculum). Typ zwrotny = `ExamSlotRef` (exam.ts): jeden kontrakt dla
+ * write-side (tu) i read-side (loadExamBank). Round-trip przez parseExamSlotRefs
+ * jest testem W1 (jakikolwiek doklejony klucz → czerwony test).
+ */
+export function buildExamSlots(
+	bank: PackedExamBank,
+	itemIdForRef: (ref: string) => string,
+): ExamSlotRef[] {
+	return bank.slots.map((slot) => ({
+		slotRef: slot.slotRef,
+		conceptSlug: slot.conceptSlug,
+		variants: slot.variants.map((v) => ({
+			ref: v.ref,
+			variant: v.variant,
+			itemId: itemIdForRef(v.ref),
+		})),
+	}));
+}
+
+/** Metadane konceptu z bazy (do guardu W3). */
+export interface ConceptSafetyMeta {
+	trunk: string;
+	diagnostic: boolean;
+	status: string;
+}
+
+/**
+ * assertExamConceptsNotDiagnostic — guard W3 (świadomie w tooling ingestu).
+ * Pytania egzaminu NIE mogą wisieć pod konceptem `diagnostic=true` + `trunk=market`
+ * + `active` — inaczej `loadDiagnosticBank` (service.ts) zaciągnąłby je do diagnozy
+ * onboardingowej (filtr: diagnostic=true AND trunk='market' AND status='active').
+ * Koncepty egzaminu F1 to `foundations`/`diagnostic=false` (Sophia §4) — ta asercja
+ * to zabezpiecza. `metaBySlug` = stan konceptów w bazie po upsercie. Koncept
+ * nieobecny w mapie → pomijamy (tool wstawia go jako foundations/diagnostic=false).
+ */
+export function assertExamConceptsNotDiagnostic(
+	bank: PackedExamBank,
+	metaBySlug: ReadonlyMap<string, ConceptSafetyMeta>,
+): void {
+	const offenders = new Set<string>();
+	for (const slot of bank.slots) {
+		const meta = metaBySlug.get(slot.conceptSlug);
+		if (!meta) continue;
+		if (meta.diagnostic === true && meta.trunk === "market" && meta.status === "active") {
+			offenders.add(slot.conceptSlug);
+		}
+	}
+	if (offenders.size > 0) {
+		throw new Error(
+			`W3: pytania egzaminu podpięte pod koncept diagnostyczny rynkowy ` +
+				`(diagnostic=true + trunk=market + active) — loadDiagnosticBank by je zaciągnął: ` +
+				`${[...offenders].join(", ")}. Koncepty egzaminu muszą być foundations/diagnostic=false.`,
+		);
+	}
 }

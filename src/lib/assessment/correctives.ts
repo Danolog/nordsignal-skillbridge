@@ -79,6 +79,19 @@ function pytaniaPoZabraklo(n: number): string {
 }
 
 /**
+ * N mikrocopy — DYSTANS DO PROGU, nie surowa liczba błędów (Sophia nota 3,
+ * §5 banku F1 v1.0; decyzja dydaktyczna wiążąca P4). „Zabrakło Ci" znaczy „byłeś
+ * tyle poniżej progu": N = `errorCount − maxErrors`. Przy maxErrors=1 minimalne
+ * oblanie errorCount=2 → N=1 („jedna poprawna odpowiedź więcej i przechodzisz").
+ * Clamp do 0: correctives odpalają WYŁĄCZNIE po oblaniu (errorCount > maxErrors),
+ * więc w praktyce N ≥ 1; clamp jest tylko defensywny (zdany egzamin nie buduje
+ * paczki), by nie wypisać liczby ujemnej.
+ */
+function distanceToPass(errorCount: number, maxErrors: number): number {
+	return Math.max(0, errorCount - maxErrors);
+}
+
+/**
  * Odmiana „koncept" w policzalnej frazie mianownikowej („M konceptów do
  * odświeżenia"): 1 → „koncept", 2–4 (poza 12–14) → „koncepty", reszta →
  * „konceptów". Standardowa polska liczebność, inny wzorzec niż „pytań" wyżej.
@@ -93,13 +106,25 @@ function konceptyForm(n: number): string {
 
 /**
  * Mikrocopy correctives — komunikat o KONCEPTACH do odświeżenia (SPEC: nie lista
- * braków). Czysta funkcja: `errorCount` = N (ile pytań zabrakło), `conceptCount`
- * = M (ile konceptów odświeżyć = liczba distinct konceptów błędnych pytań).
- * Wielka litera na starcie — to pełne zdanie w UI (brand voice §3), treść i
- * format (N/M/~15 min) zgodne z ADR-014 D3.
+ * braków). Czysta funkcja:
+ *  - `errorCount` — liczba błędnych odpowiedzi w egzaminie,
+ *  - `conceptCount` = M — ile konceptów odświeżyć (distinct konceptów błędnych),
+ *  - `maxErrors` — próg zaliczenia (licznik dopuszczalnych błędów, examConfigJson).
+ *
+ * N = `errorCount − maxErrors` = DYSTANS DO PROGU (Sophia nota 3): „zabrakło Ci
+ * N pytań **do zaliczenia**", a NIE „masz N błędów". Człon „do zaliczenia" jest
+ * OBOWIĄZKOWY — bez niego „zabrakło Ci N pytań" myli się z liczbą błędów.
+ * Przykład ADR-014 D3 / §5 banku: maxErrors=1, errorCount=2 → N=1 →
+ * „Zabrakło Ci 1 pytania do zaliczenia — 2 koncepty do odświeżenia, ~15 min".
+ * Wielka litera na starcie — pełne zdanie w UI (brand voice §3).
  */
-export function buildCorrectivesMessage(errorCount: number, conceptCount: number): string {
-	return `Zabrakło Ci ${pytaniaPoZabraklo(errorCount)} — ${konceptyForm(conceptCount)} do odświeżenia, ${CORRECTIVES_ESTIMATE}`;
+export function buildCorrectivesMessage(
+	errorCount: number,
+	conceptCount: number,
+	maxErrors: number,
+): string {
+	const missing = distanceToPass(errorCount, maxErrors);
+	return `Zabrakło Ci ${pytaniaPoZabraklo(missing)} do zaliczenia — ${konceptyForm(conceptCount)} do odświeżenia, ${CORRECTIVES_ESTIMATE}`;
 }
 
 /**
@@ -119,6 +144,7 @@ export function buildCorrectivesMessage(errorCount: number, conceptCount: number
 export function assembleCorrectives(
 	failedConcepts: readonly string[],
 	errorCount: number,
+	maxErrors: number,
 	rows: readonly CorrectivesAtomRow[],
 ): CorrectivesPackage {
 	const byConcept = new Map<string, CorrectivesConcept>();
@@ -152,7 +178,7 @@ export function assembleCorrectives(
 		});
 	}
 	return {
-		message: buildCorrectivesMessage(errorCount, failedConcepts.length),
+		message: buildCorrectivesMessage(errorCount, failedConcepts.length, maxErrors),
 		// Kolejność wejścia; wpis istnieje dla każdego failedConcept (także pusty).
 		concepts: failedConcepts.map((slug) => byConcept.get(slug) as CorrectivesConcept),
 	};

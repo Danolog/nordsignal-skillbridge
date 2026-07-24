@@ -42,8 +42,23 @@ import { logError } from "@/lib/log";
 
 const StartSchema = z.object({ moduleId: z.string().uuid() });
 
+// pg zwraca kod SQLSTATE na .code, ale Drizzle (query builder db.insert().values())
+// OWIJA błąd bazy w Error("Failed query: …") z oryginałem na .cause — wtedy .code
+// jest o poziom niżej. Chodzimy po łańcuchu cause (limit głębokości), żeby wykryć
+// naruszenie unikalności zarówno przy surowym błędzie pg, jak i owiniętym przez Drizzle.
+// Bez tego wyścig startów (23505 z db.insert) leci jako 500 zamiast 409 (finding W2 [2]).
+function pgErrorCode(err: unknown): string | undefined {
+	let cursor: unknown = err;
+	for (let depth = 0; depth < 5 && cursor && typeof cursor === "object"; depth++) {
+		const code = (cursor as { code?: unknown }).code;
+		if (typeof code === "string") return code;
+		cursor = (cursor as { cause?: unknown }).cause;
+	}
+	return undefined;
+}
+
 function isUniqueViolation(err: unknown): boolean {
-	return typeof err === "object" && err !== null && (err as { code?: string }).code === "23505";
+	return pgErrorCode(err) === "23505";
 }
 
 export async function POST(req: Request) {
