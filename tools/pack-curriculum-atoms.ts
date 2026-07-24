@@ -367,19 +367,36 @@ const CHECKS_ML_7: Check[] = [
 	},
 ];
 
+// ── M-LLM (ADR-022) — rozdział „parse" od „schema" + zakotwiczony wskaźnik ──
+// Zbiór ZAMROŻONY (utrwalone odpowiedzi modelu, żywe API dopiero w capstonie),
+// więc exact-match `value` jest legalny (ADR-022 §2.0 / G4) — recompute pieczątki
+// jest deterministyczny. Pieczątka RECOMPUTUJE tym samym filtrem schema-valid
+// (`rekord is not None and all(pole in rekord for pole in POLA)`), co uczona proza
+// — inaczej C8/R5 (słownik bez `widelki_min`) daje KeyError albo rozjazd 0.75↔0.875.
+// Źródło prawdy payloadów: docs/curation/sophia-1e2-mllm-atomy.md (Notatki dla
+// Olivera — kanoniczny listing LLM.4/LLM.7); liczby zweryfikowane wykonaniem.
+
+/** LLM.4 (lab z lukami) — rozdział parse↔schema: 6 odpowiedzi → sparsowane 5, zgodne 4. */
 const CHECKS_LLM_4: Check[] = [
 	{
 		id: "C1",
 		kind: "predicate",
-		note: "`rekordy` — 5 przypadków z utrwalonego zbioru",
-		rule: { op: "len_eq", var: "rekordy", n: 5 },
+		note: "`rekordy` — 6 odpowiedzi z utrwalonego zbioru (zbiór urósł 5→6 pod D3)",
+		rule: { op: "len_eq", var: "rekordy", n: 6 },
 	},
 	{
 		id: "C2",
 		kind: "value",
-		note: "zgodnych z ground truth: 4 z 5 (wynik zafiksowany treścią)",
+		note: "zgodne ze schematem: 4 z 6 (R3 parse-fail, R5 parsuje-ale-bez-pola wypada)",
 		var: "zgodne",
 		expect: 4,
+	},
+	{
+		id: "C3",
+		kind: "value",
+		note: "NOWY (D3) — sparsowane (udane parsowania): 5 z 6 (rozdziela parse od schematu)",
+		var: "sparsowane",
+		expect: 5,
 	},
 ];
 
@@ -588,46 +605,88 @@ const CHECKS_SQL_7: Check[] = [
 	},
 ];
 
-/** LLM.7 — dane zapisane w notebooku; wyniki zafiksowane treścią (0.875 / 0.5). */
+/**
+ * LLM.7 (lab samodzielny, finał drabiny) — kontrakt ADR-022 D1/D2/D3:
+ *  D3 `zgodnosc`=0.75 (6/8 schema-valid, NIE 0.875 powodzeń parsowania);
+ *  D1 `pola_braki_liczba`=4 + `halucynacje_liczba`=2 (kotwice mianownika i licznika
+ *     — 0.5 to najgęstsza kolizja ułamka: 1/2=2/4=3/6, kotwiczymy składniki);
+ *  D2 `trafnosc_<pole>` per pole jako `value` skalar z tolerancją float (NIE lista:
+ *     weryfikator porównuje listy dokładnym JSON.stringify bez tolerancji — złamałoby
+ *     limit ADR-015 nr 10 na ułamkach 5/6, 4/6). C6 (is_true trafnosc_zgodna) USUNIĘTY
+ *     — był boolem klienta na wiarę; po D2 serwer sam przelicza. C1/C2 (kształt listy
+ *     `trafnosc_wartosci`) zostają jako tani strażnik KSZTAŁTU, nie kotwica.
+ */
 const CHECKS_LLM_7: Check[] = [
 	{
 		id: "C1",
+		kind: "predicate",
+		note: "kształt: `trafnosc_wartosci` — 3 ułamki w kolejności POLA (strażnik, nie kotwica)",
+		rule: { op: "len_eq", var: "trafnosc_wartosci", n: 3 },
+	},
+	{
+		id: "C2",
+		kind: "predicate",
+		note: "kształt: `trafnosc_wartosci` to liczby (strażnik, nie kotwica)",
+		rule: { op: "all_numbers", var: "trafnosc_wartosci" },
+	},
+	{
+		id: "C3",
 		kind: "value",
 		note: "8 przypadków z utrwalonego zbioru",
 		var: "przypadki_liczba",
 		expect: 8,
 	},
 	{
-		id: "C2",
+		id: "C4",
 		kind: "value",
-		note: "`zgodnosc` = 0.875 (7 z 8 — jedna odpowiedź celowo złamana; ODSETEK, nie licznik)",
+		note: "D3 `zgodnosc` = 0.75 (6 z 8 schema-valid — C7 parse-fail, C8 parsuje-bez-pola; NIE 0.875)",
 		var: "zgodnosc",
-		expect: 0.875,
+		expect: 0.75,
 	},
 	{
-		id: "C3",
+		id: "C5",
 		kind: "value",
-		note: "`halucynacje_wskaznik` = 0.5 (2 wypełnione z 4 pól-braków w prawdzie — definicja LLM.5)",
+		note: "D1 mianownik: `pola_braki_liczba` = 4 (pola null w prawdzie, na zgodnych)",
+		var: "pola_braki_liczba",
+		expect: 4,
+	},
+	{
+		id: "C6",
+		kind: "value",
+		note: "D1 licznik: `halucynacje_liczba` = 2 (pola-braki, które model wypełnił)",
+		var: "halucynacje_liczba",
+		expect: 2,
+	},
+	{
+		id: "C7",
+		kind: "value",
+		note: "D1 `halucynacje_wskaznik` = 0.5 (2/4 — czytelny dla człowieka, kotwiczą składniki)",
 		var: "halucynacje_wskaznik",
 		expect: 0.5,
 	},
 	{
-		id: "C4",
-		kind: "predicate",
-		note: "`trafnosc` spłaszczona do listy 3 ułamków w kolejności POLA (ładunek nie przenosi słowników)",
-		rule: { op: "len_eq", var: "trafnosc_wartosci", n: 3 },
+		id: "C8",
+		kind: "value",
+		note: "D2 trafność `stanowisko` = 5/6 ≈ 0.8333 (value per pole, tolerancja float)",
+		var: "trafnosc_stanowisko",
+		expect: 0.8333333333333334,
+		tolerance: 0.01,
 	},
 	{
-		id: "C5",
-		kind: "predicate",
-		note: "`trafnosc_wartosci` to liczby",
-		rule: { op: "all_numbers", var: "trafnosc_wartosci" },
+		id: "C9",
+		kind: "value",
+		note: "D2 trafność `miasto` = 4/6 ≈ 0.6667 (value per pole, tolerancja float)",
+		var: "trafnosc_miasto",
+		expect: 0.6666666666666666,
+		tolerance: 0.01,
 	},
 	{
-		id: "C6",
-		kind: "predicate",
-		note: "`trafnosc` == niezależne przeliczenie pieczątki na zgodnych przypadkach",
-		rule: { op: "is_true", var: "trafnosc_zgodna" },
+		id: "C10",
+		kind: "value",
+		note: "D2 trafność `widelki_min` = 3/6 = 0.5 (value per pole; najsłabsze pole — czytelne)",
+		var: "trafnosc_widelki_min",
+		expect: 0.5,
+		tolerance: 0.01,
 	},
 ];
 
@@ -1007,7 +1066,10 @@ const MANIFESTS: ModuleManifest[] = [
 			"klucz-sekrety-rodo": "Klucz API, limity, dane osobowe",
 		},
 		overrides: {
-			"LLM.4": { checks: CHECKS_LLM_4 },
+			"LLM.4": {
+				checks: CHECKS_LLM_4,
+				notebookUrl: `${NOTEBOOKS_BASE}/mllm/llm-4-lab-parser-na-porazki.ipynb`,
+			},
 			// Lab samodzielny (finał drabiny) — meta mówi „wszystkie z M-LLM".
 			"LLM.7": {
 				concepts: [
@@ -1016,6 +1078,7 @@ const MANIFESTS: ModuleManifest[] = [
 					{ slug: "ewaluacja-halucynacje" },
 				],
 				checks: CHECKS_LLM_7,
+				notebookUrl: `${NOTEBOOKS_BASE}/mllm/llm-7-lab-tabela-ewaluacji.ipynb`,
 			},
 		},
 		przeglad: {

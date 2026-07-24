@@ -444,21 +444,29 @@
 					{
 						"id": "C1",
 						"kind": "predicate",
-						"note": "`rekordy` — 5 przypadków z utrwalonego zbioru",
+						"note": "`rekordy` — 6 odpowiedzi z utrwalonego zbioru (zbiór urósł 5→6 pod D3)",
 						"rule": {
 							"op": "len_eq",
 							"var": "rekordy",
-							"n": 5
+							"n": 6
 						}
 					},
 					{
 						"id": "C2",
 						"kind": "value",
-						"note": "zgodnych z ground truth: 4 z 5 (wynik zafiksowany treścią)",
+						"note": "zgodne ze schematem: 4 z 6 (R3 parse-fail, R5 parsuje-ale-bez-pola wypada)",
 						"var": "zgodne",
 						"expect": 4
+					},
+					{
+						"id": "C3",
+						"kind": "value",
+						"note": "NOWY (D3) — sparsowane (udane parsowania): 5 z 6 (rozdziela parse od schematu)",
+						"var": "sparsowane",
+						"expect": 5
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mllm/llm-4-lab-parser-na-porazki.ipynb"
 			}
 		},
 		{
@@ -742,29 +750,8 @@
 				"checks": [
 					{
 						"id": "C1",
-						"kind": "value",
-						"note": "8 przypadków z utrwalonego zbioru",
-						"var": "przypadki_liczba",
-						"expect": 8
-					},
-					{
-						"id": "C2",
-						"kind": "value",
-						"note": "`zgodnosc` = 0.875 (7 z 8 — jedna odpowiedź celowo złamana; ODSETEK, nie licznik)",
-						"var": "zgodnosc",
-						"expect": 0.875
-					},
-					{
-						"id": "C3",
-						"kind": "value",
-						"note": "`halucynacje_wskaznik` = 0.5 (2 wypełnione z 4 pól-braków w prawdzie — definicja LLM.5)",
-						"var": "halucynacje_wskaznik",
-						"expect": 0.5
-					},
-					{
-						"id": "C4",
 						"kind": "predicate",
-						"note": "`trafnosc` spłaszczona do listy 3 ułamków w kolejności POLA (ładunek nie przenosi słowników)",
+						"note": "kształt: `trafnosc_wartosci` — 3 ułamki w kolejności POLA (strażnik, nie kotwica)",
 						"rule": {
 							"op": "len_eq",
 							"var": "trafnosc_wartosci",
@@ -772,24 +759,75 @@
 						}
 					},
 					{
-						"id": "C5",
+						"id": "C2",
 						"kind": "predicate",
-						"note": "`trafnosc_wartosci` to liczby",
+						"note": "kształt: `trafnosc_wartosci` to liczby (strażnik, nie kotwica)",
 						"rule": {
 							"op": "all_numbers",
 							"var": "trafnosc_wartosci"
 						}
 					},
 					{
+						"id": "C3",
+						"kind": "value",
+						"note": "8 przypadków z utrwalonego zbioru",
+						"var": "przypadki_liczba",
+						"expect": 8
+					},
+					{
+						"id": "C4",
+						"kind": "value",
+						"note": "D3 `zgodnosc` = 0.75 (6 z 8 schema-valid — C7 parse-fail, C8 parsuje-bez-pola; NIE 0.875)",
+						"var": "zgodnosc",
+						"expect": 0.75
+					},
+					{
+						"id": "C5",
+						"kind": "value",
+						"note": "D1 mianownik: `pola_braki_liczba` = 4 (pola null w prawdzie, na zgodnych)",
+						"var": "pola_braki_liczba",
+						"expect": 4
+					},
+					{
 						"id": "C6",
-						"kind": "predicate",
-						"note": "`trafnosc` == niezależne przeliczenie pieczątki na zgodnych przypadkach",
-						"rule": {
-							"op": "is_true",
-							"var": "trafnosc_zgodna"
-						}
+						"kind": "value",
+						"note": "D1 licznik: `halucynacje_liczba` = 2 (pola-braki, które model wypełnił)",
+						"var": "halucynacje_liczba",
+						"expect": 2
+					},
+					{
+						"id": "C7",
+						"kind": "value",
+						"note": "D1 `halucynacje_wskaznik` = 0.5 (2/4 — czytelny dla człowieka, kotwiczą składniki)",
+						"var": "halucynacje_wskaznik",
+						"expect": 0.5
+					},
+					{
+						"id": "C8",
+						"kind": "value",
+						"note": "D2 trafność `stanowisko` = 5/6 ≈ 0.8333 (value per pole, tolerancja float)",
+						"var": "trafnosc_stanowisko",
+						"expect": 0.8333333333333334,
+						"tolerance": 0.01
+					},
+					{
+						"id": "C9",
+						"kind": "value",
+						"note": "D2 trafność `miasto` = 4/6 ≈ 0.6667 (value per pole, tolerancja float)",
+						"var": "trafnosc_miasto",
+						"expect": 0.6666666666666666,
+						"tolerance": 0.01
+					},
+					{
+						"id": "C10",
+						"kind": "value",
+						"note": "D2 trafność `widelki_min` = 3/6 = 0.5 (value per pole; najsłabsze pole — czytelne)",
+						"var": "trafnosc_widelki_min",
+						"expect": 0.5,
+						"tolerance": 0.01
 					}
-				]
+				],
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mllm/llm-7-lab-tabela-ewaluacji.ipynb"
 			}
 		},
 		{
