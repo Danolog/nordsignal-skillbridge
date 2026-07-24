@@ -11,7 +11,7 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-24 (sesja Oliver, COO — KRĘGOSŁUP TOR B) — 58/58 NOTEBOOKÓW + 1E.3 SILNIK EGZAMINU (P1–P3, flaga OFF)
+## STAN NA DZIŚ — 2026-07-24 (sesja Oliver, COO — KRĘGOSŁUP TOR B) — 58/58 NOTEBOOKÓW + 1E.3 BACKEND EGZAMINU KOMPLETNY (P1–P4, flaga OFF)
 
 **Jednym zdaniem:** dobudowane 10 brakujących notebooków-towarzyszy ćwiczeń
 (M-ML + M-LLM) → **produkcja 58/58, drabina content-complete**; każda liczba
@@ -72,14 +72,22 @@ Wg §7 mastery gate = progresja WEWNĘTRZNA = ocena formująca → maszyna samow
   **R4:** pytania w `question_items` (DENY), pozycja egzaminu enumeruje ID w
   `config_json.examSlots` = TYLKO UUID (bez migracji, bez znacznika per-wiersz). Packer
   na fixture (Opcja A — unit nie zależy od DRAFTu).
+- **P4** (`b713bab`) — correctives: po 2. oblaniu (cap 2) paczka `failedConcepts`→≤3 atomy przez
+  `curriculum_item_concepts` (filtr rodzaju w ON — R2: koncept z samymi labami = nazwa+pusta lista),
+  mikrocopy „Zabrakło Ci N pytań — M konceptów do odświeżenia, ~15 min", ślad aktywności wpięty
+  (`assessment_answers`→streak). Bez migracji (paczka w `result_json`). Quinn: test integracyjny +9.
 - **C1 treść** (Sophia, `docs/curation/sophia-1e3-egzamin-f1-v0.1.md`, DRAFT untracked) —
   pilot **F1**, 15 pytań × 2 warianty kalibrowane OSOBNO (R1: potwierdzają mastery, nie
   różnicują), 5 konceptów, `examConfigJson {15,1}`. Wymaga QG adwersaryjnego przed ingestem.
 
-**⏭ ZOSTAJE:** **P4** (correctives: `failedConcepts`→≤3 atomy przez `curriculum_item_concepts`
-+ mikrocopy „~15 min", ślad aktywności), **P5** (drabina UI widoczna-ale-zablokowana +
-„test out" + ostrzeżenie ~25 min + ekran egzaminu — frontend Mila/Jack), **ingest C1**
-(po QG-GO Sophii; dane, wzorzec `ingest-curriculum`, czerwona linia).
+**⏭ ZOSTAJE:** **P5** (drabina UI widoczna-ale-zablokowana + „test out" + ostrzeżenie ~25 min +
+ekran egzaminu + render paczki correctives — frontend Mila/Jack), **ingest C1** (po QG-GO Sophii;
+dane, wzorzec `ingest-curriculum`, czerwona linia).
+
+**Do P5/Sophii (noty Leo z review P4, nieblokujące):** (a) render konceptu bez klikalnego atomu
+(R2 — sam komunikat/CTA, nie pusty ekran); (b) M-semantyka „M konceptów" liczy WSZYSTKIE oblane,
+w tym atom-less — potwierdzić intencję copy; (c) N=`errorCount` (nie „ile brakło do progu") —
+pytanie o intencję Sophii; (d) czy curriculum ma pokrywać każdy koncept ≥1 atomem theory/exercise.
 
 **🚦 CHECKLISTA WŁĄCZENIA FLAGI** (Leo, warunki przed `FLAG_MASTERY_GATE=on` gdziekolwiek):
 1. **W1** — test write-side: ingest/packer emituje do `config_json.examSlots` WYŁĄCZNIE
