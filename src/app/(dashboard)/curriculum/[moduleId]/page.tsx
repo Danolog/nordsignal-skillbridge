@@ -11,8 +11,10 @@ import { ArrowLeft, Lock } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { ModuleExamGate } from "@/components/curriculum/exam/module-exam-gate";
 import { ModuleItems } from "@/components/curriculum/module-items";
 import { auth } from "@/lib/auth/server";
+import { type ExamGateView, getModuleExamGate } from "@/lib/curriculum/exam-gate";
 import { getModuleItems, isModuleUnlocked } from "@/lib/curriculum/ladder";
 import { isUuid } from "@/lib/curriculum/params";
 import { db } from "@/lib/db";
@@ -52,6 +54,21 @@ export default async function CurriculumModulePage({ params }: PageProps) {
 	const unlocked = await isModuleUnlocked(student.id, module_.id);
 	const items = unlocked ? await getModuleItems(student.id, module_.id) : [];
 
+	// 1E.3 · P5: karta bramki egzaminu tylko przy fladze masteryGate ON i module
+	// odblokowanym — OFF = zero nowego zapytania, strona modułu jak dziś.
+	let examGate: ExamGateView = { kind: "none" };
+	if (unlocked && isFeatureEnabled("masteryGate")) {
+		const completedItems = items.filter(
+			(i) => i.status === "completed" || i.status === "skipped_by_placement",
+		).length;
+		examGate = await getModuleExamGate({
+			studentId: student.id,
+			moduleId: module_.id,
+			completedItems,
+			itemCount: items.length,
+		});
+	}
+
 	return (
 		<div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-8">
 			<Link
@@ -68,6 +85,10 @@ export default async function CurriculumModulePage({ params }: PageProps) {
 					<p className="mt-1 text-sm text-muted-foreground">{module_.description}</p>
 				)}
 			</header>
+
+			{unlocked && examGate.kind !== "none" && (
+				<ModuleExamGate view={examGate} moduleId={module_.id} />
+			)}
 
 			{unlocked ? (
 				<ModuleItems items={items} moduleId={module_.id} />

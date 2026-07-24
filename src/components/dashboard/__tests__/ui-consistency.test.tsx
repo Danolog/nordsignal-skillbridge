@@ -74,6 +74,10 @@ const EXPECTED_ROUTES: Record<string, "nav" | "flow" | "child"> = {
 	"/curriculum": "flow",
 	"/curriculum/[moduleId]": "child",
 	"/curriculum/[moduleId]/[itemId]": "child",
+	// 1E.3 · P5: egzamin modułowy + trasa-resolver atomów correctives — za flagą
+	// FLAG_MASTERY_GATE (OFF → notFound). Wejście z bramki E3 na drabinie / stronie modułu.
+	"/curriculum/[moduleId]/exam": "child",
+	"/curriculum/atom/[moduleSlug]/[itemSlug]": "child",
 };
 
 /**
