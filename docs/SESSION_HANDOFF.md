@@ -11,84 +11,72 @@
 
 ---
 
-## RÓWNOLEGLE 2026-07-23 (sesja Oliver, COO — SPŁATA DŁUGU, obok kręgosłupa M-SQL/M-ML)
+## STAN NA DZIŚ — 2026-07-24 — KROK 4: WSZYSTKIE LABY DRABINY NA PRODZIE (nowy kontrakt oceny ADR-020/022); 48/58 NOTEBOOKÓW, 10 TOWARZYSZY ĆWICZEŃ DO DOBUDOWANIA
 
-Cztery pozycje długu wykonane i na `main` (`566c35c`), model v1.12 (Ethan scala pod bramkami Leo),
-autor commitów = Darek, każda gałąź z `origin/main` w osobnym worktree. Pełny zapis + follow-upy:
-handoff firmowy `Danolog/nordsignal-operating-system` @ `bfc96bc`.
+**Jednym zdaniem:** wszystkie laby drabiny — z modułami M-ML i M-LLM włącznie — są
+na produkcji z nowym, twardszym kontraktem oceny (ADR-020/ADR-022); do
+content-complete zostaje **10 notebooków-towarzyszy ćwiczeń** (warstwa dydaktyczna,
+bez pieczątki-tokenu) → wtedy prawdziwe **58/58**.
 
-1. **D-a11y-1/2** — drabinka podpowiedzi: fokus po async reveal (`tabIndex`/`ref` + `aria-busy`), `hintError`
-   `role="alert"` zamiast polite. ff `620295c`, prod Ready, +3 testy. (Jack→Leo→Ethan)
-2. **R-1 `tools/enforce-retention.ts`** — jeden skrypt cały rejestr retencji; `at[]` w SQL zostawia `d`
-   (`at.length ≤ d`), viva delete-row (ADR-013 D3). **Ryan złapał W-viva:** kotwica zegara = `submission_reviews`
-   dla eskalacji + guard HITL (stara wersja kasowała spod trwającej recenzji człowieka). Test integracyjny 7/7
-   na :5433. Scalone `4e70e1e`, **`--execute` NIE uruchamiany na prod** (egzekucja post-1. rejestracja).
-   ⚠ Otwarte dla Ethan+Ryan: hard-deny `skill-bridge-ai` blokuje skrypt też na gałęzi backupu Neona — ścieżka
-   egzekucji do nazwania przed 1. realną egzekucją. (Max→Ryan+Leo)
-3. **f2-7 „Strażnik budżetu"** — sonda `[1,2,3]→6` miała poczwórną kolizję (suma=iloczyn=len·2=max·2), iloczyn
-   dostawał token → `[2,5,10]→17`. Quinn mutacja: 3 błędne operatory padają. **Prod re-ingest ×2 idempotentny,
-   0 retired** (F1), notebook opublikowany (raw 200), backup `br-quiet-bread-al2nduqo`. **Prod nadal 44/58**
-   (f2-7 był labem — zmiana treści C2, nie liczby). (Sophia→Quinn→Leo→Ethan)
-4. **marketPercentage (ADR-021)** — `competencies.marketPercentage` szedł z ciała żądania → paszport PUBLICZNY
-   (employer-facing, §7). Serwer wyprowadza popyt z `loadMarketCatalog` (`buildDemandByName`), off-catalog→null,
-   pole usunięte ze schematu. Quinn: body 99→zapis 55, `leaked=[]` na :5433. Zero migracji. Scalone `566c35c`,
-   prod Ready. Follow-up: brak unikalnego indeksu `(career_goal, competency_name)` na `job_market_data`.
-   (Ethan ADR→Max→Quinn→Leo→Ethan)
+### Na prodzie tej sesji (5 zaciągów, każdy pod bramkami Quinn + Leo)
 
-5. **U1 — parytet audit-log** — `SubagentStart`/`SubagentStop` → `audit-log.py` w `.claude/settings.json`
-   (Ethan `90b7d47`, prod Ready). Darek autoryzował Ethana do edycji `.claude/settings.json` (rozszerzenie v1.12).
-   Funkcjonalnie potwierdzone (rekord `model`+`NORDSIGNAL_ROLE`+hash-chain) → audyt kosztu per-agent działa
-   w produkcie. CLAUDE.md v1.14 (zapis autoryzacji) czeka na `!` Darka. (Ethan)
+- **#217 hintDepth (ADR-018)** — głębokość podpowiedzi (`hint_depth`) liczona
+  SERWEROWO w chwili zamknięcia deklaracji klienta (koniec deklaracji, nie klient).
+  Migracje 0039/0040 na NEON. **Odblokowuje 1E.4 (FSRS — algorytm powtórek).**
+  Backup `br-fragrant-sound-al88573l`.
+- **#218 M-SQL fix (ADR-017)** — rozerwana korelacja minuta↔kwota + `z3_miejsca1_ids`;
+  dziura „odwrotne sortowanie → token" (fałszywe zaliczenie) ZAMKNIĘTA.
+  Backup `br-sparkling-tooth-al9imx5v`.
+- **#219 M-ML (ADR-020)** — pathfinder nowego kontraktu oceny: sprawdzamy wektor
+  predykcji + tożsamość próbki (D1), pochodzenie podziału (D2), anty-przeciek (D3),
+  rozkład predykcji (D4). Zbiór model-agnostyczny (6 różnych potoków myli id=18).
+  Pieczątki ml-4/ml-7. Backup `br-icy-math-algnxu39`.
+- **#220 D1 fix** — komunikat D1 rozgałęziony: legalny inny model vs zepsuty potok;
+  decyzja bramki G4 = ODMAWIAĆ. Zmiana tylko w komunikacie, bez ponownego zaciągu.
+  Zawężenie parytetu w ADR-020: pełna model-agnostyczność NIEMOŻLIWA na granicznym id=18.
+- **#221 M-LLM (ADR-022)** — ostatni moduł labów: zakotwiczony wskaźnik halucynacji,
+  trafność per pole + tolerancja, rozdział parsowanie/schemat, filtr schema-valid
+  (parytet: przeliczenie ↔ proza). `zgodnosc`=0.75. Backup `br-twilight-moon-al31z4eq`.
 
-⚠ **Runbook pre-flightu serializacji prod BŁĘDNY** (ustalił Ethan przy f2-7): backupy Neona to gałęzie **Neona**,
-nie git — `git branch -r` daje false-negative. Poprawny check: Neon API `/branches` po `prod-backup-pre-ingest-*(msql|mml)*`
-+ świeżość. Jedyna realna bariera serializacji między sesjami prod. #218 M-SQL potwierdzony na prodzie (17:59).
+Wszystkie pod bramkami Quinn (mutacją) + Leo (14 domen). Serializacja prod między
+sesjami wg runbooka `6f4117c` (backup = gałąź NEON, nie git).
 
-## STAN NA DZIŚ — 2026-07-23 — M-EDA NA PRODUKCJI (44/58); STRAŻNICY SEKRETÓW + AUDIT-LOG NA MAIN; DWIE ŁATKI DEPS (Next 16.2.11, PostCSS 8.5.22)
+### Debt-sesja równolegle (Darek)
 
-**Jednym zdaniem:** partia 7 (M-EDA) jest na produkcji (**44/58**), a repo produktu
-ma wreszcie **własne bezpieczniki** (guard-secrets + audit-log) aktywne na `main`;
-po drodze dwie fale advisory (Next.js, PostCSS) zdjęte osobnymi łatkami deps.
+a11y (fokus + `role="alert"`), f2-7 (sonda asymetryczna), retencja R-1 (skrypt
+egzekucji), marketPercentage §8c (ADR-021, źródło serwerowe), **U1** (parytet
+audit-logu `SubagentStart`/`SubagentStop` — czerwona linia, Plan Mode Darka).
 
-### 🔒 Bezpieczniki w repo produktu — NA MAIN (#213, squash `bfca8d7`)
+### Inwentarz notebooków — PRAWDA (nie „58/58")
 
-Luka z audytu Ryana: sesja startująca z katalogu produktu nie miała `guard-secrets`
-ani audit-logu (nadrzędne repo je ma, zagnieżdżone nie). Domknięte:
+**48 zbudowanych** (46 przed #221 + 2 M-LLM). **Brakuje 10 towarzyszy ćwiczeń:**
+M-ML 5 (ML.1/2/3/5/6) + M-LLM 5 (LLM.1/2/3/5/6) — warstwa dydaktyczna Sophii
+(wprowadzenie + brudnopis, BEZ pieczątki; ~20 h, widełki 16–26 h). ⚠ Ćwiczenia
+JUŻ odsyłają studenta do tych notebooków po nazwie → na prodzie są złamane
+odniesienia (niepilne — zero realnych studentów). Cel 58 = poprawny
+(notebook-per-atom), nie zmiana zakresu.
 
-- **`hooks/guard-secrets.py`** (PreToolUse Write|Edit **i** Bash) + **`hooks/audit-log.py`**
-  (PostToolUse) — **kopie 1:1** z repo nadrzędnego (`diff -q` potwierdzony przed pushem
-  i **po rebase** — asekuracja Leo), samowystarczalne, tylko biblioteka standardowa.
-- Rejestracja w `.claude/settings.json`: guard-secrets dołożony do wpisu `Write|Edit`
-  (po guardzie drizzle) + nowy matcher `Bash`; audit-log bez matchera. **Biome i guard
-  migracji drizzle nietknięte.**
-- Commit **ludzką ręką Darka** (`a5f29f2`→squash `bfca8d7`, przez `!`), sign-off Plan
-  Mode 2026-07-23 (plan `steady-wibbling-riddle`). Weryfikacja: Ryan 4/4, Leo ACCEPT
-  z uwagami, Ethan — deny na `sk-`/`AKIA` dowiedziony żywcem (nadrzędny strażnik
-  zablokował komendę testową).
-- **U2 (#215, squash `2e15aeb`):** jawny `logs/` w `.gitignore` — dziennik audytu
-  `logs/audit/*.jsonl` był ignorowany dotąd tylko INCYDENTALNIE przez `audit/` (l.52);
-  zakotwiczenie tamtego do `/audit/` przepuściłoby log do repo. `git check-ignore` po
-  zmianie → przez jawny `logs/`. Autor Ethan, mandat na trywialny gitignore.
-- **U1 → Ryan (nie Ethan):** czy pominięcie `SubagentStart/Stop` w audit-logu produktu
-  to zakres czy przeoczenie (atrybucja kosztu per-pilot opiera się na tych zdarzeniach).
-  Właściciel `audit-log.py` = Ryan, jego decyzja. OTWARTE.
-- **U3 → nota, później:** `guard-secrets` nie pokrywa `NotebookEdit` (tak samo w
-  nadrzędnym, teoretyczne) — do wspólnego guarda w przyszłości.
+### Dług następczy (w kolejce, niepilny)
 
-### Dwie łatki bezpieczeństwa deps (blokowały deps-scan na całym main)
+- **ADR-022 §1.4/§2.5** — liczby ilustracyjne SPRZED D3 (0.875) bez znacznika
+  „przed/po" w tekście; rekoncyliacja do 0.75 (poprawka-dogrywka w dokumentacji).
+- **`sophia-1e2-mllm-atomy.md` ~l.1437** — nieaktualne zdanie „manifest na starych
+  wartościach — blocker"; #221 to naprawił, usunąć.
+- **Leo N1/N2 (#219-followup)** — brzeg Pipeline/podklasa w komunikacie D1; brak
+  testu jednostkowego Gałęzi A.
 
-- **Next.js 16.2.9 → 16.2.11** (#210, `c1b6f9a`) — 4 wysokie advisory App Router
-  (bypass middleware, DoS, 2× SSRF), `>=16.0.0 <16.2.11`. Nota N1 (niżej): u nas bypass
-  pośrednika to utwardzenie, bo autoryzacja żyje w trasach/RSC, nie w middleware.
-- **PostCSS override `^8.5.22`** (#214, `345b08f`) — GHSA-6g55-p6wh-862q „arbitrary
-  file read", `<=8.5.11`, opublikowane 2026-07-23 po łatce Next. Transitive (via
-  `@tailwindcss/postcss`/next), override wzorcem undici/fast-uri/sharp. **Wzorzec dnia:
-  nocne/dzienne advisory czerwienią deps-scan na main niezależnie od pracy — diagnoza,
-  osobny wąski PR z override/bumpem, nie obchodzenie.**
+### NASTĘPNE (kolejność)
 
-**Baza po tych zmianach:** `main` = `2e15aeb`; strażnicy aktywni; deps-scan zielony.
-Hooki to warstwa dev-time + config — **nie dotykają aplikacji**, smoke prod bez zmian
-(`/` 200, `/login` 200, `/api/curriculum` 401, `/curriculum` 307). Produkcja nadal 44/58.
+1. **10 towarzyszy ćwiczeń M-ML/M-LLM** (Sophia, partiami w time-boksie) →
+   content-complete i prawdziwe **58/58**.
+2. **1E.3 mastery gate** (odblokowane — bramka na labach) → **1E.4 FSRS**
+   (odblokowane przez hintDepth #217).
+3. Dług dokumentacyjny (dogrywki wyżej).
+
+### Baseline `main` po tej sesji
+
+`8d4aa80` (#221). Notebooki **48/58**. Gałęzie NEON: **9**. Bramka środowiska
+(sonda Colab): **OTWARTA** (~2026-10-31).
 
 ---
 
