@@ -17,8 +17,6 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.dummy import DummyClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     confusion_matrix,
@@ -59,6 +57,9 @@ df
 
 # %% [markdown]
 # ## Twój model — napisz cały przepływ
+#
+# Ten lab weryfikuje model wzorcowy — drzewo z ziarnem; wolny wybór rodziny
+# modelu ćwiczysz na capstonie.
 #
 # 1. Cechy `X` (minuty, kwota, godzina) i cel `y` (napiwek).
 # 2. Podział z ziarnem: `X_tr, X_te, y_tr, y_te` (konwencja z ML.2).
@@ -161,10 +162,25 @@ def _zbierz_wyniki():
     y_pred_test = sorted([int(i), int(p)] for i, p in zip(X_te.index, pred))
     ref_vec = [[0, 1], [8, 1], [9, 1], [11, 0], [16, 1], [18, 1]]
     if y_pred_test != ref_vec:
+        if type(model).__name__ != "DecisionTreeClassifier":
+            raise RuntimeError(
+                "Twoj model to inna rodzina niz wzorzec tego labu. Ten lab weryfikuje wynik "
+                "wzgledem modelu kanonicznego — `DecisionTreeClassifier(random_state=42)` — wiec "
+                "czyta konkretny wektor predykcji, nie sama trafnosc. Twoj model (np. kNN, naiwny "
+                "Bayes) moze byc poprawny i uczciwy — kolumny i podzial moga byc dobre — ale daje "
+                "inne predykcje na granicznym przejezdzie id=18 (19 zl, tuz pod progiem napiwku), "
+                "na ktorym rodziny modeli legalnie sie roznia. To nie blad pipeline'u. Aby "
+                "zaliczyc ten lab, uzyj modelu kanonicznego: `DecisionTreeClassifier(random_state=42)`. "
+                "Wolny wybor rodziny modelu cwiczysz na capstonie, gdzie ocenia czlowiek."
+            )
         raise RuntimeError(
-            "Wektor predykcji Twojego modelu odbiega od wzorca uczciwego modelu (ml-7 D1) — "
-            "model powinien mylic wylacznie graniczny przejazd id=18. Sprawdz kolumny cech, "
-            "model i podzial."
+            "Wektor Twojego drzewa odbiega od wzorca. Najczestsza przyczyna, gdy roznica siada "
+            "na granicznym id=18: brak `random_state=42` w `DecisionTreeClassifier(...)` — drzewo "
+            "bez zamrozonego ziarna rozstrzyga remisy inaczej i przy tak malym zbiorze potrafi "
+            "trafic granice «przypadkiem», psujac powtarzalnosc (ML.1/ML.2). Jesli roznica jest "
+            "na innych przejazdach — sprawdz, czy cechy to dokladnie minuty/kwota/godzina, czy "
+            "trenujesz na `X_tr`/`y_tr`, a oceniasz na `X_te`. Ustaw "
+            "`DecisionTreeClassifier(random_state=42)`."
         )
 
     macierz = []

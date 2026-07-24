@@ -337,19 +337,22 @@ describe("symulacja sesji studenta M-ML: komórki → token → checki struktura
 	}
 
 	// ── Regresja parytetu wektora (ADR-020 §D1, warunek KONTRAKT-TESTU) ──
-	// Sześć legalnych pipeline'ów musi dać IDENTYCZNY wektor (i cały ładunek) —
-	// inaczej poprawny student z innym modelem dostałby fałszywą odmowę. To parytet
-	// analogiczny do parytetu DuckDB w M-SQL (ta sama liczba na różnych silnikach).
+	// Drzewo(z ziarnem)/kNN(k≥3)/regresja logistyczna mylą DOKŁADNIE id=18 i dają IDENTYCZNY
+	// wektor — to jest rodzina kanoniczna, NIE pełna model-agnostyczność. Pełnej agnostyczności
+	// na tym zbiorze NIE MA: id=18 jest graniczna, więc kNN=1 / drzewo-bez-ziarna / GaussianNB
+	// przewidują ją inaczej i dostają UCZCIWĄ odmowę D1 (kieruje na model kanoniczny — G4 2026-07-24).
+	// Parytet analogiczny do DuckDB w M-SQL, ale zawężony do rodziny kanonicznej. kNN/LogReg nie są
+	// już w nagłówku ml-7 (kanonizacja drzewa) — modele parytetu dostają import inline; token BEZ ZMIAN.
 	it(
-		"ml-7: sześć legalnych modeli → IDENTYCZNY token (model-agnostyczność D1, wszystkie mylą id=18)",
+		"ml-7: rodzina kanoniczna (drzewo-ziarno/kNN k≥3/LogReg) → IDENTYCZNY token (parytet D1 na id=18)",
 		() => {
 			const modele = [
 				"model = DecisionTreeClassifier(max_depth=1, random_state=42).fit(X_tr, y_tr)",
 				"model = DecisionTreeClassifier(max_depth=2, random_state=42).fit(X_tr, y_tr)",
 				"model = DecisionTreeClassifier(random_state=42).fit(X_tr, y_tr)",
-				"model = KNeighborsClassifier(n_neighbors=3).fit(X_tr, y_tr)",
-				"model = KNeighborsClassifier(n_neighbors=5).fit(X_tr, y_tr)",
-				"model = LogisticRegression(max_iter=1000).fit(X_tr, y_tr)",
+				"from sklearn.neighbors import KNeighborsClassifier\nmodel = KNeighborsClassifier(n_neighbors=3).fit(X_tr, y_tr)",
+				"from sklearn.neighbors import KNeighborsClassifier\nmodel = KNeighborsClassifier(n_neighbors=5).fit(X_tr, y_tr)",
+				"from sklearn.linear_model import LogisticRegression\nmodel = LogisticRegression(max_iter=1000).fit(X_tr, y_tr)",
 			];
 			const code = atomCode(STUDENT_ID, itemIdFor("ml-7"));
 			const oczekiwany = signToken(code, ML7_PAYLOAD);

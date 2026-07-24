@@ -1179,10 +1179,22 @@ i serwer zna je z góry.
 > z tej tabeli (liczony z FINALNEGO notebooka, ADR-020 §5). ADR §6 tę rozbieżność
 > zapowiada („test_ids i wektor się zmienią”).
 
-### Model-agnostyczność — dowód wykonaniem (nie „na papierze”)
+### Model-agnostyczność — ZAWĘŻONA po G4 (2026-07-24): parytet RODZINY KANONICZNEJ
 
-Warunek D1: poprawny student z **legalnym innym modelem** nie może dostać
-fałszywej odmowy. Sześć poprawnych pipeline'ów wytrenowanych na tym samym
+> **Korekta G4 (2026-07-24, decyzja „ODMAWIAĆ").** Wcześniej ta sekcja głosiła
+> „model-agnostyczność = TAK" bez zastrzeżeń — to było za mocne. Prawda zawężona:
+> **rodzina kanoniczna — drzewo(z ziarnem)/kNN(k≥3)/regresja logistyczna — myli
+> DOKŁADNIE id=18 i daje identyczny wektor; pełna model-agnostyczność na tym
+> zbiorze jest NIEMOŻLIWA, bo id=18 jest graniczna.** Legalne inne modele — kNN=1,
+> drzewo bez `random_state`, naiwny Bayes (GaussianNB) — przewidują id=18 poprawnie
+> (=0), dają INNY wektor i dostają odmowę D1. Lab **kanonizuje** model wzorcowy
+> `DecisionTreeClassifier(random_state=42)`, a komunikat odmowy jest teraz UCZCIWY:
+> odróżnia „legalny inny model" (kieruje na model kanoniczny; wolny wybór rodziny →
+> capstone) od „zepsuty pipeline". Kontrakt tokenu/wektor BEZ ZMIAN — naprawa jest
+> komunikat-only.
+
+Warunek D1 (zawężony): w **rodzinie kanonicznej** poprawny student nie dostaje
+fałszywej odmowy. Sześć pipeline'ów tej rodziny wytrenowanych na tym samym
 podziale (rs=42) daje **identyczny** `y_pred_test` co wzorzec — i wszystkie mylą
 **dokładnie próbkę 18**:
 
@@ -1195,8 +1207,10 @@ podziale (rs=42) daje **identyczny** `y_pred_test` co wzorzec — i wszystkie my
 | kNN k=5 | identyczny | 18 |
 | regresja logistyczna | identyczny | 18 |
 
-Wynik: **model-agnostyczność = TAK**. Kontrakt weryfikuje wynik (predykcje per
-próbka), nie metodę — nie odrzuca legalnych alternatyw, odrzuca błędne drogi.
+Wynik: **parytet w rodzinie kanonicznej = TAK; pełna model-agnostyczność = NIE**
+(id=18 graniczna — G4 2026-07-24). Kontrakt weryfikuje wynik konkretnego, kanonicznego
+modelu, nie dowolnej metody — odrzuca błędne drogi ORAZ legalne inne rodziny (te
+ostatnie z komunikatem kierującym na model wzorcowy, nie zarzutem o zepsuty pipeline).
 
 ### Cztery diagnozy odmów (ADR-020) — stringi dla buildera, 1:1 na grzechy modułu
 
@@ -1341,10 +1355,11 @@ po finalizacji ADR-020).
 1. **Zbiór Aneksu przetestowany, NIE przeprojektowany.** Publikowane liczby
    odtworzone co do joty (baseline 0.6667, model 0.8333, macierz [[1,1],[0,4]],
    precyzja 0.8, czułość 1.0, test_ids [0,8,9,11,16,18]).
-2. **Model-agnostyczność = TAK** — sześć poprawnych pipeline'ów (drzewo głęb.
-   1/2/bez limitu, kNN k=3/5, regresja logistyczna) dają identyczny `y_pred_test`
-   i mylą DOKŁADNIE próbkę id=18. Dowód wykonaniem, nie „na papierze”. Zmiana 1
-   do ADR (weryfikacja wykonaniem, nie tylko na atrapie) — zamknięta bez blockera.
+2. **Parytet rodziny kanonicznej = TAK** (zawężone po G4 2026-07-24 — patrz sekcja
+   „Model-agnostyczność"; pełna agnostyczność = NIE, bo id=18 graniczna) — sześć
+   pipeline'ów rodziny kanonicznej (drzewo głęb. 1/2/bez limitu, kNN k=3/5, regresja
+   logistyczna) dają identyczny `y_pred_test` i mylą DOKŁADNIE próbkę id=18. Dowód
+   wykonaniem, nie „na papierze”. Zmiana 1 do ADR — zamknięta bez blockera.
 3. **Cztery błędne drogi zmierzone na REALNYM zbiorze** (nie na atrapie z ADR §7):
    zły podział rs=5 (0.833, przechodzi skalar, `test_ids` [2,17,18,19,20,23]),
    ocena na treningu (1.0, 18 kluczy), klasa większościowa i wszystko pozytywne

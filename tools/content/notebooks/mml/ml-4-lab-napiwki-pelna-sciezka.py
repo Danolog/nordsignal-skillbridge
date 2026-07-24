@@ -140,10 +140,11 @@ def _zbierz_wyniki():
     ref_vec = [[0, 1], [8, 1], [9, 1], [11, 0], [16, 1], [18, 1]]
     if y_pred_test != ref_vec:
         raise RuntimeError(
-            "Wektor predykcji Twojego modelu odbiega od wzorca uczciwego modelu "
-            "(ml-4 D1) — model powinien mylic wylacznie graniczny przejazd id=18 (19 zl, tuz "
-            "pod progiem napiwku). Sprawdz, czy trenujesz `DecisionTreeClassifier(random_state=42)` "
-            "na `X_tr`/`y_tr` i oceniasz na `X_te`."
+            "Wektor predykcji odbiega od wzorca tego labu. Wzorcowy model — "
+            "`DecisionTreeClassifier(random_state=42)` z luki 4 — myli dokladnie jeden przejazd: "
+            "graniczny id=18 (19 zl, tuz pod progiem napiwku). Twoj wektor jest inny, wiec cos w "
+            "pipelinie sie rozjechalo: sprawdz, czy nie zmieniles(-as) modelu z luki 4, czy "
+            "trenujesz na `X_tr`/`y_tr`, oceniasz na `X_te`, a podzial ma `random_state=42`."
         )
 
     return {
