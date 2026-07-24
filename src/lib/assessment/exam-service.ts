@@ -16,10 +16,23 @@
 // ============================================================================
 
 import { createHash } from "node:crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { type ExamConfig, parseExamConfig } from "@/lib/curriculum/exam-config";
 import { db } from "@/lib/db";
-import { curriculumModuleItems, curriculumModules, questionItems, students } from "@/lib/db/schema";
+import {
+	curriculumItemConcepts,
+	curriculumModuleItems,
+	curriculumModules,
+	questionConcepts,
+	questionItems,
+	students,
+} from "@/lib/db/schema";
+import {
+	assembleCorrectives,
+	CORRECTIVES_ATOM_KINDS,
+	type CorrectivesAtomRow,
+	type CorrectivesPackage,
+} from "./correctives";
 import type { ExamBank, ExamSlot, ExamVariant } from "./exam";
 
 /** TTL sesji egzaminu (wzorzec diagnozy) — sprawdzany leniwie przy wznowieniu. */
@@ -152,6 +165,60 @@ export async function loadExamBank(moduleId: string, moduleSlug: string): Promis
 	}
 	if (slots.length === 0) return null;
 	return { moduleSlug, slots };
+}
+
+/**
+ * buildCorrectivesPackage — paczka remediacji dla OBLANEGO egzaminu po cap 2
+ * (P4, ADR-014 D3). Dla każdego konceptu błędnego pytania (`failedConcepts`)
+ * wskazuje ≤3 atomy uczące (theory/exercise) przez kręgosłup konceptów.
+ *
+ * Mapowanie koncept→atom (relacja): question_concepts.slug ─(id)→
+ * curriculum_item_concepts.concept_id ─→ .item_id ─→ curriculum_module_items
+ * (kind ∈ theory/exercise). LEFT JOIN od question_concepts: koncept bez atomu
+ * (R2) i tak wraca (z nazwą, pustą listą atomów) — degradacja, nie wywrotka.
+ * Dedup i przycięcie ≤3 robi assembleCorrectives (czyste). Sort (koncept,
+ * moduł, pozycja) daje deterministyczne „pierwsze 3".
+ *
+ * Odczyt owner-side (`db`): curriculum to treść STATYCZNA (niemutowana przez
+ * complete), więc czytanie poza transakcją sesji jest bezpieczne — brak
+ * zależności od stanu zapisywanego w tej samej transakcji.
+ */
+export async function buildCorrectivesPackage(
+	failedConcepts: readonly string[],
+	errorCount: number,
+): Promise<CorrectivesPackage> {
+	if (failedConcepts.length === 0) {
+		return assembleCorrectives([], errorCount, []);
+	}
+	const rows = await db
+		.select({
+			conceptSlug: questionConcepts.slug,
+			conceptName: questionConcepts.name,
+			atomSlug: curriculumModuleItems.slug,
+			atomTitle: curriculumModuleItems.title,
+			atomKind: curriculumModuleItems.kind,
+			moduleSlug: curriculumModules.slug,
+		})
+		.from(questionConcepts)
+		.leftJoin(curriculumItemConcepts, eq(curriculumItemConcepts.conceptId, questionConcepts.id))
+		// Filtr rodzaju atomu w warunku JOIN (nie WHERE) — inaczej LEFT JOIN gubi
+		// koncepty, które mają WYŁĄCZNIE atomy innego rodzaju (np. lab), zamiast
+		// zwrócić je z pustą listą (R2).
+		.leftJoin(
+			curriculumModuleItems,
+			and(
+				eq(curriculumModuleItems.id, curriculumItemConcepts.itemId),
+				inArray(curriculumModuleItems.kind, [...CORRECTIVES_ATOM_KINDS]),
+			),
+		)
+		.leftJoin(curriculumModules, eq(curriculumModules.id, curriculumModuleItems.moduleId))
+		.where(inArray(questionConcepts.slug, [...failedConcepts]))
+		.orderBy(
+			asc(questionConcepts.slug),
+			asc(curriculumModules.slug),
+			asc(curriculumModuleItems.position),
+		);
+	return assembleCorrectives(failedConcepts, errorCount, rows as CorrectivesAtomRow[]);
 }
 
 // buildExamQuestionPayload / ExamQuestionPayload — czysta logika payloadu:

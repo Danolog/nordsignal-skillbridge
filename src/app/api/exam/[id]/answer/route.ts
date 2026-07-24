@@ -138,6 +138,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 			}
 
 			const isCorrect = gradeAnswer("single_choice", { correct: variant.correct }, body.answer);
+			// Zapis odpowiedzi = jednocześnie ŚLAD AKTYWNOŚCI (P4/1.18): answered_at
+			// tego wiersza czyta getActivityTrace (assessment_answers w UNION), więc
+			// podejście do egzaminu liczy się do streaka bez osobnego wpięcia.
 			await tx.insert(assessmentAnswers).values({
 				sessionId: id,
 				studentId: student.id,

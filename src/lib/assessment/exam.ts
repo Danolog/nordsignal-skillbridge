@@ -16,6 +16,7 @@
 // ani treści. Serwowanie pytania strippuje `correct` (exam-service.ts).
 // ============================================================================
 
+import type { CorrectivesPackage } from "./correctives";
 import { fnv1a } from "./plan";
 
 /** Cap wariantów = cap podejść (ADR D1: 2 warianty izomorficzne A/B). */
@@ -113,9 +114,20 @@ export interface ExamOutcome {
 	failedConcepts: string[];
 	/**
 	 * Sygnał „uruchom correctives" = oblany po wyczerpaniu podejść (attempt ≥
-	 * EXAM_MAX_ATTEMPTS i !passed). TYLKO flaga — paczkę atomów buduje P4.
+	 * EXAM_MAX_ATTEMPTS i !passed). Flaga werdyktu (0 DB); paczkę atomów dokłada
+	 * P4 owner-side (ExamResultJson.correctivesPackage) — patrz niżej.
 	 */
 	correctives: boolean;
+}
+
+/**
+ * Koperta zapisywana do assessment_sessions.result_json — werdykt (ExamOutcome,
+ * 0 DB) PLUS opcjonalna paczka correctives (P4, budowana owner-side z banku
+ * koncept↔atom). `correctivesPackage` istnieje WYŁĄCZNIE gdy `correctives===true`
+ * (oblany po cap 2); przy zdanym/retry przed cap 2 pole jest nieobecne.
+ */
+export interface ExamResultJson extends ExamOutcome {
+	correctivesPackage?: CorrectivesPackage;
 }
 
 /** Slot w kształcie wystarczającym do zbudowania planu (bez treści wariantów). */

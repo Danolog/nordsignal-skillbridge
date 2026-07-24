@@ -4,7 +4,9 @@
  * aktywność zostawia znacznik czasu:
  *  - project_submissions.updated_at (submit / re-submit / zmiana statusu pracą),
  *  - tutor_turns.created_at (rozmowa z tutorem),
- *  - assessment_answers.answered_at (diagnoza),
+ *  - assessment_answers.answered_at (diagnoza ORAZ egzamin modułowy 1E.3 —
+ *    odpowiedzi egzaminu piszą do tej samej tabeli, więc KAŻDE podejście do
+ *    egzaminu, zdane czy nie, zostawia tu ślad; P4 nie dokłada nowego źródła),
  *  - viva_answers.answered_at (obrona),
  *  - project_reflections.updated_at (refleksja),
  *  - study_checkins.created_at (ręczny check-in — też jest aktywnością).
