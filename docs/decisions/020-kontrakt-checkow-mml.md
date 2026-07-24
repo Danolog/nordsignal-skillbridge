@@ -1,5 +1,15 @@
 # ADR-020 — Nowy kontrakt checków dla M-ML: wektor predykcji, pochodzenie podziału i bramka przecieku zamiast gołej metryki
 
+- **Wersja:** v1.2 · 2026-07-24 — **korekta protokołu parytetu (G4, decyzja „ODMAWIAĆ")**,
+  zakres komunikat-only. Zawężenie za mocnego twierdzenia z v1.1: było „każdy rozsądny pipeline
+  myli DOKŁADNIE id=18" → jest „**rodzina kanoniczna — drzewo(z ziarnem)/kNN(k≥3)/regresja
+  logistyczna — myli id=18 i daje identyczny wektor; pełna model-agnostyczność na tym zbiorze jest
+  NIEMOŻLIWA, bo id=18 jest graniczna**". Legalne inne modele (kNN=1, drzewo bez `random_state`,
+  GaussianNB) trafiają id=18 poprawnie → inny wektor → odmowa D1; stąd **kanonizacja modelu
+  wzorcowego** `DecisionTreeClassifier(random_state=42)` i **uczciwy komunikat D1** odróżniający
+  „legalny inny model" od „zepsuty pipeline". Kontrakt tokenu/wektor/`expect` **BEZ ZMIAN** —
+  poprawiono wyłącznie komunikaty pieczątki ml-4/ml-7 + ten protokół. Zamyka dług następczy #219
+  (Quinn+Leo). Decyzja Darka/G4 2026-07-24 (delegacja techniczna Ethana, `CLAUDE.md` §5).
 - **Wersja:** v1.1 · 2026-07-23 — **ZAAKCEPTOWANY** po przeglądzie domenowym Sophii (PO,
   produkt = sign-off §8 QA `CLAUDE.md`). Wcielono 4 zmiany przeglądu Sophii i uzgodniono wektor
   referencyjny z realnym zbiorem Aneksu (charakterystyczna pomyłka modelu na próbce **id=18**,
@@ -190,9 +200,15 @@ alternatyw; odrzuca błędne drogi.
 **Warunek KONTRAKT-TESTU dla D1 (wzmocnienie z przeglądu Sophii).** D1 ma moc tylko wtedy,
 gdy wektor referencyjny jest **stabilny między pipeline'ami i wersjami biblioteki** — inaczej
 poprawny student z legalnym innym modelem albo inną wersją scikit-learn dostałby fałszywą
-odmowę. Dlatego warunek nie brzmi już miękko „model myli ≥1 próbkę", lecz twardo: **każdy
-rozsądny pipeline (drzewo głęb. 1–2, kNN, regresja logistyczna) musi mylić DOKŁADNIE TĘ SAMĄ
-próbkę i dawać identyczny wektor.** To jest parytet analogiczny do **parytetu DuckDB** z M-SQL
+odmowę. Dlatego warunek nie brzmi już miękko „model myli ≥1 próbkę", lecz twardo — ale
+**zawężony do RODZINY KANONICZNEJ (korekta G4, 2026-07-24):** **rodzina kanoniczna — drzewo
+(z ziarnem)/kNN(k≥3)/regresja logistyczna — myli DOKŁADNIE TĘ SAMĄ próbkę id=18 i daje identyczny
+wektor.** **Pełna model-agnostyczność na tym zbiorze jest jednak NIEMOŻLIWA, bo id=18 jest
+graniczna:** legalne inne modele (kNN=1, drzewo bez `random_state`, GaussianNB) trafiają id=18
+poprawnie (=0), dają inny wektor i **z założenia** dostają odmowę D1 — stąd **kanonizacja modelu
+wzorcowego** `DecisionTreeClassifier(random_state=42)` i uczciwy komunikat D1 odróżniający „legalny
+inny model" (kieruje na model kanoniczny) od „zepsuty pipeline". To jest parytet analogiczny do
+**parytetu DuckDB** z M-SQL
 (ADR-017: ta sama liczba na różnych silnikach SQL) — tu: ta sama lista `y_pred_test` na różnych
 algorytmach ML i wersjach sklearn. Kontrakt-test regresyjny (Quinn/Eva, §5) egzekwuje ten
 parytet jako warunek konieczny, nie życzenie. **Dowód wykonaniem (Sophia, zbiór Aneksu):**
@@ -454,9 +470,13 @@ ADR-017 liczył z finalnych danych.
   [[1,1],[0,4]], `prec`=0.8, `rec`=1.0, `test_ids`=[0,8,9,11,16,18], wektor
   `[[0,1],[8,1],[9,1],[11,0],[16,1],[18,1]]`. Model myli próbkę **id=18** (fałszywy alarm:
   graniczny kurs 19 zł, przewiduje napiwek, prawda 0).
-- **Parytet wektora (warunek D1) — 6 pipeline'ów:** drzewo głęb. 1/2/bez limitu, kNN k=3/5,
-  regresja logistyczna → **identyczny wektor**, wszystkie mylą DOKŁADNIE **id=18**. Kontrakt
-  weryfikuje wynik, nie metodę — parytet jak DuckDB w M-SQL (ADR-017).
+- **Parytet wektora (warunek D1) — 6 pipeline'ów RODZINY KANONICZNEJ:** drzewo głęb. 1/2/bez
+  limitu, kNN k=3/5, regresja logistyczna → **identyczny wektor**, wszystkie mylą DOKŁADNIE
+  **id=18**. Kontrakt weryfikuje wynik modelu kanonicznego, nie dowolnej metody — parytet jak
+  DuckDB w M-SQL (ADR-017). **Zawężenie G4 (2026-07-24):** to parytet w rodzinie kanonicznej,
+  nie pełna model-agnostyczność — legalne inne modele (kNN=1, drzewo bez `random_state`, GaussianNB)
+  trafiają id=18 poprawnie (=0) i dają inny wektor, bo **id=18 jest graniczna**; dostają odmowę D1
+  z komunikatem kierującym na model wzorcowy (kanonizacja, nie zarzut o zepsuty pipeline).
 - **Zły podział** `random_state=5`: `acc_model`=0.8333 (**przechodzi naiwny skalar**), zestaw
   testowy [2,17,18,19,20,23] ≠ wzorzec → **provenance (D2) odrzuca**.
 - **Ocena na treningu**: `acc`=1.0, 18 predykcji, obce klucze → **D1+D2 odrzucają**.
