@@ -2,9 +2,13 @@
 // 1E.3 · P5 — kontrakt KLIENCKI tras egzaminu modułowego (mastery gate).
 //
 // To jest lustro odpowiedzi tras `/api/exam/*` w kształcie, którego używa
-// warstwa UI (ExamRunner). Buduję PRZECIW temu kontraktowi — backend P4.5
-// (423 correctives_required, twarda blokada 3. próby) żyje na osobnej gałęzi,
-// integracja po merge obu. Tu tylko TYPY + strażniki, zero fetchy, zero DB.
+// warstwa UI (ExamRunner). Backend P4.5 (423 correctives_required, twarda
+// blokada 3. próby) zmergowany na main — kontrakt ZWERYFIKOWANY 1:1 z trasami:
+//  - /start 201/200: {sessionId, resumed, attempt, total, question},
+//  - /start 423:      {state:"correctives_required", correctivesPackage},
+//  - /[id]/answer:    {accepted, done, question} (body {slotRef, answer:{selected}}),
+//  - /[id]/complete:  {completed, result} (result.correctivesPackage gdy S-C).
+// Tu tylko TYPY + strażniki, zero fetchy, zero DB.
 //
 // Źródło prawdy kształtu: src/app/api/exam/{start,[id]/answer,[id]/complete}/
 // route.ts + decyzje Sophii (docs/product/decyzje-1e3-p5-egzamin-v0.1.md, D2)

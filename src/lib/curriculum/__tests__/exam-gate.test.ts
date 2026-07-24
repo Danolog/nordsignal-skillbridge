@@ -2,9 +2,12 @@
  * 1E.3 · P5 — derywacja pod-stanu bramki egzaminu (Mila 3.2 + Sophia D6.1):
  *  - brak egzaminu → none,
  *  - verified (exam/test_out) wygrywa nad wszystkim (E4),
- *  - S-C (correctives, nieodbyte) PRZED E3 (po 2. oblaniu pozycje też zrobione),
+ *  - S-C (correctivesRequired, z paczką) PRZED E3 (po 2. oblaniu pozycje też zrobione),
  *  - E3 (wszystkie pozycje) przed E1 (test-out),
- *  - correctivesResolved=true zdejmuje S-C (świeży cykl → gate).
+ *  - reset cyklu (correctivesRequired=false) zdejmuje S-C → gate.
+ *
+ * P4.5 (Sophia D4): wejście S-C to teraz `correctivesRequired` + `correctivesPackage`
+ * z evaluateExamCycle (jedno źródło cyklu), a nie derywacja z ostatniej sesji.
  */
 
 import { describe, expect, it } from "vitest";
@@ -22,8 +25,8 @@ const base = (over: Partial<ExamGateInput> = {}): ExamGateInput => ({
 	completedItems: 0,
 	itemCount: 5,
 	verifiedByMethod: null,
-	lastExam: null,
-	correctivesResolved: null,
+	correctivesRequired: false,
+	correctivesPackage: null,
 	...over,
 });
 
@@ -54,12 +57,13 @@ describe("deriveExamGate", () => {
 		expect(deriveExamGate(base({ completedItems: 2, itemCount: 5 })).kind).toBe("none");
 	});
 
-	it("correctives_in_progress (S-C), gdy oblany cap-2 z paczką i nieodbyte", () => {
+	it("correctives_in_progress (S-C), gdy correctivesRequired z paczką", () => {
 		const view = deriveExamGate(
 			base({
 				completedItems: 5,
 				itemCount: 5,
-				lastExam: { passed: false, correctives: true, pkg },
+				correctivesRequired: true,
+				correctivesPackage: pkg,
 			}),
 		);
 		expect(view.kind).toBe("correctives_in_progress");
@@ -71,30 +75,32 @@ describe("deriveExamGate", () => {
 			base({
 				completedItems: 5,
 				itemCount: 5,
-				lastExam: { passed: false, correctives: true, pkg },
+				correctivesRequired: true,
+				correctivesPackage: pkg,
 			}),
 		);
 		expect(view.kind).not.toBe("gate");
 	});
 
-	it("correctivesResolved=true zdejmuje S-C → gate (świeży cykl)", () => {
+	it("reset cyklu (correctivesRequired=false) zdejmuje S-C → gate (świeży cykl)", () => {
 		const view = deriveExamGate(
 			base({
 				completedItems: 5,
 				itemCount: 5,
-				lastExam: { passed: false, correctives: true, pkg },
-				correctivesResolved: true,
+				correctivesRequired: false,
+				correctivesPackage: null,
 			}),
 		);
 		expect(view.kind).toBe("gate");
 	});
 
-	it("oblany PRZED cap-2 (correctives=false) nie wchodzi w S-C", () => {
+	it("correctivesRequired=true bez paczki NIE wchodzi w S-C (defensywnie → gate)", () => {
 		const view = deriveExamGate(
 			base({
 				completedItems: 5,
 				itemCount: 5,
-				lastExam: { passed: false, correctives: false, pkg: null },
+				correctivesRequired: true,
+				correctivesPackage: null,
 			}),
 		);
 		expect(view.kind).toBe("gate");

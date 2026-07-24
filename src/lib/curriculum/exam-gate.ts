@@ -12,20 +12,22 @@
 //  - gate: wszystkie pozycje zrobione, egzamin nie zdany (E3) — „Podejdź",
 //  - test_out: available, 0 pozycji (E1) — Blok B „Test out" (mniej eksponowany),
 //  - correctives_in_progress: 2 oblania w cyklu, correctives NIE odbyte (S-C) —
-//    „Dokończ powtórkę" + paczka (Ekran 5 z ostatniego wyniku).
+//    „Dokończ powtórkę" + paczka (z result_json zablokowanego cyklu).
 //
-// SEAM INTEGRACYJNY (P4.5): `correctivesResolved` = sygnał „correctives cyklu
-// odbyte" (Sophia D4, [WYMÓG BACKENDU]). Do czasu merge P4.5 assembler czyta go
-// jako `null` (nieznane) i konserwatywnie pokazuje S-C po oblaniu cap-2 — nie
-// zgaduje, że correctives odbyte. Po merge: podłączyć realny sygnał (patrz TODO).
+// INTEGRACJA P4.5 (Sophia D4): stan S-C czytamy z `evaluateExamCycle` (warstwa
+// serwisowa egzaminu) — JEDYNE źródło prawdy cyklu. Zwraca `correctivesRequired`
+// (correctives cyklu wymagane i NIEODBYTE) + `correctivesPackage` (paczka
+// zablokowanego cyklu). Reset cyklu (correctives odbyte) → `correctivesRequired
+// = false` → bramka wraca do „Podejdź". NIE liczymy cyklu tutaj — konsumujemy
+// werdykt serwisu (zero duplikacji logiki znaczników czasu / granicy cyklu).
 // ============================================================================
 
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { CorrectivesPackage } from "@/lib/assessment/correctives";
-import type { ExamResultJson } from "@/lib/assessment/exam";
+import { evaluateExamCycle } from "@/lib/assessment/exam-service";
 import type { ModuleStatus } from "@/lib/curriculum/ladder";
 import { db } from "@/lib/db";
-import { assessmentSessions, curriculumModuleProgress, curriculumModules } from "@/lib/db/schema";
+import { curriculumModuleProgress, curriculumModules } from "@/lib/db/schema";
 
 /** Widok bramki egzaminu — jeden z pod-stanów Ekranu 1 (Mila 3.2 / Sophia D6.1). */
 export type ExamGateView =
@@ -44,14 +46,17 @@ export interface ExamGateInput {
 	itemCount: number;
 	/** `curriculum_module_progress.verified_by_method` — E4 gdy exam/test_out. */
 	verifiedByMethod: string | null;
-	/** Ostatnia DOMKNIĘTA sesja egzaminu tego modułu (wykrycie S-C). */
-	lastExam: { passed: boolean; correctives: boolean; pkg: CorrectivesPackage | null } | null;
 	/**
-	 * P4.5 [WYMÓG BACKENDU — Sophia D4]: czy correctives bieżącego cyklu odbyte.
-	 * `null` = sygnał jeszcze niepodłączony (P4.5 niezmergowane) → konserwatywnie
-	 * traktuj jak „nieodbyte" (pokaż S-C). `true` → bramka wraca do „Podejdź".
+	 * P4.5 (Sophia D4) — `evaluateExamCycle.correctivesRequired`: correctives
+	 * bieżącego cyklu WYMAGANE i NIEODBYTE (S-C, 2 oblania w cyklu). Reset cyklu
+	 * (correctives odbyte / cykl świeży) → `false` → bramka wraca do „Podejdź".
 	 */
-	correctivesResolved: boolean | null;
+	correctivesRequired: boolean;
+	/**
+	 * Paczka correctives zablokowanego cyklu (`evaluateExamCycle.correctivesPackage`).
+	 * Obecna ⟺ `correctivesRequired`; `null` w każdym innym stanie.
+	 */
+	correctivesPackage: CorrectivesPackage | null;
 }
 
 /**
@@ -60,20 +65,14 @@ export interface ExamGateInput {
  * pozycje też są zrobione); E3 przed E1. Czysta funkcja — sedno testowalne bez DB.
  */
 export function deriveExamGate(input: ExamGateInput): ExamGateView {
-	const { hasExam, moduleStatus, completedItems, itemCount, verifiedByMethod, lastExam } = input;
+	const { hasExam, moduleStatus, completedItems, itemCount, verifiedByMethod } = input;
 	if (!hasExam) return { kind: "none" };
 	if (verifiedByMethod === "exam" || verifiedByMethod === "test_out") {
 		return { kind: "verified" };
 	}
-	// S-C: oblany po wyczerpaniu cap 2, correctives wymagane i NIE odbyte.
-	if (
-		lastExam &&
-		!lastExam.passed &&
-		lastExam.correctives &&
-		lastExam.pkg &&
-		input.correctivesResolved !== true
-	) {
-		return { kind: "correctives_in_progress", pkg: lastExam.pkg };
+	// S-C: correctives cyklu wymagane i NIEODBYTE (werdykt evaluateExamCycle, D2/D4).
+	if (input.correctivesRequired && input.correctivesPackage) {
+		return { kind: "correctives_in_progress", pkg: input.correctivesPackage };
 	}
 	// E3: wszystkie pozycje zrobione, egzamin nie zdany (moduł nie zaliczony).
 	if (itemCount > 0 && completedItems >= itemCount) {
@@ -96,9 +95,10 @@ function coarseStatus(rawStatus: string | undefined): ModuleStatus {
 /**
  * getModuleExamGate — owner-side read (wzorzec ladder.ts) zbierający wejście
  * derywacji dla strony modułu. Wołany WYŁĄCZNIE gdy flaga masteryGate ON.
- * Czyta sam: istnienie egzaminu, wiersz progress (status + verified_by_method),
- * ostatnią domkniętą sesję egzaminu. Strona podaje tylko liczby pozycji, które
- * i tak już ma (getModuleItems). NIE dotyka tras ani silnika egzaminu.
+ * Czyta: istnienie egzaminu, wiersz progress (status + verified_by_method); stan
+ * S-C (correctives) deleguje do `evaluateExamCycle` (warstwa serwisowa egzaminu)
+ * — nie liczy cyklu sam. Strona podaje tylko liczby pozycji, które i tak już ma
+ * (getModuleItems). NIE dotyka tras ani silnika egzaminu (tylko odczyt cyklu).
  */
 export async function getModuleExamGate(params: {
 	studentId: string;
@@ -130,30 +130,10 @@ export async function getModuleExamGate(params: {
 	const hasExam = moduleRow?.examConfigJson != null;
 	if (!hasExam) return { kind: "none" };
 
-	// Ostatnia domknięta sesja egzaminu tego modułu — wykrycie S-C (correctives).
-	const [last] = await db
-		.select({ resultJson: assessmentSessions.resultJson })
-		.from(assessmentSessions)
-		.where(
-			and(
-				eq(assessmentSessions.studentId, studentId),
-				eq(assessmentSessions.kind, "module_exam"),
-				eq(assessmentSessions.moduleId, moduleId),
-				eq(assessmentSessions.status, "completed"),
-			),
-		)
-		.orderBy(desc(assessmentSessions.completedAt))
-		.limit(1);
-
-	let lastExam: ExamGateInput["lastExam"] = null;
-	if (last?.resultJson) {
-		const r = last.resultJson as ExamResultJson;
-		lastExam = {
-			passed: r.passed,
-			correctives: r.correctives,
-			pkg: r.correctivesPackage ?? null,
-		};
-	}
+	// P4.5 (Sophia D4): stan cyklu = jedyne źródło S-C. evaluateExamCycle derywuje
+	// granicę cyklu + correctivesRequired z assessment_sessions + curriculum_item_answers
+	// (owner-side, znaczniki czasu). Konsumujemy werdykt — zero duplikacji logiki cyklu.
+	const cycle = await evaluateExamCycle(studentId, moduleId);
 
 	return deriveExamGate({
 		hasExam,
@@ -161,11 +141,8 @@ export async function getModuleExamGate(params: {
 		completedItems: params.completedItems,
 		itemCount: params.itemCount,
 		verifiedByMethod: progressRow?.verifiedByMethod ?? null,
-		lastExam,
-		// TODO(P4.5 merge): podłączyć realny sygnał „correctives cyklu odbyte"
-		// (Sophia D4 — derywacja z curriculum_item_answers po completedAt 2. oblania).
-		// Do tego czasu null = nieznane → S-C pokazywany konserwatywnie.
-		correctivesResolved: null,
+		correctivesRequired: cycle.correctivesRequired,
+		correctivesPackage: cycle.correctivesPackage ?? null,
 	});
 }
 
