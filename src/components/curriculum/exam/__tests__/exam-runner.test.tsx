@@ -221,6 +221,30 @@ describe("ExamRunner — 423 correctives_required z /start (S-C)", () => {
 		expect(await screen.findByText(/Czas na uzupełnienie materiału/)).toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: /Rozpocznij|Spróbuj/ })).not.toBeInTheDocument();
 	});
+
+	// I3 (Leo): evaluateExamCycle może zwrócić correctivesRequired bez paczki →
+	// start route serializuje `correctivesPackage: undefined` (klucz znika z JSON).
+	// isCorrectivesRequired → false. Kontrakt: NIE crash, NIE Ekran 5, NIE wpuszcza
+	// do egzaminu (żadna sesja nie powstała — 423). Degradacja do błędu startu,
+	// nie do fałszywego „start OK". Ten test przygważdża tę granicę (Quinn/QA).
+	it("423 bez paczki (I3) → NIE crash, NIE Ekran 5, brak wejścia do egzaminu", async () => {
+		const user = userEvent.setup();
+		// 423 bez pola correctivesPackage (kształt po JSON.stringify undefined).
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(423, { state: "correctives_required" }));
+		vi.stubGlobal("fetch", fetchMock);
+		render(<ExamRunner moduleId="m1" moduleTitle="Python" />);
+		await user.click(screen.getByRole("button", { name: "Rozpocznij egzamin" }));
+
+		// Blokada trzyma: brak Ekranu 5 (nie ma paczki do pokazania) i brak pytania —
+		// nie weszliśmy do egzaminu. Komunikat błędu startu zamiast wywrotki.
+		expect(await screen.findByRole("alert")).toBeInTheDocument();
+		expect(screen.queryByText(/Czas na uzupełnienie materiału/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/^Pytanie 1 z/)).not.toBeInTheDocument();
+		// Dokładnie jedno wywołanie /start — 423 nie wywołało pętli ani complete.
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
 });
 
 describe("ExamRunner — błędy startu i odpowiedzi", () => {
