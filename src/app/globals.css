@@ -191,7 +191,7 @@
 	--secondary: oklch(0.97 0 0);
 	--secondary-foreground: oklch(0.205 0 0);
 	--muted: oklch(0.97 0 0);
-	--muted-foreground: oklch(0.556 0 0);
+	--muted-foreground: oklch(0.5 0 0); /* było 0.556 — WCAG AA: 4.34:1 na bg-muted (fail); 0.5 → 5.50:1 na bg-muted, 6.00:1 na bieli. R5 fix 1E.3 mastery gate a11y. */
 	--accent: oklch(0.97 0 0);
 	--accent-foreground: oklch(0.205 0 0);
 	--destructive: oklch(0.577 0.245 27.325);

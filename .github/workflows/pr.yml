@@ -190,6 +190,144 @@ jobs:
       - run: pnpm deps:scan
 
   # ─────────────────────────────────────────────────────────────────────────
+  # a11y-exam — Playwright + @axe-core/playwright, TWARDA bramka WCAG na 3
+  # ekranach UI egzaminu modułowego (1E.3). Warunek Leo przed zapłonem
+  # FLAG_MASTERY_GATE na prod (opcja A z review: dedykowany, BLOKUJĄCY job).
+  #
+  # BLOKUJĄCY: brak `if:` (jak lint/typecheck/test/integration/build) — biega na
+  # pull_request i push do main; fail axe = czerwony check PR-a. (Wpięcie do
+  # required-status-checks to osobna, administracyjna zmiana branch protection —
+  # poza plikiem workflow; patrz raport Evy.)
+  #
+  # BEZ MODELU: trzy ścieżki a11y nie wołają LLM — (a) ekran startowy „confirm",
+  # (b)/(c) mockują POST /api/exam/start (page.route 201 / 423). Stąd BRAK klucza
+  # ANTHROPIC i BRAK override modelu — job tańszy i szybszy od e2e-llm.
+  #
+  # DLACZEGO POSTGRES + REDIS/SRH: strona egzaminu to server component, który robi
+  # notFound() gdy modułu o danym UUID nie ma w bazie → wszystkie 3 ścieżki
+  # najpierw page.goto(/curriculum/<UUID>/exam) i potrzebują ZASEEDOWANEJ bazy.
+  # `next start` (build produkcyjny) ma boot-guard rate-limitera — bez configu
+  # Upstash serwer nie wstaje; lokalny redis + SRH (REST zgodny z Upstash na
+  # loopbacku) go zaspokajają, zero sekretów prod (identycznie jak e2e-llm).
+  a11y-exam:
+    name: a11y-exam (Playwright + @axe-core skan bramki 1E.3)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: skillbridge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      srh:
+        image: hiett/serverless-redis-http:latest
+        ports:
+          - 8079:80
+        env:
+          SRH_MODE: env
+          # Token loopbacku CI — NIE sekret (para do UPSTASH_REDIS_REST_TOKEN
+          # niżej; forma „example-" celowa: to jawny placeholder, nie poświadczenie).
+          SRH_TOKEN: example-e2e-ci-token
+          SRH_CONNECTION_STRING: "redis://redis:6379"
+    env:
+      # Placeholder testowy (32 znaki) — nie sekret. Realny prod bierze z Vercela.
+      BETTER_AUTH_SECRET: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      UPSTASH_REDIS_REST_URL: http://localhost:8079
+      UPSTASH_REDIS_REST_TOKEN: example-e2e-ci-token
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      # OBIE flagi — exam page robi notFound() bez AND (page.tsx:32). Bez nich skan
+      # renderowałby 404, a „zielono" nic by nie znaczyło. Playwright webServer
+      # dziedziczy env procesu joba → `next start` widzi obie flagi zapalone.
+      FLAG_MASTERY_GATE: "1"
+      FLAG_CURRICULUM_PATH: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Ustaw DATABASE_URL/E2E_DATABASE_URL + poświadczenia konta testowego
+        env:
+          PGUSER: test
+          PGPASS: test
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGDB: skillbridge_test
+        run: |
+          AT='@'
+          CREDS="${PGUSER}:${PGPASS}"
+          DSN="postgresql://${CREDS}${AT}${PGHOST}:${PGPORT}/${PGDB}"
+          echo "DATABASE_URL=${DSN}" >> "$GITHUB_ENV"
+          # seed:e2e czyta E2E_DATABASE_URL (osobna nazwa, ten sam loopback DSN).
+          echo "E2E_DATABASE_URL=${DSN}" >> "$GITHUB_ENV"
+          # Konto MAIN — poświadczenia zgodne z domyślami seed-e2e.ts. Test loguje
+          # się (loginWithPassword "main") w beforeEach. Dane konta TESTOWEGO, nie sekret.
+          CRED='Test1234!e2e'
+          echo "E2E_TEST_EMAIL=e2e-main@example.com" >> "$GITHUB_ENV"
+          echo "E2E_TEST_PASSWORD=${CRED}" >> "$GITHUB_ENV"
+      - run: pnpm exec playwright install --with-deps chromium
+      # Migracja schematu na bazie TESTOWEJ (guard allowlisty hostów testowych).
+      - run: pnpm db:migrate:test
+      # Konta + student „main" (loginWithPassword). Idempotentny, guardowany allowlistą.
+      - run: pnpm seed:e2e
+      # FIXTURE modułu bramki: strona egzaminu robi notFound(), jeśli moduł o tym
+      # UUID nie istnieje. ID jest zahardkodowane w specie (MODULE_ID), a
+      # curriculum_modules.id = defaultRandom() (ingest generuje losowe UUID per
+      # slug) → żaden ingest nie dostarcza tego ID. Wstawiamy 1 wiersz modułu z
+      # DOKŁADNIE tym UUID (slug 'a11y-exam-fixture' — brak kolizji z drabiną).
+      # Guard hosta (localhost) przed zapisem, w duchu assert-test-db.
+      - name: Fixture modułu egzaminu (stały UUID pod skan a11y)
+        run: |
+          case "${DATABASE_URL}" in
+            *localhost*|*127.0.0.1*) : ;;
+            *) echo "::error::DATABASE_URL nie jest bazą lokalną — odmowa zapisu fixture."; exit 1 ;;
+          esac
+          psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 -c \
+            "INSERT INTO curriculum_modules (id, slug, title) VALUES ('cad6dff5-e326-4991-a742-b7ca382ee2d2', 'a11y-exam-fixture', 'Moduł A (fixture a11y egzaminu)') ON CONFLICT (id) DO NOTHING;"
+      # LOUD-fail: brak fixture = jasny błąd TU, nie mylący timeout przycisku w skanie.
+      # „Bramka MUSI paść głośno, gdy brak danych, nie zzielenieć na pusto."
+      - name: Weryfikacja fixture (bramka nie zzielenieje na pusto)
+        run: |
+          COUNT="$(psql "${DATABASE_URL}" -tAc "SELECT count(*) FROM curriculum_modules WHERE id = 'cad6dff5-e326-4991-a742-b7ca382ee2d2';")"
+          if [ "${COUNT}" != "1" ]; then
+            echo "::error::Fixture modułu egzaminu (cad6dff5-...) nieobecny — skan a11y renderowałby 404. Zatrzymuję job."
+            exit 1
+          fi
+          echo "Fixture modułu obecny (1 wiersz) — ścieżka (a) wyrenderuje ekran egzaminu."
+      # Build artefaktu produkcyjnego — `next start` (webServer configu CI) go serwuje.
+      - run: pnpm build
+      # ZAKRES: TYLKO plik 62 (3 testy @safe). Podanie ŚCIEŻKI PLIKU = zero
+      # zależności od --grep → nie ma jak zostać zeskipowanym przez filtr (w
+      # przeciwieństwie do e2e-llm, który --grep @llm wyklucza @safe).
+      - name: Playwright — skan a11y egzaminu (bramka 1E.3)
+        run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/62-1e3-exam-a11y.spec.ts
+      # Artefakty diagnostyczne przy padzie (trace/screenshot — raport axe w stdout).
+      - name: Upload raportu Playwright (przy padzie)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-a11y-exam
+          path: playwright-report/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────
   # e2e-llm — Playwright, sciezka krytyczna #1 (rejestracja -> onboarding ->
   # dashboard) z REALNYM wolaniem modelu (Z5 spec, segment B @llm).
   #
