@@ -11,7 +11,62 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-24 — KROK 4: WSZYSTKIE LABY DRABINY NA PRODZIE (nowy kontrakt oceny ADR-020/022); 48/58 NOTEBOOKÓW, 10 TOWARZYSZY ĆWICZEŃ DO DOBUDOWANIA
+## STAN NA DZIŚ — 2026-07-24 (sesja Oliver, COO — KRĘGOSŁUP TOR B) — 58/58 NOTEBOOKÓW, CONTENT-COMPLETE
+
+**Jednym zdaniem:** dobudowane 10 brakujących notebooków-towarzyszy ćwiczeń
+(M-ML + M-LLM) → **produkcja 58/58, drabina content-complete**; każda liczba
+„done" potwierdzona odczytem z prod, nie na słowo.
+
+**Baseline `main` = `b70ccd1`** (= `origin/main`). Prod: **58/58**, rozkład per
+moduł: l0=4, f1=7, f2=7, f3=7, meda=4, mpd=8, msql=7, **mml=7**, **mllm=7**.
+
+### Dwie partie (sekwencyjnie, jeden pisarz per gałąź, autor commitów = Darek)
+
+**Partia M-ML (PR #223, merge `4eeb477`) — 53/58.** 5 towarzyszy ML.1/2/3/5/6
+(worked example + brudnopis, **świadomie BEZ pieczątki** — atom `exercise`
+zalicza się pytaniami). Sophia treść (weryfikacja sklearn: acc 1.0/0.833, macierz
+[[1,1],[0,4]], precision 0.8/recall 1.0) → Ethan packer notebookUrl + build →
+Quinn kontrakt-test (13→19, +6 adwersaryjnych, auto-łapie literówkę sluga) → Leo
+GO Z NOTAMI → Ethan prod (backup `br-wispy-boat-al8tedpx`, ingest ×2, retired=0).
+Komórka „Dane" (24 rekordy, 17 napiwków) bit-w-bit z ml-4.
+
+**Partia M-LLM (PR #224, merge `b70ccd1`) — 58/58.** 5 towarzyszy LLM.1/2/3/5/6.
+Sophia treść (LLM.5: zgodność 0.75, halucynacje 2/4=0.5, trafność 5/6·4/6·3/6;
+**0 żywych wywołań API** — pierwsze wywołanie studenta = capstone; „Dane" bit-w-bit
+z llm-4/llm-7) → Ethan packer+build → Quinn kontrakt-test (14→20) → Leo GO Z NOTAMI
+(niezależnie przeliczył WSZYSTKIE liczby LLM.5) → Ethan prod (backup
+`br-rough-resonance-albjhxaa`, ingest ×2, retired=0, downgrade=0). Weryfikacja PO:
+notebookUrl 53→58, 0 wycieków logu QG do content_md.
+
+### DŁUG NASTĘPCZY (fast-follow, niepilne — wpleść, nie robić osobno)
+
+1. **ADR-010 l.120 NIEAKTUALNA** (Ethan): „Ethan NIE wykonuje — Darek wykonuje"
+   sprzeczne z delegacją v1.12 i precedensem (M-EDA/M-SQL/M-ML) → runbook ADR-010
+   §7 do modelu v1.12.
+2. **Rekoncyliacja liczb ilustracyjnych sprzed-ADR-022** (Leo W1 + prompt): ADR-022
+   §1.4/§2.5 (0.875→0.75) **oraz** Teoria atomu LLM.5 (hipotetyczne „4 przypadki" →
+   kanoniczny zbiór 6/8; sedno 2/4=0.5 bez zmian). Towarzysz deterministycznie
+   poprawny — rozjazd dotyczy Teorii. Wymaga re-ingest `content_md` LLM.5 + Leo.
+3. **Noty Leo N1/N2 (#219):** komunikat D1 M-ML — edge Pipeline/podklasa (Gałąź A);
+   brak testu jednostkowego Gałęzi A (non-DecisionTree→odmowa, token null).
+4. **I1 (Leo):** guard `notebookUrlViolations` nie waliduje segmentu repo — przyszłe
+   utwardzenie (packer-determinizm zamyka realne wejście).
+5. **gitleaks FP** na slugu w `notebooks-mml.contract.test.ts:203` (`// gitleaks:allow`,
+   zweryfikowany FP) — zgłoszone Ryanowi. ✅ `mllm-atomy.md` l.1437 — ZROBIONE (Sophia).
+
+### NASTĘPNE (ZADANIE 2 kręgosłupa)
+
+- **1E.3 mastery gate** — spec KOMPLETNA w ADR-014 **D3**: `exam` w ITEM_KINDS (kod
+  za ADR-em — tylko theory/exercise/lab), 15–20 pytań, próg = LICZNIK błędów
+  (≤1/15, ≤2/20 ≈90%), pytania kalibrowane OSOBNO, retry cap 2, correctives po 2.
+  oblaniu, stan pauza/wznowienie wzorcem `assessment_sessions`. Wg §7 = progresja
+  WEWNĘTRZNA = ocena formująca → maszyna samowystarczalna. ⚠ **WŁASNA flaga OFF** —
+  `FLAG_CURRICULUM_PATH` już zapalona; **nie włączać 1E.3 przed tutorem (1.13)**.
+- **1E.4 powtórki FSRS** — po 1E.3 (odblokowane hintDepth #217 + MIS.1).
+
+---
+
+## STAN POPRZEDNI — 2026-07-24 (rano) — KROK 4: WSZYSTKIE LABY DRABINY NA PRODZIE (nowy kontrakt oceny ADR-020/022); 48/58 NOTEBOOKÓW, 10 TOWARZYSZY ĆWICZEŃ DO DOBUDOWANIA
 
 **Jednym zdaniem:** wszystkie laby drabiny — z modułami M-ML i M-LLM włącznie — są
 na produkcji z nowym, twardszym kontraktem oceny (ADR-020/ADR-022); do

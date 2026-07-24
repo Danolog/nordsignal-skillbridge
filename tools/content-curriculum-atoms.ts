@@ -32,7 +32,10 @@ const QUESTION_TYPES: ReadonlySet<string> = new Set([
 	"short_text",
 ]);
 const CHOICE_TYPES: ReadonlySet<string> = new Set(["single_choice", "multi_choice"]);
-const ITEM_KINDS: ReadonlySet<string> = new Set(["theory", "exercise", "lab"]);
+// ADR-014 D3: lista kanoniczna to theory/exercise/lab/project/exam/review.
+// 1E.3 dokłada WYŁĄCZNIE `exam` (pozycja mastery gate) — `project`/`review`
+// wchodzą osobnymi plasterkami (1E.6/1E.4), żeby nie rozlewać zakresu P1.
+const ITEM_KINDS: ReadonlySet<string> = new Set(["theory", "exercise", "lab", "exam"]);
 
 // 1E.6b (ADR-015) — kontrakt checków labów. Musi być zgodny z silnikiem
 // `src/lib/curriculum/lab-checks.ts` (serwer ewaluuje ładunek pieczątki).
@@ -157,6 +160,40 @@ function validateNotebookUrl(item: AtomItemInput, where: string): string[] {
 	}
 	return [];
 }
+/**
+ * 1E.3 (ADR-014 D3) — walidacja pozycji `exam` (mastery gate). Pozycja egzaminu
+ * jest INNYM bytem niż atom: to WSKAŹNIK konceptów modułu, nie „atom z 3 pytaniami
+ * MC". Pytania egzaminacyjne mieszkają w banku i są kalibrowane OSOBNO (blocker
+ * treści C1) — dlatego pozycja `exam`:
+ *   - NIE zawiera pytań inline (`questions`) — nie ma tu reguły „dokładnie 3";
+ *   - NIE używa `questionRefs` (pytania ciągnie z banku po konceptach, nie reużywa
+ *     pytań innych pozycji jak przegląd);
+ *   - MUSI deklarować ≥1 koncept — correctives (P4) mapują błędne pytanie →
+ *     koncept → ≤3 atomy przez `curriculum_item_concepts`; bez konceptu na pozycji
+ *     ten kręgosłup się rwie.
+ * Parametry liczbowe egzaminu (liczba pytań, licznik błędów) NIE są tu — żyją w
+ * `curriculum_modules.exam_config_json` (walidacja: src/lib/curriculum/exam-config.ts).
+ */
+function validateExamItem(item: AtomItemInput, where: string): string[] {
+	const problems: string[] = [];
+	if ((item.questions ?? []).length > 0) {
+		problems.push(
+			`${where}: pozycja exam nie zawiera pytań inline — bank egzaminacyjny kalibrowany osobno (C1)`,
+		);
+	}
+	if ((item.questionRefs ?? []).length > 0) {
+		problems.push(
+			`${where}: pozycja exam nie używa questionRefs — pytania z banku po konceptach, nie reuse pozycji`,
+		);
+	}
+	if ((item.concepts ?? []).length === 0) {
+		problems.push(
+			`${where}: pozycja exam musi deklarować ≥1 koncept (correctives: błąd → koncept → atomy)`,
+		);
+	}
+	return problems;
+}
+
 const RESOURCE_TYPES: ReadonlySet<string> = new Set(["video", "docs", "course", "book"]);
 const KEBAB = /^[a-z0-9-]+$/;
 
@@ -346,7 +383,7 @@ export function validateModuleContent(content: AtomModuleContent): string[] {
 		if (positions.has(item.position)) problems.push(`${where}: zduplikowana position`);
 		positions.add(item.position);
 		if (!ITEM_KINDS.has(item.kind)) {
-			problems.push(`${where}: kind "${item.kind}" spoza theory|exercise|lab (treść 1E.2)`);
+			problems.push(`${where}: kind "${item.kind}" spoza theory|exercise|lab|exam (ADR-014 D3)`);
 		}
 		if (typeof item.title !== "string" || item.title.trim().length === 0) {
 			problems.push(`${where}: pusty title`);
@@ -370,34 +407,40 @@ export function validateModuleContent(content: AtomModuleContent): string[] {
 			}
 		}
 
-		const hasQuestions = (item.questions ?? []).length > 0;
-		const hasRefs = (item.questionRefs ?? []).length > 0;
-		if (hasQuestions && hasRefs) {
-			problems.push(`${where}: questions i questionRefs wykluczają się`);
-		}
-		if ((item.kind === "exercise" || item.kind === "theory") && !hasQuestions && !hasRefs) {
-			problems.push(`${where}: atom ${item.kind} wymaga pytań albo questionRefs (przegląd)`);
-		}
-		if (hasQuestions && item.kind !== "lab" && (item.questions ?? []).length !== 3) {
-			problems.push(`${where}: atom ma ${item.questions?.length} pytań (wymagane DOKŁADNIE 3)`);
-		}
-		// Drabinka hintów 3-stopniowa wszędzie tam, gdzie są własne pytania lub
-		// zadanie wykonawcze (lab); pozycje przeglądu (reuse) jej nie mają.
-		if ((hasQuestions || item.kind === "lab") && !hasRefs) {
-			if (
-				!Array.isArray(item.hints) ||
-				item.hints.length !== 3 ||
-				!item.hints.every((h) => typeof h === "string" && h.trim().length > 0)
-			) {
-				problems.push(`${where}: drabinka hintów musi mieć DOKŁADNIE 3 niepuste stopnie`);
+		// Pozycja `exam` (1E.3) idzie OSOBNĄ gałęzią — nie jest atomem z 3 pytaniami
+		// MC, więc reguły „dokładnie 3 pytania" i drabinki hintów jej nie dotyczą.
+		if (item.kind === "exam") {
+			problems.push(...validateExamItem(item, where));
+		} else {
+			const hasQuestions = (item.questions ?? []).length > 0;
+			const hasRefs = (item.questionRefs ?? []).length > 0;
+			if (hasQuestions && hasRefs) {
+				problems.push(`${where}: questions i questionRefs wykluczają się`);
 			}
-		}
-		for (const [qi, q] of (item.questions ?? []).entries()) {
-			problems.push(...validateQuestion(q, `${where} pytanie[${qi}] (${q.ref})`));
-			if (!conceptSlugs.has(q.conceptSlug)) {
-				problems.push(
-					`${where} pytanie ${q.ref}: conceptSlug "${q.conceptSlug}" niezadeklarowany na pozycji`,
-				);
+			if ((item.kind === "exercise" || item.kind === "theory") && !hasQuestions && !hasRefs) {
+				problems.push(`${where}: atom ${item.kind} wymaga pytań albo questionRefs (przegląd)`);
+			}
+			if (hasQuestions && item.kind !== "lab" && (item.questions ?? []).length !== 3) {
+				problems.push(`${where}: atom ma ${item.questions?.length} pytań (wymagane DOKŁADNIE 3)`);
+			}
+			// Drabinka hintów 3-stopniowa wszędzie tam, gdzie są własne pytania lub
+			// zadanie wykonawcze (lab); pozycje przeglądu (reuse) jej nie mają.
+			if ((hasQuestions || item.kind === "lab") && !hasRefs) {
+				if (
+					!Array.isArray(item.hints) ||
+					item.hints.length !== 3 ||
+					!item.hints.every((h) => typeof h === "string" && h.trim().length > 0)
+				) {
+					problems.push(`${where}: drabinka hintów musi mieć DOKŁADNIE 3 niepuste stopnie`);
+				}
+			}
+			for (const [qi, q] of (item.questions ?? []).entries()) {
+				problems.push(...validateQuestion(q, `${where} pytanie[${qi}] (${q.ref})`));
+				if (!conceptSlugs.has(q.conceptSlug)) {
+					problems.push(
+						`${where} pytanie ${q.ref}: conceptSlug "${q.conceptSlug}" niezadeklarowany na pozycji`,
+					);
+				}
 			}
 		}
 		for (const [ri, r] of (item.resources ?? []).entries()) {
