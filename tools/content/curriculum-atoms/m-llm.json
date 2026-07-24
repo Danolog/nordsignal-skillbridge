@@ -124,7 +124,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** przy wysokiej temperaturze różnią się sformułowania i czasem TREŚĆ (w przykładzie: raz „brak widełek\", raz zmyślone „8000\" — halucynacja na żywo); przy 0 odpowiedzi są (niemal) identyczne. Wniosek do zapamiętania: parametry generacji to część METODY — jak ziarno w ML — i należą do raportu."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mllm/llm-1-maszyna-przewidujaca-tekst.ipynb"
 			},
 			"resources": [
 				{
@@ -292,7 +293,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** usterka 1: dopisz regułę null z zakazem uzupełniania „z wiedzy ogólnej\" (model zna typowe widełki rynkowe — i właśnie dlatego je zmyśla!); usterka 2: podmień przykład na ogłoszenie bez którejś informacji, z null w odpowiedzi. Test jakości poprawki: czy z samego promptu da się jednoznacznie odtworzyć, co model MA zwrócić dla ogłoszenia „Szukamy analityka\"? (stanowisko: „analityk\", miasto: null, widelki_min: null)."
 			],
 			"config": {
-				"estimated": "15–20 min"
+				"estimated": "15–20 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mllm/llm-2-prompt-jako-specyfikacja.ipynb"
 			}
 		},
 		{
@@ -418,7 +420,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** `pole in rekord` — operator `in` na słowniku (F3.3) pyta o obecność klucza; `all` zbiera odpowiedzi (mechanika z teorii). Całość: rekord nie-None ORAZ komplet pól = „zgodny ze schematem\". Typowe potknięcie: walidacja przed try/except (na None poleci TypeError) — kolejność: parsuj-z-ochroną, POTEM waliduj."
 			],
 			"config": {
-				"estimated": "20 min"
+				"estimated": "20 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mllm/llm-3-parsuj-waliduj-porazka.ipynb"
 			}
 		},
 		{
@@ -592,7 +595,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** luka: `pole`. Wyniki dla danych notebooka: trafienia 3/4 na każde pole, halucynacje 2 przy 4 polach-brakach (0.5). Samokontrola ewaluacji: suma pól-braków w prawdzie policzona ręcznie musi się zgadzać z mianownikiem wskaźnika — jeśli nie, licznik zlicza złe pola (wcięcia! — piętra pętli jak w F3.2-P2)."
 			],
 			"config": {
-				"estimated": "20 min"
+				"estimated": "20 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mllm/llm-5-ewaluacja-trafnosc-halucynacje.ipynb"
 			}
 		},
 		{
@@ -717,7 +721,8 @@
 				"**Pełne rozwiązanie z objaśnieniem:** „(1) unieważnij (revoke) stary klucz w panelu usługi — od tej chwili wyciek jest bezzębny; (2) wygeneruj nowy i umieść go w panelu sekretów/zmiennej środowiskowej.\" Edycja pliku może być KROKIEM TRZECIM (porządki), nigdy pierwszym — kolejność odwrotna zostawia działający klucz w wiecznej historii."
 			],
 			"config": {
-				"estimated": "15 min"
+				"estimated": "15 min",
+				"notebookUrl": "https://colab.research.google.com/github/Danolog/skillbridge-notebooks/blob/main/mllm/llm-6-klucz-limity-rodo.ipynb"
 			}
 		},
 		{

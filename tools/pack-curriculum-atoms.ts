@@ -1071,10 +1071,15 @@ const MANIFESTS: ModuleManifest[] = [
 			"klucz-sekrety-rodo": "Klucz API, limity, dane osobowe",
 		},
 		overrides: {
+			"LLM.1": { notebookUrl: `${NOTEBOOKS_BASE}/mllm/llm-1-maszyna-przewidujaca-tekst.ipynb` },
+			"LLM.2": { notebookUrl: `${NOTEBOOKS_BASE}/mllm/llm-2-prompt-jako-specyfikacja.ipynb` },
+			"LLM.3": { notebookUrl: `${NOTEBOOKS_BASE}/mllm/llm-3-parsuj-waliduj-porazka.ipynb` },
 			"LLM.4": {
 				checks: CHECKS_LLM_4,
 				notebookUrl: `${NOTEBOOKS_BASE}/mllm/llm-4-lab-parser-na-porazki.ipynb`,
 			},
+			"LLM.5": { notebookUrl: `${NOTEBOOKS_BASE}/mllm/llm-5-ewaluacja-trafnosc-halucynacje.ipynb` },
+			"LLM.6": { notebookUrl: `${NOTEBOOKS_BASE}/mllm/llm-6-klucz-limity-rodo.ipynb` },
 			// Lab samodzielny (finał drabiny) — meta mówi „wszystkie z M-LLM".
 			"LLM.7": {
 				concepts: [
