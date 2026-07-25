@@ -74,6 +74,8 @@ function assertNoKeyLeak(payload: unknown) {
 dBack("W2 · kontrakt tras /api/exam/* na żywej bazie (izolacja, partial-unique, kolejność)", () => {
 	// biome-ignore lint/suspicious/noExplicitAny: moduły ładowane dynamicznie po env.
 	let db: any;
+	// biome-ignore lint/suspicious/noExplicitAny: runtime-connection (spy zero-query [5]).
+	let dbRuntime: any;
 	// biome-ignore lint/suspicious/noExplicitAny: schema ładowana dynamicznie.
 	let schema: any;
 	// biome-ignore lint/suspicious/noExplicitAny: handlery ładowane dynamicznie.
@@ -205,7 +207,7 @@ dBack("W2 · kontrakt tras /api/exam/* na żywej bazie (izolacja, partial-unique
 
 	beforeAll(async () => {
 		vi.stubEnv("FLAG_MASTERY_GATE", "1");
-		({ db } = await import("@/lib/db"));
+		({ db, dbRuntime } = await import("@/lib/db"));
 		schema = await import("@/lib/db/schema");
 		({ POST: startPOST } = await import("../start/route"));
 		({ POST: answerPOST } = await import("../[id]/answer/route"));
@@ -717,9 +719,16 @@ dBack("W2 · kontrakt tras /api/exam/* na żywej bazie (izolacja, partial-unique
 		expect(old.status).toBe("abandoned");
 	});
 
-	// ── PUNKT 5: flaga OFF → 404 na wszystkich 3 trasach (przed auth/DB) ──────
-	it("[5] flaga masteryGate OFF → 404 na start, answer i complete (trasa nie istnieje)", async () => {
+	// ── PUNKT 5: flaga OFF → 404 + ZERO zapytań DB (gate przed auth/DB) ───────
+	it("[5] flaga masteryGate OFF → 404 i ZERO zapytań DB na start, answer i complete", async () => {
 		vi.stubEnv("FLAG_MASTERY_GATE", "0");
+		// Licznik zapytań na warstwie sterownika (pg Pool pod drizzle — owner `db`
+		// i runtime `dbRuntime`). Flaga masteryGate jest 1. instrukcją każdej trasy,
+		// PRZED auth i przed jakimkolwiek dotknięciem bazy → OFF ⇒ 0 zapytań. Utrwala
+		// regresję: gdyby ktoś przestawił kolejność (auth/DB przed bramką flagi), licznik
+		// > 0 → test czerwony. Sam status 404 tego nie łapie (mógłby 404-ować PO zapytaniu).
+		const ownerSpy = vi.spyOn(db.$client, "query");
+		const runtimeSpy = vi.spyOn(dbRuntime.$client, "query");
 		try {
 			const s = await startPOST(startReq(moduleAId));
 			expect(s.status).toBe(404);
@@ -730,7 +739,12 @@ dBack("W2 · kontrakt tras /api/exam/* na żywej bazie (izolacja, partial-unique
 			expect(a.status).toBe(404);
 			const c = await completePOST(completeReq(), ctxFor("00000000-0000-0000-0000-000000000000"));
 			expect(c.status).toBe(404);
+			// Dowód „zero-query": żadna z 3 tras nie poszła do bazy przy fladze OFF.
+			expect(ownerSpy).not.toHaveBeenCalled();
+			expect(runtimeSpy).not.toHaveBeenCalled();
 		} finally {
+			ownerSpy.mockRestore();
+			runtimeSpy.mockRestore();
 			vi.stubEnv("FLAG_MASTERY_GATE", "1");
 		}
 	});
