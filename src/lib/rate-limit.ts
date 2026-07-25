@@ -66,6 +66,16 @@ export const rateLimiters = {
 	// `for` zamienia się we wzmocnienie zapisu na wierszu postępu. Poprawność
 	// gwarantuje idempotencja (D2: kliknięcie na suficie nic nie przyrasta), nie limiter.
 	hintReveal: makeLimiter(Ratelimit.slidingWindow(60, "1 m"), "hint-reveal"),
+	// 1E.4 R4: kolejka powtórek — odczyt lekki (jak aiLight, wzorzec hintReveal). Bez
+	// limitera nawet czysty SELECT jest wektorem zalania bazy per user.
+	reviewQueue: makeLimiter(Ratelimit.slidingWindow(30, "1 m"), "review-queue"),
+	// 1E.4 R4: zapis oceny powtórki. Ocena jest 0-LLM (grade.ts), więc koszt to nie
+	// model, ale nielimitowany INSERT review_logs + UPDATE review_states. Dwa wymiary
+	// (wzorzec sandboxRun/tutorDaily): reviewAnswer tnie BURST, reviewDaily tnie WOLUMEN
+	// dobowy (kolejka „na dziś" ma cap ~20 konceptów; 200/dzień z zapasem na relearning,
+	// twardy sufit przeciw farmie zapisów).
+	reviewAnswer: makeLimiter(Ratelimit.slidingWindow(60, "1 m"), "review-answer"),
+	reviewDaily: makeLimiter(Ratelimit.slidingWindow(200, "1 d"), "review-daily"),
 };
 
 export type RateLimitResult = {
