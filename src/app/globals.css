@@ -217,7 +217,8 @@
 	--ed-cream: oklch(0.974 0.013 75.5); /* #FAF6F1 — tło strony, header, CTA-end bg */
 	--ed-ink: oklch(0.157 0.01 50); /* #1B1917 — tekst główny, nagłówki kart */
 	--ed-amber: oklch(0.636 0.127 57.3); /* #D0891E — akcent, CTA, paski, badge DZIŚ */
-	--ed-amber-text: oklch(0.48 0.113 57.3); /* ≈ #8F5A0F — pochodna amber, ŚCIEMNIONA dla kontrastu AA tekstu na jasnym tle; NIE samodzielny kolor marki, stosować tylko do małych etykiet amber-na-jasnym */
+	--ed-amber-text: oklch(0.48 0.113 57.3); /* ≈ #8F5A0F — pochodna amber, ŚCIEMNIONA dla kontrastu AA tekstu na jasnym tle; NIE samodzielny kolor marki, stosować tylko do małych etykiet amber-na-jasnym. UWAGA: to kolor tekstu na JASNYM tle — na tle var(--ed-amber) daje tylko 2.0:1 (za mało); tekst na bursztynowym przycisku → var(--ed-ink) (6.08:1). */
+	--ed-crisis-text: #b91c1c; /* red-700 — AA-safe czerwień dla tekstu alertu kryzysowego na jasnym różowym tincie (rgba(239,68,68,0.06–0.08) na białym ⇒ ≥5.8:1). Analog --ed-amber-text dla czerwieni; zastępuje powtarzane literały #b91c1c. */
 	--ed-surface: oklch(0.951 0.019 75); /* #F5EFE6 — karty gain/uczelnia/pracodawca */
 	--ed-border: oklch(0.87 0.014 68); /* #D6CEC2 — separatory, obwódki, badge PEŁNA */
 	--ed-muted: oklch(0.488 0.017 55); /* ≈ #6E6860 — tekst pomocniczy (ŚCIEMNIONY z 0.503 → kontrast ≥4,5:1 na surface) */
@@ -842,7 +843,7 @@
 /* Primary button (gradient) — double class for specificity over shadcn */
 .ob-btn-primary.ob-btn-primary {
 	background: linear-gradient(135deg, var(--ed-amber) 0%, var(--ed-amber) 100%);
-	color: #ffffff;
+	color: var(--ed-ink);
 	border: none;
 	border-radius: 9999px;
 	font-family: var(--font-heading);
@@ -4450,7 +4451,7 @@
 	gap: 8px;
 	padding: 14px 24px;
 	background: linear-gradient(135deg, var(--ed-amber) 0%, var(--ed-amber) 100%);
-	color: white;
+	color: var(--ed-ink);
 	border: none;
 	border-radius: 12px;
 	font-size: 15px;
@@ -4651,10 +4652,10 @@
 	border: 1px solid rgba(239, 68, 68, 0.2);
 }
 .proj-score-rejected .proj-review-score-value {
-	color: #dc2626;
+	color: var(--ed-crisis-text);
 }
 .proj-score-rejected .proj-review-status-badge {
-	color: #dc2626;
+	color: var(--ed-crisis-text);
 	border: 1px solid rgba(239, 68, 68, 0.3);
 }
 .proj-score-pending,
@@ -4755,7 +4756,7 @@
 }
 .proj-status-rejected {
 	background: rgba(239, 68, 68, 0.08);
-	color: #dc2626;
+	color: var(--ed-crisis-text);
 	border: 1px solid rgba(239, 68, 68, 0.2);
 }
 .proj-status-submitted,
@@ -4839,12 +4840,11 @@
 	border: 1px solid rgba(239, 68, 68, 0.2);
 	/* #dc2626 dawał 4.35:1 na efektywnym tle #fef0f0 (różowy tint na białym
 	   .proj-detail-section) — pod progiem WCAG AA 4.5:1 dla tekstu 14px normal.
-	   #b91c1c (red-700) → 5.83:1, zapas nad progiem, zostaje wyraźnie czerwony
-	   (alert kryzysowy — sygnał autodestrukcji, C11 a11y). Ten sam odcień już
-	   w użyciu w .viva-outcome-failed (linia ~5042) — brak dedykowanego tokenu
-	   AA-safe dla czerwieni (analog --ed-amber-text nie istnieje), literał
-	   spójny z istniejącym precedensem. */
-	color: #b91c1c;
+	   --ed-crisis-text (#b91c1c / red-700) → 5.83:1, zapas nad progiem, zostaje
+	   wyraźnie czerwony (alert kryzysowy — sygnał autodestrukcji, C11 a11y).
+	   Dedykowany token AA-safe dla czerwieni (analog --ed-amber-text) — ten sam
+	   odcień w .viva-outcome-failed i .viva-crisis. */
+	color: var(--ed-crisis-text);
 	font-size: 14px;
 	margin-bottom: 12px;
 	white-space: pre-wrap;
@@ -4880,7 +4880,7 @@
 	gap: 6px;
 	padding: 12px 18px;
 	background: linear-gradient(135deg, var(--ed-amber) 0%, var(--ed-amber) 100%);
-	color: white;
+	color: var(--ed-ink);
 	border: none;
 	border-radius: 12px;
 	font-size: 14px;
@@ -4926,7 +4926,7 @@
 	gap: 6px;
 	padding: 12px 18px;
 	background: linear-gradient(135deg, var(--ed-amber) 0%, var(--ed-amber) 100%);
-	color: white;
+	color: var(--ed-ink);
 	border: none;
 	border-radius: 12px;
 	font-size: 14px;
@@ -4982,7 +4982,7 @@
 	background: white;
 }
 .viva-timer-low {
-	color: #dc2626;
+	color: var(--ed-crisis-text);
 	border-color: rgba(239, 68, 68, 0.35);
 	background: rgba(239, 68, 68, 0.06);
 }
@@ -5026,7 +5026,7 @@
 	border-radius: 12px;
 	background: rgba(239, 68, 68, 0.08);
 	border: 1px solid rgba(239, 68, 68, 0.2);
-	color: #dc2626;
+	color: var(--ed-crisis-text);
 	font-size: 14px;
 	white-space: pre-wrap;
 }
@@ -5046,7 +5046,7 @@
 .viva-outcome-failed {
 	background: rgba(239, 68, 68, 0.06);
 	border: 1px solid rgba(239, 68, 68, 0.2);
-	color: #b91c1c;
+	color: var(--ed-crisis-text);
 }
 .viva-outcome-mid {
 	background: rgba(245, 158, 11, 0.08);
