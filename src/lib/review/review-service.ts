@@ -318,3 +318,83 @@ export async function enrollConcept(
 		throw err;
 	}
 }
+
+/** Wynik zasiewu wsadowego — ile NOWYCH wierszy powstało (koncepty już zasiane pomija ON CONFLICT). */
+export interface EnrollBatchResult {
+	enrolled: number;
+}
+
+/**
+ * enrollConcepts — WSADOWY, idempotentny zasiew wielu konceptów naraz (hook R5:
+ * koncepty kluczowe modułu po zdanym mastery gate). Kontrakt jak enrollConcept,
+ * ale bez N+1:
+ *   • JEDEN lookup tenanta studenta (nie per koncept),
+ *   • JEDEN wielowierszowy INSERT ... ON CONFLICT (student_id, concept_id) DO
+ *     NOTHING — koncepty już w harmonogramie to NO-OP (nie nadpisują wypracowanego
+ *     S/D/due). Fundament idempotencji = uq_review_states_student_concept (0042).
+ *
+ * `.returning` liczy realnie wstawione wiersze (enrolled = liczba nowych;
+ * konflikty się nie liczą). Powtórne wywołanie tej samej paczki → enrolled: 0
+ * (bezpieczny re-fire przy retry trasy — patrz enroll-hook.ts best-effort).
+ *
+ * Singular enrollConcept ZOSTAJE bez zmian (kontrakt testów R3) — to osobna,
+ * wsadowa ścieżka. Owner-side z jawnym tenant_id (nagłówek pliku). isUniqueViolation
+ * to ten sam defensywny bezpiecznik co w enrollConcept: gdyby ON CONFLICT rozminął
+ * się z constraintem przy wyścigu dwóch równoległych zasiewów, łapiemy 23505 jako
+ * idempotentny no-op zamiast 500. Pusta lista → {enrolled: 0} bez zapytania.
+ */
+export async function enrollConcepts(
+	studentId: string,
+	conceptIds: string[],
+	now: Date,
+): Promise<EnrollBatchResult> {
+	if (conceptIds.length === 0) return { enrolled: 0 };
+
+	const [student] = await db
+		.select({ tenantId: students.tenantId })
+		.from(students)
+		.where(eq(students.id, studentId));
+	if (!student) {
+		throw new ReviewStudentNotFoundError(studentId);
+	}
+
+	const seed = initCard(now);
+	// Deduplikacja wejścia: gdyby ta sama para (student, koncept) trafiła dwa razy
+	// w JEDNYM statemencie, ON CONFLICT nie łapie duplikatów WEWNĄTRZ komendy
+	// (Postgres: „ON CONFLICT DO UPDATE command cannot affect row a second time"
+	// dotyczy DO UPDATE, ale DO NOTHING z powtórką w VALUES też jest ryzykiem
+	// zależnym od wersji) — usuwamy duplikaty z góry, bez zdania na krawędź.
+	const uniqueConceptIds = [...new Set(conceptIds)];
+
+	try {
+		const inserted = await db
+			.insert(reviewStates)
+			.values(
+				uniqueConceptIds.map((conceptId) => ({
+					studentId,
+					tenantId: student.tenantId,
+					conceptId,
+					stability: seed.stability,
+					difficulty: seed.difficulty,
+					due: seed.due,
+					lastReview: seed.lastReview,
+					state: seed.state,
+					reps: seed.reps,
+					lapses: seed.lapses,
+				})),
+			)
+			.onConflictDoNothing({
+				target: [reviewStates.studentId, reviewStates.conceptId],
+			})
+			.returning({ id: reviewStates.id });
+		return { enrolled: inserted.length };
+	} catch (err) {
+		if (isUniqueViolation(err)) {
+			// Wyścig równoległych zasiewów → część/całość paczki już istnieje: idempotentny
+			// no-op (nie wiemy ile dokładnie wpadło, ale zasiew jest z definicji „co najwyżej
+			// raz na koncept"; wołający hook R5 jest best-effort i nie odczytuje liczby).
+			return { enrolled: 0 };
+		}
+		throw err;
+	}
+}
