@@ -1,6 +1,7 @@
 # Plan 1E.4 — powtórki rozłożone w czasie (FSRS)
 
-**Wersja:** v0.2 · 2026-07-25 · Status: **DRAFT do sign-offu Darka** (Plan Mode)
+**Wersja:** v0.4 · 2026-07-25 · Status: **DRAFT do sign-offu Darka** (Plan Mode)
+**Changelog v0.3 → v0.4:** R4 (trasy API `/api/review/{queue,answer}`) scalona na `main` (PR #242, merge squash `f0227d5`, flaga OFF, brak migracji). Bramka W1 (pułapka R3 — test zacommitowany razem z trasami) zamknięta: `review-routes.integration.test.ts` (15 przypadków, mutation-proven) **realnie wykonany** w jobie `integration` CI (`✓ 15 tests`, nie skip). Kontrakty K1–K4 z sekcji 4b zamknięte w R4. Prod NEON nietknięty, deploy prod = trasy 404 za flagą OFF (smoke: `{"error":"Not found"}`). Dodano sekcję 4c — carry-forward R4 → R5/R6 (flip-gate 429 + rotacja pytań) i rozszerzono listę bramek zapłonu o realny test 429.
 **Changelog v0.2 → v0.3:** R3 (warstwa serwisowa) scalona na `main` (PR #240, merge `60aa2a6`, flaga OFF, brak migracji). Bramka W1 Leo zamknięta — test integracyjny `review-service.integration.test.ts` (10 przypadków) zielony w jobie `integration` CI. Dodano sekcję 4b — carry-forward z Leo review R3 do R4/R5 (5 kontraktów) + follow-up `ts-fsrs` (exact-pin przy major 6.0).
 
 **Changelog v0.1 → v0.2:** R1 i R2 scalone na `main` (R2 = PR #239, `297865f`, flaga OFF, brak migracji). Dodano sekcję 4a — carry-forward z Leo review R2 do R3 (noty 3/4, do rozwiązania w R3, NIE w R2).
@@ -91,6 +92,15 @@ R3 (warstwa serwisowa, owner-side, flaga OFF) scalona z Leo GO warunkowym (W1 = 
 
 ---
 
+### 4c. Carry-forward z R4 → do rozwiązania w R5/R6
+
+R4 (trasy API, flaga OFF) scalona. Dwie pozycje przeniesione dalej — **świadomie NIE rozwiązane w R4**:
+
+- **FLIP-GATE 429 — warunek zapłonu flagi (owner: Quinn).** Przed ustawieniem `FLAG_SPACED_REPETITION=1` na prodzie: **realny test 429** na `/api/review/{queue,answer}` w środowisku z Upstash (job `integration` z kredencjałami albo smoke na preview), potwierdzający że limiter przy **skonfigurowanym** Upstash zwraca `429`, a nie milcząco no-op (bez kredencjałów Upstash limiter może fail-open). Testy integracyjne R4 dowodzą kontraktu tras (izolacja, cap, strip klucza), **nie** dowodzą zapłonu limitera — limitery `reviewQueue`/`reviewAnswer`/`reviewDaily` są okablowane, ale ścieżka „przekroczenie → 429" nie jest przetestowana na żywym Upstash. **Bez tego testu flaga zostaje OFF.** Pozycja wpisana do listy bramek zapłonu (niżej), obok warunków RODO Ryana.
+- **Nota rotacji pytań (carry R4 → R6, owner: Sophia).** Rotacja wariantów / dobór pytania per powtórka konceptu, żeby student uczył się **treści**, nie pozycji odpowiedzi (to samo pytanie w tej samej kolejności przy każdej powtórce = uczenie się „C jest poprawne", nie zrozumienie). Decyzja produktowa przy warstwie doboru pytania R6 (wpięcie w kolejkę „na dziś"). Nie blokuje R5 (enrollment), blokuje sensowność powtórki przy zapłonie.
+
+---
+
 ## 5. Decyzje otwarte dla Ciebie (Darek)
 
 1. **D1 — kiedy koncept wchodzi do powtórek.** Rekomendacja: **przy zdanym mastery gate, koncepty kluczowe** (Sophia). Alternatywa Ethana (też po zaliczeniu atomu) daje więcej danych, ale ryzykuje zalew kolejki (200 kart naraz = porzucenie). Dla v0.1 idę wąsko. **Zgoda?**
@@ -116,6 +126,6 @@ Samoocena studenta (Again/Hard/Good/Easy) · nowa treść pytań powtórkowych �
 
 ---
 
-**Bramka zapłonu (jak 1E.3):** flaga zapala się dopiero, gdy (a) jest realny ruch dostarczający pierwszych sygnałów (nie na pustym harmonogramie), (b) axe a11y zielony na ekranie sesji, (c) świadoma decyzja Darka.
+**Bramka zapłonu (jak 1E.3):** flaga zapala się dopiero, gdy (a) jest realny ruch dostarczający pierwszych sygnałów (nie na pustym harmonogramie), (b) axe a11y zielony na ekranie sesji, (c) **realny test 429 na `/api/review/{queue,answer}` z żywym Upstash zielony** (FLIP-GATE 429, owner Quinn — sekcja 4c; limiter musi realnie odrzucać, nie fail-open), (d) **warunki RODO Ryana spełnione** — `retention.md` (polityka retencji `review_states`/`review_logs`) + RoPA (rejestr czynności przetwarzania) zaktualizowane, (e) świadoma decyzja Darka.
 
 **Następny krok po sign-offie:** rezerwacja numeru migracji `0042` commitem → R1.
