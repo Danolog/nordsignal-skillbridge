@@ -30,3 +30,12 @@ export function pgErrorCode(err: unknown): string | undefined {
 export function isUniqueViolation(err: unknown): boolean {
 	return pgErrorCode(err) === "23505";
 }
+
+/**
+ * Naruszenie klucza obcego (23503) — surowe pg albo owinięte przez Drizzle.
+ * Konsument (trasa /api/review/answer, K3): mapujemy na 404/409, NIGDY surowe 500 —
+ * nie wyciekamy szczegółu bazy, a klient dostaje czytelny błąd „zasób nie istnieje".
+ */
+export function isForeignKeyViolation(err: unknown): boolean {
+	return pgErrorCode(err) === "23503";
+}
