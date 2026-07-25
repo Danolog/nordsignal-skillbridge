@@ -1,6 +1,7 @@
 # Plan 1E.4 — powtórki rozłożone w czasie (FSRS)
 
-**Wersja:** v0.1 · 2026-07-24 · Status: **DRAFT do sign-offu Darka** (Plan Mode)
+**Wersja:** v0.2 · 2026-07-25 · Status: **DRAFT do sign-offu Darka** (Plan Mode)
+**Changelog v0.1 → v0.2:** R1 i R2 scalone na `main` (R2 = PR #239, `297865f`, flaga OFF, brak migracji). Dodano sekcję 4a — carry-forward z Leo review R2 do R3 (noty 3/4, do rozwiązania w R3, NIE w R2).
 **Synteza:** Oliver (COO) z warstwy produktowej Sophii (PO) + architektury Ethana (CTO)
 **Flaga:** `FLAG_SPACED_REPETITION` — domyślnie **OFF** (deploy ≠ release, jak 1E.3)
 **Poprzednik w kręgosłupie:** 1E.3 (mastery gate, na prodzie za flagą OFF) — 1E.4 twardo siedzi za nim.
@@ -64,6 +65,13 @@ Powtórki zamieniają „zdał raz" w „nadal umie za pół roku". Bez nich Pas
 | **R6 — Release** | UI kolejki (Jack wg spec Sophii) → Leo review 14 domen → scalenie `main` → backup Neon → migracja → flaga na staging → obserwacja. | R1–R5 |
 
 Rdzeń R1–R5 jest samodzielny i testowalny bez UI. Każdy slice pod te same bramki co 1E.3: Quinn (test integracyjny), Leo (14 domen), SQL transakcyjny addytywny, backup Neon, `retired=0`.
+
+### 4a. Carry-forward z Leo review R2 → do rozwiązania w R3
+
+Dwie noty z code review R2 (Leo GO z notami). **Świadomie NIE rozwiązane w R2** (R2 = czysta logika schedulera); przenoszone do R3 (warstwa serwisowa — pierwszy slice, który zapisuje stan i chodzi ścieżką spadkową):
+
+- **Nota 3 (test kontraktu CHECK na ścieżce spadkowej).** Dodać test asertujący ograniczenia bazy (`stability > 0`, `difficulty ∈ [1,10]`) na ścieżce SPADKOWEJ — powtarzane „Again" na ustalonej już karcie zbiega stabilność do `S_MIN` i trudność do `10`. Dziś testowany jest wyłącznie `initCard` (stan początkowy), nie zachowanie po wielokrotnym pogorszeniu. R3 zapisuje stan, więc to naturalne miejsce na kontrakt-test wobec realnego CHECK-a.
+- **Nota 4 (jedno źródło prawdy dla `elapsedDays`).** Rozważyć czytanie `elapsedDays` z `log.elapsed_days` zwracanego przez `scheduler.next` zamiast własnego przeliczania różnicy dat — parytet z biblioteką i jedno źródło prawdy (eliminuje ryzyko dryfu między naszym liczeniem a `ts-fsrs`). Decyzja projektowa R3 przy warstwie zapisu oceny.
 
 ---
 
