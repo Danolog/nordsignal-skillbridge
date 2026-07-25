@@ -102,6 +102,18 @@ export async function POST(req: Request) {
 		// oblanej sesji (ta sama, którą P4 pokazał przy 2. oblaniu) — front renderuje
 		// Ekran 5 także z tej odpowiedzi, nie tylko z ekranu wyniku.
 		if (cycle.correctivesRequired) {
+			if (!cycle.correctivesPackage) {
+				// Niezmiennik D2: correctivesRequired ⟹ paczka obecna (z result_json oblanej
+				// cap-2 sesji, którą P4 zapisał). Brak paczki = stan ZDEGRADOWANY (np. stare
+				// result_json bez paczki). NIE degraduj cicho do generycznego błędu — zasygnalizuj
+				// jawnie (log/Sentry), a klient dostaje 423 correctives_required bez paczki i
+				// pokazuje DEDYKOWANĄ twardą blokadę (bez retry), nie „network".
+				logError(
+					"exam.start.correctivesMissing",
+					new Error("correctivesRequired bez correctivesPackage (result_json zdegradowany)"),
+					{ userId: session.user.id, moduleId },
+				);
+			}
 			return NextResponse.json(
 				{ state: "correctives_required", correctivesPackage: cycle.correctivesPackage },
 				{ status: 423 },
