@@ -18,9 +18,12 @@ import { describe, expect, it } from "vitest";
 const CORRECTIVES_PATH = join(process.cwd(), "src/lib/assessment/correctives.ts");
 
 /**
- * Specyfikatory modułów z instrukcji `import … from "X"`, `export … from "X"`
- * oraz side-effect `import "X"`. Skan po SPECYFIKATORZE (nie po gołym podciągu),
- * więc komentarz „0 DB" ani identyfikator `db` w kodzie NIE dają fałszywego alarmu.
+ * Specyfikatory modułów z instrukcji `import … from "X"`, `export … from "X"`,
+ * side-effect `import "X"` ORAZ dynamicznego `import("X")` / `await import("X")`.
+ * Skan po SPECYFIKATORZE (nie po gołym podciągu), więc komentarz „0 DB" ani
+ * identyfikator `db` w kodzie NIE dają fałszywego alarmu. Gałąź dynamiczna łapie
+ * ucieczkę „przeniosę I/O do warstwy czystej przez `await import("@/lib/db")`",
+ * której statyczny skan `from "X"` by nie zauważył (nota Leo 2).
  */
 function importedModules(src: string): string[] {
 	const specifiers: string[] = [];
@@ -30,6 +33,12 @@ function importedModules(src: string): string[] {
 		specifiers.push(m[1]);
 	}
 	for (const m of src.matchAll(/(?:^|\n)\s*import\s*["']([^"']+)["']/g)) {
+		specifiers.push(m[1]);
+	}
+	// Dynamiczny `import("X")` — składnia wywołania (nie `import {`), więc regex
+	// łapie WYŁĄCZNie formę dynamiczną, niezależnie od pozycji w linii
+	// (`const x = await import("X")`, `void import("X")`, itd.).
+	for (const m of src.matchAll(/\bimport\s*\(\s*["']([^"']+)["']/g)) {
 		specifiers.push(m[1]);
 	}
 	return specifiers;
@@ -58,7 +67,7 @@ describe("granica correctives.ts — CZYSTE funkcje (0 DB, 0 LLM)", () => {
 		expect(forbidden).toEqual([]);
 	});
 
-	it("KONTROLA NEGATYWNA: matcher REALNIE łapie import db/ai (guard nie jest ślepy)", () => {
+	it("KONTROLA NEGATYWNA: matcher REALNIE łapie STATYCZNY import db/ai (guard nie jest ślepy)", () => {
 		// Gdyby ktoś dodał te importy do correctives.ts, test wyżej byłby czerwony.
 		const poisoned = [
 			'import { db } from "@/lib/db";',
@@ -74,5 +83,33 @@ describe("granica correctives.ts — CZYSTE funkcje (0 DB, 0 LLM)", () => {
 			"@ai-sdk/openai",
 			"drizzle-orm",
 		]);
+	});
+
+	it("KONTROLA NEGATYWNA: matcher łapie też DYNAMICZNY import() db/ai (nota Leo 2 — ucieczka przez await import)", () => {
+		// Statyczny skan `from "X"` NIE zauważyłby przeniesienia I/O do warstwy
+		// czystej przez dynamiczny `await import("@/lib/db")`. Ten wariant to domyka.
+		const poisoned = [
+			'const { db } = await import("@/lib/db");',
+			'const s = await import("@/lib/db/schema");',
+			'void import("ai");',
+			'const m = await import("@ai-sdk/openai");',
+			'const { eq } = await import("drizzle-orm");',
+		].join("\n");
+		expect(importedModules(poisoned).filter(isDbOrAiImport)).toEqual([
+			"@/lib/db",
+			"@/lib/db/schema",
+			"ai",
+			"@ai-sdk/openai",
+			"drizzle-orm",
+		]);
+	});
+
+	it("KONTROLA NEGATYWNA: matcher łapie ZARÓWNO statyczny JAK I dynamiczny import tego samego modułu", () => {
+		// Dowód wprost z noty: oba warianty `import { db } from "@/lib/db"` ORAZ
+		// `await import("@/lib/db")` trafiają do zbioru zakazanych specyfikatorów.
+		const staticImport = 'import { db } from "@/lib/db";';
+		const dynamicImport = 'const lazy = await import("@/lib/db");';
+		const both = [staticImport, dynamicImport].join("\n");
+		expect(importedModules(both).filter(isDbOrAiImport)).toEqual(["@/lib/db", "@/lib/db"]);
 	});
 });

@@ -727,8 +727,16 @@ dBack("W2 · kontrakt tras /api/exam/* na żywej bazie (izolacja, partial-unique
 		// PRZED auth i przed jakimkolwiek dotknięciem bazy → OFF ⇒ 0 zapytań. Utrwala
 		// regresję: gdyby ktoś przestawił kolejność (auth/DB przed bramką flagi), licznik
 		// > 0 → test czerwony. Sam status 404 tego nie łapie (mógłby 404-ować PO zapytaniu).
-		const ownerSpy = vi.spyOn(db.$client, "query");
-		const runtimeSpy = vi.spyOn(dbRuntime.$client, "query");
+		//
+		// Nota Leo 3: `pool.query` łapie tylko drogę NIETRANSAKCYJNĄ. Drizzle w
+		// transakcji (`db.transaction`, `withTenantContext`) bierze osobne połączenie
+		// przez `pool.connect()` i woła `client.query()` na NIM — `pool.query` tego
+		// nie widzi. Dlatego szpiegujemy TAKŻE `$client.connect`: pierwszy dotyk bazy
+		// zrobiony wyłącznie w transakcji też pójdzie na czerwono.
+		const ownerQuerySpy = vi.spyOn(db.$client, "query");
+		const runtimeQuerySpy = vi.spyOn(dbRuntime.$client, "query");
+		const ownerConnectSpy = vi.spyOn(db.$client, "connect");
+		const runtimeConnectSpy = vi.spyOn(dbRuntime.$client, "connect");
 		try {
 			const s = await startPOST(startReq(moduleAId));
 			expect(s.status).toBe(404);
@@ -739,12 +747,17 @@ dBack("W2 · kontrakt tras /api/exam/* na żywej bazie (izolacja, partial-unique
 			expect(a.status).toBe(404);
 			const c = await completePOST(completeReq(), ctxFor("00000000-0000-0000-0000-000000000000"));
 			expect(c.status).toBe(404);
-			// Dowód „zero-query": żadna z 3 tras nie poszła do bazy przy fladze OFF.
-			expect(ownerSpy).not.toHaveBeenCalled();
-			expect(runtimeSpy).not.toHaveBeenCalled();
+			// Dowód „zero-query": żadna z 3 tras nie dotknęła bazy przy fladze OFF —
+			// ani drogą nietransakcyjną (`query`), ani transakcyjną (`connect`).
+			expect(ownerQuerySpy).not.toHaveBeenCalled();
+			expect(runtimeQuerySpy).not.toHaveBeenCalled();
+			expect(ownerConnectSpy).not.toHaveBeenCalled();
+			expect(runtimeConnectSpy).not.toHaveBeenCalled();
 		} finally {
-			ownerSpy.mockRestore();
-			runtimeSpy.mockRestore();
+			ownerQuerySpy.mockRestore();
+			runtimeQuerySpy.mockRestore();
+			ownerConnectSpy.mockRestore();
+			runtimeConnectSpy.mockRestore();
 			vi.stubEnv("FLAG_MASTERY_GATE", "1");
 		}
 	});
