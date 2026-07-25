@@ -4,6 +4,7 @@ import { ArrowRight, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { MarketGapNotifications } from "@/components/dashboard/market-gap-notifications";
 import { RhythmCard, type RhythmCardState } from "@/components/rhythm/rhythm-card";
+import { Button } from "@/components/ui/button";
 import type { MarketNotificationsState } from "@/lib/market-notifications";
 
 interface Competency {
@@ -47,6 +48,12 @@ interface DashboardHubProps {
 	marketNotifications: MarketNotificationsState;
 	/** 1.18: stan karty rytmu (null = flaga off — karta nie istnieje). */
 	rhythmCard: RhythmCardState | null;
+	/**
+	 * 1E.4 R6: kolejka powtórek „na dziś" (FSRS). `null` = flaga spacedRepetition
+	 * OFF → sekcja NIE ISTNIEJE (deploy ≠ release). `capped` (licznik ≥ sufitu 200)
+	 * → kafelek pokazuje „200+" zamiast dokładnej liczby.
+	 */
+	reviewDue: { count: number; capped: boolean } | null;
 	/** 1E.6a: flaga curriculumPath — off = kafelek ścieżki nauki nie istnieje. */
 	curriculumEnabled: boolean;
 }
@@ -152,6 +159,7 @@ export function DashboardHub(props: DashboardHubProps) {
 		topGap,
 		marketNotifications,
 		rhythmCard,
+		reviewDue,
 		curriculumEnabled,
 	} = props;
 
@@ -202,6 +210,40 @@ export function DashboardHub(props: DashboardHubProps) {
 
 			{/* 1.18: rytm nauki — streak + alert zastoju (flaga off → null) */}
 			{rhythmCard && <RhythmCard state={rhythmCard} />}
+
+			{/* 1E.4 R6: powtórki „na dziś" (flaga spacedRepetition off → null → sekcja
+			    nie istnieje). Jasna db-card + CTA jako Button default (NIE amber,
+			    NIE ciemna db-nextstep). N=0 → tylko komunikat, bez CTA. Ścieżka
+			    /powtorki (NIE /review — to zajmuje kolejka recenzji człowieka B8;
+			    kolizja zgłoszona Mili, patrz raport R6). */}
+			{reviewDue && (
+				<div className="db-section">
+					<div className="db-eyebrow">Codzienny rytm</div>
+					<div className="db-section-note">
+						Utrwalanie działa najlepiej małymi porcjami — koncepty wracają, zanim je zapomnisz.
+					</div>
+					<div className="db-card">
+						{reviewDue.count === 0 ? (
+							<>
+								<div className="db-cov-title">Powtórki na dziś</div>
+								<p className="db-section-note">Nic do powtórzenia. Wróć jutro.</p>
+							</>
+						) : (
+							<>
+								<div className="db-cov-title">
+									Powtórki na dziś: {reviewDue.capped ? "200+" : reviewDue.count}
+								</div>
+								<p className="db-section-note">
+									Kilka minut teraz — odświeżysz koncepty, które zaczynają słabnąć w pamięci.
+								</p>
+								<Button asChild>
+									<Link href="/powtorki">Zacznij powtórki</Link>
+								</Button>
+							</>
+						)}
+					</div>
+				</div>
+			)}
 
 			{/* Pokrycie rynku */}
 			<div className="db-card db-cov">

@@ -420,7 +420,8 @@ dBack("1E.4 R4 · kontrakt tras /api/review/* na żywej bazie (IDOR, strip klucz
 			expect(res.status).toBe(200);
 			const json = await res.json();
 			expect(json.isCorrect).toBe(false);
-			expect(json.feedback.message).toContain("wcześniej");
+			// Copy kontraktowy z planu §2 (neutralny): „za wcześnie", nie „oblałeś".
+			expect(json.feedback.message).toContain("za wcześnie");
 			expect(json.feedback.message).not.toContain("oblałeś");
 			expect(await logCount(student.happy, cid)).toBe(1);
 		});

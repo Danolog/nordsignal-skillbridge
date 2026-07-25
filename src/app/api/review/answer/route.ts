@@ -130,7 +130,7 @@ export async function POST(req: Request) {
 		const feedback = {
 			message: isCorrect
 				? "Dobrze — ten koncept wróci w większym odstępie."
-				: "Ten koncept wróci wcześniej do powtórki.",
+				: "Ten koncept wrócił za wcześnie — pokażemy go znów niedługo.",
 			explanation: question.explanationMd,
 		};
 

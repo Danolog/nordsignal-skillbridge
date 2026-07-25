@@ -28,6 +28,7 @@ OBA: ten plik i mapę `EXPECTED_ROUTES` w teście (test pilnuje, że się nie ro
 | `/curriculum/[moduleId]/[itemId]` | `child` | widok pozycji z widoku modułu |
 | `/curriculum/[moduleId]/exam` | `child` | **1E.3 · P5** — egzamin modułowy (mastery gate), za flagą `FLAG_MASTERY_GATE` (deploy ≠ release; off → 404). Wejście z bramki E3 na drabinie / stronie modułu. |
 | `/curriculum/atom/[moduleSlug]/[itemSlug]` | `child` | **1E.3 · P5** — trasa-resolver atomów correctives (slug→UUID→redirect na `/curriculum/[moduleId]/[itemId]`); rozwiązuje niezgodność routingu slug↔UUID bez zmiany kontraktu backendu. Za flagą `FLAG_MASTERY_GATE`. |
+| `/powtorki` | `flow` | **1E.4 · R6** — sesja powtórek rozłożonych w czasie (FSRS), za flagą `FLAG_SPACED_REPETITION` (deploy ≠ release; off → 404). Wejście z kafelka „Powtórki na dziś" na pulpicie (`dashboard-hub.tsx`), poza sidebarem. Ścieżka `/powtorki`, NIE `/review` — `/review` zajmuje kolejka recenzji człowieka (B8, `humanReviewQueue`); kolizja tras Next.js. Interim odwracalny, ostateczną ścieżkę potwierdza Mila. |
 
 ## Reguła osiągalności (egzekwowana testem)
 
