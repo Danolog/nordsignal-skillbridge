@@ -224,7 +224,14 @@ dBack("1E.4 R5 · enrollment hook w POST /api/exam/[id]/complete (realna baza)",
 	}
 
 	async function stateRows(): Promise<
-		Array<{ concept_id: string; tenant_id: string; state: string; reps: number; lapses: number; due: string }>
+		Array<{
+			concept_id: string;
+			tenant_id: string;
+			state: string;
+			reps: number;
+			lapses: number;
+			due: string;
+		}>
 	> {
 		const r = await db.execute(
 			sql`SELECT concept_id, tenant_id, state, reps, lapses, due
@@ -365,9 +372,7 @@ dBack("1E.4 R5 · enrollment hook w POST /api/exam/[id]/complete (realna baza)",
 
 			// Sesja domknięta w bazie.
 			const [s] = (
-				await db.execute(
-					sql`SELECT status FROM assessment_sessions WHERE id = ${sessionId}`,
-				)
+				await db.execute(sql`SELECT status FROM assessment_sessions WHERE id = ${sessionId}`)
 			).rows;
 			expect(s.status).toBe("completed");
 
