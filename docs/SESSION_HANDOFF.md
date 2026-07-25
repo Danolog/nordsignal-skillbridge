@@ -11,7 +11,58 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-24 (sesja Oliver, COO — KRĘGOSŁUP TOR B) — 58/58 NOTEBOOKÓW + 1E.3 MASTERY GATE KOMPLETNY END-TO-END (backend+UI+bank na prod, flaga OFF)
+## STAN NA DZIŚ — 2026-07-25 (zapłon produkcyjny) — TUTOR 1.13 + 1E.3 MASTERY GATE — OBA LIVE NA PRODZIE (flagi=1, smoke-zweryfikowane)
+
+**Jednym zdaniem:** dwie funkcje kręgosłupa zapalone na prodzie w uszanowanej
+kolejności — tutor sokratyczny (1.13) PRZED egzaminem modułowym (1E.3 mastery gate);
+obie flagi `=1`, każda potwierdzona smoke'em trasy (401 ≠ 404).
+
+**Flagi na prodzie (deploy = release, świadoma decyzja Darka):**
+- `FLAG_SOCRATIC_TUTOR=1` — tutor sokratyczny (widok projektu). Smoke
+  `GET /api/projects/<uuid>/tutor` → **401** (trasa żyje).
+- `FLAG_MASTERY_GATE=1` — 1E.3 egzamin modułowy. Smoke `POST /api/exam/start` → **401**
+  (≠ 404).
+- Kolejność roadmapy uszanowana: tutor wypuszczony PRZED egzaminem (twardy warunek
+  „nie zapalać mastery gate przed tutorem 1.13").
+
+**Łańcuch release'u (3 PR-y, autor Darek), baseline `main` = `7e54f69`:**
+- **#233** (`1f48232`) — okablowanie bramki axe egzaminu w CI (blokujący job
+  `a11y-exam`) + fix tokenu kontrastu `--muted-foreground` (5.50:1). Bramka `a11y-exam`
+  zaobserwowana zielona.
+- **#235** (`27a11e9`) — higiena zależności: override `brace-expansion >=5.0.8`
+  (GHSA-mh99-v99m-4gvg, HIGH, dev-only tranzytywna). Odblokował skan zależności.
+- **#234** (`7e54f69`, HEAD `main`) — C11 tutor a11y: fix powrotu fokusu (WCAG 2.4.3) +
+  fix kontrastu stanu KRYZYSOWEGO `.tutor-crisis` `#dc2626`→`#b91c1c` (4.35→5.83:1,
+  złapany wymuszonym skanem stanu kryzysowego — Leo słusznie go zażądał) + nowy skan
+  axe tutora `63-c11-tutor-a11y.spec.ts` (4 stany zielone).
+
+### DŁUG NOWY (5 ticketów, właściciele nazwani)
+
+1. **M1 kontrast CTA** — `--ed-amber` biały-na-bursztynie 2.885:1 (przekrojowy:
+   tutor/submit/brief/onboarding; kierunek: token `--ed-amber-text`) → **Mila, P2**.
+2. **Wiring spec 63 tutora** → blokujący job w `pr.yml` z deterministycznym fixture
+   projektu → **Eva, z terminem**.
+3. **`.viva-crisis`** — ten sam defekt kontrastu co naprawiony `.tutor-crisis` →
+   a11y ticket.
+4. **Token `--ed-crisis-text` AA-safe** — literał `#b91c1c` powtórzony w
+   `.tutor-crisis`/`.viva-outcome-failed` → dług tokenizacji.
+5. **Normalizacja wartości flag env prod** (dryf pustego stringa) — obie zapalone flagi
+   już jawne `"1"`, przejść resztę flag.
+
+### GOVERNANCE (nieblokujące)
+
+Branch-protection `required-status-checks` NIEDOSTĘPNE (repo prywatne na darmowym planie
+GitHub → 403) — bramki CI egzekwowane **proceduralnie** (obserwacja checku przed merge).
+Odblokowanie = GitHub Pro (wydatek) LUB repo publiczne (+Ryan/RODO) → decyzja Darka.
+
+### 1E.4 (powtórki FSRS) — NASTĘPNA funkcja kręgosłupa
+
+Plan zaakceptowany przez Darka (`docs/product/plan-1e4-fsrs-v0.1.md`), implementacja
+**ROZPOCZĘTA** (R1 fundament w toku). Flaga `FLAG_SPACED_REPETITION` OFF.
+
+---
+
+## STAN POPRZEDNI — 2026-07-24 (sesja Oliver, COO — KRĘGOSŁUP TOR B) — 58/58 NOTEBOOKÓW + 1E.3 MASTERY GATE KOMPLETNY END-TO-END (backend+UI+bank na prod, flaga OFF)
 
 **Jednym zdaniem:** dobudowane 10 brakujących notebooków-towarzyszy ćwiczeń
 (M-ML + M-LLM) → **produkcja 58/58, drabina content-complete**; każda liczba
@@ -87,9 +138,9 @@ Quinn adwersaryjnie + Leo (14 domen), autor commitów = Darek.
 **🚦 ZOSTAJE PRZED ZAPŁONEM FLAGI (świadoma decyzja Darka):**
 - ✅ **W1** (write-side examSlots tylko-UUID — na prodzie) · ✅ **W2** (test integr. `/api/exam/*` — złapał realny
   bug współbieżności Drizzle-wrapped-23505) · ✅ **W3** (koncepty egzaminu nie diagnostic+market+active — na prodzie).
-- ⏳ **Tutor 1.13** gotowy (roadmapa: nie włączać pilotażu przed tutorem).
-- ⏳ **axe a11y** (twardy warunek Leo B): `@axe-core/playwright` + skan kontrast/landmarki na 3 ścieżkach zielony
-  ZANIM flaga zapali się w jakimkolwiek środowisku.
+- ✅ **Tutor 1.13** — ZROBIONE, zapalony na prodzie PRZED egzaminem (`FLAG_SOCRATIC_TUTOR=1`, #234).
+- ✅ **axe a11y** (twardy warunek Leo B) — ZROBIONE: bramka `a11y-exam` w CI zielona (#233) + skan axe tutora
+  `63-c11-tutor-a11y.spec.ts` (#234). Wszystkie bramki zapłonu spełnione → flagi 1E.3 i tutora zapalone (patrz STAN NA DZIŚ).
 
 **🔧 DŁUG 1E.3 (backlog, nieblokujący):** batch `evaluateExamCycle` (N+1 przy wielu cyklach — I Leo); ekstrakcja
 `FORBIDDEN_EXAM_SLOT_KEYS` po 3. konsumencie (I1); test „zero-query przy OFF"; komunikat I3 (423-bez-paczki →
