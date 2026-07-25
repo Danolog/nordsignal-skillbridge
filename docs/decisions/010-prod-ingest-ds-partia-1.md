@@ -1,8 +1,9 @@
 # Runbook: Ingest prod — projekty Data Scientist, partia 1 (v1.12)
 
-> **Status:** PRZYGOTOWANY (CTO sign-off Ethan, 2026-07-02). Ingest do bazy **testowej** zielony (walidacja kontraktu + test integracyjny). **Wykonanie na prod = czerwona linia — wymaga jawnej, świadomej decyzji Darka.** Ten dokument tylko PRZYGOTOWUJE — realny zapis odpala człowiek.
+> **Status:** PRZYGOTOWANY (CTO sign-off Ethan, 2026-07-02). Ingest do bazy **testowej** zielony (walidacja kontraktu + test integracyjny). **Wykonanie na prod = czerwona linia, ale od v1.12 delegowana Ethanowi (CTO): Ethan decyduje i wykonuje sam pod bramkami jakości (§3, §7), bez sign-offu Darka per akcja.** Granica twarda zostaje przy Darku (nowy MCP / źródło danych, edycja plików rządzenia `hooks/`·`CLAUDE.md`·`agents/*.md`, kontrakt > 5000 EUR, komenda genuinnie niszcząca).
 > **Autor commita treści/artefaktu przy scaleniu = Darek** (`mubueu@gmail.com`).
 > **Cel prod:** Neon, projekt `long-pond-11214233` („SkillBridge"), branch `main` (`br-proud-sun-al3aezrj`), baza `neondb`, rola `neondb_owner`, host direct `ep-crimson-leaf-alz0lqiz.c-3.eu-central-1.aws.neon.tech`.
+> **Korekta długu D1 (2026-07-25, Ethan/CTO):** status, pre-conditions (§4) i wykonanie (§7) zaktualizowane z modelu sprzed v1.12 („Ethan przygotowuje, Darek wykonuje") do modelu delegacji **v1.12/v1.14** (CLAUDE.md §5 „Delegacja nieodwracalnych działań technicznych — Ethan"): Ethan decyduje i wykonuje trzy nieodwracalne działania techniczne (scalenie do `main`, wdrożenie na prod, zmiana bazy NEON) sam, pod bramkami jakości, bez sign-offu Darka per akcja. **Rekord wykonania §12/§12a (2026-07-02, operował Darek) zachowany bez zmian jako dowód audytowy** — opisuje datowane zdarzenie z okna przejściowego, nie regułę; zmiana go falsyfikowałaby ślad audytu (por. §11 D3).
 
 ---
 
@@ -59,7 +60,7 @@ Formalna definicja bramek jest **rozproszona** (spójna, wzór ADR-009 §3). Bra
 - [ ] Repo na zielonym stanie: `pnpm build`, `pnpm lint`, `pnpm test:run` przechodzą; artefakt + narzędzie po review Leo, scalone do `main` (commit autorstwa Darka).
 - [ ] **Decyzja Darka o wycofaniu 7 starych DS podjęta** (§11) — w szczególności sposób obsługi ewentualnych `project_submissions` na starych DS (cascade!).
 - [ ] Brak równoległych deployów / migracji / innych ingestów w tym oknie.
-- [ ] Świadoma zgoda Darka na wykonanie (czerwona linia).
+- [ ] Decyzja Ethana (CTO) o wykonaniu + wszystkie bramki jakości §3 spełnione (czerwona linia delegowana Ethanowi, v1.12; patrz nota korekty D1 u góry i §7).
 
 ## 5. Kopia zapasowa NEON (bramka #1 — WYKONAĆ PRZED ZAPISEM)
 
@@ -115,9 +116,9 @@ GROUP BY p.slug ORDER BY submissions DESC;
 --   (Verified Receipts) kaskadą. Alternatywa: zamiast DELETE ustaw status projektu na nieaktywny.
 ```
 
-## 7. Wykonanie — WYMAGA JAWNEJ ZGODY (czerwona linia)
+## 7. Wykonanie — czerwona linia delegowana Ethanowi (CTO), pod bramkami jakości
 
-> **Świadoma decyzja operatora.** `CONFIRM_PROD_DB=1` to jawny krok, którym Darek bierze odpowiedzialność za zapis na zdalną bazę. **Ethan (CTO) NIE wykonuje tego kroku** — przygotował runbook i wydał sign-off.
+> **Delegacja v1.12 (CLAUDE.md §5).** `CONFIRM_PROD_DB=1` to jawny krok potwierdzający zapis na zdalną bazę prod. **Od v1.12 to działanie jest delegowane Ethanowi (CTO): Ethan decyduje i wykonuje je sam pod bramkami jakości — bez sign-offu Darka per akcja.** Bramki zastępujące sign-off: Leo review przed scaleniem (§4, §10 poz. 4), kopia zapasowa Neon przed zmianą danych (§5), transakcyjny SQL replace-per-projekt zamiast niszczącego `db:seed` (§3), autor commita = Darek (`mubueu@gmail.com`), jeden pisarz gita per gałąź, audit log (§10). **Granica twarda zostaje przy Darku:** nowy MCP / źródło danych, edycja plików rządzenia (`hooks/`·`CLAUDE.md`·`agents/*.md`), kontrakt > 5000 EUR; komenda genuinnie niszcząca nadal wywołuje hook `ask` i wtedy Ethan eskaluje ją do Darka zamiast obchodzić bramkę. Ten runbook stosuje wyłącznie transakcyjny, celowany SQL (§7a upsert keyed-by-slug, §7b `DELETE … WHERE slug IN (...)`), więc mieści się w delegacji Ethana.
 >
 > **Uwaga o `.env.test`:** narzędzie auto-ładuje `.env.test`, jeśli istnieje, ale `dotenv` **nie nadpisuje** już ustawionych zmiennych — `DATABASE_URL` wyeksportowany w powłoce wygrywa. Dla 100% pewności tymczasowo zmień nazwę `.env.test` na czas ingestu.
 
