@@ -1,6 +1,8 @@
 # Decyzje produktowe 1E.3 · P5 — maszyna stanów mastery gate (po 2. oblaniu, blokada 3. próby, test-out)
 
-**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-24 · **Status:** v0.1 — WIĄŻĄCY KONTRAKT dla Jacka (UI) i Ethana (backend, P4/P5)
+**Changelog v0.1 → v0.2 (2026-07-25, Sophia):** dodana **DECYZJA 6** — rozstrzygnięcie zdegradowanej gałęzi stanu S-C (`correctives_required` BEZ paczki correctives), którą eskalował Leo z review partii C (nota 1, G1/G4 produkt+arch). Rozstrzygnięcie: **hybryda — akceptuję obecny bezpiecznik C4 na prodzie TERAZ + ticket B (ograniczona odbudowa ścieżki, nie generyczny rebuild) z progiem spłaty.** Plus poprawka mikrocopy `correctives_unavailable` (obietnica, której system nie dotrzymuje). Decyzja w mojej domenie (produkt/UX/dydaktyka, CLAUDE.md §5 v1.11 — odwracalna, wewnętrzna, bez wydatku); realizacja B = kod silnika → arch-sign-off Ethana. Reszta dokumentu (D1–D5, §5a, §7) bez zmian.
+
+**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-24 (v0.1) · 2026-07-25 (v0.2) · **Status:** v0.2 — WIĄŻĄCY KONTRAKT dla Jacka (UI) i Ethana (backend, P4/P5)
 **Zleca:** rozstrzygnięcie otwartych pytań spec Mili P5 (`docs/product/mila-1e3-p5-egzamin-spec-v0.1.md`, rozdz. 10) i luki „brak twardej blokady 3. próby" (Mila 6.3) — decyzje w mojej domenie (CLAUDE.md §7, ADR-014 D3).
 **Źródło prawdy parametrów:** ADR-014 D3 (wiersz `exam`), D5 (correctives), D11 (metryki). Rama: CLAUDE.md §7 v1.13 — mastery gate = **ocena formująca, progresja WEWNĘTRZNA, maszyna samowystarczalna, ZERO human-in-the-loop**. Nic tu nie wychodzi do pracodawcy — to nie kredencjał.
 **Relacja do innych dokumentów:**
@@ -118,6 +120,48 @@ Pętla S-C → S-D → S-A(cykl n+1) powtarza się bez limitu. **Nigdy** nie ma 
 
 ---
 
+## DECYZJA 6 — Zdegradowana gałąź S-C: `correctives_required` BEZ paczki (nota 1 Leo, partia C)
+
+**Eskalacja Leo (review partii C, 1E.3, G1/G4 — produkt+arch).** Trasa `POST /api/exam/start` może zwrócić `423 correctives_required` z `correctivesPackage === undefined` w JEDNYM przypadku: cykl oblany (S-C, `correctivesRequired=true`), ale żadna oblana sesja cyklu nie niesie zapisanej paczki w `result_json` — czyli **dane zdegradowane/historyczne** (stare `result_json` sprzed utrwalania paczki). **Na bieżącej ścieżce zapisu to NIE występuje** — P4 w trasie `complete` zawsze buduje i utrwala paczkę (niezmiennik D2). To odporność na dane uszkodzone, nie żywy bug. Fix C4 (już na prodzie) obsługuje ten stan bezpiecznie: front pokazuje dedykowany `correctives_unavailable` (twarda blokada, BEZ retry — ponowienie da ten sam 423), backend loguje `logError("exam.start.correctivesMissing")` u źródła (koniec cichej degradacji). **Konsekwencja dla studenta na zdegradowanych danych: ślepy zaułek** — nie ponowi i nie dostaje listy tematów do powtórki, utyka do ręcznej interwencji.
+
+**Rozstrzygnięcie w jednym zdaniu:** **hybryda — obecny bezpiecznik C4 zostaje na prodzie TERAZ** (jest poprawny i wysyłkowy), **plus ticket B: ograniczona ODBUDOWA ŚCIEŻKI remediacji na odczycie** (nie generyczny rebuild całej paczki), z **progiem spłaty przed 1. realną rejestracją LUB przed pojawieniem się ścieżki zapisu mogącej wyprodukować zdegradowany `result_json`** — co pierwsze. Plus **natychmiastowa poprawka mikrocopy** C4 (niżej), bo obecne obiecuje coś, czego system nie robi.
+
+### Dlaczego nie samo A (zaakceptuj dead-end na zawsze)
+
+Ślepy zaułek w bramce formującej **łamie R13** — mój własny niezmiennik z D1: „błąd nigdy nie jest stanem końcowym, żadnej trwałej blokady ścieżki; ostatnie doświadczenie zawsze = sukces". Student utknięty do ręcznej interwencji to dokładnie stan „zablokowany na zawsze", którego cała maszyna stanów (S-C → S-D → S-A) ma nie dopuszczać. `logError` mówi NAM, ale student widzi zaułek i odchodzi. To jest najgorszy możliwy wynik dla produktu, którego teza brzmi „czas, nie talent; błąd prowadzi do opanowania". Argument „stan nieosiągalny + zero studentów" jest prawdziwy **dziś**, ale założenie „zero studentów" **wygasa z 1. rejestracją** — a wtedy asymetria kosztu błędu jest brutalna: koszt A = pojedynczy student cicho utknięty w bramce, która obiecuje mu przeciwieństwo.
+
+### Dlaczego nie samo B (wymuś niezmiennik — zawsze odbuduj pełną paczkę na odczycie)
+
+Dwa realne koszty, oba dydaktyczne, nie techniczne:
+
+1. **Generyczny rebuild MASKUJE naruszenie niezmiennika zapisu.** Gdyby przyszły regres P4 przestał utrwalać paczkę, cichy rebuild na odczycie zamiótłby sygnał — dokładnie tę cichą degradację, którą C4 zabił przez `logError`. Odbudowa NIE może uciszyć alertu.
+2. **Zdegradowany `result_json` może nie mieć wiarygodnego `errorCount`/`maxErrors`.** Te dwie liczby sterują WYŁĄCZNIE mikrocopy paczki (`N = errorCount − maxErrors`, „ile pytań do zaliczenia" — Decyzja 5.10.2, `buildCorrectivesPackage`). Odbudowa z brakującymi/niepewnymi liczbami wyprodukowałaby **sfałszowane N** — „zabrakło Ci X do zaliczenia" z liczbą zmyśloną. **Sfałszowany licznik dystansu do progu jest gorszy niż jego brak** — okłamuje studenta o odległości od zdania. To dydaktyczna czerwona linia (spójne z regułą banku F1: N liczone, nigdy zgadywane).
+
+### Co rozstrzygam (dydaktyka/produkt) — kształt ticketu B
+
+Rozdzielam **wartość nośną** paczki od **copy zachęty**:
+
+- **Wartość nośna = lista ≤3 atomów do powtórki** (deterministyczna, `assembleCorrectives` z `failedConcepts`, **0 LLM**). To jest realna remediacja — to ona wypełnia obietnicę R13 (student dostaje ścieżkę naprzód). **Odbudowujemy JĄ**, o ile `failedConcepts` są odzyskiwalne ze zdegradowanego `result_json` **lub** re-derywowalne z odpowiedzi oblanej sesji (`assessment_answers` → koncepty błędnych pytań).
+- **Licznik N („ile do zaliczenia") = copy wtórna.** Gdy `errorCount`/`maxErrors` są nieobecne/niepewne → paczka renderuje się w wariancie **„dystans nieznany"**: pokazuje tematy do powtórki BEZ zdania o liczbie pytań do zaliczenia. Lepsza paczka bez licznika niż paczka z licznikiem, który kłamie. **To decyzja w mojej domenie** (mikrocopy = dydaktyka).
+- **Sygnał zapisu przeżywa odbudowę.** `logError("exam.start.correctivesMissing")` **zostaje** — rebuild ≠ wyciszenie. Rozróżnienie „dane historyczne (oczekiwane, niska waga)" vs „żywy regres P4 (wysoka waga)" może iść jako pole w logu, ale log pada zawsze. Odbudowa przywraca studentowi ścieżkę, NIE udając, że niezmiennik zapisu był dotrzymany.
+- **Najgłębsza degradacja = A zostaje na zawsze.** Jeśli `failedConcepts` są nieodzyskiwalne i nie da się ich tanio re-derywować → **fallback do obecnej twardej blokady C4**. B **zawęża** zaułek do przypadku genuinnie nieodwracalnego, nie znosi bezpiecznika.
+
+### Poprawka natychmiastowa (w zakresie A, przed ticketem B) — mikrocopy `correctives_unavailable`
+
+Obecne copy C4: „…lista tematów do powtórki nie jest teraz dostępna. Wróć do modułu; **przygotujemy ją dla Ciebie**." — **obiecuje przygotowanie, którego żaden mechanizm nie dostarcza** (dopóki nie ma B). To małe naruszenie zaufania (brand voice: „customer trust > short-term win") i mojej bramy treści (copy nie obiecuje funkcji, której zakres stawia poza zasięgiem). **[WYMÓG UI — Jack]** zdjąć obietnicę auto-przygotowania: copy stwierdza fakt („nie możemy teraz odtworzyć listy tematów") + jedyna akcja „Wróć do modułu", bez zdania sugerującego, że system sam ją dostarczy. Gdy wejdzie B, copy tego wariantu i tak stanie się rzadsze (B renderuje realną paczkę, gdy tylko `failedConcepts` odzyskiwalne).
+
+### Próg spłaty ticketu B (jednoznacznie)
+
+Ticket B wchodzi do kolejki **przed** którymkolwiek z dwóch zdarzeń, co pierwsze:
+- **T1 — przed 1. realną rejestracją studenta na prodzie** (moment, w którym wygasa założenie „zero studentów" i ekspozycja na zaułek staje się realna); albo
+- **T2 — przed scaleniem jakiejkolwiek zmiany schematu/kodu mogącej wyprodukować `result_json` bez paczki na żywej ścieżce zapisu** (moment, w którym klasa zdegradowana daje się wygenerować na produkcji, nie tylko historycznie).
+
+Dziś **żadne** z T1/T2 nie zachodzi (P4 zawsze utrwala, zero studentów), więc **A jest bezpieczne do wysyłki teraz, a B nie jest pilne dziś** — ale próg jest twardy i nazwany, nie „kiedyś".
+
+**[WYMÓG BACKENDU — Ethan, arch-sign-off wymagany]** Realizacja B to kod silnika (trasa `start` + `exam-service`): (a) próba odzyskania/re-derywacji `failedConcepts` ze zdegradowanego stanu; (b) `buildCorrectivesPackage`/`assembleCorrectives` wywołane z odzyskanymi konceptami i **jawnym znacznikiem „dystans nieznany"** zamiast zmyślonego `errorCount`/`maxErrors`; (c) `logError` zachowany przy każdej odbudowie; (d) fallback do C4, gdy `failedConcepts` nieodzyskiwalne. **Czy `failedConcepts` są tanio re-derywowalne z `assessment_answers` — to feasibility do oceny Ethana**; jeśli nie, B degraduje się do „popraw copy + zostaw C4" i to jest akceptowalny wynik. JAK (kształt zapytania, gdzie helper) = domena Ethana/Maxa; ja rozstrzygam CO odbudować (atomy: tak; N: nigdy zmyślone) i KIEDY (próg spłaty).
+
+---
+
 ## 6. Konsekwencje dla spec Mili (do naniesienia przez Milę/Jacka)
 
 1. **Ekran 1, Blok A (E3) — nowy 4. pod-stan „correctives w toku".** Gdy wszystkie pozycje zrobione, egzamin oblany cap-2 (stan S-C), correctives NIE odbyte → Blok A nie pokazuje „Podejdź do egzaminu", tylko: „Dokończ powtórkę, żeby podejść ponownie" + link do paczki correctives (Ekran 5 z ostatniego wyniku). Gdy correctives odbyte (S-D) → Blok A wraca do „Podejdź do egzaminu" (świeży cykl). **[WYMÓG UI — Jack + dane: strona modułu musi znać stan correctives z backendu.]**
@@ -140,6 +184,8 @@ Routing slug↔UUID (Mila 7.4) i atom osierocony (7.2) to warstwa TECHNICZNA (Ja
 | D5.10.2 N w mikrocopy | `N = errorCount − maxErrors` w budowie message P4 | brzmienie „…{N}… do zaliczenia" w W2/W3 |
 | D5.10.3 M koncepty | M = distinct `failedConcepts` | render KAŻDEGO konceptu (3-stan Mili 7.2) |
 | D6.1 pod-stan E3 „correctives w toku" | strona modułu dostaje stan correctives | 4. pod-stan Bloku A |
+| DECYZJA 6 zdegradowana S-C (poprawka copy, TERAZ) | — | copy `correctives_unavailable` bez obietnicy auto-przygotowania |
+| DECYZJA 6 ticket B (odbudowa ścieżki, próg T1/T2) | odzysk/re-derywacja `failedConcepts`; `assembleCorrectives` z wariantem „dystans nieznany"; `logError` zachowany; fallback do C4 — **arch-sign-off Ethana** | render paczki „dystans nieznany" (tematy bez licznika N) |
 
 ---
 
@@ -147,9 +193,9 @@ Routing slug↔UUID (Mila 7.4) i atom osierocony (7.2) to warstwa TECHNICZNA (Ja
 
 Ten dokument to **decyzje produktowe**, nie treść curriculum (brak atomów, brak liczb liczonych ze zbioru danych, brak prozy studenta wymagającej uruchomienia w Pythonie). Bramą właściwą jest `skills/product/SKILL.md` A1/A2 (kompletność + spójność IN/OUT), nie treściowa T1–T5 (`skills/product/tresci-edukacyjne.md`) — zgodnie z regułą „dla PRD A1/A2, dla treści T1–T5".
 
-**A1 — kompletność dostaw.** Pięć zamówionych rozstrzygnięć = pięć oznaczonych sekcji: maszyna stanów po 2. oblaniu (DECYZJA 1), twarda blokada 3. próby (DECYZJA 2), test-out vs cap-2 (DECYZJA 3), definicja „correctives odbyte" (DECYZJA 4), pozostałe pytania Mili + sync §5a (DECYZJA 5). Plus ścieżka realizacji (§7). **PASS.**
+**A1 — kompletność dostaw.** Sześć oznaczonych rozstrzygnięć: maszyna stanów po 2. oblaniu (DECYZJA 1), twarda blokada 3. próby (DECYZJA 2), test-out vs cap-2 (DECYZJA 3), definicja „correctives odbyte" (DECYZJA 4), pozostałe pytania Mili + sync §5a (DECYZJA 5), zdegradowana gałąź S-C bez paczki (DECYZJA 6 — nota 1 Leo, dodana v0.2). Plus ścieżka realizacji (§7, z wierszami D6). **PASS.**
 
-**A2 — spójność IN/OUT.** Żadna decyzja nie opiera się na funkcji postawionej w OUT. Sprawdzone styki: (a) reset cyklu (D1) nie zakłada nowego silnika — reużywa `clampAttempt`/`gradeExam` bez zmian, zmienia tylko zakres zliczania; (b) blokada 3. próby (D2) nie zakłada UI retry na W3 — przeciwnie, potwierdza jego brak; (c) „correctives odbyte" (D4) nie zakłada human-in-the-loop (jawnie OUT wg §7) ani honor-systemu (jawnie odrzucony) — opiera się na `curriculum_item_answers`, który ISTNIEJE (ADR D2); (d) test-out (D3) nie zakłada rozróżniania sesji test-out (jawnie OUT — „zero zmian") — opiera się na obecnym liczniku. **PASS.**
+**A2 — spójność IN/OUT.** Żadna decyzja nie opiera się na funkcji postawionej w OUT. Sprawdzone styki: (a) reset cyklu (D1) nie zakłada nowego silnika — reużywa `clampAttempt`/`gradeExam` bez zmian, zmienia tylko zakres zliczania; (b) blokada 3. próby (D2) nie zakłada UI retry na W3 — przeciwnie, potwierdza jego brak; (c) „correctives odbyte" (D4) nie zakłada human-in-the-loop (jawnie OUT wg §7) ani honor-systemu (jawnie odrzucony) — opiera się na `curriculum_item_answers`, który ISTNIEJE (ADR D2); (d) test-out (D3) nie zakłada rozróżniania sesji test-out (jawnie OUT — „zero zmian") — opiera się na obecnym liczniku; (e) **DECYZJA 6 odbudowa ścieżki (B) NIE zakłada wiarygodnego `errorCount`/`maxErrors` na zdegradowanych danych — przeciwnie, jawnie stawia je w OUT dla tej gałęzi (wariant „dystans nieznany"); NIE zakłada też cichego rebuildu (zachowuje `logError`) ani human-in-the-loop; opiera się na `assembleCorrectives`/`failedConcepts`, które ISTNIEJĄ, z jawnym fallbackiem do C4, gdy nie są odzyskiwalne**. **PASS.**
 
 ## Brama część B — self-critique (senior product lead, SaaS edukacyjny, po źle zescope'owanym launchu mastery-gate)
 
