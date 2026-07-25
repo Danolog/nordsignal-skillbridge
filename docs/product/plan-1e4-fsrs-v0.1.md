@@ -1,6 +1,8 @@
 # Plan 1E.4 — powtórki rozłożone w czasie (FSRS)
 
 **Wersja:** v0.2 · 2026-07-25 · Status: **DRAFT do sign-offu Darka** (Plan Mode)
+**Changelog v0.2 → v0.3:** R3 (warstwa serwisowa) scalona na `main` (PR #240, merge `60aa2a6`, flaga OFF, brak migracji). Bramka W1 Leo zamknięta — test integracyjny `review-service.integration.test.ts` (10 przypadków) zielony w jobie `integration` CI. Dodano sekcję 4b — carry-forward z Leo review R3 do R4/R5 (5 kontraktów) + follow-up `ts-fsrs` (exact-pin przy major 6.0).
+
 **Changelog v0.1 → v0.2:** R1 i R2 scalone na `main` (R2 = PR #239, `297865f`, flaga OFF, brak migracji). Dodano sekcję 4a — carry-forward z Leo review R2 do R3 (noty 3/4, do rozwiązania w R3, NIE w R2).
 **Synteza:** Oliver (COO) z warstwy produktowej Sophii (PO) + architektury Ethana (CTO)
 **Flaga:** `FLAG_SPACED_REPETITION` — domyślnie **OFF** (deploy ≠ release, jak 1E.3)
@@ -71,7 +73,21 @@ Rdzeń R1–R5 jest samodzielny i testowalny bez UI. Każdy slice pod te same br
 Dwie noty z code review R2 (Leo GO z notami). **Świadomie NIE rozwiązane w R2** (R2 = czysta logika schedulera); przenoszone do R3 (warstwa serwisowa — pierwszy slice, który zapisuje stan i chodzi ścieżką spadkową):
 
 - **Nota 3 (test kontraktu CHECK na ścieżce spadkowej).** Dodać test asertujący ograniczenia bazy (`stability > 0`, `difficulty ∈ [1,10]`) na ścieżce SPADKOWEJ — powtarzane „Again" na ustalonej już karcie zbiega stabilność do `S_MIN` i trudność do `10`. Dziś testowany jest wyłącznie `initCard` (stan początkowy), nie zachowanie po wielokrotnym pogorszeniu. R3 zapisuje stan, więc to naturalne miejsce na kontrakt-test wobec realnego CHECK-a.
-- **Nota 4 (jedno źródło prawdy dla `elapsedDays`).** Rozważyć czytanie `elapsedDays` z `log.elapsed_days` zwracanego przez `scheduler.next` zamiast własnego przeliczania różnicy dat — parytet z biblioteką i jedno źródło prawdy (eliminuje ryzyko dryfu między naszym liczeniem a `ts-fsrs`). Decyzja projektowa R3 przy warstwie zapisu oceny.
+- **Nota 4 (jedno źródło prawdy dla `elapsedDays`).** Rozważyć czytanie `elapsedDays` z `log.elapsed_days` zwracanego przez `scheduler.next` zamiast własnego przeliczania różnicy dat — parytet z biblioteką i jedno źródło prawdy (eliminuje ryzyko dryfu między naszym liczeniem a `ts-fsrs`). Decyzja projektowa R3 przy warstwie zapisu oceny. **Rozwiązane w R3** (`applyRating` czyta `elapsed_days` z logu schedulera).
+
+---
+
+### 4b. Carry-forward z Leo review R3 → do rozwiązania w R4/R5
+
+R3 (warstwa serwisowa, owner-side, flaga OFF) scalona z Leo GO warunkowym (W1 = test integracyjny, zamknięty). Pięć kontraktów przeniesionych do warstwy API (R4) i sprzężenia enrollment (R5) — **świadomie NIE rozwiązane w R3** (R3 nie ma tras ani wpięcia w zdarzenia). Do rozwiązania:
+
+- **K1 (R4) — `studentId` z sesji, NIGDY z payloadu.** `studentId` bierzemy wyłącznie z `getStudentByUserId` (sesja), nie z ciała żądania. Serwis jest owner-side (omija RLS `app_student`), więc jawny filtr `student_id` jest JEDYNĄ granicą najemcy — payload sterujący nią = cross-tenant. Twardy warunek R4.
+- **K2 (R4) — twardy cap na `getDueQueue.limit`.** Górny limit rozmiaru kolejki po stronie serwera (klient nie ustala nieograniczonego `limit` → DoS/wyczerpanie pamięci).
+- **K3 (R4) — walidacja server-side `questionItemId`/`conceptId` + mapowanie `23503`→404/409.** Naruszenie klucza obcego (Postgres `23503`) mapujemy na 404/409, nie surowe 500 (nie wyciekamy szczegółu bazy, czytelny błąd klienta).
+- **K4 (R4) — ścieżka ODCZYTU przez `app_student`/`withTenantContext`.** SELECT-y kolejki na trasie odczytu idą pod rolą `app_student` (kontekst najemcy), żeby RLS z migracji 0042 realnie strzegła runtime SELECT — nie tylko zapis owner-side.
+- **K5 (R5) — `priorFailed` coupling = decyzja Ethana.** Sprzężenie zasiewu z sygnałem „już oblany" (hook `priorFailed`, dziś no-op) rozstrzyga Ethan w R5 przy wpięciu w zdarzenie 1E.3.
+
+**Follow-up (dług zależności, nie R4/R5):** exact-pin `ts-fsrs` (dziś `^5.4.1`) przy bumpie do major **6.0** — usuwają `log.elapsed_days`, przez co `Math.max(0, undefined) = NaN` złamałby CHECK `elapsed_days >= 0` (po nocie 4 czytamy to pole z logu). **Próg spłaty: bump major** (5.x bezpieczne; 6.0 = przypiąć dokładną wersję i zweryfikować kontrakt pola przed podniesieniem).
 
 ---
 
