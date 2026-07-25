@@ -236,14 +236,20 @@ export interface ExamCycleState {
  * Id atomów UKOŃCZALNYCH (curriculum_module_items kind ∈ theory/exercise) uczących
  * danych konceptów — kręgosłup koncept→atom (jak buildCorrectivesPackage). Tylko te
  * bramkują „correctives odbyte" (D4): lab i koncept-bez-atomu NIE (brak zdarzenia
- * retrieval do sprawdzenia). Zdeduplikowane.
+ * retrieval do sprawdzenia). Zdeduplikowane PER KONCEPT.
+ *
+ * BATCH (spłata długu N+1): jedno zapytanie dla WSZYSTKICH konceptów oblanych sesji
+ * naraz, zwrócone jako mapa koncept→atomy. Wołający składa `requiredItemIds` sesji =
+ * dedup unia atomów jej `failedConcepts` — dokładnie ten sam ZBIÓR co dawne
+ * per-sesyjne `loadCompletableCorrectiveItemIds(session.failedConcepts)` (zmienia się
+ * liczba zapytań, nie semantyka).
  */
-async function loadCompletableCorrectiveItemIds(
+async function loadCompletableCorrectiveItemIdsByConcept(
 	failedConcepts: readonly string[],
-): Promise<string[]> {
-	if (failedConcepts.length === 0) return [];
+): Promise<Map<string, string[]>> {
+	if (failedConcepts.length === 0) return new Map();
 	const rows = await db
-		.select({ itemId: curriculumModuleItems.id })
+		.select({ conceptSlug: questionConcepts.slug, itemId: curriculumModuleItems.id })
 		.from(questionConcepts)
 		.innerJoin(curriculumItemConcepts, eq(curriculumItemConcepts.conceptId, questionConcepts.id))
 		.innerJoin(
@@ -254,46 +260,96 @@ async function loadCompletableCorrectiveItemIds(
 			),
 		)
 		.where(inArray(questionConcepts.slug, [...failedConcepts]));
-	return [...new Set(rows.map((r) => r.itemId))];
+	const byConcept = new Map<string, string[]>();
+	const seen = new Map<string, Set<string>>();
+	for (const r of rows) {
+		let list = byConcept.get(r.conceptSlug);
+		let seenSet = seen.get(r.conceptSlug);
+		if (!list || !seenSet) {
+			list = [];
+			seenSet = new Set<string>();
+			byConcept.set(r.conceptSlug, list);
+			seen.set(r.conceptSlug, seenSet);
+		}
+		if (!seenSet.has(r.itemId)) {
+			seenSet.add(r.itemId); // dedup itemId per koncept (jak Set w wersji per-sesja)
+			list.push(r.itemId);
+		}
+	}
+	return byConcept;
 }
 
 /**
- * Moment „correctives odbyte" dla OBLANEJ cap-2 sesji (D4): każdy UKOŃCZALNY atom
- * paczki ma poprawną odpowiedź retrieval z answered_at PO completed_at tej sesji.
- * Zwraca czas domknięcia (max po atomach z NAJWCZEŚNIEJSZEJ kwalifikującej
- * odpowiedzi = moment, w którym padł ostatni brakujący atom) albo null, gdy któryś
- * wymagany atom nie ma jeszcze re-ukończenia. Pusty zbiór wymaganych atomów (same
- * koncepty bez atomu / lab) → NIE bramkuje: domknięcie = completed_at sesji
- * (D4 „koncept bez ukończalnego atomu nie może blokować"). R13: atom ma
- * nielimitowane próby, więc re-ukończenie zawsze osiągalne — brak ślepego zaułka.
+ * Czasy poprawnych re-ukończeń (`answered_at`) per UKOŃCZALNY atom — jedno zapytanie
+ * dla WSZYSTKICH wymaganych atomów wszystkich oblanych sesji naraz (batch N+1).
+ * Zwraca WSZYSTKIE kwalifikujące `answeredAt` per itemId (nie `min`), bo domknięcie
+ * „PO failedAt danej sesji" liczy się per sesja W PAMIĘCI (computeCorrectivesDoneAt).
+ *
+ * `sinceExclusive` = najwcześniejszy `failedAt` spośród oblanych sesji: bezpieczne
+ * przycięcie zapytania. Każda sesja i tak filtruje `answeredAt > swój failedAt`
+ * (≥ sinceExclusive) w pamięci — odpowiedzi ≤ sinceExclusive są wykluczone przez
+ * KAŻDĄ sesję, więc ich nieobecność tu niczego nie zmienia (dowód równoważności).
  */
-async function correctivesDoneAt(
+async function loadCorrectiveAnswerTimes(
 	studentId: string,
-	failedAt: Date,
-	requiredItemIds: readonly string[],
-): Promise<Date | null> {
-	if (requiredItemIds.length === 0) return failedAt;
+	itemIds: readonly string[],
+	sinceExclusive: Date,
+): Promise<Map<string, Date[]>> {
+	if (itemIds.length === 0) return new Map();
 	const rows = await db
 		.select({
 			itemId: curriculumItemAnswers.itemId,
-			firstAt: sql<string>`min(${curriculumItemAnswers.answeredAt})`,
+			answeredAt: curriculumItemAnswers.answeredAt,
 		})
 		.from(curriculumItemAnswers)
 		.where(
 			and(
 				eq(curriculumItemAnswers.studentId, studentId),
 				eq(curriculumItemAnswers.isCorrect, true),
-				gt(curriculumItemAnswers.answeredAt, failedAt),
-				inArray(curriculumItemAnswers.itemId, [...requiredItemIds]),
+				gt(curriculumItemAnswers.answeredAt, sinceExclusive),
+				inArray(curriculumItemAnswers.itemId, [...itemIds]),
 			),
-		)
-		.groupBy(curriculumItemAnswers.itemId);
-	const doneByItem = new Map(rows.map((r) => [r.itemId, new Date(r.firstAt)]));
+		);
+	const byItem = new Map<string, Date[]>();
+	for (const r of rows) {
+		const list = byItem.get(r.itemId);
+		if (list) list.push(r.answeredAt);
+		else byItem.set(r.itemId, [r.answeredAt]);
+	}
+	return byItem;
+}
+
+/**
+ * Moment „correctives odbyte" dla OBLANEJ cap-2 sesji (D4) — CZYSTA funkcja (0 DB):
+ * każdy UKOŃCZALNY atom paczki ma poprawną odpowiedź retrieval z answered_at PO
+ * completed_at (`failedAt`) TEJ sesji. Zwraca czas domknięcia (max po atomach z
+ * NAJWCZEŚNIEJSZEJ kwalifikującej odpowiedzi = moment, w którym padł ostatni brakujący
+ * atom) albo null, gdy któryś wymagany atom nie ma jeszcze re-ukończenia PO failedAt.
+ * Pusty zbiór wymaganych atomów (same koncepty bez atomu / lab) → NIE bramkuje:
+ * domknięcie = failedAt sesji (D4 „koncept bez ukończalnego atomu nie może blokować").
+ *
+ * TO JEST kalka dawnego zapytania `correctivesDoneAt` (min(answered_at) WHERE
+ * answered_at > failedAt, group by itemId, wszystkie wymagane obecne, boundary = max),
+ * przeniesiona do pamięci — DOKŁADNIE ta sama definicja `doneAt` i te same krawędzie
+ * (strict `>` na failedAt, min po kwalifikujących, null gdy któregoś brak, max po
+ * atomach). `answersByItem` niesie odpowiedzi już po pruningu `> minFailedAt`; ostry
+ * filtr per sesja `> failedAt` egzekwujemy tutaj — równoważny, bo failedAt ≥ minFailedAt.
+ */
+export function computeCorrectivesDoneAt(
+	failedAt: Date,
+	requiredItemIds: readonly string[],
+	answersByItem: ReadonlyMap<string, readonly Date[]>,
+): Date | null {
+	if (requiredItemIds.length === 0) return failedAt;
 	let boundary = failedAt;
 	for (const itemId of requiredItemIds) {
-		const at = doneByItem.get(itemId);
-		if (!at) return null; // wymagany atom bez re-ukończenia → correctives NIEODBYTE
-		if (at.getTime() > boundary.getTime()) boundary = at;
+		let firstAt: Date | null = null; // min(answered_at) z tych PO failedAt tej sesji
+		for (const t of answersByItem.get(itemId) ?? []) {
+			if (t.getTime() <= failedAt.getTime()) continue; // strict `>` failedAt (per sesja)
+			if (firstAt === null || t.getTime() < firstAt.getTime()) firstAt = t;
+		}
+		if (firstAt === null) return null; // wymagany atom bez re-ukończenia → NIEODBYTE
+		if (firstAt.getTime() > boundary.getTime()) boundary = firstAt;
 	}
 	return boundary;
 }
@@ -334,13 +390,49 @@ export async function evaluateExamCycle(
 		)
 		.orderBy(asc(assessmentSessions.completedAt));
 
+	// Sesje otwierające bramkę correctives: oblanie cap-2 (correctives === true) z
+	// completed_at. Ten sam predykat co dawna pętla (`!result?.correctives || !completedAt
+	// → continue`), tylko zebrany raz, by zbatchować zapytania (spłata N+1: dawniej
+	// 2 zapytania per taka sesja → dziś 2 zapytania łącznie dla wszystkich).
+	const correctiveSessions = failed
+		.map((s) => ({ completedAt: s.completedAt, result: s.resultJson as ExamResultJson | null }))
+		.filter(
+			(s): s is { completedAt: Date; result: ExamResultJson } =>
+				Boolean(s.completedAt) && Boolean(s.result?.correctives),
+		);
+
+	// BATCH 1: koncept→ukończalne atomy dla wszystkich oblanych sesji. Per sesja
+	// składamy `requiredItemIds` = dedup unia atomów jej failedConcepts (identyczny
+	// ZBIÓR co dawne loadCompletableCorrectiveItemIds(session.failedConcepts)).
+	const allConcepts = [
+		...new Set(correctiveSessions.flatMap((s) => s.result.failedConcepts ?? [])),
+	];
+	const itemIdsByConcept = await loadCompletableCorrectiveItemIdsByConcept(allConcepts);
+	const perSession = correctiveSessions.map((s) => {
+		const required = new Set<string>();
+		for (const concept of s.result.failedConcepts ?? []) {
+			for (const id of itemIdsByConcept.get(concept) ?? []) required.add(id);
+		}
+		return { failedAt: s.completedAt, requiredItemIds: [...required] };
+	});
+
+	// BATCH 2: czasy re-ukończeń dla WSZYSTKICH wymaganych atomów naraz, przycięte do
+	// answered_at > najwcześniejszego failedAt (bezpieczny prune — patrz
+	// loadCorrectiveAnswerTimes). Domknięcie per sesja liczymy w pamięci z zachowanym
+	// PER-SESJA failedAt (computeCorrectivesDoneAt) — semantyka `> failedAt` nietknięta.
+	const allRequiredItemIds = [...new Set(perSession.flatMap((p) => p.requiredItemIds))];
+	const minFailedAt = perSession.reduce<Date | null>(
+		(min, p) => (min === null || p.failedAt.getTime() < min.getTime() ? p.failedAt : min),
+		null,
+	);
+	const answersByItem =
+		minFailedAt !== null
+			? await loadCorrectiveAnswerTimes(studentId, allRequiredItemIds, minFailedAt)
+			: new Map<string, Date[]>();
+
 	let lastBoundary: Date | null = null;
-	for (const s of failed) {
-		const result = s.resultJson as ExamResultJson | null;
-		// Tylko oblanie cap-2 (correctives === true) otwiera bramkę correctives.
-		if (!result?.correctives || !s.completedAt) continue;
-		const requiredItemIds = await loadCompletableCorrectiveItemIds(result.failedConcepts ?? []);
-		const doneAt = await correctivesDoneAt(studentId, s.completedAt, requiredItemIds);
+	for (const p of perSession) {
+		const doneAt = computeCorrectivesDoneAt(p.failedAt, p.requiredItemIds, answersByItem);
 		if (doneAt && (!lastBoundary || doneAt.getTime() > lastBoundary.getTime())) {
 			lastBoundary = doneAt;
 		}
