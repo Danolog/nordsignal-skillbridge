@@ -2029,11 +2029,26 @@ export const reviewStates = pgTable(
 		index("idx_review_states_student_due").on(table.studentId, table.due),
 		index("idx_review_states_tenant_id").on(table.tenantId),
 		index("idx_review_states_concept_id").on(table.conceptId),
+		// Pełny enum czterech faz FSRS. UWAGA (R2, potwierdzone przez Ethana, G1 →
+		// wariant A): w bieżącym trybie długoterminowym (enable_short_term=false,
+		// LongTermScheduler ts-fsrs) produkowane są TYLKO 'new' i 'review' — karta
+		// przechodzi 'new' → 'review' bezpośrednio. 'learning' i 'relearning' są tu
+		// ZAREZERWOWANE świadomie pod przyszły tryb short-term ON (wariant B, osobny
+		// slice), a NIE są martwymi wartościami: CHECK trzyma pełny enum, żeby włączenie
+		// short-term nie wymagało migracji rozszerzającej CHECK (i żeby wrapper
+		// scheduler.ts mapował State→tekst totalnie). Schemat nie deklaruje więc stanów
+		// „na wyrost" — to zarezerwowana przestrzeń o znanym przeznaczeniu.
 		check(
 			"review_states_state_values",
 			sql`${table.state} IN ('new','learning','review','relearning')`,
 		),
 		check("review_states_difficulty_range", sql`${table.difficulty} BETWEEN 1 AND 10`),
+		// CELOWO luźniejszy niż FSRS S_MIN (0.001): ts-fsrs klampuje stabilność od dołu
+		// do S_MIN sam, więc każdy legalny zapis i tak jest >= S_MIN. Rolą tego CHECK-u
+		// jest złapać KORUPCJĘ (zero/wartość ujemna z błędu zapisu owner-side), nie
+		// duplikować dolny klamer biblioteki. Zaostrzenie do `>= 0.001` groziłoby
+		// odrzuceniem legalnego stanu na krawędzi float (zaokrąglenie tuż pod S_MIN),
+		// dlatego zostaje `> 0` — najostrzejszy warunek, który nie fałszywie-odrzuca.
 		check("review_states_stability_positive", sql`${table.stability} > 0`),
 		// Defense-in-depth (self-critique R1): liczniki nie mogą zejść poniżej zera —
 		// ts-fsrs nigdy takich nie wyprodukuje, więc CHECK niczego legalnego nie odrzuca,

@@ -134,8 +134,18 @@ const scheduler = fsrs(
 	}),
 );
 
-/** Mapa State (enum ts-fsrs) → tekst review_states.state. */
-const STATE_ENUM_TO_NAME: Record<State, ReviewStateName> = {
+/**
+ * Mapa State (enum ts-fsrs) → tekst review_states.state. TOTALNA z założenia:
+ * typ `Record<State, ReviewStateName>` wymusza pokrycie WSZYSTKICH czterech
+ * wariantów enuma przy kompilacji — dodanie nowego State w bibliotece bez wpisu
+ * tutaj wywali `pnpm typecheck`. W trybie długoterminowym (enable_short_term=false)
+ * biblioteka emituje dziś tylko New/Review, ale 'learning'/'relearning' są tu
+ * zmapowane defensywnie: przełączenie na tryb short-term (wariant B, osobny slice)
+ * NIE może po cichu wpuścić karty w stan bez mapowania. Eksport wyłącznie po to,
+ * by test totalności mógł zweryfikować to pokrycie także w runtime (żaden State
+ * nie wpada w undefined/default). Test: __tests__/scheduler.test.ts.
+ */
+export const STATE_ENUM_TO_NAME: Record<State, ReviewStateName> = {
 	[State.New]: "new",
 	[State.Learning]: "learning",
 	[State.Review]: "review",

@@ -12,11 +12,54 @@
 // ustalonej karcie ('review') inkrementuje lapses i obniża stabilność.
 // ============================================================================
 
-import { type Grade, Rating } from "ts-fsrs";
+import { type Grade, Rating, State } from "ts-fsrs";
 import { describe, expect, it } from "vitest";
-import { applyRating, initCard, mapAnswerToRating, type ReviewCardState } from "../scheduler";
+import {
+	applyRating,
+	initCard,
+	mapAnswerToRating,
+	type ReviewCardState,
+	type ReviewStateName,
+	STATE_ENUM_TO_NAME,
+} from "../scheduler";
 
 const NOW = new Date("2026-03-01T00:00:00.000Z");
+
+describe("STATE_ENUM_TO_NAME — mapowanie State→tekst jest TOTALNE (defensywnie)", () => {
+	// Typ Record<State, ReviewStateName> gwarantuje pokrycie przy kompilacji;
+	// ten test dokłada dowód RUNTIME — każdy wariant enuma ts-fsrs mapuje się na
+	// zdefiniowaną nazwę, żaden nie wpada w undefined/default. W trybie A biblioteka
+	// emituje dziś tylko New/Review, ale Learning/Relearning MUSZĄ być zmapowane
+	// pod przyszły tryb short-term (wariant B), inaczej wrapper pęknie po cichu.
+	const expectedNames: Record<State, ReviewStateName> = {
+		[State.New]: "new",
+		[State.Learning]: "learning",
+		[State.Review]: "review",
+		[State.Relearning]: "relearning",
+	};
+
+	// Wszystkie warianty enuma ts-fsrs (numeryczne — enum ma odwrotne mapowanie).
+	const stateValues = Object.values(State).filter((v): v is State => typeof v === "number");
+
+	it("pokrywa wszystkie cztery warianty State (New/Learning/Review/Relearning)", () => {
+		expect(stateValues).toHaveLength(4);
+		expect(Object.keys(STATE_ENUM_TO_NAME)).toHaveLength(4);
+	});
+
+	for (const state of stateValues) {
+		it(`State.${State[state]} → '${expectedNames[state]}' (zdefiniowane, nie default/undefined)`, () => {
+			const mapped = STATE_ENUM_TO_NAME[state];
+			expect(mapped).toBeDefined();
+			expect(mapped).toBe(expectedNames[state]);
+		});
+	}
+
+	it("zbiór wartości mapy = dokładnie cztery nazwy faz review_states.state", () => {
+		expect(new Set(Object.values(STATE_ENUM_TO_NAME))).toEqual(
+			new Set<ReviewStateName>(["new", "learning", "review", "relearning"]),
+		);
+	});
+});
 
 describe("mapAnswerToRating — pełna tabela mapowania sygnału → ocena FSRS", () => {
 	// Tabela decyzyjna §1.3 architektury Ethana. Każdy wiersz = jedna gałąź.
