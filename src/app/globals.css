@@ -4652,10 +4652,10 @@
 	border: 1px solid rgba(239, 68, 68, 0.2);
 }
 .proj-score-rejected .proj-review-score-value {
-	color: #dc2626;
+	color: var(--ed-crisis-text);
 }
 .proj-score-rejected .proj-review-status-badge {
-	color: #dc2626;
+	color: var(--ed-crisis-text);
 	border: 1px solid rgba(239, 68, 68, 0.3);
 }
 .proj-score-pending,
@@ -4756,7 +4756,7 @@
 }
 .proj-status-rejected {
 	background: rgba(239, 68, 68, 0.08);
-	color: #dc2626;
+	color: var(--ed-crisis-text);
 	border: 1px solid rgba(239, 68, 68, 0.2);
 }
 .proj-status-submitted,
@@ -4982,7 +4982,7 @@
 	background: white;
 }
 .viva-timer-low {
-	color: #dc2626;
+	color: var(--ed-crisis-text);
 	border-color: rgba(239, 68, 68, 0.35);
 	background: rgba(239, 68, 68, 0.06);
 }
