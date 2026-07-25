@@ -288,29 +288,17 @@ jobs:
       # Konta + student „main" (loginWithPassword). Idempotentny, guardowany allowlistą.
       - run: pnpm seed:e2e
       # FIXTURE modułu bramki: strona egzaminu robi notFound(), jeśli moduł o tym
-      # UUID nie istnieje. ID jest zahardkodowane w specie (MODULE_ID), a
-      # curriculum_modules.id = defaultRandom() (ingest generuje losowe UUID per
-      # slug) → żaden ingest nie dostarcza tego ID. Wstawiamy 1 wiersz modułu z
-      # DOKŁADNIE tym UUID (slug 'a11y-exam-fixture' — brak kolizji z drabiną).
-      # Guard hosta (localhost) przed zapisem, w duchu assert-test-db.
-      - name: Fixture modułu egzaminu (stały UUID pod skan a11y)
-        run: |
-          case "${DATABASE_URL}" in
-            *localhost*|*127.0.0.1*) : ;;
-            *) echo "::error::DATABASE_URL nie jest bazą lokalną — odmowa zapisu fixture."; exit 1 ;;
-          esac
-          psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 -c \
-            "INSERT INTO curriculum_modules (id, slug, title) VALUES ('cad6dff5-e326-4991-a742-b7ca382ee2d2', 'a11y-exam-fixture', 'Moduł A (fixture a11y egzaminu)') ON CONFLICT (id) DO NOTHING;"
-      # LOUD-fail: brak fixture = jasny błąd TU, nie mylący timeout przycisku w skanie.
+      # UUID nie istnieje (curriculum_modules.id = defaultRandom() — żaden ingest
+      # nie dostarcza tego stałego ID). UUID żyje w JEDNYM miejscu
+      # (tests/e2e-pw/fixtures/a11y-fixture-ids.ts — importuje je spec 62 ORAZ
+      # seeder), więc spec i baza nie mogą się rozjechać. Seeder reużywa guarda
+      # assertTestDb (hard-deny prod-DSN, allowlista hostów lokalnych), wstawia
+      # idempotentnie (ON CONFLICT (id) DO NOTHING) i SAM weryfikuje „dokładnie
+      # 1 wiersz" — pada GŁOŚNO, gdy fixture nie wszedł, zamiast mylącego timeoutu
+      # przycisku w skanie. Zdejmuje niejawną zależność od klienta psql na runnerze.
       # „Bramka MUSI paść głośno, gdy brak danych, nie zzielenieć na pusto."
-      - name: Weryfikacja fixture (bramka nie zzielenieje na pusto)
-        run: |
-          COUNT="$(psql "${DATABASE_URL}" -tAc "SELECT count(*) FROM curriculum_modules WHERE id = 'cad6dff5-e326-4991-a742-b7ca382ee2d2';")"
-          if [ "${COUNT}" != "1" ]; then
-            echo "::error::Fixture modułu egzaminu (cad6dff5-...) nieobecny — skan a11y renderowałby 404. Zatrzymuję job."
-            exit 1
-          fi
-          echo "Fixture modułu obecny (1 wiersz) — ścieżka (a) wyrenderuje ekran egzaminu."
+      - name: Fixtures a11y (moduł egzaminu — stały UUID, seeder guardowany)
+        run: pnpm exec tsx tools/fixtures/seed-a11y-fixtures.ts
       # Build artefaktu produkcyjnego — `next start` (webServer configu CI) go serwuje.
       - run: pnpm build
       # ZAKRES: TYLKO plik 62 (3 testy @safe). Podanie ŚCIEŻKI PLIKU = zero
@@ -324,6 +312,113 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-a11y-exam
+          path: playwright-report/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # a11y-tutor — Playwright + @axe-core, twarda bramka DOSTĘPNOŚCI panelu tutora
+  # sokratycznego (C11) przed zapaleniem FLAG_SOCRATIC_TUTOR na prod. Analog
+  # a11y-exam wyżej: ten sam harness, te same tagi WCAG, ta sama zasada „mock
+  # zamiast żywego LLM" (GET/POST /api/projects/*/tutor mockowane w specie 63 —
+  # zero klucza ANTHROPIC, zero kosztu modelu). BLOKUJĄCY (brak `if:`).
+  #
+  # DETERMINIZM: spec 63 wchodzi na /projects/<STAŁY UUID> (TUTOR_PROJECT_ID z
+  # tests/e2e-pw/fixtures/a11y-fixture-ids.ts), a nie przez katalog — seeder
+  # tools/fixtures/seed-a11y-fixtures.ts wstawia ten projekt do bazy testowej.
+  #
+  # SERWISY + POSTGRES/REDIS/SRH: jak a11y-exam — detal projektu to server
+  # component czytający bazę (notFound() bez wiersza projektu), a `next start`
+  # (build produkcyjny) ma boot-guard rate-limitera, który zaspokaja lokalny
+  # redis + SRH (REST zgodny z Upstash na loopbacku). Zero sekretów prod.
+  a11y-tutor:
+    name: a11y-tutor (Playwright + @axe-core skan panelu tutora C11)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: skillbridge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      srh:
+        image: hiett/serverless-redis-http:latest
+        ports:
+          - 8079:80
+        env:
+          SRH_MODE: env
+          SRH_TOKEN: example-e2e-ci-token
+          SRH_CONNECTION_STRING: "redis://redis:6379"
+    env:
+      # Placeholder testowy (32 znaki) — nie sekret. Realny prod bierze z Vercela.
+      BETTER_AUTH_SECRET: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      UPSTASH_REDIS_REST_URL: http://localhost:8079
+      UPSTASH_REDIS_REST_TOKEN: example-e2e-ci-token
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      # Flaga tutora — bez niej server component (page.tsx:75) przekazuje
+      # tutorEnabled=false i <TutorPanel> nie trafia do DOM → skan nie miałby czego
+      # skanować. Playwright webServer dziedziczy env procesu joba → `next start` ją widzi.
+      FLAG_SOCRATIC_TUTOR: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Ustaw DATABASE_URL/E2E_DATABASE_URL + poświadczenia konta testowego
+        env:
+          PGUSER: test
+          PGPASS: test
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGDB: skillbridge_test
+        run: |
+          AT='@'
+          CREDS="${PGUSER}:${PGPASS}"
+          DSN="postgresql://${CREDS}${AT}${PGHOST}:${PGPORT}/${PGDB}"
+          echo "DATABASE_URL=${DSN}" >> "$GITHUB_ENV"
+          echo "E2E_DATABASE_URL=${DSN}" >> "$GITHUB_ENV"
+          # Konto MAIN — spec 63 loguje się (loginWithPassword "main") w beforeEach.
+          CRED='Test1234!e2e'
+          echo "E2E_TEST_EMAIL=e2e-main@example.com" >> "$GITHUB_ENV"
+          echo "E2E_TEST_PASSWORD=${CRED}" >> "$GITHUB_ENV"
+      - run: pnpm exec playwright install --with-deps chromium
+      # Migracja schematu na bazie TESTOWEJ (guard allowlisty hostów testowych).
+      - run: pnpm db:migrate:test
+      # Konta + student „main" (loginWithPassword). Idempotentny, guardowany allowlistą.
+      - run: pnpm seed:e2e
+      # FIXTURE projektu tutora (stały UUID). Detal projektu robi notFound() bez
+      # wiersza projektu → panel tutora nie wyrenderowałby się. Ten sam seeder co
+      # a11y-exam (jedno źródło UUID, guard assertTestDb, weryfikacja 1 wiersza).
+      - name: Fixtures a11y (projekt tutora — stały UUID, seeder guardowany)
+        run: pnpm exec tsx tools/fixtures/seed-a11y-fixtures.ts
+      # Build artefaktu produkcyjnego — `next start` (webServer configu CI) go serwuje.
+      - run: pnpm build
+      # ZAKRES: TYLKO plik 63 (4 testy @safe). Ścieżka pliku = zero zależności od --grep.
+      - name: Playwright — skan a11y panelu tutora (bramka C11)
+        run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/63-c11-tutor-a11y.spec.ts
+      # Artefakty diagnostyczne przy padzie (trace/screenshot — raport axe w stdout).
+      - name: Upload raportu Playwright (przy padzie)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-a11y-tutor
           path: playwright-report/
           retention-days: 7
 
