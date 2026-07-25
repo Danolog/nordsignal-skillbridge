@@ -1,5 +1,14 @@
 # ADR-022 — Kontrakt checków dla M-LLM: zakotwiczony wskaźnik halucynacji, trafność per pole i rozdział parse/schema zamiast gołego ułamka
 
+- **Wersja:** v1.3 · 2026-07-25 — **rekoncyliacja liczb ilustracyjnych (dług D2, Sophia PO).**
+  Decyzja bez zmian (status ZAAKCEPTOWANY). §2.5 (tabela FINALNEGO kontraktu) zestrojona do kanonu
+  PO D3: dobra droga `zgodnosc` 0.875→**0.75** (6/8), trafność 0.857/0.714/0.571→**0.833/0.667/0.50**
+  na 6 rekordach schema-valid, „na wszystkich 8" 0.75/0.625/0.5→**0.75/0.625/0.375** (przeliczone
+  wykonaniem na zbiorze po D3); `halucynacje_wskaznik` 0.5 bez zmian. §1.4 (tabela KOLIZJI, celowo
+  PRZED D3 — na niej widać brak rozróżnienia 4. drogi) zachowana jako przed-D3, ale z **jawnym
+  znacznikiem przed/po** i wskazaniem kanonu PO D3 — dokument nie twierdzi już 0.875 jako wartości
+  bieżącej bez kontekstu. Rekoncyliacja spójna z Teorią LLM.5 (`docs/curation/sophia-1e2-mllm-atomy.md`,
+  log QG 2026-07-25) i towarzyszem LLM.5. Liczby przeliczone z definicji, nie skopiowane.
 - **Wersja:** v1.2 · 2026-07-24 — **ZAAKCEPTOWANY.** Wcielono 6 zmian z przeglądu domenowego Sophii (PO, §8 QA `CLAUDE.md`, werdykt AKCEPTUJĘ Z ZMIANAMI): **(1)** zasada G4 (§2.0) — exact-match `value` legalny TU, bo zbiór ZAMROŻONY; żywe API w capstonie wymaga kontraktu property-based, nie exact; **(2)** [warunek budowy] D3 zaostrza uczony filtr trafności do schema-valid, a recompute pieczątki LLM.7 musi użyć TEGO SAMEGO filtra; **(3)** kanoniczne liczby LLM.7 pod D3: `zgodnosc` 0.875→0.75 (6/8), `halucynacje_wskaznik` 0.5 bez zmian, trafność na 6 rekordach — §7 oznaczone „przed D3"; **(4)** wymóg honest-message (diagnoza nazywa błąd studenta, nigdy „notebook zepsuty") + założenie determinizmu; **(5)** C6 usunięty, C4/C5 zostają jako strażnik kształtu (nie kotwica); **(6)** szacunek nakładu Sophii +~1h→2,5–3,5h. Przegląd Sophii = sign-off produktu §8; finalizacja jako autor (Ethan, CTO).
 - **Wersja:** v1.1 · 2026-07-24 — **renumeracja 021→022:** numer 021 zajęła równoległa sesja (marketPercentage serwerowe, `docs/decisions/021-market-percentage-serwerowe-zrodlo.md`, scalone na main). Treść bez zmian — wyłącznie numer + referencje.
 - **Wersja:** v1.0 · 2026-07-23 — **PROPOZYCJA.** Draft po przeglądzie checków M-LLM
@@ -108,8 +117,17 @@ Dokładnie potknięcia, przed którymi ostrzega treść M-LLM (LLM.3 „parsuj z
 
 Zweryfikowane na 8-elementowym zbiorze ilustracyjnym (§7; POLA=[stanowisko, miasto,
 widelki_min]; 1 odpowiedź złamana → `zgodnosc` 7/8; prawda z 4 polami-brakami; model wypełnia 2
-z nich). Punkt odniesienia (dobra droga): `zgodnosc`=0.875, `trafnosc`={stanowisko 0.857, miasto
-0.714, widelki_min 0.571}, `pola_braki_liczba`=4, `halucynacje_liczba`=2, `halucynacje_wskaznik`=0.5.
+z nich). Punkt odniesienia (dobra droga) **liczbami PRZED D3** (przed dołożeniem przypadku
+parsowalnego-ale-niezgodnego — §D3): `zgodnosc`=0.875 (7/8), `trafnosc`={stanowisko 0.857, miasto
+0.714, widelki_min 0.571} (na 7 rekordach schema-valid), `pola_braki_liczba`=4, `halucynacje_liczba`=2,
+`halucynacje_wskaznik`=0.5.
+
+> **Znacznik przed/po ADR-022 (§D3).** Ta tabela celowo zostaje na liczbach **PRZED D3** — na nich
+> widać, że 4. droga (`zgodnosc`) jeszcze **nie jest** rozróżniona (dopiero zmiana zbioru §D3 ją
+> rozdziela — patrz akapit pod tabelą). **Po D3 (kanon ADR-022 = zbiór z labu LLM.7)** punkty
+> odniesienia przesuwają się na: `zgodnosc`=**0.75** (6/8 — dwa rekordy nie-schema-valid: 1 złamana
+> + 1 parsowalna-bez-pola), `trafnosc`=**0.833 / 0.667 / 0.50** (na **6** rekordach schema-valid),
+> `halucynacje_wskaznik`=**0.5 bez zmian**. Kanoniczny obraz PO D3: **§2.5** (finalny kontrakt) i §7.
 
 | Błędna droga | Naiwny check `value`/predicate | Werdykt dziś | Dlaczego groźne |
 |---|---|---|---|
@@ -305,13 +323,20 @@ zweryfikowane w przeglądzie). Bez niego D1–D3 to reguły na papierze. Ten ADR
 „✔" = wygląda jak dobra droga na tej bramce; „✘ ODMOWA" = bramka łapie. Dobra droga przechodzi
 wszystkie (kolumna kontrolna).
 
+> **Znacznik przed/po ADR-022 (§D3).** Ta tabela odzwierciedla **kanoniczny zbiór PO D3** (finalny
+> kontrakt = zbiór z labu LLM.7, z przypadkiem parsowalnym-ale-niezgodnym): `zgodnosc` **0.75** (6/8),
+> trafność na **6** rekordach schema-valid, `halucynacje_wskaznik` 0.5 (bez zmian). Wariant PRZED D3
+> (8-elementowy, `zgodnosc` 0.875 = 7/8, trafność na 7 rekordach) — §1.4 i §7. W kolumnie „ułamek
+> naiwny" 0.875 zostaje **jako wartość BŁĘDNEJ drogi** (student liczący powodzenia parsowania: 7/8),
+> którą D3 łapie — nie jako wartość dobrej drogi.
+
 | Droga | ułamek naiwny | D1 `pola_braki`/`hal_liczba` | D2 `trafnosc_*` per pole | D3 `zgodne_liczba` | Werdykt kontraktu |
 |---|---|---|---|---|---|
-| **Dobra droga** | wskaźnik 0.5 ✔; zgodnosc 0.875 ✔ | 4 / 2 ✔ | 0.857 / 0.714 / 0.571 ✔ | 7 (przy zbiorze +invalid: 6) ✔ | **TOKEN** ✔ |
+| **Dobra droga** | wskaźnik 0.5 ✔; zgodnosc **0.75** ✔ | 4 / 2 ✔ | 0.833 / 0.667 / 0.50 ✔ | **6 zgodnych (parse 7)** ✔ | **TOKEN** ✔ |
 | Błąd wcięcia halucynacji | wskaźnik **0.5 ✔** (kolizja!) | **2 / 1 ✘ ODMOWA** | ✔ | ✔ | **ODMOWA** (D1) |
 | Trafność `[1,1,1]`+true | — | ✔ | **1.0/1.0/1.0 ✘ ODMOWA** | ✔ | **ODMOWA** (D2) |
-| Trafność na wszystkich 8 | — | ✔ | **0.75/0.625/0.5 ✘ ODMOWA** | ✔ | **ODMOWA** (D2) |
-| `zgodnosc` = powodzenia parsowania | zgodnosc **0.875 ✔** | ✔ | ✔ | **parse 4 vs schema 3 ✘ ODMOWA** | **ODMOWA** (D3, po zmianie zbioru) |
+| Trafność na wszystkich 8 | — | ✔ | **0.75/0.625/0.375 ✘ ODMOWA** | ✔ | **ODMOWA** (D2) |
+| `zgodnosc` = powodzenia parsowania | zgodnosc **0.875 ✔** (7/8, parse) | ✔ | ✔ | **parse 7 vs schema 6 ✘ ODMOWA** | **ODMOWA** (D3, po zmianie zbioru) |
 
 **Każda z czterech błędnych dróg daje inny ładunek niż dobra droga.** Odmowa pada z **diagnozą
 wskazującą przyczynę** (wzór ADR-020): „liczysz pola-braki tylko dla części pól — masz 2 zamiast
