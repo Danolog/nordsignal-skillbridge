@@ -19,6 +19,7 @@
 
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { FORBIDDEN_EXAM_SLOT_KEYS } from "../../tests/unit/exam/_forbidden-slot-keys";
 import { runExamBankIngest } from "../ingest-exam-bank";
 
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
@@ -183,7 +184,7 @@ d("runExamBankIngest — wsad egzaminu na bazie testowej (examSlots czyste)", ()
 		const cfg = await examItemConfig();
 		expect(cfg.examSlots).toHaveLength(6);
 		const serialized = JSON.stringify(cfg);
-		for (const forbidden of ['"correct"', '"stem"', '"options"', '"answer_json"', '"answerJson"']) {
+		for (const forbidden of FORBIDDEN_EXAM_SLOT_KEYS) {
 			expect(serialized.includes(forbidden), `examSlots nie może nieść ${forbidden}`).toBe(false);
 		}
 		// każdy wariant ma dokładnie {ref, variant, itemId} i itemId to realny active item.

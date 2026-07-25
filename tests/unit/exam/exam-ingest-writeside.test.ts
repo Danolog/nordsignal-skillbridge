@@ -22,6 +22,7 @@ import {
 	type ConceptSafetyMeta,
 	packExamBankFromMarkdown,
 } from "../../../tools/content-curriculum-exam";
+import { FORBIDDEN_EXAM_SLOT_KEYS } from "./_forbidden-slot-keys";
 
 const FIXTURE = join(process.cwd(), "tests/unit/exam/fixtures/exam-bank-sample.md");
 const markdown = readFileSync(FIXTURE, "utf8");
@@ -36,16 +37,10 @@ const fakeItemId = (ref: string) =>
 		.slice(0, 12)
 		.padStart(12, "0")}`;
 
-/** Klucze/treść, które NIGDY nie mogą wyciec do config_json.examSlots. */
-const FORBIDDEN_KEYS = [
-	'"correct"',
-	'"stem"',
-	'"options"',
-	'"answer"',
-	'"answer_json"',
-	'"answerJson"',
-	'"feedbackMd"',
-] as const;
+// Klucze/treść, które NIGDY nie mogą wyciec do config_json.examSlots. Kanoniczny
+// zestaw = FORBIDDEN_EXAM_SLOT_KEYS (współdzielony z integracją ingestu); write-side
+// dokłada dwa własne (`"answer"`, `"feedbackMd"`) — skan mocniejszy, nie słabszy.
+const FORBIDDEN_KEYS = [...FORBIDDEN_EXAM_SLOT_KEYS, '"answer"', '"feedbackMd"'] as const;
 
 function leakedKeys(configJson: unknown): string[] {
 	const serialized = JSON.stringify(configJson);
