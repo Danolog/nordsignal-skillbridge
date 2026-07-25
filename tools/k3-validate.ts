@@ -103,6 +103,15 @@ const TENANT_TABLES = [
 	// owner-side przez reconcileVerifiedCompetencies), app_faculty bez grantu;
 	// ENABLE+FORCE + student_sees_own + owner_passthrough.
 	"verified_competencies",
+	// 1E.4 (SLICE R1) — powtórki rozłożone w czasie, FSRS (migracja 0042). Dane
+	// studenta, jednostka = koncept. review_states: grant TYLKO SELECT dla
+	// app_student (stan „co na dziś"), zapisy owner-side przez trasy /api/review/*;
+	// FORCE RLS + student_sees_own + owner_passthrough. review_logs: wariant
+	// DENY-both (zero grantów app_student ORAZ app_faculty, strażnik #13a) jak
+	// assessment_answers/viva_answers — APPEND-ONLY ślad ocen, FORCE RLS +
+	// owner_passthrough. Obie tenant-owe (tenant_id).
+	"review_states",
+	"review_logs",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.
@@ -254,10 +263,10 @@ async function main() {
 				`SELECT count(*)::int AS c
 				   FROM information_schema.role_table_grants
 				  WHERE grantee IN ('app_student', 'app_faculty')
-				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs', 'job_market_data_bak', 'project_hidden_tests', 'question_concepts', 'question_items', 'assessment_answers', 'viva_answers')`,
+				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs', 'job_market_data_bak', 'project_hidden_tests', 'question_concepts', 'question_items', 'assessment_answers', 'viva_answers', 'review_logs')`,
 			);
 			check(
-				"13a. AG.3/B6/A5 — zero grantów app_student/app_faculty na tabelach DENY (staging/runy/ukryte testy/bank pytań/odpowiedzi)",
+				"13a. AG.3/B6/A5 — zero grantów app_student/app_faculty na tabelach DENY (staging/runy/ukryte testy/bank pytań/odpowiedzi/logi powtórek)",
 				r13a.rows[0].c === 0,
 				`znaleziono ${r13a.rows[0].c} grantów ról aplikacyjnych (oczekiwano 0)`,
 			);

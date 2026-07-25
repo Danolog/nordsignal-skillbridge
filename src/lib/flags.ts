@@ -144,6 +144,15 @@ export const FLAGS = {
 			"Deploy≠release; włączyć świadomie po banku pytań C1 i tutorze 1.13.",
 		defaultValue: false,
 	},
+	spacedRepetition: {
+		envVar: "FLAG_SPACED_REPETITION",
+		description:
+			"1E.4: powtórki rozłożone w czasie (FSRS, biblioteka ts-fsrs) — jednostka powtórki = " +
+			"KONCEPT, stan per student × koncept (review_states), append-only ślad ocen (review_logs); " +
+			"kolejka „na dziś” per koncept, trasy /api/review/* (przyszłe R4). Off = trasy 404, hook " +
+			"enrollment nie odpala, zero wierszy review_states/review_logs. Deploy≠release.",
+		defaultValue: false,
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).
