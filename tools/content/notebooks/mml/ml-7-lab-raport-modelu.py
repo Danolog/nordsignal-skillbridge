@@ -162,7 +162,17 @@ def _zbierz_wyniki():
     y_pred_test = sorted([int(i), int(p)] for i, p in zip(X_te.index, pred))
     ref_vec = [[0, 1], [8, 1], [9, 1], [11, 0], [16, 1], [18, 1]]
     if y_pred_test != ref_vec:
-        if type(model).__name__ != "DecisionTreeClassifier":
+        # Czy model jest (legalnie) drzewem decyzyjnym? Rozpoznanie odporne na dwie
+        # krawedzie (noty Leo N1 #219): (a) sklearn `Pipeline` opakowuje wlasciwy
+        # klasyfikator — oceniamy jego KROK KONCOWY (final estimator), nie sam
+        # Pipeline; (b) PODKLASA `DecisionTreeClassifier` to wciaz legalnie drzewo —
+        # `isinstance` ja lapie, `type(...).__name__ == "DecisionTreeClassifier"` NIE.
+        from sklearn.tree import DecisionTreeClassifier as _DrzewoDecyzyjne
+
+        _estymator = model
+        while getattr(_estymator, "steps", None):  # rozpakuj (zagniezdzony) Pipeline
+            _estymator = _estymator.steps[-1][1]
+        if not isinstance(_estymator, _DrzewoDecyzyjne):
             raise RuntimeError(
                 "Twoj model to inna rodzina niz wzorzec tego labu. Ten lab weryfikuje wynik "
                 "wzgledem modelu kanonicznego — `DecisionTreeClassifier(random_state=42)` — wiec "

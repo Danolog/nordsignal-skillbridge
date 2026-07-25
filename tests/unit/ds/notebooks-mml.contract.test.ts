@@ -178,6 +178,39 @@ const ML7_PAYLOAD: StampPayload = {
 	max_corr_cecha_cel: 0.7049356271704668,
 };
 
+// ── N1 (#219): krawędzie rozpoznania „legalnie drzewo" — Pipeline i podklasa ──
+// Gałąź A pieczątki ml-7 (błędny wektor na D1) rozstrzyga rodzinę modelu: model
+// SPOZA rodziny drzew → „inna rodzina" (token null); drzewo / jego PODKLASA /
+// Pipeline z drzewem w środku → „zepsuty pipeline" (błąd konfiguracji, nie rodziny).
+// Stary check `type(model).__name__ == "DecisionTreeClassifier"` mylił oba edge:
+// Pipeline (nazwa „Pipeline") i podklasę (własna nazwa) brał za „inną rodzinę".
+const ML7_PODKLASA_OK =
+	"class MojeDrzewo(DecisionTreeClassifier):\n    pass\n" +
+	"model = MojeDrzewo(random_state=42).fit(X_tr, y_tr)";
+const ML7_PIPE_DRZEWO_OK =
+	"from sklearn.pipeline import Pipeline\n" +
+	"model = Pipeline([('clf', DecisionTreeClassifier(random_state=42))]).fit(X_tr, y_tr)";
+// Non-tree: naiwny Bayes trafia graniczny id=18 poprawnie (0) — inny wektor niż
+// wzorzec (1), więc dochodzi do rozgałęzienia D1 i wpada w Gałąź A.
+const ML7_GAUSSIAN =
+	"from sklearn.naive_bayes import GaussianNB\nmodel = GaussianNB().fit(X_tr, y_tr)";
+const ML7_PIPE_GAUSSIAN =
+	"from sklearn.pipeline import Pipeline\nfrom sklearn.naive_bayes import GaussianNB\n" +
+	"model = Pipeline([('clf', GaussianNB())]).fit(X_tr, y_tr)";
+// Podklasa drzewa, która celowo psuje jeden wynik → wektor błędny, ale to WCIĄŻ
+// drzewo (isinstance): oczekujemy „zepsuty pipeline", NIE „inna rodzina".
+const ML7_PODKLASA_BLAD =
+	"class DrzewoOdwrocone(DecisionTreeClassifier):\n" +
+	"    def predict(self, X):\n" +
+	"        p = list(super().predict(X)); p[0] = 1 - p[0]; return p\n" +
+	"model = DrzewoOdwrocone(random_state=42).fit(X_tr, y_tr)";
+const ML7_PIPE_PODKLASA_BLAD =
+	"from sklearn.pipeline import Pipeline\n" +
+	"class DrzewoOdwrocone(DecisionTreeClassifier):\n" +
+	"    def predict(self, X):\n" +
+	"        p = list(super().predict(X)); p[0] = 1 - p[0]; return p\n" +
+	"model = Pipeline([('clf', DrzewoOdwrocone(random_state=42))]).fit(X_tr, y_tr)";
+
 beforeAll(() => {
 	// Jak w lab-checks.test.ts — fixture, nie sekret.
 	process.env.LAB_TOKEN_SECRET = ["fixture", "testowy", "partia8", "nie", "sekret"].join("-");
@@ -393,6 +426,22 @@ describe("symulacja sesji studenta M-ML: komórki → token → checki struktura
 			replacements: [[ML7_PUSTE, ml7Solution(ML7_DRZEWO)]],
 			expectPayload: ML7_PAYLOAD,
 		},
+		{
+			// N1 #219: PODKLASA DecisionTreeClassifier to wciąż legalnie drzewo →
+			// ten sam wektor → token wzorcowy (isinstance łapie, type().__name__ nie).
+			name: "ml-7: podklasa DecisionTreeClassifier (rs=42) → token wzorcowy (podklasa = legalne drzewo, N1 #219)",
+			slug: "ml-7",
+			replacements: [[ML7_PUSTE, ml7Solution(ML7_PODKLASA_OK)]],
+			expectPayload: ML7_PAYLOAD,
+		},
+		{
+			// N1 #219: Pipeline z drzewem kanonicznym → po rozpakowaniu final estimator
+			// jest drzewem → ten sam wektor → token wzorcowy.
+			name: "ml-7: Pipeline z drzewem kanonicznym w środku → token wzorcowy (final estimator rozpakowany, N1 #219)",
+			slug: "ml-7",
+			replacements: [[ML7_PUSTE, ml7Solution(ML7_PIPE_DRZEWO_OK)]],
+			expectPayload: ML7_PAYLOAD,
+		},
 	];
 
 	for (const scenario of HAPPY) {
@@ -487,6 +536,38 @@ describe("symulacja sesji studenta M-ML: komórki → token → checki struktura
 			slug: "ml-4",
 			replacements: [ML4_L1, ML4_L2, ["random_state=______)", "random_state=5)"], ML4_L45, ML4_L6],
 			message: /Zmieniles\(-as\) ziarno w[\s\S]*random_state=42/,
+		},
+		// ── Gałąź A + krawędzie N1 #219: rozgałęzienie „inna rodzina" vs „zepsuty pipeline" ──
+		{
+			// N2 rdzeń: model spoza rodziny drzew → Gałąź A (odmowa, token null).
+			name: "ml-7: non-DecisionTree (GaussianNB) — Gałąź A ODMOWA «inna rodzina», token null (N2 #219)",
+			slug: "ml-7",
+			replacements: [[ML7_PUSTE, ml7Solution(ML7_GAUSSIAN)]],
+			message: /Twoj model to inna rodzina niz wzorzec/,
+		},
+		{
+			// N1: Pipeline opakowujący NIE-drzewo → po rozpakowaniu final estimator to
+			// GaussianNB → Gałąź A, nie „zepsuty pipeline".
+			name: "ml-7: Pipeline z NIE-drzewem (GaussianNB) — Gałąź A ODMOWA «inna rodzina», token null (N1 #219)",
+			slug: "ml-7",
+			replacements: [[ML7_PUSTE, ml7Solution(ML7_PIPE_GAUSSIAN)]],
+			message: /Twoj model to inna rodzina niz wzorzec/,
+		},
+		{
+			// N1 (regresja fixu): podklasa drzewa z błędnym wektorem to WCIĄŻ drzewo →
+			// „zepsuty pipeline", NIE „inna rodzina" (stary type().__name__ mylił nazwą podklasy).
+			name: "ml-7: podklasa drzewa z błędnym wektorem — ODMOWA «zepsuty pipeline» (nie «inna rodzina»), token null (N1 #219)",
+			slug: "ml-7",
+			replacements: [[ML7_PUSTE, ml7Solution(ML7_PODKLASA_BLAD)]],
+			message: /Wektor Twojego drzewa odbiega od wzorca/,
+		},
+		{
+			// N1 (regresja fixu): Pipeline z drzewem dającym błędny wektor → po rozpakowaniu
+			// drzewo → „zepsuty pipeline", NIE „inna rodzina" (stary type=="Pipeline" mylił).
+			name: "ml-7: Pipeline z drzewem (błędny wektor) — ODMOWA «zepsuty pipeline» (nie «inna rodzina»), token null (N1 #219)",
+			slug: "ml-7",
+			replacements: [[ML7_PUSTE, ml7Solution(ML7_PIPE_PODKLASA_BLAD)]],
+			message: /Wektor Twojego drzewa odbiega od wzorca/,
 		},
 	];
 
