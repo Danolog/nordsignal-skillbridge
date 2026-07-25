@@ -627,20 +627,23 @@ for przypadek in przypadki:                # przypadek = {"model": …, "prawda"
             halucynacje = halucynacje + 1      # luka wyżej: które pole sprawdzasz?
 ```
 
-**Przewidź:** dla 4 przypadków testowych notebooka (każdy z 3 polami)
-trafienia wychodzą po 3/4 na pole. Co mówi wynik „stanowisko: 0.75"?
+**Przewidź:** dla 6 przypadków zgodnych ze schematem w notebooku (z 8 —
+dwa odpadają, patrz niżej: zgodność 6/8 = 0.75) trafienia wychodzą różne
+per pole: 5/6 dla `stanowisko`, 4/6 dla `miasto`, 3/6 dla `widelki_min`.
+Co mówi wynik „stanowisko: 0.83" (5/6)?
 
-Że w JEDNYM z czterech przypadków model podał inne stanowisko niż
-prawda (w naszych danych: „Data Scientist" zamiast „Starszy Data
-Scientist" — ekstrakcja zgubiła seniority). **Trafność per pole** —
-osobna liczba dla każdego pola — mówi, GDZIE pipeline kuleje; jedna
-średnia by to ukryła (ta sama lekcja co accuracy w ML.5!).
+Że w JEDNYM z sześciu zgodnych przypadków model podał inne stanowisko niż
+prawda (w naszych danych: „programista" zamiast „starszy programista" —
+ekstrakcja zgubiła seniority). **Trafność per pole** — osobna liczba dla
+każdego pola — mówi, GDZIE pipeline kuleje: tu najmocniej widełki
+(3/6 = 0.50); jedna średnia by to ukryła (ta sama lekcja co accuracy
+w ML.5!).
 
 **Wskaźnik halucynacji** to osobna miara z osobnej definicji: pole,
 które w prawdzie jest `null` (informacji NIE MA w tekście), a model je
-WYPEŁNIŁ. W naszych 4 przypadkach: prawda ma 4 pola-braki, model
-wypełnił 2 z nich → wskaźnik 2/4 = 0.5 — poważny sygnał (co drugi brak
-model zmyśla!). Zauważ asymetrię: pomyłka „Warszawa" zamiast „Radom"
+WYPEŁNIŁ. W naszych danych: prawda ma 4 pola-braki (wszystkie w tych
+6 przypadkach zgodnych ze schematem), model wypełnił 2 z nich → wskaźnik
+2/4 = 0.5 — poważny sygnał (co drugi brak model zmyśla!). Zauważ asymetrię: pomyłka „Warszawa" zamiast „Radom"
 psuje trafność; zmyślenie „Warszawa" tam, gdzie miasta nie było, to
 halucynacja — groźniejsza, bo tworzy dane z niczego. Dlatego rubryka
 żąda OSOBNEGO wskaźnika, nie wliczenia w trafność.
@@ -721,11 +724,11 @@ podaje (prawda: null). Jak to liczysz?**
 2. **Szkielet:** `przypadek["model"][pole]` — ta sama zmienna pętli,
    którą sprawdziłeś po stronie prawdy.
 3. **Pełne rozwiązanie z objaśnieniem:** luka: `pole`. Wyniki dla
-   danych notebooka: trafienia 3/4 na każde pole, halucynacje 2 przy
-   4 polach-brakach (0.5). Samokontrola ewaluacji: suma pól-braków
-   w prawdzie policzona ręcznie musi się zgadzać z mianownikiem
-   wskaźnika — jeśli nie, licznik zlicza złe pola (wcięcia! — piętra
-   pętli jak w F3.2-P2).
+   danych notebooka (6 przypadków zgodnych ze schematem): trafienia
+   5/6·4/6·3/6, halucynacje 2 przy 4 polach-brakach (0.5). Samokontrola
+   ewaluacji: suma pól-braków w prawdzie policzona ręcznie musi się
+   zgadzać z mianownikiem wskaźnika — jeśli nie, licznik zlicza złe pola
+   (wcięcia! — piętra pętli jak w F3.2-P2).
 
 ---
 
@@ -1548,3 +1551,64 @@ już nie jest blocker.
 do Olivera). 0 pieczątek, 0 żywych wywołań API w komórkach WE (wszystkie
 wzory żywego API zakomentowane; pierwsze żywe wywołanie studenta =
 capstone). NIE dotykano packera/buildu/produ — zbiera Oliver sekwencyjnie.
+
+---
+
+## Log QG — domknięcie długu D2: rekoncyliacja Teorii LLM.5 do kanonu 6/8 (2026-07-25)
+
+Autor: Sophia (PO, kuracja). Domyka erratę zapowiedzianą w logu 2026-07-24
+(pozycja 1: „NIE poprawiam Teorii w tej sesji… errata do rozważenia przy
+re-sign-off"). Zakres: warstwa DYDAKTYCZNA (Teoria atomu LLM.5) + ADR-022
+§1.4/§2.5 (znacznik przed/po). Towarzysz LLM.5 deterministycznie poprawny —
+NIE dotknięty; rozjazd był wyłącznie w prozie Teorii.
+
+**D2b — Teoria LLM.5.** Hipotetyczne „4 przypadki testowe / trafienia 3/4 na
+pole" (liczby sprzed ADR-022) zastąpione **kanonicznym zbiorem 6/8** — tym
+samym, którego używa reszta modułu (lab LLM.7 + towarzysz LLM.5). Trzy miejsca:
+1. „Przewidź" + odpowiedź: `4 przypadki, 3/4` → **6 zgodnych ze schematem
+   (zgodność 6/8 = 0.75); trafienia 5/6 / 4/6 / 3/6**; przykład stanowiska
+   zestrojony z kanonicznym C6 („programista" zamiast „starszy programista"
+   — utrata seniority; było hipotetyczne „Data Scientist"); diagnoza „widełki
+   kuleją najmocniej (3/6 = 0.50)" zgodna z towarzyszem i hintem 3 LLM.7.
+2. Wskaźnik halucynacji: „w naszych 4 przypadkach" → „w naszych danych
+   (4 pola-braki, wszystkie w 6 zgodnych)". **Sedno `2/4 = 0.5` NIETKNIĘTE.**
+3. Hint 3 (luka z teorii): „trafienia 3/4 na każde pole" → „5/6·4/6·3/6
+   (6 przypadków zgodnych ze schematem)"; „halucynacje 2 przy 4 polach-brakach
+   (0.5)" bez zmian.
+
+**Liczby przeliczone wykonaniem (Python stdlib, zbiór z labu LLM.7, zero
+żywego API), nie skopiowane:** parsowalne 7/8, zgodne (schema-valid) **6/8 →
+zgodność 0.75**; trafność na 6 zgodnych stanowisko 5/6 = 0.833, miasto 4/6 =
+0.667, widelki_min 3/6 = 0.500; pola-braki 4, halucynacje 2 → **wskaźnik 2/4
+= 0.5**. Zgodne z towarzyszem LLM.5 (l. 100–101) i listingiem QG 2026-07-24.
+
+**D2a — ADR-022 §1.4/§2.5.** §2.5 (tabela rozróżnialności = obraz FINALNEGO
+kontraktu PO D3) zestrojona do kanonu: dobra droga `zgodnosc` 0.875 → **0.75**,
+trafność 0.857/0.714/0.571 (7 rek.) → **0.833/0.667/0.50 (6 rek. schema-valid)**,
+kolumna D3 „7" → „6 zgodnych (parse 7)"; wiersz „trafność na wszystkich 8"
+0.75/0.625/0.5 → **0.75/0.625/0.375** (przeliczone na zbiorze po D3), nadal ≠
+dobra droga → ODMOWA (rozróżnialność zachowana). §1.4 (tabela KOLIZJI = obraz
+PRZED D3, celowo — na niej widać, że 4. droga `zgodnosc` jeszcze NIE jest
+rozróżniona) **zachowana jako przed-D3**, ale z jawnym znacznikiem: punkt
+odniesienia oznaczony „PRZED D3" + wskazanie kanonu PO D3 (0.75 / 0.833/0.667/0.50
+/ wskaźnik 0.5 bez zmian) w §2.5 i §7. Dokument nie twierdzi już 0.875 jako
+wartości bieżącej bez kontekstu.
+
+**Granica roli.** Warstwa dydaktyczna (Teoria) + rekoncyliacja liczb
+ilustracyjnych ADR (styk 1/3 skilla — kształt danych = decyzja produktowa,
+ADR-022 §2.6). Pieczątki/manifest packera (`m-llm.json`) już na wartościach
+ADR-022 (#221) — NIE dotknięte. Re-ingest treści LLM.5 na prod = osobny
+gated krok Ethana (backup Neon, transakcyjny SQL, Leo review) — NIE w tej sesji.
+
+**Diff `content_md` na prodzie (wejście dla Ethana, re-ingest atomu LLM.5).**
+Zmienia się WYŁĄCZNie pole `theory_md` atomu LLM.5 (proza Teorii) + `hints`
+(hint 3). Konkretnie: 3 akapity/fragmenty wyżej. Pola `content_md` innych
+atomów (LLM.1–4, 6, 7), pytania P1–P3 LLM.5, config/checks, pieczątki —
+BEZ ZMIAN. `zgodnosc`/`trafnosc`/`halucynacje_wskaznik` w kontrakcie pieczątki
+już były 0.75 / 2-4 / 0.5 (#221) — re-ingest dotyczy tekstu dydaktycznego,
+nie wartości checków.
+
+**Brama T1–T5 (część A):** T1 poprawki wyłącznie w `.md` + repack + determinizm
+zielony; T2 grep sekcji atomów na meta-markery = 0 (0.875 tylko w logach QG);
+T3 wszystkie liczby policzone wykonaniem; T4 brak nowych placeholderów/luk;
+T5 N/D (bez cudzego UI). Szczegóły w raporcie do Olivera.
