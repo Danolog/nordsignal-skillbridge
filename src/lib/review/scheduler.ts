@@ -38,15 +38,7 @@
 // ============================================================================
 
 import type { Card, CardInput, Grade, StateType } from "ts-fsrs";
-import {
-	createEmptyCard,
-	dateDiffInDays,
-	fsrs,
-	generatorParameters,
-	Rating,
-	S_MIN,
-	State,
-} from "ts-fsrs";
+import { createEmptyCard, fsrs, generatorParameters, Rating, S_MIN, State } from "ts-fsrs";
 
 /** Faza harmonogramu FSRS zapisywana w review_states.state (tekst). */
 export type ReviewStateName = "new" | "learning" | "review" | "relearning";
@@ -237,10 +229,15 @@ export function mapAnswerToRating(
 export function applyRating(state: ReviewCardState, rating: Grade, now: Date): ApplyRatingResult {
 	// state==='new' ⟺ koncept nigdy nieoceniony ⟺ pierwsza powtórka (init FSRS).
 	const isFirstReview = state.state === "new";
-	const { card } = scheduler.next(toCardInput(state, isFirstReview), now, rating);
-	// dateDiffInDays = natywny helper FSRS (nie przedawniony) — spójny z tym, co
-	// scheduler liczy wewnętrznie. 0 dla pierwszej powtórki (brak last_review).
-	const elapsedDays = state.lastReview ? dateDiffInDays(state.lastReview, now) : 0;
+	const { card, log } = scheduler.next(toCardInput(state, isFirstReview), now, rating);
+	// NOTA 4 (Leo R2→R3): elapsed_days czytamy z `log` SCHEDULERA — to dokładnie ta
+	// wartość, której ts-fsrs UŻYŁ w krzywej zapominania, więc jest jedno źródło
+	// prawdy i pełny parytet z biblioteką. Poprzednio liczyliśmy je niezależnie
+	// (dateDiffInDays(last_review, now)) obok algorytmu; wynik jest identyczny (ten
+	// sam last_review na wejściu toCardInput), ale rekonstrukcja obok schedulera
+	// mogła się rozjechać, gdyby biblioteka zmieniła wewnętrzne zaokrąglenie elapsed.
+	// UWAGA: `log.elapsed_days` jest @deprecated w ts-fsrs (planowane usunięcie w
+	// 6.0.0) — przy bumpie major tej biblioteki zrewidować źródło elapsed (follow-up).
 	const logRow: ReviewLogRow = {
 		rating,
 		stateBefore: state.state,
@@ -248,7 +245,7 @@ export function applyRating(state: ReviewCardState, rating: Grade, now: Date): A
 		stabilityAfter: card.stability,
 		difficultyAfter: card.difficulty,
 		// Math.max — defensywnie honoruje CHECK-i review_logs (>= 0) przy skoku zegara.
-		elapsedDays: Math.max(0, elapsedDays),
+		elapsedDays: Math.max(0, log.elapsed_days),
 		scheduledDays: Math.max(0, card.scheduled_days),
 	};
 	return { nextState: fromCard(card), logRow };

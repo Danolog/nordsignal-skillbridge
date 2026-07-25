@@ -289,6 +289,44 @@ describe("applyRating — przejścia na ustalonej karcie (review)", () => {
 		expect(logRow.rating).toBe(Rating.Again);
 		expect(logRow.stabilityBefore).toBe(state.stability);
 	});
+
+	// NOTA 3 (Leo R2→R3): kontrakt CHECK na ścieżce SPADKOWEJ. Dotąd CHECK-i
+	// review_states/review_logs testowaliśmy tylko na initCard i pojedynczej ocenie;
+	// realny incydent zapisu to STAN MALEJĄCY (seria wpadek): stabilność dąży do
+	// S_MIN, trudność do 10. Ta pętla dowodzi, że na całej ścieżce w dół zapisywany
+	// stan NIGDY nie łamie CHECK-ów (stability > 0, difficulty ∈ [1,10]) — inaczej
+	// owner-side INSERT/UPDATE (R3) poleciałby 23514 w produkcji.
+	it("powtarzane Again (S→S_MIN, D→10) trzyma CHECK-i review_states/logs na malejącym stanie", () => {
+		let state = establishedCard().state;
+		let clock = new Date(state.due);
+		let prevStability = state.stability;
+		for (let i = 0; i < 12; i++) {
+			const { nextState, logRow } = applyRating(state, Rating.Again, clock);
+			// CHECK review_states (0042): stan zapisywalny na każdym kroku w dół.
+			expect(nextState.stability).toBeGreaterThan(0);
+			expect(nextState.difficulty).toBeGreaterThanOrEqual(1);
+			expect(nextState.difficulty).toBeLessThanOrEqual(10);
+			// CHECK review_logs (0042): wiersz audytowy również legalny.
+			expect(logRow.stabilityAfter).toBeGreaterThan(0);
+			expect(logRow.difficultyAfter).toBeGreaterThanOrEqual(1);
+			expect(logRow.difficultyAfter).toBeLessThanOrEqual(10);
+			expect(logRow.elapsedDays).toBeGreaterThanOrEqual(0);
+			expect(logRow.scheduledDays).toBeGreaterThanOrEqual(0);
+			// Stan faktycznie MALEJE (nie rośnie) — dowód, że testujemy ścieżkę w dół,
+			// nie przypadkowo płaską (+eps na float, Again nie zwiększa stabilności).
+			expect(nextState.stability).toBeLessThanOrEqual(prevStability + 1e-9);
+			// Każda wpadka na ustalonej karcie inkrementuje lapses.
+			expect(nextState.lapses).toBe(state.lapses + 1);
+			prevStability = nextState.stability;
+			state = nextState;
+			clock = new Date(state.due);
+		}
+		// Po serii Again: trudność dobiła w pobliże górnego krańca, stabilność wciąż > 0
+		// (S_MIN dolnym klamrem ts-fsrs) — oba krańce CHECK-ów wysycone, nadal legalne.
+		expect(state.difficulty).toBeGreaterThan(9);
+		expect(state.difficulty).toBeLessThanOrEqual(10);
+		expect(state.stability).toBeGreaterThan(0);
+	});
 });
 
 describe("determinizm — te same wejścia dają ten sam wynik", () => {
