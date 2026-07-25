@@ -210,6 +210,16 @@ const ML7_PIPE_PODKLASA_BLAD =
 	"    def predict(self, X):\n" +
 	"        p = list(super().predict(X)); p[0] = 1 - p[0]; return p\n" +
 	"model = Pipeline([('clf', DrzewoOdwrocone(random_state=42))]).fit(X_tr, y_tr)";
+// ZAGNIEŻDŻONY Pipeline[Pipeline[drzewo z błędnym wektorem]] — fix deklaruje
+// obsługę zagnieżdżenia pętlą `while getattr(steps)`. Pojedyncze `if` rozpakowałoby
+// tylko warstwę zewnętrzną → zostałby wewnętrzny Pipeline → isinstance False →
+// „inna rodzina". Ten test blokuje regresję `while`→`if` (Quinn, wzmocnienie D3).
+const ML7_PIPE_PIPE_PODKLASA_BLAD =
+	"from sklearn.pipeline import Pipeline\n" +
+	"class DrzewoOdwrocone(DecisionTreeClassifier):\n" +
+	"    def predict(self, X):\n" +
+	"        p = list(super().predict(X)); p[0] = 1 - p[0]; return p\n" +
+	"model = Pipeline([('wew', Pipeline([('clf', DrzewoOdwrocone(random_state=42))]))]).fit(X_tr, y_tr)";
 
 beforeAll(() => {
 	// Jak w lab-checks.test.ts — fixture, nie sekret.
@@ -567,6 +577,16 @@ describe("symulacja sesji studenta M-ML: komórki → token → checki struktura
 			name: "ml-7: Pipeline z drzewem (błędny wektor) — ODMOWA «zepsuty pipeline» (nie «inna rodzina»), token null (N1 #219)",
 			slug: "ml-7",
 			replacements: [[ML7_PUSTE, ml7Solution(ML7_PIPE_PODKLASA_BLAD)]],
+			message: /Wektor Twojego drzewa odbiega od wzorca/,
+		},
+		{
+			// N1 (regresja fixu, wzmocnienie Quinn): ZAGNIEŻDŻONY Pipeline[Pipeline[drzewo]]
+			// z błędnym wektorem → pętla `while` rozpakowuje obie warstwy → drzewo →
+			// „zepsuty pipeline". Blokuje podmianę `while`→`if` (rozpakowanie tylko 1 poziomu
+			// dałoby „inna rodzina"). Deklaracja „zagniezdzony Pipeline" w fixie = kontrakt.
+			name: "ml-7: ZAGNIEŻDŻONY Pipeline[Pipeline[drzewo]] (błędny wektor) — ODMOWA «zepsuty pipeline» (while nie if), token null (N1 #219)",
+			slug: "ml-7",
+			replacements: [[ML7_PUSTE, ml7Solution(ML7_PIPE_PIPE_PODKLASA_BLAD)]],
 			message: /Wektor Twojego drzewa odbiega od wzorca/,
 		},
 	];
