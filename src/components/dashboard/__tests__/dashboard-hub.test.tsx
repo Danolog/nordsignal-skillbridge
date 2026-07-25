@@ -60,6 +60,8 @@ const defaultProps = {
 	},
 	// 1.18: flaga off → karta rytmu nie istnieje (osobne testy w rhythm.test.tsx).
 	rhythmCard: null,
+	// 1E.4 R6: flaga off → kafelek powtórek nie istnieje (osobne testy niżej).
+	reviewDue: null,
 	// 1E.6a: flaga off → kafelek ścieżki nauki nie istnieje.
 	curriculumEnabled: false,
 };
@@ -120,5 +122,32 @@ describe("DashboardHub", () => {
 		const hrefs = screen.getAllByRole("link").map((l) => l.getAttribute("href"));
 		expect(hrefs).toContain("/curriculum");
 		expect(screen.getByText("Ucz się po kolei, bez skrótów")).toBeInTheDocument();
+	});
+
+	// 1E.4 R6 — kafelek powtórek: „deploy ≠ release" (null = flaga off → brak sekcji).
+	it("nie pokazuje kafelka powtórek przy fladze off (reviewDue=null)", () => {
+		render(<DashboardHub {...defaultProps} />);
+		expect(screen.queryByText(/Powtórki na dziś/)).not.toBeInTheDocument();
+		const hrefs = screen.getAllByRole("link").map((l) => l.getAttribute("href"));
+		expect(hrefs).not.toContain("/powtorki");
+	});
+
+	it("N>0: pokazuje licznik i CTA do /powtorki", () => {
+		render(<DashboardHub {...defaultProps} reviewDue={{ count: 7, capped: false }} />);
+		expect(screen.getByText("Powtórki na dziś: 7")).toBeInTheDocument();
+		const cta = screen.getByRole("link", { name: "Zacznij powtórki" });
+		expect(cta).toHaveAttribute("href", "/powtorki");
+	});
+
+	it("N=0: komunikat Nic do powtórzenia bez CTA", () => {
+		render(<DashboardHub {...defaultProps} reviewDue={{ count: 0, capped: false }} />);
+		expect(screen.getByText("Nic do powtórzenia. Wróć jutro.")).toBeInTheDocument();
+		expect(screen.queryByRole("link", { name: "Zacznij powtórki" })).not.toBeInTheDocument();
+	});
+
+	it("capped: licznik pokazuje 200+ zamiast dokładnej liczby", () => {
+		render(<DashboardHub {...defaultProps} reviewDue={{ count: 200, capped: true }} />);
+		expect(screen.getByText("Powtórki na dziś: 200+")).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: "Zacznij powtórki" })).toBeInTheDocument();
 	});
 });

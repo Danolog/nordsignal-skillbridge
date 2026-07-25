@@ -11,7 +11,14 @@ import { getMarketNotificationsState } from "@/lib/market-notifications";
 import { computeDemandCoverage } from "@/lib/onboarding/market-catalog";
 import { loadMarketCatalog } from "@/lib/onboarding/market-gaps";
 import { calculateCoverage } from "@/lib/passport-utils";
+import { getDueQueue } from "@/lib/review/review-service";
 import { getRhythmState } from "@/lib/rhythm/state";
+
+// 1E.4 R6: sufit LICZENIA kolejki na kafelek pulpitu — ODRĘBNY od capu DoS trasy
+// /api/review/queue (20). Kafelek pokazuje realny wolumen „na dziś" do „200+",
+// nie sufit ochronny trasy; 200 to bezpieczna górna granica pojedynczego SELECT
+// po indeksie (student_id, due) bez ryzyka skanu.
+const REVIEW_DASHBOARD_CAP = 200;
 
 export default async function DashboardPage() {
 	const session = await auth.api.getSession({ headers: await headers() });
@@ -84,6 +91,16 @@ export default async function DashboardPage() {
 		};
 	}
 
+	// 1E.4 R6: licznik powtórek „na dziś" (flaga off → null → kafelek nie istnieje).
+	// BEZPOŚREDNIE wywołanie getDueQueue (owner-side, R3) — jak pozostałe zapytania
+	// pulpitu, NIE przez trasę /api/review/queue. capped = licznik osiągnął sufit
+	// liczenia (200) → kafelek pokazuje „200+".
+	let reviewDue: { count: number; capped: boolean } | null = null;
+	if (isFeatureEnabled("spacedRepetition")) {
+		const due = await getDueQueue(student.id, new Date(), REVIEW_DASHBOARD_CAP);
+		reviewDue = { count: due.length, capped: due.length === REVIEW_DASHBOARD_CAP };
+	}
+
 	const gapTotal = gapRows[0]?.count ?? 0;
 	// Blok C (C3, decyzja D3): przy fladze ON zbiorcze pokrycie na pulpicie to
 	// „pokrycie deklarowane" WAŻONE POPYTEM — ten sam wzór co paszport
@@ -127,6 +144,7 @@ export default async function DashboardPage() {
 			topGap={topGap}
 			marketNotifications={marketNotifications}
 			rhythmCard={rhythmCard}
+			reviewDue={reviewDue}
 			// 1E.6a: kafelek ścieżki nauki tylko przy włączonej fladze (deploy ≠ release).
 			curriculumEnabled={isFeatureEnabled("curriculumPath")}
 		/>

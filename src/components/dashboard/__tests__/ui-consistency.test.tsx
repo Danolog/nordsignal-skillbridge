@@ -78,6 +78,10 @@ const EXPECTED_ROUTES: Record<string, "nav" | "flow" | "child"> = {
 	// FLAG_MASTERY_GATE (OFF → notFound). Wejście z bramki E3 na drabinie / stronie modułu.
 	"/curriculum/[moduleId]/exam": "child",
 	"/curriculum/atom/[moduleSlug]/[itemSlug]": "child",
+	// 1E.4 · R6: sesja powtórek FSRS za flagą FLAG_SPACED_REPETITION (OFF → notFound).
+	// Wejście z kafelka „Powtórki na dziś" na pulpicie (nie sidebar). Ścieżka /powtorki,
+	// NIE /review (to zajmuje kolejka recenzji człowieka B8) — kolizja tras Next.js.
+	"/powtorki": "flow",
 };
 
 /**

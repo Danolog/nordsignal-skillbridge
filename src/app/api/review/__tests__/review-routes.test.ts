@@ -288,7 +288,8 @@ describe("POST /api/review/answer", () => {
 			expect.objectContaining({ isCorrect: false, hintDepth: 0 }),
 			expect.any(Date),
 		);
-		expect(json.feedback.message).toContain("wcześniej");
+		// Copy kontraktowy z planu §2 (neutralny, nie karzący): „za wcześnie", nie „oblałeś".
+		expect(json.feedback.message).toContain("za wcześnie");
 		expect(json.feedback.message).not.toContain("oblałeś");
 	});
 
