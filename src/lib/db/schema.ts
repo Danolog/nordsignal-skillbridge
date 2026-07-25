@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
 	boolean,
 	check,
+	doublePrecision,
 	index,
 	integer,
 	jsonb,
@@ -1969,5 +1970,142 @@ export const curriculumItemResourcesRelations = relations(curriculumItemResource
 	item: one(curriculumModuleItems, {
 		fields: [curriculumItemResources.itemId],
 		references: [curriculumModuleItems.id],
+	}),
+}));
+
+// ============================================================================
+// 1E.4 (SLICE R1) — Powtórki rozłożone w czasie (FSRS). Dane studenta, RLS.
+//
+// Jednostka powtórki = KONCEPT (question_concepts) — nie item, nie moduł
+// (kontekst architektury Ethan, CTO). Stan planowania trzyma review_states
+// (jeden wiersz per student × koncept); każda ocena dokłada wiersz append-only
+// do review_logs (ślad audytowy, jak curriculum_item_answers). Algorytm liczy
+// biblioteka ts-fsrs (MIT, zero runtime-deps) — R2/R3, nie tutaj.
+//
+// Wariant RLS (wzorzec 0025/0030):
+//  - review_states: grant TYLKO SELECT dla app_student (student widzi swój
+//    stan „co na dziś"); wszystkie zapisy owner-side przez trasy /api/review/*
+//    (R4). ENABLE+FORCE + student_sees_own + owner_passthrough.
+//  - review_logs: wariant DENY-both (zero grantów app_student ORAZ app_faculty,
+//    strażnik k3 #13a) jak assessment_answers/viva_answers — surowy ślad ocen
+//    służy silnikowi/kalibracji, nie kliento­wi; ENABLE+FORCE + owner_passthrough.
+//    APPEND-ONLY. (NIE jak curriculum_item_answers — tamta ma GRANT SELECT app_student.)
+// Obie tenant-owe (tenant_id) → TENANT_TABLES w k3-validate (testy #3/#4/#10).
+// Sekcja GRANT/RLS pisana ręcznie w migracji 0042 (drizzle-kit jej nie generuje).
+// ============================================================================
+
+export const reviewStates = pgTable(
+	"review_states",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		// Jednostka powtórki. Kasowanie konceptu z banku (retire = nowy wiersz,
+		// ale twarde usunięcie możliwe w ingest) kasuje stan powtórki — cascade.
+		conceptId: uuid("concept_id")
+			.notNull()
+			.references(() => questionConcepts.id, { onDelete: "cascade" }),
+		// Parametry FSRS (ts-fsrs): stabilność pamięci (dni) i trudność (skala 1–10).
+		stability: doublePrecision("stability").notNull(),
+		difficulty: doublePrecision("difficulty").notNull(),
+		// Termin następnej powtórki — gorąca ścieżka „co na dziś" (indeks student+due).
+		due: timestamp("due", { withTimezone: true }).notNull(),
+		// NULL = koncept jeszcze nieoceniony (stan 'new' przed pierwszą powtórką).
+		lastReview: timestamp("last_review", { withTimezone: true }),
+		// Faza harmonogramu FSRS.
+		state: text("state").notNull().default("new"),
+		reps: integer("reps").notNull().default(0),
+		lapses: integer("lapses").notNull().default(0),
+		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		uniqueIndex("uq_review_states_student_concept").on(table.studentId, table.conceptId),
+		// Gorąca ścieżka kolejki „na dziś": stan studenta posortowany po terminie.
+		index("idx_review_states_student_due").on(table.studentId, table.due),
+		index("idx_review_states_tenant_id").on(table.tenantId),
+		index("idx_review_states_concept_id").on(table.conceptId),
+		check(
+			"review_states_state_values",
+			sql`${table.state} IN ('new','learning','review','relearning')`,
+		),
+		check("review_states_difficulty_range", sql`${table.difficulty} BETWEEN 1 AND 10`),
+		check("review_states_stability_positive", sql`${table.stability} > 0`),
+		// Defense-in-depth (self-critique R1): liczniki nie mogą zejść poniżej zera —
+		// ts-fsrs nigdy takich nie wyprodukuje, więc CHECK niczego legalnego nie odrzuca,
+		// a chroni stan przed korupcją zapisu owner-side. Spójne ze stylem CHECK wyżej.
+		check("review_states_reps_nonneg", sql`${table.reps} >= 0`),
+		check("review_states_lapses_nonneg", sql`${table.lapses} >= 0`),
+	],
+);
+
+export const reviewLogs = pgTable(
+	"review_logs",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		conceptId: uuid("concept_id")
+			.notNull()
+			.references(() => questionConcepts.id, { onDelete: "cascade" }),
+		// set null: log przeżywa wycofanie/usunięcie itemu (ślad audytowy oceny
+		// zostaje, nawet gdy konkretne pytanie zniknie z banku).
+		questionItemId: uuid("question_item_id").references(() => questionItems.id, {
+			onDelete: "set null",
+		}),
+		// Ocena FSRS: 1=Again, 2=Hard, 3=Good, 4=Easy.
+		rating: smallint("rating").notNull(),
+		stateBefore: text("state_before").notNull(),
+		// NULL dla pierwszej powtórki konceptu (brak stanu sprzed).
+		stabilityBefore: doublePrecision("stability_before"),
+		stabilityAfter: doublePrecision("stability_after").notNull(),
+		difficultyAfter: doublePrecision("difficulty_after").notNull(),
+		elapsedDays: doublePrecision("elapsed_days").notNull(),
+		scheduledDays: doublePrecision("scheduled_days").notNull(),
+		reviewedAt: timestamp("reviewed_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		index("idx_review_logs_student_reviewed").on(table.studentId, table.reviewedAt),
+		index("idx_review_logs_tenant_id").on(table.tenantId),
+		check("review_logs_rating_range", sql`${table.rating} BETWEEN 1 AND 4`),
+		// Defense-in-depth (self-critique R1): interwały FSRS są nieujemne — CHECK
+		// twardnieje ślad audytowy (append-only) bez odrzucania żadnej legalnej oceny.
+		check("review_logs_elapsed_nonneg", sql`${table.elapsedDays} >= 0`),
+		check("review_logs_scheduled_nonneg", sql`${table.scheduledDays} >= 0`),
+	],
+);
+
+// 1E.4 — Relacje powtórek (spójnie z konwencją repo; przygotowanie pod R2/R3).
+export const reviewStatesRelations = relations(reviewStates, ({ one }) => ({
+	student: one(students, {
+		fields: [reviewStates.studentId],
+		references: [students.id],
+	}),
+	concept: one(questionConcepts, {
+		fields: [reviewStates.conceptId],
+		references: [questionConcepts.id],
+	}),
+}));
+
+export const reviewLogsRelations = relations(reviewLogs, ({ one }) => ({
+	student: one(students, {
+		fields: [reviewLogs.studentId],
+		references: [students.id],
+	}),
+	concept: one(questionConcepts, {
+		fields: [reviewLogs.conceptId],
+		references: [questionConcepts.id],
+	}),
+	questionItem: one(questionItems, {
+		fields: [reviewLogs.questionItemId],
+		references: [questionItems.id],
 	}),
 }));
