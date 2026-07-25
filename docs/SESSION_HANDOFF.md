@@ -11,7 +11,70 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-25 (zapłon produkcyjny) — TUTOR 1.13 + 1E.3 MASTERY GATE — OBA LIVE NA PRODZIE (flagi=1, smoke-zweryfikowane)
+## STAN NA DZIŚ — 2026-07-25 (1E.4 powtórki FSRS) — BACKEND KOMPLETNY (R1–R5) NA PRODZIE ZA FLAGĄ OFF
+
+**Jednym zdaniem:** cały backend powtórek rozłożonych w czasie (FSRS) — od schematu bazy,
+przez planer i serwis, po API i wpięcie w mastery gate — jest na prodzie **za flagą OFF**
+(deploy ≠ release); zostaje UI (R6) + zapłon świadomą decyzją Darka.
+
+**Flaga na prodzie:** `FLAG_SPACED_REPETITION` **OFF** — `defaultValue false`, nieustawiona
+w env prod. Skutek: trasy `/api/review/*` → **404**, hook enrollment (auto-zapis konceptu na
+powtórki) nie odpala, zero wierszy w `review_states`/`review_logs`. Student NIC nie widzi do
+świadomego zapłonu.
+
+**Baseline `main` = `f827417`** (= R5, `origin/main`). Każdy plasterek: Quinn adwersaryjnie +
+Leo (14 domen), autor commitów = Darek, jeden pisarz per gałąź.
+
+### Pięć plasterków R1–R5 (backend end-to-end)
+
+- **R1 — fundament (PR #236, `7e936a8`).** Schema `review_states` + `review_logs` + RLS
+  (Row Level Security — izolacja wierszy po studencie; **Ryan CRCO GO**, klasa K-INT,
+  `rls-matrix.md` v0.29) + flaga OFF + biblioteka planująca `ts-fsrs@5.4.1` (licencja MIT).
+  Migracja **`0042`** wygenerowana i na `main`, **NIE zastosowana na prod NEON** (zaciąg ręczny —
+  czeka do R6, delegacja v1.12 + kopia Neon).
+- **R2 — planer (PR #239, `297865f`).** Scheduler FSRS jako czyste funkcje (bez efektów
+  ubocznych). Decyzja **G1 = short-term OFF** (Wariant A: przejście koncept→powtórka bez
+  wewnątrzdniowych mikro-kroków nauki).
+- **R3 — serwis (PR #240, `60aa2a6`).** `review-service.ts`: `getDueQueue` (kolejka na dziś,
+  jedno zapytanie), `recordReview` (transakcja + blokada wiersza `FOR UPDATE`), `enrollConcept`
+  (idempotentny — ponowny zapis nie duplikuje). Quinn 10 testów, mutation-proven.
+- **R4 — API (PR #242, `f0227d5`).** `/api/review/{queue,answer}`. Twarde niezmienniki:
+  **K1** studentId z sesji (nie z ciała żądania), **K2** cap 20/dobę, **K3** walidacja wejścia,
+  strip klucza odpowiedzi z payloadu, głębokość podpowiedzi = 0 wyliczana serwerowo. Quinn 15
+  testów (IDOR + strip mutation-proven).
+- **R5 — wpięcie w mastery gate (PR #245, `f827417`).** Enrollment wyzwalany przy zdanym
+  egzaminie modułowym (`exam/complete`), po stronie właściciela best-effort, gating szczelny.
+  **Inwariant flag-OFF mutation-proven: żywa trasa `exam/complete` zachowuje się bajt-w-bajt jak
+  dziś, gdy flaga OFF.** Enrollment obejmuje koncepty `active AND trunk='market' AND ≥1 pytanie`.
+  Decyzje Sophii: **§4** (niższa stabilność startowa dla oblanych) **DEFER**; **corrective-done**
+  jako trigger **DEFER**; wejście na powtórki **tylko przez mastery gate**. Plan v0.6.
+
+### ZOSTAJE R6 + ZAPŁON
+
+**R6 (UI + prod-migracja):**
+- Kafelek „Powtórki na dziś: N" na dashboardzie + ekran sesji powtórki — **Mila** design →
+  **Jack** implementacja → skan **axe** (a11y).
+- Migracja **`0042`** na prod NEON — **Ethan** (delegacja v1.12) + kopia Neon przed zmianą.
+- Limit dzienny **D3** (cap na liczbę powtórek/dobę na UI), rotacja pytań.
+
+**BRAMKI ZAPŁONU `FLAG_SPACED_REPETITION=1`** (świadoma decyzja Darka, wszystkie muszą paść):
+1. **RODO** — reguła retencji dla `review_logs` w `retention.md` + nota RoPA (rejestr czynności
+   przetwarzania) — **Ryan**.
+2. **Realny test limitu 429** z Upstash (rate-limit) — **Quinn** (nie tylko test jednostkowy).
+3. **Decyzja N1 phantom-wiersz** — zawęzić `EXISTS` do `single_choice` albo świadomie
+   zaakceptować pusty wiersz — **Sophia/Ethan**.
+4. **N2 indeks** `question_items(concept_id, status)` — pod zapytanie kolejki.
+5. **N3** rozważyć `after()` (Next.js — praca po odpowiedzi HTTP) dla latencji zapisu logu.
+6. **Migracja `0042` zastosowana na prod** (część R6).
+
+### Dług równoległy (sesja Darka)
+
+Partie A/B długu wpięte na `main` (kontrast, bramka a11y-tutor w CI). Prompt spłaty w historii.
+Stash `stash@{0}` (v0.5 planu, **przeterminowany**) — do dropnięcia.
+
+---
+
+## STAN POPRZEDNI — 2026-07-25 (zapłon produkcyjny) — TUTOR 1.13 + 1E.3 MASTERY GATE — OBA LIVE NA PRODZIE (flagi=1, smoke-zweryfikowane)
 
 **Jednym zdaniem:** dwie funkcje kręgosłupa zapalone na prodzie w uszanowanej
 kolejności — tutor sokratyczny (1.13) PRZED egzaminem modułowym (1E.3 mastery gate);
