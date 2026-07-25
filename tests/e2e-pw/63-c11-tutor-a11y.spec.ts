@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { TUTOR_PROJECT_ID } from "./fixtures/a11y-fixture-ids";
 import { loginWithPassword } from "./helpers/auth";
 
 /**
@@ -113,18 +114,20 @@ async function runAxe(page: import("@playwright/test").Page, label: string) {
 	return results;
 }
 
-/** Wejście na detal pierwszego projektu z katalogu (wzorzec 60-c11-tutor.spec.ts). */
-async function openFirstProject(page: import("@playwright/test").Page) {
-	await page.goto("/projects");
-	// Katalog domyślnie filtruje po kierunku kariery studenta; gdy brak dopasowań,
-	// odsłaniamy pełny katalog (seed ma ≥1 projekt globalny). Deterministyczne wejście.
-	const projectLink = page.locator('a[href^="/projects/"]').first();
-	if ((await projectLink.count()) === 0) {
-		await page.getByRole("button", { name: /Pokaż wszystkie kierunki/i }).click();
-	}
-	await projectLink.click();
+/**
+ * Wejście na detal projektu-fixture o STAŁYM UUID (TUTOR_PROJECT_ID), wstawionego
+ * do bazy testowej przez seeder CI (`tools/fixtures/seed-a11y-fixtures.ts`).
+ *
+ * Poprzednio wchodziliśmy przez katalog (page.goto("/projects") → klik pierwszego
+ * linku) — niedeterministycznie, bo zależnie od stanu seedu / filtra kierunku
+ * kariery katalog mógł nie pokazać żadnego projektu albo inny. Bezpośredni goto
+ * na znany UUID zdejmuje tę zmienną: bramka mierzy dostępność panelu, nie
+ * przypadkowy stan katalogu. Panel istnieje wyłącznie gdy serwer ma
+ * FLAG_SOCRATIC_TUTOR=1 (server component page.tsx:75).
+ */
+async function openTutorProject(page: import("@playwright/test").Page) {
+	await page.goto(`/projects/${TUTOR_PROJECT_ID}`);
 	await expect(page).toHaveURL(/\/projects\/[^/]+$/);
-	// Panel istnieje wyłącznie gdy serwer ma FLAG_SOCRATIC_TUTOR=1.
 	await expect(page.getByRole("heading", { name: "Tutor projektu" })).toBeVisible();
 }
 
@@ -144,7 +147,7 @@ test.describe("@safe C11 a11y — skan panelu tutora (bramka przed FLAG_SOCRATIC
 			}
 			return route.fallback();
 		});
-		await openFirstProject(page);
+		await openTutorProject(page);
 		// Rehydracja domknięta: pokazuje się zachęta pustej rozmowy, nie spinner.
 		await expect(page.getByText("Utknąłeś? Opisz, co już próbowałeś")).toBeVisible();
 		await expect(page.getByRole("textbox", { name: "Wiadomość do tutora" })).toBeVisible();
@@ -171,7 +174,7 @@ test.describe("@safe C11 a11y — skan panelu tutora (bramka przed FLAG_SOCRATIC
 			}
 			return route.fallback();
 		});
-		await openFirstProject(page);
+		await openTutorProject(page);
 
 		const input = page.getByRole("textbox", { name: "Wiadomość do tutora" });
 		await input.fill("Utknąłem na starcie — od czego zacząć ten projekt?");
@@ -208,7 +211,7 @@ test.describe("@safe C11 a11y — skan panelu tutora (bramka przed FLAG_SOCRATIC
 			}
 			return route.fallback();
 		});
-		await openFirstProject(page);
+		await openTutorProject(page);
 		await expect(page.getByText("Limit rozmowy z tutorem dla tego projektu")).toBeVisible();
 		await expect(page.getByRole("textbox", { name: "Wiadomość do tutora" })).toHaveCount(0);
 		const { violations } = await runAxe(page, "c: limit rozmowy");
@@ -253,7 +256,7 @@ test.describe("@safe C11 a11y — skan panelu tutora (bramka przed FLAG_SOCRATIC
 			}
 			return route.fallback();
 		});
-		await openFirstProject(page);
+		await openTutorProject(page);
 
 		// Wyślij wiadomość → mock oddaje {crisis:true} → panel wchodzi w stan kryzysu.
 		const input = page.getByRole("textbox", { name: "Wiadomość do tutora" });

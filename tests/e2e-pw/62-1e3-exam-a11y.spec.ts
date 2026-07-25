@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { EXAM_MODULE_ID } from "./fixtures/a11y-fixture-ids";
 import { loginWithPassword } from "./helpers/auth";
 
 /**
@@ -23,7 +24,9 @@ import { loginWithPassword } from "./helpers/auth";
  * Tagi WCAG: wcag2a, wcag2aa, wcag21a, wcag21aa, best-practice.
  */
 
-const MODULE_ID = "cad6dff5-e326-4991-a742-b7ca382ee2d2"; // „Moduł A" (baza testowa)
+// UUID modułu „Moduł A" — JEDNO ŹRÓDŁO: tests/e2e-pw/fixtures/a11y-fixture-ids.ts
+// (ten sam, który seeder CI wstawia do bazy testowej). Zmiana UUID = zmiana tam.
+const MODULE_ID = EXAM_MODULE_ID;
 const EXAM_URL = `/curriculum/${MODULE_ID}/exam`;
 const EXAM_SCOPE = "main.db-main";
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"];
