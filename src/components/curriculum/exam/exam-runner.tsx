@@ -44,7 +44,9 @@ interface ExamRunnerProps {
 }
 
 type Phase = "confirm" | "running" | "closing" | "result";
-type StartError = "not_configured" | "network" | "conflict" | null;
+// `correctives_unavailable`: 423 S-C (twarda blokada), ale paczka correctives
+// niedostępna (stan zdegradowany) — komunikat BEZ retry, NIE mylony z „network".
+type StartError = "not_configured" | "network" | "conflict" | "correctives_unavailable" | null;
 type AnswerError = "network" | "conflict" | null;
 
 const BACK_PREFIX = "/curriculum";
@@ -117,7 +119,10 @@ export function ExamRunner({ moduleId, moduleTitle }: ExamRunnerProps) {
 					setGatePkg(body.correctivesPackage);
 					return;
 				}
-				setStartError("network");
+				// 423 to WYŁĄCZNIE correctives_required (jedyne źródło 423 na /start), ale
+				// bez ważnej paczki (stan zdegradowany: brak correctivesPackage w result_json).
+				// To NADAL twarda blokada — NIE „network" z retry (ponowienie da ten sam 423).
+				setStartError("correctives_unavailable");
 				return;
 			}
 			if (res.status === 422) {
@@ -241,6 +246,12 @@ export function ExamRunner({ moduleId, moduleTitle }: ExamRunnerProps) {
 					<StartErrorNoRetry backHref={backHref}>
 						Ten moduł nie ma jeszcze gotowego egzaminu. Wróć do modułu — dogonimy Cię, gdy będzie
 						gotowy.
+					</StartErrorNoRetry>
+				)}
+				{startError === "correctives_unavailable" && (
+					<StartErrorNoRetry backHref={backHref}>
+						Zanim podejdziesz ponownie, musisz uzupełnić materiał — ale lista tematów do powtórki
+						nie jest teraz dostępna. Wróć do modułu; przygotujemy ją dla Ciebie.
 					</StartErrorNoRetry>
 				)}
 				{startError === "conflict" && (
