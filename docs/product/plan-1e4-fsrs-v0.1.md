@@ -1,6 +1,7 @@
 # Plan 1E.4 — powtórki rozłożone w czasie (FSRS)
 
-**Wersja:** v0.6 · 2026-07-25 · Status: **DRAFT do sign-offu Darka** (Plan Mode)
+**Wersja:** v0.7 · 2026-07-25 · Status: **DRAFT do sign-offu Darka** (Plan Mode)
+**Changelog v0.6 → v0.7 (R6 UI scalona + skonsolidowana lista bramek zapłonu — Ethan, domena techniczna):** **R6 (warstwa UI powtórek — kafelek pulpitu + sesja `/powtorki` + skan a11y) scalona na `main`** (PR #249, merge squash `b9b75d9`, autor Darek, flaga OFF, **brak migracji** → prod NEON nietknięty, deploy prod = kafelek nie renderuje / `/powtorki` 404 przy OFF). **Warunek Leo #2 zamknięty:** nowy job CI `a11y-review` **realnie się wykonał i jest zielony** (nie „pominięty"/nieobecny) — Playwright „Running 5 tests", axe naruszeń 0 we wszystkich stanach (pytanie / werdykt-poprawny / werdykt-błąd / koniec-sesji / pusto), wynik `1 flaky, 4 passed` (stan (d) padł raz, przeszedł na retry #1), krok „Playwright — skan a11y sesji powtórek (bramka 1E.4 R6)" → success, konkluzja joba = success. Wszystkie wymagane checki zielone (test/typecheck/lint/build/integration/deps-scan/secret-scan/a11y-exam/a11y-tutor/a11y-review). Merge w modelu CLAUDE.md v1.12 (delegacja nieodwracalnych działań technicznych — Ethan/CTO): Leo review GO, autor commita = Darek, audit log. **Dodano skonsolidowaną sekcję „Bramki zapłonu FLAG_SPACED_REPETITION"** (niżej) — wszystkie bramki zebrane w jedno miejsce, świadomie NIE rozwiązane (zapłon = osobna decyzja Darka). Reszta planu bez zmian.
 **Changelog v0.5 → v0.6 (carry-forward R5 → R6 — Ethan, domena techniczna):** dodano **§4d — carry-forward z R5 do R6** (trzy noty z Leo review R5, świadomie NIE rozwiązane w R5, dług śpi przy fladze OFF): **N1** — filtr pojemności type-agnostyczny (`EXISTS` po dowolnym typie pytania) → ryzyko phantom-wiersza `review_states` dla konceptu `trunk='market'` z ≥1 pytaniem, ale zero aktywnych `single_choice`; decyzja R6 (Sophia/Ethan): zawęzić `EXISTS` do `single_choice` (parytet z R4) albo zaakceptować. **N2** — potwierdzić/dodać indeks `question_items(concept_id, status)` pod skorelowany `EXISTS` (N1). **N3** — rozważyć `after()` (Next 15) dla rozprzężenia zasiewu powtórek od odpowiedzi zdanego egzaminu (latencja p95). Merge SHA R5 odnotowany będzie w następnym bumpie (konwencja: slice odnotowuje merge poprzednika). Reszta planu bez zmian; nadal czeka na sign-off Darka.
 **Changelog v0.4 → v0.5 (przegląd produktowy R5 — Sophia, domena PO §8):** trzy rozstrzygnięcia odblokowujące implementację Maxa, wpięte przed R5. **(1) §4 sprzężenie „niższa stabilność początkowa dla oblanego konceptu" → DEFER poza R5** (udokumentowana iteracja po MVP, kierunek: „krótszy pierwszy `due`", NIGDY syntetyczny `review_log`). Enrollment R5 prosty: wszystkie zdane koncepty kluczowe wchodzą jednakowo. Uzasadnienie: ts-fsrs re-inicjalizuje S/D przy pierwszej realnej ocenie — sprzężenie kupuje tylko wcześniejsze pierwsze wypłynięcie, a FSRS i tak samo-koryguje kruchość na 1. powtórce; defer jest odwracalny i bez straty sygnału (`failedConcepts` żyje w 1E.3). **(2) Definicja „konceptu kluczowego" = aktywny koncept `trunk='market'` zmapowany na pozycję modułu** (NIE wszystkie aktywne — `foundations` poza kolejką), sparowany z twardym dziennym capem nowych kart (D3) jako throttle humanitarnej kolejki. Mechanizm „≤4 tagowane przy autoringu" **wycofany** — tagu nie ma w schemacie, `trunk='market'` + cap D3 realizują intencję na istniejącej, CHECK-owanej kolumnie. **(3) Corrective-done jako wyzwalacz → NIE w R5** (wejście tylko przez mastery gate); logicznie w pakiecie z (1) jako przyszła iteracja „harmonogram świadomy kruchości". Aktualizacja §2, §4b K5, §7. Przegląd domenowy §8 (produkt → Sophia); reszta planu (flaga, migracja, bramki zapłonu) bez zmian i nadal czeka na sign-off Darka.
 **Changelog v0.3 → v0.4:** R4 (trasy API `/api/review/{queue,answer}`) scalona na `main` (PR #242, merge squash `f0227d5`, flaga OFF, brak migracji). Bramka W1 (pułapka R3 — test zacommitowany razem z trasami) zamknięta: `review-routes.integration.test.ts` (15 przypadków, mutation-proven) **realnie wykonany** w jobie `integration` CI (`✓ 15 tests`, nie skip). Kontrakty K1–K4 z sekcji 4b zamknięte w R4. Prod NEON nietknięty, deploy prod = trasy 404 za flagą OFF (smoke: `{"error":"Not found"}`). Dodano sekcję 4c — carry-forward R4 → R5/R6 (flip-gate 429 + rotacja pytań) i rozszerzono listę bramek zapłonu o realny test 429.
@@ -150,3 +151,32 @@ Jeden spójny wątek, świadomie odłożony z R5, do podjęcia po pierwszych dan
 **Bramka zapłonu (jak 1E.3):** flaga zapala się dopiero, gdy (a) jest realny ruch dostarczający pierwszych sygnałów (nie na pustym harmonogramie), (b) axe a11y zielony na ekranie sesji, (c) **realny test 429 na `/api/review/{queue,answer}` z żywym Upstash zielony** (FLIP-GATE 429, owner Quinn — sekcja 4c; limiter musi realnie odrzucać, nie fail-open), (d) **warunki RODO Ryana spełnione** — `retention.md` (polityka retencji `review_states`/`review_logs`) + RoPA (rejestr czynności przetwarzania) zaktualizowane, (e) świadoma decyzja Darka.
 
 **Następny krok po sign-offie:** rezerwacja numeru migracji `0042` commitem → R1.
+
+---
+
+## Bramki zapłonu FLAG_SPACED_REPETITION (skonsolidowane — v0.7)
+
+Wszystkie warunki zapłonu flagi zebrane w jedno miejsce (rozsiane wyżej po §4c/§4d/§7a). **Ta sekcja tylko zbiera — nie rozwiązuje.** Legenda: ✅ = zamknięte, ⏳ = otwarte. **Zapłon = świadoma decyzja Darka po zzielenieniu wszystkich ⏳** (deploy ≠ release).
+
+**Zamknięte**
+- ✅ **RODO** — retencja (`review_states` / `review_logs`) + RoPA (rejestr czynności przetwarzania, art. 30 RODO) + poprawka #13a. Owner: Ryan. Dowód: commit `2cf33fa`, `rls-matrix` v0.31. **ZAMKNIĘTE.**
+- ✅ **Backend R1–R5 + UI R6 na prodzie za flagą OFF.** R6 UI scalona PR #249 / `b9b75d9` (a11y-review zielony realnie, nie przez nieobecność).
+
+**Otwarte — techniczne**
+- ⏳ **Migracja `0042` na prod NEON.** Wykonanie: Ethan (CLAUDE.md v1.12 — delegacja nieodwracalnych działań technicznych) + **kopia zapasowa Neon przed zmianą** (bramka jakości c). UWAGA operacyjna: plan darmowy Neon ma limit 10 gałęzi/kopii — jeśli zablokuje utworzenie kopii, Darek przycina stare gałęzie w konsoli Neon (memory „Neon limit 10 gałęzi"). Migracja addytywna, nie dotyka danych.
+- ⏳ **CF-2 / 429 — dyskryminator `scope`.** Dodać `scope: "daily" | "burst"` w ciele odpowiedzi 429 + usunąć heurystykę 90 s w runnerze (rozróżnianie limitu dziennego od chwilowego po treści, nie po czasie). Owner: Max / Ethan.
+- ⏳ **Test 429 realny z Upstash** (FLIP-GATE 429 z R4). Realny test odrzucenia `429` na `/api/review/{queue,answer}` przy skonfigurowanym Upstash (limiter musi realnie odrzucać, nie fail-open / no-op). Owner: Quinn. **Bez tego flaga zostaje OFF.**
+- ⏳ **CF-3 — test wiringu dashboardu.** OFF → `getDueQueue` nie wołane; ON → `limit=200`; `length===200` → oznaczone jako `capped`. Owner: Quinn.
+- ⏳ **N1 — filtr pojemności zawęzić do `single_choice`** (parytet z R4) — usuwa ryzyko phantom-wiersza `review_states` dla konceptu `trunk='market'` z pytaniem, ale bez aktywnego `single_choice`. Owner: Sophia / Ethan.
+- ⏳ **N2 — indeks `question_items(concept_id, status)`** pod skorelowany `EXISTS` filtra pojemności (N1); dodanie addytywne, nie dotyka danych. Owner: Ethan.
+
+**Otwarte — produktowe / IA**
+- ⏳ **CF-1 — ścieżka `/powtorki` potwierdzona przez Milę (IA).** Koszt ewentualnej zmiany trasy: 4 miejsca. Owner: Mila (IA).
+
+**Otwarte — firmowe (przed 1. studentem, nie ściśle przed flipem flagi)**
+- ⏳ **Klauzula informacyjna art. 13 RODO** (obowiązek informacyjny wobec studenta). Pozycja E-1. Owner: Darek / Wendy.
+
+**Incydentalne (poza ścieżką krytyczną zapłonu)**
+- ⏳ **`.env.test` — ANTHROPIC_API_KEY cleartext** → audyt Ryana (higiena sekretów, nie blokuje flagi, ale do domknięcia).
+
+**Reguła zapłonu:** flaga `FLAG_SPACED_REPETITION=1` na prodzie zapala się dopiero, gdy wszystkie ⏳ techniczne + produktowe + FLIP-GATE 429 są zielone, a Darek podejmie świadomą decyzję. Firmowa klauzula art. 13 i incydentalny audyt `.env.test` idą równolegle, nie blokują samego flipu technicznego, ale muszą być domknięte przed pierwszym realnym studentem.
