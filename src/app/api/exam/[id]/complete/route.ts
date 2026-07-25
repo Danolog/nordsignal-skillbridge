@@ -38,6 +38,7 @@ import { db } from "@/lib/db";
 import { assessmentAnswers, assessmentSessions } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
+import { enrollModuleConceptsOnMasteryPass } from "@/lib/review/enroll-hook";
 
 class ExamCompleteConflictError extends Error {}
 
@@ -108,7 +109,10 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 				.update(assessmentSessions)
 				.set({ status: "completed", resultJson, completedAt: new Date() })
 				.where(and(eq(assessmentSessions.id, id), eq(assessmentSessions.status, "in_progress")));
-			return { kind: "completed" as const, result: resultJson };
+			// moduleId wypchnięty do outcome (1E.4 R5): hook enrollment poza transakcją
+			// potrzebuje adresu modułu. Dla 'module_exam' CHECK
+			// assessment_sessions_module_exam_requires_module gwarantuje non-null.
+			return { kind: "completed" as const, result: resultJson, moduleId: assessment.moduleId };
 		});
 
 		if (outcome.kind === "not_found") {
@@ -120,6 +124,26 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 				{ status: 422 },
 			);
 		}
+
+		// 1E.4 (R5) — zasiew konceptów kluczowych do powtórek przy ZDANYM mastery gate.
+		// GATING SZCZELNY: isFeatureEnabled JEST OSTATNIM, zwierającym warunkiem — przy
+		// fladze OFF wyrażenie zwiera się PRZED wejściem w hook, więc ZERO dodatkowych
+		// zapytań i odpowiedź trasy jest identyczna jak dziś (inwariant flag-OFF, Quinn
+		// dowodzi bajt-w-bajt). Bramka jest TU (miejsce wywołania), nie w hooku.
+		// `outcome.moduleId` guard: dla 'module_exam' CHECK gwarantuje non-null; warunek
+		// zawęża typ i broni przed teoretyczną sesją bez modułu (nie zasiewamy w próżnię).
+		// BEST-EFFORT: .catch + logError — błąd zasiewu NIE propaguje do odpowiedzi;
+		// enrollment (dodatek edukacyjny) nie może wywalić studentowi ZDANEGO egzaminu
+		// (§7: mastery gate > powtórki). Idempotencja hooka czyni re-fire bezpiecznym.
+		// `moduleId` do lokalnej stałej — narrowing property (outcome.moduleId: string|null)
+		// nie przeżyłby wewnątrz domknięcia `.catch`; const utrwala typ `string`.
+		const passedModuleId = outcome.result.passed ? outcome.moduleId : null;
+		if (passedModuleId && isFeatureEnabled("spacedRepetition")) {
+			await enrollModuleConceptsOnMasteryPass(student.id, passedModuleId).catch((err) =>
+				logError("review.enroll", err, { studentId: student.id, moduleId: passedModuleId }),
+			);
+		}
+
 		return NextResponse.json({ completed: true, result: outcome.result });
 	} catch (err) {
 		if (err instanceof ExamCompleteConflictError) {
