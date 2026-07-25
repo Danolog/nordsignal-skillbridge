@@ -239,9 +239,19 @@ describe("ExamRunner — 423 correctives_required z /start (S-C)", () => {
 
 		// Blokada trzyma: brak Ekranu 5 (nie ma paczki do pokazania) i brak pytania —
 		// nie weszliśmy do egzaminu. Komunikat błędu startu zamiast wywrotki.
-		expect(await screen.findByRole("alert")).toBeInTheDocument();
+		const alert = await screen.findByRole("alert");
+		expect(alert).toBeInTheDocument();
 		expect(screen.queryByText(/Czas na uzupełnienie materiału/)).not.toBeInTheDocument();
 		expect(screen.queryByText(/^Pytanie 1 z/)).not.toBeInTheDocument();
+		// DECYZJA 6 (zakres A): copy uczciwe — brak obietnicy bez pokrycia
+		// („przygotujemy ją dla Ciebie”) i brak retry (ponowienie da ten sam 423).
+		expect(alert).toHaveTextContent(/Nie możemy teraz rozpocząć tej próby/);
+		expect(alert).toHaveTextContent(/Skontaktuj się z prowadzącym lub wsparciem/);
+		expect(alert).not.toHaveTextContent(/przygotujemy/i);
+		expect(
+			within(alert).queryByRole("button", { name: /Spróbuj ponownie/ }),
+		).not.toBeInTheDocument();
+		expect(within(alert).getByRole("link", { name: "Wróć do modułu" })).toBeInTheDocument();
 		// Dokładnie jedno wywołanie /start — 423 nie wywołało pętli ani complete.
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});

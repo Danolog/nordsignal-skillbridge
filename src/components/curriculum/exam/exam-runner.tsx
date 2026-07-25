@@ -250,8 +250,8 @@ export function ExamRunner({ moduleId, moduleTitle }: ExamRunnerProps) {
 				)}
 				{startError === "correctives_unavailable" && (
 					<StartErrorNoRetry backHref={backHref}>
-						Zanim podejdziesz ponownie, musisz uzupełnić materiał — ale lista tematów do powtórki
-						nie jest teraz dostępna. Wróć do modułu; przygotujemy ją dla Ciebie.
+						Nie możemy teraz rozpocząć tej próby — brakuje danych potrzebnych do jej przygotowania.
+						Skontaktuj się z prowadzącym lub wsparciem, żeby to odblokować.
 					</StartErrorNoRetry>
 				)}
 				{startError === "conflict" && (
