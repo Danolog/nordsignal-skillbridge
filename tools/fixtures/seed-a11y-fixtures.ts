@@ -35,6 +35,13 @@ async function main(): Promise<void> {
 
 		// Transakcyjnie i idempotentnie (ON CONFLICT (id) DO NOTHING) — ponowny bieg
 		// nie dubluje ani nie modyfikuje istniejących wierszy fixture.
+		//
+		// UWAGA dla przyszłego autora seedu/drabiny: namespace slugów `a11y-*-fixture`
+		// jest ZAREZERWOWANY dla tych fixture. `ON CONFLICT (id) DO NOTHING` łapie tylko
+		// kolizję na PRIMARY KEY (id) — NIE chroni przed kolizją na UNIQUE(slug). Gdyby
+		// ktoś wprowadził wiersz o slugu 'a11y-exam-fixture'/'a11y-tutor-fixture' pod
+		// INNYM id, poniższy INSERT padłby unique-violation na slug (nie zostałby cicho
+		// pominięty). Nie używaj tych slugów poza tym plikiem.
 		await client.query("BEGIN");
 
 		// Fixture modułu egzaminu (spec 62): strona egzaminu robi notFound() bez tego

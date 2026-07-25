@@ -223,16 +223,16 @@ test.describe("@safe C11 a11y — skan panelu tutora (bramka przed FLAG_SOCRATIC
 	// (bez modelu), a panel renderuje statyczny komunikat wsparcia (116 123) w
 	// żywym regionie role="alert" (.tutor-crisis).
 	//
-	// KONTRAST — policzony twardo z realnych bajtów sRGB (globals.css:4835):
-	//   tekst  #dc2626                       = rgb(220, 38, 38)
+	// KONTRAST — stan PO #234 (fix kontrastu, globals.css:4835):
+	//   tekst  #b91c1c (red-700)             = rgb(185, 28, 28)
 	//   tło    rgba(239,68,68,0.08) NAD white(.proj-detail-section, globals.css:4394)
 	//          → skomponowane = rgb(254, 240, 240)
-	//   kontrast = 4.35:1  (14px, waga normalna → próg AA = 4.5:1)  → PONIŻEJ progu.
-	//   (dla porównania #dc2626 na czystej bieli = 4.83:1 — to różowy tint zbija
-	//    kontrast pod próg; realny niedobór, nie artefakt.)
-	// Dlatego oczekiwana obserwacja: axe zgłasza color-contrast jako NARUSZENIE
-	// (impact serious). Ta asercja MA prawo pójść na czerwono — to bramka robiąca
-	// swoją robotę: blokuje flip flagi, dopóki Mila nie podniesie kontrastu.
+	//   kontrast = 5.83:1  (14px, waga normalna → próg AA = 4.5:1)  → ZAPAS nad progiem.
+	//   (poprzednio #dc2626 dawał 4.35:1 — różowy tint tła zbijał kontrast pod próg;
+	//    #234 podniósł tekst do red-700 — realny fix koloru, nie obejście testu.)
+	// Dlatego oczekiwana obserwacja: axe NIE zgłasza color-contrast — asercja niżej
+	// wymaga ZERA naruszeń (toEqual([])). Ta bramka blokuje job, jeśli ktoś cofnie
+	// fix kontrastu (regresja .tutor-crisis do <4.5:1) — pilnuje, by nie spadł ponownie.
 	// Dodatkowo twardo pilnujemy, by color-contrast NIE schował się w `incomplete`
 	// (axe bywa niepewny przy półprzezroczystym tle — a tu „nie wiem" != „zielone").
 	test("(d) stan kryzysowy — komunikat wsparcia role=alert, kontrast liczony twardo", async ({
@@ -290,9 +290,10 @@ test.describe("@safe C11 a11y — skan panelu tutora (bramka przed FLAG_SOCRATIC
 			)}`,
 		).toEqual([]);
 
-		// Bramka właściwa: zero naruszeń. Przy kontraście 4.35:1 (<4.5) oczekujemy,
-		// że ta asercja pójdzie na czerwono z regułą color-contrast — to sygnał dla
-		// Mili (token/kolor), nie do obejścia po stronie testu.
+		// Bramka właściwa: zero naruszeń. Po #234 kontrast .tutor-crisis to 5.83:1
+		// (≥4.5) — asercja jest ZIELONA. Jeśli ktoś cofnie fix kontrastu (regresja
+		// <4.5:1), color-contrast wróci jako naruszenie i ta asercja pójdzie na
+		// czerwono — sygnał dla Mili (token/kolor), nie do obejścia po stronie testu.
 		expect(violations, JSON.stringify(violations, null, 2)).toEqual([]);
 	});
 });
