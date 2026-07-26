@@ -45,6 +45,21 @@ function makeLimiter(limiter: ReturnType<typeof Ratelimit.slidingWindow>, prefix
 	});
 }
 
+/**
+ * Override progu limitera WYŁĄCZNIE dla testów (bramka QA — realny 429 scope=daily
+ * bez 200+ żądań, bo burst 60/min tnie wcześniej). Prod-safe: Vercel NIGDY nie
+ * ustawia tych zmiennych → wartość produkcyjna (`fallback`) bez zmiany. Honorujemy
+ * override tylko gdy jest dodatnią liczbą całkowitą; cokolwiek innego → fallback.
+ * Wzorzec bezpieczeństwa identyczny jak reszta toru testowego (UPSTASH_* z SRH):
+ * bezpieczeństwo z tego, że produkcja env NIE ustawia, nie z gałęzi w kodzie.
+ */
+function limitOverride(envKey: string, fallback: number): number {
+	const raw = process.env[envKey];
+	if (!raw) return fallback;
+	const n = Number(raw);
+	return Number.isInteger(n) && n > 0 ? n : fallback;
+}
+
 export const rateLimiters = {
 	facultyLogin: makeLimiter(Ratelimit.slidingWindow(5, "15 m"), "faculty-login"),
 	aiHeavy: makeLimiter(Ratelimit.slidingWindow(5, "1 m"), "ai-heavy"),
@@ -74,8 +89,14 @@ export const rateLimiters = {
 	// (wzorzec sandboxRun/tutorDaily): reviewAnswer tnie BURST, reviewDaily tnie WOLUMEN
 	// dobowy (kolejka „na dziś" ma cap ~20 konceptów; 200/dzień z zapasem na relearning,
 	// twardy sufit przeciw farmie zapisów).
-	reviewAnswer: makeLimiter(Ratelimit.slidingWindow(60, "1 m"), "review-answer"),
-	reviewDaily: makeLimiter(Ratelimit.slidingWindow(200, "1 d"), "review-daily"),
+	reviewAnswer: makeLimiter(
+		Ratelimit.slidingWindow(limitOverride("RATE_LIMIT_REVIEW_ANSWER", 60), "1 m"),
+		"review-answer",
+	),
+	reviewDaily: makeLimiter(
+		Ratelimit.slidingWindow(limitOverride("RATE_LIMIT_REVIEW_DAILY", 200), "1 d"),
+		"review-daily",
+	),
 };
 
 export type RateLimitResult = {
