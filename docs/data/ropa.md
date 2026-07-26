@@ -6,11 +6,25 @@
 > z art. 13 — osobny artefakt, którego jeszcze nie ma; patrz E-1 w
 > `docs/security/hint-reveals-retencja-signoff.md` §7).
 
-**Wersja:** v0.1 · 2026-07-25 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
+**Wersja:** v0.2 · 2026-07-26 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
 **Administrator danych:** nordsignal (podmiot w rejestracji — NIP TBD, trigger A/B/C, CLAUDE.md §9).
 **Status:** **rejestr minimalny, zasiany** — założony przy sign-offie FSRS (1E.4, rls-matrix v0.30).
 Kompletny przegląd wszystkich czynności przetwarzania w produkcie = **Wendy, Faza 3**, przed pierwszą
 realną rejestracją studenta. Poniższe wpisy to stan wiedzy zweryfikowany na kodzie na dziś.
+
+**Changelog v0.1 → v0.2 (2026-07-26) — sprostowanie opisu środków bezpieczeństwa we wpisie #3
+(art. 30 ust. 1 lit. g); Ryan (CRCO), samodoniesienie.** W v0.1 napisałem „RLS ENABLE+FORCE na obu
+tabelach" jako opis środka. Zdanie jest formalnie prawdziwe (FORCE jest ustawione), ale **sugeruje
+egzekucję na poziomie bazy szerszą niż faktyczna** — polityka `owner_passthrough` z migracji `0012`
+przepuszcza właściciela bezwarunkowo, więc FORCE wiąże rolę wykonawczą (`app_runtime`), a nie
+ścieżki idące połączeniem właściciela. Podpisałem tamten opis, opierając się na macierzy RLS zamiast
+na własności sprawdzonej na produkcji. Weryfikacja produkcji 2026-07-26 wypadła **korzystnie**
+(aplikacja faktycznie łączy się rolą `app_runtime`, `NOBYPASSRLS`), ale prostuję mimo korzystnego
+wyniku: rejestr ma opisywać środki takimi, jakie są, również wtedy, gdy prawda jest po naszej
+stronie. Pełny ślad ustalenia faktu i klasyfikacja:
+`../../../docs/audyty/2026-07-26-rls-bypassrls-prod.md` (v0.2). Zmiana **policy-only** — żaden kod,
+hook ani migracja nie ruszone; wpis #3 co do zakresu danych, podstawy prawnej, retencji i
+minimalizacji **bez zmian**.
 
 **Podstawa istnienia tego pliku:** decyzja Ryana (CRCO) w domenie ryzyka/RODO — akt **wewnętrzny,
 odwracalny, bez wydatku, niewychodzący na zewnątrz, spoza plików rządzenia** (CLAUDE.md §5, stała
@@ -72,11 +86,39 @@ Vercel) — rejestr sub-procesorów prowadzony osobno, poza zakresem tego wpisu.
 Art. 17 (usunięcie): `student_id ON DELETE CASCADE` na obu tabelach — kasowanie konta czyści profil
 automatycznie.
 
-**Środki bezpieczeństwa.** RLS ENABLE+FORCE na obu tabelach; `review_states` grant TYLKO SELECT dla
-studenta (`student_sees_own` przez `app.current_user_id`), zapisy owner-side; `review_logs` bez
-grantów ról aplikacyjnych; CHECK defense-in-depth (zakresy rating/difficulty/stability/liczniki);
-flaga OFF do świadomego zapłonu. Audyt na kodzie: rls-matrix v0.30 (sign-off Ryana 2026-07-25,
-0 KRYTYCZNYCH / 0 WAŻNYCH).
+**Środki bezpieczeństwa** *(sprostowane w v0.2 — patrz changelog; poprzednie brzmienie sugerowało
+egzekucję szerszą niż faktyczna)*. Kontrola dostępu do obu tabel opiera się na trzech środkach,
+wymienionych w kolejności, w jakiej działają:
+
+1. **Uprawnienia roli (deny-by-default).** `review_states` — `GRANT` wyłącznie na `SELECT` dla
+   `app_student`, zapisy po stronie serwera; `review_logs` — **zero grantów** dla ról aplikacyjnych
+   (`REVOKE ALL` dla `app_student` i `app_faculty`). `app_faculty` nie ma dostępu do żadnej z tabel.
+   To środek najmocniejszy, bo działa niezależnie od poprawności zapytań.
+2. **Filtr w zapytaniu (warstwa aplikacji).** Każde zapytanie na danych studenta wyprowadza
+   tożsamość z sesji i filtruje jawnym warunkiem `WHERE`. **Na ścieżkach idących połączeniem
+   właściciela bazy jest to środek jedyny** — patrz zastrzeżenie niżej.
+3. **RLS ENABLE+FORCE + polityka `student_sees_own`** (przez `app.current_user_id`). Egzekwowane
+   **dla połączeń rolą wykonawczą `app_runtime`** (`NOBYPASSRLS`), którą aplikacja nawiązuje
+   połączenie z bazą — zweryfikowane na produkcji 2026-07-26.
+
+> **Zastrzeżenie co do zasięgu środka 3 (jawnie, bo rejestr nie ma obiecywać więcej, niż daje).**
+> `FORCE ROW LEVEL SECURITY` **nie** wiąże połączeń nawiązanych rolą właściciela bazy
+> (`neondb_owner`): migracja `0012` zakłada politykę `owner_passthrough … USING (true)`, która
+> przepuszcza właściciela bezwarunkowo (decyzja świadoma — ADR-005). Część tras serwerowych łączy
+> się właśnie tak (wzorzec „zapis owner-side"). Dla tych ścieżek obowiązują środki 1 i 2, a RLS
+> **nie** stanowi dodatkowej siatki. Środek 3 jest realną drugą warstwą tam, gdzie kod przechodzi
+> przez `withTenantContext`.
+
+Dodatkowo: ograniczenia `CHECK` na zakresach (rating/difficulty/stability/liczniki) jako kontrola
+poprawności danych; flaga funkcji domyślnie wyłączona do świadomego zapłonu.
+
+**Weryfikacja i jej ograniczenie (art. 32 ust. 1 lit. d).** Audyt na kodzie: rls-matrix v0.30
+(sign-off Ryana 2026-07-25, 0 KRYTYCZNYCH / 0 WAŻNYCH). Tożsamość roli, którą aplikacja łączy się
+z bazą, potwierdzona **jednorazowo** 2026-07-26 (`docs/audyty/2026-07-26-rls-bypassrls-prod.md`).
+**Nie mamy dziś kontroli ciągłej tej własności** — strażnik `k3-validate` sprawdza atrybuty roli w
+izolacji, nie tożsamość połączenia w czasie żądania. Uzupełnienie (krok D2 wskazanego audytu) jest
+**warunkiem przed pierwszą realną rejestracją studenta**, obok klauzuli informacyjnej z art. 13
+(E-1).
 
 **Minimalizacja (art. 5 ust. 1 lit. c) — POTWIERDZONA.** Kolumny ograniczone do parametrów silnika
 i ocen; **zero treści wolnej**, **zero PII bezpośredniego**, brak wtórnej telemetrii (nie ma `ip`,

@@ -18,11 +18,20 @@
 
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { isDedicatedTestDbUrl } from "../assert-test-db";
 import type { AtomModuleContent } from "../content-curriculum-atoms";
 import { type Ladder, runCurriculumIngest } from "../ingest-curriculum";
 
+// ⚠ BRAMKA POMIJANIA — ZAOSTRZONA (dług C1 z przeglądu Leo, 1E.7 L2).
+// Poprzedni warunek (regexp na dowolny lokalny host i port) przepuszczał bazę
+// DEWELOPERSKĄ: `../ingest-curriculum` ładuje przy imporcie `.env.local`, więc
+// przy gołym `pnpm test:integration` (bez `. ./.env.test`) DATABASE_URL wskazywał
+// na localhost:5432/skillbridge i ta suita — kasująca i przepisująca wiersze —
+// pisała do bazy dewelopera, wyglądając przy tym na pominiętą. Teraz wymagamy
+// JAWNIE bazy testowej (nazwa `test` / sufiks `_test`), wspólnym predykatem
+// z tools/assert-test-db.ts. Nazwy w CI i w docker-compose.test.yml: skillbridge_test.
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
-const isLocalTestDb = /@(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//.test(DATABASE_URL);
+const isLocalTestDb = isDedicatedTestDbUrl(DATABASE_URL);
 const d = isLocalTestDb ? describe : describe.skip;
 
 const PATH = "t-1e2-ingest-path";

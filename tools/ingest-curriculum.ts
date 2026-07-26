@@ -414,6 +414,13 @@ export async function runCurriculumIngest(
 	ladder: Ladder,
 	contents: AtomModuleContent[],
 ): Promise<IngestStats> {
+	// STRAŻNIK BAZY STOI TU, nie tylko w main() (dług C1 z przeglądu Leo, 1E.7 L2):
+	// to ta funkcja otwiera Pool i pisze, a woła ją także test integracyjny —
+	// guard wyłącznie w CLI zostawiał realną ścieżkę zapisu bez ochrony.
+	// main() woła go powtórnie (fail-fast przed czytaniem plików) — guard jest
+	// idempotentny i bez efektów ubocznych, więc podwójne wywołanie nic nie kosztuje.
+	assertTestDb(databaseUrl, "DATABASE_URL");
+
 	// Walidacja treści PRZED dotknięciem bazy (plik niekontraktowy nie wejdzie).
 	const problems = validateContentSet(contents);
 	const ladderSlugs = new Set(ladder.modules.map((m) => m.slug));
