@@ -1,5 +1,10 @@
 # Decyzje produktowe 1E.7 · placement diagnozy w curriculum — mapa tagów, próg, reguła prefiksowa
 
+**Changelog v0.3 → v0.4 (2026-07-27, Sophia):** dwa rozstrzygnięcia po znaleziskach Ryana z L3. **Rozstrzygnięcia v0.1–v0.3 bez zmian; jedno uzupełnienie reguły z DECYZJI 5.**
+1. **`blockingHoleSlug` na wierszu NIE wystarcza — nośnikiem drugiej strony asymetrii jest zdarzenie, nie kolumna.** Ryan ma rację, zweryfikowałam na kodzie (`placement-service.ts:218-220`: przy zerze odblokowań serwis wychodzi z `written: 0`, a policzony `outcome` razem z `blockingHoleSlug` jest odrzucany). **Pole dołożone w v0.3, żeby zobaczyć niedoszacowanie, było nieobecne dokładnie w najczystszym przypadku niedoszacowania** — sesji, w której nie otworzyło się nic. To był mój błąd projektowy, gorszy niż brak pola, bo dawał pozór pokrycia. Rozstrzygnięcie i wymagania w DECYZJI 2, podsekcja „Nośnik drugiej strony asymetrii".
+2. **§6c — moduł już zaliczony: POMIJAMY (bez wiersza, bez komunikatu).** Potwierdzam kierunek Ryana, z argumentem produktowym mocniejszym niż dane: powiedzenie „diagnoza otworzyła ci moduł X" o module, który student **sam zdał egzaminem na ≈90%**, przypisuje produktowi jego pracę i miesza dwie waluty, których cała hybryda pilnuje osobno.
+3. **Uzupełnienie DECYZJI 5 (nowe, niezgłoszone — do rozstrzygnięcia przed zapłonem):** moduł **zaliczony** musi **spełniać** warunek ciągłości prefiksu, a nie go łamać. Dziś reguła L2 nie wie o zaliczeniach (`computePlacement` bierze wyłącznie diagnozę), więc słaby instrument może unieważnić mocny. Szczegóły w §6c.
+
 **Changelog v0.2 → v0.3 (2026-07-26, Sophia):** dwa rozstrzygnięcia wymagane przed L6 (pytania Maxa z budowy L2) + potwierdzenie rozjazdu punktu wejścia. **Rozstrzygnięcia v0.1/v0.2 bez zmian.**
 1. **DECYZJA 2 — trzecia gałąź trybu wsparcia:** moduł wciągnięty prefiksem, bez własnego pomiaru (`f2-python-2`, `f3-dane-python`) → **pełne wsparcie**, ale z **odrębnym powodem** w zapisie, nie zlany z poziomem 3. Max słusznie zostawił `null` zamiast podstawiać domyślną wartość po cichu — reguła nie miała tej gałęzi. Nowe mikrocopy w §8 (dotychczasowy tekst dla modułu granicznego mówi o „jednym trafionym pytaniu" — dla F2/F3 byłby **nieprawdą**, bo o F2 nie padło żadne pytanie).
 2. **DECYZJA 2 — miernik dostaje wyliczone pola i uzasadnienie per pole** (wymóg twardy dla L3). Sama lista odblokowanych slugów **kasuje możliwość weryfikacji progu na zawsze**. Dołożone `blockingHoleSlug` jako jedyne źródło danych o **drugiej stronie asymetrii** — dotąd miernik mierzył wyłącznie przestrzelenie w górę, czyli połowę problemu, na którym zbudowałam DECYZJĘ 2.
@@ -11,10 +16,11 @@
 2. **DECYZJA 5, tabela przypadków — „5 tagów" → 6** (`ds-python`, `ds-pandas`, `ds-eda`, `ds-sql`, `ds-uczenie-maszynowe`, `ds-llm`). Liczba w tym wierszu (≈3 na 10 milionów) była policzona dla sześciu i zostaje bez zmian — błędny był wyłącznie licznik w opisie.
 3. **DECYZJA 2 — własna korekta tej samej rodziny, niezgłoszona:** pisałam, że odblokowanie `m-ml` wymaga **czterech** pomiarów (≈4 na 100 000). Z warunku braku dziury (reguła 3) wynika, że `m-ml` musi zakwalifikować się także **na własnym tagu** — czyli **pięć** pomiarów, ≈3 na milion. Ochrona jest o rząd wielkości silniejsza, niż deklarowałam; kierunek wniosku bez zmian.
 
-**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-26 (v0.1–v0.3) · **Status:** v0.3 — WIĄŻĄCY KONTRAKT produktowy dla slice'ów L1–L6 funkcji 1E.7 (Ethan — backend, Jack — UI, Mila — ekrany wyniku diagnozy)
+**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-26 (v0.1–v0.3) · 2026-07-27 (v0.4) · **Status:** v0.4 — WIĄŻĄCY KONTRAKT produktowy dla slice'ów L1–L6 funkcji 1E.7 (Ethan — backend, Jack — UI, Mila — ekrany wyniku diagnozy)
 **Stan realizacji (2026-07-26):**
 - **L1** (Max) — most danych `curriculum_modules.diagnostic_concept_id`, migracja **0044**, kontrakt ingestu na literówki w slugach; mapa tagów zweryfikowana w kodzie, zero rozbieżności. **Kolejność wdrożenia na prodzie (strażnik ingestu): migracja 0044 → ingest banku rynkowego → ingest curriculum.** Odwrotna kolejność przerywa ingest na pierwszym tagu — bezpiecznie, ale głośno.
 - **L2** (Max) — reguła jako czysta funkcja, bez bazy. Równoważność z brzmieniem deklaratywnym z DECYZJI 5 **udowodniona**, nie zadeklarowana: test porównuje implementację z niezależną wersją reguł na **wszystkich 15 625 kształtach wyniku diagnozy**, dla progów 3 i 4. Sprostowanie z v0.2 (pięć pomiarów chroni `m-ml`) jest w kodzie.
+- **L3** (Max) — `curriculum_placements` z pełnym werdyktem per moduł (`level`, `threshold` w chwili zapisu, `reason`, `support_mode`, `blocking_hole_slug`), wiersz niezmienny (wyzwalacz + `UNIQUE` + `ON CONFLICT DO NOTHING`), nienadpisywany przy ponownej diagnozie. Trzecia gałąź trybu wsparcia (`carried_untagged` → pełne wsparcie, powód odrębny) egzekwowana ograniczeniem bazy. **Dwa uzupełnienia z v0.4:** zdarzenie dla sesji bez odblokowań (DECYZJA 2, „Nośnik drugiej strony asymetrii") + pominięcie modułu zaliczonego (§6c).
 - **Warunek ważności progu ≥3 (brama A2): SPEŁNIONY** — 1E.3 mastery gate live na prodzie od 2026-07-25 (`FLAG_MASTERY_GATE=1`), „test out" jako droga naprawcza istnieje realnie.
 **Zleca:** Oliver (COO) — rozstrzygnięcia produktowe blokujące L1/L2.
 **Rama nadrzędna:** decyzja Darka 2026-07-26 (sign-off) — **wariant hybrydowy: diagnoza OTWIERA, egzamin ZALICZA.** Wynik diagnozy ≥ progu → moduł **odblokowany** (zdjęty prerekwizyt), NIE zaliczony. Zaliczenie bez przechodzenia modułu = egzamin modułowy (silnik 1E.3, próg ≈90%) → `verified_by_method='test_out'`.
@@ -111,13 +117,31 @@ Pola i uzasadnienie każdego (reguła L2 niesie już komplet):
 | `level` | Rdzeń pomiaru: oblewalność pierwszego egzaminu modułu dla odblokowanych na 3 kontra na 4. Bez tego nie ma czego z czym porównać. |
 | `reason` (własny pomiar / wciągnięty prefiksem) | Rozdziela DECYZJĘ 2 od DECYZJI 5 — dwie różne naprawy (patrz tabela trybów wsparcia wyżej). |
 | `threshold` obowiązujący w chwili zapisu | Gdy podniosę próg do 4, rekordy sprzed zmiany bez tego pola stają się nieczytelne, a porównanie „przed/po" niemożliwe. To także wymóg audytowalności z §7 pkt 2. |
-| `blockingHoleSlug` | **Jedyne źródło danych o drugiej stronie asymetrii.** Student niedoszacowany przechodzi moduł, którego nie potrzebował, i nic nie zgłasza — ten błąd jest niewidoczny we wszystkich pozostałych polach. `blockingHoleSlug` pokazuje, który moduł najczęściej ucina prefiks; jeśli to zawsze `m-eda` u ludzi z wysokim SQL, problem jest w kolejności drabiny albo w banku EDA, nie w progu. |
+| `blockingHoleSlug` | Który moduł uciął prefiks tej sesji. **Uwaga: na wierszu pokrywa wyłącznie sesje, w których coś się otworzyło** — pełny nośnik niżej. |
 | `supportMode` | Pełne wsparcie przy poziomie 3 to **moja** mitygacja ryzyka. Jeśli nie zmienia wyników, mam ją wycofać zamiast utrzymywać. |
 | id sesji diagnozy + znacznik czasu | Audytowalność (§7 pkt 2) i powiązanie werdyktu z konkretnym pomiarem. |
 
 **Zapis w chwili odblokowania, nigdy przeliczany wstecz** (§7 pkt 2) i **nienadpisywany przy ponownej diagnozie** — przy monotoniczności z §6b druga diagnoza dokłada odblokowania, ale **nie wolno jej przepisać powodu, dla którego moduł otworzył się za pierwszym razem**; inaczej miernik gubi pierwotny poziom i mierzy skutek własnej aktualizacji.
 
 **Próg alarmowy: jeśli studenci odblokowani na poziomie 3 oblewają pierwsze podejście istotnie częściej niż odblokowani na poziomie 4 — podnoszę próg do 4.** Bez tego zapisu „≥3" pozostaje przekonaniem, a nie decyzją opartą na danych; przy zerze studentów mam dziś wyłącznie przekonanie i arytmetykę, i jest to jedyny sposób, żeby to zmienić.
+
+### Nośnik drugiej strony asymetrii — zdarzenie, nie kolumna [rozstrzygnięte v0.4]
+
+**Mój błąd z v0.3:** napisałam, że `blockingHoleSlug` daje mi drugą stronę asymetrii. Nie daje — pole żyje na wierszu, a wiersz powstaje wyłącznie wtedy, gdy coś się otworzyło (`placement-service.ts:218-220`: przy zerze odblokowań `written: 0`, `outcome` odrzucony). **Sesja, w której placement nie otworzył nic, to najczystszy przypadek niedoszacowania, jaki istnieje — i właśnie ona nie zostawiała śladu.** Pole sugerowało pokrycie, którego nie było; to gorsze niż jego brak, bo uśpiłoby czujność przy pierwszym przeglądzie danych z pilotażu.
+
+**Rozstrzygnięcie: przyjmuję rekomendację Ryana — nośnikiem jest zdarzenie w `audit_log`, nie dodatkowy wiersz w `curriculum_placements`.** Uzasadnienie mam własne, produktowe, i zbieżne z jego zasadą: tabela placementów jest **nośnikiem uprawnienia** — obowiązuje w niej niezmiennik „moduł otwarty ⟺ istnieje wiersz". Wpuszczenie do niej wiersza, który niczego nie otwiera, psuje jedyne zdanie, jakim tę tabelę da się opisać studentowi i audytorowi. Dokłada się do tego dowód z kodu: `blockingHoleSlug` jest tam opisany wprost jako „migawka wspólna dla całego zapisu" — czyli **fakt o sesji zduplikowany na wiersze o modułach**. Sam kod mówi, że to dana sesyjna; zdarzenie jest jej właściwym miejscem.
+
+**[WYMÓG — Ethan/Ryan] Zdarzenie powstaje przy KAŻDYM policzeniu placementu, także gdy nic się nie otworzyło.** To warunek nośny, nie preferencja: same zdarzenia „zero odblokowań" bez zdarzeń „coś się otworzyło" **nie mają mianownika** — nie odróżnię „placement nie odpala się nigdy" od „placement odpala się zwykle, ale ta grupa wypadła słabo". Jedno zdarzenie na diagnozę to wolumen pomijalny.
+
+Zdarzenie ma pozwolić odpowiedzieć na trzy pytania **bez łączenia z czymkolwiek innym**:
+
+1. **Jak często placement w ogóle odpala?** → liczba odblokowanych modułów (w tym zero).
+2. **Gdzie się zatrzymuje?** → `blockingHoleSlug` + obowiązujący `threshold`.
+3. **Czy student był daleko, czy o włos?** → poziom na koncepcie blokującym. Poziom 1 znaczy „faktycznie nie umie" i potwierdza regułę; **ściana poziomów 2 na tym samym module znaczy, że nasze pytanie o trudności 2 jest za trudne** — wtedy naprawiam bank, a nie próg. Bez tej jednej liczby oba przypadki wyglądają identycznie.
+
+Kształt zdarzenia i minimalizacja danych — Ryan (konsekwencję RODO bierze na siebie). Poziom kompetencji nie jest nową kategorią danych: leży już w `result_json` tej samej sesji.
+
+**Kolumna `blockingHoleSlug` na wierszach:** zostaje albo znika — decyzja Ethana/Maxa, jest już zbudowana i w review. Warunek jedyny: **po wprowadzeniu zdarzenia nie wolno jej cytować jako pokrycia niedoszacowania.** Źródłem prawdy dla tej analizy jest zdarzenie.
 
 ---
 
@@ -162,7 +186,7 @@ Reguła Olivera („odblokowujemy wyłącznie ciągły prefiks drabiny, żadnych
 
 Drabina jest liniowa i ponumerowana: 1 `l0-start` · 2 `f1-python-1` · 3 `f2-python-2` · 4 `f3-dane-python` · 5 `m-pandas` · 6 `m-eda` · 7 `m-sql` · 8 `m-ml` · 9 `m-llm`.
 
-1. **Moduł kwalifikuje się** ⟺ ma tag diagnostyczny (nie `NULL`) **i** `result_json.concepts[tag].level ≥ 3`. Brak pomiaru, `uncovered`, brak sesji — nie kwalifikuje się.
+1. **Moduł kwalifikuje się** ⟺ ma tag diagnostyczny (nie `NULL`) **i** `result_json.concepts[tag].level ≥ 3`. Brak pomiaru, `uncovered`, brak sesji — nie kwalifikuje się. **Wyjątek [v0.4]:** moduł **zaliczony** (`exam`/`test_out`) liczy się jako spełniający próg niezależnie od diagnozy — §6c.
 2. Niech **k** = pozycja **najgłębszego kwalifikującego się** modułu. Brak takiego → **nic nie odblokowane**, student startuje od `l0-start`.
 3. **Warunek braku dziury:** jeśli którykolwiek **otagowany** moduł na pozycjach 2…k się nie kwalifikuje, **k cofa się** na pozycję tuż przed pierwszym takim modułem. Powtarzaj, aż prefiks będzie wolny od dziur.
 4. **Odblokowane = moduły na pozycjach 2…k.** Moduły z `NULL` leżące wewnątrz prefiksu jadą z nim.
@@ -188,7 +212,17 @@ Drabina jest liniowa i ponumerowana: 1 `l0-start` · 2 `f1-python-1` · 3 `f2-py
 
 **b) Ponowna diagnoza (re-onboarding) → odblokowania są monotoniczne: nigdy nie odbieramy tego, co już otwarte.** Zabranie dostępu do modułu, w którym student może być w połowie, to kara za skorzystanie z naszej funkcji. Nowy wynik liczymy i **sumujemy** z dotychczasowym zbiorem odblokowań. **Warunek nośny:** to jest bezpieczne **wyłącznie dopóki nie ma przycisku „powtórz test"** (spec §8 pkt 3 — powtórki tylko przy re-onboardingu). Powtarzalna diagnoza plus monotoniczność to maszyna do zbierania odblokowań po ≈8% za podejście. **Jeśli powtórki kiedykolwiek wejdą do UI — ta decyzja wymaga rewizji** (wtedy: licz wyłącznie z najnowszej sesji). Zapisuję to jako jawną zależność, nie jako założenie w tle.
 
-**c) Moduł już zaliczony (`exam` / `test_out`) → placement go nie dotyka.** Zaliczenie jest mocniejszym dowodem niż odblokowanie; nic go nie degraduje.
+**c) Moduł już zaliczony (`exam` / `test_out`) → placement go POMIJA: bez wiersza, bez komunikatu, bez zmiany statusu.** [doprecyzowane v0.4 — w v0.1 było „nie dotyka", co dało się przeczytać jako „nie zmienia statusu, ale zapisuje"; L3 zapisywał wiersz.] Potwierdzam kierunek Ryana (warunek W-6). Trzy powody, dwa poza miernikiem:
+
+1. **To jest tekst do studenta, nie tylko dane.** Pola `reason`, `supportMode` i `blockingHoleSlug` są wprost treścią mikrocopy z §8. Wiersz dla modułu zdanego egzaminem produkuje komunikat „diagnoza otworzyła ci moduł **{X}**" o module, który student **sam zdał na ≈90%**. To przypisanie produktowi cudzej pracy — i trafia w osobę, która właśnie zrobiła najtrudniejszą rzecz, jaką platforma oferuje. Nie ma gorszego adresata takiego zdania.
+2. **Miesza dwie waluty, które hybryda rozdziela.** Cała rama brzmi „diagnoza OTWIERA, egzamin ZALICZA". Opisanie zaliczenia językiem otwarcia degraduje mocny dowód (egzamin, ≈90%, 15–20 pytań) do słownika słabego (dwa pytania). Raz zrobione, kasuje różnicę, którą tłumaczymy studentowi w każdym innym miejscu.
+3. **Niezmiennik nośnika.** „Moduł otwarty ⟺ istnieje wiersz" — moduł zaliczony nie potrzebuje uprawnienia do wejścia, więc wiersza nie ma. Wariant „zapisz z flagą no-op" słusznie odrzucony: wpuszcza do tabeli nośnikowej wiersze, które nośnikami nie są, i rozjeżdża uzasadnienie retencji.
+
+**Co student widzi na jego temat w komunikacie o placemencie: nic.** Moduł zaliczony pokazuje na drabinie swój własny stan („zaliczony — egzamin"), niezależny od diagnozy i wcześniejszy od niej.
+
+**[NOWE, do rozstrzygnięcia przed zapłonem — uzupełnienie DECYZJI 5] Moduł zaliczony SPEŁNIA warunek ciągłości prefiksu, nigdy go nie łamie.** Reguła L2 zna wyłącznie wynik diagnozy (`computePlacement` bierze `concepts` + `uncovered`), więc dziś student, który zdał `m-eda` egzaminem, a potem przy re-onboardingu wypadł na `ds-eda` słabo, dostaje **dziurę na module, który ma zaliczony** — i prefiks ucina się przed wszystkim powyżej. To słaby instrument unieważniający mocny, czyli odwrotność zasady, na której stoi cała hybryda. **Reguła produktowa: moduł ze statusem zaliczonym traktujemy jak spełniający próg, niezależnie od poziomu z diagnozy.**
+
+Sposób realizacji zostawiam Ethanowi/Maxowi — funkcja może zostać czysta, jeśli dostanie zbiór modułów zaliczonych jako wejście (tak jak dostaje próg). **Pilność:** nie blokuje L4/L5; zapala się dopiero przy diagnozie **po** zaliczeniu jakiegoś modułu, czyli w ścieżce re-onboardingu — ale to jest dokładnie ta ścieżka, w której diagnoza wraca do studenta z historią. Proponuję traktować jak W-7 i domknąć przed zapłonem; ostateczną ocenę pilności zostawiam Tobie i Ryanowi.
 
 **d) Student bez ukończonej diagnozy → zero odblokowań, start od `l0-start`.** Bez zmian wobec D8. Sesja porzucona lub niedokończona (trajektorie krótsze niż 2 kroki — `levelFromTrajectory` zwraca `null`) traktowana jak brak pomiaru dla tych konceptów, nie jak poziom 1.
 
@@ -272,7 +306,10 @@ Uzupełniająco: wariant hybrydowy **wzmacnia** zgodność z §7 wobec pierwotne
 | Reguła prefiksowa | kolejność `modules[]` w manifeście drabiny | Nie — łańcuch liniowy istnieje (D10, manifest) |
 | „Test out" jako droga naprawcza przy błędzie w dół | egzamin modułowy 1E.3, próg ≈90% | **SPEŁNIONE 2026-07-25** — 1E.3 live na prodzie (`FLAG_MASTERY_GATE=1`). Warunek postawiony w v0.1 („kolejność 1E.3 → 1E.7 jest warunkiem ważności progu ≥3") jest domknięty: droga naprawcza istnieje realnie, nie tylko w projekcie. |
 | Tryb wsparcia dla modułu wciągniętego prefiksem | trzecia gałąź tabeli trybów (DECYZJA 2) | Nie — gałąź dopisana w v0.3, `null` nie jest już stanem osiągalnym dla modułu odblokowanego |
-| Miernik progu | pola werdyktu zapisywane w L3 | **Zależność jawna:** bez pełnego werdyktu per moduł próg ≥3 pozostaje nieweryfikowalny. Wymóg twardy dla L3, nie życzenie. |
+| Miernik progu — przestrzelenie w górę | pola werdyktu w `curriculum_placements` (L3) | Zbudowane. Pokrywa sesje, w których coś się otworzyło |
+| Miernik progu — niedoszacowanie | **zdarzenie przy każdym policzeniu placementu** (DECYZJA 2) | **Zależność jawna, niedomknięta:** dopóki zdarzenia nie ma, sesje bez odblokowań nie zostawiają śladu i druga strona asymetrii jest niemierzalna. `blocking_hole_slug` na wierszu **nie** wypełnia tego warunku |
+| Pominięcie modułu zaliczonego (§6c) | status `exam`/`test_out` w `curriculum_module_progress` | Nie — status istnieje i jest zapisywany przez 1E.3 (live od 2026-07-25) |
+| Ciągłość prefiksu przy module zaliczonym (§6c, W-7) | wiedza reguły o zaliczeniach | **Zależność jawna, niedomknięta:** `computePlacement` bierze dziś wyłącznie diagnozę. Do domknięcia przed zapłonem |
 | Tryb wsparcia przy poziomie 3 | C7/C8 z D8 (wsparcie od fazy completion) | Nie — mechanizm zaprojektowany w ADR, nie wymyślony tutaj |
 | Mikrocopy `uncovered` | `uncovered` w `result_json` | Nie — degradacja zaimplementowana w `plan.ts` |
 | Monotoniczność odblokowań | brak przycisku powtórki (spec §8 pkt 3) | **Zależność jawna, opisana w §6b** — nie ukryta |

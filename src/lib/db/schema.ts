@@ -2156,3 +2156,143 @@ export const reviewLogsRelations = relations(reviewLogs, ({ one }) => ({
 		references: [questionItems.id],
 	}),
 }));
+
+// ============================================================================
+// 1E.7 (SLICE L3) — TRWAŁY NOŚNIK ODBLOKOWANIA (migracja 0045).
+//
+// Wiersz = „diagnoza X otworzyła studentowi moduł Y, z tego powodu, przy tym
+// progu". Wyłącznie moduły FAKTYCZNIE OTWARTE (minimalizacja art. 5 ust. 1
+// lit. c — nie utrwalamy tego, na czym student wypadł słabo; to zostaje
+// w assessment_sessions.result_json, osobna czynność przetwarzania).
+//
+// ⚠ NIE MYLIĆ z `placement_events` (0033) — tamto to placement ZAWODOWY
+// (staż/praca, K-PII, zgoda RODO). Wspólne słowo, dwie różne rzeczy: inna
+// klasa danych, inna podstawa prawna, inna retencja. RoPA wpis #5 ma przy #4
+// ostrzeżenie o tej kolizji nazw.
+//
+// ── DLACZEGO TRWAŁY NOŚNIK, A NIE LICZENIE W LOCIE ────────────────────────
+// Wymóg produktowy Sophii (v0.3 §7 pkt 2 + DECYZJA 2): liczenie placementu
+// z `result_json` przy każdym żądaniu sprawia, że zmiana mapy tagów albo progu
+// PO CICHU ODBIERA studentom dostęp, który już dostali, a miernik trafności
+// progu traci przesłankę (danych nie da się odtworzyć wstecz — ten sam
+// result_json będzie później czytany inną mapą). Dlatego zapisujemy PEŁNY
+// WERDYKT (level/threshold/reason/support_mode/blocking_hole_slug), nie samą
+// listę slugów, i zapisujemy go W CHWILI ODBLOKOWANIA.
+//
+// ── NIEZMIENNOŚĆ: APPEND-ONLY WZGLĘDEM UPDATE, ALE **NIE** DELETE ─────────
+// UNIQUE(student_id, module_id) + zapis ON CONFLICT DO NOTHING + wyzwalacz
+// odrzucający UPDATE (migracja 0045). Druga diagnoza DOKŁADA wiersze i NIGDY
+// nie przepisuje powodu pierwszego otwarcia (monotoniczność §6b; inaczej
+// miernik mierzy skutek własnej aktualizacji).
+// ⚠ Wyzwalacz jest `BEFORE UPDATE`, NIGDY `BEFORE UPDATE OR DELETE` — wariant
+// z DELETE (wzorzec audit_log_append_only, 0008/0010) łamie art. 17 RODO,
+// bo odpala się także przy kasowaniu KASKADOWYM: `DELETE FROM students`
+// kończyłby się wyjątkiem i konta nie dałoby się usunąć. Sprawdzone
+// wykonaniem przez Ryana (znalezisko P-2 bramki projektowej 1E.7 L3).
+// Wiersz jest NOŚNIKIEM UPRAWNIENIA (moduł otwarty ⟺ istnieje wiersz), nie
+// śladem — stąd retencja „czas trwania konta", nie 12 miesięcy.
+//
+// RLS (0045, rls-matrix v0.32 wiersz #28): klasa review_states — GRANT SELECT
+// dla app_student + FORCE RLS + student_sees_own + owner_passthrough;
+// app_faculty REVOKE ALL (wykładowca nie widzi placementu nikogo, także
+// zbiorczo — warunek nośny A22-3 oceny art. 22). Zapisy wyłącznie owner-side.
+// ============================================================================
+
+export const curriculumPlacements = pgTable(
+	"curriculum_placements",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		// cascade: odblokowanie nie przeżywa modułu, do którego się odnosi
+		// (precedens verified_competencies.submission_id).
+		moduleId: uuid("module_id")
+			.notNull()
+			.references(() => curriculumModules.id, { onDelete: "cascade" }),
+		// cascade: ani sesji pomiaru, z której powstało — werdykt bez pomiaru
+		// przestaje być audytowalny, więc nie ma po co żyć dalej.
+		assessmentSessionId: uuid("assessment_session_id")
+			.notNull()
+			.references(() => assessmentSessions.id, { onDelete: "cascade" }),
+		// MIGAWKA sluga konceptu tagującego moduł (nie FK): tożsamość tagu
+		// w chwili decyzji. NULL ⟺ reason='carried_untagged' (moduł wciągnięty
+		// prefiksem, bez własnego pomiaru) — CHECK kształtu niżej.
+		conceptSlug: text("concept_slug"),
+		// Poziom z diagnozy (1–4) dla tagu; NULL przy module bez własnego pomiaru.
+		level: smallint("level"),
+		// Próg OBOWIĄZUJĄCY W CHWILI ZAPISU — nigdy odczytywany z konfiguracji
+		// przy odczycie. Podniesienie progu do 4 nie może przepisać historii,
+		// inaczej porównanie „przed/po" (miernik DECYZJI 2) jest niemożliwe.
+		threshold: smallint("threshold").notNull(),
+		// Powód rozłączny: 'qualified' (własny pomiar ≥ próg) / 'carried_untagged'
+		// (wciągnięty prefiksem). Rozdziela DECYZJĘ 2 od DECYZJI 5 — dwie różne
+		// naprawy przy dwóch różnych awariach progu.
+		reason: text("reason").notNull(),
+		// 'full' / 'fading' (DECYZJA 2 v0.3). Dla wiersza odblokowania NIGDY NULL:
+		// moduł wciągnięty prefiksem dostaje 'full' (dowód wyłącznie pośredni).
+		supportMode: text("support_mode").notNull(),
+		// Migawka modułu, który uciął prefiks (reguła 3) — JEDYNE źródło danych
+		// o „studencie niedoszacowanym", który przechodzi materiał, którego nie
+		// potrzebował, i nic nie zgłasza. NULL = prefiks nie został zatrzymany
+		// dziurą. Pole bez funkcji operacyjnej (żyje dla miernika) — przegląd
+		// celowany po rozstrzygnięciu progu ≥3 (docs/data/retention.md).
+		blockingHoleSlug: text("blocking_hole_slug"),
+		unlockedAt: timestamp("unlocked_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		// Fundament niezmienności: druga diagnoza trafia w ON CONFLICT DO NOTHING.
+		uniqueIndex("uq_curriculum_placements_student_module").on(table.studentId, table.moduleId),
+		index("idx_curriculum_placements_tenant_id").on(table.tenantId),
+		// Indeksy pod kaskadę FK (kasowanie modułu/sesji nie skanuje tabeli)
+		// i pod zapytania miernika „wszystkie odblokowania z tej sesji".
+		index("idx_curriculum_placements_module_id").on(table.moduleId),
+		index("idx_curriculum_placements_session_id").on(table.assessmentSessionId),
+		check(
+			"curriculum_placements_reason_values",
+			sql`${table.reason} IN ('qualified','carried_untagged')`,
+		),
+		check(
+			"curriculum_placements_support_mode_values",
+			sql`${table.supportMode} IN ('full','fading')`,
+		),
+		check("curriculum_placements_threshold_range", sql`${table.threshold} BETWEEN 1 AND 4`),
+		check(
+			"curriculum_placements_level_range",
+			sql`${table.level} IS NULL OR ${table.level} BETWEEN 1 AND 4`,
+		),
+		// CHECK na KSZTAŁCIE werdyktu, nie tylko na zakresach (Ryan, środek 5):
+		// dwa powody odblokowania, które miernik ma rozróżniać, nie dadzą się zlać
+		// po cichu. 'qualified' MUSI mieć komplet tag+poziom i poziom ≥ próg;
+		// 'carried_untagged' MUSI mieć ICH BRAK (moduł bez własnego pomiaru).
+		check(
+			"curriculum_placements_verdict_shape",
+			sql`(${table.reason} = 'qualified'
+					AND ${table.conceptSlug} IS NOT NULL
+					AND ${table.level} IS NOT NULL
+					AND ${table.level} >= ${table.threshold})
+				OR (${table.reason} = 'carried_untagged'
+					AND ${table.conceptSlug} IS NULL
+					AND ${table.level} IS NULL
+					AND ${table.supportMode} = 'full')`,
+		),
+	],
+);
+
+export const curriculumPlacementsRelations = relations(curriculumPlacements, ({ one }) => ({
+	student: one(students, {
+		fields: [curriculumPlacements.studentId],
+		references: [students.id],
+	}),
+	module: one(curriculumModules, {
+		fields: [curriculumPlacements.moduleId],
+		references: [curriculumModules.id],
+	}),
+	assessmentSession: one(assessmentSessions, {
+		fields: [curriculumPlacements.assessmentSessionId],
+		references: [assessmentSessions.id],
+	}),
+}));

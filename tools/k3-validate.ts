@@ -112,6 +112,17 @@ const TENANT_TABLES = [
 	// owner_passthrough. Obie tenant-owe (tenant_id).
 	"review_states",
 	"review_logs",
+	// 1E.7 (SLICE L3) — trwały nośnik odblokowania modułów diagnozą (migracja
+	// 0045). Dane studenta, wiersz per student × moduł, wyłącznie dla modułów
+	// FAKTYCZNIE OTWARTYCH. Klasa review_states: grant TYLKO SELECT dla
+	// app_student (zapisy owner-side hookiem po domknięciu diagnozy),
+	// app_faculty REVOKE ALL (warunek nośny A22-3 oceny art. 22 — wykładowca
+	// nie widzi placementu nikogo, także zbiorczo); ENABLE+FORCE +
+	// student_sees_own + owner_passthrough. APPEND-ONLY względem UPDATE
+	// (wyzwalacz curriculum_placements_no_update) — DELETE dozwolony, bo
+	// kasowanie idzie kaskadą art. 17 RODO. ⚠ NIE MYLIĆ z placement_events
+	// (0033, placement zawodowy — inna klasa danych i podstawa prawna).
+	"curriculum_placements",
 ];
 
 // Tabele K-PUB (katalog publiczny/referencyjny) — JAWNY WYJĄTEK RLS.
@@ -471,6 +482,43 @@ async function main() {
 				"12a. B5 R1 — app_faculty NIE ma grantu na project_reflections (deny-by-default)",
 				r12a.rows[0].c === 0,
 				`znaleziono ${r12a.rows[0].c} grantów faculty (oczekiwano 0)`,
+			);
+		}
+
+		// 12b. DENY-FACULTY dla tabel klasy „student SELECT / wykładowca ZERO"
+		// (nota L3-N1 Leo). Tabela z tej klasy wpada MIĘDZY DWIE LISTY tego pliku
+		// i przez to nie jest pilnowana przez nic:
+		//   • TENANT_TABLES (testy #3/#4/#10) sprawdza RLS/FORCE/backfill — ale
+		//     ani jednego GRANTU, więc nadanie wykładowcy SELECT przechodzi;
+		//   • #13a pilnuje zerowych grantów, ale WYŁĄCZNIE dla tabel DENY-both
+		//     (zero grantów dla OBU ról) — a te tabele mają grant dla app_student,
+		//     więc nie kwalifikują się na tamtą listę.
+		// Skutkiem luki `GRANT SELECT ON curriculum_placements TO app_faculty`
+		// przechodził k3 na ZIELONO (zmutowane wykonaniem, przegląd L3 Leo) — czyli
+		// narzędzie, którym walidujemy PRODUKCJĘ, przepuszczało nadanie wykładowcy
+		// odczytu placementu studenta. Waga: „skutek nie opuszcza ścieżki nauki"
+		// (A22-3) to warunek NOŚNY oceny art. 22 RODO Ryana, nie kosmetyka
+		// uprawnień — dotąd pilnował go wyłącznie test integracyjny (lokalny).
+		//
+		// ⚠ KAŻDA nowa tabela, na której app_student ma grant, a app_faculty NIE
+		// ma mieć żadnego — dopisz TUTAJ. Wpis w TENANT_TABLES tego NIE pokrywa.
+		// (project_reflections z tej samej klasy pilnuje test 12a — precedens
+		// proceduralny Ryana; nie dublujemy go tu, żeby nie mieć dwóch prawd.)
+		{
+			const denyFacultyTables = ["curriculum_placements"];
+			const r12b = await client.query(
+				`SELECT table_name, privilege_type
+				   FROM information_schema.role_table_grants
+				  WHERE grantee = 'app_faculty' AND table_name = ANY($1::text[])`,
+				[denyFacultyTables],
+			);
+			check(
+				`12b. 1E.7 L3 — app_faculty ma ZERO grantów na tabelach deny-faculty (${denyFacultyTables.join(", ")})`,
+				r12b.rowCount === 0,
+				r12b.rowCount === 0
+					? "0 grantów (oczekiwano 0)"
+					: `znaleziono granty: ${r12b.rows.map((r) => `${r.table_name}.${r.privilege_type}`).join(", ")} — ` +
+							"wykładowca NIE może czytać placementu studenta, także zbiorczo (warunek nośny A22-3)",
 			);
 		}
 
