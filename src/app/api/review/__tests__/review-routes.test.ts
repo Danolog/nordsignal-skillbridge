@@ -46,11 +46,18 @@ vi.mock("@/lib/review/review-questions", () => ({
 vi.mock("@/lib/rate-limit", () => ({
 	applyRateLimit: (...a: unknown[]) => h.mockApplyRateLimit(...a),
 	rateLimiters: { reviewQueue: {}, reviewAnswer: {}, reviewDaily: {} },
-	rateLimitResponse: () =>
-		new Response(JSON.stringify({ error: "Too many requests" }), {
-			status: 429,
-			headers: { "retry-after": "1" },
-		}),
+	// Wierny mock: przekazuje `scope` (2. arg) do body, jak prawdziwy rateLimitResponse
+	// (CF-2). Wywołanie bez scope → brak pola (parytet wstecznej zgodności).
+	rateLimitResponse: (_reset: number, scope?: string) =>
+		new Response(
+			JSON.stringify(
+				scope ? { error: "Too many requests", scope } : { error: "Too many requests" },
+			),
+			{
+				status: 429,
+				headers: { "content-type": "application/json", "retry-after": "1" },
+			},
+		),
 }));
 
 import { POST } from "../answer/route";
@@ -332,12 +339,29 @@ describe("POST /api/review/answer", () => {
 		expect(json.error).not.toContain("boom");
 	});
 
-	it("limiter dobowy wyczerpany → 429", async () => {
+	it("limiter dobowy wyczerpany → 429 ze scope=daily", async () => {
 		h.mockApplyRateLimit
 			.mockResolvedValueOnce({ success: true, reset: 0, remaining: 10 })
 			.mockResolvedValueOnce({ success: false, reset: Date.now() + 1000, remaining: 0 });
 		const res = await POST(answerReq(goodBody));
 		expect(res.status).toBe(429);
+		const json = await res.json();
+		expect(json.scope).toBe("daily");
+		expect(h.mockRecordReview).not.toHaveBeenCalled();
+	});
+
+	it("limiter burst wyczerpany → 429 ze scope=burst (przed limiterem dobowym)", async () => {
+		h.mockApplyRateLimit.mockResolvedValueOnce({
+			success: false,
+			reset: Date.now() + 1000,
+			remaining: 0,
+		});
+		const res = await POST(answerReq(goodBody));
+		expect(res.status).toBe(429);
+		const json = await res.json();
+		expect(json.scope).toBe("burst");
+		// burst pęka PRZED sprawdzeniem limitera dobowego → tylko jedno wywołanie.
+		expect(h.mockApplyRateLimit).toHaveBeenCalledTimes(1);
 		expect(h.mockRecordReview).not.toHaveBeenCalled();
 	});
 });

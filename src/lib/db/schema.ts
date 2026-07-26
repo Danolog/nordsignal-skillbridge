@@ -1249,6 +1249,12 @@ export const questionItems = pgTable(
 	},
 	(table) => [
 		index("idx_question_items_concept_difficulty").on(table.conceptId, table.difficulty),
+		// 1E.4 (N2): wspiera korelowany EXISTS filtra pojemności enroll-hook po
+		// zawężeniu do single_choice (predykat: concept_id = ? AND status = 'active'
+		// AND type = 'single_choice' — trzy równości) oraz ogólne zapytania „aktywne
+		// pytania konceptu danego typu". Kolejność kolumn = klucz korelacji (concept_id)
+		// → status → type; wszystkie równościowe, więc pełne pokrycie predykatu.
+		index("idx_question_items_concept_status_type").on(table.conceptId, table.status, table.type),
 		check("question_items_difficulty_range", sql`${table.difficulty} BETWEEN 1 AND 3`),
 		check(
 			"question_items_type_values",

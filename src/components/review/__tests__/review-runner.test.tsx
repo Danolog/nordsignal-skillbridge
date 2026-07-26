@@ -222,13 +222,22 @@ describe("ReviewRunner — mapowanie kodów błędów", () => {
 		expect(await screen.findByText("Koniec sesji")).toBeInTheDocument();
 	});
 
-	it("429 DZIENNY (retry-after duże) → reframe na koniec sesji (nie błąd)", async () => {
+	it("429 scope=daily → reframe na koniec sesji (nie błąd), niezależnie od Retry-After", async () => {
 		const user = userEvent.setup();
 		vi.stubGlobal(
 			"fetch",
 			routeFetch(
 				() => queueResp([entry(1), entry(2)]),
-				[() => jsonResponse(429, { error: "Too many requests" }, { "retry-after": "3600" })],
+				// Retry-After MAŁE (30 s) — pod starą heurystyką „burst"; scope="daily"
+				// wygrywa → dowód, że runner czyta scope, nie próg Retry-After.
+				[
+					() =>
+						jsonResponse(
+							429,
+							{ error: "Too many requests", scope: "daily" },
+							{ "retry-after": "30" },
+						),
+				],
 			),
 		);
 		render(<ReviewRunner />);
@@ -240,13 +249,22 @@ describe("ReviewRunner — mapowanie kodów błędów", () => {
 		expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 	});
 
-	it("429 BURST (retry-after małe) → komunikat retry, wybór zostaje", async () => {
+	it("429 scope=burst → komunikat retry, wybór zostaje, niezależnie od Retry-After", async () => {
 		const user = userEvent.setup();
 		vi.stubGlobal(
 			"fetch",
 			routeFetch(
 				() => queueResp([entry(1)]),
-				[() => jsonResponse(429, { error: "Too many requests" }, { "retry-after": "30" })],
+				// Retry-After DUŻE (3600 s) — pod starą heurystyką „daily"; scope="burst"
+				// wygrywa → wybór zostaje, brak „koniec sesji".
+				[
+					() =>
+						jsonResponse(
+							429,
+							{ error: "Too many requests", scope: "burst" },
+							{ "retry-after": "3600" },
+						),
+				],
 			),
 		);
 		render(<ReviewRunner />);
@@ -258,6 +276,26 @@ describe("ReviewRunner — mapowanie kodów błędów", () => {
 		// Wybór studenta NIE znika (może ponowić).
 		expect(screen.getByRole("radio", { name: "Opcja A" })).toBeChecked();
 		// Nie weszliśmy w werdykt ani koniec sesji.
+		expect(screen.queryByText("Koniec sesji")).not.toBeInTheDocument();
+	});
+
+	it("429 bez scope (fallback defensywny) → traktowane jak burst, wybór zostaje", async () => {
+		const user = userEvent.setup();
+		vi.stubGlobal(
+			"fetch",
+			routeFetch(
+				() => queueResp([entry(1)]),
+				// Brak pola scope (np. starszy serwer) → fallback = burst, NIE koniec sesji.
+				[() => jsonResponse(429, { error: "Too many requests" }, { "retry-after": "3600" })],
+			),
+		);
+		render(<ReviewRunner />);
+		await screen.findByText("Powtórka 1 z 1");
+		await user.click(screen.getByRole("radio", { name: "Opcja A" }));
+		await user.click(screen.getByRole("button", { name: "Sprawdź" }));
+
+		expect(await screen.findByRole("alert")).toHaveTextContent(/Za szybko/);
+		expect(screen.getByRole("radio", { name: "Opcja A" })).toBeChecked();
 		expect(screen.queryByText("Koniec sesji")).not.toBeInTheDocument();
 	});
 

@@ -111,9 +111,18 @@ export function getClientIp(req: Request): string {
 	return req.headers.get("x-real-ip") ?? "unknown";
 }
 
-export function rateLimitResponse(reset: number): Response {
+/**
+ * Odpowiedź 429 z nagłówkiem Retry-After. `scope` (opcjonalny) to jawny
+ * dyskryminator, KTÓRY limiter pękł — trafia do JSON body jako pole `scope`, żeby
+ * klient nie musiał zgadywać po progu Retry-After (heurystyka zdjęta w
+ * review-runner, 1E.4 CF-2). Wywołania bez `scope` zachowują IDENTYCZNE body jak
+ * dotąd (`{ error }` bez dodatkowych pól) — zmiana wstecznie zgodna dla pozostałych tras.
+ */
+export function rateLimitResponse(reset: number, scope?: string): Response {
 	const retryAfter = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
-	return new Response(JSON.stringify({ error: "Too many requests" }), {
+	const body: { error: string; scope?: string } = { error: "Too many requests" };
+	if (scope) body.scope = scope;
+	return new Response(JSON.stringify(body), {
 		status: 429,
 		headers: {
 			"content-type": "application/json",
