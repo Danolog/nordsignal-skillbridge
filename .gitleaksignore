@@ -14,3 +14,12 @@
 # odciskiem palca. Wpis jest przypięty do JEDNEGO commita, pliku, reguły i
 # numeru linii — nie rozluźnia skanera nigdzie indziej.
 f2232b25b401c756daf94f6f37847bfc4708b085:src/lib/curriculum/__tests__/placement-service.integration.test.ts:generic-api-key:31
+
+# Skutek uboczny naprawy wyżej: commit 5f87b00 dopisał TEN plik z komentarzem
+# cytującym literał, więc skan gałęzi znalazł go w .gitleaksignore. Treść jest
+# już poprawiona (cf37c61), ale commit 5f87b00 zostaje w zakresie skanu PR-a.
+# Oba wpisy 1E.7 to RUSZTOWANIE SKANU GAŁĘZI, nie realne wyciszenia: po
+# squash-merge main dostaje jeden commit z czystą treścią (inline
+# `gitleaks:allow` w teście, zero literału tutaj), więc nocny pełny skan main
+# jest zielony bez nich. Wolno je przyciąć przy najbliższym sprzątaniu.
+5f87b00a264fc1e0bd1f7d91f2917f5dbd7357f6:.gitleaksignore:generic-api-key:7
