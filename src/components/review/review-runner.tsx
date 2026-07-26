@@ -31,16 +31,15 @@
  *  - 429 BURST → „Zwolnij" z retry (wybór zostaje),
  *  - sieć / 500 → „Spróbuj ponownie" (wybór zostaje).
  *
- * ── ROZBIEŻNOŚĆ 429 burst vs dzienny (zgłoszona do Quinn/Ethana) ─────────────
- * Trasa answer (R4) zwraca dla OBU limiterów (reviewAnswer=burst, reviewDaily=cap
- * dobowy) IDENTYCZNE body `{error:"Too many requests"}` przez wspólny
- * rateLimitResponse — jedyny sygnał różnicujący to nagłówek `Retry-After`
- * (okno burst = „1 m" → ≤ 60 s; okno dobowe = „1 d" → duże). Rozróżniamy więc po
- * progu Retry-After. To HEURYSTYKA, nie twardy kontrakt: świadomie NIE zmieniam
- * trasy answer (G9 — nie rozszerzam API poza jeden autoryzowany string copy).
- * Rekomendacja follow-up dla backendu (owner: Max/Ethan): jawny dyskryminator w
- * body 429 (np. `scope: "daily"|"burst"`), wtedy klient zdejmie próg. Dług śpi
- * przy fladze OFF (zero ruchu = zero misklasyfikacji dziś).
+ * ── DYSKRYMINATOR 429 burst vs dzienny (CF-2 — dług spłacony) ────────────────
+ * Trasa answer (R4) dokłada do body 429 jawne pole `scope: "daily" | "burst"`
+ * (rateLimitResponse z argumentem scope) — trasa WIE, który limiter pękł
+ * (reviewDaily = cap dobowy vs reviewAnswer = burst). Klient czyta `scope` WPROST
+ * z kontraktu; zdjęta wcześniejsza HEURYSTYKA progu Retry-After (stała
+ * DAILY_429_THRESHOLD_S usunięta) — próg był kruchy (zależny od dokładnych okien
+ * limitera). Fallback defensywny: gdyby `scope` zabrakło (starszy serwer / błąd
+ * parsowania), traktujemy jak burst (zwolnij + retry) — bezpieczniejszy default
+ * niż przedwczesne „koniec sesji". Docelowo scope jest zawsze.
  */
 
 import { CheckCircle2, RefreshCw } from "lucide-react";
@@ -87,12 +86,21 @@ type Phase = "loading" | "load-error" | "empty" | "question" | "verdict" | "done
 // przechodzi w fazę „done".
 type AnswerError = "network" | "burst" | null;
 
-// Próg Retry-After (sekundy) odróżniający dzienny cap od burstu. Okno burst trasy =
-// „1 m" → Retry-After ≤ 60 s; dobowe = „1 d" → wielokrotnie większe. 90 s daje zapas
-// nad oknem burst bez ryzyka złapania go jako „dzienny". Patrz nota w nagłówku.
-const DAILY_429_THRESHOLD_S = 90;
-
 const DASHBOARD_HREF = "/dashboard";
+
+/**
+ * Odczyt dyskryminatora `scope` z body 429 (CF-2). Defensywnie: brak pola / błąd
+ * parsowania → null, wołający potraktuje to jak burst (fallback). Docelowo trasa
+ * answer zawsze zwraca `scope: "daily" | "burst"`.
+ */
+async function read429Scope(res: Response): Promise<string | null> {
+	try {
+		const body = (await res.json()) as { scope?: unknown };
+		return typeof body.scope === "string" ? body.scope : null;
+	} catch {
+		return null;
+	}
+}
 
 export function ReviewRunner() {
 	const [phase, setPhase] = useState<Phase>("loading");
@@ -201,11 +209,12 @@ export function ReviewRunner() {
 				return;
 			}
 
-			// 429: dzienny cap → koniec sesji (student zrobił swoje); burst → zwolnij.
-			// Rozróżnienie po Retry-After (patrz nota w nagłówku).
+			// 429: rozróżnienie po `scope` z body (CF-2, nie po progu Retry-After).
+			// scope==="daily" → dzienny cap = koniec sesji (student zrobił swoje, NIE błąd).
+			// scope==="burst" LUB brak scope (fallback defensywny) → „zwolnij", wybór zostaje.
 			if (res.status === 429) {
-				const retryAfter = Number.parseInt(res.headers.get("retry-after") ?? "", 10);
-				if (Number.isFinite(retryAfter) && retryAfter > DAILY_429_THRESHOLD_S) {
+				const scope = await read429Scope(res);
+				if (scope === "daily") {
 					setPhase("done");
 					return;
 				}

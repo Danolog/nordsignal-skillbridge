@@ -48,19 +48,25 @@ import { enrollConcepts } from "./review-service";
  *   2. Batch-enroll przez enrollConcepts (JEDEN wielowierszowy INSERT ...
  *      ON CONFLICT DO NOTHING, bez N+1).
  *
- * ── FILTR POJEMNOŚCI (decyzja R5) ─────────────────────────────────────────
- * Zawężamy do konceptów mających ≥1 AKTYWNE pytanie w banku (EXISTS na
- * question_items). Powód: koncept bez pytania nie da się powtórzyć — zasiew
- * takiego to martwy wiersz review_states, którego kolejka R4 (loadReviewQuestions)
- * i tak nigdy nie pokaże. Wolę NIE tworzyć śmiecia niż polegać wyłącznie na
- * pominięciu w kolejce (Built-to-Sell: tabela nie kłamie o „zaplanowanych"
- * powtórkach, których nie ma). To kontrakt pojemności §6 Sophii egzekwowany u
- * ŹRÓDŁA. Uwaga — filtr jest type-agnostyczny („≥1 aktywne pytanie", zgodnie z
- * brzmieniem §6); R4 dokłada węższy net (tylko `single_choice` z opcjami wchodzi
- * do kolejki, `buildReviewQuestionPayload`), więc koncept, którego jedyne aktywne
- * pytanie jest np. numeric, nie wyprodukuje pustej powtórki mimo zasiewu —
- * obrona-w-głąb. Brak backfillu (plan §3): jeśli pytanie dojdzie później, zasiew
- * nastąpi przy KOLEJNYM zdanym mastery gate, nie wstecz.
+ * ── FILTR POJEMNOŚCI (decyzja R5, zawężony N1) ────────────────────────────
+ * Zawężamy do konceptów mających ≥1 AKTYWNE pytanie TYPU `single_choice` w banku
+ * (EXISTS na question_items). Powód: koncept bez POWTARZALNEGO pytania nie da się
+ * powtórzyć — zasiew takiego to martwy wiersz review_states, którego kolejka R4
+ * (loadReviewQuestions) i tak nigdy nie pokaże. Wolę NIE tworzyć śmiecia niż
+ * polegać wyłącznie na pominięciu w kolejce (Built-to-Sell: tabela nie kłamie o
+ * „zaplanowanych" powtórkach, których nie ma). To kontrakt pojemności §6 Sophii
+ * egzekwowany u ŹRÓDŁA.
+ *
+ * ── PARYTET Z R4 (N1) ─────────────────────────────────────────────────────
+ * Kolejka R4 serwuje WYŁĄCZNIE `single_choice` (loadReviewQuestions /
+ * buildReviewQuestionPayload — grade.ts ocenia po kluczu `correct`). Wcześniej filtr
+ * był type-agnostyczny („≥1 aktywne pytanie"), więc koncept `trunk='market'`, którego
+ * jedyne aktywne pytanie było np. numeric, BYŁ enrollowany, ale nigdy nie wchodził do
+ * kolejki → PHANTOM-wiersz review_states. N1 domyka lukę u źródła: predykat EXISTS
+ * niesie ten sam warunek typu co kolejka, więc zbiór zasianych konceptów = zbiór
+ * powtarzalnych. Brak backfillu (plan §3): jeśli kwalifikujące pytanie dojdzie później,
+ * zasiew nastąpi przy KOLEJNYM zdanym mastery gate, nie wstecz. Indeks pod ten EXISTS:
+ * idx_question_items_concept_status_type (migracja 0043, N2).
  *
  * ── best-effort / owner-side / gating: patrz nagłówek pliku ───────────────
  */
@@ -78,7 +84,10 @@ export async function enrollModuleConceptsOnMasteryPass(
 				eq(curriculumModuleItems.moduleId, moduleId),
 				eq(questionConcepts.status, "active"),
 				eq(questionConcepts.trunk, "market"),
-				// Filtr pojemności: koncept ma ≥1 AKTYWNE pytanie (korelowany EXISTS).
+				// Filtr pojemności: koncept ma ≥1 AKTYWNE pytanie TYPU single_choice
+				// (korelowany EXISTS). Zawężenie do single_choice = parytet z kolejką R4
+				// (loadReviewQuestions serwuje WYŁĄCZNIE single_choice) — patrz nota
+				// "FILTR POJEMNOŚCI" w docstringu.
 				exists(
 					db
 						.select({ one: questionItems.id })
@@ -87,6 +96,7 @@ export async function enrollModuleConceptsOnMasteryPass(
 							and(
 								eq(questionItems.conceptId, questionConcepts.id),
 								eq(questionItems.status, "active"),
+								eq(questionItems.type, "single_choice"),
 							),
 						),
 				),

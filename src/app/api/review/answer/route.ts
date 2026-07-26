@@ -84,10 +84,13 @@ export async function POST(req: Request) {
 
 	try {
 		// Dwa wymiary limitera (burst + wolumen dobowy) PRZED gradingiem/zapisem.
+		// `scope` w body 429 mówi klientowi, KTÓRY limiter pękł: "burst" → chwilowe
+		// zwolnienie i retry; "daily" → koniec sesji na dziś (nie błąd). Zdejmuje to
+		// z klienta heurystykę progu Retry-After (CF-2, jawny dyskryminator w kontrakcie).
 		const burst = await applyRateLimit(rateLimiters.reviewAnswer, `user:${session.user.id}`);
-		if (!burst.success) return rateLimitResponse(burst.reset);
+		if (!burst.success) return rateLimitResponse(burst.reset, "burst");
 		const daily = await applyRateLimit(rateLimiters.reviewDaily, `user:${session.user.id}`);
-		if (!daily.success) return rateLimitResponse(daily.reset);
+		if (!daily.success) return rateLimitResponse(daily.reset, "daily");
 
 		// K3: walidacja server-side — pytanie musi ISTNIEĆ, być active i należeć do
 		// podanego konceptu. Owner-side (klucz z banku). Niepasujące → 404 (nie 500).

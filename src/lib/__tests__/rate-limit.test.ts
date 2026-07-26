@@ -159,4 +159,30 @@ describe("rateLimitResponse", () => {
 		const res = rateLimitResponse(Date.now() - 60_000);
 		expect(res.headers.get("retry-after")).toBe("1");
 	});
+
+	// CF-2 (1E.4) — serializacja dyskryminatora `scope` do BODY. Test trasy
+	// (review-routes.test.ts) MOCKUJE rateLimitResponse, więc nie widzi tej
+	// serializacji; tu testujemy REALNĄ funkcję. To środkowe ogniwo kontraktu
+	// scope: trasa przekazuje literał (test trasy) → rateLimitResponse wkłada go
+	// do body.scope (TU) → runner czyta body.scope (review-runner.test.tsx).
+	it("CF-2: scope='burst' → body.scope='burst'", async () => {
+		const { rateLimitResponse } = await import("../rate-limit");
+		const res = rateLimitResponse(Date.now() + 30_000, "burst");
+		expect(res.status).toBe(429);
+		expect(await res.json()).toEqual({ error: "Too many requests", scope: "burst" });
+	});
+
+	it("CF-2: scope='daily' → body.scope='daily'", async () => {
+		const { rateLimitResponse } = await import("../rate-limit");
+		const res = rateLimitResponse(Date.now() + 30_000, "daily");
+		expect(await res.json()).toEqual({ error: "Too many requests", scope: "daily" });
+	});
+
+	it("CF-2: bez scope → body BEZ pola scope (wsteczna zgodność pozostałych tras)", async () => {
+		const { rateLimitResponse } = await import("../rate-limit");
+		const res = rateLimitResponse(Date.now() + 30_000);
+		const body = await res.json();
+		expect(body).toEqual({ error: "Too many requests" });
+		expect("scope" in body).toBe(false);
+	});
 });
