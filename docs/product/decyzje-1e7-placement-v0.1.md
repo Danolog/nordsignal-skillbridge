@@ -1,12 +1,21 @@
 # Decyzje produktowe 1E.7 · placement diagnozy w curriculum — mapa tagów, próg, reguła prefiksowa
 
+**Changelog v0.2 → v0.3 (2026-07-26, Sophia):** dwa rozstrzygnięcia wymagane przed L6 (pytania Maxa z budowy L2) + potwierdzenie rozjazdu punktu wejścia. **Rozstrzygnięcia v0.1/v0.2 bez zmian.**
+1. **DECYZJA 2 — trzecia gałąź trybu wsparcia:** moduł wciągnięty prefiksem, bez własnego pomiaru (`f2-python-2`, `f3-dane-python`) → **pełne wsparcie**, ale z **odrębnym powodem** w zapisie, nie zlany z poziomem 3. Max słusznie zostawił `null` zamiast podstawiać domyślną wartość po cichu — reguła nie miała tej gałęzi. Nowe mikrocopy w §8 (dotychczasowy tekst dla modułu granicznego mówi o „jednym trafionym pytaniu" — dla F2/F3 byłby **nieprawdą**, bo o F2 nie padło żadne pytanie).
+2. **DECYZJA 2 — miernik dostaje wyliczone pola i uzasadnienie per pole** (wymóg twardy dla L3). Sama lista odblokowanych slugów **kasuje możliwość weryfikacji progu na zawsze**. Dołożone `blockingHoleSlug` jako jedyne źródło danych o **drugiej stronie asymetrii** — dotąd miernik mierzył wyłącznie przestrzelenie w górę, czyli połowę problemu, na którym zbudowałam DECYZJĘ 2.
+3. **§7 — punkt wejścia potwierdzony: „najgłębszy odblokowany", nie „pierwszy nieodblokowany".** Rozjazd ze zleceniem Olivera rozstrzygnięty na rzecz tego dokumentu (jego decyzja). Dopisane nazwy obu pól i zakaz nazywania któregokolwiek „punktem startu".
+4. **Brama A2 — warunek ważności progu ≥3 SPEŁNIONY:** 1E.3 (mastery gate) live na prodzie od 2026-07-25 (`FLAG_MASTERY_GATE=1`), więc tania droga naprawcza przez „test out" istnieje realnie, nie tylko w projekcie.
+
 **Changelog v0.1 → v0.2 (2026-07-26, Sophia):** trzy sprostowania faktograficzne, **zero zmian w rozstrzygnięciach** (mapa tagów, próg ≥3, reguła prefiksowa, l0-start, F1-only — bez zmian; L1 zbudowany przez Maxa na v0.1 zostaje ważny).
 1. **§7 pkt 1 — poprawiony numer migracji z 0029 na 0035 (błąd niebezpieczny, zgłoszony przez Olivera).** Cytowałam migrację `competencies.verified_by_method`, gdzie zapis `'diagnostic'` jest **legalny i aktywny do dziś**, zamiast `curriculum_module_progress.verified_by_method`, która pod hybrydą faktycznie zamiera. To **dwie różne kolumny o tej samej nazwie** — dopisane wprost, bo mój zapis o mało nie wyprodukował kontrakt-testu blokującego działającą diagnozę.
 2. **DECYZJA 5, tabela przypadków — „5 tagów" → 6** (`ds-python`, `ds-pandas`, `ds-eda`, `ds-sql`, `ds-uczenie-maszynowe`, `ds-llm`). Liczba w tym wierszu (≈3 na 10 milionów) była policzona dla sześciu i zostaje bez zmian — błędny był wyłącznie licznik w opisie.
 3. **DECYZJA 2 — własna korekta tej samej rodziny, niezgłoszona:** pisałam, że odblokowanie `m-ml` wymaga **czterech** pomiarów (≈4 na 100 000). Z warunku braku dziury (reguła 3) wynika, że `m-ml` musi zakwalifikować się także **na własnym tagu** — czyli **pięć** pomiarów, ≈3 na milion. Ochrona jest o rząd wielkości silniejsza, niż deklarowałam; kierunek wniosku bez zmian.
 
-**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-26 (v0.1 i v0.2) · **Status:** v0.2 — WIĄŻĄCY KONTRAKT produktowy dla slice'ów L1/L2 funkcji 1E.7 (Ethan — backend, Jack — UI, Mila — ekrany wyniku diagnozy)
-**Stan realizacji (2026-07-26):** L1 zbudowany przez Maxa — most danych `curriculum_modules.diagnostic_concept_id`, migracja **0044**, kontrakt ingestu na literówki w slugach; mapa tagów, próg i reguła prefiksowa zweryfikowane w kodzie, zero rozbieżności. **Kolejność wdrożenia na prodzie (strażnik ingestu): migracja 0044 → ingest banku rynkowego → ingest curriculum.** Odwrotna kolejność przerywa ingest na pierwszym tagu — bezpiecznie, ale głośno.
+**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-26 (v0.1–v0.3) · **Status:** v0.3 — WIĄŻĄCY KONTRAKT produktowy dla slice'ów L1–L6 funkcji 1E.7 (Ethan — backend, Jack — UI, Mila — ekrany wyniku diagnozy)
+**Stan realizacji (2026-07-26):**
+- **L1** (Max) — most danych `curriculum_modules.diagnostic_concept_id`, migracja **0044**, kontrakt ingestu na literówki w slugach; mapa tagów zweryfikowana w kodzie, zero rozbieżności. **Kolejność wdrożenia na prodzie (strażnik ingestu): migracja 0044 → ingest banku rynkowego → ingest curriculum.** Odwrotna kolejność przerywa ingest na pierwszym tagu — bezpiecznie, ale głośno.
+- **L2** (Max) — reguła jako czysta funkcja, bez bazy. Równoważność z brzmieniem deklaratywnym z DECYZJI 5 **udowodniona**, nie zadeklarowana: test porównuje implementację z niezależną wersją reguł na **wszystkich 15 625 kształtach wyniku diagnozy**, dla progów 3 i 4. Sprostowanie z v0.2 (pięć pomiarów chroni `m-ml`) jest w kodzie.
+- **Warunek ważności progu ≥3 (brama A2): SPEŁNIONY** — 1E.3 mastery gate live na prodzie od 2026-07-25 (`FLAG_MASTERY_GATE=1`), „test out" jako droga naprawcza istnieje realnie.
 **Zleca:** Oliver (COO) — rozstrzygnięcia produktowe blokujące L1/L2.
 **Rama nadrzędna:** decyzja Darka 2026-07-26 (sign-off) — **wariant hybrydowy: diagnoza OTWIERA, egzamin ZALICZA.** Wynik diagnozy ≥ progu → moduł **odblokowany** (zdjęty prerekwizyt), NIE zaliczony. Zaliczenie bez przechodzenia modułu = egzamin modułowy (silnik 1E.3, próg ≈90%) → `verified_by_method='test_out'`.
 **Korekta ADR:** ten dokument **koryguje ADR-014 D8** (`docs/decisions/014-curriculum-sciezka-edukacyjna.md`), który zakładał, że placement ZALICZA moduły przez `verified_by_method='diagnostic'`. Powód korekty: spec diagnozy (`docs/design/skillbridge-a5-bank-pytan-diagnoza-spec-v0.2.md` §7) przyznaje rezydualną zgadywalność, a egzamin ma próg ≈90% — dwa instrumenty o różnej mocy dowodowej nie mogą dawać tego samego skutku. **Aktualizacja ADR-014 D8 = zadanie Ethana** (ADR to jego terytorium; ja rozstrzygam dydaktykę i produkt, nie przepisuję cudzego ADR-u).
@@ -56,7 +65,22 @@ Jeden tag na moduł (rollup wg D8). Slug z `trunk='market' AND diagnostic=true`.
 
 ## DECYZJA 2 — Próg odblokowania: **poziom ≥ 3**, a poziom 3 kontra 4 steruje trybem wsparcia
 
-**Rozstrzygnięcie:** moduł kwalifikuje się do odblokowania przy **poziomie 3 lub 4** na swoim koncepcie diagnostycznym. Potwierdzam kierunek domyślny. Dodatkowo: **poziom 3 = moduł graniczny → wejście z pełnym wsparciem; poziom 4 → wejście w normalnym trybie wygaszania wsparcia (fading)** — to bezpośrednie użycie mechanizmu C7/C8 z D8 („wejście w moduł graniczny od fazy completion, nigdy od zera wsparcia; przy niepewności domyślnie dawaj wsparcie").
+**Rozstrzygnięcie:** moduł kwalifikuje się do odblokowania przy **poziomie 3 lub 4** na swoim koncepcie diagnostycznym. Potwierdzam kierunek domyślny.
+
+**Tryb wsparcia — trzy gałęzie, lista wyczerpująca** (bezpośrednie użycie C7/C8 z D8: „wejście w moduł graniczny od fazy completion, nigdy od zera wsparcia; przy niepewności domyślnie dawaj wsparcie"):
+
+| Jak moduł się otworzył | Tryb wsparcia | Powód |
+|---|---|---|
+| **Poziom 4** na własnym tagu | normalne wygaszanie wsparcia (fading) | Dwa trafione pytania, w tym trudniejsze. Pomiar bezpośredni i najmocniejszy, jaki mamy. |
+| **Poziom 3** na własnym tagu | **pełne wsparcie** (moduł graniczny) | Jedno trafione pytanie. Pomiar bezpośredni, ale słaby — niepewność wysoka. |
+| **Brak własnego pomiaru** — wciągnięty prefiksem (`f2-python-2`, `f3-dane-python`) | **pełne wsparcie**, powód zapisany ODRĘBNIE | Dowód wyłącznie pośredni (DECYZJA 4: kto robi `merge`, ten umie pętle). Wnioskowanie jest mocne, ale to nadal wnioskowanie — nie zmierzyliśmy tego modułu ani razu. |
+
+**Dlaczego trzecia gałąź nie jest zlana z poziomem 3, skoro tryb jest ten sam.** Bo **powód musi zostać w danych rozdzielony** — inaczej miernik z końca tej sekcji przestaje odróżniać dwie różne decyzje, które mogą się zepsuć niezależnie i wymagają przeciwnych napraw:
+
+- studenci odblokowani na **poziomie 3** oblewają egzaminy → za niski **próg** (DECYZJA 2) → naprawa: podnieś próg do 4;
+- studenci wchodzący w moduły **wciągnięte prefiksem** oblewają egzaminy → za luźna **reguła przeciągania** (DECYZJA 5, przejrzystość tagów `NULL`) → naprawa: F2/F3 przestają jechać z prefiksem, a nie zmiana progu.
+
+Zlanie obu w jedno „pełne wsparcie" bez rozróżnienia powodu sprawiłoby, że w razie problemu zobaczyłabym objaw i nie wiedziała, którą decyzję cofnąć. **Max postąpił słusznie, zostawiając `null` zamiast podstawiać „pełne wsparcie" po cichu** — reguła nie miała tej gałęzi, a cicha wartość domyślna zabiłaby to rozróżnienie, zanim ktokolwiek by je zauważył.
 
 ### Który błąd jest droższy przy zerze studentów i pilotażu DS
 
@@ -78,7 +102,22 @@ Trzy powody, każdy wystarczający:
 
 Ryzyko przenoszę na mechanizmy, które nie psują funkcji: reguła prefiksowa (DECYZJA 5), tag tylko na F1 (DECYZJA 4), `l0-start` nigdy nie pomijany (DECYZJA 3), `uncovered` nigdy nie kwalifikuje (§6a), wsparcie domyślnie włączone przy poziomie 3 (wyżej) i rekomendacja punktu wejścia zamiast wymuszonego skoku (§7).
 
-**[WYMÓG BACKENDU — Ethan] Miernik weryfikujący ten próg** (instrumentacja D11): loguj przy każdym odblokowaniu parę `(moduł, poziom z diagnozy)` i zestawiaj z późniejszym wynikiem pierwszego egzaminu tego modułu. **Próg alarmowy: jeśli studenci odblokowani na poziomie 3 oblewają pierwsze podejście istotnie częściej niż odblokowani na poziomie 4, wracam do progu i podnoszę go do 4.** Bez tego pomiaru „≥3" jest przekonaniem, nie decyzją opartą na danych — a przy zerze studentów mam dziś wyłącznie przekonanie i arytmetykę.
+**[WYMÓG BACKENDU — twardy, slice L3] Miernik weryfikujący ten próg** (instrumentacja D11). **L3 zapisuje pełny werdykt per moduł, nie samą listę odblokowanych slugów.** To wymóg blokujący, nie życzenie: lista slugów jest zapisem *skutku* bez *przesłanki*, a przesłanka jest dokładnie tą zmienną, którą testuję. Zapisana lista bez poziomów **kasuje możliwość weryfikacji progu na zawsze** — danych z pilotażu nie da się odtworzyć wstecz, bo `result_json` tamtej sesji będzie już przeliczony inną mapą tagów i innym progiem.
+
+Pola i uzasadnienie każdego (reguła L2 niesie już komplet):
+
+| Pole | Po co, konkretnie |
+|---|---|
+| `level` | Rdzeń pomiaru: oblewalność pierwszego egzaminu modułu dla odblokowanych na 3 kontra na 4. Bez tego nie ma czego z czym porównać. |
+| `reason` (własny pomiar / wciągnięty prefiksem) | Rozdziela DECYZJĘ 2 od DECYZJI 5 — dwie różne naprawy (patrz tabela trybów wsparcia wyżej). |
+| `threshold` obowiązujący w chwili zapisu | Gdy podniosę próg do 4, rekordy sprzed zmiany bez tego pola stają się nieczytelne, a porównanie „przed/po" niemożliwe. To także wymóg audytowalności z §7 pkt 2. |
+| `blockingHoleSlug` | **Jedyne źródło danych o drugiej stronie asymetrii.** Student niedoszacowany przechodzi moduł, którego nie potrzebował, i nic nie zgłasza — ten błąd jest niewidoczny we wszystkich pozostałych polach. `blockingHoleSlug` pokazuje, który moduł najczęściej ucina prefiks; jeśli to zawsze `m-eda` u ludzi z wysokim SQL, problem jest w kolejności drabiny albo w banku EDA, nie w progu. |
+| `supportMode` | Pełne wsparcie przy poziomie 3 to **moja** mitygacja ryzyka. Jeśli nie zmienia wyników, mam ją wycofać zamiast utrzymywać. |
+| id sesji diagnozy + znacznik czasu | Audytowalność (§7 pkt 2) i powiązanie werdyktu z konkretnym pomiarem. |
+
+**Zapis w chwili odblokowania, nigdy przeliczany wstecz** (§7 pkt 2) i **nienadpisywany przy ponownej diagnozie** — przy monotoniczności z §6b druga diagnoza dokłada odblokowania, ale **nie wolno jej przepisać powodu, dla którego moduł otworzył się za pierwszym razem**; inaczej miernik gubi pierwotny poziom i mierzy skutek własnej aktualizacji.
+
+**Próg alarmowy: jeśli studenci odblokowani na poziomie 3 oblewają pierwsze podejście istotnie częściej niż odblokowani na poziomie 4 — podnoszę próg do 4.** Bez tego zapisu „≥3" pozostaje przekonaniem, a nie decyzją opartą na danych; przy zerze studentów mam dziś wyłącznie przekonanie i arytmetykę, i jest to jedyny sposób, żeby to zmienić.
 
 ---
 
@@ -167,7 +206,16 @@ Wariant hybrydowy zmienia nie tylko próg, ale i **ślad w danych**. Trzy konsek
 2. **Odblokowanie potrzebuje własnego nośnika, odrębnego od zaliczenia.** Wymogi produktowe (kształt = Twoja decyzja): musi być **trwałe** (nie liczone w locie z `result_json` przy każdym żądaniu — inaczej zmiana mapy tagów po cichu odbiera studentom dostęp), **audytowalne** (widać, z której sesji diagnozy i przy jakim poziomie powstało — bez tego miernik z DECYZJI 2 nie ma z czego liczyć) i **addytywne** (§6b).
 3. **Żadna pozycja nie dostaje `skipped_by_placement`.** D3 przewidywał ten status dla pozycji pomijanych przez placement — pod hybrydą **placement nie pomija żadnej pozycji**, moduł jest tylko otwarty, a pozycje zostają do przejścia. Status pozostaje sensowny wyłącznie dla pozycji modułu zaliczonego przez **test out** (zaliczenie przy zerze ukończonych pozycji). Nazwa `skipped_by_placement` przestaje wtedy opisywać rzeczywistość — **czy ją zmieniać, decyduje Ethan** (to nazewnictwo w schemacie, nie dydaktyka); ja tylko stwierdzam, że semantyka się przesunęła i nie wolno tego przeoczyć.
 
-**Punkt wejścia (rekomendacja, nie przymus):** drabina **nie skacze** studenta automatycznie. Odblokowane moduły są otwarte, ale rekomendowany start to **najgłębszy odblokowany moduł** (albo `l0-start` przy pierwszym wejściu — DECYZJA 3), a wszystkie moduły niżej zostają dostępne i widoczne. Student ma prawo powiedzieć „wolę zacząć od początku" i produkt ma to uszanować — przy poziomie 3, opartym na jednym pytaniu, on często wie o sobie więcej niż nasz pomiar.
+**Punkt wejścia (rekomendacja, nie przymus):** drabina **nie skacze** studenta automatycznie. Rekomendowany start to **najgłębszy ODBLOKOWANY moduł** (albo `l0-start` przy pierwszym wejściu — DECYZJA 3), a wszystkie moduły niżej zostają dostępne i widoczne. Student ma prawo powiedzieć „wolę zacząć od początku" i produkt ma to uszanować — przy poziomie 3, opartym na jednym pytaniu, on często wie o sobie więcej niż nasz pomiar.
+
+**[ROZSTRZYGNIĘTE 2026-07-26 — rozjazd ze zleceniem L2]** Zlecenie mówiło „punkt startu = **pierwszy NIEodblokowany** moduł". To jest błąd i nie obowiązuje. Kontrprzykład: przy `ds-python=4, ds-pandas=4` odblokowane są F1, F2, F3, `m-pandas`, a pierwszy nieodblokowany to `m-eda` — moduł, którego student wedle pomiaru **nie umie**. Rekomendowanie startu od materiału, na którym wypadł słabo, to dokładnie ten błąd, którego cała DECYZJA 2 unika (wrzucenie ponad poziom → porzucenie).
+
+Obie wielkości są przydatne, ale znaczą co innego i **żadnej nie wolno nazwać „punktem startu"**:
+
+| Wielkość | Znaczenie | Gdzie w UI |
+|---|---|---|
+| **najgłębszy odblokowany** | gdzie student **zaczyna** — ostatni moduł potwierdzony pomiarem | rekomendacja „zacznij tutaj" na ekranie wyniku diagnozy |
+| **pierwszy nieodblokowany** | gdzie kończy się prefiks — **najbliższy cel**, pierwszy moduł do zdobycia | znacznik celu na drabinie, nigdy jako sugestia startu |
 
 ---
 
@@ -180,8 +228,11 @@ Cel: student ma po jednym przeczytaniu rozumieć, że **otwarte ≠ zaliczone**.
 - **Odznaka na module otwartym placementem:** „Otwarty na podstawie diagnozy · niezaliczony".
 - **Rekomendacja pierwszego kroku (zawsze, gdy `l0-start` niezaliczony):**
   „Zacznij od **Start: środowisko pracy** — około 15 minut. Bez działającego notebooka nie ruszysz żadnego ćwiczenia z kodem, nawet jeśli materiał znasz."
-- **Wejście w moduł graniczny (kwalifikacja na poziomie 3):**
+- **Wejście w moduł graniczny (kwalifikacja na poziomie 3, własny pomiar):**
   „Ten moduł otwieramy Ci na podstawie jednego trafionego pytania — zostawiamy pełne wsparcie włączone. Jeśli materiał okaże się znany, przeklikasz go szybko."
+- **Wejście w moduł otwarty cudzym pomiarem (wciągnięty prefiksem — `f2-python-2`, `f3-dane-python`):**
+  „Tego modułu nie sprawdzaliśmy w diagnozie. Otwieramy go, bo poradziłeś sobie z **{nazwa kompetencji głębszej}** — a bez tych podstaw to nie byłoby możliwe. Zostawiamy pełne wsparcie włączone; jeśli materiał znasz, przeklikasz go szybko."
+  **Uzasadnienie osobnego tekstu:** komunikat dla modułu granicznego mówi o „jednym trafionym pytaniu" — dla F2 i F3 byłby **nieprawdą**, bo o te moduły nie padło ani jedno pytanie. Student, który to sprawdzi (a przebranżowiający się sprawdzają), przyłapie produkt na zmyślaniu przesłanki. Uczciwe nazwanie wnioskowania kosztuje jedno zdanie i jest jedyną wersją zgodną z „AI ocenia jako pierwsze, człowiek decyduje ostatni".
 - **Placement nie zadziałał, bo kompetencja nie była badana (`uncovered`):**
   „Nie badaliśmy **{nazwa kompetencji}** w diagnozie, więc moduł **{tytuł}** zostaje na swoim miejscu. Jeśli znasz ten materiał — zdaj egzamin modułu (**test out**) i przeskocz go."
 - **Placement nie zadziałał z powodu dziury w prefiksie:**
@@ -219,7 +270,9 @@ Uzupełniająco: wariant hybrydowy **wzmacnia** zgodność z §7 wobec pierwotne
 |---|---|---|
 | Próg ≥3 | `staircase.ts` (poziomy 1–4), `levelToStatus` (3/4 = `acquired`) | Nie — obie rzeczy istnieją i są ratyfikowane |
 | Reguła prefiksowa | kolejność `modules[]` w manifeście drabiny | Nie — łańcuch liniowy istnieje (D10, manifest) |
-| „Test out" jako droga naprawcza przy błędzie w dół | egzamin modułowy 1E.3, próg ≈90% | **Zależność jawna:** 1E.3 jest w kolejce przed 1E.7 (handoff). Gdyby 1E.7 wszedł przed 1E.3, argumentacja DECYZJI 2 traci drogę naprawczą i próg trzeba podnieść do 4. **Kolejność 1E.3 → 1E.7 jest warunkiem ważności progu ≥3.** |
+| „Test out" jako droga naprawcza przy błędzie w dół | egzamin modułowy 1E.3, próg ≈90% | **SPEŁNIONE 2026-07-25** — 1E.3 live na prodzie (`FLAG_MASTERY_GATE=1`). Warunek postawiony w v0.1 („kolejność 1E.3 → 1E.7 jest warunkiem ważności progu ≥3") jest domknięty: droga naprawcza istnieje realnie, nie tylko w projekcie. |
+| Tryb wsparcia dla modułu wciągniętego prefiksem | trzecia gałąź tabeli trybów (DECYZJA 2) | Nie — gałąź dopisana w v0.3, `null` nie jest już stanem osiągalnym dla modułu odblokowanego |
+| Miernik progu | pola werdyktu zapisywane w L3 | **Zależność jawna:** bez pełnego werdyktu per moduł próg ≥3 pozostaje nieweryfikowalny. Wymóg twardy dla L3, nie życzenie. |
 | Tryb wsparcia przy poziomie 3 | C7/C8 z D8 (wsparcie od fazy completion) | Nie — mechanizm zaprojektowany w ADR, nie wymyślony tutaj |
 | Mikrocopy `uncovered` | `uncovered` w `result_json` | Nie — degradacja zaimplementowana w `plan.ts` |
 | Monotoniczność odblokowań | brak przycisku powtórki (spec §8 pkt 3) | **Zależność jawna, opisana w §6b** — nie ukryta |

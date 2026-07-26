@@ -69,6 +69,34 @@ export function parseDbHost(url: string): string | null {
 }
 
 /**
+ * Czy DSN wskazuje na DEDYKOWANĄ bazę testową (host lokalny **i** nazwa bazy
+ * `test` albo z sufiksem `_test`).
+ *
+ * Dlaczego osobno od `assertTestDb`: guard chroni przed bazą ZDALNĄ, ale
+ * przepuszcza każdą lokalną — w tym bazę DEWELOPERSKĄ (`localhost:5432/skillbridge`).
+ * Testy integracyjne, które kasują i przepisują wiersze, nie mogą stać na
+ * „dowolnym lokalnym porcie": dotąd suita ingestu przechodziła własną bramkę
+ * pomijania i pisała do bazy dewelopera, bo importowany moduł ładował
+ * `.env.local` (dług C1 z przeglądu Leo, 1E.7 L2).
+ *
+ * Przechodzi: `@localhost:5433/skillbridge_test` (docker-compose.test.yml),
+ * `@localhost:5432/skillbridge_test` (usługa Postgres w CI), `@127.0.0.1/test`.
+ * Nie przechodzi: `@localhost:5432/skillbridge` (baza deweloperska), każdy host zdalny.
+ */
+export function isDedicatedTestDbUrl(dbUrl: string | undefined): boolean {
+	if (!dbUrl) return false;
+	const host = parseDbHost(dbUrl);
+	if (host === null || !ALLOWED_LOCAL_HOSTS.includes(host)) return false;
+	let dbName: string;
+	try {
+		dbName = new URL(dbUrl).pathname.replace(/^\//, "");
+	} catch {
+		return false;
+	}
+	return dbName === "test" || dbName.endsWith("_test");
+}
+
+/**
  * Guard bezpieczeństwa bazy — sprawdza host i wymagane flagi.
  *
  * Kolejność sprawdzeń (KRYTYCZNA — nie zmieniaj):
