@@ -153,6 +153,18 @@ export const FLAGS = {
 			"enrollment nie odpala, zero wierszy review_states/review_logs. Deploy≠release.",
 		defaultValue: false,
 	},
+	placementDiagnostic: {
+		envVar: "FLAG_PLACEMENT_DIAGNOSTIC",
+		description:
+			"1E.7: placement z diagnozy — wynik diagnozy OTWIERA prefiks drabiny curriculum " +
+			"(egzamin nadal ZALICZA, wariant hybrydowy). Zapis pełnego werdyktu per moduł do " +
+			"curriculum_placements hookiem po domknięciu diagnozy (best-effort, po transakcji). " +
+			"Off = hook nie odpala, zero wierszy curriculum_placements, odpowiedź " +
+			"/api/assessment/[id]/complete identyczna jak dziś. ⚠ Zapłon wymaga sprawdzenia, " +
+			"że FLAG_MASTERY_GATE=1 na tym samym środowisku — droga alternatywna „test out” to " +
+			"warunek nośny A22-2 oceny art. 22 RODO (RoPA wpis #5), nie tylko wybór produktowy.",
+		defaultValue: false,
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).

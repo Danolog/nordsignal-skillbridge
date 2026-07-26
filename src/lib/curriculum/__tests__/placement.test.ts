@@ -115,6 +115,60 @@ function referenceUnlocked(
 	return ordered.filter((m) => m.position > rootPosition && m.position <= k).map((m) => m.slug);
 }
 
+// ── Referencja pozostałych pól MIERNIKA (C2 przeglądu Leo) ────────────────────
+// Od v0.3 `blockingHoleSlug` i `supportMode` NIE są ozdobą werdyktu, tylko
+// polami miernika trafności progu (DECYZJA 2): pierwsze jest JEDYNYM źródłem
+// danych o studencie NIEDOSZACOWANYM (przechodzi moduł, którego nie
+// potrzebował, i nic nie zgłasza), drugie mówi, czy mitygacja „pełne wsparcie
+// przy poziomie granicznym" cokolwiek zmienia. Skoro L3 utrwala je w bazie
+// i nie da się ich odtworzyć wstecz, muszą wejść do WYCZERPUJĄCEGO porównania,
+// a nie zostać na kilku golden-przypadkach.
+
+/** Dziura ucinająca prefiks: pierwszy OTAGOWANY moduł poza korzeniem, który się nie kwalifikuje. */
+function referenceHole(
+	modules: readonly PlacementLadderModule[],
+	diag: PlacementDiagnosis | null,
+	threshold: CompetencyLevel,
+): string | null {
+	const ordered = [...modules].sort((a, b) => a.position - b.position);
+	const hole = ordered
+		.slice(1)
+		.find(
+			(m) =>
+				m.diagnosticConceptSlug !== null &&
+				!isQualifyingLevel(diag?.concepts[m.diagnosticConceptSlug]?.level ?? null, threshold),
+		);
+	return hole?.slug ?? null;
+}
+
+/**
+ * Tryb wsparcia per moduł WPROST z tabeli Sophii (v0.3, DECYZJA 2), liczony
+ * z wejścia — nie z werdyktu implementacji:
+ *   • moduł nieodblokowany → null,
+ *   • odblokowany na WŁASNYM pomiarze: poziom == próg → 'full', wyżej → 'fading',
+ *   • odblokowany bez własnego pomiaru (wciągnięty prefiksem) → 'full'.
+ */
+function referenceSupport(
+	modules: readonly PlacementLadderModule[],
+	diag: PlacementDiagnosis | null,
+	threshold: CompetencyLevel,
+): Record<string, string | null> {
+	const unlocked = new Set(referenceUnlocked(modules, diag, threshold));
+	const out: Record<string, string | null> = {};
+	for (const m of modules) {
+		if (!unlocked.has(m.slug)) {
+			out[m.slug] = null;
+			continue;
+		}
+		const level =
+			m.diagnosticConceptSlug === null
+				? null
+				: (diag?.concepts[m.diagnosticConceptSlug]?.level ?? null);
+		out[m.slug] = level === null ? "full" : level === threshold ? "full" : "fading";
+	}
+	return out;
+}
+
 describe("computePlacement — 6 przypadków z tabeli Sophii (DECYZJA 5)", () => {
 	it("wszystko poziom 1–2 → nic odblokowane, student zaczyna od l0-start", () => {
 		const out = computePlacement({
@@ -413,12 +467,20 @@ describe("computePlacement — równoważność z deklaratywnym brzmieniem regu�
 					if (stan !== undefined) levels[tag] = stan;
 				}
 				const diag = diagnosis(levels);
-				const oczekiwane = referenceUnlocked(LADDER, diag, threshold);
-				const otrzymane = computePlacement({
-					modules: LADDER,
-					diagnosis: diag,
-					threshold,
-				}).unlockedSlugs;
+				// C2 (przegląd Leo): porównujemy TRZY pola miernika naraz, nie samą
+				// listę odblokowań — `blockingHoleSlug` i `supportMode` od v0.3 są
+				// polami, które L3 utrwala i których nie da się odtworzyć wstecz.
+				const oczekiwane = {
+					unlocked: referenceUnlocked(LADDER, diag, threshold),
+					hole: referenceHole(LADDER, diag, threshold),
+					support: referenceSupport(LADDER, diag, threshold),
+				};
+				const out = computePlacement({ modules: LADDER, diagnosis: diag, threshold });
+				const otrzymane = {
+					unlocked: out.unlockedSlugs,
+					hole: out.blockingHoleSlug,
+					support: Object.fromEntries(out.modules.map((m) => [m.slug, m.supportMode])),
+				};
 				sprawdzone++;
 				if (JSON.stringify(oczekiwane) !== JSON.stringify(otrzymane)) {
 					rozbieznosci.push(

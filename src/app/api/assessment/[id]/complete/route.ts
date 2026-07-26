@@ -23,6 +23,7 @@ import { computeResult, type SessionAnswer } from "@/lib/assessment/plan";
 import { getStudentByUserId, isSessionExpired } from "@/lib/assessment/service";
 import type { AssessmentPlan } from "@/lib/assessment/types";
 import { auth } from "@/lib/auth/server";
+import { recordPlacementOnDiagnosisComplete } from "@/lib/curriculum/placement-service";
 import { db } from "@/lib/db";
 import { assessmentAnswers, assessmentSessions, competencies } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
@@ -114,7 +115,18 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 				updatedCompetencies += updated.length;
 			}
 
-			return { kind: "completed" as const, result, updatedCompetencies };
+			// `sessionKind` (nie `kind` — to dyskryminanta wyniku transakcji) niesie
+			// rodzaj sesji na zewnątrz: hook placementu 1E.7 wolno odpalić WYŁĄCZNIE
+			// dla 'diagnostic'. Ta trasa nie filtruje po rodzaju (egzamin modułowy ma
+			// własną — /api/exam/[id]/complete), więc sesja 'module_exam' własnego
+			// studenta domknięta tędy policzyłaby placement z wyniku EGZAMINU.
+			// Rozróżnienie exam/test_out to L5; do tego czasu bramka jest tu.
+			return {
+				kind: "completed" as const,
+				sessionKind: assessment.kind,
+				result,
+				updatedCompetencies,
+			};
 		});
 
 		if (outcome.kind === "not_found") {
@@ -124,6 +136,28 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 			return NextResponse.json(
 				{ error: "Diagnoza nie jest ukończona — odpowiedz na wszystkie pytania." },
 				{ status: 422 },
+			);
+		}
+
+		// 1E.7 (L3) — trwały nośnik odblokowania: zapis pełnego werdyktu placementu
+		// dla modułów, które ta diagnoza OTWARŁA (diagnoza otwiera, egzamin zalicza).
+		// GATING SZCZELNY: isFeatureEnabled JEST OSTATNIM, zwierającym warunkiem —
+		// przy fladze OFF wyrażenie zwiera się PRZED wejściem w hook, więc ZERO
+		// dodatkowych zapytań i odpowiedź trasy identyczna jak dziś (inwariant
+		// flag-OFF). Bramka jest TU (miejsce wywołania), nie w hooku — wzorzec 1E.4 R5.
+		// PO TRANSAKCJI: zapis idzie połączeniem właściciela i nie należy do
+		// transakcji diagnozy — wciągnięcie go tam związałoby domknięcie diagnozy
+		// z awarią dodatku.
+		// BEST-EFFORT: .catch + logError — błąd placementu NIE propaguje do
+		// odpowiedzi. Student ma dostać swój wynik diagnozy nawet gdy nośnik
+		// odblokowania padnie; idempotencja hooka (ON CONFLICT DO NOTHING) czyni
+		// ponowny zapłon przy retry bezpiecznym.
+		// `diagnosisResult` do lokalnej stałej: zawężenie typu nie przeżyłoby
+		// wewnątrz domknięcia `.catch` (parytet z hookiem enrollment 1E.4 R5).
+		const diagnosisResult = outcome.sessionKind === "diagnostic" ? outcome.result : null;
+		if (diagnosisResult && isFeatureEnabled("placementDiagnostic")) {
+			await recordPlacementOnDiagnosisComplete(student, id, diagnosisResult).catch((err) =>
+				logError("curriculum.placement", err, { studentId: student.id, sessionId: id }),
 			);
 		}
 
