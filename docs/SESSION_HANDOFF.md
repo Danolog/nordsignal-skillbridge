@@ -11,7 +11,59 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-25 (1E.4 powtórki FSRS) — BACKEND KOMPLETNY (R1–R5) NA PRODZIE ZA FLAGĄ OFF
+## STAN NA DZIŚ — 2026-07-26 (1E.4 powtórki FSRS) — CAŁY STOS NA PRODZIE ZA FLAGĄ `FLAG_SPACED_REPETITION` OFF (deploy≠release)
+
+**Jednym zdaniem:** kompletny stos powtórek rozłożonych w czasie (FSRS — algorytm planujący,
+kiedy przypomnieć koncept) — backend R1–R5, UI R6 i batch bramek zapłonu (CF-2/N1/N2) — jest na
+prodzie **za flagą OFF**; migracje 0042+0043 zastosowane na prod NEON; zostaje kilka bramek przed
+świadomym zapłonem flagi przez Darka.
+
+**Flaga na prodzie:** `FLAG_SPACED_REPETITION` **OFF** (`defaultValue false`, nieustawiona w env
+prod). Skutek: `/powtorki` i `/api/review/*` → **404**, hook enrollment (auto-zapis konceptu na
+powtórki) nie odpala, `review_states`/`review_logs` puste. Student NIC nie widzi do świadomego zapłonu.
+
+**Baseline `main` = `7f83330`** (PR #250, `origin/main`) — ostatni merge batcha bramek; R6 UI
+`b9b75d9` (PR #249). Każdy plasterek: Quinn adwersaryjnie + Leo (14 domen), autor commitów = Darek,
+jeden pisarz per gałąź.
+
+### Cały stos scalony (backend + UI + bramki)
+
+- **Backend R1–R5 + UI R6 + batch bramek (CF-2/N1/N2)** — scalone. Ostatni merge batcha `7f83330` (PR #250).
+- **UI `/powtorki`** (NIE `/review` — zajęte przez B8; Mila potwierdziła kanoniczność), scheduler
+  ts-fsrs long-term (Wariant A), enrollment przez zdany mastery gate (§4 defer, corrective defer —
+  Sophia), koncept kluczowy = `trunk='market' + single_choice` (N1).
+- **RODO** — retencja + RoPA (rejestr czynności przetwarzania) + klauzula #13a zamknięte
+  (`2cf33fa`, `rls-matrix` v0.31).
+
+### Migracja 0042+0043 ZASTOSOWANA na prod NEON
+
+- Kopia zapasowa `prod-backup-pre-0042-0043-review-20260726` przed zmianą; transakcyjnie;
+  **44 migracje, pending=0**.
+- Zweryfikowane odczytem z prod: `review_states`/`review_logs` z FORCE RLS (wymuszona izolacja
+  wierszy po studencie) + granty (`review_states`→`app_student` SELECT + polityka `student_sees_own`;
+  `review_logs`→DENY-both, zero grantów); indeks `idx_question_items_concept_status_type`.
+  **Tabele puste.**
+- Flaga OFF → `/powtorki` i `/api/review/*` nadal **404**.
+
+### POZOSTAŁE BRAMKI ZAPŁONU `FLAG_SPACED_REPETITION=1` (świadoma decyzja Darka)
+
+- ⏳ **realny 429-Upstash smoke** (preview/CI z SRH) — kontrakt scope w pełni pokryty testem
+  jednostkowym, brak tylko realnego pęknięcia limitera. Quinn/Ethan.
+- ⏳ **flaky „koniec sesji"** w jobie `a11y-review` (przechodzi na retry) — stabilizacja, Jack/Quinn.
+- ⏳ **`.env.test` cleartext `ANTHROPIC_API_KEY`** → audyt Ryana.
+- ⏳ **(firmowe, przed 1. studentem) klauzula informacyjna art. 13** — E-1, Darek/Wendy.
+- ✅ reszta checklisty (RODO, backend, UI, migracja, N1/N2, CF-1 ścieżka, CF-2 scope, CF-3 wiring) — ZAMKNIĘTE.
+
+**Zapłon = flip flagi na prod = świadoma decyzja Darka** (jak 1E.3). Rollback trywialny (flaga OFF);
+migracja addytywna, kopia Neon istnieje.
+
+**Środowisko (gotcha):** kanoniczny checkout produktu = zagnieżdżony
+`.../nordsignal-operating-system/SkillBridge`; `Documents/kodowanie/nordsignal-skillbridge` to STARY
+klon na `feat/etl-lift` (nie widzi lokalnych gałęzi) — pinować ścieżkę w zleceniach git.
+
+---
+
+## STAN POPRZEDNI — 2026-07-25 (1E.4 powtórki FSRS) — BACKEND KOMPLETNY (R1–R5) NA PRODZIE ZA FLAGĄ OFF
 
 **Jednym zdaniem:** cały backend powtórek rozłożonych w czasie (FSRS) — od schematu bazy,
 przez planer i serwis, po API i wpięcie w mastery gate — jest na prodzie **za flagą OFF**
