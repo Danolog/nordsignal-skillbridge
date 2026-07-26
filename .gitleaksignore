@@ -4,9 +4,11 @@
 # dodatkowo inline `gitleaks:allow`; ten wpis wycisza HISTORYCZNY commit.
 31ba61ac11b444d93ee17134e4f8c3b30867e360:src/lib/__tests__/log.test.ts:generic-api-key:68
 
-# 1E.7 L3 — ten sam wzorzec. `const PATH_KEY = "l3s-sciezka-testowa"` to SLUG
+# 1E.7 L3 — ten sam wzorzec. Stała PATH_KEY w teście placementu niesie SLUG
 # ścieżki curriculum (rekwizyt testu integracyjnego), nie sekret; regułę
 # generic-api-key odpala nazwa stałej zawierająca KEY + długość napisu.
+# ⚠ NIE cytuj tu wartości — komentarz z literałem sam odpala regułę (na tym
+# pliku), co kosztowało jeden przebieg CI.
 # Bieżąca wersja pliku ma inline `gitleaks:allow`, ale skan PR-owy chodzi po
 # COMMITACH gałęzi, więc historyczny f2232b2 (przed dopiskiem) trzeba wyciszyć
 # odciskiem palca. Wpis jest przypięty do JEDNEGO commita, pliku, reguły i
