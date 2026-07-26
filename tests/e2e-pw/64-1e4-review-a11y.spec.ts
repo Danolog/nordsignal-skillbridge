@@ -1,3 +1,5 @@
+import { tmpdir } from "node:os";
+import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { loginWithPassword } from "./helpers/auth";
@@ -36,6 +38,11 @@ import { loginWithPassword } from "./helpers/auth";
  *
  * Tagi WCAG: identyczne z bramkami 1E.3 / C11.
  */
+
+// storageState współdzielony przez 5 testów (zapisany raz w beforeAll). Poza repo
+// (tmpdir) — efemeryczny artefakt przebiegu, nigdy commitowany, zawsze zapisywalny
+// w workerze CI. Jeden worker = jeden plik na przebieg (config: workers:1).
+const STORAGE_STATE = path.join(tmpdir(), "sb-e2e-1e4-review-auth.json");
 
 const REVIEW_SCOPE = "main.db-main";
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"];
@@ -139,8 +146,29 @@ async function mockReviewApi(
 }
 
 test.describe("@safe 1E.4 R6 — skan a11y sesji powtórek (bramka przed FLAG_SPACED_REPETITION)", () => {
-	test.beforeEach(async ({ page }) => {
-		await loginWithPassword(page, "main");
+	// Reużycie sesji: logujemy się RAZ (beforeAll, konto „main"), zapisujemy stan
+	// sesji do pliku i wstrzykujemy go do wszystkich 5 testów przez test.use
+	// ({ storageState }). Każdy test startuje już zalogowany — page.goto("/powtorki")
+	// nie przechodzi przez /login. Zdejmuje 5 sekwencyjnych logowań (poprzednio
+	// beforeEach × 5) do JEDNEGO: piąte trafiało w limiter auth (Redis/SRH w CI) i
+	// flakowało stan (d) „koniec sesji" (pad ~15,9 s przy 1. próbie, przechodził na
+	// retry #1). To niestabilność harnessu logowania, nie defekt a11y — axe = 0
+	// naruszeń w każdym z 5 stanów. Mocki /api/review/* zostają PER-TEST (page.route
+	// w treści każdego testu) — reużywamy tylko sesję, nie mocki.
+	test.use({ storageState: STORAGE_STATE });
+
+	test.beforeAll(async ({ browser }) => {
+		// storageState: undefined JEST konieczne — Playwright wstrzykuje domyślne opcje
+		// kontekstu (w tym storageState z test.use) także do browser.newContext(), więc
+		// bez zerowania ten kontekst próbowałby CZYTAĆ plik, którego dopiero tu tworzymy
+		// (ENOENT). Logujemy od czystej sesji, potem zapisujemy stan do pliku.
+		const context = await browser.newContext({ storageState: undefined });
+		try {
+			await loginWithPassword(await context.newPage(), "main");
+			await context.storageState({ path: STORAGE_STATE });
+		} finally {
+			await context.close();
+		}
 	});
 
 	test("(a) pytanie — pierwsza karta", async ({ page }) => {
