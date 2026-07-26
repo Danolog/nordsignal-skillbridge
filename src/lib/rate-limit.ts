@@ -47,17 +47,22 @@ function makeLimiter(limiter: ReturnType<typeof Ratelimit.slidingWindow>, prefix
 
 /**
  * Override progu limitera WYŁĄCZNIE dla testów (bramka QA — realny 429 scope=daily
- * bez 200+ żądań, bo burst 60/min tnie wcześniej). Prod-safe: Vercel NIGDY nie
- * ustawia tych zmiennych → wartość produkcyjna (`fallback`) bez zmiany. Honorujemy
- * override tylko gdy jest dodatnią liczbą całkowitą; cokolwiek innego → fallback.
- * Wzorzec bezpieczeństwa identyczny jak reszta toru testowego (UPSTASH_* z SRH):
- * bezpieczeństwo z tego, że produkcja env NIE ustawia, nie z gałęzi w kodzie.
+ * bez 200+ żądań, bo burst 60/min tnie wcześniej). Prod-safe DWUWARSTWOWO:
+ *   1. Vercel NIGDY nie ustawia tych zmiennych → wartość produkcyjna (`fallback`)
+ *      bez zmiany (bezpieczeństwo z tego, że produkcja env NIE ustawia).
+ *   2. Defense-in-depth (warunek Leo, 1E.4): override może TYLKO ZAOSTRZAĆ limiter,
+ *      nigdy go poluzować — `Math.min(n, fallback)`. Nawet gdyby wartość wyciekła do
+ *      prod env (`RATE_LIMIT_REVIEW_*=<ogromna>`), nie może podnieść progu powyżej
+ *      produkcyjnego fallbacku; obniżyć (zaostrzyć) — tak. Postawa limitera prod
+ *      jest niezmienna od strony env, nie tylko od konwencji „Vercel nie ustawia".
+ * Honorujemy override tylko gdy jest dodatnią liczbą całkowitą; cokolwiek innego →
+ * fallback.
  */
 function limitOverride(envKey: string, fallback: number): number {
 	const raw = process.env[envKey];
 	if (!raw) return fallback;
 	const n = Number(raw);
-	return Number.isInteger(n) && n > 0 ? n : fallback;
+	return Number.isInteger(n) && n > 0 ? Math.min(n, fallback) : fallback;
 }
 
 export const rateLimiters = {
