@@ -1,0 +1,36 @@
+-- ============================================================================
+-- 1E.7 L1 — MOST diagnoza → drabina. Kolumna curriculum_modules.diagnostic_concept_id:
+-- koncept z pnia RYNKOWEGO (trunk='market' AND diagnostic=true), którego poziom
+-- z diagnozy decyduje o ODBLOKOWANIU modułu — nie o zaliczeniu (wariant hybrydowy,
+-- sign-off Darka 2026-07-26: diagnoza otwiera, egzamin zalicza). Mapa modułów:
+-- docs/product/decyzje-1e7-placement-v0.1.md DECYZJA 1 (koryguje ADR-014 D8,
+-- którego postulat „każdy moduł otagowany konceptem diagnostycznym" nigdy nie
+-- został zaimplementowany — do dziś mostu w danych nie było).
+--
+-- NULLABLE ŚWIADOMIE, i NULL ma tu znaczenie: „NIE ZMIERZYLIŚMY", nigdy „student
+-- nie umie". Trzy moduły mają NULL z decyzji produktowej (l0-start — setup Colab
+-- to czynność, nie wiedza, i brak egzaminu = brak drogi awaryjnej; f2-python-2 i
+-- f3-dane-python — bank nie ma ani jednego pytania o pętle, definiowanie funkcji,
+-- słowniki ani agregaty). Reguła prefiksowa L2 na tym stoi: moduł z NULL wjeżdża
+-- do odblokowanego prefiksu razem z nim, ale sam go NIGDY nie przedłuża. Odwrócenie
+-- tej semantyki („NULL = nie umie") zamyka te trzy moduły na stałe i zabija funkcję.
+--
+-- FK bez ON DELETE (no action, wzorem curriculum_item_concepts.concept_id):
+-- skasowanie konceptu, na którym wisi tag modułu, ma się WYWALIĆ, a nie po cichu
+-- wyzerować mapę placementu. Bez indeksu świadomie — tabela ma 9 wierszy, a jedyny
+-- odczyt to skan całej drabiny; indeks byłby kosztem utrzymania bez zysku.
+--
+-- Migracja CZYSTO ADDYTYWNA (ADD COLUMN + ADD CONSTRAINT) — zero DROP, zero DELETE,
+-- zero zmiany istniejących danych. Wszystkie istniejące wiersze dostają NULL, co
+-- do momentu ingestu manifestu jest stanem poprawnym (= placement nie działa,
+-- drabina zachowuje się dokładnie jak przed migracją).
+-- ============================================================================
+ALTER TABLE "curriculum_modules" ADD COLUMN "diagnostic_concept_id" uuid;--> statement-breakpoint
+ALTER TABLE "curriculum_modules" ADD CONSTRAINT "curriculum_modules_diagnostic_concept_id_question_concepts_id_fk" FOREIGN KEY ("diagnostic_concept_id") REFERENCES "public"."question_concepts"("id") ON DELETE no action ON UPDATE no action;
+
+-- ROLLBACK:
+-- ALTER TABLE "curriculum_modules" DROP CONSTRAINT IF EXISTS "curriculum_modules_diagnostic_concept_id_question_concepts_id_fk";
+-- ALTER TABLE "curriculum_modules" DROP COLUMN IF EXISTS "diagnostic_concept_id";
+-- Wycofanie jest BEZPIECZNE dopóki nie wszedł L3 (nośnik odblokowania): kolumna
+-- trzyma wyłącznie mapę konfiguracyjną odtwarzalną ingestem manifestu, zero danych
+-- studenta. Po L3 sprawdź najpierw, czy nośnik odblokowań na nią nie wskazuje.

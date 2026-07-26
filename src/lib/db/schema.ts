@@ -1654,7 +1654,9 @@ export const tutorTurnsRelations = relations(tutorTurns, ({ one }) => ({
 // w 0035): curriculum_item_progress (stan pozycji), curriculum_item_answers
 // (APPEND-ONLY — nośnik instrumentacji D11, cech FSRS 1E.4 i śladu streaka
 // 1.18; ocena deterministyczna przy zapisie, 0 LLM), curriculum_module_progress
-// (blokada prereq D3 + verified_by_method dla placementu/test-outu).
+// (blokada prereq D3 + verified_by_method dla egzaminu/test-outu; placement 1E.7
+// NIE zapisuje tej kolumny — odblokowanie ma własny nośnik, patrz komentarz przy
+// curriculumModuleProgress.verifiedByMethod).
 //
 // Stan powtórek FSRS = OSOBNA tabela w 1E.4 (ADR-014 D2 świadomie jej nie
 // projektuje); kind='review' to rezerwacja typu POZYCJI treści.
@@ -1671,6 +1673,22 @@ export const curriculumModules = pgTable(
 		// Parametry egzaminu per moduł (D3: liczba pytań, licznik błędów) —
 		// konsument w 1E.3; NULL do tego czasu.
 		examConfigJson: jsonb("exam_config_json"),
+		// 1E.7 L1 — MOST diagnoza → drabina (mapa Sophii, DECYZJA 1 w
+		// docs/product/decyzje-1e7-placement-v0.1.md; koryguje ADR-014 D8).
+		// Koncept z pnia RYNKOWEGO (trunk='market' AND diagnostic=true), którego
+		// poziom z diagnozy decyduje o ODBLOKOWANIU modułu — nie o zaliczeniu
+		// (wariant hybrydowy: diagnoza otwiera, egzamin zalicza). To osobna
+		// warstwa tagów niż curriculum_item_concepts (tamte to pień 'foundations',
+		// a ingest zabrania kolizji slugów między pniami).
+		//
+		// NULL znaczy „NIE ZMIERZYLIŚMY", nigdy „student nie umie". Rozróżnienie
+		// jest nośne dla reguły prefiksowej L2 (DECYZJA 5 pkt 4–5): moduł z NULL
+		// wjeżdża do odblokowanego prefiksu razem z nim, ale sam NIGDY go nie
+		// przedłuża. Odwrócenie tej semantyki („NULL = nie umie") zamyka
+		// f2-python-2, f3-dane-python i l0-start na stałe i zabija funkcję.
+		// Tag jest DANYMI (manifest → ingest), nie stałą w kodzie — zmiana mapy
+		// nie może wymagać wdrożenia (wymóg produktowy Sophii).
+		diagnosticConceptId: uuid("diagnostic_concept_id").references(() => questionConcepts.id),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
@@ -1913,8 +1931,16 @@ export const curriculumModuleProgress = pgTable(
 			.notNull()
 			.references(() => curriculumModules.id, { onDelete: "cascade" }),
 		status: text("status").notNull().default("locked"),
-		// NULL = zaliczony pełnym przejściem; wypełniane przez egzamin (1E.3),
-		// placement (1E.7 — 'diagnostic') i test-out (D8).
+		// NULL = zaliczony pełnym przejściem; wypełniane przez egzamin (1E.3 → 'exam')
+		// i test-out (D8 → 'test_out').
+		// ⚠ 'diagnostic' w TEJ kolumnie jest MARTWE pod ramą hybrydową 1E.7 (decyzja
+		// Darka 2026-07-26): placement ODBLOKOWUJE moduł, nie zalicza go — zaliczenie
+		// zawsze ma pokrycie egzaminem. Odblokowanie dostaje własny nośnik (plasterek
+		// L3), nie tę kolumnę. Pilnuje tego kontrakt-test
+		// tests/unit/ds/placement-martwa-wartosc-diagnostic.contract.test.ts.
+		// NIE myl z competencies.verified_by_method (migracja 0029), gdzie
+		// 'diagnostic' jest legalne i żywe — tam diagnoza znaczy pochodzenie poziomu
+		// kompetencji. Dwie różne kolumny o tej samej nazwie.
 		verifiedByMethod: text("verified_by_method"),
 		completedAt: timestamp("completed_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

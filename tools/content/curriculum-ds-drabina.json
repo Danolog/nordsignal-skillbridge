@@ -7,43 +7,51 @@
 			"Pozycje atomów (theory/exercise/lab) wchodzą z treścią 1E.2 (Sophia) — tu wyłącznie struktura + capstone'y.",
 			"Mini-projekt transferowy po F3 (pkt 12b) wejdzie jako pozycja project w f3-dane-python, gdy projekt powstanie w 1E.2 (CHECK wymaga istniejącego projectId).",
 			"Git/terminal: just-in-time (decyzja Darka pkt 9) — atomy wejdą w m-eda, NIE w l0-start.",
-			"1E.2: pozycje mają stabilny slug (klucz upsertu ingestu — ustalenie wiążące z przeglądu Ethana); position = tylko sortowanie. Capstone'y: slug 'capstone'."
+			"1E.2: pozycje mają stabilny slug (klucz upsertu ingestu — ustalenie wiążące z przeglądu Ethana); position = tylko sortowanie. Capstone'y: slug 'capstone'.",
+			"1E.7 L1 (mapa Sophii, DECYZJA 1 w docs/product/decyzje-1e7-placement-v0.1.md — koryguje ADR-014 D8): pole 'diagnosticConcept' per moduł = slug konceptu z pnia RYNKOWEGO (trunk='market' AND diagnostic=true) albo jawny null. null znaczy 'NIE ZMIERZYLIŚMY', nigdy 'student nie umie' — moduł z null wjeżdża do odblokowanego prefiksu razem z nim, ale sam go nie przedłuża (DECYZJA 5 pkt 4-5). Pole jest WYMAGANE na każdym module: brak klucza = błąd konfiguracji łapany kontrakt-testem (tests/unit/ds/curriculum-placement-tagi.contract.test.ts), jawny null = decyzja.",
+			"1E.7 L1 — słabe ogniwo mapy: para m-llm ↔ ds-llm oznaczona przez Sophię jako 'słaba — pierwsza do rewizji' (bank pyta o wiedzę ogólną o modelach: RAG kontra dostrajanie, okno kontekstu, liczba parametrów warstwy transformera; moduł uczy strukturalnego wyjścia i ewaluacji względem wzorca). Tag zostaje, bo to jedyny kandydat, a moduł jest ostatni w drabinie (chroni go pełen prefiks 4 wcześniejszych pomiarów). Drugie w kolejce: m-sql (bank nie sprawdza funkcji okna wymaganych przez rubrykę capstone'u — nieszkodliwe pod hybrydą, bo odblokowanie nie zalicza capstone'u)."
 		]
 	},
 	"path": "data-science",
 	"modules": [
 		{
 			"slug": "l0-start",
+			"diagnosticConcept": null,
 			"title": "Start: środowisko pracy",
 			"description": "Colab i notebook od zera — pierwsza uruchomiona komórka w ≤15 min od wejścia (ADR-014 D10). Wariant LEAN: 4 atomy-checklisty, zaliczenie przez wykonanie (pkt 10), bez egzaminu. Bez Gita i terminala (just-in-time — pkt 9).",
 			"items": []
 		},
 		{
 			"slug": "f1-python-1",
+			"diagnosticConcept": "ds-python",
 			"title": "Python I: zmienne, typy, warunki",
 			"description": "Fundamenty od literalnego zera (persona ADR-014): atom = teoria 300–600 słów + worked example + 3 pytania.",
 			"items": []
 		},
 		{
 			"slug": "f2-python-2",
+			"diagnosticConcept": null,
 			"title": "Python II: pętle, funkcje, struktury danych",
 			"description": "Ciąg dalszy fundamentów; fading wsparcia wzdłuż modułu (D5).",
 			"items": []
 		},
 		{
 			"slug": "f3-dane-python",
+			"diagnosticConcept": null,
 			"title": "Dane w Pythonie: kolekcje i rekordy",
 			"description": "Czysty Python na danych: append, filtrowanie, słowniki, lista słowników (pomost do JSON/pandas), agregaty; zwieńczenie: MINI-PROJEKT transferowy (pkt 12b — pozycja dojdzie z treścią 1E.2). Pandas przeniesione do m-pandas (audyt pojemności D10, 2026-07-11).",
 			"items": []
 		},
 		{
 			"slug": "m-pandas",
+			"diagnosticConcept": "ds-pandas",
 			"title": "Pandas: dane w tabelach",
 			"description": "DataFrame, selekcja, braki danych, grupowanie, wykresy + import/pakiety/terminal w Colab. Moduł wydzielony z M-EDA decyzją treściową Sophii (audyt pojemności D10, 2026-07-11 — bilans rubryki capstone'u nie mieścił się w 5–6 atomach; docs/curation/sophia-1e2-audyt-pojemnosci-m-eda.md).",
 			"items": []
 		},
 		{
 			"slug": "m-eda",
+			"diagnosticConcept": "ds-eda",
 			"title": "EDA: od API do repozytorium",
 			"description": "API i JSON (GUS BDL), Git/GitHub just-in-time (pkt 9), przebieg EDA; capstone: EDA na danych GUS BDL. Bez egzaminu MC — bramką jest capstone (wariant C, pkt 2).",
 			"items": [
@@ -58,6 +66,7 @@
 		},
 		{
 			"slug": "m-sql",
+			"diagnosticConcept": "ds-sql",
 			"title": "SQL: analiza danych w bazie",
 			"description": "Od tabeli i SELECT po agregacje; capstone: analiza przejazdów w DuckDB.",
 			"items": [
@@ -72,6 +81,7 @@
 		},
 		{
 			"slug": "m-ml",
+			"diagnosticConcept": "ds-uczenie-maszynowe",
 			"title": "Pierwszy model predykcyjny",
 			"description": "Baseline, walidacja, leakage, metryki; capstone: pierwszy model w scikit-learn.",
 			"items": [
@@ -86,6 +96,7 @@
 		},
 		{
 			"slug": "m-llm",
+			"diagnosticConcept": "ds-llm",
 			"title": "LLM: ekstrakcja strukturalna",
 			"description": "Czym są LLM, strukturalne wyjście, ewaluacja z ground truth; capstone: ekstrakcja do JSON.",
 			"items": [
