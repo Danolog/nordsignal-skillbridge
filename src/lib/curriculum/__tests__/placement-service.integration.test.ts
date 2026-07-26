@@ -28,7 +28,10 @@ const dBack = isLocalTestDb ? describe : describe.skip;
 
 const USER = "u-1e7-serwis";
 const PREFIX = "l3s-";
-const PATH_KEY = "l3s-sciezka-testowa";
+// Fałszywy alarm `generic-api-key` (nazwa stałej zawiera KEY + napis o dużej
+// entropii). To slug ścieżki curriculum — rekwizyt testu, nie sekret. Wyciszenie
+// jest ZAKRESU JEDNEJ LINII, konwencją repo (por. notebooks-mml.contract.test.ts).
+const PATH_KEY = "l3s-sciezka-testowa"; // gitleaks:allow
 const KOMPETENCJA_PYTHON = "L3S Python";
 const KOMPETENCJA_PANDAS = "L3S Pandas";
 const KOMPETENCJA_EDA = "L3S EDA";
