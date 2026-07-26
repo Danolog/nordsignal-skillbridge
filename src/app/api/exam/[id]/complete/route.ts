@@ -8,9 +8,15 @@
 //    {passed, errorCount, failedConcepts, correctives},
 //  - P4: po OBLANIU z wyczerpanym cap 2 (correctives=true) dokładamy do
 //    result_json paczkę remediacji (buildCorrectivesPackage: koncept → ≤3
-//    atomy) + mikrocopy. ZERO zapisu do curriculum_module_progress (integracja
-//    z drabiną = P5). Ślad aktywności podejścia jest już wpięty przez
+//    atomy) + mikrocopy. Ślad aktywności podejścia jest już wpięty przez
 //    assessment_answers (patrz src/lib/rhythm/activity.ts) — bez zmian tutaj.
+//  - 1E.7 · L0: ZDANY egzamin zostawia ślad w drabinie — upsert
+//    curriculum_module_progress (status='completed', verified_by_method='exam')
+//    W TEJ SAMEJ transakcji co werdykt. Wcześniej trasa pisała wyłącznie do
+//    assessment_sessions, a P5 (exam-gate.ts) okazało się w całości read-only:
+//    student zdawał egzamin, a moduł zostawał niezaliczony i następny
+//    zablokowany. Kaskada completeItem tego nie łata — pozycji kind='exam' nie
+//    da się ukończyć żadną trasą, więc w module z egzaminem nigdy nie domyka.
 //
 // Wynik wraca do klienta (passed + licznik + koncepty) — dopiero tu student
 // poznaje werdykt (w trakcie egzaminu zero feedbacku).
@@ -35,7 +41,7 @@ import {
 } from "@/lib/assessment/exam-service";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { assessmentAnswers, assessmentSessions } from "@/lib/db/schema";
+import { assessmentAnswers, assessmentSessions, curriculumModuleProgress } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
 import { logError } from "@/lib/log";
 import { enrollModuleConceptsOnMasteryPass } from "@/lib/review/enroll-hook";
@@ -109,6 +115,61 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 				.update(assessmentSessions)
 				.set({ status: "completed", resultJson, completedAt: new Date() })
 				.where(and(eq(assessmentSessions.id, id), eq(assessmentSessions.status, "in_progress")));
+
+			// 1E.7 · L0 — ŚLAD W DRABINIE. Zdany egzamin ⇒ moduł zaliczony metodą
+			// 'exam' (E4 bramki, odblokowanie następnego modułu przez ladder.ts).
+			// W TRANSAKCJI, nie po niej: ślad drabiny nie jest dodatkiem edukacyjnym
+			// jak hak FSRS niżej (best-effort). Werdykt bez śladu = stan „zdane, ale
+			// niezaliczone" — dokładnie naprawiany defekt. Gdy upsert padnie, cały
+			// complete się cofa: student dostaje 500 i może powtórzyć complete
+			// (sesja zostaje in_progress, więc powtórka jest legalna).
+			// OWNER-SIDE: `db` to połączenie właściciela (src/lib/db/index.ts) —
+			// wymagane, bo curriculum_module_progress ma FORCE RLS, a app_student ma
+			// wyłącznie SELECT. Wzorzec zapisu jak completeItem (completion.ts).
+			// tenant_id z `student.tenantId` (jedno źródło, nie z sesji egzaminu).
+			// verified_by_method zawsze 'exam'. Decyzja produktowa JUŻ ZAPADŁA
+			// (docs/product/decyzje-1e7-placement-v0.1.md, rama nadrzędna, sign-off
+			// Darka 2026-07-26): zaliczenie modułu BEZ przechodzenia go (test-out)
+			// zapisuje 'test_out'. Odroczone jest wykonanie, nie decyzja — wchodzi
+			// w plasterku L5. ZNANY DŁUG OKNA L0→L5 (od 2026-07-26): wiersze zapisane
+			// w tym oknie mają 'exam' także dla ścieżki test-out i po fakcie NIE dają
+			// się odróżnić (liczby ukończonych pozycji w chwili zdania nie zapisujemy).
+			// Nieszkodliwe dziś: exam-gate.ts:70 traktuje obie wartości równorzędnie (E4).
+			// onConflictDoUpdate obowiązkowy: ponowne zdanie po restarcie cyklu
+			// trafiłoby w uq_curriculum_module_progress_student_module (23505).
+			// `set` celowo WĄSKI (jak completion.ts:72) — nie dotykamy pól, których
+			// nie ustawiamy świadomie.
+			// NIEZMIENNIK KOLEJNOŚCI BLOKAD (adresat: autor L1 i dalszych plasterków):
+			// żadna transakcja nie bierze blokady na assessment_sessions PO
+			// curriculum_module_progress. Ta trasa trzyma FOR UPDATE na
+			// assessment_sessions i dokłada pod ten sam lock wiersz drabiny.
+			// Dziś pisarze drabiny to: ta trasa + kaskada completeItem (completion.ts,
+			// wołana z /api/curriculum/items/[id]/{answer,complete}) — żaden z pozostałych
+			// nie dotyka assessment_sessions, więc cyklu blokad (deadlock) nie ma; zostaje
+			// krótka rywalizacja o ten sam wiersz (student, moduł).
+			// Pierwszy realny kandydat do złamania niezmiennika: L1 placementu — czyta
+			// sesję diagnozy i zapisze własny nośnik odblokowania. Kolejność ma zostać ta sama.
+			if (resultJson.passed && assessment.moduleId) {
+				await tx
+					.insert(curriculumModuleProgress)
+					.values({
+						studentId: student.id,
+						tenantId: student.tenantId,
+						moduleId: assessment.moduleId,
+						status: "completed",
+						verifiedByMethod: "exam",
+						completedAt: new Date(),
+					})
+					.onConflictDoUpdate({
+						target: [curriculumModuleProgress.studentId, curriculumModuleProgress.moduleId],
+						set: {
+							status: "completed",
+							verifiedByMethod: "exam",
+							completedAt: new Date(),
+							updatedAt: new Date(),
+						},
+					});
+			}
 			// moduleId wypchnięty do outcome (1E.4 R5): hook enrollment poza transakcją
 			// potrzebuje adresu modułu. Dla 'module_exam' CHECK
 			// assessment_sessions_module_exam_requires_module gwarantuje non-null.
