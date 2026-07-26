@@ -526,6 +526,124 @@ jobs:
           retention-days: 7
 
   # ─────────────────────────────────────────────────────────────────────────
+  # rate-limit-review — Playwright, DOWÓD ŻYWEGO LIMITERA na POST /api/review/answer
+  # (1E.4 R4/CF-2, bramka Quinn — domknięcie zapłonu FLAG_SPACED_REPETITION). W
+  # przeciwieństwie do a11y-review (mock trasy przez page.route) TU walimy w PRAWDZIWY
+  # endpoint z ŻYWYM limiterem (Upstash SDK → SRH → Redis) i sprawdzamy realne 429 +
+  # scope w body. Unit (review-routes.test.ts) mockuje applyRateLimit — dowodzi
+  # kontraktu trasa→runner, ale NIE że żywy limiter faktycznie pęka. Ten job zamyka
+  # dokładnie tę lukę (lekcja Quinn: „zielony test ≠ działający kod, jeśli mockuje
+  # to, co realnie pęka").
+  #
+  # MATRYCA (dwie komórki): trasa sprawdza burst PRZED daily, oba inkrementują ten sam
+  # klucz — w jednym procesie wychodzi tylko scope o NIŻSZYM progu. Żeby pokryć OBA
+  # scope naprawdę, odpalamy spec dwa razy z różnym progiem (override prod-safe z
+  # rate-limit.ts; Vercel tych zmiennych NIE ustawia → prod = 60/min, 200/dzień):
+  #   - burst: RATE_LIMIT_REVIEW_ANSWER=3, daily=200 → 4. żądanie pęka na burst
+  #   - daily: answer=60, RATE_LIMIT_REVIEW_DAILY=3  → 4. żądanie pęka na daily
+  # SERWISY + POSTGRES/REDIS/SRH: identyczne z a11y-review — /api/review/answer ma
+  # boot-guard rate-limitera zaspokajany lokalnym redis + SRH (bez SRH limiter NO-OP
+  # i 429 nigdy nie pada — czyli test wykrywa regresję „limiter wyłączony"). Zero
+  # sekretów prod.
+  rate-limit-review:
+    name: rate-limit-review (Playwright — realny 429 scope=${{ matrix.scope }} 1E.4)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scope: burst
+            answer: "3"
+            daily: "200"
+          - scope: daily
+            answer: "60"
+            daily: "3"
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: skillbridge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      srh:
+        image: hiett/serverless-redis-http:latest
+        ports:
+          - 8079:80
+        env:
+          SRH_MODE: env
+          SRH_TOKEN: example-e2e-ci-token
+          SRH_CONNECTION_STRING: "redis://redis:6379"
+    env:
+      # Placeholder testowy (32 znaki) — nie sekret. Realny prod bierze z Vercela.
+      BETTER_AUTH_SECRET: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      UPSTASH_REDIS_REST_URL: http://localhost:8079
+      UPSTASH_REDIS_REST_TOKEN: example-e2e-ci-token
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      # Flaga powtórek — bez niej /api/review/answer robi 404 (trasa nie istnieje).
+      FLAG_SPACED_REPETITION: "1"
+      # Progi testowe (override prod-safe) + oczekiwany scope — z matrycy.
+      RATE_LIMIT_REVIEW_ANSWER: ${{ matrix.answer }}
+      RATE_LIMIT_REVIEW_DAILY: ${{ matrix.daily }}
+      EXPECTED_SCOPE: ${{ matrix.scope }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Ustaw DATABASE_URL/E2E_DATABASE_URL + poświadczenia konta testowego
+        env:
+          PGUSER: test
+          PGPASS: test
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGDB: skillbridge_test
+        run: |
+          AT='@'
+          CREDS="${PGUSER}:${PGPASS}"
+          DSN="postgresql://${CREDS}${AT}${PGHOST}:${PGPORT}/${PGDB}"
+          echo "DATABASE_URL=${DSN}" >> "$GITHUB_ENV"
+          echo "E2E_DATABASE_URL=${DSN}" >> "$GITHUB_ENV"
+          # Konto MAIN — spec 65 loguje się (E2E_TEST_EMAIL/PASSWORD) i wala w limiter.
+          CRED='Test1234!e2e'
+          echo "E2E_TEST_EMAIL=e2e-main@example.com" >> "$GITHUB_ENV"
+          echo "E2E_TEST_PASSWORD=${CRED}" >> "$GITHUB_ENV"
+      - run: pnpm exec playwright install --with-deps chromium
+      # Migracja schematu na bazie TESTOWEJ (guard allowlisty hostów testowych).
+      - run: pnpm db:migrate:test
+      # Student „main" (loginWithPassword) — spec potrzebuje TYLKO zalogowanego studenta;
+      # body oceny to losowe UUID (limiter pęka przed lookupem, więc bank pytań zbędny).
+      - run: pnpm seed:e2e
+      # Build artefaktu produkcyjnego — `next start` (webServer configu CI) go serwuje.
+      - run: pnpm build
+      - name: Playwright — realny 429 scope=${{ matrix.scope }} (żywy SRH)
+        run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/65-1e4-review-rate-limit.spec.ts
+      - name: Upload raportu Playwright (przy padzie)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-rate-limit-${{ matrix.scope }}
+          path: playwright-report/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────
   # e2e-llm — Playwright, sciezka krytyczna #1 (rejestracja -> onboarding ->
   # dashboard) z REALNYM wolaniem modelu (Z5 spec, segment B @llm).
   #
