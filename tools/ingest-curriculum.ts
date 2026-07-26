@@ -3,7 +3,7 @@
  * + treść atomów i bank pytań foundations (tools/content/curriculum-atoms/*.json).
  *
  * IDEMPOTENTNY (drugi bieg = identyczny stan logiczny):
- *  - moduły: upsert po slug,
+ *  - moduły: upsert po slug (wraz z tagiem placementu 1E.7 — patrz niżej),
  *  - pozycje: upsert po (module_id, slug) — ustalenie wiążące z przeglądu
  *    Ethana po 1E.1: slug to TOŻSAMOŚĆ pozycji, position TYLKO sortuje.
  *    NIGDY nie kasuje pozycji (mogą mieć postęp studentów; usunięcie =
@@ -35,8 +35,18 @@
  * [CZERWONA LINIA ADR-010], po backupie gałęzią Neona:
  *   CONFIRM_PROD_DB=1 pnpm db:ingest-curriculum
  *
+ * TAG PLACEMENTU (1E.7 L1): pole `diagnosticConcept` modułu w manifeście drabiny
+ * (slug konceptu rynkowego albo jawny null) trafia do
+ * curriculum_modules.diagnostic_concept_id. Rozwiązanie sluga → id ma KONTRAKT
+ * TWARDY: slug spoza banku albo koncept bez `trunk='market' AND diagnostic=true`
+ * przerywa ingest wyjątkiem, nigdy nie daje cichego NULL
+ * (`resolveDiagnosticConceptId`). NULL w bazie znaczy „nie zmierzyliśmy", nie
+ * „student nie umie" — reguła prefiksowa L2 na tym stoi.
+ *
  * Kolejność na prod (lekcja „migracja przed deploy"): najpierw migracja
- * (0035/0036), potem ten ingest, dopiero potem flaga.
+ * (0035/0036, od 1E.7 także 0044), potem bank rynkowy
+ * (`db:ingest-question-bank tools/content/question-bank-ds-partia-1.json` —
+ * PREREKWIZYT tagów placementu), potem ten ingest, dopiero potem flaga.
  */
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -86,6 +96,16 @@ export type LadderModule = {
 	slug: string;
 	title: string;
 	description?: string;
+	/**
+	 * 1E.7 L1 — tag placementu: slug konceptu DIAGNOSTYCZNEGO (pień rynkowy,
+	 * `trunk='market' AND diagnostic=true`) albo jawny `null` = „nie zmierzyliśmy".
+	 * Brak klucza ingest traktuje jak `null`; obecności klucza na KAŻDYM module
+	 * pilnuje kontrakt-test (`tests/unit/ds/curriculum-placement-tagi.contract.test.ts`)
+	 * — podział ról za wymogiem Sophii: „brak wpisu = błąd konfiguracji do
+	 * wyłapania kontrakt-testem, jawny NULL = decyzja". Pole jest opcjonalne
+	 * w TYPIE, bo `Ladder` budują też syntetyczne fixture'y testów integracyjnych.
+	 */
+	diagnosticConcept?: string | null;
 	items: LadderItem[];
 };
 export type Ladder = { path: string; modules: LadderModule[] };
@@ -285,6 +305,53 @@ async function syncQuestionBank(
 	};
 }
 
+/**
+ * 1E.7 L1 — rozwiązanie tagu placementu modułu: slug → id konceptu diagnostycznego.
+ *
+ * KONTRAKT TWARDY (ten sam wzorzec co strażnik kolizji pni wyżej i strażnik
+ * capstone'ów niżej): literówka w slugu albo koncept spoza zbioru diagnozy
+ * PRZERYWA ingest wyjątkiem. Nigdy ciche `NULL` — ciche NULL po cichu wyłączyłoby
+ * placement dla modułu, a `NULL` w tej kolumnie znaczy „nie zmierzyliśmy" (decyzja
+ * produktowa), więc literówka podszyłaby się pod świadomą decyzję i wyszłaby
+ * dopiero na pilotażu, na żywym studencie.
+ *
+ * Warunek `trunk='market' AND diagnostic=true` jest ten sam, którym diagnoza
+ * dobiera pytania — tag spoza tego zbioru nigdy nie dostałby poziomu w
+ * `result_json`, więc byłby tagiem-atrapą blokującym moduł na zawsze.
+ *
+ * KOLEJNOŚĆ NA PROD: bank rynkowy (`db:ingest-question-bank`) MUSI wejść przed
+ * tym ingestem — inaczej strażnik słusznie przerwie na pierwszym tagu.
+ */
+async function resolveDiagnosticConceptId(
+	client: PoolClient,
+	moduleSlug: string,
+	conceptSlug: string | null | undefined,
+): Promise<string | null> {
+	if (conceptSlug === null || conceptSlug === undefined) return null;
+	const { rows } = await client.query<{ id: string; trunk: string; diagnostic: boolean }>(
+		"SELECT id, trunk, diagnostic FROM question_concepts WHERE slug = $1",
+		[conceptSlug],
+	);
+	if (rows.length === 0) {
+		throw new Error(
+			`Moduł '${moduleSlug}': tag diagnostyczny '${conceptSlug}' nie istnieje w banku ` +
+				`konceptów — ingest przerwany (kontrakt 1E.7). Sprawdź literówkę w manifeście ` +
+				`drabiny albo zaciągnij bank rynkowy PRZED tym ingestem: ` +
+				`pnpm db:ingest-question-bank tools/content/question-bank-ds-partia-1.json`,
+		);
+	}
+	const { id, trunk, diagnostic } = rows[0];
+	if (trunk !== "market" || diagnostic !== true) {
+		throw new Error(
+			`Moduł '${moduleSlug}': tag diagnostyczny '${conceptSlug}' ma trunk='${trunk}', ` +
+				`diagnostic=${diagnostic} — wymagane trunk='market' ORAZ diagnostic=true ` +
+				`(diagnoza pyta wyłącznie o taki zbiór; tag spoza niego nigdy nie dostanie ` +
+				`poziomu i zablokowałby moduł na stałe). Ingest przerwany (kontrakt 1E.7).`,
+		);
+	}
+	return id;
+}
+
 /** Strażnik treści pod postępem: wykrywa zmiany kind/questionItemIds. */
 async function assertNoContentMigrationUnderProgress(
 	client: PoolClient,
@@ -377,13 +444,21 @@ export async function runCurriculumIngest(
 		let downgraded = 0;
 
 		for (const module_ of ladder.modules) {
+			// 1E.7 L1 — tag placementu rozwiązany PRZED upsertem: zły slug wywala
+			// ingest w całości (transakcja), zamiast wpisać moduł bez mostu.
+			const diagnosticConceptId = await resolveDiagnosticConceptId(
+				client,
+				module_.slug,
+				module_.diagnosticConcept,
+			);
 			const { rows } = await client.query<{ id: string }>(
-				`INSERT INTO curriculum_modules (slug, title, description)
-				 VALUES ($1, $2, $3)
+				`INSERT INTO curriculum_modules (slug, title, description, diagnostic_concept_id)
+				 VALUES ($1, $2, $3, $4)
 				 ON CONFLICT (slug) DO UPDATE
-				   SET title = EXCLUDED.title, description = EXCLUDED.description, updated_at = now()
+				   SET title = EXCLUDED.title, description = EXCLUDED.description,
+				       diagnostic_concept_id = EXCLUDED.diagnostic_concept_id, updated_at = now()
 				 RETURNING id`,
-				[module_.slug, module_.title, module_.description ?? null],
+				[module_.slug, module_.title, module_.description ?? null, diagnosticConceptId],
 			);
 			const moduleId = rows[0].id;
 			moduleIdBySlug.set(module_.slug, moduleId);
