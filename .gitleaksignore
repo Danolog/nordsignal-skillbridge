@@ -3,3 +3,12 @@
 # NIE wycieka do logów walidacji. Żaden realny sekret. Bieżąca wersja pliku ma
 # dodatkowo inline `gitleaks:allow`; ten wpis wycisza HISTORYCZNY commit.
 31ba61ac11b444d93ee17134e4f8c3b30867e360:src/lib/__tests__/log.test.ts:generic-api-key:68
+
+# 1E.7 L3 — ten sam wzorzec. `const PATH_KEY = "l3s-sciezka-testowa"` to SLUG
+# ścieżki curriculum (rekwizyt testu integracyjnego), nie sekret; regułę
+# generic-api-key odpala nazwa stałej zawierająca KEY + długość napisu.
+# Bieżąca wersja pliku ma inline `gitleaks:allow`, ale skan PR-owy chodzi po
+# COMMITACH gałęzi, więc historyczny f2232b2 (przed dopiskiem) trzeba wyciszyć
+# odciskiem palca. Wpis jest przypięty do JEDNEGO commita, pliku, reguły i
+# numeru linii — nie rozluźnia skanera nigdzie indziej.
+f2232b25b401c756daf94f6f37847bfc4708b085:src/lib/curriculum/__tests__/placement-service.integration.test.ts:generic-api-key:31
