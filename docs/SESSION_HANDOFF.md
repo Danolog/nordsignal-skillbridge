@@ -11,55 +11,72 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-26 (1E.4 powtórki FSRS) — CAŁY STOS NA PRODZIE ZA FLAGĄ `FLAG_SPACED_REPETITION` OFF (deploy≠release)
+## STAN NA DZIŚ — 2026-07-26 (1E.4 powtórki FSRS) — ZAPŁON WYKONANY: `FLAG_SPACED_REPETITION=1` LIVE NA PRODZIE
 
-**Jednym zdaniem:** kompletny stos powtórek rozłożonych w czasie (FSRS — algorytm planujący,
-kiedy przypomnieć koncept) — backend R1–R5, UI R6 i batch bramek zapłonu (CF-2/N1/N2) — jest na
-prodzie **za flagą OFF**; migracje 0042+0043 zastosowane na prod NEON; zostaje kilka bramek przed
-świadomym zapłonem flagi przez Darka.
+**Jednym zdaniem:** kręgosłup powtórek rozłożonych w czasie (FSRS — algorytm planujący, kiedy
+przypomnieć koncept) jest **zapalony na prodzie** — flip `FLAG_SPACED_REPETITION=1` wykonany, cały
+stos żywy, smoke czysty, rollback trywialny.
 
-**Flaga na prodzie:** `FLAG_SPACED_REPETITION` **OFF** (`defaultValue false`, nieustawiona w env
-prod). Skutek: `/powtorki` i `/api/review/*` → **404**, hook enrollment (auto-zapis konceptu na
-powtórki) nie odpala, `review_states`/`review_logs` puste. Student NIC nie widzi do świadomego zapłonu.
+**Flaga na prodzie:** `FLAG_SPACED_REPETITION` **=1 (LIVE)**. Smoke po zapłonie: `/api/review/queue`→**401**,
+`/api/review/answer`→**401**, `/powtorki`→**307/login**, env `="1"`. **Zero 404/5xx.** Trasy i UI żyją;
+gating auth działa (401/307 zamiast 404).
 
-**Baseline `main` = `7f83330`** (PR #250, `origin/main`) — ostatni merge batcha bramek; R6 UI
-`b9b75d9` (PR #249). Każdy plasterek: Quinn adwersaryjnie + Leo (14 domen), autor commitów = Darek,
-jeden pisarz per gałąź.
+**Baseline `main` = `5ccc318`** (PR #252, `origin/main`). Każdy plasterek: Quinn adwersaryjnie + Leo
+(14 domen), autor commitów = Darek, jeden pisarz per gałąź.
 
-### Cały stos scalony (backend + UI + bramki)
+### Cały stos żywy na prodzie
 
-- **Backend R1–R5 + UI R6 + batch bramek (CF-2/N1/N2)** — scalone. Ostatni merge batcha `7f83330` (PR #250).
-- **UI `/powtorki`** (NIE `/review` — zajęte przez B8; Mila potwierdziła kanoniczność), scheduler
-  ts-fsrs long-term (Wariant A), enrollment przez zdany mastery gate (§4 defer, corrective defer —
-  Sophia), koncept kluczowy = `trunk='market' + single_choice` (N1).
-- **RODO** — retencja + RoPA (rejestr czynności przetwarzania) + klauzula #13a zamknięte
-  (`2cf33fa`, `rls-matrix` v0.31).
+- **Schemat** `0042+0043` na prod NEON — `review_states`/`review_logs` z FORCE RLS (wymuszona izolacja
+  wierszy po studencie), granty (`review_states`→`app_student` SELECT + `student_sees_own`;
+  `review_logs`→DENY-both), indeks `idx_question_items_concept_status_type`. Zweryfikowane odczytem z prod.
+- **Scheduler FSRS** ts-fsrs long-term (Wariant A) · **serwis** `review-service.ts` · **API** `/api/review/*`
+  · **UI** `/powtorki` (NIE `/review` — zajęte przez B8; Mila potwierdziła kanoniczność).
+- **Enrollment** przez zdany mastery gate (§4 defer, corrective defer — Sophia), koncept kluczowy =
+  `trunk='market' + single_choice` (N1).
+- **Ostatnie merge:** residual a11y `a6ac9c5` (#251), realny 429-live + utwardzenie limitera `5ccc318` (#252).
 
-### Migracja 0042+0043 ZASTOSOWANA na prod NEON
+### Bramki zapłonu — WSZYSTKIE DOMKNIĘTE ✅
 
-- Kopia zapasowa `prod-backup-pre-0042-0043-review-20260726` przed zmianą; transakcyjnie;
-  **44 migracje, pending=0**.
-- Zweryfikowane odczytem z prod: `review_states`/`review_logs` z FORCE RLS (wymuszona izolacja
-  wierszy po studencie) + granty (`review_states`→`app_student` SELECT + polityka `student_sees_own`;
-  `review_logs`→DENY-both, zero grantów); indeks `idx_question_items_concept_status_type`.
-  **Tabele puste.**
-- Flaga OFF → `/powtorki` i `/api/review/*` nadal **404**.
+- ✅ **RODO** — retencja + RoPA (rejestr czynności przetwarzania) + klauzula #13a (`2cf33fa`, `rls-matrix` v0.31).
+- ✅ **backend R1–R5**, **UI R6**, **migracja prod** (`0042+0043`).
+- ✅ **N1/N2**, **CF-1 ścieżka / CF-2 scope / CF-3 wiring**.
+- ✅ **flaky a11y** — job `a11y-review` ustabilizowany (`storageState`).
+- ✅ **realny 429-Upstash** — job `rate-limit-review` (burst + daily), realne pęknięcie limitera.
 
-### POZOSTAŁE BRAMKI ZAPŁONU `FLAG_SPACED_REPETITION=1` (świadoma decyzja Darka)
+**Rollback trywialny:** `FLAG_SPACED_REPETITION` → OFF + redeploy. Migracja addytywna; kopia Neon
+`prod-backup-pre-0042-0043-review-20260726` istnieje.
 
-- ⏳ **realny 429-Upstash smoke** (preview/CI z SRH) — kontrakt scope w pełni pokryty testem
-  jednostkowym, brak tylko realnego pęknięcia limitera. Quinn/Ethan.
-- ⏳ **flaky „koniec sesji"** w jobie `a11y-review` (przechodzi na retry) — stabilizacja, Jack/Quinn.
-- ⏳ **`.env.test` cleartext `ANTHROPIC_API_KEY`** → audyt Ryana.
-- ⏳ **(firmowe, przed 1. studentem) klauzula informacyjna art. 13** — E-1, Darek/Wendy.
-- ✅ reszta checklisty (RODO, backend, UI, migracja, N1/N2, CF-1 ścieżka, CF-2 scope, CF-3 wiring) — ZAMKNIĘTE.
+### FOLLOW-UPY PO ZAPŁONIE (nie blokowały flipu)
 
-**Zapłon = flip flagi na prod = świadoma decyzja Darka** (jak 1E.3). Rollback trywialny (flaga OFF);
-migracja addytywna, kopia Neon istnieje.
+- ⏳ **Rotacja `.env.test` `ANTHROPIC_API_KEY`** (SLA 48h od 2026-07-26): realny prod-klucz w cleartext
+  (NIGDY nie w gicie — zero aktywnego wycieku, narusza §10). Eva sanityzuje plik → referencja Doppler +
+  dokłada `.env.test` do pokrycia gitleaks; **Darek rotuje klucz w konsoli Anthropic**. Ryan: nie-blokujące.
+- ⏳ **Klauzula informacyjna art. 13 RODO** — przed 1. rejestracją studenta (NIE przed flipem na pustym
+  prodzie): informacja o profilowaniu uczenia się. E-1, Darek/Wendy (Faza 3). Twarda bramka przed rejestracją.
+- ⏳ (drobne) job `rate-limit-review` do required-checks — bezprzedmiotowe póki branch protection
+  niedostępne (darmowy plan); egzekucja proceduralna.
+
+**Stan produktu:** 1E.3 (mastery gate + tutor 1.13) i 1E.4 (FSRS) — **OBA live na prodzie**. Pełna pętla:
+nauka → egzamin modułowy → powtórki rozłożone w czasie. **Zero studentów** (`#212` czeka na 1. rejestrację)
+— klauzula art. 13 przed nią.
 
 **Środowisko (gotcha):** kanoniczny checkout produktu = zagnieżdżony
 `.../nordsignal-operating-system/SkillBridge`; `Documents/kodowanie/nordsignal-skillbridge` to STARY
 klon na `feat/etl-lift` (nie widzi lokalnych gałęzi) — pinować ścieżkę w zleceniach git.
+
+---
+
+## STAN POPRZEDNI — 2026-07-26 (1E.4 powtórki FSRS) — CAŁY STOS NA PRODZIE ZA FLAGĄ `FLAG_SPACED_REPETITION` OFF (przed flipem)
+
+**Jednym zdaniem:** kompletny stos FSRS — backend R1–R5, UI R6 i batch bramek zapłonu (CF-2/N1/N2) —
+na prodzie **za flagą OFF**; migracje 0042+0043 na prod NEON; zostały bramki przed świadomym zapłonem.
+Ten stan zapalony flipem `FLAG_SPACED_REPETITION=1` — patrz STAN NA DZIŚ.
+
+**Baseline `main` przed flipem = `7f83330`** (PR #250; R6 UI `b9b75d9` PR #249). Flaga OFF → `/powtorki`
+i `/api/review/*` = **404**, enrollment nie odpala, `review_states`/`review_logs` puste. Migracja
+`0042+0043` zastosowana na prod NEON (kopia `prod-backup-pre-0042-0043-review-20260726`, transakcyjnie,
+44 migracje/pending=0; FORCE RLS + granty zweryfikowane; tabele puste). RODO (retencja + RoPA + #13a)
+zamknięte (`2cf33fa`, `rls-matrix` v0.31).
 
 ---
 
