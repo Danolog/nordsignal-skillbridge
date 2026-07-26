@@ -6,11 +6,26 @@
 > z art. 13 — osobny artefakt, którego jeszcze nie ma; patrz E-1 w
 > `docs/security/hint-reveals-retencja-signoff.md` §7).
 
-**Wersja:** v0.2 · 2026-07-26 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
+**Wersja:** v0.3 · 2026-07-26 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
 **Administrator danych:** nordsignal (podmiot w rejestracji — NIP TBD, trigger A/B/C, CLAUDE.md §9).
 **Status:** **rejestr minimalny, zasiany** — założony przy sign-offie FSRS (1E.4, rls-matrix v0.30).
 Kompletny przegląd wszystkich czynności przetwarzania w produkcie = **Wendy, Faza 3**, przed pierwszą
 realną rejestracją studenta. Poniższe wpisy to stan wiedzy zweryfikowany na kodzie na dziś.
+
+**Changelog v0.2 → v0.3 (2026-07-26) — nowy wpis #5 „Automatyczne dopasowanie ścieżki nauki
+(placement curriculum)"; Ryan (CRCO), bramka projektowa PRZED implementacją 1E.7 L3.** Powód
+osobnego wpisu, a nie dopisania do #3 (profilowanie FSRS): **inny cel przetwarzania** (otwarcie
+nawigacji po drabinie kontra harmonogram powtórek — art. 30 ust. 1 lit. b wymaga celów, a zlanie
+dwóch celów w jeden wpis kasuje sens rejestru), **inna retencja** (nośnik uprawnienia kontra ślad)
+i — rozstrzygające — **pierwsza w produkcie zautomatyzowana decyzja zmieniająca dostęp człowieka do
+materiału**, więc ocena art. 22 musi mieć własne miejsce, a nie pożyczać uzasadnienia napisanego dla
+FSRS. ⚠ **Nie mylić z wpisem #4** („Zdarzenia zawodowe / placement", `placement_events`, podstawa
+= zgoda): słowo „placement" oznacza w tych dwóch wpisach **dwie zupełnie różne rzeczy** — #4 to
+staż/praca (dane zawodowe, zgoda odwoływalna, delete-on-revoke), #5 to otwarcie modułu w drabinie
+nauki (wykonanie umowy, bez zgody). Kolizja nazewnicza jest znana i celowo nazwana tutaj, żeby
+Wendy nie scaliła obu wpisów w Fazie 3. Zmiana **policy-only, przed kodem** — migracja `0045` nie
+istnieje jeszcze w chwili tego wpisu; wpis jest bramką jej projektu, nie opisem stanu wdrożonego
+(status jawnie oznaczony w treści wpisu).
 
 **Changelog v0.1 → v0.2 (2026-07-26) — sprostowanie opisu środków bezpieczeństwa we wpisie #3
 (art. 30 ust. 1 lit. g); Ryan (CRCO), samodoniesienie.** W v0.1 napisałem „RLS ENABLE+FORCE na obu
@@ -40,10 +55,17 @@ mandatem, idzie do Darka (E-1).
 | 1 | Konto i uwierzytelnianie (Better Auth: e-mail, hasło/OAuth Google) | art. 6 ust. 1 lit. b (umowa) | nie | czas trwania konta (kaskada) | brak *(wpis skrócony — do uzupełnienia, Wendy Faza 3)* |
 | 2 | Mapowanie kompetencji i analiza luk (sylabus → kompetencje → rynek) | art. 6 ust. 1 lit. b (umowa) | nie | czas trwania konta | brak *(wpis skrócony)* |
 | **3** | **Profilowanie uczenia się — dobór i harmonogram powtórek (FSRS)** | **art. 6 ust. 1 lit. b (umowa)** | **nie** | `review_logs` 12 m-cy; `review_states` czas trwania konta | **brak** |
-| 4 | Zdarzenia zawodowe / placement (deklarowane) | art. 6 ust. 1 lit. a (zgoda) | **tak** — odwoływalna, delete-on-revoke | do odwołania zgody | brak *(wpis skrócony)* |
+| 4 | Zdarzenia **zawodowe** / placement zawodowy (staż, praca — deklarowane) | art. 6 ust. 1 lit. a (zgoda) | **tak** — odwoływalna, delete-on-revoke | do odwołania zgody | brak *(wpis skrócony)* |
+| **5** | **Automatyczne dopasowanie ścieżki nauki (placement curriculum — odblokowanie modułów wynikiem diagnozy)** | **art. 6 ust. 1 lit. b (umowa)** | **nie** | `curriculum_placements` — czas trwania konta | **brak** |
 
-Pełny opis niżej ma **wpis #3** (przedmiot sign-offu 1E.4). Wpisy 1/2/4 są zasiane skrótowo —
-Wendy uzupełnia je w Fazie 3 do pełnego formatu art. 30.
+Pełny opis niżej mają **wpis #3** (przedmiot sign-offu 1E.4) i **wpis #5** (bramka projektowa
+1E.7 L3). Wpisy 1/2/4 są zasiane skrótowo — Wendy uzupełnia je w Fazie 3 do pełnego formatu art. 30.
+
+> ⚠ **Wpis #4 i wpis #5 to dwie różne czynności mimo wspólnego słowa „placement".** #4 =
+> **placement zawodowy** (student deklaruje staż/pracę; dane zawodowe, zgoda, tabela
+> `placement_events`). #5 = **placement curriculum** (system otwiera moduł drabiny na podstawie
+> wyniku diagnozy; brak danych zawodowych, podstawa umowna, tabela `curriculum_placements`).
+> Różne cele, różne podstawy prawne, różne retencje, różne tabele. **Nie scalać.**
 
 ---
 
@@ -129,9 +151,157 @@ po cichu poszerzyć bez migracji, która wraca do przeglądu ryzyka.
 
 ---
 
+## Wpis #5 — Automatyczne dopasowanie ścieżki nauki (placement curriculum)
+
+**Status:** wpis **wyprzedza wdrożenie** — powstał jako bramka projektowa przed implementacją
+plasterka L3 funkcji 1E.7 (migracja `0045`, tabela `curriculum_placements`, flaga
+`FLAG_PLACEMENT_DIAGNOSTIC` domyślnie WYŁĄCZONA). W chwili wpisu: zero wierszy, zero ścieżek
+zapisu. Wpis podlega weryfikacji na kodzie po landzie L3 — dopiero wtedy opisuje stan, a nie projekt.
+
+**Czynność.** Po domknięciu diagnozy system **automatycznie ustala, które moduły ścieżki nauki
+zostają studentowi otwarte** (zdjęty prerekwizyt), na podstawie poziomów zmierzonych diagnozą
+i progu konfiguracyjnego. To **profilowanie w rozumieniu art. 4 pkt 4 RODO** (zautomatyzowana ocena
+aspektu osoby — tu: stanu wiedzy) połączone z **decyzją o dostępie do materiału**. Reguła jest
+deterministyczna i bez udziału modelu językowego (`src/lib/curriculum/placement.ts` — funkcja
+czysta, zero LLM, zero losowości).
+
+**Kategorie osób.** Studenci uczelni-partnerów korzystający z platformy.
+
+**Kategorie danych.** Klasa **K-INT** (wewnętrzne nie-PII), tabela `curriculum_placements`
+(migracja `0045`), wiersz per student × moduł, **wyłącznie dla modułów faktycznie otwartych**:
+- `level` — poziom z diagnozy (1–4) dla konceptu tagującego moduł; `NULL` przy module wciągniętym
+  prefiksem (brak własnego pomiaru);
+- `threshold` — próg obowiązujący **w chwili zapisu** (nie bieżący);
+- `reason` — kod rozłączny: `qualified` (własny pomiar) / `carried_untagged` (wciągnięty prefiksem);
+- `support_mode` — `full` / `fading` / `NULL`;
+- `concept_slug`, `blocking_hole_slug` — migawki identyfikatorów konceptu i modułu ucinającego prefiks;
+- `assessment_session_id`, `unlocked_at` — powiązanie z pomiarem i moment nadania.
+
+**Zero treści wolnej, zero PII bezpośredniego, zero odpowiedzi studenta.** Powiązanie z osobą
+wyłącznie przez `student_id` (pseudonimizacja na poziomie tabeli).
+
+**Cel.** Funkcja produktowa: student z częściową wiedzą nie przechodzi materiału, który już zna.
+Wtórnie — i to jest cel **jawnie nazwany, nie uboczny** — pomiar trafności progu odblokowania
+(DECYZJA 2 w `docs/product/decyzje-1e7-placement-v0.1.md`): bez `level`/`threshold`/`reason`
+zapisanych w chwili decyzji nie da się później sprawdzić, czy próg był ustawiony dobrze, bo
+interpretacja tego samego `result_json` zmienia się wraz z mapą tagów i progiem.
+
+**Podstawa prawna: art. 6 ust. 1 lit. b RODO — wykonanie umowy.** Dopasowanie ścieżki jest
+elementem świadczonej usługi edukacyjnej, nie funkcją opcjonalną ponad rdzeń — jak wpis #3, a
+w odróżnieniu od wpisu #4 (dane zawodowe = zgoda).
+
+### Art. 22 RODO (zautomatyzowane decyzje) — ocena wprost: **NIE MA ZASTOSOWANIA**, warunkowo
+
+Element (a) *decyzja* — **zachodzi**: „moduł X zostaje otwarty". Element (b) *wyłącznie
+zautomatyzowane przetwarzanie* — **zachodzi**: reguła wykonuje się przy domknięciu diagnozy, żaden
+człowiek nie zatwierdza wyniku. Rozstrzyga element (c) — czy decyzja *wywołuje skutki prawne albo
+w podobny sposób istotnie wpływa* na osobę. **Oceniam, że nie — z trzech niezależnych powodów,
+z których każdy sam wystarcza:**
+
+1. **Decyzja wyłącznie ROZSZERZA dostęp, nigdy go nie odbiera.** Stanem odniesienia jest student
+   bez diagnozy: drabina zamknięta poza modułem startowym, otwierana przechodzeniem kolejnych
+   modułów. Placement może ten stan wyłącznie **poprawić**. Nie istnieje wynik diagnozy, po którym
+   student ma mniej niż bez niej. Odblokowania są dodatkowo **monotoniczne** — druga diagnoza
+   dokłada, nigdy nie odbiera (§6b dokumentu produktowego), a tabela jest append-only (bez ścieżki
+   UPDATE). Decyzja, która w najgorszym razie nie daje nic, nie może „istotnie wpłynąć" niekorzystnie.
+2. **Istnieje pełna, równorzędna i zawsze dostępna droga alternatywna.** Każdy moduł można otworzyć
+   przechodząc go normalnie albo zdając jego egzamin („test out", próg ≈90%, na produkcji od
+   2026-07-25). Automat jest **skrótem**, nie bramą: niczego nie zamyka i nie jest jedyną drogą do
+   żadnego skutku.
+3. **Skutek nie opuszcza platformy i nie tworzy kredencjału.** Placement nie zalicza modułu, nie
+   trafia do Paszportu, nie widzi go panel wykładowcy (`app_faculty` bez grantu), nie idzie do
+   pracodawcy, nie wpływa na ocenę, zaliczenie przedmiotu ani rekrutację. To wyłącznie kolejność
+   pracy wewnątrz aplikacji.
+
+**Czego ta ocena NIE mówi.** Nie twierdzę, że „to tylko nauka, więc art. 22 nie dotyczy" — decyzje
+o dostępie do kształcenia potrafią przekroczyć próg istotności (wytyczne WP251rev.01 wymieniają
+dostęp do usług edukacyjnych wśród przykładów). Ocena stoi na tym, że **ta konkretna decyzja jest
+jednostronnie korzystna i obchodzalna**, a nie na tym, że dotyczy nauki. Zdejmij którąkolwiek z
+trzech przesłanek i wynik się zmienia.
+
+**Konstytucja §7 nie zastępuje tej oceny.** §7 (ocena formująca kontra kredencjał) to nasza
+doktryna produktowa i odpowiada na pytanie „czy maszyna może orzec sama". Art. 22 odpowiada na inne
+pytanie — „czy osoba ma prawo nie podlegać tej decyzji". Zgodność z §7 jest tu spełniona
+(placement jest formujący, nic nie wychodzi na zewnątrz), ale **została sprawdzona osobno**, a nie
+przyjęta jako dowód dla art. 22.
+
+**Trzy warunki nośne — zdjęcie któregokolwiek unieważnia tę ocenę i wymaga ponownej analizy
+przed wdrożeniem zmiany:**
+
+| # | Warunek | Co go łamie |
+|---|---|---|
+| A22-1 | Placement wyłącznie otwiera; nigdy nie zamyka, nie pomija ani nie zalicza materiału | Powrót do wariantu „diagnoza zalicza" (pierwotne ADR-014 D8); ożywienie statusu `skipped_by_placement` jako realnego pominięcia pozycji; jakakolwiek ścieżka UPDATE/DELETE odbierająca odblokowanie |
+| A22-2 | Droga alternatywna („test out") realnie dostępna | Wyłączenie `FLAG_MASTERY_GATE`, usunięcie egzaminu modułowego, podniesienie progu egzaminu do poziomu nieosiągalnego. **Uwaga: ocena prawna zależy tu od flagi funkcji** — wyłączenie `FLAG_MASTERY_GATE` przy włączonym `FLAG_PLACEMENT_DIAGNOSTIC` to nie tylko zmiana produktu, ale zmiana przesłanki tej oceny |
+| A22-3 | Wynik nie opuszcza ścieżki nauki | Pokazanie placementu wykładowcy (grant dla `app_faculty`, agregat per student), wejście do Paszportu, do rekrutacji, do stypendiów, do rankingu studentów |
+
+**Skutek dla klauzuli informacyjnej (art. 13, artefakt E-1 — zaległy, bramka przed 1. rejestracją).**
+Brak zastosowania art. 22 **zdejmuje obowiązek z art. 13 ust. 2 lit. f** (informacja o logice
+decyzji), ale **nie zdejmuje art. 5 ust. 1 lit. a** (rzetelność i przejrzystość). Wiążące dla
+autora klauzuli:
+1. **Nie wolno użyć klauzuli-wzorca ze zdaniem „nie podejmujemy decyzji w sposób zautomatyzowany,
+   w tym profilowania".** Byłoby to **nieprawdą** — profilujemy w dwóch czynnościach (#3 FSRS
+   i #5 placement). To najczęstszy błąd kopiowanych klauzul i u nas byłby fałszywym oświadczeniem
+   wobec podmiotu danych.
+2. Do celów przetwarzania dopisać **osobny cel**: „automatyczne dopasowanie ścieżki nauki do wyniku
+   diagnozy (otwieranie modułów)".
+3. Dodać jeden akapit **dobrowolnie, nie z obowiązku** (i tak to zapisać w uzasadnieniu klauzuli):
+   o tym, które moduły się otwierają, decyduje system automatycznie na podstawie wyniku diagnozy
+   i progu; decyzja **tylko otwiera materiał, nigdy go nie zamyka**; każdy moduł pozostaje dostępny
+   przez przejście albo egzamin; student może poprosić o wyjaśnienie i o sprawdzenie decyzji przez
+   człowieka.
+4. **Zapisać wprost, że punkt 3 jest zabezpieczeniem dobrowolnym.** Zaoferowanie kontaktu z
+   człowiekiem **nie jest** przyznaniem, że art. 22 ust. 1 ma zastosowanie, i nie tworzy takiego
+   domniemania na przyszłość. Bez tego zdania sami zbudujemy sobie dowód przeciwko własnej ocenie.
+5. Retencja w klauzuli: czas trwania konta, usunięcie kaskadą przy skasowaniu konta.
+
+**Odbiorcy zewnętrzni.** Brak. Dane nie opuszczają platformy.
+
+**Retencja.** Czas trwania konta — uzasadnienie i zastrzeżenie co do `blocking_hole_slug`:
+`docs/data/retention.md`. Art. 17 realizowany kaskadą `student_id ON DELETE CASCADE`.
+**Uwaga konstrukcyjna:** wiersz jest nośnikiem uprawnienia, więc mechanizm append-only **nie może
+blokować DELETE** — inaczej kaskada art. 17 przestaje działać. Zakaz zapisu obejmuje wyłącznie
+UPDATE (patrz warunek W-1 w macierzy RLS v0.32).
+
+**Środki bezpieczeństwa** *(opisane tak, jak działają — nie mocniej; wzorem sprostowania z v0.2)*:
+
+1. **Uprawnienia roli (deny-by-default).** `GRANT` wyłącznie na `SELECT` dla `app_student`;
+   `REVOKE ALL` dla `app_faculty` (wykładowca nie widzi placementu żadnego studenta, także
+   zbiorczo); zapisy wyłącznie po stronie serwera. Środek najmocniejszy — działa niezależnie od
+   poprawności zapytań. **Jawnie:** grant dla `app_student` nie ma dziś konsumenta (wszystkie
+   odczyty idą połączeniem właściciela) — jest spójnością klasy i rezerwą na trasy przez
+   `withTenantContext`, nie działającą kontrolą. Zapisuję to od razu, żeby nie stał się
+   uprawnieniem, które trwa, bo nikt nie pamięta, po co powstało.
+2. **Filtr w zapytaniu (warstwa aplikacji).** Tożsamość z sesji + jawny `WHERE`. **Na ścieżkach
+   idących połączeniem właściciela bazy jest to środek jedyny** — a wszystkie dzisiejsze odczyty
+   ekranów drabiny idą właśnie tak (17 z 17 stron renderowanych serwerowo,
+   `../../../docs/audyty/2026-07-26-rls-bypassrls-prod.md` §8.2).
+3. **RLS ENABLE+FORCE + polityka `student_sees_own`.** Egzekwowane dla połączeń rolą wykonawczą
+   `app_runtime`. **Dla ścieżek owner-side nie stanowi dodatkowej siatki** — `owner_passthrough
+   … USING (true)` z migracji `0012` przepuszcza właściciela bezwarunkowo (ADR-005). Zapisuję to
+   przy zakładaniu tabeli, a nie po fakcie: dla `curriculum_placements` środek 3 jest dziś
+   **rezerwą na przyszłe trasy przez `withTenantContext`**, nie działającą kontrolą odczytu.
+4. **Niezmienność zapisu.** Wiersz powstaje raz i nie jest przepisywany: `UNIQUE(student_id,
+   module_id)` + zapis `ON CONFLICT DO NOTHING` + wyzwalacz odrzucający `UPDATE`. To **maszynowa**
+   gwarancja wymogu produktowego „nienadpisywany przy ponownej diagnozie", nie obietnica kodu.
+5. Ograniczenia `CHECK` na zakresach i **na kształcie werdyktu** (gałąź `qualified` wymaga
+   kompletu `concept_slug`+`level`+`support_mode` i `level >= threshold`; gałąź `carried_untagged`
+   wymaga ich braku) — uniemożliwiają ciche zlanie dwóch powodów odblokowania, które miernik ma
+   rozróżniać.
+6. Flaga `FLAG_PLACEMENT_DIAGNOSTIC` domyślnie wyłączona — zero wierszy do świadomego zapłonu.
+
+**Minimalizacja (art. 5 ust. 1 lit. c).** Zapisujemy wyłącznie moduły **otwarte** — nie zapisujemy
+trwale, na czym student wypadł słabo (to zostaje w `assessment_sessions.result_json`, czynność
+diagnozy, i nie jest dublowane). Zbiór pól domknięty schematem tabeli (nie JSONB), więc nie da się
+go poszerzyć bez migracji wracającej do przeglądu ryzyka. **Jedno pole ponad funkcję:**
+`blocking_hole_slug` służy wyłącznie miernikowi progu — nazwane jawnie, z przeglądem po pilotażu
+(`docs/data/retention.md`).
+
+---
+
 ## Przegląd
 
 **Data przeglądu:** przy pierwszej realnej rejestracji studenta (bramka zdarzeniowa), najpóźniej
 **2026-10-25** (kwartał). Przegląd: czy Wendy uzupełniła wpisy 1/2/4 do pełnego art. 30, czy
 klauzula informacyjna art. 13 powstała (E-1), czy retencja `review_logs` ma egzekucję (wspólny
-skrypt R-1 rejestru retencji).
+skrypt R-1 rejestru retencji), czy wpis #5 został **zweryfikowany na wdrożonym kodzie** (dziś
+opisuje projekt, nie stan) i czy trzy warunki nośne oceny art. 22 (A22-1…A22-3) nadal zachodzą.
