@@ -18,6 +18,8 @@
  *  10. FORCE RLS (§8 #1 Phase 2 / sub-issue #19h, migracja 0012, ADR-005):
  *      6 tabel studenta ma relforcerowsecurity=true; owner_passthrough policy
  *      istnieje na każdej; cross-role: app_runtime bez SET LOCAL ROLE = deny-default.
+ *  14. 1E.7 L4 — SPÓJNOŚĆ TRYBU WSPARCIA z regułą placementu (decyzja Ethana:
+ *      asercja tutaj ZAMIAST ograniczenia CHECK w bazie).
  *
  * Connection string NIE jest logowany. Wypisuje PASS/FAIL, kończy exit 1 przy błędzie.
  */
@@ -519,6 +521,45 @@ async function main() {
 					? "0 grantów (oczekiwano 0)"
 					: `znaleziono granty: ${r12b.rows.map((r) => `${r.table_name}.${r.privilege_type}`).join(", ")} — ` +
 							"wykładowca NIE może czytać placementu studenta, także zbiorczo (warunek nośny A22-3)",
+			);
+		}
+
+		// 14. 1E.7 L4 — TRYB WSPARCIA ZGODNY Z REGUŁĄ (decyzja Ethana: asercja
+		// w tym skrypcie ZAMIAST ograniczenia CHECK w bazie).
+		//
+		// Czego CHECK z migracji 0045 NIE łapie: `curriculum_placements_verdict_shape`
+		// wiąże `support_mode` z powodem wyłącznie na gałęzi 'carried_untagged'
+		// (tam wymusza 'full'). Dla 'qualified' przyjmuje 'full' i 'fading'
+		// OBOJĘTNIE, bo nie zna reguły „poziom RÓWNY progowi = moduł graniczny →
+		// pełne wsparcie; wyżej → wygaszanie" (DECYZJA 2 Sophii). Wiersz z parą
+		// (level=4, threshold=3, support_mode='full') przechodzi więc bazę, a jest
+		// sprzeczny z regułą — i jest NIENAPRAWIALNY, bo tabela jest append-only.
+		//
+		// Waga: `support_mode` to mitygacja ryzyka progu ≥3, którą Sophia zamierza
+		// WYCOFAĆ, jeśli nie zmienia wyników. Wiersze niezgodne z regułą zatruwają
+		// dokładnie ten pomiar — i nie da się ich odsiać po fakcie, bo wyglądają
+		// jak legalne dane.
+		//
+		// ⚠ To jest asercja o DANYCH, nie o schemacie: łapie każdą przyszłą drogę
+		// zapisu (L5 `test_out`, backfill, ręczny INSERT), także taką, która ominie
+		// serwis placementu. Test „jednego pisarza" w suicie jednostkowej pilnuje
+		// tego samego od strony kodu — te dwa zabezpieczenia nie dublują się.
+		{
+			const r14 = await client.query(
+				`SELECT count(*)::int AS c
+				   FROM curriculum_placements
+				  WHERE reason = 'qualified'
+				    AND support_mode IS DISTINCT FROM
+				        (CASE WHEN level = threshold THEN 'full' ELSE 'fading' END)`,
+			);
+			check(
+				"14. 1E.7 — support_mode zgodny z regułą dla każdego wiersza 'qualified' (poziom=próg → full, wyżej → fading)",
+				r14.rows[0].c === 0,
+				r14.rows[0].c === 0
+					? "0 wierszy sprzecznych z regułą"
+					: `${r14.rows[0].c} wierszy, w których tryb wsparcia NIE wynika z pary (level, threshold) — ` +
+							"miernik trafności progu (DECYZJA 2) liczy na tych wierszach nieprawdę, " +
+							"a tabela jest append-only, więc nie da się ich poprawić",
 			);
 		}
 

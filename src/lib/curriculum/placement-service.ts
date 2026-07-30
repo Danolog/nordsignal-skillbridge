@@ -1,10 +1,12 @@
 // ============================================================================
-// 1E.7 (SLICE L3) — warstwa serwisowa placementu: spina CZYSTĄ regułę L2
-// (`placement.ts` — 0 DB) z bazą. Trzy kroki i ani jednego więcej:
+// 1E.7 (SLICE L3 + L4) — warstwa serwisowa placementu: spina CZYSTĄ regułę L2
+// (`placement.ts` — 0 DB) z bazą. Cztery kroki i ani jednego więcej:
 //   1. wczytaj drabinę ścieżki i ROZWIĄŻ tag uuid → slug konceptu (+ nazwę
-//      kompetencji) JEDNYM złączeniem,
+//      kompetencji) JEDNYM złączeniem oraz zbiór modułów ZALICZONYCH (§6c),
 //   2. policz werdykt regułą L2 (`computePlacement`),
-//   3. zapisz PEŁNY werdykt modułów OTWARTYCH do `curriculum_placements`
+//   3. zapisz ZDARZENIE MIERNIKA do `audit_log` — przy KAŻDYM policzeniu,
+//      także zerowym (P-1, DECYZJA 2 „Nośnik drugiej strony asymetrii"),
+//   4. zapisz PEŁNY werdykt modułów OTWARTYCH do `curriculum_placements`
 //      (jeden wielowierszowy INSERT ... ON CONFLICT DO NOTHING).
 //
 // Wzorzec: review-service.ts (1E.4 R3).
@@ -28,19 +30,28 @@
 // czym student wypadł słabo — to zostaje w `assessment_sessions.result_json`
 // (osobna czynność przetwarzania) i nie jest dublowane.
 //
+// ── ZDARZENIE MIERNIKA PRZY KAŻDYM POLICZENIU (P-1, L4) ───────────────────
+// Wiersz w `curriculum_placements` powstaje TYLKO wtedy, gdy coś się otworzyło,
+// więc sesja, w której placement nie otworzył NIC — najczystszy przypadek
+// niedoszacowania, jaki istnieje — nie zostawiała żadnego śladu. Same zdarzenia
+// „zero odblokowań" też nie wystarczą: bez zdarzeń „coś się otworzyło" NIE MA
+// MIANOWNIKA i nie da się odróżnić „placement nie odpala się nigdy" od „odpala
+// się zwykle, ale ta grupa wypadła słabo". Dlatego zdarzenie leci ZAWSZE,
+// niezależnie od wyniku (wolumen: jedno na diagnozę).
+//
 // ── CZEGO TEN MODUŁ NIE ROBI ──────────────────────────────────────────────
-//  • nie zmienia `isModuleUnlocked`/drabiny (L4 — dopóki L4 nie wejdzie, wiersze
-//    powstają, ale nie otwierają jeszcze niczego w UI),
 //  • nie rozstrzyga exam/test_out (L5), nie renderuje niczego (L6),
 //  • nie zapala flagi i nie sprawdza jej — bramka jest w MIEJSCU WYWOŁANIA
 //    (trasa), wzorzec 1E.4 R5 (`enroll-hook.ts`).
 // ============================================================================
 
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { CompetencyLevel } from "@/lib/assessment/types";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { isUniqueViolation } from "@/lib/db/pg-error";
 import {
+	curriculumModuleProgress,
 	curriculumModules,
 	curriculumPathModules,
 	curriculumPlacements,
@@ -178,6 +189,102 @@ function assertResolvedTags(rows: readonly LadderRow[]): void {
 }
 
 /**
+ * Slugi modułów ZALICZONYCH przez studenta w obrębie tej drabiny (§6c, W-6/W-7).
+ *
+ * Źródło: `curriculum_module_progress.status = 'completed'` — ta sama kolumna,
+ * którą czyta drabina (`ladder.ts`), więc „zaliczony" znaczy w placemencie
+ * dokładnie to samo, co na ekranie studenta. Zawężone `inArray` do modułów tej
+ * ścieżki: student może mieć postęp na innej ścieżce, a reguła i tak by go
+ * zignorowała — nie ma po co go ciągnąć.
+ *
+ * ⚠ Rozróżnienie exam/test_out NIE jest tu robione (L5). Dla W-6/W-7 liczy się
+ * sam fakt zaliczenia, niezależnie od drogi: każda z nich jest instrumentem
+ * mocniejszym niż dwa pytania diagnozy.
+ */
+async function loadCompletedModuleSlugs(
+	studentId: string,
+	ladder: readonly LadderRow[],
+): Promise<string[]> {
+	if (ladder.length === 0) return [];
+	const slugById = new Map(ladder.map((m) => [m.moduleId, m.slug]));
+	const rows = await db
+		.select({ moduleId: curriculumModuleProgress.moduleId })
+		.from(curriculumModuleProgress)
+		.where(
+			and(
+				eq(curriculumModuleProgress.studentId, studentId),
+				eq(curriculumModuleProgress.status, "completed"),
+				inArray(curriculumModuleProgress.moduleId, [...slugById.keys()]),
+			),
+		);
+	return rows.map((r) => slugById.get(r.moduleId)).filter((s): s is string => s !== undefined);
+}
+
+/**
+ * ZDARZENIE MIERNIKA (P-1) — jedno na każde policzenie placementu, także zerowe.
+ *
+ * Odpowiada na trzy pytania Sophii BEZ łączenia z czymkolwiek innym:
+ *  1. jak często placement odpala → `unlockedCount` (w tym 0),
+ *  2. gdzie się zatrzymuje → `blockingHoleSlug` + obowiązujący `threshold`,
+ *  3. czy student był daleko, czy o włos → `blockingHoleLevel`. Ta jedna liczba
+ *     jest nośna: poziom 1 potwierdza regułę, a ŚCIANA poziomów 2 na tym samym
+ *     module znaczy, że nasze pytanie o trudności 2 jest za trudne — wtedy
+ *     naprawiamy BANK, nie próg. Bez niej oba przypadki wyglądają identycznie.
+ *
+ * `blockingHoleReason` dokłada rozróżnienie, którego sam poziom nie niesie:
+ * `below_threshold` („zmierzyliśmy, wypadł słabo") kontra `uncovered` /
+ * `no_measurement` („w ogóle nie badaliśmy") — to dwie różne naprawy (bank
+ * kontra domyślny zestaw kompetencji w onboardingu, §6a).
+ *
+ * `alreadyCompletedCount` odróżnia zero odblokowań u kogoś, kto ma drabinę
+ * zdaną, od zera u kogoś, kto nic nie umie. Bez tego pola oba stany są w danych
+ * nierozróżnialne, a znaczą coś przeciwnego.
+ *
+ * MINIMALIZACJA (art. 5 ust. 1 lit. c): wychodzi JEDEN poziom — dla konceptu
+ * blokującego — a nie mapa poziomów. Nie jest to nowa kategoria danych: leży
+ * już w `result_json` tej samej sesji (ustalenie Sophii/Ryana, v0.4).
+ *
+ * `recordAudit` jest best-effort (połyka własny błąd), a zdarzenie leci PRZED
+ * zapisem odblokowań — celowo: jeśli zapis padnie, miernik ma zachować ślad
+ * tego, co reguła policzyła. Odwrotna kolejność gubiłaby pomiar dokładnie
+ * w sesjach, które najbardziej wymagają wyjaśnienia.
+ */
+async function recordPlacementMetricEvent(params: {
+	studentId: string;
+	assessmentSessionId: string;
+	pathKey: string;
+	ladderSize: number;
+	outcome: PlacementOutcome;
+}): Promise<void> {
+	const { outcome } = params;
+	const hole = outcome.blockingHoleSlug
+		? (outcome.modules.find((m) => m.slug === outcome.blockingHoleSlug) ?? null)
+		: null;
+	await recordAudit({
+		actorType: "student",
+		actorId: params.studentId,
+		// ⚠ NIE MYLIĆ z `placement.consent.*` (1.17 — placement ZAWODOWY, inna
+		// klasa danych i inna podstawa prawna). Prefiks `curriculum.` jest tu
+		// jedyną rzeczą, która trzyma te dwa światy osobno w jednym `audit_log`.
+		action: "curriculum.placement.computed",
+		targetType: "assessment_session",
+		targetId: params.assessmentSessionId,
+		metadata: {
+			pathKey: params.pathKey,
+			threshold: outcome.threshold,
+			ladderSize: params.ladderSize,
+			unlockedCount: outcome.unlockedSlugs.length,
+			prefixEndPosition: outcome.prefixEndPosition,
+			alreadyCompletedCount: outcome.alreadyCompletedSlugs.length,
+			blockingHoleSlug: outcome.blockingHoleSlug,
+			blockingHoleConceptSlug: hole?.conceptSlug ?? null,
+			blockingHoleLevel: hole?.level ?? null,
+			blockingHoleReason: hole?.reason ?? null,
+		},
+	});
+}
+
+/**
  * recordPlacementForDiagnosis — policz werdykt i utrwal odblokowania.
  *
  * Zwraca policzone `unlockedSlugs` (nawet gdy nic nie wstawiono — druga
@@ -206,15 +313,35 @@ export async function recordPlacementForDiagnosis(params: {
 	const threshold = params.threshold ?? DEFAULT_PLACEMENT_THRESHOLD;
 
 	const ladder = await loadPlacementLadder(params.pathKey);
+	// §6c — zbiór zaliczeń MUSI być policzony przed regułą: bez niego moduł zdany
+	// egzaminem robi dziurę w prefiksie (W-7), a przy okazji dostaje wiersz
+	// „diagnoza otworzyła ci moduł, który sam zdałeś na ≈90%" (W-6).
+	const completedModuleSlugs = await loadCompletedModuleSlugs(params.studentId, ladder);
 	const outcome = computePlacement({
 		modules: ladder,
 		diagnosis: params.diagnosis,
+		completedModuleSlugs,
 		threshold,
 	});
+
+	// P-1: zdarzenie miernika PRZY KAŻDYM policzeniu — także gdy nic się nie
+	// otworzyło i także dla ścieżki bez drabiny (`ladderSize: 0` odróżnia błąd
+	// konfiguracji od słabego wyniku, zamiast zlewać oba w ciszę).
+	await recordPlacementMetricEvent({
+		studentId: params.studentId,
+		assessmentSessionId: params.assessmentSessionId,
+		pathKey: params.pathKey,
+		ladderSize: ladder.length,
+		outcome,
+	});
+
 	// Ścieżka bez drabiny (cel kariery spoza pilotażu DS) — nie ma czego liczyć.
 	if (ladder.length === 0) return { unlockedSlugs: [], written: 0, outcome };
 
 	const moduleIdBySlug = new Map(ladder.map((m) => [m.slug, m.moduleId]));
+	// `m.unlocked` NIGDY nie obejmuje modułu zaliczonego (W-6 jest niezmiennikiem
+	// czystej reguły, nie filtrem tutaj) — dodatkowe odsiewanie w tym miejscu
+	// byłoby drugą prawdą o tym samym i mogłoby się z regułą rozjechać.
 	const unlocked = outcome.modules.filter((m) => m.unlocked);
 	if (unlocked.length === 0) {
 		return { unlockedSlugs: [], written: 0, outcome };
