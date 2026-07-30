@@ -164,9 +164,39 @@ dBack("1E.7 L3 · placement-service: most uuid→slug + zapis werdyktu (realna b
 		}
 	});
 
+	/**
+	 * Zdarzenia miernika (P-1) DLA JEDNEJ sesji diagnozy, najstarsze pierwsze.
+	 * `audit_log` jest append-only (wyzwalacz odrzuca DELETE), więc zawężamy po
+	 * sesji zamiast czyścić tabelę między testami.
+	 */
+	async function zdarzenia(dlaSesji: string): Promise<Array<Record<string, unknown>>> {
+		return db
+			.execute(
+				sql`SELECT action, actor_type, actor_id, target_type, target_id, metadata
+				    FROM audit_log
+				    WHERE action = 'curriculum.placement.computed' AND target_id = ${dlaSesji}
+				    ORDER BY created_at ASC`,
+			)
+			.then((r: { rows: Record<string, unknown>[] }) => r.rows);
+	}
+
+	/** Oznacza moduł jako ZALICZONY (wejście W-6/W-7 — §6c). */
+	async function zalicz(slug: string, method: "exam" | "test_out" = "exam") {
+		await db.execute(
+			sql`INSERT INTO curriculum_module_progress
+			      (student_id, tenant_id, module_id, status, verified_by_method, completed_at)
+			    VALUES (${studentId}, ${tenantId}, ${moduleIds[slug]}, 'completed', ${method}, now())
+			    ON CONFLICT (student_id, module_id) DO UPDATE
+			      SET status = 'completed', verified_by_method = EXCLUDED.verified_by_method`,
+		);
+	}
+
 	beforeEach(async () => {
 		await db.execute(sql`DELETE FROM curriculum_placements WHERE student_id = ${studentId}`);
+		await db.execute(sql`DELETE FROM curriculum_module_progress WHERE student_id = ${studentId}`);
 		await db.execute(sql`DELETE FROM assessment_sessions WHERE student_id = ${studentId}`);
+		// audit_log jest APPEND-ONLY (wyzwalacz odrzuca DELETE), więc zdarzeń nie
+		// kasujemy — testy filtrują po sesji/porównują przyrost.
 		sessionId = await nowaSesja("h-1");
 		sessionId2 = await nowaSesja("h-2");
 	});
@@ -395,6 +425,176 @@ dBack("1E.7 L3 · placement-service: most uuid→slug + zapis werdyktu (realna b
 				    WHERE slug = ${`${PREFIX}m-eda`}`,
 			);
 		}
+	});
+
+	// ─── 5. §6c — moduł ZALICZONY: W-6 (bez wiersza) + W-7 (spełnia ciągłość) ──
+	it("W-6: moduł ZALICZONY nie dostaje wiersza, choć leży w prefiksie", async () => {
+		await zalicz(`${PREFIX}f1-python`);
+		const wynik = await recordPlacementForDiagnosis({
+			studentId,
+			tenantId,
+			assessmentSessionId: sessionId,
+			pathKey: PATH_KEY,
+			diagnosis: diagnoza({ [`${PREFIX}ds-python`]: 4, [`${PREFIX}ds-pandas`]: 4 }),
+		});
+
+		const slugi = (await wiersze()).map((r: Record<string, unknown>) => r.module_slug);
+		// f1 jest zaliczony egzaminem — placement nie ma o czym mówić (§6c).
+		// Wiersz produkowałby komunikat „diagnoza otworzyła ci moduł, który sam
+		// zdałeś na ≈90%": przypisanie produktowi cudzej pracy.
+		expect(slugi).not.toContain(`${PREFIX}f1-python`);
+		expect(wynik.unlockedSlugs).not.toContain(`${PREFIX}f1-python`);
+		// Reszta prefiksu powstaje normalnie — zaliczenie niczego nie zabiera.
+		expect(slugi).toEqual([`${PREFIX}f2-python-2`, `${PREFIX}m-pandas`]);
+		expect(wynik.outcome.modules.find((m) => m.slug === `${PREFIX}f1-python`)?.reason).toBe(
+			"already_completed",
+		);
+	});
+
+	it("W-7: moduł ZALICZONY nie robi dziury — prefiks idzie DALEJ mimo słabej diagnozy", async () => {
+		// Scenariusz z v0.4: pandas zdany egzaminem, a przy re-onboardingu wynik
+		// z ds-pandas wypadł słabo. Bez W-7 słaby instrument (2 pytania) unieważnia
+		// mocny (≈90%) i ucina wszystko powyżej.
+		await zalicz(`${PREFIX}m-pandas`, "test_out");
+		const wynik = await recordPlacementForDiagnosis({
+			studentId,
+			tenantId,
+			assessmentSessionId: sessionId,
+			pathKey: PATH_KEY,
+			diagnosis: diagnoza({
+				[`${PREFIX}ds-python`]: 4,
+				[`${PREFIX}ds-pandas`]: 1,
+				[`${PREFIX}ds-eda`]: 4,
+			}),
+		});
+		expect(wynik.unlockedSlugs).toEqual([
+			`${PREFIX}f1-python`,
+			`${PREFIX}f2-python-2`,
+			`${PREFIX}m-eda`,
+		]);
+		expect(wynik.outcome.blockingHoleSlug).toBeNull();
+	});
+
+	it("bez W-7 (ten sam wynik, moduł NIEzaliczony) prefiks faktycznie się ucina", async () => {
+		// Kontrola negatywna: gdyby test wyżej przechodził z innego powodu niż W-7,
+		// ten sam wynik bez zaliczenia dałby to samo. Nie daje.
+		const wynik = await recordPlacementForDiagnosis({
+			studentId,
+			tenantId,
+			assessmentSessionId: sessionId,
+			pathKey: PATH_KEY,
+			diagnosis: diagnoza({
+				[`${PREFIX}ds-python`]: 4,
+				[`${PREFIX}ds-pandas`]: 1,
+				[`${PREFIX}ds-eda`]: 4,
+			}),
+		});
+		expect(wynik.unlockedSlugs).toEqual([`${PREFIX}f1-python`]);
+		expect(wynik.outcome.blockingHoleSlug).toBe(`${PREFIX}m-pandas`);
+	});
+
+	// ─── 6. P-1 — zdarzenie miernika przy KAŻDYM policzeniu ────────────────────
+	it("P-1: zdarzenie powstaje przy ZEROWYM placemencie (najczystszy przypadek niedoszacowania)", async () => {
+		await recordPlacementForDiagnosis({
+			studentId,
+			tenantId,
+			assessmentSessionId: sessionId,
+			pathKey: PATH_KEY,
+			// poziom 2 na Pythonie: student był O WŁOS, nie „daleko" — dokładnie to
+			// rozróżnienie decyduje, czy naprawiamy PRÓG, czy BANK PYTAŃ.
+			diagnosis: diagnoza({ [`${PREFIX}ds-python`]: 2 }),
+		});
+
+		const zd = await zdarzenia(sessionId);
+		expect(zd.length).toBe(1);
+		expect(zd[0]).toMatchObject({
+			actor_type: "student",
+			actor_id: studentId,
+			target_type: "assessment_session",
+			target_id: sessionId,
+		});
+		expect(zd[0].metadata).toMatchObject({
+			pathKey: PATH_KEY,
+			threshold: 3,
+			unlockedCount: 0,
+			prefixEndPosition: 0,
+			alreadyCompletedCount: 0,
+			blockingHoleSlug: `${PREFIX}f1-python`,
+			blockingHoleConceptSlug: `${PREFIX}ds-python`,
+			// TA liczba jest nośna: 1 potwierdza regułę, ŚCIANA dwójek znaczy, że
+			// nasze pytanie o trudności 2 jest za trudne (wtedy naprawiamy bank).
+			blockingHoleLevel: 2,
+			blockingHoleReason: "below_threshold",
+		});
+	});
+
+	it("P-1: zdarzenie ma MIANOWNIK — powstaje też, gdy coś się otworzyło", async () => {
+		await recordPlacementForDiagnosis({
+			studentId,
+			tenantId,
+			assessmentSessionId: sessionId,
+			pathKey: PATH_KEY,
+			diagnosis: diagnoza({ [`${PREFIX}ds-python`]: 4, [`${PREFIX}ds-pandas`]: 3 }),
+		});
+		const zd = await zdarzenia(sessionId);
+		expect(zd.length).toBe(1);
+		expect(zd[0].metadata).toMatchObject({
+			unlockedCount: 3,
+			prefixEndPosition: 4,
+			blockingHoleSlug: `${PREFIX}m-eda`,
+			// EDA nie była w ogóle zmierzona → poziom null, powód rozróżnia „nie umie"
+			// od „nie badaliśmy" (dwie różne naprawy, §6a).
+			blockingHoleLevel: null,
+			blockingHoleReason: "no_measurement",
+		});
+	});
+
+	it("P-1: zero odblokowań u studenta z ZALICZONĄ drabiną jest odróżnialne od zera u nowicjusza", async () => {
+		for (const slug of [`${PREFIX}f1-python`, `${PREFIX}f2-python-2`, `${PREFIX}m-pandas`]) {
+			await zalicz(slug);
+		}
+		await recordPlacementForDiagnosis({
+			studentId,
+			tenantId,
+			assessmentSessionId: sessionId,
+			pathKey: PATH_KEY,
+			diagnosis: diagnoza({ [`${PREFIX}ds-python`]: 4, [`${PREFIX}ds-pandas`]: 4 }),
+		});
+		const zd = await zdarzenia(sessionId);
+		// Zero odblokowań — ale z zupełnie innego powodu niż „student nic nie umie".
+		// Bez `alreadyCompletedCount` oba stany są w danych nierozróżnialne.
+		expect(zd[0].metadata).toMatchObject({ unlockedCount: 0, alreadyCompletedCount: 3 });
+	});
+
+	it("P-1: zdarzenie powstaje NAWET dla ścieżki bez drabiny (ladderSize odróżnia błąd konfiguracji)", async () => {
+		await recordPlacementForDiagnosis({
+			studentId,
+			tenantId,
+			assessmentSessionId: sessionId,
+			pathKey: "sciezka-ktorej-nie-ma",
+			diagnosis: diagnoza({ [`${PREFIX}ds-python`]: 4 }),
+		});
+		const zd = await zdarzenia(sessionId);
+		expect(zd.length).toBe(1);
+		expect(zd[0].metadata).toMatchObject({ ladderSize: 0, unlockedCount: 0 });
+	});
+
+	it("P-1: DOKŁADNIE jedno zdarzenie na policzenie (miernik nie zawyża licznika)", async () => {
+		const args = {
+			studentId,
+			tenantId,
+			assessmentSessionId: sessionId,
+			pathKey: PATH_KEY,
+			diagnosis: diagnoza({ [`${PREFIX}ds-python`]: 4 }),
+		};
+		await recordPlacementForDiagnosis(args);
+		expect((await zdarzenia(sessionId)).length).toBe(1);
+		// Powtórny zapłon (retry trasy) nic nie dopisuje do bazy odblokowań, ale
+		// JEST kolejnym policzeniem — i ma być widoczny jako osobne zdarzenie.
+		await recordPlacementForDiagnosis(args);
+		const zd = await zdarzenia(sessionId);
+		expect(zd.length).toBe(2);
+		expect(zd[1].metadata).toMatchObject({ unlockedCount: 1 });
 	});
 
 	// ─── 4. C6 — competencyName z tej samej kolumny, która karmi plan diagnozy ──

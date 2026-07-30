@@ -12,7 +12,14 @@
 //
 // Nowa flaga = nowy wpis w FLAGS (jedyne źródło prawdy). Konwencja nazwy env:
 // FLAG_<SCREAMING_SNAKE>. Wpisz też do `.env.example`.
+//
+// 1E.7 L4 — SPRZĘŻENIE FLAG (`requires`): flaga może deklarować przesłanki, bez
+// których jej zapalenie jest błędem, a nie wyborem. Bramka żyje TUTAJ, w
+// `isFeatureEnabled`, bo env na Vercelu przestawia się bez deployu — sprawdzenie
+// wykonane raz, w skrypcie wdrożeniowym, nie chroni przed niczym.
 // ============================================================================
+
+import { logError } from "@/lib/log";
 
 type FlagDefinition = {
 	/** Zmienna środowiskowa sterująca flagą (konwencja: FLAG_<SCREAMING_SNAKE>). */
@@ -24,6 +31,16 @@ type FlagDefinition = {
 	 * wchodzi domyślnie włączona (deploy ≠ release). Typ literalny egzekwuje regułę.
 	 */
 	readonly defaultValue: false;
+	/**
+	 * SPRZĘŻENIE FLAG (1E.7 L4, decyzja Ethana) — flagi, które MUSZĄ być zapalone,
+	 * żeby ta flaga w ogóle zadziałała. Egzekwowane w `isFeatureEnabled`, nie
+	 * w skrypcie wdrożeniowym: zmienną na Vercelu da się przestawić BEZ deployu,
+	 * więc bramka sprawdzana raz przy wdrożeniu nie chroni przed niczym.
+	 *
+	 * Nazwy sprawdzane typem — patrz `_RequirementsAreFlagNames` niżej (literówka
+	 * w `requires` nie skompiluje się, zamiast po cichu nigdy nie być spełniona).
+	 */
+	readonly requires?: readonly string[];
 };
 
 /**
@@ -160,10 +177,20 @@ export const FLAGS = {
 			"(egzamin nadal ZALICZA, wariant hybrydowy). Zapis pełnego werdyktu per moduł do " +
 			"curriculum_placements hookiem po domknięciu diagnozy (best-effort, po transakcji). " +
 			"Off = hook nie odpala, zero wierszy curriculum_placements, odpowiedź " +
-			"/api/assessment/[id]/complete identyczna jak dziś. ⚠ Zapłon wymaga sprawdzenia, " +
-			"że FLAG_MASTERY_GATE=1 na tym samym środowisku — droga alternatywna „test out” to " +
-			"warunek nośny A22-2 oceny art. 22 RODO (RoPA wpis #5), nie tylko wybór produktowy.",
+			"/api/assessment/[id]/complete identyczna jak dziś. ⚠ Zapłon WYMAGA FLAG_MASTERY_GATE=1 " +
+			"na tym samym środowisku — droga alternatywna „test out” to warunek nośny A22-2 oceny " +
+			"art. 22 RODO (RoPA wpis #5), nie tylko wybór produktowy. Wymóg jest EGZEKWOWANY " +
+			"(`requires` niżej), nie tylko opisany.",
 		defaultValue: false,
+		// TWARDA BRAMKA SPRZĘŻENIA (decyzja Ethana, 1E.7 L4). Placement OTWIERA moduły,
+		// egzamin ZALICZA — przy zgaszonym `masteryGate` student wrzucony placementem
+		// w głąb drabiny NIE MA drogi „test out", czyli tej samej taniej naprawy błędu
+		// w dół, na której stoi cała analiza asymetrii kosztu Sophii (DECYZJA 2) ORAZ
+		// ocena art. 22 RODO Ryana (A22-2: „istnieje alternatywna droga bez skutku
+		// automatycznego"). Zapalenie placementu przy zgaszonym egzaminie nie jest więc
+		// „gorszym UX" — WYWRACA PODSTAWĘ PRAWNĄ przetwarzania. Dlatego bramka jest
+		// w kodzie ewaluacji flagi, a nie w runbooku wdrożenia.
+		requires: ["masteryGate"],
 	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
@@ -173,6 +200,27 @@ export const FLAGS = {
 
 /** Nazwa istniejącej flagi — węższy typ niż string, wymuszony przez rejestr. */
 export type FlagName = keyof typeof FLAGS;
+
+/** Wszystkie napisy występujące w `requires` w całym rejestrze. */
+type DeclaredRequirement = {
+	[K in FlagName]: (typeof FLAGS)[K] extends { readonly requires: readonly (infer R)[] }
+		? R
+		: never;
+}[FlagName];
+
+/**
+ * KONTRAKT KOMPILACJI: każdy wpis `requires` musi nazywać ISTNIEJĄCĄ flagę.
+ * Bez tego literówka („masterygate") dawałaby przesłankę, której NIC nigdy nie
+ * spełnia — flaga cicho nie działa, a env jest zapalony. Pole jest typowane
+ * `readonly string[]` (a nie `FlagName[]`), bo `FlagName` powstaje z `typeof FLAGS`
+ * i wpisanie go do `FlagDefinition` zapętla wnioskowanie typu; ta linia domyka
+ * to samo sprawdzenie po fakcie. Runtime-owy odpowiednik: test „requires nazywa
+ * istniejącą flagę" (`src/lib/__tests__/flags.test.ts`).
+ */
+type Assert<T extends true> = T;
+type _RequirementsAreFlagNames = Assert<
+	[DeclaredRequirement] extends [FlagName | never] ? true : never
+>;
 
 /** Truthy: "1" / "true" / "on" (bez wielkości liter, po przycięciu). Reszta → default. */
 function parseFlagValue(raw: string | undefined, defaultValue: boolean): boolean {
@@ -187,10 +235,96 @@ function parseFlagValue(raw: string | undefined, defaultValue: boolean): boolean
 }
 
 /**
+ * Przesłanki flagi (`requires`) jako lista nazw flag. Odczyt przez jawne
+ * poszerzenie do `FlagDefinition`, bo `as const satisfies` zawęża rejestr do
+ * typów literalnych i pole opcjonalne „znika" z wpisów, które go nie mają.
+ * Nazwy są nazwami flag na mocy `_RequirementsAreFlagNames` (kontrakt kompilacji)
+ * i testu runtime — rzutowanie nie jest tu domysłem.
+ */
+export function requirementsOf(name: FlagName): readonly FlagName[] {
+	const flag: FlagDefinition = FLAGS[name];
+	return (flag.requires ?? []) as readonly FlagName[];
+}
+
+/** Rejestr flag w kształcie potrzebnym ewaluacji — realny FLAGS albo atrapa testu. */
+type FlagRegistry = Readonly<Record<string, FlagDefinition>>;
+
+/**
+ * Ostrzeżenia o niespełnionym sprzężeniu — raz na proces i na kombinację, żeby
+ * gorąca ścieżka (flaga czytana per żądanie) nie zalała logu. Cold start serwera
+ * bezserwerowego wypisze je ponownie, więc sygnał nie ginie.
+ */
+const warned = new Set<string>();
+function warnOnce(key: string, message: string, ctx: Record<string, string>): void {
+	if (warned.has(key)) return;
+	warned.add(key);
+	// GŁOŚNO i przez ten sam kanał co błędy (logError → console.error): bez tego
+	// wpisu zapalenie flagi z niespełnioną przesłanką wygląda dokładnie tak samo
+	// jak flaga zgaszona — ktoś ustawia env, nic się nie dzieje i nikt nie wie
+	// dlaczego. To był warunek postawiony wprost przy decyzji o bramce.
+	logError("flags.requires", new Error(message), ctx);
+}
+
+/**
+ * Rekurencyjna ewaluacja: flaga działa ⟺ jej env jest truthy ORAZ każda flaga
+ * z `requires` jest (PRZECHODNIO) włączona. FAIL-CLOSED — każdy problem
+ * (niespełniona przesłanka, nieznana nazwa, cykl w grafie) GASI flagę, nigdy
+ * jej nie zapala.
+ *
+ * `trail` niesie ścieżkę wywołań: cykl (A wymaga B, B wymaga A) kończy się
+ * zgaszeniem flagi i głośnym logiem, a nie przepełnieniem stosu na GORĄCEJ
+ * ścieżce (flagi czytane per żądanie). Statyczną acykliczność rejestru pilnuje
+ * osobny test — ten strażnik jest dla stanu, w którym test już przegapiono.
+ *
+ * Rejestr jest PARAMETREM (a nie odczytem `FLAGS` w środku) z jednego powodu:
+ * inaczej strażnika cyklu nie da się wykonać żadnym testem, bo realny rejestr
+ * jest acykliczny — a „test", który odtwarza logikę zamiast ją wywołać, daje
+ * pozór pokrycia zamiast pokrycia. Produkcja woła to wyłącznie z `FLAGS`.
+ */
+export function evaluateFlagIn(
+	registry: FlagRegistry,
+	name: string,
+	trail: readonly string[] = [],
+): boolean {
+	if (trail.includes(name)) {
+		warnOnce(`cycle:${name}`, `[flags] CYKL w grafie 'requires': ${[...trail, name].join(" → ")}`, {
+			flag: name,
+			trail: [...trail, name].join(" → "),
+		});
+		return false;
+	}
+	const flag = registry[name];
+	if (!flag) {
+		warnOnce(`unknown:${name}`, `[flags] Nieznana flaga w grafie 'requires': '${name}'.`, {
+			flag: name,
+		});
+		return false;
+	}
+	if (!parseFlagValue(process.env[flag.envVar], flag.defaultValue)) return false;
+
+	const requires = flag.requires ?? [];
+	if (requires.length === 0) return true;
+
+	const deeper = [...trail, name];
+	const missing = requires.filter((req) => !evaluateFlagIn(registry, req, deeper));
+	if (missing.length > 0) {
+		warnOnce(
+			`missing:${name}:${missing.join(",")}`,
+			`[flags] Flaga '${name}' (${flag.envVar}) jest ZAPALONA w env, ale jej ` +
+				`przesłanki są zgaszone: ${missing.join(", ")}. Funkcja pozostaje WYŁĄCZONA ` +
+				"(fail-closed). Zapal najpierw przesłanki albo zgaś tę flagę.",
+			{ flag: name, missing: missing.join(",") },
+		);
+		return false;
+	}
+	return true;
+}
+
+/**
  * Czy funkcja za flagą jest włączona. Ewaluacja po stronie serwera; domyślnie
- * `false` — zapala jawnie zmienna środowiskowa flagi.
+ * `false` — zapala jawnie zmienna środowiskowa flagi ORAZ (od 1E.7 L4) komplet
+ * jej przesłanek z `requires`.
  */
 export function isFeatureEnabled(name: FlagName): boolean {
-	const flag = FLAGS[name];
-	return parseFlagValue(process.env[flag.envVar], flag.defaultValue);
+	return evaluateFlagIn(FLAGS, name);
 }

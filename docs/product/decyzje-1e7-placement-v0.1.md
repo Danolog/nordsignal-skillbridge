@@ -1,5 +1,10 @@
 # Decyzje produktowe 1E.7 · placement diagnozy w curriculum — mapa tagów, próg, reguła prefiksowa
 
+**Changelog v0.4 → v0.5 (2026-07-30, Sophia):** dwie interpretacje z L4 przesądzone. **Rozstrzygnięcia v0.1–v0.4 bez zmian; §7 punkt wejścia uogólniony.**
+1. **W-7 — POTWIERDZAM odczyt Maxa: moduł zaliczony WYZNACZA k, tak samo jak poziom 4 z diagnozy.** Uzasadnienie w §6c. Skrót: reguła 5 odmawia `NULL`-owi prawa wyznaczania k dlatego, że `NULL` znaczy **niezmierzony** — a moduł zaliczony jest zmierzony najmocniejszym instrumentem, jaki mamy. Zarzut „pytania zamknięte nie transferują" nie bije w tę decyzję, bo dotyczy **zaliczania**, a tu nic się nie zalicza.
+2. **§7 — rekomendacja startu MUSI uwzględniać zaliczenia; dotychczasowe brzmienie („najgłębszy odblokowany") było za wąskie.** Rekomendowanie `m-pandas` studentowi, który zdał `m-eda`, to cofanie go — na ekranie, którego jedynym zadaniem jest powiedzieć mu, gdzie jest. Nowa definicja: **najgłębszy moduł dostępny i niezaliczony**, ze wskazaniem dostępności z obu źródeł (łańcuch po module zaliczonym ∪ odblokowanie placementem). W-6 nienaruszone — rozdzielam **komunikat o placemencie** od **rekomendacji startu**; nowe mikrocopy w §8.
+3. **Przyjmuję dwa pola Maxa ponad zlecenie** (`blockingHoleReason`, `alreadyCompletedCount`) — oba nośne, uzasadnienie w DECYZJI 2.
+
 **Changelog v0.3 → v0.4 (2026-07-27, Sophia):** dwa rozstrzygnięcia po znaleziskach Ryana z L3. **Rozstrzygnięcia v0.1–v0.3 bez zmian; jedno uzupełnienie reguły z DECYZJI 5.**
 1. **`blockingHoleSlug` na wierszu NIE wystarcza — nośnikiem drugiej strony asymetrii jest zdarzenie, nie kolumna.** Ryan ma rację, zweryfikowałam na kodzie (`placement-service.ts:218-220`: przy zerze odblokowań serwis wychodzi z `written: 0`, a policzony `outcome` razem z `blockingHoleSlug` jest odrzucany). **Pole dołożone w v0.3, żeby zobaczyć niedoszacowanie, było nieobecne dokładnie w najczystszym przypadku niedoszacowania** — sesji, w której nie otworzyło się nic. To był mój błąd projektowy, gorszy niż brak pola, bo dawał pozór pokrycia. Rozstrzygnięcie i wymagania w DECYZJI 2, podsekcja „Nośnik drugiej strony asymetrii".
 2. **§6c — moduł już zaliczony: POMIJAMY (bez wiersza, bez komunikatu).** Potwierdzam kierunek Ryana, z argumentem produktowym mocniejszym niż dane: powiedzenie „diagnoza otworzyła ci moduł X" o module, który student **sam zdał egzaminem na ≈90%**, przypisuje produktowi jego pracę i miesza dwie waluty, których cała hybryda pilnuje osobno.
@@ -16,11 +21,12 @@
 2. **DECYZJA 5, tabela przypadków — „5 tagów" → 6** (`ds-python`, `ds-pandas`, `ds-eda`, `ds-sql`, `ds-uczenie-maszynowe`, `ds-llm`). Liczba w tym wierszu (≈3 na 10 milionów) była policzona dla sześciu i zostaje bez zmian — błędny był wyłącznie licznik w opisie.
 3. **DECYZJA 2 — własna korekta tej samej rodziny, niezgłoszona:** pisałam, że odblokowanie `m-ml` wymaga **czterech** pomiarów (≈4 na 100 000). Z warunku braku dziury (reguła 3) wynika, że `m-ml` musi zakwalifikować się także **na własnym tagu** — czyli **pięć** pomiarów, ≈3 na milion. Ochrona jest o rząd wielkości silniejsza, niż deklarowałam; kierunek wniosku bez zmian.
 
-**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-26 (v0.1–v0.3) · 2026-07-27 (v0.4) · **Status:** v0.4 — WIĄŻĄCY KONTRAKT produktowy dla slice'ów L1–L6 funkcji 1E.7 (Ethan — backend, Jack — UI, Mila — ekrany wyniku diagnozy)
+**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-26 (v0.1–v0.3) · 2026-07-27 (v0.4) · 2026-07-30 (v0.5) · **Status:** v0.5 — WIĄŻĄCY KONTRAKT produktowy dla slice'ów L1–L6 funkcji 1E.7 (Ethan — backend, Jack — UI, Mila — ekrany wyniku diagnozy)
 **Stan realizacji (2026-07-26):**
 - **L1** (Max) — most danych `curriculum_modules.diagnostic_concept_id`, migracja **0044**, kontrakt ingestu na literówki w slugach; mapa tagów zweryfikowana w kodzie, zero rozbieżności. **Kolejność wdrożenia na prodzie (strażnik ingestu): migracja 0044 → ingest banku rynkowego → ingest curriculum.** Odwrotna kolejność przerywa ingest na pierwszym tagu — bezpiecznie, ale głośno.
 - **L2** (Max) — reguła jako czysta funkcja, bez bazy. Równoważność z brzmieniem deklaratywnym z DECYZJI 5 **udowodniona**, nie zadeklarowana: test porównuje implementację z niezależną wersją reguł na **wszystkich 15 625 kształtach wyniku diagnozy**, dla progów 3 i 4. Sprostowanie z v0.2 (pięć pomiarów chroni `m-ml`) jest w kodzie.
 - **L3** (Max) — `curriculum_placements` z pełnym werdyktem per moduł (`level`, `threshold` w chwili zapisu, `reason`, `support_mode`, `blocking_hole_slug`), wiersz niezmienny (wyzwalacz + `UNIQUE` + `ON CONFLICT DO NOTHING`), nienadpisywany przy ponownej diagnozie. Trzecia gałąź trybu wsparcia (`carried_untagged` → pełne wsparcie, powód odrębny) egzekwowana ograniczeniem bazy. **Dwa uzupełnienia z v0.4:** zdarzenie dla sesji bez odblokowań (DECYZJA 2, „Nośnik drugiej strony asymetrii") + pominięcie modułu zaliczonego (§6c).
+- **L4** (Max) — drabina honoruje placement (`required.every(...) || placementUnlocked.has(...)`), W-6 i W-7 wdrożone, zdarzenie miernika w dzienniku audytowym przy **każdym** policzeniu placementu (warunek mianownika spełniony), plus dwa pola ponad zlecenie przyjęte w v0.5. **Do domknięcia w L6:** rekomendacja startu wg uogólnionej definicji z §7 (najgłębszy dostępny i niezaliczony) — dzisiejsza pomija zaliczenia.
 - **Warunek ważności progu ≥3 (brama A2): SPEŁNIONY** — 1E.3 mastery gate live na prodzie od 2026-07-25 (`FLAG_MASTERY_GATE=1`), „test out" jako droga naprawcza istnieje realnie.
 **Zleca:** Oliver (COO) — rozstrzygnięcia produktowe blokujące L1/L2.
 **Rama nadrzędna:** decyzja Darka 2026-07-26 (sign-off) — **wariant hybrydowy: diagnoza OTWIERA, egzamin ZALICZA.** Wynik diagnozy ≥ progu → moduł **odblokowany** (zdjęty prerekwizyt), NIE zaliczony. Zaliczenie bez przechodzenia modułu = egzamin modułowy (silnik 1E.3, próg ≈90%) → `verified_by_method='test_out'`.
@@ -141,6 +147,11 @@ Zdarzenie ma pozwolić odpowiedzieć na trzy pytania **bez łączenia z czymkolw
 
 Kształt zdarzenia i minimalizacja danych — Ryan (konsekwencję RODO bierze na siebie). Poziom kompetencji nie jest nową kategorią danych: leży już w `result_json` tej samej sesji.
 
+**[v0.5] Przyjmuję dwa pola dołożone przez Maxa ponad zlecenie — oba są nośne i oba zamykają dziury, których nie zauważyłam:**
+
+- **`blockingHoleReason`** — odróżnia „zmierzyliśmy, wypadł słabo" od „**nie badaliśmy tej kompetencji**". To dwie różne naprawy: pierwsza to kalibracja banku pytań, druga to domyślny zestaw kompetencji w onboardingu, czyli **ryzyko, które sama zgłosiłam w §6a** i zostawiłam bez pomiaru. Bez tego pola §6a pozostaje przeczuciem — z nim widzę, ilu studentów traci placement przez własny wybór na wcześniejszym kroku, a nie przez brak wiedzy.
+- **`alreadyCompletedCount`** — odróżnia zero odblokowań u studenta z **zaliczoną drabiną** od zera u kogoś, kto nic nie umie. Bez tego oba stany są w danych identyczne, a znaczą rzeczy przeciwne: pierwszy to placement działający poprawnie (nie ma czego otwierać), drugi to placement, który nie zadziałał. Zliczenie ich razem zawyżałoby „placement nic nie daje" o przypadki, w których nie miał nic do dania.
+
 **Kolumna `blockingHoleSlug` na wierszach:** zostaje albo znika — decyzja Ethana/Maxa, jest już zbudowana i w review. Warunek jedyny: **po wprowadzeniu zdarzenia nie wolno jej cytować jako pokrycia niedoszacowania.** Źródłem prawdy dla tej analizy jest zdarzenie.
 
 ---
@@ -220,7 +231,15 @@ Drabina jest liniowa i ponumerowana: 1 `l0-start` · 2 `f1-python-1` · 3 `f2-py
 
 **Co student widzi na jego temat w komunikacie o placemencie: nic.** Moduł zaliczony pokazuje na drabinie swój własny stan („zaliczony — egzamin"), niezależny od diagnozy i wcześniejszy od niej.
 
-**[NOWE, do rozstrzygnięcia przed zapłonem — uzupełnienie DECYZJI 5] Moduł zaliczony SPEŁNIA warunek ciągłości prefiksu, nigdy go nie łamie.** Reguła L2 zna wyłącznie wynik diagnozy (`computePlacement` bierze `concepts` + `uncovered`), więc dziś student, który zdał `m-eda` egzaminem, a potem przy re-onboardingu wypadł na `ds-eda` słabo, dostaje **dziurę na module, który ma zaliczony** — i prefiks ucina się przed wszystkim powyżej. To słaby instrument unieważniający mocny, czyli odwrotność zasady, na której stoi cała hybryda. **Reguła produktowa: moduł ze statusem zaliczonym traktujemy jak spełniający próg, niezależnie od poziomu z diagnozy.**
+**[ROZSTRZYGNIĘTE v0.5 — W-7] Moduł zaliczony WYZNACZA k, nie tylko „nie robi dziury".** Potwierdzam odczyt Maxa. Trzy powody:
+
+1. **Zgodność z zasadą, która stoi za regułą 5.** Odmawiam `NULL`-owi prawa wyznaczania k **nie dlatego, że nie ma tagu**, tylko dlatego, że `NULL` znaczy **niezmierzony** — a k ma sięgać najgłębiej potwierdzonego miejsca. Moduł zaliczony jest zmierzony, i to instrumentem najmocniejszym z posiadanych (15–20 pytań, ≈90%) — przeciwieństwem `NULL`. Odmówienie mu prawa wyznaczania k byłoby stosowaniem litery reguły przeciw jej własnemu uzasadnieniu.
+2. **Zarzut o transfer nie bije w tę decyzję.** Owszem, pisałam (DECYZJA 4), że mastery pytań zamkniętych nie transferuje do kodu — ale to argument przeciw **zaliczaniu** modułu pytaniami zamkniętymi. Tu nic się nie zalicza: `f2-python-2` i `f3-dane-python` zostają **otwarte i niezaliczone**, a żeby je zaliczyć, student i tak musi je przejść albo zdać ich egzaminy. Otwarcie ≠ zaliczenie; to ta sama granica, na której stoi cała hybryda.
+3. **Stawka bliska zeru i asymetryczna na korzyść otwarcia.** Moduły wciągane przez zaliczony `m-pandas` leżą **poniżej** niego, więc nie są drogą naprzód — ścieżka w górę i tak jest otwarta łańcuchem (`m-pandas` zaliczony ⟹ `m-eda` dostępne). Jedyna realna konsekwencja to możliwość **cofnięcia się po brakującą podstawę** bez zaliczania wcześniejszych modułów. Odmowa kosztowałaby student, który chce uzupełnić lukę, przymus przechodzenia `f1` od zera; otwarcie nie kosztuje nic.
+
+**Świadomie NIE dokładam osobnego powodu** dla modułu wciągniętego przez moduł *zaliczony* (kontra wciągniętego przez *zdiagnozowany*). Rozdzielałam powody w v0.3 tam, gdzie różne przyczyny wymagają różnych napraw — tutaj stawka jest bliska zeru (moduły poniżej już zdobytego punktu), a gdyby `f2`/`f3` zaczęły oblewać, sygnał i tak przyjdzie z `reason='carried_untagged'`. Trzecia gałąź dołożona „na wszelki wypadek" kosztuje ograniczenie w bazie i nic nie odpowiada.
+
+**Warunek ciągłości — bez zmian od v0.4:** moduł zaliczony SPEŁNIA go i nigdy go nie łamie. Reguła L2 zna wyłącznie wynik diagnozy (`computePlacement` bierze `concepts` + `uncovered`), więc dziś student, który zdał `m-eda` egzaminem, a potem przy re-onboardingu wypadł na `ds-eda` słabo, dostaje **dziurę na module, który ma zaliczony** — i prefiks ucina się przed wszystkim powyżej. To słaby instrument unieważniający mocny, czyli odwrotność zasady, na której stoi cała hybryda. **Reguła produktowa: moduł ze statusem zaliczonym traktujemy jak spełniający próg, niezależnie od poziomu z diagnozy.**
 
 Sposób realizacji zostawiam Ethanowi/Maxowi — funkcja może zostać czysta, jeśli dostanie zbiór modułów zaliczonych jako wejście (tak jak dostaje próg). **Pilność:** nie blokuje L4/L5; zapala się dopiero przy diagnozie **po** zaliczeniu jakiegoś modułu, czyli w ścieżce re-onboardingu — ale to jest dokładnie ta ścieżka, w której diagnoza wraca do studenta z historią. Proponuję traktować jak W-7 i domknąć przed zapłonem; ostateczną ocenę pilności zostawiam Tobie i Ryanowi.
 
@@ -240,7 +259,13 @@ Wariant hybrydowy zmienia nie tylko próg, ale i **ślad w danych**. Trzy konsek
 2. **Odblokowanie potrzebuje własnego nośnika, odrębnego od zaliczenia.** Wymogi produktowe (kształt = Twoja decyzja): musi być **trwałe** (nie liczone w locie z `result_json` przy każdym żądaniu — inaczej zmiana mapy tagów po cichu odbiera studentom dostęp), **audytowalne** (widać, z której sesji diagnozy i przy jakim poziomie powstało — bez tego miernik z DECYZJI 2 nie ma z czego liczyć) i **addytywne** (§6b).
 3. **Żadna pozycja nie dostaje `skipped_by_placement`.** D3 przewidywał ten status dla pozycji pomijanych przez placement — pod hybrydą **placement nie pomija żadnej pozycji**, moduł jest tylko otwarty, a pozycje zostają do przejścia. Status pozostaje sensowny wyłącznie dla pozycji modułu zaliczonego przez **test out** (zaliczenie przy zerze ukończonych pozycji). Nazwa `skipped_by_placement` przestaje wtedy opisywać rzeczywistość — **czy ją zmieniać, decyduje Ethan** (to nazewnictwo w schemacie, nie dydaktyka); ja tylko stwierdzam, że semantyka się przesunęła i nie wolno tego przeoczyć.
 
-**Punkt wejścia (rekomendacja, nie przymus):** drabina **nie skacze** studenta automatycznie. Rekomendowany start to **najgłębszy ODBLOKOWANY moduł** (albo `l0-start` przy pierwszym wejściu — DECYZJA 3), a wszystkie moduły niżej zostają dostępne i widoczne. Student ma prawo powiedzieć „wolę zacząć od początku" i produkt ma to uszanować — przy poziomie 3, opartym na jednym pytaniu, on często wie o sobie więcej niż nasz pomiar.
+**Punkt wejścia (rekomendacja, nie przymus):** drabina **nie skacze** studenta automatycznie. Rekomendowany start to **najgłębszy moduł DOSTĘPNY i NIEZALICZONY** [uogólnione v0.5], a wszystkie moduły niżej zostają dostępne i widoczne.
+
+**Dostępność płynie z dwóch źródeł i rekomendacja musi widzieć oba:** (a) łańcuch — moduł następujący po zaliczonym jest dostępny z mocy prerekwizytu; (b) placement — moduł odblokowany diagnozą. Definicja z v0.3 („najgłębszy odblokowany") widziała tylko (b) i dawała wynik wprost zły: student, który zdał `m-eda`, dostawał rekomendację `m-pandas` — **cofnięcie**, i to na jedynym ekranie, którego zadaniem jest powiedzieć mu, gdzie jest. To nie jest dziwne, tylko błędne; poprawiam definicję, nie komunikat.
+
+Sprawdzenie: zdany `m-eda` (poz. 6) → łańcuch daje `m-sql` (7) → rekomendacja `m-sql`. Brak zaliczeń, placement otworzył do `m-pandas` (5) → rekomendacja `m-pandas` (jak w v0.3). Nic nie zdobyte → `l0-start`. Nowa definicja pochłania starą, nie zastępuje jej wyjątkiem.
+
+**`l0-start` idzie przed wszystkim, dopóki jest niezaliczony** — także u studenta z zaliczonymi modułami wyżej (DECYZJA 3). To nie jest formalność: „test out" zdaje się pytaniami zamkniętymi, więc **można zaliczyć `m-eda`, nie uruchomiwszy nigdy notatnika**. Rekomendacja `m-sql` bez działającego środowiska trafia dokładnie w scenariusz, przed którym DECYZJA 3 chroni. Student ma prawo powiedzieć „wolę zacząć od początku" i produkt ma to uszanować — przy poziomie 3, opartym na jednym pytaniu, on często wie o sobie więcej niż nasz pomiar.
 
 **[ROZSTRZYGNIĘTE 2026-07-26 — rozjazd ze zleceniem L2]** Zlecenie mówiło „punkt startu = **pierwszy NIEodblokowany** moduł". To jest błąd i nie obowiązuje. Kontrprzykład: przy `ds-python=4, ds-pandas=4` odblokowane są F1, F2, F3, `m-pandas`, a pierwszy nieodblokowany to `m-eda` — moduł, którego student wedle pomiaru **nie umie**. Rekomendowanie startu od materiału, na którym wypadł słabo, to dokładnie ten błąd, którego cała DECYZJA 2 unika (wrzucenie ponad poziom → porzucenie).
 
@@ -248,8 +273,11 @@ Obie wielkości są przydatne, ale znaczą co innego i **żadnej nie wolno nazwa
 
 | Wielkość | Znaczenie | Gdzie w UI |
 |---|---|---|
-| **najgłębszy odblokowany** | gdzie student **zaczyna** — ostatni moduł potwierdzony pomiarem | rekomendacja „zacznij tutaj" na ekranie wyniku diagnozy |
-| **pierwszy nieodblokowany** | gdzie kończy się prefiks — **najbliższy cel**, pierwszy moduł do zdobycia | znacznik celu na drabinie, nigdy jako sugestia startu |
+| **najgłębszy dostępny i niezaliczony** | gdzie student **zaczyna** — uwzględnia zaliczenia i placement | rekomendacja „zacznij tutaj" na ekranie wyniku diagnozy |
+| **najgłębszy odblokowany placementem** | co zrobiła **diagnoza** — wyłącznie do komunikatu o placemencie | zdanie „diagnoza otworzyła…", nigdy jako rekomendacja startu |
+| **pierwszy nieodblokowany** | gdzie kończy się prefiks — **najbliższy cel** | znacznik celu na drabinie, nigdy jako sugestia startu |
+
+**Rozdzielenie komunikatu od rekomendacji jest tym, co godzi W-6 z sensownym startem.** Komunikat o placemencie mówi wyłącznie o tym, co zrobiła diagnoza (więc nigdy nie przypisuje sobie modułu zdanego przez studenta); rekomendacja startu to **osobne zdanie** o tym, gdzie student jest — i ono zaliczenia widzi. Dwa zdania, dwa źródła, zero kolizji.
 
 ---
 
@@ -260,6 +288,10 @@ Cel: student ma po jednym przeczytaniu rozumieć, że **otwarte ≠ zaliczone**.
 - **Ekran wyniku diagnozy, gdy placement zadziałał:**
   „Diagnoza otworzyła Ci ścieżkę aż do modułu **{tytuł modułu}**. To skrót w nawigacji, nie zaliczenie — moduły po drodze nadal czekają. Żeby moduł liczył się jako zaliczony, przejdź go albo zdaj jego egzamin (**test out**)."
 - **Odznaka na module otwartym placementem:** „Otwarty na podstawie diagnozy · niezaliczony".
+- **Student z modułami zaliczonymi wcześniej (dwa zdania, dwa źródła — §7):**
+  „Masz już zaliczone: **{lista modułów zaliczonych}**. Diagnoza otworzyła dodatkowo: **{lista odblokowanych}**. Zacznij od **{najgłębszy dostępny i niezaliczony}**."
+  Wariant, gdy placement nie dołożył nic: „Masz już zaliczone: **{lista}**. Diagnoza nie otworzyła nic ponad to — zacznij od **{moduł}**."
+  **Uzasadnienie:** rozdzielenie „zaliczone" od „otwarte diagnozą" w jednym widoku jest jedynym miejscem, gdzie student widzi obie waluty obok siebie i uczy się różnicy między nimi bez wykładu. Kolejność zdań jest wiążąca — **najpierw jego praca, potem nasza diagnoza.**
 - **Rekomendacja pierwszego kroku (zawsze, gdy `l0-start` niezaliczony):**
   „Zacznij od **Start: środowisko pracy** — około 15 minut. Bez działającego notebooka nie ruszysz żadnego ćwiczenia z kodem, nawet jeśli materiał znasz."
 - **Wejście w moduł graniczny (kwalifikacja na poziomie 3, własny pomiar):**
@@ -309,7 +341,9 @@ Uzupełniająco: wariant hybrydowy **wzmacnia** zgodność z §7 wobec pierwotne
 | Miernik progu — przestrzelenie w górę | pola werdyktu w `curriculum_placements` (L3) | Zbudowane. Pokrywa sesje, w których coś się otworzyło |
 | Miernik progu — niedoszacowanie | **zdarzenie przy każdym policzeniu placementu** (DECYZJA 2) | **Zależność jawna, niedomknięta:** dopóki zdarzenia nie ma, sesje bez odblokowań nie zostawiają śladu i druga strona asymetrii jest niemierzalna. `blocking_hole_slug` na wierszu **nie** wypełnia tego warunku |
 | Pominięcie modułu zaliczonego (§6c) | status `exam`/`test_out` w `curriculum_module_progress` | Nie — status istnieje i jest zapisywany przez 1E.3 (live od 2026-07-25) |
-| Ciągłość prefiksu przy module zaliczonym (§6c, W-7) | wiedza reguły o zaliczeniach | **Zależność jawna, niedomknięta:** `computePlacement` bierze dziś wyłącznie diagnozę. Do domknięcia przed zapłonem |
+| Ciągłość prefiksu przy module zaliczonym (§6c, W-7) | wiedza reguły o zaliczeniach | **DOMKNIĘTE w L4** — moduł zaliczony spełnia próg i wyznacza k (v0.5) |
+| Rekomendacja startu (§7, uogólniona) | status modułów + odblokowania placementem | **Zależność jawna, niedomknięta:** wymaga obu źródeł dostępności. Do domknięcia w L6 — dzisiejsza wersja pomija zaliczenia i cofa studenta |
+| Mikrocopy „masz już zaliczone / diagnoza otworzyła" | rozdzielone wielkości z §7 | Nie — obie wielkości istnieją po L4; potrzeba tylko złożyć je w dwa zdania |
 | Tryb wsparcia przy poziomie 3 | C7/C8 z D8 (wsparcie od fazy completion) | Nie — mechanizm zaprojektowany w ADR, nie wymyślony tutaj |
 | Mikrocopy `uncovered` | `uncovered` w `result_json` | Nie — degradacja zaimplementowana w `plan.ts` |
 | Monotoniczność odblokowań | brak przycisku powtórki (spec §8 pkt 3) | **Zależność jawna, opisana w §6b** — nie ukryta |

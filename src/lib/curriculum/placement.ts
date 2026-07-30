@@ -1,33 +1,60 @@
 // ============================================================================
-// 1E.7 (SLICE L2) — reguła placementu: wynik diagnozy → odblokowany prefiks
-// drabiny. CZYSTE funkcje, 0 DB, 0 LLM, 0 I/O — wzorzec staircase.ts (1.11)
-// i review/scheduler.ts (1E.4). Ten plik NIE dotyka bazy, tras ani czasu:
-// wejście w całości podaje wołający (L3), wyjście jest deterministyczne.
+// 1E.7 (SLICE L2, rozszerzony w L4 o §6c) — reguła placementu: wynik diagnozy
+// → odblokowany prefiks drabiny. CZYSTE funkcje, 0 DB, 0 LLM, 0 I/O — wzorzec
+// staircase.ts (1.11) i review/scheduler.ts (1E.4). Ten plik NIE dotyka bazy,
+// tras ani czasu: wejście w całości podaje wołający (L3), wyjście deterministyczne.
 //
-// ŹRÓDŁO PRAWDY: docs/product/decyzje-1e7-placement-v0.1.md (v0.3, Sophia) —
+// ŹRÓDŁO PRAWDY: docs/product/decyzje-1e7-placement-v0.1.md (v0.4, Sophia) —
 // DECYZJA 2 (próg ≥3 + tryb wsparcia), DECYZJA 5 (reguła prefiksowa),
-// §6 (przypadki brzegowe). Rama: decyzja Darka 2026-07-26 — wariant hybrydowy
+// §6 (przypadki brzegowe), §6c (W-6 + W-7, dodane w v0.4). Rama: decyzja
+// Darka 2026-07-26 — wariant hybrydowy
 // „diagnoza OTWIERA, egzamin ZALICZA". Odblokowanie ≠ zaliczenie: ten moduł
 // nie produkuje żadnego dowodu kompetencji, tylko prawo wejścia.
 //
-// ── REGUŁA W BRZMIENIU WIĄŻĄCYM (DECYZJA 5) ────────────────────────────────
-//  1. Moduł KWALIFIKUJE SIĘ ⟺ ma tag (nie NULL) i concepts[tag].level ≥ próg.
+// ── REGUŁA W BRZMIENIU WIĄŻĄCYM (DECYZJA 5 + §6c) ──────────────────────────
+//  1. Moduł KWALIFIKUJE SIĘ ⟺ ma tag (nie NULL) i concepts[tag].level ≥ próg,
+//     ALBO jest ZALICZONY (W-7, v0.4 §6c — patrz niżej).
 //  2. k = pozycja najgłębszego kwalifikującego się modułu; brak → nic.
 //  3. Dziura: otagowany moduł na pozycjach 2…k, który się nie kwalifikuje,
 //     cofa k przed siebie (powtarzaj aż prefiks jest wolny od dziur).
-//  4. Odblokowane = moduły na pozycjach 2…k (moduły z NULL jadą z prefiksem).
+//  4. Odblokowane = moduły na pozycjach 2…k (moduły z NULL jadą z prefiksem),
+//     MINUS moduły już zaliczone (W-6, §6c — placement ich nie dotyka).
 //  5. Moduł z NULL NIGDY nie wyznacza k (nie przedłuża prefiksu poza ostatni
-//     moduł potwierdzony WŁASNYM pomiarem).
+//     moduł potwierdzony WŁASNYM pomiarem). Moduł ZALICZONY jest potwierdzony
+//     pomiarem MOCNIEJSZYM niż diagnoza (egzamin ≈90%), więc k wyznacza.
 //  6. Korzeń drabiny (pozycja 1, `l0-start`) nigdy nie jest odblokowywany
 //     placementem — jest dostępny zawsze, niezależnie od diagnozy.
 //
+// ── W-7: MODUŁ ZALICZONY SPEŁNIA WARUNEK CIĄGŁOŚCI (v0.4 §6c) ──────────────
+// Do L3 reguła znała wyłącznie wynik diagnozy. Student, który ZDAŁ `m-eda`
+// egzaminem (≈90%), a przy re-onboardingu wypadł słabo na `ds-eda` (2 pytania),
+// dostawał DZIURĘ na module, który ma zaliczony — prefiks ucinał się przed
+// wszystkim powyżej. Słaby instrument unieważniał mocny, czyli odwrotność
+// zasady, na której stoi cała hybryda „diagnoza OTWIERA, egzamin ZALICZA".
+// Dlatego zbiór modułów zaliczonych jest WEJŚCIEM reguły — tak jak próg —
+// a funkcja zostaje CZYSTA (zero bazy; zbiór podaje L3).
+//
+// ── W-6: MODUŁ ZALICZONY NIE DOSTAJE ODBLOKOWANIA (v0.4 §6c) ───────────────
+// Zaliczony moduł NIE trafia do `unlockedSlugs` i ma własny powód
+// (`already_completed`), więc L3 nie ma z czego zapisać wiersza. To jest
+// egzekwowane W REGULE, nie filtrem w serwisie: filtr da się pominąć w drugim
+// miejscu zapisu, niezmiennik czystej funkcji — nie. Powód produktowy (Sophia):
+// wiersz produkuje komunikat „diagnoza otworzyła ci moduł X" skierowany do
+// osoby, która sama zdała go na ≈90% — przypisanie produktowi cudzej pracy
+// i opisanie mocnego dowodu słownikiem słabego. Powód danych (Ryan): art. 5
+// ust. 1 lit. d (prawidłowość) + niezmiennik nośnika „wiersz istnieje ⟺ moduł
+// otwarty", na którym stoi uzasadnienie retencji.
+//
 // Implementacja to JEDEN przebieg w przód (`resolvePrefixEnd`), równoważny
 // powyższemu sformułowaniu deklaratywnemu: idąc od pozycji 2 w górę, moduł
-// otagowany i kwalifikujący się przesuwa k na siebie, pierwszy otagowany
-// niekwalifikujący się przerywa marsz (reguła 3), a moduł z NULL ani nie
-// przesuwa k, ani nie przerywa (reguły 4–5). Równoważność obu sformułowań
-// jest testowana wyczerpująco (`__tests__/placement.test.ts` — 15 625
-// kombinacji wyniku diagnozy przeciw referencyjnej implementacji reguł 1–6).
+// spełniający warunek (pomiar ALBO zaliczenie) przesuwa k na siebie, pierwszy
+// otagowany niespełniający przerywa marsz (reguła 3), a moduł z NULL i bez
+// zaliczenia ani nie przesuwa k, ani nie przerywa (reguły 4–5). Równoważność
+// obu sformułowań jest testowana wyczerpująco przeciw NIEZALEŻNEJ implementacji
+// deklaratywnej (`__tests__/placement.test.ts`, trzy przebiegi): S1 — wszystkie
+// 15 625 kształtów diagnozy bez zaliczeń; S2 — PEŁNY iloczyn diagnoza ×
+// podzbiór zaliczeń na drabinie o kompletnej strukturze; S3 — wszystkie 512
+// podzbiorów zaliczeń na realnej drabinie DS. Razem ~162 tys. porównań.
 //
 // ── DLACZEGO `NULL` NIE JEST ZEREM ─────────────────────────────────────────
 // NULL znaczy „NIE ZMIERZYLIŚMY", nie „student nie umie" (DECYZJA 5,
@@ -38,7 +65,7 @@
 // ── CZEGO TEN MODUŁ NIE ROBI (granice slice'a) ─────────────────────────────
 //  • nie zapisuje niczego (nośnik odblokowania = L3, §7 pkt 2 dokumentu),
 //  • nie sumuje odblokowań z wielu sesji (§6b monotoniczność = L3),
-//  • nie patrzy na moduły już zaliczone (§6c — placement ich nie dotyka = L3),
+//  • nie CZYTA statusów zaliczenia — dostaje je gotowe na wejściu (L3),
 //  • nie rozstrzyga egzamin/test_out (L5) ani UI (L6).
 // ============================================================================
 
@@ -104,6 +131,14 @@ export type PlacementReason =
 	| "qualified"
 	/** Odblokowany, bo leży wewnątrz prefiksu, ale sam nie był mierzony (tag NULL). */
 	| "carried_untagged"
+	/**
+	 * Moduł JUŻ ZALICZONY (`exam` / `test_out`) — placement go POMIJA: bez wiersza,
+	 * bez komunikatu, bez zmiany statusu (§6c, W-6). Powód ma pierwszeństwo przed
+	 * każdym innym poza `root`, także gdy moduł leży za dziurą: to, co student
+	 * o nim widzi, pochodzi z jego własnego stanu („zaliczony — egzamin"),
+	 * a nie z diagnozy. Moduł zaliczony NIGDY nie jest `unlocked`.
+	 */
+	| "already_completed"
 	/** Nieodblokowany: tag jest, pomiar jest, poziom poniżej progu. */
 	| "below_threshold"
 	/** Nieodblokowany: tag jest, ale kompetencji w ogóle nie badaliśmy (§6a). */
@@ -126,8 +161,15 @@ export interface PlacementModuleVerdict {
 	conceptSlug: string | null;
 	/** Poziom odczytany z diagnozy dla tego tagu; null = brak pomiaru albo brak tagu. */
 	level: CompetencyLevel | null;
-	/** Czy moduł kwalifikuje się na WŁASNYM pomiarze (reguła 1). */
+	/**
+	 * Czy moduł kwalifikuje się na WŁASNYM pomiarze DIAGNOZY (tag + poziom ≥ próg).
+	 * ŚWIADOMIE bez zaliczenia: `qualifies` niesie siłę dowodu Z DIAGNOZY, bo to
+	 * ona jest zmienną mierzoną w progu alarmowym Sophii (DECYZJA 2). Ciągłość
+	 * prefiksu (W-7) liczy się z `qualifies || completed` — patrz `satisfiesPrefix`.
+	 */
 	qualifies: boolean;
+	/** Czy moduł jest już ZALICZONY (wejście reguły; §6c). Zaliczony ⇒ `unlocked: false`. */
+	completed: boolean;
 	/** Czy placement go otwiera (reguła 4). */
 	unlocked: boolean;
 	reason: PlacementReason;
@@ -146,13 +188,29 @@ export interface PlacementOutcome {
 	threshold: CompetencyLevel;
 	/** Pozycja końca prefiksu (k z DECYZJI 5); 0 = nic nie odblokowane. */
 	prefixEndPosition: number;
-	/** Slugi modułów otwartych placementem, w kolejności drabiny (pozycje 2…k). */
+	/**
+	 * Slugi modułów OTWARTYCH placementem, w kolejności drabiny: pozycje 2…k
+	 * MINUS moduły już zaliczone (W-6, §6c). To jest dokładnie zbiór, dla którego
+	 * L3 zapisuje wiersze — „wiersz istnieje ⟺ moduł otwarty przez placement".
+	 */
 	unlockedSlugs: string[];
+	/**
+	 * Moduły w prefiksie POMINIĘTE, bo student ma je zaliczone (W-6). Nie jest to
+	 * ozdoba: bez tej liczby sesja „zero odblokowań" studenta, który ma już całą
+	 * drabinę zdaną, wygląda w mierniku IDENTYCZNIE jak sesja, w której placement
+	 * nic nie otworzył, bo student nic nie umie. To dwa przeciwne stany.
+	 */
+	alreadyCompletedSlugs: string[];
 	/**
 	 * Najgłębszy odblokowany moduł — u Sophii (§7) to REKOMENDOWANY punkt wejścia
 	 * („drabina nie skacze studenta automatycznie; rekomendowany start to najgłębszy
 	 * odblokowany moduł"). Mikrocopy §8: „Diagnoza otworzyła Ci ścieżkę aż do modułu
 	 * {tytuł}". null = placement nic nie otworzył.
+	 *
+	 * Liczony z `unlockedSlugs`, więc moduł ZALICZONY leżący w prefiksie nie może
+	 * nim zostać (W-6). To celowe: zdanie „diagnoza otworzyła Ci ścieżkę aż do
+	 * {X}" o module zdanym przez studenta egzaminem jest dokładnie tym
+	 * przypisaniem cudzej pracy, którego zabrania §6c.
 	 */
 	deepestUnlockedSlug: string | null;
 	/**
@@ -180,6 +238,19 @@ export interface PlacementOutcome {
 export interface PlacementInput {
 	modules: readonly PlacementLadderModule[];
 	diagnosis: PlacementDiagnosis | null;
+	/**
+	 * Slugi modułów ZALICZONYCH przez studenta (`curriculum_module_progress.status
+	 * = 'completed'`) — wejście W-7/W-6 (§6c). Wołający odczytuje je z bazy; reguła
+	 * zostaje czysta.
+	 *
+	 * ŚWIADOMIE POLE WYMAGANE, bez wartości domyślnej — w przeciwieństwie do progu.
+	 * Próg ma sensowną wartość domyślną (decyzja produktowa), a „zbiór zaliczeń"
+	 * nie ma: pominięcie go po cichu przywraca DOKŁADNIE tę awarię, którą W-7
+	 * naprawia (słaby instrument unieważnia mocny). Wymagalność sprawia, że każdy
+	 * nowy wołający — w tym L5 z `test_out` — musi podjąć tę decyzję świadomie,
+	 * a kompilator ją wymusi. Pusta tablica = „student nie ma nic zaliczonego".
+	 */
+	completedModuleSlugs: readonly string[];
 	/** Próg kwalifikacji; domyślnie DEFAULT_PLACEMENT_THRESHOLD (DECYZJA 2). */
 	threshold?: CompetencyLevel;
 }
@@ -207,19 +278,29 @@ function levelForModule(
 /**
  * Koniec prefiksu (k) — jeden przebieg w przód od pozycji 2 (reguły 2–5).
  * `modules` MUSI być posortowane rosnąco po pozycji.
+ *
+ * `satisfiesBySlug` to `qualifies || completed` (W-7): moduł ZALICZONY spełnia
+ * warunek ciągłości i przedłuża prefiks tak samo jak moduł potwierdzony
+ * diagnozą — bo jest potwierdzony instrumentem MOCNIEJSZYM (egzamin ≈90%
+ * kontra dwa pytania). Dotyczy to także modułu z tagiem NULL: reguła 5 wyklucza
+ * z wyznaczania k moduły NIEZMIERZONE, a zaliczony zmierzony jest.
  */
 function resolvePrefixEnd(
 	ordered: readonly PlacementLadderModule[],
-	qualifiesBySlug: ReadonlyMap<string, boolean>,
+	satisfiesBySlug: ReadonlyMap<string, boolean>,
+	completedBySlug: ReadonlySet<string>,
 ): { prefixEnd: number; holeSlug: string | null } {
 	let prefixEnd = 0;
 	for (let i = 1; i < ordered.length; i++) {
 		const module_ = ordered[i];
-		// Moduł bez tagu: jedzie z prefiksem, ale go nie przedłuża (reguły 4–5).
-		if (module_.diagnosticConceptSlug === null) continue;
-		// Pierwszy otagowany, który się nie kwalifikuje = dziura: prefiks kończy
-		// się na ostatnim module potwierdzonym własnym pomiarem (reguła 3).
-		if (!qualifiesBySlug.get(module_.slug)) {
+		const satisfies = satisfiesBySlug.get(module_.slug) ?? false;
+		// Moduł bez tagu i bez zaliczenia: jedzie z prefiksem, ale go nie
+		// przedłuża (reguły 4–5) i nigdy nie jest dziurą.
+		if (module_.diagnosticConceptSlug === null && !completedBySlug.has(module_.slug)) continue;
+		// Pierwszy otagowany, który nie spełnia warunku = dziura: prefiks kończy
+		// się na ostatnim module potwierdzonym pomiarem (reguła 3). Moduł zaliczony
+		// NIGDY nie jest dziurą — o to chodzi w W-7.
+		if (!satisfies) {
 			return { prefixEnd, holeSlug: module_.slug };
 		}
 		prefixEnd = module_.position;
@@ -255,6 +336,7 @@ export function computePlacement(input: PlacementInput): PlacementOutcome {
 			threshold,
 			prefixEndPosition: 0,
 			unlockedSlugs: [],
+			alreadyCompletedSlugs: [],
 			deepestUnlockedSlug: null,
 			firstNotUnlockedSlug: null,
 			blockingHoleSlug: null,
@@ -265,30 +347,45 @@ export function computePlacement(input: PlacementInput): PlacementOutcome {
 
 	const diagnosis = input.diagnosis;
 	const uncovered = new Set(diagnosis?.uncovered ?? []);
+	const completedBySlug = new Set(input.completedModuleSlugs);
 	const levelBySlug = new Map<string, CompetencyLevel | null>();
 	const qualifiesBySlug = new Map<string, boolean>();
+	const satisfiesBySlug = new Map<string, boolean>();
 	for (const module_ of ordered) {
 		const level = levelForModule(module_, diagnosis);
 		levelBySlug.set(module_.slug, level);
 		// isQualifyingLevel(null) === false, a levelForModule zwraca null dla tagu NULL —
 		// osobny warunek na diagnosticConceptSlug byłby martwy (mutacja M7 Leo przeżyła
 		// komplet testów). Żywy strażnik reguły 5 stoi w resolvePrefixEnd.
-		qualifiesBySlug.set(module_.slug, isQualifyingLevel(level, threshold));
+		const qualifies = isQualifyingLevel(level, threshold);
+		qualifiesBySlug.set(module_.slug, qualifies);
+		// W-7: ciągłość prefiksu liczy się z DWÓCH źródeł dowodu (diagnoza ALBO
+		// zaliczenie). `qualifies` zostaje węższe — niesie wyłącznie siłę dowodu
+		// z diagnozy, bo to ona jest zmienną w progu alarmowym Sophii.
+		satisfiesBySlug.set(module_.slug, qualifies || completedBySlug.has(module_.slug));
 	}
 
-	const { prefixEnd, holeSlug } = resolvePrefixEnd(ordered, qualifiesBySlug);
+	const { prefixEnd, holeSlug } = resolvePrefixEnd(ordered, satisfiesBySlug, completedBySlug);
 
 	const modules: PlacementModuleVerdict[] = ordered.map((module_, index) => {
 		const level = levelBySlug.get(module_.slug) ?? null;
 		const qualifies = qualifiesBySlug.get(module_.slug) ?? false;
+		const completed = completedBySlug.has(module_.slug);
 		const isRoot = index === 0;
 		// Korzeń NIGDY nie jest odblokowywany placementem (reguła 6) — jest dostępny
 		// z mocy bycia korzeniem, nie z mocy diagnozy.
-		const unlocked = !isRoot && module_.position <= prefixEnd;
+		// Moduł ZALICZONY nigdy nie jest odblokowywany (W-6, §6c) — nie potrzebuje
+		// uprawnienia do wejścia, więc nie ma po co powstawać wiersz ani komunikat.
+		const unlocked = !isRoot && !completed && module_.position <= prefixEnd;
 
 		let reason: PlacementReason;
 		if (isRoot) {
 			reason = "root";
+		} else if (completed) {
+			// Pierwszeństwo PRZED prefiksem i przed dziurą: dla modułu zaliczonego
+			// placement nie ma nic do powiedzenia, niezależnie od tego, gdzie leży
+			// (§6c: „Co student widzi na jego temat w komunikacie o placemencie: nic").
+			reason = "already_completed";
 		} else if (unlocked) {
 			reason = qualifies ? "qualified" : "carried_untagged";
 		} else if (module_.diagnosticConceptSlug === null) {
@@ -309,6 +406,7 @@ export function computePlacement(input: PlacementInput): PlacementOutcome {
 			conceptSlug: module_.diagnosticConceptSlug,
 			level,
 			qualifies,
+			completed,
 			unlocked,
 			reason,
 			// Trzy gałęzie trybu wsparcia (Sophia v0.3, DECYZJA 2 — lista wyczerpująca):
@@ -338,6 +436,12 @@ export function computePlacement(input: PlacementInput): PlacementOutcome {
 		threshold,
 		prefixEndPosition: prefixEnd,
 		unlockedSlugs: unlocked.map((m) => m.slug),
+		// Pominięte przez W-6 liczymy TYLKO wewnątrz prefiksu: zaliczenie leżące
+		// poza prefiksem (np. za dziurą) nie jest „pominięciem przez placement",
+		// tylko modułem, którego placement i tak by nie otworzył.
+		alreadyCompletedSlugs: modules
+			.filter((m) => m.completed && m.position > 1 && m.position <= prefixEnd)
+			.map((m) => m.slug),
 		deepestUnlockedSlug: unlocked.at(-1)?.slug ?? null,
 		firstNotUnlockedSlug: firstNotUnlocked?.slug ?? null,
 		blockingHoleSlug: holeSlug,
