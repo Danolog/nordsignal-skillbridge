@@ -240,6 +240,74 @@ dBack("1E.7 L4 · drabina honoruje placement (realna baza)", () => {
 		expect(przyOn).toBe(3);
 	});
 
+	it("FLAGA OFF: ŻADEN SQL NIE NAZYWA `curriculum_placements` (podsłuch na sterowniku pg)", async () => {
+		// Nota (b) Ethana — dowód przeniesiony z sondy w sesji do repo.
+		//
+		// Dlaczego nie wystarczają dwa testy wyżej: one liczą WYWOŁANIA `db.select`.
+		// Mutacja przenosząca odczyt placementu do `db.execute` (albo do transakcji,
+		// albo do `db.query.*`) przeszłaby je na zielono, bo licznik `db.select` by
+		// się nie ruszył — a zapytanie do bazy POLECIAŁOBY. Pinujemy więc właściwość
+		// o poziom niżej: na `Client.prototype.query` sterownika `pg`, przez który
+		// przechodzi KAŻDE zapytanie (pool.query, transakcja, surowy SQL). Klasę
+		// bierzemy z ŻYWEJ puli (`db.$client.Client`), nie z importu — identyczność
+		// modułu jest wtedy faktem, a nie założeniem o rozwiązywaniu ścieżek.
+		//
+		// KONTROLA NEGATYWNA JEST TU OBOWIĄZKOWA: ślepy podsłuch (zła klasa, zły
+		// moment instalacji, literówka w filtrze) też pokaże „zero" przy OFF i dowód
+		// byłby bezwartościowy. Dlatego ten sam podsłuch, ten sam filtr i te same
+		// dwa wywołania przy ON MUSZĄ zobaczyć zapytanie nazywające tabelę.
+		const pula = (db as { $client: { Client: { prototype: { query: unknown } } } }).$client;
+		const prototypKlienta = pula.Client.prototype as { query: (...a: unknown[]) => unknown };
+		const oryginalnaQuery = prototypKlienta.query;
+		const zebrane: string[] = [];
+		prototypKlienta.query = function (this: unknown, ...args: unknown[]) {
+			const pierwszy = args[0] as string | { text?: string } | undefined;
+			zebrane.push(typeof pierwszy === "string" ? pierwszy : (pierwszy?.text ?? ""));
+			return (oryginalnaQuery as (...a: unknown[]) => unknown).apply(this, args);
+		};
+		/** Zapytania nazywające tabelę — po nazwie SQL, nie po nazwie funkcji w TS. */
+		const nazywajaceTabele = () => zebrane.filter((q) => /curriculum_placements/i.test(q));
+
+		try {
+			// Wywołujemy OBIE derywacje (ekran + trasa) — bramka flagi stoi w obu.
+			ustawFlagi(false);
+			zebrane.length = 0;
+			await getLadder(studentId, PATH_KEY);
+			await isModuleUnlocked(studentId, moduleIds[`${PREFIX}f1`]);
+			const przyOff = nazywajaceTabele();
+
+			ustawFlagi(true);
+			zebrane.length = 0;
+			await getLadder(studentId, PATH_KEY);
+			await isModuleUnlocked(studentId, moduleIds[`${PREFIX}f1`]);
+			const przyOn = nazywajaceTabele();
+
+			expect(
+				przyOff,
+				"Przy zgaszonej fladze poleciało zapytanie do curriculum_placements — " +
+					"bramka przestała zwierać PRZED odczytem (deploy ≠ release).",
+			).toEqual([]);
+			expect(
+				przyOn.length,
+				"Kontrola negatywna: przy ZAPALONEJ fladze podsłuch nie zobaczył ani jednego " +
+					"zapytania o curriculum_placements. To znaczy, że sonda jest ślepa, " +
+					"a zero przy OFF nic nie dowodzi.",
+			).toBeGreaterThan(0);
+			// ⚠ USUNIĘTA ASERCJA (nota Leo, review L5): stała tu kontrola
+			// `zebrane.length >= przyOn.length`, gdzie `przyOn` to filtr z `zebrane` —
+			// czyli warunek, który NIE MOŻE zaświecić na czerwono w żadnych
+			// okolicznościach. Jej komentarz obiecywał dowód „stoimy poniżej warstwy
+			// ORM (begin/commit)", którego nie dostarczała: ani `getLadder`, ani
+			// `isModuleUnlocked` nie otwierają transakcji, więc `begin`/`commit`
+			// w `zebrane` nigdy się nie pojawią. Dowód niosą dwie asercje wyżej
+			// (zero przy OFF + kontrola negatywna przy ON) i są wystarczające.
+			// Pusta asercja z obietnicą w komentarzu jest gorsza niż jej brak.
+		} finally {
+			prototypKlienta.query = oryginalnaQuery;
+			ustawFlagi(true);
+		}
+	});
+
 	it("BRAMKA SPRZĘŻENIA: placement ON + masteryGate OFF → drabina jak przed L4", async () => {
 		// Ten sam skutek co flaga zgaszona, ale z innego powodu: bez „test out"
 		// nie ma taniej drogi naprawy błędu w dół (warunek nośny A22-2 art. 22 RODO).
@@ -336,6 +404,104 @@ dBack("1E.7 L4 · drabina honoruje placement (realna baza)", () => {
 		expect(ladder.find((m) => m.slug === `${PREFIX}f1`)?.status).toBe("locked");
 		expect(await isModuleUnlocked(obcy.id, moduleIds[`${PREFIX}f1`])).toBe(false);
 		await db.execute(sql`DELETE FROM students WHERE id = ${obcy.id}`);
+	});
+
+	// ─── 4. Carry-forward C2 (Leo) — SPÓJNOŚĆ DRABINY PO ZNIKNIĘCIU POSTĘPU ────
+	//
+	// Skąd ta dziura. W-6 mówi: moduł ZALICZONY wewnątrz prefiksu NIE dostaje
+	// wiersza w `curriculum_placements` (po co otwierać coś, co student ma zrobione).
+	// Jego „otwartość" na drabinie stoi wtedy na jednej nodze — na wierszu POSTĘPU
+	// (`status='completed'`). Gdyby ten wiersz zniknął, moduł nie ma ani placementu,
+	// ani zaliczenia, a jego prerekwizyt nadal nie jest zaliczony ⇒ `locked`, mimo że
+	// moduły po OBU jego stronach są otwarte. Dla studenta: dziura w środku drabiny,
+	// której nie da się otworzyć niczym poza cofnięciem się przed prefiks.
+	//
+	// Dziś nieosiągalne: w kodzie produkcyjnym NIE MA kasowania
+	// `curriculum_module_progress` (jedyni pisarze to upsert kaskady completeItem
+	// i upsert trasy egzaminu). L5 dokłada trzeci powód, żeby ten wiersz ruszać
+	// (dowód 'test_out'), więc pierwsza ścieżka „reset modułu / powtórka od zera"
+	// to zapali. Ten test jest tu po to, żeby zapaliło się W CI, a nie u studenta.
+	/** Slugi modułów `locked`, które mają moduł otwarty i przed sobą, i po sobie. */
+	async function wyspyLocked(): Promise<string[]> {
+		const drabina = await getLadder(studentId, PATH_KEY);
+		const posortowana = [...drabina].sort((a, b) => a.position - b.position);
+		return posortowana
+			.filter(
+				(m, i) =>
+					m.status === "locked" &&
+					posortowana.slice(0, i).some((x) => x.status !== "locked") &&
+					posortowana.slice(i + 1).some((x) => x.status !== "locked"),
+			)
+			.map((m) => m.slug);
+	}
+
+	it("C2 — stan wyjściowy W-6 (moduł zaliczony w prefiksie, BEZ wiersza placementu) jest spójny", async () => {
+		// Kontrola pozytywna: zanim zaczniemy kasować, drabina wyspy NIE ma. Bez tego
+		// czerwień w teście niżej mogłaby pochodzić z samych rekwizytów, nie z kasowania.
+		await db.execute(
+			sql`DELETE FROM curriculum_placements
+			    WHERE student_id = ${studentId} AND module_id = ${moduleIds[`${PREFIX}f2`]}`,
+		);
+		await db.execute(
+			sql`INSERT INTO curriculum_module_progress (student_id, tenant_id, module_id, status)
+			    VALUES (${studentId}, ${tenantId}, ${moduleIds[`${PREFIX}f2`]}, 'completed')`,
+		);
+		expect(await statusUI(`${PREFIX}f2`)).toBe("completed");
+		expect(await wyspyLocked()).toEqual([]);
+	});
+
+	// ⚠⚠ TO NIE JEST KONTRAKT — TO UDOKUMENTOWANY DEFEKT.
+	// ✅ ROZSTRZYGNIĘTY: docs/product/decyzje-1e7-placement-v0.1.md **§6e** (Sophia
+	// v0.6). PRZECZYTAJ §6e, ZANIM cokolwiek tu zmienisz — rozstrzygnięcie odrzuca
+	// obie oczywiste naprawy (przeliczanie placementu łamie niezmiennik miernika;
+	// „świadoma dziura z komunikatem" obiecuje studentowi czynność, której produkt
+	// nie pozwala wykonać) i daje trzecią regułę wiążącą:
+	// **RESET ZERUJE ZALICZENIE, NIGDY DOSTĘPNOŚĆ** — reset ma zmieniać status
+	// wiersza postępu (`completed` → `available`), a nie kasować wiersz. Wtedy
+	// wyspa nie powstaje, placement nie jest przeliczany, miernik zostaje nietknięty.
+	// Jeśli wiersz technicznie MUSI zniknąć, ratunkowe dopisanie wiersza placementu
+	// wymaga sign-offu Sophii PRZED implementacją, nie po.
+	// Zmierzony w L5 (2026-07-30, Max): niezmiennik „brak wyspy `locked`" JEST
+	// ZŁAMANY. Test pinuje stan FAKTYCZNY, nie pożądany, z dwóch powodów: (1) L5
+	// nie ma mandatu naprawiać reguły placementu — to decyzja produktowa (Sophia),
+	// nie plasterek backendu; (2) niezapisany defekt zniknąłby z pola widzenia po
+	// release'ie. Test zaświeci na CZERWONO w chwili, gdy ktokolwiek to naprawi —
+	// i to jest zamierzone: wtedy trzeba go przepisać na asercję niezmiennika
+	// (`expect(await wyspyLocked()).toEqual([])`), którą zostawiam gotową wyżej.
+	// DECYZJA DO PODJĘCIA: albo reset/powtórka modułu przelicza placement (dopisuje
+	// wiersz W-6, który reguła świadomie pominęła), albo akceptujemy dziurę i UI
+	// mówi o niej wprost. Do czasu decyzji ŻADNA ścieżka produkcyjna nie ma prawa
+	// kasować `curriculum_module_progress` — dziś nie kasuje żadna.
+	it("C2 · DEFEKT: skasowanie postępu modułu wewnątrz prefiksu ROBI wyspę `locked` między otwartymi", async () => {
+		await db.execute(
+			sql`DELETE FROM curriculum_placements
+			    WHERE student_id = ${studentId} AND module_id = ${moduleIds[`${PREFIX}f2`]}`,
+		);
+		await db.execute(
+			sql`INSERT INTO curriculum_module_progress (student_id, tenant_id, module_id, status)
+			    VALUES (${studentId}, ${tenantId}, ${moduleIds[`${PREFIX}f2`]}, 'completed')`,
+		);
+		// Stan wyjściowy jest spójny (kontrola pozytywna ma własny przypadek wyżej).
+		expect(await wyspyLocked()).toEqual([]);
+
+		// „Reset / powtórka modułu" — jedyne zdarzenie, które kasuje wiersz postępu.
+		// L5 dokłada powód, żeby taką ścieżkę w ogóle napisać (dowód 'test_out').
+		await db.execute(
+			sql`DELETE FROM curriculum_module_progress
+			    WHERE student_id = ${studentId} AND module_id = ${moduleIds[`${PREFIX}f2`]}`,
+		);
+
+		const drabina = (await getLadder(studentId, PATH_KEY)).sort((a, b) => a.position - b.position);
+		// Cały kształt drabiny w asercji — dowód, że to naprawdę WYSPA (otwarte po
+		// obu stronach), a nie po prostu „zablokowany ogon" jak `eda`.
+		expect(drabina.map((m) => `${m.slug}=${m.status}`)).toEqual([
+			`${PREFIX}l0-start=available`,
+			`${PREFIX}f1=available`,
+			`${PREFIX}f2=locked`, // ⟵ DZIURA: bez placementu (W-6) i bez zaliczenia
+			`${PREFIX}pandas=available`,
+			`${PREFIX}eda=locked`, // ogon poza prefiksem — to jest poprawne (DECYZJA 5)
+		]);
+		expect(await wyspyLocked()).toEqual([`${PREFIX}f2`]);
 	});
 
 	it("przywraca flagi środowiska (sprzątanie)", () => {

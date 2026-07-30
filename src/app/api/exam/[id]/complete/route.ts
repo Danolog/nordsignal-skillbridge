@@ -11,12 +11,17 @@
 //    atomy) + mikrocopy. Ślad aktywności podejścia jest już wpięty przez
 //    assessment_answers (patrz src/lib/rhythm/activity.ts) — bez zmian tutaj.
 //  - 1E.7 · L0: ZDANY egzamin zostawia ślad w drabinie — upsert
-//    curriculum_module_progress (status='completed', verified_by_method='exam')
+//    curriculum_module_progress (status='completed', verified_by_method)
 //    W TEJ SAMEJ transakcji co werdykt. Wcześniej trasa pisała wyłącznie do
 //    assessment_sessions, a P5 (exam-gate.ts) okazało się w całości read-only:
 //    student zdawał egzamin, a moduł zostawał niezaliczony i następny
 //    zablokowany. Kaskada completeItem tego nie łata — pozycji kind='exam' nie
 //    da się ukończyć żadną trasą, więc w module z egzaminem nigdy nie domyka.
+//  - 1E.7 · L5: dowód rozróżnia DROGĘ zaliczenia — 'exam' (student przeszedł
+//    pozycje modułu i zdał) vs 'test_out' (zdał BEZ ani jednej zaliczonej
+//    pozycji). Rozstrzygane w chwili zapisu, z tej samej transakcji; bramka
+//    (exam-gate.ts) traktuje obie wartości równorzędnie — zmienia się dowód,
+//    nie zachowanie.
 //
 // Wynik wraca do klienta (passed + licznik + koncepty) — dopiero tu student
 // poznaje werdykt (w trakcie egzaminu zero feedbacku).
@@ -40,6 +45,7 @@ import {
 	isExamSessionExpired,
 } from "@/lib/assessment/exam-service";
 import { auth } from "@/lib/auth/server";
+import { getCompletedItemCounts } from "@/lib/curriculum/ladder";
 import { db } from "@/lib/db";
 import { assessmentAnswers, assessmentSessions, curriculumModuleProgress } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
@@ -127,14 +133,34 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 			// wymagane, bo curriculum_module_progress ma FORCE RLS, a app_student ma
 			// wyłącznie SELECT. Wzorzec zapisu jak completeItem (completion.ts).
 			// tenant_id z `student.tenantId` (jedno źródło, nie z sesji egzaminu).
-			// verified_by_method zawsze 'exam'. Decyzja produktowa JUŻ ZAPADŁA
-			// (docs/product/decyzje-1e7-placement-v0.1.md, rama nadrzędna, sign-off
-			// Darka 2026-07-26): zaliczenie modułu BEZ przechodzenia go (test-out)
-			// zapisuje 'test_out'. Odroczone jest wykonanie, nie decyzja — wchodzi
-			// w plasterku L5. ZNANY DŁUG OKNA L0→L5 (od 2026-07-26): wiersze zapisane
-			// w tym oknie mają 'exam' także dla ścieżki test-out i po fakcie NIE dają
-			// się odróżnić (liczby ukończonych pozycji w chwili zdania nie zapisujemy).
-			// Nieszkodliwe dziś: exam-gate.ts:70 traktuje obie wartości równorzędnie (E4).
+			//
+			// 1E.7 · L5 — DOWÓD ROZRÓŻNIA 'exam' OD 'test_out'. Decyzja produktowa
+			// (docs/product/decyzje-1e7-placement-v0.1.md, rama „diagnoza OTWIERA,
+			// egzamin ZALICZA", sign-off Darka 2026-07-26): zaliczenie modułu BEZ
+			// przechodzenia go to 'test_out', przejście modułu + zdany egzamin to 'exam'.
+			// Kryterium = liczba ZALICZONYCH pozycji modułu w chwili zapisu (zero ⇒
+			// test-out) — dokładnie ten sam pod-stan, który bramka nazywa `test_out`
+			// (exam-gate.ts: moduł available, zero pozycji). Liczy `getCompletedItemCounts`,
+			// czyli ta sama funkcja, która karmi pasek postępu drabiny — bo na DZISIEJSZYCH
+			// danych obie liczby wychodzą identycznie (`skipped_by_placement` nie ma ani
+			// jednego pisarza w kodzie produkcyjnym).
+			// ⚠ TO JEST STAN PRZEJŚCIOWY, NIE KONTRAKT. Sophia v0.6 §7 pkt 3 rozstrzyga
+			// wiążąco: pozycja pominięta przez diagnozę NIE liczy się jako przerobiona,
+			// gdy rozstrzygamy JAKIM DOWODEM student zaliczył moduł — inaczej dowód
+			// `test_out` skasowałby samego siebie (ten status powstaje WYŁĄCZNIE na
+			// pozycjach modułu zaliczonego test-outem). Rozdzielenie na dwie jawnie
+			// nazwane funkcje wchodzi, gdy cokolwiek zacznie ten status zapisywać —
+			// patrz komentarz przy `getCompletedItemCounts` w ladder.ts.
+			// W CHWILI ZAPISU I W TEJ SAMEJ TRANSAKCJI, nie wstecz: po fakcie tego się
+			// nie odtworzy (liczby pozycji nie zapisujemy nigdzie), a odczyt spoza
+			// transakcji mógłby zobaczyć pozycję ukończoną RÓWNOLEGLE między werdyktem
+			// a zapisem dowodu i zamienić 'test_out' w 'exam'.
+			// ⚠ ZACHOWANIE BRAMKI SIĘ NIE ZMIENIA: exam-gate.ts:70 traktuje obie
+			// wartości równorzędnie (E4 verified) — zmienia się WYŁĄCZNIE zapisany dowód.
+			// ⚠ DŁUG OKNA L0→L5 (2026-07-26 → dziś) NIE JEST SPŁACALNY WSTECZ: wiersze
+			// zapisane w tym oknie mają 'exam' także dla ścieżki test-out i po fakcie
+			// NIE dają się odróżnić. Na prodzie okno jest puste (zero sesji egzaminu
+			// modułowego), więc spłata jest czysta — backfillu nie ma i nie będzie.
 			// onConflictDoUpdate obowiązkowy: ponowne zdanie po restarcie cyklu
 			// trafiłoby w uq_curriculum_module_progress_student_module (23505).
 			// `set` celowo WĄSKI (jak completion.ts:72) — nie dotykamy pól, których
@@ -149,7 +175,19 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 			// krótka rywalizacja o ten sam wiersz (student, moduł).
 			// Pierwszy realny kandydat do złamania niezmiennika: L1 placementu — czyta
 			// sesję diagnozy i zapisze własny nośnik odblokowania. Kolejność ma zostać ta sama.
+			// L5 dokłada tu WYŁĄCZNIE ODCZYT (liczba zaliczonych pozycji) — zero nowych
+			// blokad, więc kolejność blokad jest nienaruszona.
 			if (resultJson.passed && assessment.moduleId) {
+				const completedItems =
+					(await getCompletedItemCounts(student.id, [assessment.moduleId], tx)).get(
+						assessment.moduleId,
+					) ?? 0;
+				// L5: zero zaliczonych pozycji ⇒ student zdał egzamin BEZ przechodzenia
+				// modułu (test-out). Wystarczy jedna zaliczona pozycja, żeby dowodem był
+				// 'exam' — „przeszedł moduł" celowo nie znaczy „komplet pozycji": komplet
+				// bez zdanego egzaminu i tak nie zalicza modułu (bramka E3), a stopniowanie
+				// „ile procent modułu" nie jest tu żadną decyzją produktową.
+				const verifiedByMethod = completedItems === 0 ? "test_out" : "exam";
 				await tx
 					.insert(curriculumModuleProgress)
 					.values({
@@ -157,14 +195,14 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 						tenantId: student.tenantId,
 						moduleId: assessment.moduleId,
 						status: "completed",
-						verifiedByMethod: "exam",
+						verifiedByMethod,
 						completedAt: new Date(),
 					})
 					.onConflictDoUpdate({
 						target: [curriculumModuleProgress.studentId, curriculumModuleProgress.moduleId],
 						set: {
 							status: "completed",
-							verifiedByMethod: "exam",
+							verifiedByMethod,
 							completedAt: new Date(),
 							updatedAt: new Date(),
 						},

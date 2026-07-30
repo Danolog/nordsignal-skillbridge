@@ -213,17 +213,47 @@ export async function getLadder(studentId: string, pathKey: string): Promise<Lad
 }
 
 /**
+ * Executor odczytu: `db` albo transakcja (`db.transaction`) — typ strukturalny,
+ * `tx` drizzle spełnia go wprost (wzorzec `CurriculumDbc` z completion.ts).
+ * Potrzebny, bo 1E.7 L5 liczy zaliczone pozycje W TEJ SAMEJ transakcji, w której
+ * trasa egzaminu zapisuje werdykt.
+ */
+export type LadderReadDbc = Pick<typeof db, "select">;
+
+/**
  * 1E.6a — liczba pozycji ZALICZONYCH per moduł (completed + skipped_by_placement,
- * bo skipped liczy się jak zaliczona dla sekwencji — D3/D8). Konsument: pasek
- * postępu na drabinie. Odczyt owner-side, bez zapisów.
+ * bo skipped liczy się jak zaliczona dla sekwencji — D3/D8). Konsumenci: pasek
+ * postępu na drabinie (1E.6a) oraz rozstrzygnięcie exam ⟂ test_out przy zapisie
+ * zdanego egzaminu (1E.7 L5). Odczyt owner-side, bez zapisów.
+ *
+ * ⚠ DZIŚ JEDNA FUNKCJA KARMI DWÓCH KONSUMENTÓW — I TO JEST STAN PRZEJŚCIOWY.
+ * Pasek postępu i dowód `verified_by_method` liczą tę samą liczbę, bo na
+ * dzisiejszych danych wychodzi ona identycznie: `skipped_by_placement` NIE MA
+ * ANI JEDNEGO PISARZA w kodzie produkcyjnym (sam status + odczyty + CHECK).
+ *
+ * ⚠ ROZSTRZYGNIĘCIE WIĄŻĄCE (Sophia v0.6 §7 pkt 3, [WYMÓG BACKENDU]): to są
+ * odpowiedzi na DWA RÓŻNE PYTANIA i mają dostać DWIE FUNKCJE o jawnie różnych
+ * nazwach, w chwili gdy cokolwiek zacznie zapisywać `skipped_by_placement`:
+ *   • „ile masz z głowy?" (pasek postępu)  → pominięte LICZĄ SIĘ,
+ *   • „czym to zdobyłeś?" (dowód, audyt)   → pominięte NIE LICZĄ SIĘ.
+ * Powód jest sprzecznością wewnętrzną, nie preferencją: pod hybrydą ten status
+ * może powstać WYŁĄCZNIE na pozycjach modułu zaliczonego przez `test_out`, więc
+ * liczenie go jak przerobionego kazałoby dowodowi `test_out` SKASOWAĆ SAMEGO
+ * SIEBIE i pokazać 'exam'.
+ *
+ * NIE traktuj wspólnego wołania jako kontraktu do utrwalenia — to jest dług
+ * z terminem. Mutacja Leo (review L5) dowodzi, że rozjazd definicji jest dziś
+ * dla suity NIEWIDOCZNY: podmiana na własne zapytanie liczące tylko 'completed'
+ * przechodzi 363/363. Lekarstwem jest test pinujący, nie ten komentarz.
  */
 export async function getCompletedItemCounts(
 	studentId: string,
 	moduleIds: string[],
+	dbc: LadderReadDbc = db,
 ): Promise<Map<string, number>> {
 	const counts = new Map<string, number>();
 	if (moduleIds.length === 0) return counts;
-	const rows = await db
+	const rows = await dbc
 		.select({
 			moduleId: curriculumModuleItems.moduleId,
 			status: curriculumItemProgress.status,

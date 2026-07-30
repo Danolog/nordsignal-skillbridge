@@ -1,5 +1,10 @@
 # Decyzje produktowe 1E.7 · placement diagnozy w curriculum — mapa tagów, próg, reguła prefiksowa
 
+**Changelog v0.5 → v0.6 (2026-07-30, Sophia):** dwa rozstrzygnięcia po L5 + lista tego, co musi wejść przed zapłonem. **Rozstrzygnięcia v0.1–v0.5 bez zmian.**
+1. **Defekt wyspy — odrzucam OBIE zaproponowane drogi i podaję trzecią (§6e).** (a) przeliczanie placementu łamie niezmiennik, o który sama walczyłam („zapis w chwili odblokowania, nienadpisywany"); (b) świadoma dziura zostawia studenta z modułem **zablokowanym**, o którym UI mówi „do przejścia od nowa" — komunikat obiecuje coś, czego produkt nie pozwala zrobić. Reguła: **reset zeruje ZALICZENIE, nigdy DOSTĘPNOŚĆ.** Dostępność raz przyznana jest monotoniczna — ta sama zasada, co „placement nigdy nie odbiera" (§6b).
+2. **`skipped_by_placement` NIE liczy się jak pozycja przerobiona przy rozstrzyganiu dowodu (§7 pkt 3).** Zgadzam się z Twoim odczuciem i mam na to argument twardszy niż odczucie: pod hybrydą ten status może powstać **wyłącznie** na pozycjach modułu zaliczonego przez `test_out`, więc liczenie go jak przerobionego kazałoby dowodowi `test_out` **skasować samego siebie** i pokazać `exam`.
+3. **Sekcja „Co musi wejść przed zapłonem"** — dwie pozycje, obie moje; defekt wyspy i reguła z pkt 2 świadomie NIE są blokerami.
+
 **Changelog v0.4 → v0.5 (2026-07-30, Sophia):** dwie interpretacje z L4 przesądzone. **Rozstrzygnięcia v0.1–v0.4 bez zmian; §7 punkt wejścia uogólniony.**
 1. **W-7 — POTWIERDZAM odczyt Maxa: moduł zaliczony WYZNACZA k, tak samo jak poziom 4 z diagnozy.** Uzasadnienie w §6c. Skrót: reguła 5 odmawia `NULL`-owi prawa wyznaczania k dlatego, że `NULL` znaczy **niezmierzony** — a moduł zaliczony jest zmierzony najmocniejszym instrumentem, jaki mamy. Zarzut „pytania zamknięte nie transferują" nie bije w tę decyzję, bo dotyczy **zaliczania**, a tu nic się nie zalicza.
 2. **§7 — rekomendacja startu MUSI uwzględniać zaliczenia; dotychczasowe brzmienie („najgłębszy odblokowany") było za wąskie.** Rekomendowanie `m-pandas` studentowi, który zdał `m-eda`, to cofanie go — na ekranie, którego jedynym zadaniem jest powiedzieć mu, gdzie jest. Nowa definicja: **najgłębszy moduł dostępny i niezaliczony**, ze wskazaniem dostępności z obu źródeł (łańcuch po module zaliczonym ∪ odblokowanie placementem). W-6 nienaruszone — rozdzielam **komunikat o placemencie** od **rekomendacji startu**; nowe mikrocopy w §8.
@@ -21,12 +26,23 @@
 2. **DECYZJA 5, tabela przypadków — „5 tagów" → 6** (`ds-python`, `ds-pandas`, `ds-eda`, `ds-sql`, `ds-uczenie-maszynowe`, `ds-llm`). Liczba w tym wierszu (≈3 na 10 milionów) była policzona dla sześciu i zostaje bez zmian — błędny był wyłącznie licznik w opisie.
 3. **DECYZJA 2 — własna korekta tej samej rodziny, niezgłoszona:** pisałam, że odblokowanie `m-ml` wymaga **czterech** pomiarów (≈4 na 100 000). Z warunku braku dziury (reguła 3) wynika, że `m-ml` musi zakwalifikować się także **na własnym tagu** — czyli **pięć** pomiarów, ≈3 na milion. Ochrona jest o rząd wielkości silniejsza, niż deklarowałam; kierunek wniosku bez zmian.
 
-**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-26 (v0.1–v0.3) · 2026-07-27 (v0.4) · 2026-07-30 (v0.5) · **Status:** v0.5 — WIĄŻĄCY KONTRAKT produktowy dla slice'ów L1–L6 funkcji 1E.7 (Ethan — backend, Jack — UI, Mila — ekrany wyniku diagnozy)
-**Stan realizacji (2026-07-26):**
+**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-26 (v0.1–v0.3) · 2026-07-27 (v0.4) · 2026-07-30 (v0.5, v0.6) · **Status:** v0.6 — WIĄŻĄCY KONTRAKT produktowy dla slice'ów L1–L6 funkcji 1E.7 (Ethan — backend, Jack — UI, Mila — ekrany wyniku diagnozy)
+
+## Co MUSI wejść przed zapłonem — lista zamknięta [v0.6]
+
+Odpowiedź na pytanie Olivera. **Dwie pozycje, obie moje. Nic więcej z mojej strony nie blokuje zapłonu.**
+
+1. **L6 — ekran wyniku diagnozy wg §7 i §8.** Rekomendacja startu liczona z **obu** źródeł dostępności (najgłębszy dostępny i niezaliczony) oraz mikrocopy w wiążącej kolejności zdań („najpierw jego praca, potem nasza diagnoza"). Bez tego ekran albo cofa studenta, albo przypisuje sobie jego pracę — a to jedyny ekran, na którym student styka się z placementem.
+2. **Weryfikacja §6a przed pierwszym studentem: czy krok wyboru kompetencji (1.12) na ścieżce DS domyślnie proponuje komplet szóstki** (Python, Pandas, EDA, SQL, ML, LLM). Jeśli nie — placement po cichu nie odpala, bo diagnoza bada tylko zaznaczone kompetencje (Opcja A). **Przy 1–3 studentach pilotażu to różnica między zebraniem danych o placemencie a niezebraniem żadnych.** Nowe pole `blockingHoleReason` pokaże to w danych, ale **po** pilotażu, a pilotaż jest jedynym, jaki mamy. Jeśli poprawka nie mieści się przed zapłonem — decyzja świadoma: zapalamy wiedząc, że placement może nie odpalić, i nie wyciągamy z tego wniosków o progu.
+
+**Świadomie NIE są blokerami:** defekt wyspy (§6e — nieosiągalny bez funkcji resetu) i reguła `skipped_by_placement` a dowód (§7 pkt 3 — żaden kod produkcyjny tego statusu nie zapisuje). Obie wiążą wykonawcę, który ruszy te obszary; żadna nie wstrzymuje pilotażu.
+
+**Stan realizacji (2026-07-30):**
 - **L1** (Max) — most danych `curriculum_modules.diagnostic_concept_id`, migracja **0044**, kontrakt ingestu na literówki w slugach; mapa tagów zweryfikowana w kodzie, zero rozbieżności. **Kolejność wdrożenia na prodzie (strażnik ingestu): migracja 0044 → ingest banku rynkowego → ingest curriculum.** Odwrotna kolejność przerywa ingest na pierwszym tagu — bezpiecznie, ale głośno.
 - **L2** (Max) — reguła jako czysta funkcja, bez bazy. Równoważność z brzmieniem deklaratywnym z DECYZJI 5 **udowodniona**, nie zadeklarowana: test porównuje implementację z niezależną wersją reguł na **wszystkich 15 625 kształtach wyniku diagnozy**, dla progów 3 i 4. Sprostowanie z v0.2 (pięć pomiarów chroni `m-ml`) jest w kodzie.
 - **L3** (Max) — `curriculum_placements` z pełnym werdyktem per moduł (`level`, `threshold` w chwili zapisu, `reason`, `support_mode`, `blocking_hole_slug`), wiersz niezmienny (wyzwalacz + `UNIQUE` + `ON CONFLICT DO NOTHING`), nienadpisywany przy ponownej diagnozie. Trzecia gałąź trybu wsparcia (`carried_untagged` → pełne wsparcie, powód odrębny) egzekwowana ograniczeniem bazy. **Dwa uzupełnienia z v0.4:** zdarzenie dla sesji bez odblokowań (DECYZJA 2, „Nośnik drugiej strony asymetrii") + pominięcie modułu zaliczonego (§6c).
 - **L4** (Max) — drabina honoruje placement (`required.every(...) || placementUnlocked.has(...)`), W-6 i W-7 wdrożone, zdarzenie miernika w dzienniku audytowym przy **każdym** policzeniu placementu (warunek mianownika spełniony), plus dwa pola ponad zlecenie przyjęte w v0.5. **Do domknięcia w L6:** rekomendacja startu wg uogólnionej definicji z §7 (najgłębszy dostępny i niezaliczony) — dzisiejsza pomija zaliczenia.
+- **L5** (Max) — dowód rozróżnia `'exam'` (student przeszedł moduł i zdał) od `'test_out'` (zdał bez ani jednej zaliczonej pozycji); dług otwarty od 2026-07-26 spłacony, na prodzie okno było puste. Dwa znaleziska rozstrzygnięte w v0.6: defekt wyspy (§6e) i `skipped_by_placement` wobec dowodu (§7 pkt 3) — **oba zapakowane jako testy pinujące, nie naprawy**.
 - **Warunek ważności progu ≥3 (brama A2): SPEŁNIONY** — 1E.3 mastery gate live na prodzie od 2026-07-25 (`FLAG_MASTERY_GATE=1`), „test out" jako droga naprawcza istnieje realnie.
 **Zleca:** Oliver (COO) — rozstrzygnięcia produktowe blokujące L1/L2.
 **Rama nadrzędna:** decyzja Darka 2026-07-26 (sign-off) — **wariant hybrydowy: diagnoza OTWIERA, egzamin ZALICZA.** Wynik diagnozy ≥ progu → moduł **odblokowany** (zdjęty prerekwizyt), NIE zaliczony. Zaliczenie bez przechodzenia modułu = egzamin modułowy (silnik 1E.3, próg ≈90%) → `verified_by_method='test_out'`.
@@ -245,6 +261,23 @@ Sposób realizacji zostawiam Ethanowi/Maxowi — funkcja może zostać czysta, j
 
 **d) Student bez ukończonej diagnozy → zero odblokowań, start od `l0-start`.** Bez zmian wobec D8. Sesja porzucona lub niedokończona (trajektorie krótsze niż 2 kroki — `levelFromTrajectory` zwraca `null`) traktowana jak brak pomiaru dla tych konceptów, nie jak poziom 1.
 
+**e) Reset / powtórzenie modułu (defekt wyspy) → reset zeruje ZALICZENIE, nigdy DOSTĘPNOŚĆ.** [rozstrzygnięte v0.6]
+
+**Stan faktyczny (zmierzony, nie hipotetyczny):** po skasowaniu wiersza postępu modułu zaliczonego **wewnątrz** prefiksu drabina daje `l0-start=available, f1=available, f2=LOCKED, m-pandas=available` — `f2` jest wyspą, zablokowaną między dwoma otwartymi modułami. Mechanizm wynika wprost z W-6, które zatwierdziłam: moduł zaliczony świadomie nie dostaje wiersza placementu, więc jego dostępność stoi **na jednej nodze** — na wierszu postępu. Nie ma dziś ścieżki produkcyjnej, która ten wiersz kasuje; zapali to pierwsza funkcja „reset modułu" albo „powtórz moduł".
+
+**Odrzucam obie zaproponowane drogi:**
+
+- **(a) przeliczanie placementu przy kasowaniu postępu** — łamie niezmiennik, o który walczyłam w v0.3/v0.4: „zapis w chwili odblokowania, nigdy przeliczany wstecz, nienadpisywany". `threshold` z chwili zapisu przestałby być jednoznaczny, a późniejsza zmiana mapy tagów po cichu przepisywałaby historię. To kasuje mój miernik, żeby naprawić defekt niedostępny dla użytkownika.
+- **(b) świadoma dziura z komunikatem „ten moduł masz do przejścia od nowa"** — moduł jest **zablokowany**, więc komunikat obiecuje czynność, której produkt nie pozwala wykonać. Uczciwe nazwanie defektu nie czyni go akceptowalnym: student, który świadomie zresetował moduł, zostaje ukarany za skorzystanie z funkcji, którą mu daliśmy.
+
+**Reguła produktowa (wiążąca dla przyszłej funkcji resetu): dostępność raz przyznana jest monotoniczna.** Reset kasuje **dowód zaliczenia**, a nie **prawo wejścia** — to ta sama zasada, którą zapisałam w §6b („placement nigdy nie odbiera"), zastosowana do innego mechanizmu. Skutek: moduł po resecie ma być `available`, nie `locked`, i żaden wiersz placementu nie musi powstawać.
+
+**[WYMÓG BACKENDU — Ethan/Max, przy budowie resetu]** Najprostsza realizacja spójna z tą regułą: **reset zmienia status wiersza postępu (`completed` → `available`/`in_progress`), zamiast kasować wiersz.** Wtedy wyspa nie powstaje, placement nie jest przeliczany, a miernik zostaje nienaruszony. Jeśli z powodów technicznych wiersz **musi** zniknąć, to ratunkowe dopisanie wiersza placementu jest odstępstwem od mojego niezmiennika i wymaga mojego sign-offu **przed** implementacją, nie po.
+
+**Test pinujący Maxa zostaje** — z nagłówkiem „to nie jest kontrakt, to udokumentowany defekt". Proszę tylko o dopisanie w nim odsyłacza do tego punktu, żeby osoba, której test zaświeci na czerwono, przeczytała **rozstrzygnięcie**, a nie sam opis defektu.
+
+**Nie jest blokerem zapłonu** — defekt jest dziś nieosiągalny.
+
 ---
 
 ## 7. Co placement ZAPISUJE — korekta wobec ADR-014 D8
@@ -257,7 +290,22 @@ Wariant hybrydowy zmienia nie tylko próg, ale i **ślad w danych**. Trzy konsek
 
    **[WYMÓG BACKENDU — Ethan]** kontrakt-test pilnujący martwej wartości musi być **zawężony do `curriculum_module_progress`**. Test w brzmieniu „nigdzie nie zapisujemy `'diagnostic'`" **zablokuje działającą diagnozę**, wyglądając przy tym na strażnika jakości — v0.1 tego dokumentu o mało tego nie spowodowała (wyłapane przy budowie L1).
 2. **Odblokowanie potrzebuje własnego nośnika, odrębnego od zaliczenia.** Wymogi produktowe (kształt = Twoja decyzja): musi być **trwałe** (nie liczone w locie z `result_json` przy każdym żądaniu — inaczej zmiana mapy tagów po cichu odbiera studentom dostęp), **audytowalne** (widać, z której sesji diagnozy i przy jakim poziomie powstało — bez tego miernik z DECYZJI 2 nie ma z czego liczyć) i **addytywne** (§6b).
-3. **Żadna pozycja nie dostaje `skipped_by_placement`.** D3 przewidywał ten status dla pozycji pomijanych przez placement — pod hybrydą **placement nie pomija żadnej pozycji**, moduł jest tylko otwarty, a pozycje zostają do przejścia. Status pozostaje sensowny wyłącznie dla pozycji modułu zaliczonego przez **test out** (zaliczenie przy zerze ukończonych pozycji). Nazwa `skipped_by_placement` przestaje wtedy opisywać rzeczywistość — **czy ją zmieniać, decyduje Ethan** (to nazewnictwo w schemacie, nie dydaktyka); ja tylko stwierdzam, że semantyka się przesunęła i nie wolno tego przeoczyć.
+3. **Żadna pozycja nie dostaje `skipped_by_placement`.** D3 przewidywał ten status dla pozycji pomijanych przez placement — pod hybrydą **placement nie pomija żadnej pozycji**, moduł jest tylko otwarty, a pozycje zostają do przejścia. Status pozostaje sensowny wyłącznie dla pozycji modułu zaliczonego przez **test out** (zaliczenie przy zerze ukończonych pozycji). **[ROZSTRZYGNIĘTE v0.6] Pozycja `skipped_by_placement` NIE liczy się jak przerobiona, gdy rozstrzygamy, JAKIM DOWODEM student zaliczył moduł.** Trzy powody:
+
+1. **Argument domykający: liczenie jej jak przerobionej kazałoby dowodowi `test_out` skasować samego siebie.** Pod hybrydą ten status może powstać **wyłącznie** na pozycjach modułu zaliczonego przez `test_out` (placement nie pomija niczego — pkt wyżej). Gdyby liczył się jak przerobiony, moduł zdany bez ani jednej przerobionej pozycji pokazałby dowód `'exam'` — czyli status **stworzony przez** test-out zatarłby ślad, że test-out miał miejsce. To nie jest ryzyko brzegowe, to sprzeczność wewnętrzna.
+2. **ADR-014 D3 już to rozstrzygnął w warstwie postępu:** pozycje pominięte dostają `skipped_by_placement`, a **nie** `completed`, z uzasadnieniem „postęp modułu liczy się z dowodów" (G8). Rozciągnięcie „pominięta = przerobiona" na warstwę dowodu cofa decyzję, która już zapadła.
+3. **Dowód odpowiada na pytanie „czym to zdobyłeś".** Pozycja pominięta to z definicji praca niewykonana. Wliczanie jej sprawia, że rozróżnienie kłamie dokładnie w tym przypadku, dla którego powstało.
+
+**Odpowiedź na obawę Maxa o „dwie prawdy": to nie są dwie prawdy o tym samym, tylko odpowiedzi na dwa różne pytania** — i dlatego jedna liczba nie może ich obsłużyć:
+
+| Pytanie | Kto pyta | Czy `skipped_by_placement` się liczy |
+|---|---|---|
+| „Ile masz z głowy?" | ekran postępu, student | **TAK** — student nie ma tego do zrobienia; pokazanie jako zaległość byłoby nieprawdą i demotywacją |
+| „Czym to zdobyłeś?" | dowód (`exam` / `test_out`), audyt | **NIE** — liczy się wyłącznie praca faktycznie wykonana |
+
+**[WYMÓG BACKENDU — Ethan/Max]** Rozwiązaniem nie jest jedna wspólna definicja, tylko **dwie funkcje o jawnie różnych nazwach** (np. „pozycje z głowy" kontra „pozycje faktycznie przerobione"). Wspólna nazwa „pozycja zaliczona" dla obu jest źródłem tej pomyłki — dopóki obie się nazywają tak samo, każdy kolejny wykonawca będzie zakładał, że to jedno i to samo. **Nie jest blokerem zapłonu** (żaden kod produkcyjny tego statusu dziś nie zapisuje), ale wiąże każdego, kto zacznie go zapisywać — proszę o test pinujący w tym samym stylu co przy defekcie wyspy.
+
+Nazwa `skipped_by_placement` przestaje opisywać rzeczywistość — **czy ją zmieniać, decyduje Ethan** (to nazewnictwo w schemacie, nie dydaktyka); ja tylko stwierdzam, że semantyka się przesunęła i nie wolno tego przeoczyć.
 
 **Punkt wejścia (rekomendacja, nie przymus):** drabina **nie skacze** studenta automatycznie. Rekomendowany start to **najgłębszy moduł DOSTĘPNY i NIEZALICZONY** [uogólnione v0.5], a wszystkie moduły niżej zostają dostępne i widoczne.
 
@@ -344,6 +392,8 @@ Uzupełniająco: wariant hybrydowy **wzmacnia** zgodność z §7 wobec pierwotne
 | Ciągłość prefiksu przy module zaliczonym (§6c, W-7) | wiedza reguły o zaliczeniach | **DOMKNIĘTE w L4** — moduł zaliczony spełnia próg i wyznacza k (v0.5) |
 | Rekomendacja startu (§7, uogólniona) | status modułów + odblokowania placementem | **Zależność jawna, niedomknięta:** wymaga obu źródeł dostępności. Do domknięcia w L6 — dzisiejsza wersja pomija zaliczenia i cofa studenta |
 | Mikrocopy „masz już zaliczone / diagnoza otworzyła" | rozdzielone wielkości z §7 | Nie — obie wielkości istnieją po L4; potrzeba tylko złożyć je w dwa zdania |
+| Reguła resetu modułu (§6e) | status wiersza postępu, nie jego istnienie | Nie opiera się na niczym z OUT; **świadomie NIE wymaga przeliczania placementu**, więc nie narusza niezmiennika miernika |
+| Dowód `exam`/`test_out` (§7 pkt 3) | pozycje faktycznie przerobione | Nie — wymaga wyłącznie **oddzielenia nazw** dwóch istniejących liczników, nie nowej funkcji |
 | Tryb wsparcia przy poziomie 3 | C7/C8 z D8 (wsparcie od fazy completion) | Nie — mechanizm zaprojektowany w ADR, nie wymyślony tutaj |
 | Mikrocopy `uncovered` | `uncovered` w `result_json` | Nie — degradacja zaimplementowana w `plan.ts` |
 | Monotoniczność odblokowań | brak przycisku powtórki (spec §8 pkt 3) | **Zależność jawna, opisana w §6b** — nie ukryta |

@@ -357,9 +357,13 @@ dBack("L0 · zdany egzamin modułowy a ślad w drabinie (żywa baza, realne tras
 			.then((r: { rows: unknown[] }) => r.rows);
 		expect(sessionRow).toEqual({ status: "completed", passed: "true" });
 
-		// KONTRAKT L0: zdany egzamin = moduł zaliczony metodą 'exam'.
+		// KONTRAKT L0: zdany egzamin = moduł zaliczony (wiersz JEST).
+		// L5: ten przypadek nie robi ANI JEDNEJ pozycji przed egzaminem, więc drogą
+		// jest test-out i dowód brzmi 'test_out' — wartość zmieniona razem z kodem
+		// (przed L5 stało tu 'exam' jako świadomy dług okna L0→L5). Druga strona
+		// rozróżnienia (pozycje zrobione ⇒ 'exam') ma własny przypadek: [L0-2].
 		const after = await moduleProgressRows();
-		expect(after).toEqual([{ status: "completed", verified_by_method: "exam" }]);
+		expect(after).toEqual([{ status: "completed", verified_by_method: "test_out" }]);
 	});
 
 	it("[L0-2] wszystkie pozycje uczące zrobione + zdany egzamin → wiersz drabiny dostaje verified_by_method='exam' (ścieżka aktualizacji upsertu)", async () => {
@@ -417,10 +421,12 @@ dBack("L0 · zdany egzamin modułowy a ślad w drabinie (żywa baza, realne tras
 	});
 
 	// ── (d) DRABINA: ODBLOKOWANIE NASTĘPNEGO MODUŁU ──────────────────────────
-	// ⚠ ASERCJA DO ODWRÓCENIA W L5: ta ścieżka (zdany egzamin przy ZERO ukończonych
-	// pozycji) to test-out, któremu decyzja produktowa 1E.7 przypisuje
-	// verified_by_method='test_out'. W oknie L0→L5 zapisujemy tu 'exam' — świadomy
-	// dług, nie defekt. L5 zmienia i kod, i tę asercję razem.
+	// 1E.7 · L5 — ASERCJA ODWRÓCONA (dług z okna L0→L5 spłacony). Ta ścieżka to
+	// zdany egzamin przy ZERO zaliczonych pozycji, czyli test-out; decyzja produktowa
+	// 1E.7 przypisuje jej verified_by_method='test_out'. Skutki dla drabiny są
+	// identyczne jak przy 'exam' (moduł zaliczony, następny otwarty) — różni się
+	// wyłącznie DOWÓD. Kontrola pozytywna dla drugiej strony rozróżnienia (pozycje
+	// zaliczone ⇒ 'exam') stoi w [L0-2].
 	it("[L0-4] zdany egzamin bez pozycji (test-out) → drabina i moduł następny", async () => {
 		const completed = await passExam();
 		expect(completed.result.passed).toBe(true);
@@ -430,7 +436,8 @@ dBack("L0 · zdany egzamin modułowy a ślad w drabinie (żywa baza, realne tras
 		const examModule = ladder.find((m: { id: string }) => m.id === moduleId);
 		const nextUnlocked = await isModuleUnlocked(studentId, nextModuleId);
 
-		// KONTRAKT L0: zdany egzamin zalicza moduł ⇒ następny moduł otwarty.
+		// KONTRAKT L0+L5: zdany egzamin zalicza moduł ⇒ następny moduł otwarty,
+		// a dowód nazywa DROGĘ — tu 'test_out' (zero zaliczonych pozycji).
 		// JEDNA asercja na całym stanie — komunikat błędu ma pokazać KOMPLET
 		// zmierzonych wartości (gdzie dokładnie ślad znika), nie urwać się na
 		// pierwszej rozbieżności.
@@ -440,9 +447,9 @@ dBack("L0 · zdany egzamin modułowy a ślad w drabinie (żywa baza, realne tras
 			ladderVerifiedByMethod: examModule.verifiedByMethod,
 			nextModuleUnlocked: nextUnlocked,
 		}).toEqual({
-			progressRows: [{ status: "completed", verified_by_method: "exam" }],
+			progressRows: [{ status: "completed", verified_by_method: "test_out" }],
 			ladderStatus: "completed",
-			ladderVerifiedByMethod: "exam",
+			ladderVerifiedByMethod: "test_out",
 			nextModuleUnlocked: true,
 		});
 	});
