@@ -11,10 +11,10 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-26 wieczór (1E.7 placement diagnozy) — L0/L1/L2 NA PRODZIE, L3 W BUDOWIE
+## STAN NA DZIŚ — 2026-07-27 (1E.7 placement diagnozy) — L0/L1/L2/L3 NA PRODZIE, NASTĘPNY L4
 
 **Jednym zdaniem:** ruszyła **następna funkcja kręgosłupa po 1E.4** — placement diagnozy w curriculum
-(wynik testu adaptacyjnego wyznacza, od którego modułu student zaczyna); trzy z sześciu plasterków są
+(wynik testu adaptacyjnego wyznacza, od którego modułu student zaczyna); **cztery z sześciu** plasterków są
 na prodzie, funkcja jeszcze **nie ma flagi zapalonej i nie ma UI** — student nic nie widzi.
 
 **Rama zatwierdzona przez Darka (2026-07-26): „diagnoza OTWIERA, egzamin ZALICZA".**
@@ -31,8 +31,8 @@ nie mogą dawać tego samego skutku. **To świadoma korekta ADR-014 D8** (zakła
 | **L0** | ślad zdanego egzaminu w drabinie (`verified_by_method='exam'`) | ✅ prod `f04ea69` |
 | **L1** | most danych: `curriculum_modules.diagnostic_concept_id` + migracja `0044` + mapa tagów + strażnik ingestu | ✅ prod `f027a71` |
 | **L2** | reguła placementu (czysta funkcja) + spłata długu C1 | ✅ prod `d33ba28` |
-| **L3** | tabela `curriculum_placements` + migracja `0045` + hak w domknięciu diagnozy | 🔄 w budowie |
-| **L4** | drabina honoruje placement (`ladder.ts` **i** `isModuleUnlocked` — oba naraz) | ⏳ |
+| **L3** | tabela `curriculum_placements` + migracja `0045` + hak w domknięciu diagnozy | ✅ prod `514b60f` |
+| **L4** | drabina honoruje placement + W-6 + W-7 + zdarzenie P-1 + bramka sprzężenia flag | ⏳ **następny** |
 | **L5** | test-out zapisuje `'test_out'` zamiast `'exam'` (spłata długu okna L0→L5) | ⏳ |
 | **L6** | UI wyniku diagnozy + release: migracje `0044`+`0045` na prod NEON, flaga OFF | ⏳ |
 
@@ -44,7 +44,31 @@ Zdany egzamin modułowy (`FLAG_MASTERY_GATE=1`) **nie tworzył żadnego wiersza*
 w całości **read-only**. Obie strony założyły, że pisze ta druga. Naprawa: upsert **w transakcji** trasy,
 owner-side. Nikomu to nie zaszkodziło — na prodzie **zero sesji egzaminu modułowego**.
 
-### Decyzje produktowe (Sophia, `docs/product/decyzje-1e7-placement-v0.1.md`, wersja wewn. **v0.3**)
+### ZAKRES L4 (gotowy do wykonania, wszystko rozstrzygnięte)
+
+1. **Rdzeń:** `ladder.ts` **i** `isModuleUnlocked` naraz — inaczej UI pokaże moduł otwarty, a API zwróci 403.
+2. **W-6 (§6c):** moduł już zaliczony egzaminem — **pomijamy**, bez wiersza i bez komunikatu. Dziś wiersz
+   produkowałby komunikat „diagnoza otworzyła ci moduł X" do osoby, która **sama zdała go na ≈90%**.
+3. **W-7:** ⚠ **zmienia sygnaturę `computePlacement`** (kod już na prodzie) — funkcja musi dostać zbiór
+   modułów zaliczonych. Dziś ich nie zna, więc student, który zdał moduł egzaminem, a potem wypadł słabo
+   na tym koncepcie w diagnozie, dostaje **dziurę na module, który ma zaliczony**: słaby instrument
+   (2 pytania) unieważnia mocny (≈90%). Reguła: moduł zaliczony **spełnia** warunek ciągłości.
+4. **P-1:** zdarzenie w `audit_log` przy **KAŻDYM** policzeniu placementu, także zerowym — same zdarzenia
+   „zero odblokowań" **nie mają mianownika**. Ma nieść: liczbę otwartych modułów, `blockingHoleSlug`,
+   obowiązujący próg **oraz poziom na koncepcie blokującym** (ściana poziomów 2 znaczy „nasze pytanie jest
+   za trudne", nie „próg za wysoki" — bez tej liczby oba przypadki wyglądają identycznie).
+5. **Decyzje Ethana (CTO, G1/G3):**
+   - **L3-C3 → TAK, twarda bramka sprzężenia flag.** `FLAG_PLACEMENT_DIAGNOSTIC` niemożliwa do zapalenia
+     bez `FLAG_MASTERY_GATE=1`. Pole `requires` w `FlagDefinition`, egzekucja **wewnątrz `isFeatureEnabled`**
+     (nie w skrypcie wdrożeniowym — env na Vercelu da się przestawić bez deployu), **fail-closed**,
+     **głośny log** przy niespełnionej przesłance, test acykliczności grafu `requires`.
+   - **L3-C2 → NIE dokładamy `CHECK` wiążącego `support_mode` z `(level, threshold)`.** Powód: to polityka
+     produktowa, nie fakt o danych — zmiana polityki Sophii walidowałaby się przeciw wierszom historycznym
+     (każdy niesie własny próg), a te są append-only. Zamiast tego: **asercja w `k3-validate`** (zero wierszy
+     `qualified`, gdzie `support_mode` ≠ wynik reguły) + **test niezmiennika jednego pisarza** (żeby L5 nie
+     dołożył drugiej drogi zapisu po cichu).
+
+### Decyzje produktowe (Sophia, `docs/product/decyzje-1e7-placement-v0.1.md`, wersja wewn. **v0.4**)
 
 - **Mapa tagów: 6 z 9 modułów.** `f1-python-1`→`ds-python`, `m-pandas`→`ds-pandas`, `m-eda`→`ds-eda`,
   `m-sql`→`ds-sql`, `m-ml`→`ds-uczenie-maszynowe`, `m-llm`→`ds-llm` (para **słaba**, pierwsza do rewizji).
