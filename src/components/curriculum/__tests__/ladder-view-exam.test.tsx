@@ -18,6 +18,7 @@ const gateModule = (over: Partial<LadderModuleWithProgress> = {}): LadderModuleW
 	position: 1,
 	status: "in_progress",
 	verifiedByMethod: null,
+	openedByPlacementEver: false,
 	itemCount: 5,
 	completedItems: 5,
 	hasExam: true,

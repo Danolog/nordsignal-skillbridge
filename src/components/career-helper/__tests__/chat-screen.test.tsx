@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { SessionStateResponse } from "@/lib/career-helper/types";
+import { type SessionStateResponse, SUMMARY_CLIENT_BUDGET_MS } from "@/lib/career-helper/types";
 
 /**
  * Testy ekranu 2 (rozmowa) z ZAMOCKOWANYM useChat i fetch — zero realnego API,
@@ -56,6 +56,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+	// Zegar sterowany bywa włączany w teście budżetu czasu (A4). Gdyby test padł
+	// przed swoim finally, fake timers zatrułyby WSZYSTKIE kolejne testy pliku.
+	vi.useRealTimers();
 	vi.restoreAllMocks();
 	// Sprzątamy własność dodaną na prototypie (configurable: true).
 	Reflect.deleteProperty(HTMLElement.prototype, "scrollTo");
@@ -170,6 +173,72 @@ describe("ChatScreen", () => {
 		const cta = await screen.findByRole("button", { name: /Pokaż podsumowanie/ });
 		cta.click();
 		await waitFor(() => expect(onShowSummary).toHaveBeenCalledWith(summary));
+	});
+
+	// A4 — łączny (end-to-end) limit czasu na „Pokaż podsumowanie".
+	//
+	// Właściwość, nie implementacja: „student dostaje odpowiedź w skończonym, znanym
+	// czasie". Wcześniej 3 próby bez AbortSignal i bez wspólnego budżetu dawały
+	// ~185 s kręciołka na Kroku 0 onboardingu (60 + 1,5 + 60 + 3 + 60 = 184,5 s).
+	it("„Pokaż podsumowanie” z niemym serwerem: degrade W GRANICY budżetu, nie po 3 pełnych próbach", async () => {
+		const onShowSummary = vi.fn();
+		const summarySignals: (AbortSignal | undefined)[] = [];
+		vi.stubGlobal(
+			"fetch",
+			vi.fn((url: string, init?: RequestInit) => {
+				if (typeof url === "string" && url.endsWith("/summary")) {
+					summarySignals.push(init?.signal ?? undefined);
+					// Serwer milczy; żądanie kończy się DOPIERO zerwaniem sygnału.
+					return new Promise((_, reject) => {
+						init?.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+					});
+				}
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						messages: [
+							{ role: "ai", content: "9. pytanie AI?" },
+							{ role: "user", content: "ostatnia odpowiedź" },
+						],
+						turn: 9,
+						status: "in_progress",
+					}),
+				});
+			}),
+		);
+		mockChat.status = "ready";
+		mockChat.messages = [aiMsg("9. pytanie AI?")];
+		render(<ChatScreen sessionId="s1" onShowSummary={onShowSummary} onRestart={vi.fn()} />);
+		// Rehydracja i CTA jeszcze na PRAWDZIWYM zegarze (waitFor testing-library).
+		const cta = await screen.findByRole("button", { name: /Pokaż podsumowanie/ });
+
+		// Od kliknięcia jedziemy na zegarze sterowanym — inaczej test trwałby 90 s.
+		vi.useFakeTimers();
+		try {
+			cta.click();
+			await vi.advanceTimersByTimeAsync(0);
+			expect(summarySignals).toHaveLength(1);
+
+			// Tuż PRZED końcem budżetu student nadal czeka (kręciołek jest uczciwy).
+			await vi.advanceTimersByTimeAsync(SUMMARY_CLIENT_BUDGET_MS - 1000);
+			expect(onShowSummary).not.toHaveBeenCalled();
+
+			// Po budżecie: uczciwy degrade (istniejący ekran summary_error z „Spróbuj
+			// ponownie"), a nie dalsze kręcenie się przez kolejne próby.
+			await vi.advanceTimersByTimeAsync(2000);
+			expect(onShowSummary).toHaveBeenCalledWith({
+				judged: false,
+				judgedFor: "warstwa4_failed",
+				summaryText: null,
+				careerPaths: [],
+			});
+			// Sygnał realnie zerwał połączenie (nie „przestaliśmy patrzeć").
+			expect(summarySignals[0]?.aborted).toBe(true);
+			// Nie zaczęliśmy kolejnej próby po wyczerpanym budżecie.
+			expect(summarySignals).toHaveLength(1);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("stan error po retry: pokazuje toast Ponów", async () => {

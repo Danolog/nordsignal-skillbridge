@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CareerHelperFlow } from "@/components/career-helper/career-helper-flow";
+import {
+	type PlacementSummaryViewModel,
+	toPlacementSummaryViewModel,
+} from "@/components/curriculum/placement-summary-vm";
 import { Button } from "@/components/ui/button";
 import type { AssessmentResult } from "@/lib/assessment/types";
 import {
@@ -140,9 +144,14 @@ export function OnboardingWizard({
 		uncovered: string[];
 	} | null>(null);
 	// Wynik ukończonego testu — źródło poziomów dla POST (sessionId) i panelu Wniosków.
+	// 1E.7 L6: obok wyniku wieziemy kontrakt sekcji „Po diagnozie" (§12.8). `null` =
+	// sekcja nie istnieje. Żyje w stanie kreatora tak samo jak wynik — i tak samo
+	// nie przeżywa odświeżenia strony (§12.7 pkt 6, decyzja świadoma: powodów dziury
+	// nie utrwalamy, więc trwałym nośnikiem jest odznaka na drabinie, nie ten ekran).
 	const [diagnosisOutcome, setDiagnosisOutcome] = useState<{
 		sessionId: string;
 		result: AssessmentResult;
+		placement: PlacementSummaryViewModel | null;
 	} | null>(null);
 	// 422 ze startu (bank nie pokrywa ścieżki) → jawny fallback do klasycznej samooceny.
 	const [diagnosisFallback, setDiagnosisFallback] = useState(false);
@@ -424,7 +433,14 @@ export function OnboardingWizard({
 		}
 		const nextSelections = { ...measured, ...outcome.uncoveredLevels };
 		setSelections(nextSelections);
-		setDiagnosisOutcome({ sessionId: diagnosis?.sessionId ?? "", result: outcome.result });
+		setDiagnosisOutcome({
+			sessionId: diagnosis?.sessionId ?? "",
+			result: outcome.result,
+			// Kontrakt serwera → model widoku Mili. Jedyne miejsce tej zamiany
+			// (patrz `placement-summary-vm.ts`); adapter zwraca `null` dla każdego
+			// kształtu, którego nie da się wyrenderować bez zgadywania.
+			placement: toPlacementSummaryViewModel(outcome.placement),
+		});
 		setDiagnosis(null);
 		await runSubmit({
 			diagnosticSessionId: diagnosis?.sessionId,
@@ -812,6 +828,7 @@ export function OnboardingWizard({
 						completing={completing}
 						diagnosisResult={diagnosisOutcome?.result ?? null}
 						placementEnabled={placementEnabled}
+						placementSummary={diagnosisOutcome?.placement ?? null}
 					/>
 				)}
 			</div>

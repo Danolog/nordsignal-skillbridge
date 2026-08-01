@@ -12,7 +12,12 @@
 
 import { CheckCircle2, ChevronRight, ClipboardCheck, Clock, Lock } from "lucide-react";
 import Link from "next/link";
-import { MODULE_STATUS_LABEL, statusBadgeClass } from "@/components/curriculum/labels";
+import {
+	MODULE_STATUS_LABEL,
+	PLACEMENT_BADGE_LABEL,
+	statusBadgeClass,
+} from "@/components/curriculum/labels";
+import { shouldShowPlacementBadge } from "@/components/curriculum/placement-badge";
 import type { LadderModule } from "@/lib/curriculum/ladder";
 
 export interface LadderModuleWithProgress extends LadderModule {
@@ -68,6 +73,11 @@ function ModuleRow({ module: m }: { module: LadderModuleWithProgress }) {
 		m.status === "in_progress" &&
 		m.itemCount > 0 &&
 		m.completedItems >= m.itemCount;
+	// 1E.7 L6 · PODWÓJNY GUARD (Mila §4.3) — warunek mieszka w `placement-badge.ts`
+	// i NIE jest tu przepisany: jedno miejsce, jedna prawda. Przy zgaszonej fladze
+	// pole jest `false` dla każdego modułu (`getLadder` nie wczytuje zbioru), więc
+	// wiersz renderuje się jak przed L6.
+	const showPlacementBadge = shouldShowPlacementBadge(m);
 
 	const body = (
 		<div className="flex items-start gap-4">
@@ -82,6 +92,16 @@ function ModuleRow({ module: m }: { module: LadderModuleWithProgress }) {
 					>
 						{MODULE_STATUS_LABEL[m.status]}
 					</span>
+					{/* Odznaka pochodzenia dostępności — OBOK odznaki statusu, nie zamiast
+					    niej (§12.9 pkt 2): status mówi „dostępny", ta mówi SKĄD ta dostępność.
+					    Rozróżnia ją KSZTAŁT (`rounded-md`), nie kolor — te same tokeny co
+					    `locked`/`coming_soon`, które nigdy nie współwystępują z tą odznaką
+					    na jednym module. Czytelna tekstem, więc nie zależy od koloru wcale. */}
+					{showPlacementBadge && (
+						<span className="rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+							{PLACEMENT_BADGE_LABEL}
+						</span>
+					)}
 				</div>
 				{m.description && (
 					<p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{m.description}</p>

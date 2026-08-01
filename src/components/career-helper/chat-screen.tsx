@@ -18,6 +18,8 @@ import {
 	MAX_TURNS,
 	type RestartResponse,
 	type SessionStateResponse,
+	SUMMARY_CLIENT_BUDGET_MS,
+	SUMMARY_MIN_ATTEMPT_MS,
 	type SummaryResponse,
 } from "@/lib/career-helper/types";
 import { ChatInput } from "./chat-input";
@@ -226,32 +228,49 @@ export function ChatScreen({
 		// Robimy to programowo: do 3 prób z rosnącym odczekaniem, zanim pokażemy błąd.
 		const MAX_ATTEMPTS = 3;
 		const BACKOFF_MS = [1500, 3000];
-		for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-			try {
-				const res = await fetch(`/api/career-helper/session/${sessionId}/summary`, {
-					method: "POST",
-				});
-				if (!res.ok) throw new Error("summary_failed");
-				const data = (await res.json()) as SummaryResponse;
-				// Sukces — także judged=false z niepustymi ścieżkami (legalny fallback do
-				// wykładowcy) jest poprawnym wynikiem; nie ponawiamy.
-				onShowSummary(data);
-				return;
-			} catch {
-				if (attempt < MAX_ATTEMPTS) {
-					await new Promise((r) => setTimeout(r, BACKOFF_MS[attempt - 1] ?? 3000));
-					continue;
+		// A4 — ŁĄCZNY limit czasu na całą operację, nie na pojedynczą próbę. Jeden
+		// AbortController na wszystkie próby: gdy budżet padnie, trwające żądanie jest
+		// FAKTYCZNIE zrywane (przeglądarka zwalnia połączenie, serwer widzi rozłączenie),
+		// a nie tylko przestaje być obserwowane. Wcześniej 3 próby bez sygnału dawały
+		// ~185 s kręciołka bez żadnego górnego ograniczenia.
+		const budget = new AbortController();
+		const deadlineAt = Date.now() + SUMMARY_CLIENT_BUDGET_MS;
+		const budgetTimer = setTimeout(() => budget.abort(), SUMMARY_CLIENT_BUDGET_MS);
+		try {
+			for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+				// Kolejnej próby nie zaczynamy, jeśli nie zdąży się domknąć — student
+				// czekałby, wiedząc już, że nic z tego nie będzie.
+				if (attempt > 1 && deadlineAt - Date.now() < SUMMARY_MIN_ATTEMPT_MS) break;
+				try {
+					const res = await fetch(`/api/career-helper/session/${sessionId}/summary`, {
+						method: "POST",
+						signal: budget.signal,
+					});
+					if (!res.ok) throw new Error("summary_failed");
+					const data = (await res.json()) as SummaryResponse;
+					// Sukces — także judged=false z niepustymi ścieżkami (legalny fallback do
+					// wykładowcy) jest poprawnym wynikiem; nie ponawiamy.
+					onShowSummary(data);
+					return;
+				} catch {
+					// Budżet wyczerpany (albo żądanie zerwane) → koniec prób, uczciwy degrade.
+					if (budget.signal.aborted || attempt >= MAX_ATTEMPTS) break;
+					const wait = Math.min(BACKOFF_MS[attempt - 1] ?? 3000, deadlineAt - Date.now());
+					if (wait > 0) await new Promise((r) => setTimeout(r, wait));
 				}
-				// Wyczerpane próby → ekran 3 stan summary_error (rodzic obsłuży przez
-				// onShowSummary null-marker; przywracamy CTA do ręcznej próby).
-				setSummaryPending(false);
-				onShowSummary({
-					judged: false,
-					judgedFor: "warstwa4_failed",
-					summaryText: null,
-					careerPaths: [],
-				});
 			}
+			// Wyczerpane próby ALBO wyczerpany budżet czasu → ekran 3 stan summary_error
+			// (rodzic obsłuży przez onShowSummary null-marker; przywracamy CTA do ręcznej
+			// próby). Ten sam, istniejący degrade w obu przypadkach — bez drugiego ekranu.
+			setSummaryPending(false);
+			onShowSummary({
+				judged: false,
+				judgedFor: "warstwa4_failed",
+				summaryText: null,
+				careerPaths: [],
+			});
+		} finally {
+			clearTimeout(budgetTimer);
 		}
 	}
 

@@ -1,9 +1,7 @@
 import { expect } from "@playwright/test";
 import { loginWithPassword } from "./helpers/auth";
-import { driveChatToSummaryCta } from "./helpers/b0-chat";
 import { resetOnboardingState } from "./helpers/db-reset";
 import { dbWriteTest as test } from "./helpers/guards";
-import { fillSurveyAndContinue } from "./helpers/survey";
 
 /**
  * @dbwrite — Z2 (Quinn, Agent QA): warstwa KLIENTA błędu #2 (upload sylabusa PDF).
@@ -63,39 +61,33 @@ async function makeSyllabusPdfBuffer(text: string): Promise<Buffer> {
 }
 
 /**
- * Krok 0 „Cel kariery" (strumień E / #5): Pomocnik osadzony w wizardzie ustala
- * careerGoal w pamięci. Przejście wymaga REALNEGO modelu (ankieta → czat 9 tur →
- * podsumowanie → wybór ścieżki) — Pomocnik nie ma deterministycznej zaślepki celu,
- * więc każda ścieżka przez Krok 0 jest @llm. Po wyborze karty wizard ustawia
- * profile.careerGoal i przechodzi do Kroku 1 (Profil — nagłówek „Opowiedz nam o sobie").
+ * Krok 0 „Cel kariery" (strumień E / #5) przez DETERMINISTYCZNY picker 23 realnych
+ * ścieżek („lub wybierz z listy", D1 — onboarding-wizard.tsx:625–640).
+ *
+ * DLACZEGO NIE PRZEZ POMOCNIKA (zmiana 2026-08-01, naprawa defektu testu z przebiegu
+ * CI 30579719642). Ten spec bada UPLOAD SYLABUSA, a nie Pomocnika. Przejeżdżanie
+ * przez ankietę i 9 tur rozmowy tylko po to, żeby ustawić cel kariery, wnosiło tu
+ * dwie rzeczy i obie złe: ~10 zbędnych wywołań modelu na test ORAZ cudzą losowość —
+ * gdy model zwrócił obiekt niezgodny ze schematem, produkt uczciwie degradował
+ * („Coś poszło nie tak z podsumowaniem"), a ten spec padał w miejscu, które z
+ * sylabusem nie ma nic wspólnego (klikał kartę „Wybieram tę ścieżkę", której na
+ * ekranie błędu nie ma). Picker zdejmuje tę zmienną — dokładnie tak, jak zrobił to
+ * wcześniej spec 20 (20-b1-b4, komentarz „świadomie NIE przez czat Pomocnika").
+ *
+ * CZEGO TEN SPEC PRZEZ TO NIE PILNUJE: przepływu Pomocnika w trybie osadzonym.
+ * Pilnuje go spec 10 (describe „Pomocnik jako Krok 0 onboardingu") — i to jest jego
+ * praca, nie tego pliku. Tu nie ubywa pokrycia, ubywa duplikat z losowością.
  */
-async function passKrok0CareerHelper(page: import("@playwright/test").Page): Promise<void> {
-	// Krok 0 — nagłówek wizarda nad osadzonym Pomocnikiem (spec §4).
+async function passKrok0CelKariery(page: import("@playwright/test").Page): Promise<void> {
+	// Krok 0 — nagłówek wizarda nad Pomocnikiem i pickerem (spec §4).
 	await expect(page.getByRole("heading", { name: /Zacznijmy od celu/i })).toBeVisible({
 		timeout: 15_000,
 	});
 	// Pasek postępu: krok „Cel kariery" widoczny jako pierwszy (spec §2/§4).
 	await expect(page.getByText("Cel kariery").first()).toBeVisible();
 
-	// Pomocnik: ankieta → czat → podsumowanie (realny model).
-	await fillSurveyAndContinue(page);
-	await expect(page.getByRole("heading", { name: /krok 2 z 3: rozmowa/i })).toBeVisible({
-		timeout: 45_000,
-	});
-	await driveChatToSummaryCta(page);
-	await page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i }).click();
-
-	// Ekran 3 — podsumowanie z kartami. Wybierz pierwszą ścieżkę i przejdź dalej.
-	await expect(
-		page.getByText(/Co rozumiem z naszej rozmowy/i).or(page.getByText(/Przygotuję to za chwilę/i)),
-	).toBeVisible({ timeout: 150_000 });
-	await page
-		.getByText(/Wybieram tę ścieżkę/i)
-		.first()
-		.click();
-	// „Idź dalej do samooceny" → tryb embedded woła onCareerGoalChosen (NIE select-path)
-	// → wizard ustawia careerGoal w pamięci i przechodzi do Kroku 1 (Profil).
-	await page.getByRole("button", { name: /Idź dalej do samooceny/i }).click();
+	// Picker 23 ścieżek: klik ustawia careerGoal w pamięci wizarda i przechodzi do Kroku 1.
+	await page.getByRole("button", { name: "Data Analyst", exact: true }).click();
 
 	// Krok 1 — Profil. Mikrokopia HITL potwierdza, że cel z Kroku 0 jest w pamięci.
 	await expect(page.getByRole("heading", { name: /Opowiedz nam o sobie/i })).toBeVisible({
@@ -108,7 +100,7 @@ async function passKrok0CareerHelper(page: import("@playwright/test").Page): Pro
  * Wypełnia krok 1 (Profil) i przechodzi „Dalej" do kroku 2 (Sylabus).
  * Profil NIE ma już selecta celu kariery (przeniesiony do Kroku 0, spec §3.2):
  * tylko 2 radix-selecty w kolejności DOM — uczelnia(0), semestr(1).
- * WYMAGA wcześniejszego przejścia Kroku 0 (passKrok0CareerHelper) — bez ustalonego
+ * WYMAGA wcześniejszego przejścia Kroku 0 (passKrok0CelKariery) — bez ustalonego
  * celu wizard i tak nie wpuści do Profilu (isStep0Valid).
  */
 async function fillProfileAndGoToSyllabus(page: import("@playwright/test").Page): Promise<void> {
@@ -125,10 +117,21 @@ async function fillProfileAndGoToSyllabus(page: import("@playwright/test").Page)
 	// pozostały tylko 2 selecty (cel zniknął z tego kroku).
 	await expect(combos).toHaveCount(2);
 
-	await page.getByRole("button", { name: /Dalej/i }).click();
+	// „Dalej" DOKŁADNIE (nie /Dalej/i — to łapie też „Idź dalej…") i dopiero gdy
+	// wizard uzna Profil za kompletny. Bez tej bramki nieudane wpisanie któregoś pola
+	// dawało pad dopiero na braku nagłówka kroku 2 — komunikat mylący co do przyczyny
+	// (wzorzec z 20-b1-b4, gdzie ta sama sekwencja jest już asertowana na enabled).
+	const dalej = page.getByRole("button", { name: /^Dalej$/ });
+	await expect(
+		dalej,
+		`Profil wypełniony, a „Dalej" wciąż nieaktywne — któreś pole (uczelnia / kierunek / semestr) nie zarejestrowało się w stanie wizarda.`,
+	).toBeEnabled({ timeout: 15_000 });
+	await dalej.click();
 	// Nagłówek kroku 2 po redesignie „realny rynek" (Partia 4/D4): sylabus jest
 	// OPCJONALNY i adnotuje katalog — stary nagłówek „Wgraj swój sylabus" nie istnieje.
-	await expect(page.getByRole("heading", { name: /Sylabus \(opcjonalny\)/i })).toBeVisible();
+	await expect(page.getByRole("heading", { name: /Sylabus \(opcjonalny\)/i })).toBeVisible({
+		timeout: 15_000,
+	});
 }
 
 /** Wgrywa PDF (bez wpisywania tekstu) i klika „Analizuj sylabus". */
@@ -144,30 +147,30 @@ async function uploadPdfAndAnalyze(page: import("@playwright/test").Page): Promi
 	await page.getByRole("button", { name: /Analizuj sylabus/i }).click();
 }
 
-// @llm na całym describe (zmiana strumienia E / #5): krok 2 „Sylabus" jest teraz
-// osiągalny WYŁĄCZNIE przez Krok 0 (Pomocnik) → Profil → Sylabus. Krok 0 woła model
-// (ankieta→czat→podsumowanie), nie ma deterministycznej zaślepki celu → cała ścieżka
-// onboardingu od nowego studenta wymaga klucza. Bez ANTHROPIC_API_KEY oba testy skip
-// (guard niżej). PRZED #5 pierwszy test był non-@llm (Profil był 1. ekranem); Krok 0
-// to zmienił. Charakteryzacja „klient nie blokuje ścieżki plikowej" zostaje, ale jej
-// punkt wejścia (krok Sylabus) jest już za bramą modelu.
+// @llm na całym describe: drugi test realnie analizuje PDF modelem (parseSyllabus),
+// więc bez klucza nie ma czego mierzyć. Krok 0 od 2026-08-01 modelu NIE woła (picker
+// 23 ścieżek zamiast rozmowy Pomocnika — patrz passKrok0CelKariery), więc pierwszy
+// test technicznie przeszedłby i bez klucza. Zostawiamy go pod tym samym guardem
+// świadomie: nocny job wybiera testy przez --grep "@llm" i spec 40 nie biega w żadnym
+// innym jobie — wyjęcie go z @llm oznaczałoby, że nie biega NIGDZIE. Przeniesienie
+// do taniego joba e2e @dbwrite na PR = decyzja o topologii jobów (Ethan, ADR).
 test.describe("@dbwrite @llm Onboarding — Krok 0 + upload sylabusa PDF (błędy #5, #2, warstwa klienta)", () => {
 	test.skip(
 		!process.env.ANTHROPIC_API_KEY && process.env.E2E_LLM_AVAILABLE !== "1",
-		"Cała ścieżka onboardingu zaczyna się Krokiem 0 (Pomocnik — woła model). " +
-			"Ustaw E2E_LLM_AVAILABLE=1, gdy serwer ma ANTHROPIC_API_KEY.",
+		"Analiza sylabusa (krok 2) woła model. Ustaw E2E_LLM_AVAILABLE=1, gdy serwer ma ANTHROPIC_API_KEY.",
 	);
 
 	test("po naprawie: sam PDF (bez tekstu) odblokowuje analizę — klient NIE blokuje ścieżki plikowej", async ({
 		page,
 	}) => {
-		test.setTimeout(240_000); // Krok 0 to ~9 wywołań modelu (czat) + podsumowanie.
+		// Krok 0 przez picker = zero wywołań modelu; budżet zostaje na wolne CI i upload.
+		test.setTimeout(120_000);
 		// Konto b4 współdzielone ze specami 10/20 — reset przywraca Krok 0 (db-reset.ts).
 		await resetOnboardingState("b4");
 		await loginWithPassword(page, "b4");
 		await page.goto("/onboarding");
 
-		await passKrok0CareerHelper(page);
+		await passKrok0CelKariery(page);
 		await fillProfileAndGoToSyllabus(page);
 
 		const pdf = await makeSyllabusPdfBuffer(SYLLABUS_TEXT);
@@ -190,17 +193,17 @@ test.describe("@dbwrite @llm Onboarding — Krok 0 + upload sylabusa PDF (błęd
 		page,
 	}) => {
 		// test.fail() ZDJĘTY po naprawie strumienia C — upload PDF działa, test musi być zielony.
-		// Ścieżka woła model dwukrotnie: Krok 0 (Pomocnik) + parseSyllabus (upload). Bez klucza
-		// API na serwerze cały describe się skipuje (guard wyżej). Budżet duży: Krok 0 (czat) +
-		// realna analiza PDF bywają wolne.
-		test.setTimeout(300_000);
+		// Ścieżka woła model RAZ: parseSyllabus (upload). Krok 0 idzie deterministycznym
+		// pickerem, więc losowość Pomocnika nie wchodzi już do testu o sylabusie. Bez klucza
+		// API na serwerze cały describe się skipuje (guard wyżej).
+		test.setTimeout(180_000);
 
 		// Jak wyżej: samowystarczalność wobec współdzielonego konta b4.
 		await resetOnboardingState("b4");
 		await loginWithPassword(page, "b4");
 		await page.goto("/onboarding");
 
-		await passKrok0CareerHelper(page);
+		await passKrok0CelKariery(page);
 		await fillProfileAndGoToSyllabus(page);
 		await uploadPdfAndAnalyze(page);
 
@@ -211,8 +214,22 @@ test.describe("@dbwrite @llm Onboarding — Krok 0 + upload sylabusa PDF (błęd
 		await expect(page).toHaveURL(/\/onboarding/);
 
 		// CEL: plik PDF realnie przeanalizowany → przejście do kroku kompetencji.
-		await expect(page.getByRole("heading", { name: /Twoje kompetencje/i })).toBeVisible({
-			timeout: 60_000,
-		});
+		//
+		// Rozróżnienie „produkt odmówił" od „produkt wisi" (ta sama lekcja, co przy
+		// podsumowaniu Pomocnika): analiza sylabusa NIE ma stanu uczciwego degrade'u,
+		// który pozwalałby iść dalej — porażka to komunikat błędu i pozostanie na kroku 2.
+		// Ścigamy więc nagłówek sukcesu z komunikatem błędu: gdy wygra błąd, pad mówi
+		// WPROST, co się stało, zamiast po 60 s zgłaszać nierozróżnialny timeout.
+		const krokKompetencji = page.getByRole("heading", { name: /Twoje kompetencje/i });
+		const bladAnalizy = page.getByText(
+			/Nie udało się przeanalizować sylabusa|Wgraj plik PDF albo wklej|Wypełnij wszystkie wymagane pola/i,
+		);
+		await expect(krokKompetencji.or(bladAnalizy).first()).toBeVisible({ timeout: 60_000 });
+		await expect(
+			krokKompetencji,
+			`Analiza sylabusa nie powiodła się: wizard pokazał komunikat błędu i został na kroku 2. ` +
+				`To NIE jest zawieszenie — trasa /api/syllabus/parse odpowiedziała odmową (log serwera: ` +
+				`syllabus.parse). Sprawdź, czy PDF ma wyciągalny tekst i czy warstwa modelu odpowiada.`,
+		).toBeVisible({ timeout: 30_000 });
 	});
 });

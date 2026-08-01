@@ -2,7 +2,7 @@ import { generateObject, type LanguageModel, NoObjectGeneratedError, streamText 
 import { z } from "zod";
 import { getModel } from "@/lib/ai/model";
 import { sanitizeForPrompt } from "@/lib/ai/sanitize";
-import { aiTimeoutSignal } from "@/lib/ai/timeout";
+import { AI_CALL_TIMEOUT_MS, aiTimeoutSignal } from "@/lib/ai/timeout";
 import { streamUsageTracker, withAiUsage } from "@/lib/ai/usage";
 import { entryCareerPaths, isEntryCareerGoal, matchCareerGoal } from "@/lib/db/data/career-paths";
 import { extractValidationIssues, logError } from "@/lib/log";
@@ -383,6 +383,101 @@ const GENERATE_OBJECT_BACKOFF_MS = 200;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+// --- A4: łączny (end-to-end) limit czasu na CAŁĄ operację /summary -----------
+//
+// PROBLEM. Każde POJEDYNCZE wywołanie modelu ma własny limit 45 s (aiTimeoutSignal),
+// ale CAŁA operacja nie miała ŻADNEGO. Najgorszy przypadek do zsumowania:
+// 2 iteracje pętli sędziego × (2 próby generatora + 2 próby sędziego) × 45 s ≈ 360 s
+// wywołań modelu. Na produkcji ucinała to dopiero platforma (maxDuration=60) —
+// jako 504, czyli TWARDY BŁĄD zamiast uczciwego degrade'u; klient ponawiał 3×,
+// co dawało ~185 s kręciołka u studenta (60 + 1,5 + 60 + 3 + 60 = 184,5 s).
+//
+// ROZWIĄZANIE. Jeden wspólny termin (deadline) dla całej operacji. Każde wywołanie
+// modelu dostaje `min(limit per wywołanie, ile zostało z budżetu)` — i jako
+// AbortSignal (realne zerwanie połączenia z modelem, nie tylko „przestajemy czekać"),
+// i jako twardy wyścig z zegarem (gwarancja skończonego czasu nawet, gdyby dostawca
+// zignorował sygnał). Wyczerpany budżet = ten sam łagodny stan warstwa4_failed,
+// który już obsługujemy przy wyczerpanym retry — front pokazuje istniejący ekran
+// „Coś poszło nie tak z podsumowaniem / Spróbuj ponownie". Bez nowego degrade'u.
+//
+// WARTOŚĆ 50 s. Trasa ma maxDuration=60 s (twardy limit funkcji na Vercelu).
+// 50 s to NAJWIĘKSZA wartość, przy której zostaje realny zapas na to, co robi
+// trasa POZA modelem (odczyt sesji + transkryptu przed, zapis ścieżek i pamięci
+// po, serializacja odpowiedzi) — ok. 10 s. Zmierzone tło: udane podsumowanie to
+// typowo 20–40 s (Opus 4.8: generator + sędzia), a analogi z tabeli ai_usage_ledger
+// na produkcji dają generację strukturalną 18,4–23,5 s i sędziego 2,9–3,4 s.
+// Realny udany przebieg mieści się więc w 50 s z zapasem; wszystko powyżej i tak
+// padłoby dziś na 504. Zysk: zamiast 504 student dostaje uczciwą odpowiedź.
+export const SUMMARY_TOTAL_BUDGET_MS = 50_000;
+
+/**
+ * Najmniejszy budżet, przy którym warto W OGÓLE zaczynać wywołanie generatora.
+ * Poniżej tego progu wywołanie nie ma szans się domknąć — zaczynanie go tylko
+ * pali tokeny i czas. Oparte na pomiarze: najszybsza zaobserwowana generacja
+ * strukturalna na produkcji to 18,4 s (ai_usage_ledger, scope viva.generate).
+ */
+export const MIN_GENERATE_BUDGET_MS = 20_000;
+
+/**
+ * Slot sędziego: ile czasu wywołanie sędziego potrzebuje ORAZ ile REZERWUJEMY dla
+ * niego przed każdą generacją (jedna liczba, jedno uzasadnienie).
+ *
+ * WARTOŚĆ 8 s = 2 × zaobserwowane maksimum wywołania sędziego (3,914 s). Mnożnik
+ * nie jest ostrożnościowy „na wszelki wypadek", tylko domyka lukę pomiarową:
+ * WSZYSTKIE 5 próbek sędziego z ai_usage_ledger (2 858 / 2 979 / 3 396 / 3 401 /
+ * 3 914 ms) pochodzi z warstw `fast` (Haiku) i `standard` (Sonnet), a sędzia
+ * /summary jedzie na warstwie `premium` (Opus 4.8) — której w tabeli NIE MA ANI
+ * JEDNEGO wiersza. Ekstrapoluję więc na niezmierzoną, wolniejszą warstwę.
+ *
+ * Asymetria kosztu błędu przesądza kierunek zaokrąglenia. Rezerwa za MAŁA =
+ * dokładnie ten defekt, który zamykamy: sędzia startuje, zostaje przerwany w locie,
+ * a świeża generacja Opusa (4096 tokenów wyjścia) idzie do kosza. Rezerwa za DUŻA =
+ * rezygnujemy z DRUGIEJ generacji (ponowienie po odmowie sędziego) w wąskim paśmie
+ * budżetu — funkcja miła, nie krytyczna. Wolę stracić ponowienie niż spalić generację.
+ */
+export const MIN_JUDGE_BUDGET_MS = 8_000;
+
+/** Termin dla całej operacji — jedno źródło prawdy „ile jeszcze wolno". */
+type Deadline = { remainingMs: () => number };
+
+function createDeadline(budgetMs: number): Deadline {
+	const at = Date.now() + budgetMs;
+	return { remainingMs: () => at - Date.now() };
+}
+
+/**
+ * Budżet operacji wyczerpany. Rzucany zamiast czekania w nieskończoność; łapie go
+ * catch w generateSummary i zamienia na łagodny SummaryResult (nigdy surowy 500).
+ */
+class SummaryBudgetExceededError extends Error {
+	constructor(scope: string) {
+		super(`Budżet czasu /summary wyczerpany (${scope}).`);
+		this.name = "SummaryBudgetExceededError";
+	}
+}
+
+/**
+ * Twardy wyścig wywołania z zegarem. AbortSignal (przekazany osobno do modelu)
+ * ZWALNIA połączenie, ale gwarancja skończonego czasu nie może zależeć od tego,
+ * czy dostawca ten sygnał uszanuje — stąd druga, niezależna bariera.
+ */
+async function withDeadline<T>(work: Promise<T>, ms: number, scope: string): Promise<T> {
+	// Gdy wyścig wygra zegar, `work` odrzuci się później (abort) — bez tego byłby
+	// to nieobsłużony reject procesu.
+	work.catch(() => undefined);
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		return await Promise.race([
+			work,
+			new Promise<never>((_, reject) => {
+				timer = setTimeout(() => reject(new SummaryBudgetExceededError(scope)), Math.max(0, ms));
+			}),
+		]);
+	} finally {
+		if (timer) clearTimeout(timer);
+	}
+}
+
 /**
  * Opakowuje generateObject jawnym retry na AI_NoObjectGeneratedError.
  *
@@ -401,12 +496,25 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
  */
 async function generateObjectWithRetry<T>(
 	scope: string,
-	call: () => Promise<{ object: T }>,
+	deadline: Deadline,
+	minCallBudgetMs: number,
+	reserveMs: number,
+	call: (signal: AbortSignal) => Promise<{ object: T }>,
 ): Promise<{ object: T }> {
 	let lastErr: unknown;
 	for (let attempt = 1; attempt <= GENERATE_OBJECT_ATTEMPTS; attempt++) {
+		// A4/W4: każda próba (także pierwsza) mieści się we WSPÓLNYM budżecie operacji,
+		// POMNIEJSZONYM o czas zarezerwowany dla kroku NASTĘPUJĄCEGO PO niej (dla
+		// generacji: slot sędziego). Rezerwa wchodzi w OBA miejsca — i w próg startu,
+		// i w limit samego wywołania — bo sam próg startowy byłby pozorny: generacja
+		// z limitem `cała reszta budżetu` może zjeść rezerwę i sędzia znów nie ma czasu.
+		// Niezmiennik: ALBO oceniamy wynik, ALBO w ogóle go nie generujemy.
+		const budget = deadline.remainingMs() - reserveMs;
+		if (budget < minCallBudgetMs) throw lastErr ?? new SummaryBudgetExceededError(scope);
+		// Limit tego wywołania = mniejszy z: limitu per wywołanie i reszty budżetu.
+		const callMs = Math.min(AI_CALL_TIMEOUT_MS, budget);
 		try {
-			return await call();
+			return await withDeadline(call(AbortSignal.timeout(callMs)), callMs, scope);
 		} catch (err) {
 			if (!NoObjectGeneratedError.isInstance(err)) throw err;
 			lastErr = err;
@@ -429,22 +537,32 @@ async function generateObjectWithRetry<T>(
 	throw lastErr;
 }
 
-async function judgeSummary(summary: CareerSummary, model: LanguageModel): Promise<boolean> {
+async function judgeSummary(
+	summary: CareerSummary,
+	model: LanguageModel,
+	deadline: Deadline,
+): Promise<boolean> {
 	// Guardrail deterministyczny PRZED sędzią — tani, zamyka oczywiste wzorce.
 	const blob = `${summary.summaryText}\n${summary.careerPaths.map((p) => `${p.label} ${p.why}`).join("\n")}`;
 	if (violatesVerdictGuardrail(blob)) return false;
 
-	const { object } = await generateObjectWithRetry("career-helper.summary.judge", () =>
-		withAiUsage({ scope: "career-helper.summary.judge", tier: "premium" }, () =>
-			generateObject({
-				model,
-				abortSignal: aiTimeoutSignal(),
-				schema: JudgeSchema,
-				maxOutputTokens: 200,
-				system: JUDGE_SYSTEM_PROMPT,
-				prompt: `<user_input untrusted="true">${sanitizeForPrompt(blob, 4000)}</user_input>`,
-			}),
-		),
+	const { object } = await generateObjectWithRetry(
+		"career-helper.summary.judge",
+		deadline,
+		MIN_JUDGE_BUDGET_MS,
+		// Sędzia jest ostatnim krokiem iteracji — nie rezerwuje niczego po sobie.
+		0,
+		(signal) =>
+			withAiUsage({ scope: "career-helper.summary.judge", tier: "premium" }, () =>
+				generateObject({
+					model,
+					abortSignal: signal,
+					schema: JudgeSchema,
+					maxOutputTokens: 200,
+					system: JUDGE_SYSTEM_PROMPT,
+					prompt: `<user_input untrusted="true">${sanitizeForPrompt(blob, 4000)}</user_input>`,
+				}),
+			),
 	);
 	// verdict to teraz string (schemat tolerancyjny). Akceptujemy tylko jednoznaczne
 	// „YES"; cokolwiek innego (puste, „NO", „maybe", literówka) = odmowa. Bezpieczniej
@@ -461,6 +579,12 @@ export type GenerateSummaryArgs = {
 	summaryModel?: LanguageModel;
 	/** Default Opus. Testy podają mock. */
 	judgeModel?: LanguageModel;
+	/**
+	 * A4 — łączny budżet czasu na CAŁĄ operację (ms). Default SUMMARY_TOTAL_BUDGET_MS.
+	 * Parametr istnieje dla testów właściwości „student dostaje odpowiedź w skończonym,
+	 * znanym czasie"; trasa go NIE podaje, więc produkcja jedzie na wartości domyślnej.
+	 */
+	budgetMs?: number;
 };
 
 /**
@@ -472,6 +596,9 @@ export type GenerateSummaryArgs = {
 export async function generateSummary(args: GenerateSummaryArgs): Promise<SummaryResult> {
 	const summaryModel = args.summaryModel ?? getModel("premium");
 	const judgeModel = args.judgeModel ?? getModel("premium");
+	// A4: jeden termin dla całej operacji — dzielą go wszystkie wywołania modelu
+	// (generator + jego ponowienia, sędzia + jego ponowienia, obie iteracje pętli).
+	const deadline = createDeadline(args.budgetMs ?? SUMMARY_TOTAL_BUDGET_MS);
 
 	const safeAnswers = sanitizeForPrompt(JSON.stringify(args.answers ?? {}), 2000);
 	const transcript = args.history
@@ -488,11 +615,15 @@ export async function generateSummary(args: GenerateSummaryArgs): Promise<Summar
 		for (let attempt = 0; attempt < 2; attempt++) {
 			const { object: rawObject } = await generateObjectWithRetry(
 				"career-helper.summary.generate",
-				() =>
+				deadline,
+				MIN_GENERATE_BUDGET_MS,
+				// W4: rezerwujemy slot sędziego — nie generujemy tego, czego nie da się ocenić.
+				MIN_JUDGE_BUDGET_MS,
+				(signal) =>
 					withAiUsage({ scope: "career-helper.summary.generate", tier: "premium" }, () =>
 						generateObject({
 							model: summaryModel,
-							abortSignal: aiTimeoutSignal(),
+							abortSignal: signal,
 							schema: CareerSummarySchema,
 							// Cap długości wyjścia: dół-of-thumb summaryText(2000) + 3×(label 120
 							// + why 800) + narzut JSON ≈ 3.5 tys. znaków. Bez tego limitu AI SDK
@@ -536,7 +667,7 @@ Trzymaj się limitów długości i liczby obszarów (najwyżej ${MAX_PATHS}). Be
 				});
 				continue;
 			}
-			const ok = await judgeSummary(object, judgeModel);
+			const ok = await judgeSummary(object, judgeModel, deadline);
 			if (ok) {
 				return {
 					judged: true,
@@ -548,8 +679,10 @@ Trzymaj się limitów długości i liczby obszarów (najwyżej ${MAX_PATHS}). Be
 			}
 		}
 	} catch (err) {
-		// Retry generateObject wyczerpany (trwały NoObjectGeneratedError) ALBO inny
-		// błąd modelu. Zamiast pozwolić, by wyjątek wyleciał do route jako surowy
+		// Retry generateObject wyczerpany (trwały NoObjectGeneratedError), wyczerpany
+		// łączny budżet czasu (A4 — SummaryBudgetExceededError / TimeoutError z
+		// AbortSignal) ALBO inny błąd modelu. W logu rozróżnia je err.name.
+		// Zamiast pozwolić, by wyjątek wyleciał do route jako surowy
 		// 500, zwracamy ŁAGODNY stan: summary_error widziany przez front (puste
 		// careerPaths → ekran „nie udało się, spróbuj ponownie" z afordancją ponów).
 		// Logujemy PII-safe; student nigdy nie widzi stack trace ani 500. Osobny tag

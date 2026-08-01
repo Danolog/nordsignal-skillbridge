@@ -6,11 +6,13 @@
 > z art. 13 — osobny artefakt, którego jeszcze nie ma; patrz E-1 w
 > `docs/security/hint-reveals-retencja-signoff.md` §7).
 
-**Wersja:** v0.3 · 2026-07-26 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
+**Wersja:** v0.4 · 2026-08-01 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
 **Administrator danych:** nordsignal (podmiot w rejestracji — NIP TBD, trigger A/B/C, CLAUDE.md §9).
 **Status:** **rejestr minimalny, zasiany** — założony przy sign-offie FSRS (1E.4, rls-matrix v0.30).
 Kompletny przegląd wszystkich czynności przetwarzania w produkcie = **Wendy, Faza 3**, przed pierwszą
 realną rejestracją studenta. Poniższe wpisy to stan wiedzy zweryfikowany na kodzie na dziś.
+
+**Changelog v0.3 → v0.4 (2026-08-01) — nowy wpis #6 „Ślad rozliczalności i bezpieczeństwa (`audit_log`)"; Ryan (CRCO).** Powód: rozstrzygając dopuszczenie zdarzenia `curriculum.placement.skipped` (`docs/data/audit-log-taksonomia.md` v0.1) ustaliłem, że **`audit_log` w ogóle nie występuje w tym rejestrze** — a przechowuje `actor_id` (identyfikator studenta dla części zdarzeń), adres IP i podpis przeglądarki, czyli dane osobowe. Nie mogłem dopuścić nowej kategorii wierszy do magazynu nieopisanego w rejestrze (art. 30 ust. 1), więc wpis #6 jest **warunkiem tamtego rozstrzygnięcia**, nie osobną inicjatywą. Wpis nazywa też **dług A-1**: `actor_id` jest zwykłym `text` bez klucza obcego i bez kaskady, a wyzwalacz append-only z migracji `0008` blokuje `DELETE` nawet właścicielowi — dla zdarzeń zapisujących `actor_id` studenta **usunięcie z art. 17 jest dziś strukturalnie niewykonalne**. Klasa: WAŻNE dla kontroli, INFO dla danych (zero prawdziwych studentów); próg naprawy — **przed pierwszą prawdziwą rejestracją**. Zmiana **policy-only** — żaden kod, hook ani migracja nie ruszone; wpisy #1–#5 bez zmian.
 
 **Changelog v0.2 → v0.3 (2026-07-26) — nowy wpis #5 „Automatyczne dopasowanie ścieżki nauki
 (placement curriculum)"; Ryan (CRCO), bramka projektowa PRZED implementacją 1E.7 L3.** Powód
@@ -57,9 +59,11 @@ mandatem, idzie do Darka (E-1).
 | **3** | **Profilowanie uczenia się — dobór i harmonogram powtórek (FSRS)** | **art. 6 ust. 1 lit. b (umowa)** | **nie** | `review_logs` 12 m-cy; `review_states` czas trwania konta | **brak** |
 | 4 | Zdarzenia **zawodowe** / placement zawodowy (staż, praca — deklarowane) | art. 6 ust. 1 lit. a (zgoda) | **tak** — odwoływalna, delete-on-revoke | do odwołania zgody | brak *(wpis skrócony)* |
 | **5** | **Automatyczne dopasowanie ścieżki nauki (placement curriculum — odblokowanie modułów wynikiem diagnozy)** | **art. 6 ust. 1 lit. b (umowa)** | **nie** | `curriculum_placements` — czas trwania konta | **brak** |
+| **6** | **Ślad rozliczalności i bezpieczeństwa (`audit_log`)** | **art. 6 ust. 1 lit. f (prawnie uzasadniony interes) + art. 5 ust. 2 / art. 32** | **nie** | **bezterminowa — tabela append-only; patrz dług A-1** | **brak** |
 
-Pełny opis niżej mają **wpis #3** (przedmiot sign-offu 1E.4) i **wpis #5** (bramka projektowa
-1E.7 L3). Wpisy 1/2/4 są zasiane skrótowo — Wendy uzupełnia je w Fazie 3 do pełnego formatu art. 30.
+Pełny opis niżej mają **wpis #3** (przedmiot sign-offu 1E.4), **wpis #5** (bramka projektowa
+1E.7 L3) i **wpis #6** (warunek rozstrzygnięcia taksonomii `audit_log`). Wpisy 1/2/4 są zasiane
+skrótowo — Wendy uzupełnia je w Fazie 3 do pełnego formatu art. 30.
 
 > ⚠ **Wpis #4 i wpis #5 to dwie różne czynności mimo wspólnego słowa „placement".** #4 =
 > **placement zawodowy** (student deklaruje staż/pracę; dane zawodowe, zgoda, tabela
@@ -298,10 +302,93 @@ go poszerzyć bez migracji wracającej do przeglądu ryzyka. **Jedno pole ponad 
 
 ---
 
+## Wpis #6 — Ślad rozliczalności i bezpieczeństwa (`audit_log`)
+
+**Status:** wpis **opisuje stan wdrożony** (tabela istnieje od migracji `0003`, wyzwalacze `0008`
+i `0010`). Powstał z opóźnieniem — `audit_log` działał od miesięcy bez wpisu w rejestrze i to samo
+w sobie było brakiem z art. 30 ust. 1. Odkryte przy rozstrzyganiu taksonomii zdarzeń
+(`docs/data/audit-log-taksonomia.md` v0.1), które ten wpis warunkuje.
+
+**Czynność.** Zapis zdarzeń istotnych dla **bezpieczeństwa i rozliczalności**: logowania panelu
+wykładowcy i operatora jakości (w tym nieudane), udostępnienie i cofnięcie publicznego Paszportu,
+weryfikacja zgłoszenia projektowego i przebieg obrony ustnej, decyzje kolejki recenzenckiej oraz
+ślad automatycznego dopasowania ścieżki nauki. **Nie jest to dziennik aplikacji** (logi
+uruchomieniowe Vercela) ani telemetria kosztowa (`ai_usage_ledger`, wpis odrębny do zasiania).
+
+**Kategorie osób.** Studenci; wykładowcy kampusów-partnerów; operatorzy jakości.
+
+**Kategorie danych.** `actor_type` (klasa podmiotu), `actor_id` (**identyfikator osoby — dla części
+zdarzeń**, patrz dług A-1), `action` (kod zdarzenia z domkniętej taksonomii), `target_type` /
+`target_id` (czego dotyczyło), `ip_address`, `user_agent`, `metadata` (JSONB — **wyłącznie kody
+i liczby**, zero treści wolnej), `created_at`.
+
+**Zero treści studenta, zero odpowiedzi z diagnozy, zero wyników nauki poza kodami.** Adres IP
+i podpis przeglądarki są zapisywane tylko przy zdarzeniach uwierzytelniania i udostępniania — to
+najbardziej wrażliwy element tego wpisu i jest świadomy: bez nich ślad logowania nie spełnia swojej
+funkcji.
+
+**Cel.** Wykazanie zgodności (art. 5 ust. 2), wykrywanie nadużyć i dochodzenie incydentów
+(art. 32 ust. 1 lit. b i d), oraz — dla zdarzeń `curriculum.placement.*` — pomiar trafności
+automatycznej reguły odblokowania.
+
+**Podstawa prawna: art. 6 ust. 1 lit. f — prawnie uzasadniony interes administratora**
+(bezpieczeństwo systemu i rozliczalność), wsparty obowiązkiem z art. 32. **Nie** lit. b: ślad
+audytowy nie jest elementem usługi świadczonej studentowi. Test równowagi: dane ograniczone do
+kodów i identyfikatorów technicznych, brak treści, brak odbiorców zewnętrznych, brak profilowania
+na tej podstawie — interes osoby nie przeważa.
+
+**Retencja: BEZTERMINOWA, i to jest świadomy kompromis, nie przeoczenie.** Tabela jest
+**append-only z wyzwalacza** (`audit_log_no_update_delete`, migracja `0008`; `audit_log_no_truncate`,
+`0010`) — wiersza nie usunie ani nie zmieni **nawet właściciel bazy**. To środek bezpieczeństwa
+o realnej wartości (ślad, którego nie da się zatrzeć). Konsekwencja jest jednak twarda i musi być
+zapisana wprost: **retencji nie da się dziś egzekwować przez usuwanie.** Firmowa reguła „audit log
+12 miesięcy" (`agents/ryan.md`) dotyczy audit logu **nordsignal** (`logs/audit/`), nie tej tabeli —
+i tego rozróżnienia dotąd nigdzie nie zapisałem.
+
+Dla wierszy **bez `actor_id`** (wzorzec A7: `curriculum.placement.computed`, docelowo `.skipped`)
+bezterminowość jest nieszkodliwa: jedyne wiązanie idzie przez `target_id` → `assessment_sessions`,
+a ta tabela kaskaduje przy usunięciu konta. Po skasowaniu konta wiersz staje się **sierotą** i
+przestaje być danymi osobowymi (motyw 26 RODO).
+
+### Dług A-1 — art. 17 strukturalnie niewykonalny dla zdarzeń z `actor_id`
+
+**Fakt (zweryfikowany na kodzie 2026-08-01):** `actor_id` to zwykły `text` **bez klucza obcego
+i bez kaskady** (`drizzle/0003_bumpy_microbe.sql:4`). Skasowanie konta studenta **nie usuwa** jego
+wierszy w `audit_log` i **nie zrywa** wiązania — identyfikator zostaje w kolumnie jako napis. Wraz
+z wyzwalaczem blokującym `DELETE` znaczy to, że **żądania usunięcia z art. 17 nie da się dziś
+spełnić** dla zdarzeń: `passport.share.enable` / `.disable`, `submission.verified`,
+`submission.viva.*`, `submission.review.*`.
+
+**Klasa: WAŻNE dla kontroli, INFO dla danych.** Zero prawdziwych studentów; 28 kont testowych
+Darka (administrator i podmiot danych to ta sama osoba). Nie ma dziś zagrożonego podmiotu danych.
+
+**Próg naprawy: przed pierwszą prawdziwą rejestracją**, razem z klauzulą informacyjną art. 13.
+Po tej dacie żądanie usunięcia stanie się jednocześnie **wykonalne prawnie i niewykonalne
+technicznie** — to najgorszy możliwy układ i najgorszy moment, żeby go odkryć.
+
+**Świadomie NIE rekomenduję zdjęcia wyzwalacza append-only.** Kierunki naprawy, do rozstrzygnięcia
+osobno: (a) przejście istniejących zdarzeń na wzorzec bez `actor_id`, wiązanie przez kaskadujący
+`target_id` — tańsze i preferowane; (b) wąska, jawna ścieżka anonimizacji `UPDATE actor_id = NULL`
+przy usunięciu konta, jako **jedyny** wyjątek od wyzwalacza, z własnym śladem. Pełne uzasadnienie
+i taksonomia: `docs/data/audit-log-taksonomia.md` §6.
+
+**Środki bezpieczeństwa (art. 30 ust. 1 lit. g).** Zapis wyłącznie połączeniem właściciela
+(`recordAudit`, best-effort — awaria zapisu nie blokuje akcji użytkownika); `REVOKE TRUNCATE` dla
+ról `app_student` i `app_faculty` (`0010`); wyzwalacze append-only (`0008`, `0010`); `metadata`
+ograniczona konwencją do kodów i liczb, z testami pilnującymi, że treść studenta tam nie trafia.
+**Ograniczenie nazwane wprost:** ochrona przed odczytem opiera się na grantach ról, nie na izolacji
+wierszy — tabela nie ma polityk RLS per podmiot danych (stan zgodny z opisem w
+`../../../docs/audyty/2026-07-26-rls-bypassrls-prod.md` v0.3 dla ścieżek owner-side).
+
+---
+
 ## Przegląd
 
 **Data przeglądu:** przy pierwszej realnej rejestracji studenta (bramka zdarzeniowa), najpóźniej
 **2026-10-25** (kwartał). Przegląd: czy Wendy uzupełniła wpisy 1/2/4 do pełnego art. 30, czy
 klauzula informacyjna art. 13 powstała (E-1), czy retencja `review_logs` ma egzekucję (wspólny
 skrypt R-1 rejestru retencji), czy wpis #5 został **zweryfikowany na wdrożonym kodzie** (dziś
-opisuje projekt, nie stan) i czy trzy warunki nośne oceny art. 22 (A22-1…A22-3) nadal zachodzą.
+opisuje projekt, nie stan), czy trzy warunki nośne oceny art. 22 (A22-1…A22-3) nadal zachodzą
+oraz — od v0.4 — **czy dług A-1 z wpisu #6 został zamknięty** (art. 17 wykonalny dla zdarzeń
+`audit_log` z `actor_id`) i czy taksonomia zdarzeń nie rozjechała się z kodem
+(`docs/data/audit-log-taksonomia.md` §5).

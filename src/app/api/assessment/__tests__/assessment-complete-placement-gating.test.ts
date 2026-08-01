@@ -47,7 +47,14 @@ vi.mock("@/lib/log", () => ({ logError: (...a: unknown[]) => mockLogError(...a) 
 import { POST } from "../[id]/complete/route";
 
 const SESSION = { user: { id: "user-1" } };
-const STUDENT = { id: "student-1", tenantId: "tenant-1", careerGoal: "Data Scientist" };
+// ⚠ `careerGoal: ""` — STAN REALNY w chwili domknięcia diagnozy (Krok 0 kreatora
+// zakłada wiersz z placeholderem, właściwy cel zapisuje `POST /api/onboarding`
+// DOPIERO PO diagnozie). Poprzednia wersja tego rekwizytu sadzała tu gotowe
+// "Data Scientist" i przez to przepuściła bloker D0: hook czytał cel z wiersza
+// studenta, czyli z pola, które w tym momencie przepływu jest puste. Ten plik
+// testuje WYŁĄCZNIE bramkę wywołania (hook jest atrapą); źródło celu dowodzi
+// `placement-hook-career-goal.integration.test.ts` na realnej bazie.
+const STUDENT = { id: "student-1", tenantId: "tenant-1", careerGoal: "" };
 const SESSION_ID = "11111111-1111-4111-8111-111111111111";
 const RESULT = {
 	competencies: { Python: 4 },

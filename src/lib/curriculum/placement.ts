@@ -234,6 +234,35 @@ export interface PlacementOutcome {
 	modules: PlacementModuleVerdict[];
 }
 
+/**
+ * Znacznik werdyktu, który PRZESZEDŁ ŚCIEŻKĘ ZAPISU (1E.7 L6, warunek W2 Leo).
+ *
+ * Po co: kolejność „najpierw zapis wierszy tej sesji, potem kontrakt ekranu" jest
+ * warunkiem poprawności (§12.2) — rekomendacja policzona przed zapisem nie widzi
+ * odblokowań z TEJ diagnozy i pokazuje moduł o kilka pozycji za nisko, a wynik
+ * nadal wygląda sensownie (awaria bezobjawowa). Wcześniej nagłówek warstwy ekranu
+ * twierdził, że tej kolejności pilnuje typ — **to była nieprawda**: `computePlacement`
+ * jest funkcją czystą i eksportowaną, więc surowy `PlacementOutcome` powstaje bez
+ * jednego zapisu do bazy. Leo udowodnił to kompilatorem.
+ *
+ * Ten znacznik zamienia komentarz w gwarancję: `buildPlacementScreenContract`
+ * przyjmuje WYŁĄCZNIE werdykt oznaczony, a oznaczyć go potrafi tylko moduł zapisu
+ * (`placement-service.ts`), bo symbol jest prywatny dla tego pliku i nie ma
+ * publicznej funkcji stemplującej. Podanie surowego wyjścia `computePlacement`
+ * **nie kompiluje się**.
+ *
+ * ⚠ CO ZNACZNIK OBIECUJE, A CZEGO NIE: znaczy „ten obiekt wyszedł ze ścieżki
+ * zapisu", nie „wstawiono wiersze". Przebieg, w którym nie było czego zapisać
+ * (zero odblokowań — najczęstszy przypadek pilotażu, §12.5), też jest oznaczony
+ * i tak ma być: ekran ma się wtedy renderować.
+ */
+declare const ZNACZNIK_ZAPISANEGO_WERDYKTU: unique symbol;
+
+/** `PlacementOutcome` pochodzący ze ścieżki zapisu — patrz znacznik wyżej. */
+export type PersistedPlacementOutcome = PlacementOutcome & {
+	readonly [ZNACZNIK_ZAPISANEGO_WERDYKTU]: true;
+};
+
 /** Parametry reguły. Diagnoza `null` = brak ukończonej sesji (§6d): zero odblokowań. */
 export interface PlacementInput {
 	modules: readonly PlacementLadderModule[];

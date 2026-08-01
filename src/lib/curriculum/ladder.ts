@@ -104,6 +104,40 @@ export type LadderModule = {
 	status: ModuleStatus;
 	verifiedByMethod: string | null;
 	itemCount: number;
+	/**
+	 * 1E.7 L6 / dług D8 — czy dla tego modułu ISTNIEJE wiersz w `curriculum_placements`,
+	 * czyli czy otworzyła go diagnoza. Nośnik odznaki „Otwarty na podstawie diagnozy ·
+	 * niezaliczony" (§12.9 pkt 2); bez tego pola odznaka jest fizycznie niewykonalna,
+	 * bo `getLadder` wczytywał ten zbiór i go nie eksponował.
+	 *
+	 * ⚠ TO JEST FAKT O POCHODZENIU, NIE WARUNEK WYŚWIETLENIA. Wiersz placementu jest
+	 * z decyzji Sophii niezmienny i NIGDY nie znika, więc pole zostaje `true` także
+	 * po zaliczeniu modułu. Warunek „czy TERAZ pokazać odznakę" brzmi
+	 * `openedByPlacementEver && status !== 'completed'` i należy do widoku (§4.3 projektu
+	 * Mili, przyjęte w §12.10) — świadomie NIE jest wpieczony tutaj:
+	 *   • wpieczony zamieniłby pole z faktu w decyzję prezentacyjną, a drugi konsument
+	 *     (miernik D11, przyszła karta „skąd ta dostępność") dostałby po cichu `false`
+	 *     dla modułu, który placement realnie otworzył — czyli skasowanie prowenicji;
+	 *   • `status` i tak jedzie w tym samym obiekcie, więc widok liczy warunek bez
+	 *     jednego dodatkowego bajtu danych.
+	 * Pinuje to test „moduł zaliczony ZACHOWUJE openedByPlacementEver".
+	 *
+	 * ⚠ DLACZEGO W NAZWIE JEST `Ever` (wniosek W6, Leo). Poprzednia nazwa
+	 * `openedByPlacement` czytała się jak STAN BIEŻĄCY, a niesie HISTORIĘ — i właśnie
+	 * dlatego każdy widok musi dokładać drugą połowę warunku. Nazwa bez `Ever` nie
+	 * uwierała przy złym użyciu: `if (m.openedByPlacement)` brzmi kompletnie i jest
+	 * fałszywe. `if (m.openedByPlacementEver)` brzmi NIEDOKOŃCZENIE („kiedykolwiek
+	 * otwarty… i co teraz?") — i to jest cała robota, jaką ta nazwa ma wykonać.
+	 * Odrzucone `placementProvenance`: (a) gubi czasownik, na którym stoi decyzja
+	 * produktowa („diagnoza OTWIERA, egzamin ZALICZA"), (b) czyta się gładko, więc nie
+	 * ostrzega, (c) zajmuje nazwę potrzebną przyszłemu polu z WARTOŚCIĄ powodu
+	 * (`qualified` kontra `carried_untagged`, dziś w bazie, czeka na dług D12) —
+	 * a wartość logiczna ma nazywać się jak zdanie logiczne.
+	 *
+	 * Przy fladze `placementDiagnostic` OFF zbiór jest pusty BEZ zapytania, więc pole
+	 * jest wtedy `false` dla każdego modułu i derywacja pozostaje bajt-w-bajt sprzed L4.
+	 */
+	openedByPlacementEver: boolean;
 };
 
 export type LadderItem = {
@@ -208,6 +242,9 @@ export async function getLadder(studentId: string, pathKey: string): Promise<Lad
 			status,
 			verifiedByMethod: row?.verifiedByMethod ?? null,
 			itemCount,
+			// D8: fakt o pochodzeniu dostępności, bez warunku wyświetlenia — patrz
+			// komentarz przy polu. Przy fladze OFF zbiór jest pusty → zawsze false.
+			openedByPlacementEver: placementUnlocked.has(m.id),
 		};
 	});
 }

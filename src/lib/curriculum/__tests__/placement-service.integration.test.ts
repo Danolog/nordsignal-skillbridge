@@ -508,8 +508,11 @@ dBack("1E.7 L3 · placement-service: most uuid→slug + zapis werdyktu (realna b
 		const zd = await zdarzenia(sessionId);
 		expect(zd.length).toBe(1);
 		expect(zd[0]).toMatchObject({
+			// KLASA podmiotu zostaje (odróżnia zdarzenie studenckie od
+			// operatorskiego), TOŻSAMOŚĆ znika — A7/art. 17 RODO, patrz test
+			// „A7" niżej.
 			actor_type: "student",
-			actor_id: studentId,
+			actor_id: null,
 			target_type: "assessment_session",
 			target_id: sessionId,
 		});
@@ -577,6 +580,61 @@ dBack("1E.7 L3 · placement-service: most uuid→slug + zapis werdyktu (realna b
 		const zd = await zdarzenia(sessionId);
 		expect(zd.length).toBe(1);
 		expect(zd[0].metadata).toMatchObject({ ladderSize: 0, unlockedCount: 0 });
+	});
+
+	// ─── A7 (Ryan, art. 17 RODO) — zdarzenie miernika BEZ identyfikatora osoby ──
+	it("A7: zdarzenie NIE niesie actor_id, a KOMPLET pól miernika zostaje nietknięty", async () => {
+		// `audit_log` ma wyzwalacz BEFORE UPDATE OR DELETE odrzucający kasowanie
+		// NAWET właścicielowi — wiersz jest nieusuwalny z konstrukcji. Para
+		// „identyfikator studenta + blockingHoleLevel (poziom, na którym wypadł
+		// słabo)" byłaby trwałym wyjątkiem od prawa do usunięcia danych, i to od
+		// PIERWSZEGO zdarzenia. Jedyne wiązanie z osobą to `target_id` = id sesji,
+		// która po skasowaniu konta znika kaskadą → zdarzenie zostaje sierotą.
+		await recordPlacementForDiagnosis({
+			studentId,
+			tenantId,
+			assessmentSessionId: sessionId,
+			pathKey: PATH_KEY,
+			diagnosis: diagnoza({ [`${PREFIX}ds-python`]: 4, [`${PREFIX}ds-pandas`]: 2 }),
+		});
+
+		const [zd] = await zdarzenia(sessionId);
+		expect(zd.actor_id).toBeNull();
+		// Nie „gdziekolwiek indziej" — identyfikator studenta nie może przeciec
+		// do metadanych ani do adresu celu.
+		expect(JSON.stringify(zd)).not.toContain(studentId);
+		expect(zd).toMatchObject({
+			actor_type: "student",
+			target_type: "assessment_session",
+			target_id: sessionId,
+		});
+		// MIERNIK SOPHII NIETKNIĘTY — komplet pól, nie podzbiór.
+		expect(Object.keys(zd.metadata as Record<string, unknown>).sort()).toEqual(
+			[
+				"alreadyCompletedCount",
+				"blockingHoleConceptSlug",
+				"blockingHoleLevel",
+				"blockingHoleReason",
+				"blockingHoleSlug",
+				"ladderSize",
+				"pathKey",
+				"prefixEndPosition",
+				"threshold",
+				"unlockedCount",
+			].sort(),
+		);
+		expect(zd.metadata).toMatchObject({
+			pathKey: PATH_KEY,
+			threshold: 3,
+			ladderSize: 5,
+			unlockedCount: 1,
+			prefixEndPosition: 2,
+			alreadyCompletedCount: 0,
+			blockingHoleSlug: `${PREFIX}m-pandas`,
+			blockingHoleConceptSlug: `${PREFIX}ds-pandas`,
+			blockingHoleLevel: 2,
+			blockingHoleReason: "below_threshold",
+		});
 	});
 
 	it("P-1: DOKŁADNIE jedno zdarzenie na policzenie (miernik nie zawyża licznika)", async () => {
