@@ -16,10 +16,27 @@ on:
     - cron: "0 3 * * *" # 03:00 UTC ≈ 05:00 Europe/Warsaw — poza godzinami pracy
   workflow_dispatch: {}
 
-# Anuluj starsze przebiegi tego samego PR-a/brancha (oszczędność minut runnera).
+# Anuluj starsze przebiegi tego samego PR-a (oszczędność minut runnera) — ale
+# WYŁĄCZNIE dla PR-ów. Przebiegi `push` do `main` i tor nocny dobiegają do końca.
+#
+# DLACZEGO (Quinn, 2026-08-01): anulowany przebieg zostawia check-runy z konkluzją
+# `cancelled`, a to NIE jest `success`. Przy proceduralnych bramkach było to
+# niewidoczne; odkąd `main` ma 12 wymaganych kontekstów, `cancel-in-progress: true`
+# znaczy „seria szybkich pushy zostawia po sobie niespełnione konteksty".
+# W historii repo: 43 anulowane przebiegi `push` (na 50 ostatnich anulowanych).
+#
+# Dla treści prywatnej jest to szczególnie dotkliwe: przebieg PO SCALENIU to
+# JEDYNY przebieg, który dostaje sekret `CONTENT_REPO_KEY` przy PR-ach Dependabota
+# i z forków, czyli jedyny dowód, że kontrakty banku pytań i atomów faktycznie
+# przeszły (docs/runbooks/tresc-prywatna.md §5 pkt 2). Anulowanie go kasowało
+# dokładnie ten dowód. Ceremonia 1E.7 to seria scaleń pod rząd — czyli seria
+# takich anulowań.
+#
+# Grupy i tak są rozłączne (PR ma ref `refs/pull/N/merge`, push `refs/heads/main`),
+# więc zawężenie do PR-ów nie zmienia oszczędności na PR-ach.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
