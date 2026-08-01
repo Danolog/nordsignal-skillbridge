@@ -14,6 +14,34 @@ export const MODULE_STATUS_LABEL: Record<ModuleStatus, string> = {
 	coming_soon: "Treść w drodze",
 };
 
+/**
+ * 1E.7 L6 · POWIERZCHNIA B — odznaka modułu otwartego diagnozą (§8, cytat 1:1).
+ *
+ * Stała, nie funkcja: tekst nie zależy od żadnego parametru (Mila §4.2). To jedyny
+ * TRWAŁY nośnik zdania „otwarte ≠ zaliczone" — powierzchnia A (krok 4 kreatora)
+ * znika po jednym przejściu i student może jej nie zobaczyć ani razu (§12.7 pkt 6).
+ */
+export const PLACEMENT_BADGE_LABEL = "Otwarty na podstawie diagnozy · niezaliczony";
+
+/**
+ * Nagłówek `/curriculum` — dwa brzmienia, wybór po fladze (dług D7, §12.9 pkt 1).
+ *
+ * Stare zdanie („bez skrótów") KŁAMIE, gdy mechanizm skrótu istnieje w produkcie:
+ * student zobaczyłby je i tuż pod nim odznakę „Otwarty na podstawie diagnozy" na
+ * module, którego nie zaliczył — sprzeczność w dwóch sąsiadujących liniach, do
+ * obalenia jednym spojrzeniem.
+ *
+ * Bramkujemy po FLADZE, nie po tym, czy TEN student ma coś odblokowane: zdanie
+ * o braku skrótów jest fałszywe, odkąd skrót jest możliwy, a nie dopiero odkąd
+ * komuś zadziałał (Mila §4.5). Teksty tutaj, nie w JSX, bo są mikrocopy Sophii
+ * i podlegają cytatowi 1:1 tak samo jak zdania narracji (§12.3).
+ */
+export const CURRICULUM_INTRO =
+	"Moduły od podstaw do projektu. Kolejny moduł otwiera się dopiero po zaliczeniu poprzedniego — bez skrótów.";
+
+export const CURRICULUM_INTRO_WITH_PLACEMENT =
+	"Moduły od podstaw do projektu. Kolejny moduł otwiera się po zaliczeniu poprzedniego — albo od razu, jeśli diagnoza pokazała, że znasz wcześniejszy materiał. Otwarty moduł to nie zaliczony moduł.";
+
 export const ITEM_STATUS_LABEL: Record<LadderItem["status"], string> = {
 	locked: "Zablokowana",
 	available: "Dostępna",

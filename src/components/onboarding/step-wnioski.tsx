@@ -15,6 +15,8 @@
 
 import { ArrowRight, BookOpen } from "lucide-react";
 import { useMemo } from "react";
+import { PlacementSummary } from "@/components/curriculum/placement-summary";
+import type { PlacementSummaryViewModel } from "@/components/curriculum/placement-summary-vm";
 import { PlacementConsentCard } from "@/components/placement/consent-card";
 import { SharePill } from "@/components/skill-map/group-context";
 import { Button } from "@/components/ui/button";
@@ -76,6 +78,16 @@ interface StepWnioskiProps {
 	diagnosisResult?: AssessmentResult | null;
 	/** 1.17: flaga placementTracking — karta zgody nad stopką (baseline 1. kohorty). */
 	placementEnabled?: boolean;
+	/**
+	 * 1E.7 L6: sekcja „Po diagnozie" (placement CURRICULUM — nie mylić z 1.17 wyżej,
+	 * to placement ZAWODOWY: inna funkcja, inna klasa danych, §12.1).
+	 *
+	 * `null`/`undefined` = sekcja NIE ISTNIEJE (§12.6 warianty 1–4). Wzorzec ten sam
+	 * co `diagnosisResult`/`placementEnabled`: prop opcjonalny z wartością domyślną,
+	 * więc istniejące wywołania komponentu (i testy) nie muszą się zmieniać, a przy
+	 * zgaszonej fladze render jest bajt w bajt jak przed L6.
+	 */
+	placementSummary?: PlacementSummaryViewModel | null;
 }
 
 export function StepWnioski({
@@ -89,6 +101,7 @@ export function StepWnioski({
 	completing,
 	diagnosisResult = null,
 	placementEnabled = false,
+	placementSummary = null,
 }: StepWnioskiProps) {
 	const view = useMemo(() => {
 		// Lustrzane filtrowanie po katalogu (jak runSubmit w wizardzie) — odporne na
@@ -218,6 +231,13 @@ export function StepWnioski({
 					)}
 				</section>
 			)}
+
+			{/* 2c. 1E.7 L6 — „Po diagnozie": placement jest konsekwencją diagnozy i stoi
+			    zaraz za nią, nad `profileNote` (§12.10). Komponent sam decyduje o braku
+			    renderu, więc rodzic NIE warunkuje: cztery przyczyny „sekcji nie ma"
+			    rozstrzyga serwer PRZED wysłaniem, a powtórzenie ich tutaj byłoby drugą
+			    kopią cudzej reguły (Mila §3.2). */}
+			<PlacementSummary summary={placementSummary} />
 
 			{/* 5. profileNote — uczciwe zastrzeżenie, jak czytać te liczby */}
 			{profileNote && (

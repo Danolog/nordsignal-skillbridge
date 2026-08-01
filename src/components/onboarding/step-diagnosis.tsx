@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AssessmentResult } from "@/lib/assessment/types";
+import type { PlacementScreenContract } from "@/lib/curriculum/placement-screen";
 import { type PossessionLevel, possessionLabelsForKind } from "@/lib/onboarding/market-catalog";
 
 /** Pytanie w kształcie odpowiedzi tras /api/assessment (QuestionPayload serwera). */
@@ -39,6 +40,18 @@ export interface DiagnosisQuestion {
 export interface DiagnosisOutcome {
 	result: AssessmentResult;
 	uncoveredLevels: Record<string, PossessionLevel>;
+	/**
+	 * 1E.7 L6: kontrakt sekcji „Po diagnozie" dla kroku 4 (§12.8). Klucz `placement`
+	 * jest w odpowiedzi WYŁĄCZNIE wtedy, gdy sekcja ma się renderować — przy zgaszonej
+	 * fladze, celu spoza pilotażu, pustej drabinie albo awarii hooka trasa go nie
+	 * wysyła (brak klucza, nie `null` w ciele). Dlatego `undefined` przechodzi tędy
+	 * nietknięte aż do komponentu, który traktuje je jednoznacznie jako „nie renderuj".
+	 *
+	 * ⚠ TO JEDYNY NOŚNIK POWODU DZIURY. Powody nie są utrwalane (minimalizacja, L3),
+	 * więc po odświeżeniu strony wyjaśnienia nie ma i nie będzie (§12.7 pkt 6) —
+	 * świadoma decyzja Sophii, nie defekt do naprawienia przeliczaniem na odczycie.
+	 */
+	placement?: PlacementScreenContract | null;
 }
 
 interface StepDiagnosisProps {
@@ -73,6 +86,10 @@ export function StepDiagnosis({
 	const [desynced, setDesynced] = useState(false);
 	// Faza mini-samooceny uncovered (po complete). null = jeszcze w teście.
 	const [result, setResult] = useState<AssessmentResult | null>(null);
+	// 1E.7 L6 — kontrakt sekcji „Po diagnozie" z tej samej odpowiedzi co wynik.
+	// Trzymany obok `result`, bo obie drogi domknięcia (z mini-samooceną i bez)
+	// muszą oddać go wizardowi — inaczej sekcja znika u połowy studentów.
+	const [placement, setPlacement] = useState<PlacementScreenContract | null>(null);
 	const [uncoveredLevels, setUncoveredLevels] = useState<Record<string, PossessionLevel>>({});
 
 	const answeredCount = question ? question.position : total;
@@ -90,10 +107,16 @@ export function StepDiagnosis({
 			setDesynced(true);
 			return;
 		}
-		const data = (await res.json()) as { result: AssessmentResult };
+		// Brak klucza `placement` = sekcja nie istnieje (§12.6 warianty 1–4) — nie
+		// odróżniamy tu przyczyny, bo rozstrzygnął ją serwer (§12.8 pkt 1).
+		const data = (await res.json()) as {
+			result: AssessmentResult;
+			placement?: PlacementScreenContract;
+		};
 		setResult(data.result);
+		setPlacement(data.placement ?? null);
 		if (uncoveredNames.length === 0) {
-			onFinished({ result: data.result, uncoveredLevels: {} });
+			onFinished({ result: data.result, uncoveredLevels: {}, placement: data.placement ?? null });
 		}
 	}
 
@@ -200,7 +223,7 @@ export function StepDiagnosis({
 				</ul>
 				<div className="flex justify-end">
 					<Button
-						onClick={() => onFinished({ result, uncoveredLevels })}
+						onClick={() => onFinished({ result, uncoveredLevels, placement })}
 						className="ob-btn-accent gap-2"
 					>
 						<ClipboardCheck className="h-4 w-4" />

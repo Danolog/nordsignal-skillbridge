@@ -120,7 +120,13 @@ describe("StepDiagnosis — przepływ pytań i kształty odpowiedzi", () => {
 		// done → complete → onFinished z wynikiem (bez fazy uncovered).
 		await waitFor(() => expect(onFinished).toHaveBeenCalledOnce());
 		expect(fetchMock.mock.calls[2][0]).toBe("/api/assessment/ses-1/complete");
-		expect(onFinished).toHaveBeenCalledWith({ result: RESULT, uncoveredLevels: {} });
+		// 1E.7 L6: odpowiedź bez klucza `placement` (flaga OFF / cel spoza pilotażu)
+		// jedzie dalej jako jawne `null` — „sekcja nie istnieje", nie „nie wiadomo".
+		expect(onFinished).toHaveBeenCalledWith({
+			result: RESULT,
+			uncoveredLevels: {},
+			placement: null,
+		});
 	});
 
 	it("numeric: wysyła {value: string} (normalizacja przecinka po stronie serwera)", async () => {
@@ -187,6 +193,49 @@ describe("StepDiagnosis — przepływ pytań i kształty odpowiedzi", () => {
 		const outcome = onFinished.mock.calls[0][0];
 		expect(outcome.result).toEqual(resultWithUncovered);
 		expect(outcome.uncoveredLevels).toEqual({ Terraform: 3 });
+	});
+
+	it("1E.7 L6: kontrakt `placement` przeżywa DRUGIE wyjście (przez mini-samoocenę)", async () => {
+		// Dlaczego akurat ta droga: `completeSession` ma wynik w zmiennej lokalnej i
+		// oddaje go od razu, gdy nie ma `uncovered`. Przy `uncovered` domknięcie
+		// następuje o jedno kliknięcie później, ze STANU — i to jest ścieżka, na
+		// której kontrakt najłatwiej zgubić. Zgubiony = sekcja „Po diagnozie" znika
+		// części studentów bez żadnego objawu.
+		const user = userEvent.setup();
+		const onFinished = vi.fn();
+		const resultWithUncovered: AssessmentResult = { ...RESULT, uncovered: ["Terraform"] };
+		const placement = {
+			unlockedByDiagnosis: [{ slug: "f1", title: "Python I" }],
+			completedModules: [],
+			hole: null,
+			recommendation: { slug: "f1", title: "Python I" },
+			noRecommendationReason: null,
+			recommendationIsRoot: false,
+		};
+
+		fetchMock
+			.mockResolvedValueOnce(jsonResponse({ accepted: true, done: true, question: null }))
+			.mockResolvedValueOnce(jsonResponse({ result: resultWithUncovered, placement }));
+
+		render(
+			<StepDiagnosis
+				sessionId="ses-6"
+				total={2}
+				initialQuestion={Q_SINGLE}
+				uncoveredNames={["Terraform"]}
+				onFinished={onFinished}
+				onRestart={noop}
+				onBack={noop}
+			/>,
+		);
+
+		await user.click(screen.getByRole("button", { name: "Opcja A" }));
+		await user.click(screen.getByRole("button", { name: /dalej/i }));
+		await screen.findByText(/oceń je samodzielnie/i);
+		await user.click(screen.getByRole("button", { name: /zapisz i zobacz wnioski/i }));
+
+		expect(onFinished).toHaveBeenCalledOnce();
+		expect(onFinished.mock.calls[0][0].placement).toEqual(placement);
 	});
 
 	it("409 z answer → ekran desync z przyciskiem wznowienia (onRestart)", async () => {

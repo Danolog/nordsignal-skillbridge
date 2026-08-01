@@ -136,3 +136,29 @@ export type RestartResponse = { sessionId: string; redirectTo: string };
 
 /** Twardy limit tur — w kodzie (golden ADR-001 §3.1), spójny z backendem. */
 export const MAX_TURNS = 9;
+
+// --- A4: łączny (end-to-end) limit czasu na „Pokaż podsumowanie" -------------
+//
+// Limit liczony OD STRONY STUDENTA: obejmuje wszystkie próby POST /summary razem
+// z odczekaniami między nimi — nie jest limitem pojedynczej próby. Bez niego
+// klient robił 3 próby bez żadnego górnego ograniczenia: 60 s (twardy limit
+// funkcji na Vercelu) + 1,5 s + 60 s + 3 s + 60 s = 184,5 s kręciołka, po czym
+// dopiero pokazywał uczciwy degrade.
+//
+// WARTOŚĆ 90 s wynika z trzech zmierzonych liczb, nie z sufitu:
+//   1. serwer po zmianie A4 oddaje odpowiedź najpóźniej po ~50 s
+//      (SUMMARY_TOTAL_BUDGET_MS) — tyle może trwać pierwsza próba,
+//   2. odczekanie przed drugą próbą: 1,5 s,
+//   3. udane podsumowanie trwa typowo 20–40 s (Opus 4.8: generator + sędzia;
+//      analogi z ai_usage_ledger na produkcji: generacja 18,4–23,5 s, sędzia
+//      2,9–3,4 s) — druga próba dostaje ~38 s, czyli mieści cały ten zakres.
+// 50 + 1,5 + 38,5 = 90 s. Nie ucinamy więc żadnego przebiegu, który miał realną
+// szansę się udać, a najgorszy przypadek u studenta spada z 185 s do 90 s.
+export const SUMMARY_CLIENT_BUDGET_MS = 90_000;
+
+/**
+ * Próg, poniżej którego NIE zaczynamy kolejnej próby — nie zdąży się domknąć,
+ * a student i tak czeka. Oparty na dolnej granicy udanego przebiegu (generacja
+ * 18,4 s + sędzia 2,9 s ≈ 21 s; ai_usage_ledger, produkcja).
+ */
+export const SUMMARY_MIN_ATTEMPT_MS = 20_000;

@@ -23,6 +23,10 @@ import { computeResult, type SessionAnswer } from "@/lib/assessment/plan";
 import { getStudentByUserId, isSessionExpired } from "@/lib/assessment/service";
 import type { AssessmentPlan } from "@/lib/assessment/types";
 import { auth } from "@/lib/auth/server";
+import {
+	buildPlacementScreenContract,
+	type PlacementScreenContract,
+} from "@/lib/curriculum/placement-screen";
 import { recordPlacementOnDiagnosisComplete } from "@/lib/curriculum/placement-service";
 import { db } from "@/lib/db";
 import { assessmentAnswers, assessmentSessions, competencies } from "@/lib/db/schema";
@@ -155,16 +159,51 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
 		// `diagnosisResult` do lokalnej stałej: zawężenie typu nie przeżyłoby
 		// wewnątrz domknięcia `.catch` (parytet z hookiem enrollment 1E.4 R5).
 		const diagnosisResult = outcome.sessionKind === "diagnostic" ? outcome.result : null;
+		// 1E.7 L6 — KONTRAKT EKRANU WYNIKU DIAGNOZY (§12.8). Powody dziury NIE są
+		// utrwalane (minimalizacja, L3), więc odpowiedź tej trasy jest ich JEDYNYM
+		// nośnikiem (§12.7 pkt 6). Przy fladze OFF klucz `placement` w ogóle nie
+		// powstaje — odpowiedź jest identyczna jak dziś, bajt w bajt.
+		let placement: PlacementScreenContract | null = null;
 		if (diagnosisResult && isFeatureEnabled("placementDiagnostic")) {
-			await recordPlacementOnDiagnosisComplete(student, id, diagnosisResult).catch((err) =>
-				logError("curriculum.placement", err, { studentId: student.id, sessionId: id }),
+			// KOLEJNOŚĆ WIĄŻĄCA (§12.2): najpierw ZAPIS wierszy tej sesji, potem kontrakt.
+			// Nie jest to konwencja do zapamiętania — kontrakt konsumuje `write.outcome`,
+			// więc policzenie go wcześniej jest niewyrażalne: nie ma czym wywołać funkcji.
+			const write = await recordPlacementOnDiagnosisComplete(student, id, diagnosisResult).catch(
+				(err) => {
+					logError("curriculum.placement", err, { studentId: student.id, sessionId: id });
+					return null;
+				},
 			);
+			// `write === null` znaczy „placement się nie policzył" (brak celu, cel spoza
+			// pilotażu, awaria) — wtedy sekcja NIE ISTNIEJE (§12.6 warianty 2 i 4), a wynik
+			// diagnozy stoi sam.
+			// ⚠ Trasa NIE rozstrzyga już ścieżki curriculum. Robi to wyłącznie hook
+			// placementu (`resolveDiagnosisPathKey` w jednym miejscu, D0) i zwraca ją
+			// w `write.pathKey` razem z werdyktem. Wcześniejsze liczenie jej tutaj było
+			// drugim wywołaniem tej samej reguły i źródłem pary, którą dało się zestawić
+			// błędnie (warunek W3 Leo).
+			if (write) {
+				// `write` niesie PARĘ (ścieżka, werdykt) i stempel kolejności — dlatego
+				// jedzie w całości, zamiast być rozbierany na dwa parametry (W2/W3 Leo).
+				placement = await buildPlacementScreenContract({
+					studentId: student.id,
+					write,
+				}).catch((err) => {
+					// Best-effort jak sam placement: awaria dodatku nie ma prawa zabrać
+					// studentowi wyniku diagnozy (§12.6 wariant 4).
+					logError("curriculum.placement.screen", err, { studentId: student.id, sessionId: id });
+					return null;
+				});
+			}
 		}
 
 		return NextResponse.json({
 			completed: true,
 			result: outcome.result,
 			updatedCompetencies: outcome.updatedCompetencies,
+			// Klucz obecny WYŁĄCZNIE gdy sekcja ma się renderować — brak sekcji to brak
+			// klucza, nie `null` w ciele (inwariant flagi OFF, §12.8 pkt 6).
+			...(placement ? { placement } : {}),
 		});
 	} catch (err) {
 		if (err instanceof CompleteConflictError) {

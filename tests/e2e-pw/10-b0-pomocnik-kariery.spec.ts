@@ -1,6 +1,8 @@
 import { expect } from "@playwright/test";
 import { loginWithPassword } from "./helpers/auth";
 import { driveChatToSummaryCta } from "./helpers/b0-chat";
+import { wyczyscSesjePomocnika, zasiejDomknietaRozmowe } from "./helpers/b0-session-seed";
+import { domknijPodsumowanieZeSciezkami, poczekajNaEkran3 } from "./helpers/b0-summary";
 import { resetOnboardingState } from "./helpers/db-reset";
 import { dbWriteTest as test } from "./helpers/guards";
 import { fillSurveyAndContinue } from "./helpers/survey";
@@ -18,8 +20,19 @@ import { fillSurveyAndContinue } from "./helpers/survey";
  *    max 3, q4 textarea ≥10 znaków) — asertuje „Idź dalej" enabled.
  *  - czat: helper driveChatToSummaryCta — odpowiada aż do CTA „Pokaż podsumowanie"
  *    (pole DISABLED w trakcie streamingu; rozmowa domyka się po 9. pytaniu AI).
- *  - podsumowanie: nagłówek „Co rozumiem z naszej rozmowy" + disclaimer „To NIE są
- *    rekomendacje"; karty „Wybieram tę ścieżkę".
+ *  - podsumowanie: helper domknijPodsumowanieZeSciezkami (helpers/b0-summary.ts) —
+ *    zna TRZY stany końcowe ekranu 3 i domyka ścieżkę do „karty są".
+ *
+ * ROZDZIELENIE WŁAŚCIWOŚCI (naprawa defektu z przebiegu CI 30579719642). Ten plik
+ * pilnuje DWÓCH różnych rzeczy DWOMA różnymi torami:
+ *  A. „podsumowanie realnie się generuje" — testy @llm niżej, realny model, bez atrap.
+ *     Uczciwy degrade nie jest wynikiem akceptowanym: korzystamy z afordancji
+ *     produktu (ponów) i dopiero po wyczerpaniu prób padamy — z komunikatem, który
+ *     mówi, GDZIE szukać (log .no-object-retry / .exhausted).
+ *  B. „uczciwy degrade ma wyjście" — osobny describe na końcu pliku, DETERMINISTYCZNY
+ *     (atrapa wyłącznie na poziomie kontraktu naszego endpointu /summary, zero atrap
+ *     na modelu i na bazie). Bez niego strata z punktu A byłaby niewidoczna: nikt
+ *     nie sprawdzał, czy ekran błędu w ogóle prowadzi z powrotem do podsumowania.
  *
  * Konto: "main" (onboardingCompleted=TRUE). B0 wymaga tylko zalogowanego studenta.
  * Czas: każdy pełny przejazd to ~9 wywołań modelu — podnosimy budżet testu.
@@ -34,8 +47,17 @@ test.describe("@dbwrite @llm B0 Pomocnik kariery — czat i podsumowanie", () =>
 		"B0 wymaga LLM (serwer musi mieć ANTHROPIC_API_KEY). Ustaw E2E_LLM_AVAILABLE=1, gdy serwer ma klucz.",
 	);
 
+	// Sufit 10 sesji Pomocnika na dobę per student (MAX_SESSIONS_PER_DAY) vs 5 sesji,
+	// które ten plik zakłada na koncie „main" — przy ponowieniach Playwrighta (CI
+	// retries: 1) resztki z poprzedniego przebiegu dobijają do sufitu i kolejny test
+	// dostaje 429 zamiast ekranu Pomocnika. Czyścimy stan wejściowy raz, na starcie.
+	test.beforeAll(async () => {
+		await wyczyscSesjePomocnika("main");
+	});
+
 	test("Ankieta → czat (AI odzywa się pierwszy) → 9 tur → podsumowanie", async ({ page }) => {
-		test.setTimeout(240_000);
+		// Budżet: rozmowa (~9 wywołań) + do 3 podejść do /summary po ≤100 s każde.
+		test.setTimeout(420_000);
 		await loginWithPassword(page);
 		await page.goto("/pomocnik-kariery");
 
@@ -47,19 +69,11 @@ test.describe("@dbwrite @llm B0 Pomocnik kariery — czat i podsumowanie", () =>
 
 		await page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i }).click();
 
-		// Ekran 3 — podsumowanie. Backend ma DWA dozwolone warianty (kontrakt
-		// SummaryResponse): judged:true → pełne podsumowanie „Co rozumiem z naszej
-		// rozmowy"; judged:false (warstwa 4 oceny nie przeszła) → akceptowalny
-		// degrade HITL „Przygotuję to za chwilę". Oba pokazują karty wyboru ścieżki.
-		// Pusty/błędny ekran = FAIL; którykolwiek z dwóch wariantów = PASS.
-		// /summary woła model i bywa wolne (do ~64 s) → budżet 150 s (sedno bug #57).
-		await expect(
-			page
-				.getByText(/Co rozumiem z naszej rozmowy/i)
-				.or(page.getByText(/Przygotuję to za chwilę/i)),
-		).toBeVisible({ timeout: 150_000 });
-		// 1–3 ścieżki: karty wyboru „Wybieram tę ścieżkę" muszą się pojawić w obu wariantach.
-		await expect(page.getByText(/Wybieram tę ścieżkę/i).first()).toBeVisible({ timeout: 60_000 });
+		// Ekran 3 — wynik musi zawierać ŚCIEŻKI (podsumowanie judged=true albo
+		// przegląd opiekuna judged=false z obszarami). Sam ekran błędu = ponawiamy
+		// przyciskiem produktu; po wyczerpaniu prób pad z diagnozą. Szczegóły i lista
+		// rzeczy, których ten tor NIE pilnuje: helpers/b0-summary.ts.
+		await domknijPodsumowanieZeSciezkami(page);
 	});
 
 	test("Fix #55: po wysłaniu wiadomości fokus wraca do pola wejścia", async ({ page }) => {
@@ -80,9 +94,16 @@ test.describe("@dbwrite @llm B0 Pomocnik kariery — czat i podsumowanie", () =>
 
 	// Fix #57 bywał kapryśny → 3 przebiegi samego /summary. Każdy: świeża sesja,
 	// domknięcie czatu, generacja podsumowania. 3 = kompromis pokrycie/koszt LLM.
+	//
+	// PO NAPRAWIE DEFEKTU TESTU (przebieg CI 30579719642): warunkiem zaliczenia jest
+	// wynik ZE ŚCIEŻKAMI, a nie sam nagłówek — inaczej ekran „Coś poszło nie tak
+	// z podsumowaniem" (uczciwy degrade produktu) czekał do końca budżetu i raportował
+	// się jako zawieszenie. Koszt rośnie wyłącznie wtedy, gdy model faktycznie
+	// degraduje: w zdrowym przebiegu to nadal jedno POST /summary na test.
 	for (let run = 1; run <= 3; run++) {
 		test(`Fix #57: /summary generuje wynik — przebieg ${run}/3`, async ({ page }) => {
-			test.setTimeout(180_000);
+			// Budżet: rozmowa + do 3 podejść do /summary po ≤100 s (kontrakt A4 klienta).
+			test.setTimeout(420_000);
 			await loginWithPassword(page);
 			await page.goto("/pomocnik-kariery");
 			await fillSurveyAndContinue(page);
@@ -90,17 +111,112 @@ test.describe("@dbwrite @llm B0 Pomocnik kariery — czat i podsumowanie", () =>
 			await driveChatToSummaryCta(page);
 			await page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i }).click();
 
-			// Wynik musi się wygenerować — nagłówek podsumowania albo (akceptowalny
-			// degrade HITL) ekran „Przygotuję to za chwilę". Pusty ekran = FAIL.
-			// /summary woła model i bywa wolne (zaobserwowane do ~64 s) → budżet 150 s,
-			// żeby smoke nie był flaky na samej latencji LLM (to był sedno bug #57).
-			await expect(
-				page
-					.getByText(/Co rozumiem z naszej rozmowy/i)
-					.or(page.getByText(/Przygotuję to za chwilę/i)),
-			).toBeVisible({ timeout: 150_000 });
+			await domknijPodsumowanieZeSciezkami(page);
 		});
 	}
+});
+
+/**
+ * @dbwrite — „uczciwy degrade podsumowania ma wyjście" (DETERMINISTYCZNIE, bez modelu).
+ *
+ * DRUGA POŁOWA rozdzielenia właściwości (patrz nagłówek pliku, punkt B). Tor @llm
+ * wyżej pilnuje, że podsumowanie się generuje — ale toleruje po drodze degrade.
+ * Ten test pilnuje dokładnie tego, co tamten przestał: że degrade jest uczciwy
+ * (mówi studentowi prawdę, nie udaje sukcesu) i że PROWADZI GDZIEŚ (ponowienie
+ * realnie wraca do podsumowania). Do 2026-08-01 tej właściwości nie pilnował
+ * ŻADEN test e2e — przycisk „Spróbuj ponownie" był sprawdzony tylko na poziomie
+ * komponentu (summary-screen.test.tsx), gdzie „wraca do czatu" to atrapa callbacku.
+ *
+ * GDZIE JEST ATRAPA I DLACZEGO TYLKO TAM. Podstawiamy WYŁĄCZNIE odpowiedź naszego
+ * własnego endpointu POST /summary — na poziomie kontraktu (dokładnie kształt
+ * SummaryResponse z src/lib/career-helper/types.ts), nie logiki. Realne zostają:
+ * przeglądarka, trasa Next, sesja logowania, baza (sesja i tury czytane przez
+ * GET /session z RLS), oba przejścia ekranów i rehydracja czatu. Model NIE jest
+ * atrapowany — on jest tu nieistotny: degrade jest z definicji stanem, w którym
+ * model nic sensownego nie zwrócił. Sterowanie kolejnością odpowiedzi (1. próba
+ * degrade, 2. próba sukces) jest jedynym sposobem, żeby ta ścieżka była pewna,
+ * a nie zależna od szczęścia.
+ *
+ * @llm w tytule mimo ZERO wywołań modelu: nocny job e2e-llm wybiera testy przez
+ * --grep "@llm", a spec 10 nie biega w żadnym innym jobie. Bez tego tagu test byłby
+ * martwy (nigdy nieuruchamiany). Docelowo: przenieść do taniego joba e2e @dbwrite
+ * na PR — decyzja o topologii jobów należy do Ethana (ADR), nie do tego pliku.
+ */
+test.describe("@dbwrite @llm B0 — uczciwy degrade /summary (bez kosztu modelu, atrapa kontraktu)", () => {
+	const SUMMARY_GLOB = "**/api/career-helper/session/*/summary";
+
+	/** Degrade z trasy: generator wyczerpał próby/budżet → 200 z pustymi ścieżkami. */
+	const ODPOWIEDZ_DEGRADE = {
+		judged: false,
+		judgedFor: "warstwa4_failed",
+		summaryText: null,
+		careerPaths: [],
+	};
+
+	/** Poprawne podsumowanie po ponowieniu (etykieta z katalogu 23 ścieżek). */
+	const ODPOWIEDZ_SUKCES = {
+		judged: true,
+		judgedFor: "R2",
+		summaryText:
+			"Z tego, co powiedziałeś: lubisz rozkładać problem na części i sprawdzać hipotezy na danych.",
+		careerPaths: [
+			{
+				label: "Data Analyst",
+				why: "Wracałeś do pracy z liczbami i do sprawdzania, czy wnioski trzymają się danych.",
+			},
+		],
+	};
+
+	test("ekran błędu mówi prawdę i wraca do podsumowania (ponowienie realnie działa)", async ({
+		page,
+	}) => {
+		test.setTimeout(120_000);
+
+		// Rozmowa domknięta zasiana w bazie — wchodzimy prosto na czat z CTA,
+		// bez ankiety i bez 9 wywołań modelu (helpers/b0-session-seed.ts).
+		const sessionId = await zasiejDomknietaRozmowe("main");
+
+		let wywolania = 0;
+		await page.route(SUMMARY_GLOB, async (route) => {
+			if (route.request().method() !== "POST") return route.fallback();
+			wywolania += 1;
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify(wywolania === 1 ? ODPOWIEDZ_DEGRADE : ODPOWIEDZ_SUKCES),
+			});
+		});
+
+		await loginWithPassword(page);
+		await page.goto(`/pomocnik-kariery?sessionId=${sessionId}`);
+
+		// Rehydracja z bazy: rozmowa domknięta → CTA zamiast pola wpisywania.
+		const cta = page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i });
+		await expect(cta).toBeVisible({ timeout: 30_000 });
+		await cta.click();
+
+		// (1) Degrade jest UCZCIWY: nazywa problem, nie udaje sukcesu, nie gubi rozmowy.
+		expect(await poczekajNaEkran3(page)).toBe("blad_generacji");
+		await expect(page.getByText(/Twoja rozmowa jest zapisana, nic nie zginęło/i)).toBeVisible();
+		// Nie podszywa się pod wynik: żadnych kart wyboru ścieżki na ekranie błędu.
+		await expect(page.getByText(/Wybieram tę ścieżkę/i)).toHaveCount(0);
+		const ponow = page.getByRole("button", { name: /Spróbuj ponownie/i });
+		await expect(ponow).toBeVisible();
+
+		// (2) Wyjście PROWADZI GDZIEŚ: ponowienie wraca na czat z CTA (rehydracja
+		// GET /session ustawia stan „rozmowa domknięta"), a nie w pustkę.
+		await ponow.click();
+		await expect(cta).toBeVisible({ timeout: 30_000 });
+		await cta.click();
+
+		// (3) Druga próba się udaje → student dostaje podsumowanie i karty.
+		expect(await poczekajNaEkran3(page)).toBe("podsumowanie");
+		await expect(page.getByText(/Wybieram tę ścieżkę/i).first()).toBeVisible();
+		expect(
+			wywolania,
+			"Ponowienie musi wysłać NOWE POST /summary, nie odtworzyć starej odpowiedzi",
+		).toBe(2);
+	});
 });
 
 /**
@@ -130,7 +246,8 @@ test.describe("@dbwrite @llm Pomocnik jako Krok 0 onboardingu (#5, nowy student)
 	test("Krok 0: wybór ścieżki ustawia cel w pamięci i przechodzi do Profilu (bez select-path)", async ({
 		page,
 	}) => {
-		test.setTimeout(300_000); // Krok 0 = ~9 wywołań modelu (czat) + podsumowanie.
+		// Krok 0 = ~9 wywołań modelu (czat) + do 2 podejść do podsumowania.
+		test.setTimeout(420_000);
 		// Konto "b4": onboardingCompleted=FALSE → /onboarding wpuszcza w wizard od Kroku 0.
 		// Reset stanu PRZED wejściem: specy 10/20/40 współdzielą konto b4, a każdy
 		// zakłada Krok 0 — bez resetu pierwszy przebieg zostawia wizard dalej
@@ -152,11 +269,9 @@ test.describe("@dbwrite @llm Pomocnik jako Krok 0 onboardingu (#5, nowy student)
 		});
 		await driveChatToSummaryCta(page);
 		await page.getByRole("button", { name: /Pokaż podsumowanie rozmowy/i }).click();
-		await expect(
-			page
-				.getByText(/Co rozumiem z naszej rozmowy/i)
-				.or(page.getByText(/Przygotuję to za chwilę/i)),
-		).toBeVisible({ timeout: 150_000 });
+		// Tu podsumowanie jest ŚRODKIEM, nie celem (celem jest wpięcie Kroku 0), więc
+		// budżet prób węższy niż w testach dedykowanych /summary: 2 zamiast 3.
+		await domknijPodsumowanieZeSciezkami(page, { maxProby: 2 });
 
 		// Wybór ścieżki + „Idź dalej do samooceny" → tryb embedded (onCareerGoalChosen).
 		await page

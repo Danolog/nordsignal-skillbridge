@@ -1,6 +1,6 @@
 import { generateObject, NoObjectGeneratedError } from "ai";
 import { convertArrayToReadableStream, MockLanguageModelV3 } from "ai/test";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	CareerSummarySchema,
 	detectCrisis,
@@ -8,8 +8,11 @@ import {
 	groundCareerPaths,
 	MAX_RESTARTS,
 	MAX_TURNS,
+	MIN_GENERATE_BUDGET_MS,
+	MIN_JUDGE_BUDGET_MS,
 	normalizeSummary,
 	runTurn,
+	SUMMARY_TOTAL_BUDGET_MS,
 	violatesVerdictGuardrail,
 } from "../career-helper";
 
@@ -243,6 +246,154 @@ describe("generateSummary — ugruntowanie w katalogu (F2)", () => {
 		});
 		expect(capturedPrompt).toContain("Data Analyst");
 		expect(capturedPrompt).toContain("DOKŁADNĄ kopią");
+	});
+});
+
+/**
+ * A4 — łączny (end-to-end) limit czasu na /summary.
+ *
+ * Testujemy WŁAŚCIWOŚĆ, nie implementację: „przy modelu, który nie odpowiada,
+ * student dostaje odpowiedź w skończonym, znanym czasie". Bez limitu najgorszy
+ * przypadek to 2 iteracje × (2 próby generatora + 2 próby sędziego) × 45 s ≈ 360 s
+ * wywołań modelu — na produkcji ucinała je dopiero platforma (504), a klient
+ * ponawiał 3×, dając ~185 s kręciołka na Kroku 0 onboardingu.
+ */
+describe("generateSummary — łączny limit czasu operacji (A4)", () => {
+	/** Model, który NIE odpowiada i NIE honoruje abortSignal (najgorszy dostawca). */
+	function hangingModel() {
+		let calls = 0;
+		const signals: (AbortSignal | undefined)[] = [];
+		const model = new MockLanguageModelV3({
+			doGenerate: (options) => {
+				calls++;
+				signals.push(options.abortSignal);
+				return new Promise(() => {
+					/* nigdy nie odpowiada */
+				});
+			},
+		});
+		return { model, getCalls: () => calls, getSignals: () => signals };
+	}
+
+	it("model nie odpowiada → operacja kończy się W GRANICY budżetu, nie po pełnych próbach", async () => {
+		vi.useFakeTimers();
+		try {
+			const gen = hangingModel();
+			let settled = false;
+			const promise = generateSummary({
+				answers: { q1: "a" },
+				history: [{ role: "user", content: "lubię dane" }],
+				summaryModel: gen.model,
+				judgeModel: gen.model,
+			}).then((r) => {
+				settled = true;
+				return r;
+			});
+
+			// Przewijamy zegar DOKŁADNIE o budżet operacji. Gdyby limitu nie było,
+			// promise wisiałby dalej (do ~360 s wywołań modelu albo w nieskończoność).
+			await vi.advanceTimersByTimeAsync(SUMMARY_TOTAL_BUDGET_MS);
+
+			expect(settled).toBe(true);
+			const result = await promise;
+			// Uczciwy degrade — ten sam stan kontraktu co przy wyczerpanym retry.
+			expect(result.judged).toBe(false);
+			expect(result.judgedFor).toBe("warstwa4_failed");
+			expect(result.careerPaths).toHaveLength(0);
+			expect(result.summaryText).toBeNull();
+			// Nie przemieliliśmy pełnej puli prób (bez limitu byłoby ich do 8).
+			expect(gen.getCalls()).toBe(1);
+			// Deadline jedzie do modelu jako AbortSignal — zerwanie połączenia,
+			// nie samo „przestajemy czekać".
+			expect(gen.getSignals()[0]).toBeInstanceOf(AbortSignal);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("budżet już wyczerpany → nie zaczyna wywołania modelu w ogóle (zero spalonych tokenów)", async () => {
+		const gen = hangingModel();
+		const started = Date.now();
+		const result = await generateSummary({
+			answers: { q1: "a" },
+			history: [{ role: "user", content: "lubię dane" }],
+			summaryModel: gen.model,
+			judgeModel: gen.model,
+			// Budżet mniejszy niż najszybszy realny przebieg → wywołanie nie ma szans.
+			budgetMs: 1,
+		});
+		expect(Date.now() - started).toBeLessThan(1000);
+		expect(gen.getCalls()).toBe(0);
+		expect(result.judged).toBe(false);
+		expect(result.judgedFor).toBe("warstwa4_failed");
+	});
+
+	/**
+	 * W4 — rezerwacja slotu sędziego. Budżet operacji musi pomieścić generację
+	 * RAZEM z jej oceną. Bez rezerwacji generacja startowała, gdy starczało czasu
+	 * tylko na nią samą — po czym świeże podsumowanie (4096 tokenów wyjścia na
+	 * Opusie) szło do kosza, bo sędzia nie miał już czasu. Właściwość: NIE GENERUJEMY
+	 * TEGO, CZEGO NIE DA SIĘ OCENIĆ — generator nie startuje, zamiast startować i paść.
+	 */
+	function countingObjectModel(payload: unknown) {
+		let calls = 0;
+		const result = generateResult(payload);
+		const model = new MockLanguageModelV3({
+			doGenerate: async () => {
+				calls++;
+				return result;
+			},
+		});
+		return { model, getCalls: () => calls };
+	}
+
+	it("W4: budżet < próg generacji + slot sędziego → generator NIE startuje (zero wywołań)", async () => {
+		const gen = countingObjectModel(SAFE_SUMMARY);
+		const judge = countingObjectModel({ verdict: "YES", reason: "ok" });
+		const result = await generateSummary({
+			answers: { q1: "a" },
+			history: [{ role: "user", content: "lubię dane" }],
+			summaryModel: gen.model,
+			judgeModel: judge.model,
+			// O 1 ms za mało, by generację dało się OCENIĆ — choć na samą generację by starczyło.
+			budgetMs: MIN_GENERATE_BUDGET_MS + MIN_JUDGE_BUDGET_MS - 1,
+		});
+		// Sedno: nie „wywołał się i padł", tylko w ogóle nie ruszył.
+		expect(gen.getCalls()).toBe(0);
+		expect(judge.getCalls()).toBe(0);
+		expect(result.judged).toBe(false);
+		expect(result.judgedFor).toBe("warstwa4_failed");
+		expect(result.careerPaths).toHaveLength(0);
+	});
+
+	it("W4: budżet ≥ próg generacji + slot sędziego → generacja startuje i jest oceniona", async () => {
+		const gen = countingObjectModel(SAFE_SUMMARY);
+		const judge = countingObjectModel({ verdict: "YES", reason: "ok" });
+		const result = await generateSummary({
+			answers: { q1: "a" },
+			history: [{ role: "user", content: "lubię dane" }],
+			summaryModel: gen.model,
+			judgeModel: judge.model,
+			budgetMs: MIN_GENERATE_BUDGET_MS + MIN_JUDGE_BUDGET_MS + 1_000,
+		});
+		// Próg nie jest zbyt ciasny — tuż nad granicą pracujemy normalnie.
+		expect(gen.getCalls()).toBe(1);
+		expect(judge.getCalls()).toBe(1);
+		expect(result.judged).toBe(true);
+	});
+
+	it("powodzenie w budżecie: zachowanie bez zmian (judged=true, ścieżki, bez probability)", async () => {
+		const result = await generateSummary({
+			answers: { q1: "a" },
+			history: [{ role: "user", content: "lubię dane" }],
+			summaryModel: objectModel(SAFE_SUMMARY),
+			judgeModel: objectModel({ verdict: "YES", reason: "ok" }),
+		});
+		expect(result.judged).toBe(true);
+		if (result.judged) {
+			expect(result.careerPaths).toHaveLength(2);
+			expect(result.summaryText).toBe(SAFE_SUMMARY.summaryText);
+		}
 	});
 });
 

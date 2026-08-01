@@ -21,6 +21,7 @@ const modules: LadderModuleWithProgress[] = [
 		status: "in_progress",
 		verifiedByMethod: null,
 		itemCount: 4,
+		openedByPlacementEver: false,
 		completedItems: 1,
 	},
 	{
@@ -32,6 +33,7 @@ const modules: LadderModuleWithProgress[] = [
 		status: "locked",
 		verifiedByMethod: null,
 		itemCount: 8,
+		openedByPlacementEver: false,
 		completedItems: 0,
 	},
 	{
@@ -43,6 +45,7 @@ const modules: LadderModuleWithProgress[] = [
 		status: "coming_soon",
 		verifiedByMethod: null,
 		itemCount: 0,
+		openedByPlacementEver: false,
 		completedItems: 0,
 	},
 ];

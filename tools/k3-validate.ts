@@ -22,9 +22,17 @@
  *      asercja tutaj ZAMIAST ograniczenia CHECK w bazie).
  *
  * Connection string NIE jest logowany. Wypisuje PASS/FAIL, kończy exit 1 przy błędzie.
+ *
+ * TOŻSAMOŚĆ BAZY (1E.7 A5): na górze wyjścia i przy werdykcie końcowym skrypt
+ * wypisuje, GDZIE odbył się przebieg — punkt końcowy, nazwa bazy, rola sesji /
+ * rola bieżąca i to, czy ta rola omija RLS. Dane pochodzą z zapytania do bazy
+ * (tools/k3-identity.ts), nie z parsowania łańcucha połączenia z hasłem.
+ * Bez tego zielony wynik nie dowodzi niczego o KONKRETNEJ bazie — a jest jedynym
+ * dowodem warunku nośnego A22-3 oceny art. 22 RODO.
  */
 import { config } from "dotenv";
-import { Pool } from "pg";
+import { type Client, Pool, type PoolClient } from "pg";
+import { formatIdentityHeader, formatIdentityOneLine, readDbIdentity } from "./k3-identity";
 
 config({ path: ".env.local" });
 
@@ -203,9 +211,86 @@ const K_PUB_TABLES = [
 	"question_items",
 ] as const;
 
+/**
+ * A5b — POMOCNIKI UTWARDZAJĄCE (zlecenie Olivera, kubełek A).
+ *
+ * Dlaczego istnieją: dotychczasowe asercje uprawnień czytały PUSTKĘ widoku
+ * `information_schema.role_table_grants` / `column_privileges`. Pustka tego widoku
+ * jest DWUZNACZNA i ślepa na trzy realne wektory:
+ *   • widok pokazuje wyłącznie granty, w których grantor albo grantee jest rolą
+ *     WŁĄCZONĄ w bieżącej sesji — „0 wierszy" znaczy też „nie widzę stąd";
+ *   • `GRANT … TO PUBLIC` ma grantee = 'PUBLIC', więc filtr `grantee='app_faculty'`
+ *     go NIE zobaczy, a wykładowca i tak by czytał;
+ *   • grant odziedziczony przez członkostwo w innej roli też umyka filtrowi.
+ * `has_table_privilege` / `has_column_privilege` odpowiadają na pytanie faktyczne
+ * („czy ta rola MOŻE"), uwzględniają PUBLIC i dziedziczenie, i nie zależą od tego,
+ * kto pyta. To jest różnica między „nie widzę grantu" a „grantu nie ma".
+ */
+const PRAWA_TABELOWE = [
+	"SELECT",
+	"INSERT",
+	"UPDATE",
+	"DELETE",
+	"TRUNCATE",
+	"REFERENCES",
+	"TRIGGER",
+] as const;
+
+/** Które z podanych nazw istnieją w schemacie `public` (reszta = brak tabeli). */
+async function istniejaceTabele(client: PoolClient, nazwy: readonly string[]): Promise<string[]> {
+	const r = await client.query(
+		`SELECT t.nazwa FROM unnest($1::text[]) AS t(nazwa)
+		  WHERE to_regclass('public.' || quote_ident(t.nazwa)) IS NOT NULL`,
+		[nazwy],
+	);
+	return r.rows.map((x: { nazwa: string }) => x.nazwa);
+}
+
+/**
+ * Faktyczne uprawnienia roli na tabelach — lista `tabela.PRAWO`.
+ * Pusta lista = rola nie ma NICZEGO (także przez PUBLIC i dziedziczenie).
+ * Wołaj wyłącznie na tabelach, które istnieją (has_table_privilege rzuca na braku).
+ */
+async function nadaneUprawnienia(
+	client: PoolClient,
+	rola: string,
+	tabele: readonly string[],
+): Promise<string[]> {
+	if (tabele.length === 0) return [];
+	const r = await client.query(
+		`SELECT t.nazwa, p.prawo
+		   FROM unnest($2::text[]) AS t(nazwa)
+		   CROSS JOIN unnest($3::text[]) AS p(prawo)
+		  WHERE has_table_privilege($1, 'public.' || quote_ident(t.nazwa), p.prawo)
+		  ORDER BY 1, 2`,
+		[rola, tabele, PRAWA_TABELOWE],
+	);
+	return r.rows.map((x: { nazwa: string; prawo: string }) => `${x.nazwa}.${x.prawo}`);
+}
+
 async function main() {
 	const client = await pool.connect();
+	// Ustawiane zaraz po połączeniu; używane też w werdykcie końcowym (poza try/finally).
+	let identityLine = "tożsamość bazy NIEUSTALONA";
 	try {
+		// 0. TOŻSAMOŚĆ BAZY (1E.7 A5) — musi iść PRZED pierwszą asercją, żeby
+		// czytelnik wiedział, czego dotyczy wszystko poniżej. Nie jest testem:
+		// nie wywołuje check(), nie wpływa na liczbę FAIL ani na exit code.
+		// Host/port bierzemy z pól konfiguracyjnych klienta `pg` (struktura, nie
+		// nasze parsowanie DSN), resztę — zapytaniem do bazy.
+		{
+			// `PoolClient` w @types/pg nie deklaruje `host`/`port`, choć obiekt w czasie
+			// wykonania JEST `Client` i te pola ma (index.d.ts: `class Client` — host, port).
+			// Rzutujemy więc na kształt WZIĘTY Z TYPU BIBLIOTEKI, nie na kształt wymyślony:
+			// gdyby pg przemianowało te pola, tsc to zgłosi. Inline `{ host?: string }`
+			// kompilowałby się dalej i po cichu czytał undefined — dokładnie ta rodzina
+			// błędu, która wywróciła build (typ kłamiący o kodzie).
+			const cfg = client as unknown as Partial<Pick<Client, "host" | "port">>;
+			const identity = await readDbIdentity(client, cfg.host ?? null, cfg.port ?? null);
+			identityLine = formatIdentityOneLine(identity);
+			console.log(formatIdentityHeader(identity));
+		}
+
 		// 1. tenants
 		const t = await client.query(`SELECT slug FROM tenants WHERE slug = ANY($1)`, [
 			["wsb-merito-szczecin", "wsb-merito-warszawa", "__unmapped"],
@@ -219,17 +304,36 @@ async function main() {
 		check("2. role app_student/app_faculty", r.rowCount === 2, `znaleziono ${r.rowCount}/2`);
 
 		// 3. RLS włączony
-		const rls = await client.query(
-			`SELECT relname FROM pg_class
-			 WHERE relname = ANY($1) AND relrowsecurity = true`,
-			[[...TENANT_TABLES, "audit_log", "faculty_sessions"]],
-		);
+		// A5b: filtr schematu `public` + relkind='r' (dotąd zapytanie szło po całym
+		// pg_class — tabela o tej samej nazwie w innym schemacie mogła DOPEŁNIĆ licznik)
+		// oraz NAZWANIE braków przy FAIL (dotąd komunikat mówił „29/30" i kazał szukać
+		// ręcznie, w środku ceremonii produkcyjnej).
 		{
-			const expected = TENANT_TABLES.length + 2;
+			const oczekiwane = [...TENANT_TABLES, "audit_log", "faculty_sessions"];
+			const stan = await client.query(
+				`SELECT c.relname, c.relrowsecurity AS rls
+				   FROM pg_class c
+				   JOIN pg_namespace n ON n.oid = c.relnamespace
+				  WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relname = ANY($1::text[])`,
+				[oczekiwane],
+			);
+			const zRls = new Set(stan.rows.filter((r) => r.rls === true).map((r) => r.relname));
+			const istnieje = new Set(stan.rows.map((r) => r.relname));
+			const brakTabeli = oczekiwane.filter((t) => !istnieje.has(t));
+			const bezRls = oczekiwane.filter((t) => istnieje.has(t) && !zRls.has(t));
+			const ok = brakTabeli.length === 0 && bezRls.length === 0;
 			check(
 				`3. RLS włączony (${TENANT_TABLES.length} tenant + audit_log + faculty_sessions)`,
-				rls.rowCount === expected,
-				`włączony na ${rls.rowCount}/${expected}`,
+				ok,
+				ok
+					? `włączony na ${zRls.size}/${oczekiwane.length} (schemat public)`
+					: [
+							`włączony na ${zRls.size}/${oczekiwane.length}`,
+							bezRls.length ? `BEZ RLS: ${bezRls.join(", ")}` : null,
+							brakTabeli.length ? `BRAK TABELI w public: ${brakTabeli.join(", ")}` : null,
+						]
+							.filter(Boolean)
+							.join(" · "),
 			);
 		}
 
@@ -245,6 +349,16 @@ async function main() {
 		// Zakres: `relkind='r'` (zwykłe tabele) w `public`. Tabela drizzle
 		// `__drizzle_migrations` żyje w schemacie `drizzle` (nie `public`) — naturalnie
 		// poza zakresem, bez specjalnego wykluczenia.
+		//
+		// ⚠ DŁUG A5b-6 (świadomie odłożony do kubełka B, decyzja Olivera 2026-08-01):
+		// zakres `relkind='r'` NIE obejmuje tabel PARTYCJONOWANYCH (`relkind='p'`) ani
+		// OBCYCH/foreign (`relkind='f'`). Taka tabela bez RLS przeszłaby dziś przez ten
+		// inwariant niesklasyfikowana. Dziura jest UTAJONA, nie czynna: na 2026-08-01 w
+		// `public` nie ma ani jednej tabeli 'p' ani 'f' (sprawdzone przebiegiem A5b).
+		// PRÓG URUCHOMIENIA NAPRAWY: pierwsza tabela partycjonowana albo obca w `public`
+		// — wtedy rozszerz filtr na `relkind IN ('r','p','f')` i przejrzyj K_PUB_TABLES.
+		// Kontrola tego progu: poniższe zapytanie liczy je i RAPORTUJE w detalu testu,
+		// więc próg nie zależy od niczyjej pamięci.
 		{
 			const allPublic = await client.query(
 				`SELECT c.relname, c.relrowsecurity AS rls
@@ -257,13 +371,29 @@ async function main() {
 				.filter((r) => r.rls !== true && !classified.has(r.relname))
 				.map((r) => r.relname)
 				.sort();
+			// Nośnik progu długu A5b-6: liczymy relacje POZA zakresem tego inwariantu.
+			// Dopóki jest 0, dziura jest utajona. Gdy pojawi się pierwsza — stanie w
+			// wyjściu k3 i wymusi rozszerzenie filtru (kubełek B).
+			const pozaZakresem = await client.query(
+				`SELECT c.relkind, count(*)::int AS c
+				   FROM pg_class c
+				   JOIN pg_namespace n ON c.relnamespace = n.oid
+				  WHERE n.nspname = 'public' AND c.relkind IN ('p', 'f')
+				  GROUP BY c.relkind`,
+			);
+			const opisPozaZakresem =
+				pozaZakresem.rowCount === 0
+					? "poza zakresem (partycjonowane/obce): 0 — dług A5b-6 utajony"
+					: `⚠ DŁUG A5b-6 AKTYWNY: ${pozaZakresem.rows.map((r) => `relkind=${r.relkind}: ${r.c}`).join(", ")} ` +
+						"— rozszerz filtr na relkind IN ('r','p','f')";
 			check(
 				"13. kompletność wyjątków K-PUB — każda tabela public bez RLS jest sklasyfikowana",
 				unaccounted.length === 0,
-				unaccounted.length === 0
+				(unaccounted.length === 0
 					? `wszystkie ${allPublic.rowCount} tabel public pokryte (RLS lub lista wyjątków)`
 					: `tabela(e) bez RLS i NIE na liście wyjątków K-PUB: ${unaccounted.join(", ")} — ` +
-							"dodaj do K_PUB_TABLES z uzasadnieniem (rls-matrix §4) albo włącz RLS",
+						"dodaj do K_PUB_TABLES z uzasadnieniem (rls-matrix §4) albo włącz RLS") +
+					` · ${opisPozaZakresem}`,
 			);
 		}
 
@@ -271,24 +401,62 @@ async function main() {
 		// niż pozostałe wyjątki: role aplikacyjne nie mają na nich ŻADNYCH grantów
 		// (deny-by-default jak 12a). Staging/runy to kuchnia operacyjna (diff, md5,
 		// artefakty) — student/faculty nie mają czego tu czytać; dostęp tylko owner.
+		// A5b: `has_table_privilege` zamiast pustki widoku — łapie też GRANT TO PUBLIC
+		// i granty odziedziczone, których filtr `grantee='app_*'` nie widział.
+		// Tabele nieistniejące są WYPISANE, nie przemilczane: `job_market_data_bak`
+		// zwykle nie istnieje (transient AG.4), a „brak tabeli" to inny stan niż
+		// „tabela bez uprawnień" i czytelnik ma widzieć który zachodzi.
 		{
-			const r13a = await client.query(
-				`SELECT count(*)::int AS c
-				   FROM information_schema.role_table_grants
-				  WHERE grantee IN ('app_student', 'app_faculty')
-				    AND table_name IN ('job_market_data_staging', 'market_refresh_runs', 'job_market_data_bak', 'project_hidden_tests', 'question_concepts', 'question_items', 'assessment_answers', 'viva_answers', 'review_logs')`,
-			);
+			const denyObie = [
+				"job_market_data_staging",
+				"market_refresh_runs",
+				"job_market_data_bak",
+				"project_hidden_tests",
+				"question_concepts",
+				"question_items",
+				"assessment_answers",
+				"viva_answers",
+				"review_logs",
+			];
+			const istnieja = await istniejaceTabele(client, denyObie);
+			const nieistnieja = denyObie.filter((t) => !istnieja.includes(t));
+			const nadane = [
+				...(await nadaneUprawnienia(client, "app_student", istnieja)).map((x) => `student:${x}`),
+				...(await nadaneUprawnienia(client, "app_faculty", istnieja)).map((x) => `faculty:${x}`),
+			];
 			check(
-				"13a. AG.3/B6/A5 — zero grantów app_student/app_faculty na tabelach DENY (staging/runy/ukryte testy/bank pytań/odpowiedzi/logi powtórek)",
-				r13a.rows[0].c === 0,
-				`znaleziono ${r13a.rows[0].c} grantów ról aplikacyjnych (oczekiwano 0)`,
+				"13a. AG.3/B6/A5 — zero uprawnień app_student/app_faculty na tabelach DENY (staging/runy/ukryte testy/bank pytań/odpowiedzi/logi powtórek)",
+				nadane.length === 0,
+				[
+					nadane.length === 0
+						? `0 uprawnień na ${istnieja.length} istniejących tabelach (has_table_privilege, obejmuje PUBLIC i dziedziczenie)`
+						: `ZNALEZIONE UPRAWNIENIA: ${nadane.join(", ")}`,
+					nieistnieja.length ? `nie istnieją (nie sprawdzano): ${nieistnieja.join(", ")}` : null,
+				]
+					.filter(Boolean)
+					.join(" · "),
 			);
 		}
 
 		// 4. backfill — 0 NULL
+		// A5b: wynik niesie MIANOWNIK. `count(*) WHERE tenant_id IS NULL = 0` na tabeli
+		// pustej jest prawdą trywialną — świeci zielono dokładnie wtedy, gdy nie ma czego
+		// mierzyć. Pusta tabela nie jest błędem (świeży prod po migracji), ale czytelnik
+		// dowodu musi widzieć, że asercja była pusta.
 		for (const tbl of TENANT_TABLES) {
-			const n = await client.query(`SELECT count(*)::int AS c FROM ${tbl} WHERE tenant_id IS NULL`);
-			check(`4. ${tbl}: 0 NULL tenant_id`, n.rows[0].c === 0, `${n.rows[0].c} NULL`);
+			const n = await client.query(
+				`SELECT count(*)::int AS wszystkie,
+				        count(*) FILTER (WHERE tenant_id IS NULL)::int AS nulle
+				   FROM ${tbl}`,
+			);
+			const { wszystkie, nulle } = n.rows[0];
+			check(
+				`4. ${tbl}: 0 NULL tenant_id`,
+				nulle === 0,
+				wszystkie === 0
+					? "tabela PUSTA (0 wierszy) — asercja nic nie zmierzyła"
+					: `${nulle} NULL z ${wszystkie} wierszy`,
+			);
 		}
 
 		// Próbki danych do testów izolacji
@@ -300,6 +468,13 @@ async function main() {
 		);
 
 		// 5. izolacja STUDENTA
+		// A5b: wynik jest odniesiony do POPULACJI widzianej jako właściciel. Przy jednym
+		// studencie w bazie „zwrócono 1 wiersz" jest prawdą trywialną — a pilotaż to
+		// 1–3 studentów, czyli asercja byłaby pusta dokładnie w populacji, dla której
+		// ją napisano. Dlatego dokładamy 5b: sonda OBCYM identyfikatorem (nieistniejący
+		// UUID), która mierzy izolację niezależnie od liczby wierszy w tabeli.
+		const populacja = await client.query(`SELECT count(*)::int AS c FROM students`);
+		const studentowWBazie = populacja.rows[0].c as number;
 		if (sample.rowCount === 0) {
 			check("5. izolacja studenta", false, "brak studentów — uruchom pnpm db:seed");
 		} else {
@@ -313,7 +488,30 @@ async function main() {
 			check(
 				"5. student widzi tylko swój wiersz students",
 				onlyOwn,
-				`zwrócono ${own.rowCount} wierszy`,
+				`zwrócono ${own.rowCount} z ${studentowWBazie} wierszy w tabeli` +
+					(studentowWBazie < 2
+						? " — UWAGA: populacja < 2, sam ten wynik NIE dowodzi izolacji (dowodzi jej 5b)"
+						: ""),
+			);
+		}
+
+		// 5b. A5b — sonda OBCYM identyfikatorem: rola app_student z `app.current_user_id`
+		// wskazującym na nieistniejącego użytkownika musi zobaczyć 0 wierszy. Różnica
+		// wobec 10c (tam brak identyfikatora → NULL): tu identyfikator JEST ustawiony i
+		// poprawny składniowo, tylko cudzy. To jest realne twierdzenie o izolacji i
+		// działa nawet przy jednym studencie w bazie.
+		{
+			await client.query("BEGIN");
+			await client.query(
+				`SELECT set_config('app.current_user_id', '00000000-0000-0000-0000-0000000000ff', true)`,
+			);
+			await client.query("SET LOCAL ROLE app_student");
+			const obcy = await client.query(`SELECT user_id FROM students`);
+			await client.query("ROLLBACK");
+			check(
+				"5b. student z OBCYM app.current_user_id widzi 0 wierszy (izolacja niezależna od populacji)",
+				obcy.rowCount === 0,
+				`zwrócono ${obcy.rowCount} wierszy przy ${studentowWBazie} w tabeli (oczekiwano 0)`,
 			);
 		}
 
@@ -334,9 +532,19 @@ async function main() {
 				onlyTenantA,
 				`tenanty w wyniku: ${seen.rows.map((x) => x.tenant_id).join(", ") || "brak"}`,
 			);
+			// A5b: mianownik także tutaj — jeśli tenant B nie ma ANI JEDNEGO studenta,
+			// „faculty nie widzi tenanta B" jest prawdą trywialną (nie ma czego widzieć).
+			const wTenancieB = await client.query(
+				`SELECT count(*)::int AS c FROM students WHERE tenant_id = $1`,
+				[b.id],
+			);
+			const studentowB = wTenancieB.rows[0].c as number;
 			check(
 				"6b. faculty NIE widzi drugiego tenanta",
 				!seen.rows.some((row) => row.tenant_id === b.id),
+				studentowB === 0
+					? `UWAGA: tenant ${b.slug} ma 0 studentów — asercja trywialnie spełniona, nic nie zmierzyła`
+					: `tenant ${b.slug} ma ${studentowB} studentów (owner-side), żaden nie był widoczny`,
 			);
 		}
 
@@ -417,16 +625,29 @@ async function main() {
 		//   musi zwrócić 0 wierszy (deny-default). To dowód, że FORCE działa
 		//   od strony app_runtime.
 		{
+			// A5b: filtr schematu `public` + relkind='r' + NAZWANIE tabel bez FORCE.
+			// FORCE RLS jest jedyną rzeczą, która poddaje WŁAŚCICIELA politykom — na
+			// produkcji, gdzie runtime i migracje idą rolą-właścicielem, to nie jest
+			// detal, tylko oś całej izolacji. Licznik bez nazw był tu bezużyteczny.
 			const forceTables = await client.query(
-				`SELECT relname FROM pg_class
-				 WHERE relname = ANY($1::text[]) AND relforcerowsecurity = true`,
+				`SELECT c.relname FROM pg_class c
+				   JOIN pg_namespace n ON n.oid = c.relnamespace
+				  WHERE n.nspname = 'public' AND c.relkind = 'r'
+				    AND c.relname = ANY($1::text[]) AND c.relforcerowsecurity = true`,
 				[TENANT_TABLES],
 			);
-			check(
-				`10a. FORCE RLS na ${TENANT_TABLES.length} tabelach tenant-owych`,
-				forceTables.rowCount === TENANT_TABLES.length,
-				`FORCE na ${forceTables.rowCount}/${TENANT_TABLES.length}`,
-			);
+			{
+				const zForce = new Set(forceTables.rows.map((r) => r.relname));
+				const bezForce = TENANT_TABLES.filter((t) => !zForce.has(t));
+				check(
+					`10a. FORCE RLS na ${TENANT_TABLES.length} tabelach tenant-owych`,
+					bezForce.length === 0,
+					bezForce.length === 0
+						? `FORCE na ${zForce.size}/${TENANT_TABLES.length} (schemat public)`
+						: `FORCE na ${zForce.size}/${TENANT_TABLES.length} — BEZ FORCE: ${bezForce.join(", ")} ` +
+								"(na tych tabelach właściciel omija politykę bezwarunkowo)",
+				);
+			}
 
 			// Polityka idzie `TO <current_user>` (prod = neondb_owner, CI = test) —
 			// agnostyczny test sprawdza nazwę policy + tablename + by `roles` miało
@@ -435,21 +656,28 @@ async function main() {
 			// Array.isArray(r.roles) dawało false negative na prod (Neon) mimo
 			// poprawnego stanu policy. Server-side cardinality jest immune na parser
 			// quirks i zwraca prosty integer.
+			// A5b: filtr schematu `public` + nazwanie tabel bez polityki (ta sama rodzina
+			// braku diagnostyki co #3/#10a).
 			const passthroughPolicies = await client.query(
 				`SELECT tablename, cardinality(roles) AS role_count
 				   FROM pg_policies
-				  WHERE tablename = ANY($1::text[]) AND policyname = 'owner_passthrough'`,
+				  WHERE schemaname = 'public'
+				    AND tablename = ANY($1::text[]) AND policyname = 'owner_passthrough'`,
 				[TENANT_TABLES],
 			);
-			const okPolicyCount = passthroughPolicies.rows.filter(
-				(r) => Number(r.role_count) >= 1,
-			).length;
-			check(
-				`10b. owner_passthrough policy na ${TENANT_TABLES.length} tabelach (>=1 rola każda)`,
-				passthroughPolicies.rowCount === TENANT_TABLES.length &&
-					okPolicyCount === TENANT_TABLES.length,
-				`policy na ${passthroughPolicies.rowCount}/${TENANT_TABLES.length} (>=1 rola: ${okPolicyCount}/${TENANT_TABLES.length})`,
-			);
+			{
+				const zPolityka = new Set(
+					passthroughPolicies.rows.filter((r) => Number(r.role_count) >= 1).map((r) => r.tablename),
+				);
+				const bezPolityki = TENANT_TABLES.filter((t) => !zPolityka.has(t));
+				check(
+					`10b. owner_passthrough policy na ${TENANT_TABLES.length} tabelach (>=1 rola każda)`,
+					bezPolityki.length === 0,
+					bezPolityki.length === 0
+						? `policy na ${zPolityka.size}/${TENANT_TABLES.length} (schemat public, każda z >=1 rolą)`
+						: `policy na ${zPolityka.size}/${TENANT_TABLES.length} — BRAK (lub 0 ról): ${bezPolityki.join(", ")}`,
+				);
+			}
 
 			// Cross-role deny-default: SET LOCAL ROLE app_student BEZ
 			// app.current_user_id (NULL → predykat user_id = NULL = false).
@@ -473,18 +701,27 @@ async function main() {
 		// Tabela bez grantu tabelowego i bez polityki faculty_sees_tenant →
 		// deny-by-default egzekwowany na poziomie PostgreSQL.
 		// information_schema.role_table_grants: 0 wierszy = grant nie istnieje.
+		// A5b: `has_table_privilege` zamiast pustki widoku (uzasadnienie przy pomocnikach
+		// wyżej). Brak tabeli jest teraz FAIL-em, nie cichym zielonym.
 		{
-			const r12a = await client.query(
-				`SELECT count(*)::int AS c
-				   FROM information_schema.role_table_grants
-				  WHERE grantee = 'app_faculty'
-				    AND table_name = 'project_reflections'`,
-			);
-			check(
-				"12a. B5 R1 — app_faculty NIE ma grantu na project_reflections (deny-by-default)",
-				r12a.rows[0].c === 0,
-				`znaleziono ${r12a.rows[0].c} grantów faculty (oczekiwano 0)`,
-			);
+			const istnieje = await istniejaceTabele(client, ["project_reflections"]);
+			if (istnieje.length === 0) {
+				check(
+					"12a. B5 R1 — app_faculty NIE ma uprawnień na project_reflections (deny-by-default)",
+					false,
+					"tabela project_reflections NIE ISTNIEJE w schemacie public — migracja 0015 nie " +
+						"wylądowała na tej bazie, asercja niesprawdzalna",
+				);
+			} else {
+				const nadane = await nadaneUprawnienia(client, "app_faculty", istnieje);
+				check(
+					"12a. B5 R1 — app_faculty NIE ma uprawnień na project_reflections (deny-by-default)",
+					nadane.length === 0,
+					nadane.length === 0
+						? "0 uprawnień (has_table_privilege, obejmuje PUBLIC i dziedziczenie)"
+						: `ZNALEZIONE UPRAWNIENIA: ${nadane.join(", ")}`,
+				);
+			}
 		}
 
 		// 12b. DENY-FACULTY dla tabel klasy „student SELECT / wykładowca ZERO"
@@ -506,21 +743,34 @@ async function main() {
 		// ma mieć żadnego — dopisz TUTAJ. Wpis w TENANT_TABLES tego NIE pokrywa.
 		// (project_reflections z tej samej klasy pilnuje test 12a — precedens
 		// proceduralny Ryana; nie dublujemy go tu, żeby nie mieć dwóch prawd.)
+		// A5b — TO JEST JEDYNY MASZYNOWY DOWÓD warunku nośnego A22-3 oceny art. 22 RODO
+		// i dlatego dostaje najmocniejsze dostępne narzędzie:
+		//   • `has_table_privilege` zamiast pustki `role_table_grants` — pustka tamtego
+		//     widoku znaczyła też „nie widzę stąd", nie widziała `GRANT … TO PUBLIC`
+		//     ani grantów odziedziczonych przez członkostwo w roli;
+		//   • BRAK TABELY = FAIL, nie ciche zielone. Na produkcji stan „migracja 0045
+		//     nie doszła" jest realnym scenariuszem ceremonii — wtedy k3 ma krzyczeć,
+		//     a nie potwierdzać nieistniejącą własność.
 		{
 			const denyFacultyTables = ["curriculum_placements"];
-			const r12b = await client.query(
-				`SELECT table_name, privilege_type
-				   FROM information_schema.role_table_grants
-				  WHERE grantee = 'app_faculty' AND table_name = ANY($1::text[])`,
-				[denyFacultyTables],
-			);
+			const istnieja = await istniejaceTabele(client, denyFacultyTables);
+			const brakujace = denyFacultyTables.filter((t) => !istnieja.includes(t));
+			const nadane = await nadaneUprawnienia(client, "app_faculty", istnieja);
+			const ok = brakujace.length === 0 && nadane.length === 0;
 			check(
-				`12b. 1E.7 L3 — app_faculty ma ZERO grantów na tabelach deny-faculty (${denyFacultyTables.join(", ")})`,
-				r12b.rowCount === 0,
-				r12b.rowCount === 0
-					? "0 grantów (oczekiwano 0)"
-					: `znaleziono granty: ${r12b.rows.map((r) => `${r.table_name}.${r.privilege_type}`).join(", ")} — ` +
+				`12b. 1E.7 L3 — app_faculty ma ZERO uprawnień na tabelach deny-faculty (${denyFacultyTables.join(", ")})`,
+				ok,
+				ok
+					? "0 uprawnień na wszystkich tabelach listy (has_table_privilege, obejmuje PUBLIC i dziedziczenie)"
+					: [
+							brakujace.length
+								? `BRAK TABELI w public: ${brakujace.join(", ")} — migracja nie wylądowała, asercja niesprawdzalna`
+								: null,
+							nadane.length ? `ZNALEZIONE UPRAWNIENIA: ${nadane.join(", ")}` : null,
 							"wykładowca NIE może czytać placementu studenta, także zbiorczo (warunek nośny A22-3)",
+						]
+							.filter(Boolean)
+							.join(" · "),
 			);
 		}
 
@@ -544,22 +794,32 @@ async function main() {
 		// zapisu (L5 `test_out`, backfill, ręczny INSERT), także taką, która ominie
 		// serwis placementu. Test „jednego pisarza" w suicie jednostkowej pilnuje
 		// tego samego od strony kodu — te dwa zabezpieczenia nie dublują się.
+		// A5b: wynik niesie MIANOWNIK. Po `db:migrate` na produkcji `curriculum_placements`
+		// będzie PUSTA — asercja przejdzie, nie mierząc niczego, i zrobi to dokładnie w
+		// chwili odczytywania k3 jako dowodu gotowości. Pustka nie jest błędem (nikt
+		// jeszcze nie przeszedł diagnozy), ale musi być WIDOCZNA w wyjściu.
 		{
 			const r14 = await client.query(
-				`SELECT count(*)::int AS c
-				   FROM curriculum_placements
-				  WHERE reason = 'qualified'
-				    AND support_mode IS DISTINCT FROM
-				        (CASE WHEN level = threshold THEN 'full' ELSE 'fading' END)`,
+				`SELECT count(*)::int AS wszystkie,
+				        count(*) FILTER (WHERE reason = 'qualified')::int AS kwalifikowane,
+				        count(*) FILTER (
+				          WHERE reason = 'qualified'
+				            AND support_mode IS DISTINCT FROM
+				                (CASE WHEN level = threshold THEN 'full' ELSE 'fading' END)
+				        )::int AS sprzeczne
+				   FROM curriculum_placements`,
 			);
+			const { wszystkie, kwalifikowane, sprzeczne } = r14.rows[0];
 			check(
 				"14. 1E.7 — support_mode zgodny z regułą dla każdego wiersza 'qualified' (poziom=próg → full, wyżej → fading)",
-				r14.rows[0].c === 0,
-				r14.rows[0].c === 0
-					? "0 wierszy sprzecznych z regułą"
-					: `${r14.rows[0].c} wierszy, w których tryb wsparcia NIE wynika z pary (level, threshold) — ` +
+				sprzeczne === 0,
+				sprzeczne > 0
+					? `${sprzeczne} z ${kwalifikowane} wierszy 'qualified', w których tryb wsparcia NIE wynika z pary (level, threshold) — ` +
 							"miernik trafności progu (DECYZJA 2) liczy na tych wierszach nieprawdę, " +
-							"a tabela jest append-only, więc nie da się ich poprawić",
+							"a tabela jest append-only, więc nie da się ich poprawić"
+					: kwalifikowane === 0
+						? `0 wierszy 'qualified' (tabela: ${wszystkie} wierszy) — ASERCJA PUSTA, nic nie zmierzyła`
+						: `0 sprzecznych z ${kwalifikowane} wierszy 'qualified' (tabela: ${wszystkie} wierszy)`,
 			);
 		}
 
@@ -568,29 +828,60 @@ async function main() {
 		// information_schema.column_privileges: musi zwrócić 0 wierszy dla faculty + tych kolumn.
 		// 0 wierszy = deny-by-default egzekwowany w bazie (REVOKE/GRANT z 0015).
 		//
-		// Gdy migracja 0015 jeszcze nie wylądowała na tym środowisku (kolumna nie istnieje),
-		// zapytanie też zwróci 0 — test PASS, bo kolumna nieistniejąca ≡ nieuprawniona.
-		// Pełna egzekucja R1 sprawdzalna dopiero po `pnpm db:migrate` z 0015.
+		// A5b — DWIE ZMIANY, obie zamykają fałszywą zieleń:
+		//   • ISTNIENIE KOLUMN JAKO WARUNEK WSTĘPNY. Dotąd obowiązywała reguła „kolumna
+		//     nieistniejąca ≡ nieuprawniona" — czyli test świecił na zielono dokładnie
+		//     na bazie, na której migracja 0015 nie wylądowała. Na produkcji ten stan
+		//     jest realnym scenariuszem ceremonii A6, więc teraz jest FAIL-em.
+		//   • `has_column_privilege` zamiast pustki `information_schema.column_privileges`
+		//     — widzi uprawnienie nadane na poziomie CAŁEJ TABELY, przez PUBLIC i przez
+		//     dziedziczenie, których poprzednie zapytanie nie pokazywało.
 		{
-			const r1 = await client.query(
-				`SELECT column_name, privilege_type
-				   FROM information_schema.column_privileges
-				  WHERE grantee = 'app_faculty'
-				    AND table_name = 'competencies'
-				    AND column_name IN ('self_assessment', 'verified_by_method')`,
+			const KOLUMNY = ["self_assessment", "verified_by_method"];
+			const istnienie = await client.query(
+				`SELECT column_name FROM information_schema.columns
+				  WHERE table_schema = 'public' AND table_name = 'competencies'
+				    AND column_name = ANY($1::text[])`,
+				[KOLUMNY],
 			);
-			check(
-				"11. B4 R1 — app_faculty NIE ma SELECT na self_assessment/verified_by_method",
-				r1.rowCount === 0,
-				`znaleziono ${r1.rowCount} wierszy uprawnień (oczekiwano 0)`,
-			);
+			const sa = new Set(istnienie.rows.map((r) => r.column_name));
+			const brakujace = KOLUMNY.filter((k) => !sa.has(k));
+			if (brakujace.length > 0) {
+				check(
+					"11. B4 R1 — app_faculty NIE ma SELECT na self_assessment/verified_by_method",
+					false,
+					`BRAK KOLUMN w public.competencies: ${brakujace.join(", ")} — migracja 0015 nie ` +
+						"wylądowała na tej bazie, asercja niesprawdzalna (dotąd przechodziła jako zielona)",
+				);
+			} else {
+				const uprawnienia = await client.query(
+					`SELECT k.kolumna, p.prawo
+					   FROM unnest($1::text[]) AS k(kolumna)
+					   CROSS JOIN unnest(ARRAY['SELECT','INSERT','UPDATE','REFERENCES']) AS p(prawo)
+					  WHERE has_column_privilege('app_faculty', 'public.competencies', k.kolumna, p.prawo)
+					  ORDER BY 1, 2`,
+					[KOLUMNY],
+				);
+				const nadane = uprawnienia.rows.map((r) => `${r.kolumna}.${r.prawo}`);
+				check(
+					"11. B4 R1 — app_faculty NIE ma SELECT na self_assessment/verified_by_method",
+					nadane.length === 0,
+					nadane.length === 0
+						? "0 uprawnień kolumnowych (has_column_privilege, obie kolumny istnieją)"
+						: `ZNALEZIONE UPRAWNIENIA: ${nadane.join(", ")}`,
+				);
+			}
 		}
 	} finally {
 		client.release();
 		await pool.end();
 	}
 
-	console.log(`\n${failures === 0 ? "✅ K3 WALIDACJA ZIELONA" : `❌ ${failures} FAIL`}`);
+	// Werdykt końcowy NIESIE TOŻSAMOŚĆ BAZY (1E.7 A5): kto zobaczy tylko ostatnią
+	// linię (podsumowanie CI, wklejka do raportu), ma wiedzieć, czego ona dotyczy.
+	console.log(
+		`\n${failures === 0 ? "✅ K3 WALIDACJA ZIELONA" : `❌ ${failures} FAIL`} — ${identityLine}`,
+	);
 	process.exit(failures === 0 ? 0 : 1);
 }
 

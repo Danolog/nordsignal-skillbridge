@@ -9,6 +9,7 @@
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { CURRICULUM_INTRO, CURRICULUM_INTRO_WITH_PLACEMENT } from "@/components/curriculum/labels";
 import { type LadderModuleWithProgress, LadderView } from "@/components/curriculum/ladder-view";
 import { auth } from "@/lib/auth/server";
 import { modulesWithExam } from "@/lib/curriculum/exam-gate";
@@ -55,9 +56,13 @@ export default async function CurriculumPage() {
 		<div className="mx-auto flex max-w-3xl flex-col gap-5 px-4 py-8">
 			<header>
 				<h1 className="text-2xl font-semibold text-foreground">Ścieżka nauki</h1>
+				{/* 1E.7 L6 — dług D7: przy zapalonej fladze stare zdanie („bez skrótów")
+				    stoi w sprzeczności z odznaką „Otwarty na podstawie diagnozy" dwa
+				    wiersze niżej. Teksty w `labels.ts` (mikrocopy Sophii, cytat 1:1). */}
 				<p className="mt-1 text-sm text-muted-foreground">
-					Moduły od podstaw do projektu. Kolejny moduł otwiera się dopiero po zaliczeniu
-					poprzedniego — bez skrótów.
+					{isFeatureEnabled("placementDiagnostic")
+						? CURRICULUM_INTRO_WITH_PLACEMENT
+						: CURRICULUM_INTRO}
 				</p>
 			</header>
 
