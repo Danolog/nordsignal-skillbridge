@@ -87,3 +87,16 @@ scratchpad/
 
 # Worktree'y agentów Claude (izolowane kopie repo — nigdy nie commitować)
 .claude/worktrees/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TREŚĆ PRYWATNA — klucze odpowiedzi (2026-08-01, decyzja Darka).
+# To repo jest PUBLICZNE do końca wdrożenia planu; kod jawny, klucze nie.
+# Pliki niżej mieszkają w prywatnym Danolog/nordsignal-skillbridge-content i są
+# zaciągane do drzewa roboczego (`pnpm tresc:sync`, w CI osobny actions/checkout).
+# Leżą pod tymi samymi ścieżkami co dawniej — ignore jest jedyną rzeczą, która
+# powstrzymuje `git add -A` przed wrzuceniem ich z powrotem na widok publiczny.
+# Manifest (jedyne źródło prawdy) + bramka: tools/tresc-prywatna.ts
+tools/content/question-bank-ds-partia-1.json
+tools/content/curriculum-atoms/
+docs/curation/sophia-1e2-*-atomy.md
+docs/curation/sophia-1e3-egzamin-*.md

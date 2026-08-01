@@ -1431,9 +1431,19 @@ function main(): void {
 			`✅ ${manifest.moduleSlug}: pozycje=${content.items.length}, pytania=${questions} → ${outPath}`,
 		);
 	}
-	// Format kanoniczny = Biome (lint bramkuje te pliki; determinizm testu
-	// kontraktowego porównuje wynik packera z commitowanym stanem).
-	execFileSync("pnpm", ["exec", "biome", "format", "--write", OUT_DIR], { stdio: "pipe" });
+	// Format kanoniczny = Biome — determinizm testu kontraktowego porównuje wynik
+	// packera bajt w bajt ze stanem plików, więc formatowanie NIE jest ozdobą.
+	//
+	// `--vcs-enabled=false` jest tu konieczne od 2026-08-01: OUT_DIR trafił do
+	// `.gitignore` (klucze odpowiedzi wyniesione do prywatnego repo treści —
+	// docs/runbooks/tresc-prywatna.md), a `biome.json` ma `vcs.useIgnoreFile: true`.
+	// Biome pomijał więc cały katalog i kończył się kodem 1 („No files were
+	// processed"), co wywalało packer, a przez niego 20 testów kontraktu atomów.
+	// Ta flaga wyłącza czytanie .gitignore WYŁĄCZNIE dla tego wywołania —
+	// reguły formatowania i zakres `pnpm lint` zostają bez zmian.
+	execFileSync("pnpm", ["exec", "biome", "format", "--write", "--vcs-enabled=false", OUT_DIR], {
+		stdio: "pipe",
+	});
 	// Kod wyjścia 1 PO zapakowaniu reszty: automat (repack → ingest) zatrzymuje
 	// się, a kurator dalej ma świeże moduły spoza bramki.
 	if (!bramka.ok && !weryfikacja) process.exit(1);

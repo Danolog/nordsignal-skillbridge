@@ -18,6 +18,8 @@
 		"test:coverage": "vitest run --coverage",
 		"test:e2e": "bash tests/e2e/run-all.sh",
 		"deps:scan": "pnpm audit --audit-level high",
+		"tresc:sprawdz": "tsx tools/sprawdz-tresc.ts",
+		"tresc:sync": "bash tools/sync-tresc.sh",
 		"test:e2e:pw": "playwright test",
 		"test:e2e:pw:safe": "playwright test --grep @safe",
 		"test:e2e:pw:dbwrite": "playwright test --grep @dbwrite",

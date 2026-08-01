@@ -2,26 +2,38 @@
 // 1E.3 (ADR-014 D3) — kontrakt packera banku egzaminacyjnego (mastery gate).
 // Test JEDNOSTKOWY (bez DB): parsuje COMMITOWANY fixture i sprawdza strukturę.
 //
-// ODSPRZĘGNIĘCIE OD DRAFTu (Opcja A, sign-off Olivera 2026-07-24):
+// ODSPRZĘGNIĘCIE OD FIXTURE (Opcja A, sign-off Olivera 2026-07-24):
 //   Unit-kontrakt packera stoi na fixture `fixtures/exam-bank-sample.md` — pliku
-//   commitowanym, syntetycznym, wiernym formatowi §6. Realny bank Sophii
-//   (`docs/curation/sophia-1e3-egzamin-f1-v0.1.md`) jest NIECOMMITOWANYM DRAFTem —
-//   czytanie go w CI dawało ENOENT. Kontrakt (allowlista/nie-wyciek, determinizm,
-//   samozgodność dystraktorów, granica §6, de-dup) egzekwujemy tu na fixture;
-//   zachowana pełna intencja adwersaryjna Quinn, guardy NIE osłabione.
+//   commitowanym, syntetycznym, wiernym formatowi §6. Kontrakt (allowlista/
+//   nie-wyciek, determinizm, samozgodność dystraktorów, granica §6, de-dup)
+//   egzekwujemy na fixture, żeby nie zależał od cyklu życia treści; zachowana
+//   pełna intencja adwersaryjna Quinn, guardy NIE osłabione.
 //
-// TODO(ingest) — samozgodność REALNEGO banku Sophii (E1A=float, klucze policzone
-//   w Pythonie, 15×2, koncepty ⊆ modułu) jest BRAMKĄ INGESTU po QG-GO Sophii, nie
-//   bramką unit-CI (spójne z checklistą flag-enable W1). Test `skip-if-absent`
-//   niżej uruchamia tę walidację LOKALNIE, gdy plik Sophii jest obecny; w CI
-//   (plik untracked → nieobecny) jest pomijany — unit-kontrakt stoi na fixture.
+// SPROSTOWANIE 2026-08-01 (Sophia): poprzednia wersja tego nagłówka twierdziła,
+//   że realny bank Sophii (`docs/curation/sophia-1e3-egzamin-f1-v0.1.md`) jest
+//   „NIECOMMITOWANYM DRAFTem", i na tym założeniu oparto `skip-if-absent` niżej.
+//   To była nieprawda: plik wszedł do repo tego samego dnia (63bee3b, PR #232,
+//   2026-07-24), godziny po napisaniu tego testu (0461dcd, PR #227). Skutek:
+//   `existsSync` był PRAWDĄ, więc walidacja realnego banku od 2026-07-24 biegła
+//   w CI — nikt tego nie wiedział, bo komentarz mówił coś przeciwnego. Bramka
+//   działająca „przypadkiem" jest tak samo zła jak pominięta: nikt jej nie pilnuje.
+//
+// STAN OD 2026-08-01: bank egzaminu F1 to TREŚĆ PRYWATNA (repo publiczne — klucze
+//   nie). Publikacja OBU wariantów izomorficznych unieważniała obronę „po oblaniu
+//   dostajesz wariant B", więc plik przeniesiony do Danolog/nordsignal-skillbridge-content.
+//   Walidacja realnego banku niżej NIE jest już „skip-if-absent": w naszym CI treść
+//   jest zaciągana i brak pliku = TWARDY BŁĄD, a PR z forka (bez sekretu) daje
+//   JAWNE pominięcie z `::warning::`. Nigdy cichy zielony.
 // ============================================================================
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { gradeAnswer } from "../../../src/lib/assessment/grade";
 import { packExamBankFromMarkdown, validateExamBank } from "../../../tools/content-curriculum-exam";
+// Realny bank F1 niesie klucze OBU wariantów izomorficznych → prywatne repo treści.
+// Fixture syntetyczny (niżej) zostaje publiczny — to format, nie klucz.
+import { czytajTrescTekst, describeTresc } from "../../support/tresc-prywatna";
 
 // Koncepty fixture (allowlista modułu) — 2 koncepty × 3 sloty (równomierne, ADR D1).
 const FIXTURE_CONCEPTS = ["dodawanie", "mnozenie"] as const;
@@ -209,11 +221,16 @@ describe("P4 granica §6 — pytania spoza sekcji §6 NIE wchodzą do banku", ()
 });
 
 // ============================================================================
-// BRAMKA INGESTU (skip-if-absent) — walidacja REALNEGO banku Sophii. Uruchamia
-// się LOKALNIE, gdy DRAFT jest obecny; w CI (plik untracked/nieobecny) pomijana.
-// To NIE jest unit-kontrakt — to podgląd bramki ingestu (po QG-GO Sophii).
+// BRAMKA REALNEGO BANKU F1 — treść prywatna, nie „skip-if-absent".
+//
+// Był tu `it.skipIf(!existsSync(...))` postawiony na fałszywym założeniu, że plik
+// jest niecommitowanym draftem (patrz SPROSTOWANIE w nagłówku). Po przeniesieniu
+// banku do prywatnego repo treści `existsSync` znowu bywa fałszem — ale teraz
+// rozróżniamy DLACZEGO: brak treści w naszym CI to awaria zaciągu (twardy błąd),
+// a nie „lokalnie nie mam pliku". Deklarację pominięcia trzeba wypowiedzieć
+// jawnie (SKILLBRIDGE_TRESC_OPCJONALNA=1) i zostawia ona ślad w logu.
 // ============================================================================
-const SOPHIA_DRAFT = join(process.cwd(), "docs/curation/sophia-1e3-egzamin-f1-v0.1.md");
+const BANK_F1 = "docs/curation/sophia-1e3-egzamin-f1-v0.1.md";
 const F1_CONCEPTS = [
 	"typ-wartosci",
 	"wyrazenie-obliczenie",
@@ -222,13 +239,10 @@ const F1_CONCEPTS = [
 	"decyzja-if-else",
 ] as const;
 
-describe("INGEST (skip-if-absent) — realny bank Sophii F1 (15×2)", () => {
-	it.skipIf(!existsSync(SOPHIA_DRAFT))(
-		"realny bank przechodzi kontrakt 15×2 (bramka ingestu, nie unit-CI)",
-		() => {
-			const real = packExamBankFromMarkdown(readFileSync(SOPHIA_DRAFT, "utf8"), "f1-python-1");
-			expect(real.slots).toHaveLength(15);
-			expect(validateExamBank(real, { slotCount: 15, concepts: F1_CONCEPTS })).toEqual([]);
-		},
-	);
+describeTresc("realny bank egzaminu F1 (15×2) — treść prywatna", () => {
+	it("realny bank przechodzi kontrakt 15 slotów × 2 warianty i walidację ingestu", () => {
+		const real = packExamBankFromMarkdown(czytajTrescTekst(BANK_F1), "f1-python-1");
+		expect(real.slots).toHaveLength(15);
+		expect(validateExamBank(real, { slotCount: 15, concepts: F1_CONCEPTS })).toEqual([]);
+	});
 });

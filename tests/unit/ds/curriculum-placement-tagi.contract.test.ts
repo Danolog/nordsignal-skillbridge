@@ -24,7 +24,11 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
+// Manifest drabiny ZOSTAJE publiczny (sama struktura, zero kluczy). Bank pytań
+// niesie klucze → prywatne repo treści. Ten test wiąże jedno z drugim, więc
+// dzieli los banku: brak treści = twardy błąd, fork bez sekretu = pominięcie.
+import { czytajTrescJson, describeTresc } from "../../support/tresc-prywatna";
 
 type LadderModule = {
 	slug: string;
@@ -36,9 +40,10 @@ const ladder = JSON.parse(
 	readFileSync(join(process.cwd(), "tools", "content", "curriculum-ds-drabina.json"), "utf8"),
 ) as { path: string; modules: LadderModule[] };
 
-const bank = JSON.parse(
-	readFileSync(join(process.cwd(), "tools", "content", "question-bank-ds-partia-1.json"), "utf8"),
-) as { slug: string; name: string; trunk: string; diagnostic: boolean }[];
+const bank = czytajTrescJson<{ slug: string; name: string; trunk: string; diagnostic: boolean }[]>(
+	"tools/content/question-bank-ds-partia-1.json",
+	[],
+);
 
 const conceptBySlug = new Map(bank.map((c) => [c.slug, c]));
 
@@ -58,7 +63,7 @@ const MAPA_WIAZACA: Record<string, string | null> = {
 	"m-llm": "ds-llm", // para SŁABA — pierwsza do rewizji przy rozbudowie banku
 };
 
-describe("1E.7 L1 · kontrakt tagów placementu (manifest ↔ bank)", () => {
+describeTresc("1E.7 L1 · kontrakt tagów placementu (manifest ↔ bank)", () => {
 	it("KAŻDY moduł ma pole diagnosticConcept — brak klucza to błąd konfiguracji, nie milczące NULL", () => {
 		for (const m of ladder.modules) {
 			expect(

@@ -21,7 +21,7 @@
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import { evaluateChecks, parseChecks, type StampPayload } from "@/lib/curriculum/lab-checks";
 import { atomCode, parseToken, signToken } from "@/lib/curriculum/lab-token";
 import {
@@ -29,6 +29,9 @@ import {
 	listNotebookSources,
 	sharedStampBlock,
 } from "../../../tools/build-notebooks";
+// Atomy niosą klucze odpowiedzi → prywatne repo treści (tools/tresc-prywatna.ts).
+// Notebooki i ich źródła ZOSTAJĄ publiczne — student je pobiera.
+import { czytajTrescJson, describeTresc } from "../../support/tresc-prywatna";
 
 const ROOT = process.cwd();
 const SRC_DIR = join(ROOT, "tools", "content", "notebooks");
@@ -69,9 +72,9 @@ type PackedMsql = {
 };
 
 function packedMsql(): PackedMsql {
-	return JSON.parse(
-		readFileSync(join(ROOT, "tools", "content", "curriculum-atoms", "m-sql.json"), "utf8"),
-	) as PackedMsql;
+	return czytajTrescJson<PackedMsql>("tools/content/curriculum-atoms/m-sql.json", {
+		items: [],
+	} as PackedMsql);
 }
 
 beforeAll(() => {
@@ -79,7 +82,7 @@ beforeAll(() => {
 	process.env.LAB_TOKEN_SECRET = ["fixture", "testowy", "krok4", "nie", "sekret"].join("-");
 });
 
-describe("notebooki M-SQL — warstwy, drift buildera i podział lab/ćwiczenie", () => {
+describeTresc("notebooki M-SQL — warstwy, drift buildera i podział lab/ćwiczenie", () => {
 	const sources = listNotebookSources().filter((s) => s.module === "msql");
 	const items = packedMsql().items;
 	const atoms = items.filter((i) => i.slug !== "sql-przeglad");
@@ -147,7 +150,7 @@ describe("notebooki M-SQL — warstwy, drift buildera i podział lab/ćwiczenie"
 	});
 });
 
-describe("symulacja sesji studenta M-SQL: komórki → token → checki z prodowego JSON-a", () => {
+describeTresc("symulacja sesji studenta M-SQL: komórki → token → checki z prodowego JSON-a", () => {
 	const checksBySlug = new Map(
 		packedMsql()
 			.items.filter((i) => i.kind === "lab")
