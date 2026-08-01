@@ -11,125 +11,64 @@
 
 ---
 
-## STAN NA DZIŚ — 2026-07-27 (1E.7 placement diagnozy) — L0/L1/L2/L3 NA PRODZIE, NASTĘPNY L4
+## STAN NA DZIŚ — 2026-08-01 (1E.7 placement diagnozy) — **ZAPŁON WYKONANY, PĘTLA UDOWODNIONA NA ŻYWYM PRODZIE**
 
-**Jednym zdaniem:** ruszyła **następna funkcja kręgosłupa po 1E.4** — placement diagnozy w curriculum
-(wynik testu adaptacyjnego wyznacza, od którego modułu student zaczyna); **cztery z sześciu** plasterków są
-na prodzie, funkcja jeszcze **nie ma flagi zapalonej i nie ma UI** — student nic nie widzi.
+**Jednym zdaniem:** `FLAG_PLACEMENT_DIAGNOSTIC` jest **zapalona na produkcji** (decyzja Darka 2026-08-01, 17:57), a cała pętla — od diagnozy przez wiersz odblokowania po ekran i odznakę — została przejechana realnym kontem i **udowodniona cytatami z produkcji**, nie testami.
 
-**Rama zatwierdzona przez Darka (2026-07-26): „diagnoza OTWIERA, egzamin ZALICZA".**
-Wynik diagnozy ≥ progu **odblokowuje** moduł (zdejmuje prerekwizyt), ale go **nie zalicza** — zaliczenie
-zawsze ma pokrycie egzaminem modułowym (`verified_by_method='test_out'`). Powód: spec diagnozy §7
-przyznaje ~10% zgadywalności przy 2–3 pytaniach na kompetencję, a egzamin ma próg 90% — te dwie rzeczy
-nie mogą dawać tego samego skutku. **To świadoma korekta ADR-014 D8** (zakładał, że placement *zalicza*)
-— korekta w osobnym **ADR-023**, ADR-014 nietknięty jako rekord tego, co zatwierdzono w lipcu.
+**Baseline `main` produktu = `bb0bdbb`** (#264). Wcześniej: `8a76e3a` (#262, kubełek A).
 
-### Plan i postęp (`~/.claude/plans/velvety-exploring-sphinx.md`)
+### Stan produkcji po sesji
 
-| Plasterek | Zakres | Stan |
-|---|---|---|
-| **L0** | ślad zdanego egzaminu w drabinie (`verified_by_method='exam'`) | ✅ prod `f04ea69` |
-| **L1** | most danych: `curriculum_modules.diagnostic_concept_id` + migracja `0044` + mapa tagów + strażnik ingestu | ✅ prod `f027a71` |
-| **L2** | reguła placementu (czysta funkcja) + spłata długu C1 | ✅ prod `d33ba28` |
-| **L3** | tabela `curriculum_placements` + migracja `0045` + hak w domknięciu diagnozy | ✅ prod `514b60f` |
-| **L4** | drabina honoruje placement + W-6 + W-7 + zdarzenie P-1 + bramka sprzężenia flag | ⏳ **następny** |
-| **L5** | test-out zapisuje `'test_out'` zamiast `'exam'` (spłata długu okna L0→L5) | ⏳ |
-| **L6** | UI wyniku diagnozy + release: migracje `0044`+`0045` na prod NEON, flaga OFF | ⏳ |
+| Miara | Wartość |
+|---|---|
+| Migracje | **47/47** (`0044`, `0045`, `0046` zastosowane dziś) |
+| Gałęzie Neona | **7/10** (trzy kopie utworzone dziś, kasowanie zbędne) |
+| `curriculum_placements` | **1 wiersz** — techniczny, z kluczem ścieżki |
+| `k3-validate` | **50 PASS** (było 25 asercji) |
+| `FORCE RLS` | 28/28 · własność 55/55 (FORCE 29) |
+| Flaga | zapalona, potwierdzona **behawioralnie** |
 
-### L0 — defekt znaleziony i naprawiony po drodze (był na ŻYWYM prodzie)
+### Co weszło (kubełek A + B1)
 
-Zdany egzamin modułowy (`FLAG_MASTERY_GATE=1`) **nie tworzył żadnego wiersza** w `curriculum_module_progress`
-→ następny moduł zostawał **zablokowany**, bramka nigdy nie przechodziła w „zaliczony". Przyczyna: trasa
-`exam/complete` deklarowała „ZERO zapisu do drabiny — integracja = P5", a P5 (`exam-gate.ts`) powstało
-w całości **read-only**. Obie strony założyły, że pisze ta druga. Naprawa: upsert **w transakcji** trasy,
-owner-side. Nikomu to nie zaszkodziło — na prodzie **zero sesji egzaminu modułowego**.
+- **1E.7-D0 — bloker zapłonu.** Placement brał cel kariery z wiersza studenta, pustego w chwili domknięcia diagnozy → **funkcja nie zadziałałaby ani razu dla persony pilotażu**. Źródłem jest teraz `assessment_sessions.career_goal`; cel pusty vs nierozwiązywalny **zostawia rozróżnialny ślad**. Precedencja ma **jeden nośnik w całym przepływie**.
+- **A2 — ekran L6.** Dwie powierzchnie (krok 4 kreatora + odznaka na drabinie), 10 wariantów renderu, 9 powodów (7 milczy), fail-closed **w czasie wykonania** (typ nie przeżywa granicy sieci). Dług D7 spłacony: nagłówek `/curriculum` przestał mówić „bez skrótów".
+- **A4 —** łączny limit operacji `/summary`: **185 s → 90 s**; rezerwacja slotu sędziego (albo oceniamy, albo nie generujemy).
+- **A5/A5b —** `k3-validate` identyfikuje bazę i rolę połączenia; **wstrzyknięty `GRANT … TO PUBLIC` był dla starej asercji niewidoczny** — a to warunek nośny A22-3.
+- **A7 —** zdarzenie miernika bez identyfikatora studenta (art. 17); nowe `curriculum.placement.skipped` w kształcie zatwierdzonym przez CRCO.
+- **B1 —** `path_key` w wierszu odblokowania + poszerzony klucz jednoznaczności (migracja `0046`). ⚠ Bez poprawki `ON CONFLICT` **placement przestałby zapisywać cokolwiek** — cicho, bo hak jest best-effort.
 
-### ZAKRES L4 (gotowy do wykonania, wszystko rozstrzygnięte)
+### Cztery dowody z pełnej pętli (konto techniczne QA, produkcja)
 
-1. **Rdzeń:** `ladder.ts` **i** `isModuleUnlocked` naraz — inaczej UI pokaże moduł otwarty, a API zwróci 403.
-2. **W-6 (§6c):** moduł już zaliczony egzaminem — **pomijamy**, bez wiersza i bez komunikatu. Dziś wiersz
-   produkowałby komunikat „diagnoza otworzyła ci moduł X" do osoby, która **sama zdała go na ≈90%**.
-3. **W-7:** ⚠ **zmienia sygnaturę `computePlacement`** (kod już na prodzie) — funkcja musi dostać zbiór
-   modułów zaliczonych. Dziś ich nie zna, więc student, który zdał moduł egzaminem, a potem wypadł słabo
-   na tym koncepcie w diagnozie, dostaje **dziurę na module, który ma zaliczony**: słaby instrument
-   (2 pytania) unieważnia mocny (≈90%). Reguła: moduł zaliczony **spełnia** warunek ciągłości.
-4. **P-1:** zdarzenie w `audit_log` przy **KAŻDYM** policzeniu placementu, także zerowym — same zdarzenia
-   „zero odblokowań" **nie mają mianownika**. Ma nieść: liczbę otwartych modułów, `blockingHoleSlug`,
-   obowiązujący próg **oraz poziom na koncepcie blokującym** (ściana poziomów 2 znaczy „nasze pytanie jest
-   za trudne", nie „próg za wysoki" — bez tej liczby oba przypadki wyglądają identycznie).
-5. **Decyzje Ethana (CTO, G1/G3):**
-   - **L3-C3 → TAK, twarda bramka sprzężenia flag.** `FLAG_PLACEMENT_DIAGNOSTIC` niemożliwa do zapalenia
-     bez `FLAG_MASTERY_GATE=1`. Pole `requires` w `FlagDefinition`, egzekucja **wewnątrz `isFeatureEnabled`**
-     (nie w skrypcie wdrożeniowym — env na Vercelu da się przestawić bez deployu), **fail-closed**,
-     **głośny log** przy niespełnionej przesłance, test acykliczności grafu `requires`.
-   - **L3-C2 → NIE dokładamy `CHECK` wiążącego `support_mode` z `(level, threshold)`.** Powód: to polityka
-     produktowa, nie fakt o danych — zmiana polityki Sophii walidowałaby się przeciw wierszom historycznym
-     (każdy niesie własny próg), a te są append-only. Zamiast tego: **asercja w `k3-validate`** (zero wierszy
-     `qualified`, gdzie `support_mode` ≠ wynik reguły) + **test niezmiennika jednego pisarza** (żeby L5 nie
-     dołożył drugiej drogi zapisu po cichu).
+1. Odpowiedź trasy niesie klucz `placement` (powstaje wyłącznie przy zapalonej fladze) + nowy nagłówek D7 obecny, stary nieobecny.
+2. Wiersz: `path_key: "data-science"`, `reason: qualified`, `level: 4`, `support_mode: fading` — **mimo pustego celu w wierszu studenta**.
+3. Zdarzenie miernika: `actor_id: null`, cel = sesja; identyfikator studenta **nie występuje w całym wierszu** (sprawdzone zawieraniem).
+4. Kontrakt ekranu i HTML z produkcji: odznaka „Otwarty na podstawie diagnozy · niezaliczony", rekomendacja = **korzeń** (nadpisanie z DECYZJI 3 działa), dziura `no_measurement` → **brak zdania o słabym wyniku**.
 
-### Decyzje produktowe (Sophia, `docs/product/decyzje-1e7-placement-v0.1.md`, wersja wewn. **v0.4**)
+⚠ **Pierwszy wiersz w tabeli jest TECHNICZNY** (konto QA, domena `.invalid`). Musi być wyłączony z każdego odczytu miernika — inaczej pilotaż zacznie od jednego „udanego" placementu, którego nikt nie odegrał poza nami.
 
-- **Mapa tagów: 6 z 9 modułów.** `f1-python-1`→`ds-python`, `m-pandas`→`ds-pandas`, `m-eda`→`ds-eda`,
-  `m-sql`→`ds-sql`, `m-ml`→`ds-uczenie-maszynowe`, `m-llm`→`ds-llm` (para **słaba**, pierwsza do rewizji).
-  **NULL:** `l0-start` (setup Colab = czynność, nie wiedza; jedyny moduł bez egzaminu = bez drogi awaryjnej),
-  `f2-python-2` i `f3-dane-python` (w banku **zero** pytań o pętle, funkcje i słowniki — sprawdzone pozycja po pozycji).
-- **Próg ≥3** (parametr, nie stała). Próg 4 wszedłby w sprzeczność z ratyfikowanym `levelToStatus` (3 i 4 → „opanowane").
-  Ochronę niesie reguła prefiksowa: `m-ml` wymaga **pięciu** niezależnych trafień.
-- **Reguła prefiksowa:** `NULL` = „nie zmierzyliśmy", nie „nie umie" — moduł bez tagu **jedzie z prefiksem,
-  ale nigdy go nie przedłuża**. Odwrócenie tej semantyki zamyka `l0-start`/`f2`/`f3` na stałe.
-- **Rekomendacja startu = najgłębszy odblokowany**, NIE „pierwszy nieodblokowany" (ten drugi wskazuje moduł,
-  na którym student wypadł słabo). Żadnego pola nie wolno nazwać „punktem startu".
-- **Tryb wsparcia — trzy gałęzie:** poziom 4 → fading; poziom 3 → pełne wsparcie; **wciągnięty prefiksem
-  (bez własnego pomiaru) → pełne wsparcie, powód zapisany ODRĘBNIE**. Rozróżnienie musi zostać w danych:
-  oba przypadki psują się niezależnie i wymagają **przeciwnych** napraw.
+### Wzorzec sesji: strażnicy-atrapy
 
-### Bramka RODO/RLS dla L3 (Ryan, w commicie `5f6e5ca`)
+Leo znalazł **mutacją, nie czytaniem**, że trzej strażnicy tej funkcji nic nie strzegli — a suita była zielona przez cały czas. Mutacja pola `recommendationIsRoot` **przeżyła 2013 testów**; bramka parytetu miała **zero testów**; nagłówek deklarował gwarancję, której nie było (obalone kompilatorem z kontrolą negatywną). Dziś **wszystkie strażnicy mają mutację, która je czerwieni; dwa mają kontrolę dwustronną.**
 
-**GO z warunkami W-1…W-5.** Wariant dostępu jak `review_states` (GRANT SELECT + FORCE RLS), `app_faculty`
-REVOKE ALL. Retencja: **czas trwania konta** (to nośnik uprawnienia, nie ślad — kasowanie odbiera dostęp).
-RoPA **nowy wpis #5** (nie mieści się w #3 FSRS). Macierz RLS **v0.32**, wiersz #28.
+**Ta sama reguła w dwóch kopiach wyprodukowała w tej funkcji CZTERY osobne wady** (D0, D4, K1, znalezisko A). Rekomendacja Leo do rozważenia przez Darka: „czy ta reguła ma dokładnie jeden nośnik" jako pozycja w definicji ukończenia, sprawdzana tak rutynowo jak lint.
 
-**Art. 22 RODO — NIE MA ZASTOSOWANIA**, przy trzech warunkach nośnych: decyzja wyłącznie **rozszerza** dostęp,
-istnieje **pełna droga alternatywna** (przejście albo egzamin), skutek **nie opuszcza platformy**. Elementy
-„decyzja" i „wyłącznie zautomatyzowana" **zachodzą** — ocena stoi na trzecim. ⚠ **A22-2 zależy od flagi:**
-zgaszenie `FLAG_MASTERY_GATE` przy zapalonym placemencie to zmiana **przesłanki prawnej**, nie tylko produktowej.
+### Długi otwarte — z progami, nie w worku
 
-**Skutek dla zaległej klauzuli art. 13 (bramka przed 1. rejestracją):** NIE WOLNO użyć wzorcowego zdania
-„nie podejmujemy decyzji w sposób zautomatyzowany, w tym profilowania" — byłoby to **nieprawdą**
-(profilujemy w dwóch czynnościach: FSRS i placement). Pięć punktów wiążących dla Wendy w `ropa.md`.
+- **Przed 1. rejestracją:** klauzula art. 13; **A-1** — dla zdarzeń paszportu i zgłoszeń projektowych **usunięcie danych na żądanie jest strukturalnie niewykonalne** (`actor_id` bez klucza obcego + wyzwalacz blokuje `DELETE`); maszynowa kontrola roli połączenia; pułapka w runbooku awaryjnym.
+- **Przed 1. diagnozą uczestnika:** **D11** — miernik nie ma ani jednego zapytania, które go czyta; **D5b** — ograniczenia wnioskowania muszą stać **przy** tym zapytaniu.
+- **Rotacja sekretów — priorytet ODWRÓCONY pomiarem:** klucz podpisu sesji z `.env.prod` **nie jest kluczem produkcji** (obalone eksperymentem kontrolnym), a `NEON_API_KEY` i poświadczenie `neondb_owner` są **żywe** i leżą na dysku od 19 dni. Kolejność: Neon → baza → klucz sesji. Rotacja obu pierwszych **poza delegacją Ethana**.
+- **Znalezisko A** (trójka powodów dziury w dwóch kopiach) — refaktor odłożony, ale **pilnowany testem-strażnikiem**; próg: pierwsza zmiana `PlacementReason`.
+- **Znalezisko B** („korzeń = pozycja 1" w trzech wyrażeniach) — dziś zgodne; próg: pierwsza zmiana modelu drabiny.
+- **Baza testowa współdzielona przez agentów** produkuje fałszywe czerwone (i może produkować fałszywe zielone) — `load average 19–30`, ten sam zestaw 52 s vs 283 s. Naprawa: baza per agent albo szeregowanie.
+- **Testy integracyjne pomijają się lokalnie bez ręcznego `DATABASE_URL`** — „8 skipped" wygląda jak sukces. **To jest powód, dla którego trzy atrapy przeżyły.**
+- **`e2e-llm` nie biega na PR** (tor nocny z decyzji 2026-06-26) — odpalany ręcznie; nocny przebieg CI **ustawia model globalnie**, więc warstwa premium jedzie w CI na innym modelu niż produkcja.
+- Drobne: **B11** (nieużywany import), **N1/N2** spłacone, k3 przed migracją przerywa na pierwszym błędzie zamiast pokazać komplet (próg: następna migracja tabeli tenant-owej).
 
-**Znalezisko P-2 — zysk z bramki PRZED implementacją:** skopiowanie wzorca `audit_log_append_only`
-(`BEFORE UPDATE OR DELETE`) **złamałoby art. 17** — wyzwalacz odpala się przy kasowaniu **kaskadowym**,
-więc `DELETE FROM students` kończyłby się wyjątkiem i konta nie dałoby się usunąć. Sprawdzone wykonaniem.
+### Rollback
 
-### Długi otwarte (nazwane, przypisane)
+Zgaszenie `FLAG_PLACEMENT_DIAGNOSTIC` + ponowne wdrożenie. Migracje addytywne. Kopie: `prod-backup-pre-0044-0045-l6-20260801`, `prod-backup-pre-ingest-curriculum-l6-20260801`, `prod-backup-pre-0046-pathkey-b1-20260801`.
 
-- ⏳ **Okno L0→L5 tyka:** ścieżka test-out zapisuje `'exam'` zamiast `'test_out'`, wierszy nie da się
-  po fakcie rozróżnić. Dziś nieszkodliwe (obie wartości równorzędne w `exam-gate.ts`), zero wierszy na prodzie.
-- ⏳ **C2 (detektor martwej wartości)** — nie łapie formy **międzyplikowej** (stała z innego modułu). Dowód:
-  mutacja Leo przeżyła. Próg spłaty: **najpóźniej PR zakładający nośnik L3**.
-- ⏳ **C4 — 49 plików integracyjnych z luźną bramką bazy** (48 pisze do bazy). Luka **utajona**, nie czynna.
-  Rekomendacja Leo: zamiast podmieniać 49 plików, **test-strażnik grepujący repo** — blokuje plik nr 50.
-- ⏳ **Bramka pomijania jest cicha, tylko węższa** (Ethan): przy złym adresie bazy suita przechodzi na zielono
-  nic nie robiąc. Właściwa poprawka: twardy błąd zamiast pominięcia, gdy `CI=true`.
-- ⏳ **P-1 (do Sophii):** miernik ma ślepą plamę — sesja, w której placement nic nie otworzył, nie zostawia
-  ani jednego wiersza, a to właśnie przypadek „student niedoszacowany nic nie zgłasza".
-- ⏳ **12 worktree'ów** po poprzednich sesjach; jeden trzyma `main` pięć commitów wstecz. Plus
-  `backup/1e7-l1-przed-rebase` do skasowania.
-
-### PIĘĆ FAŁSZYWYCH ZIELENI ZŁAPANYCH W TEJ SESJI (wzorzec, nie seria przypadków)
-
-1. **CI w ogóle nie ruszyło** na PR w stanie konfliktu — GitHub nie odpala testów, gdy nie potrafi zbudować
-   refa scalenia, a `gh pr checks` pokazywał dwa zielone znaczki **Vercela**. Branch protection niedostępne
-   (darmowy plan) → nic by tego nie zatrzymało. **Sprawdzaj `mergeable`, nie sam widok znaczków.**
-2. **`pnpm test:integration` bez `DATABASE_URL`** pomija 46 z 51 plików i kończy się kodem 0 — z **tymi samymi
-   totalami w nawiasach** co pełny przebieg.
-3. **Testy ingestu pisały do bazy DEWELOPERSKIEJ** — importowany moduł ładował `.env.local` i pokonywał
-   własną bramkę pomijania. Osiem testów kasujących wiersze raportowało zielony przebieg. **Spłacone w L2.**
-4. **Strażnik `k3-validate` (25/25)** świecił identycznie, gdy podejrzewaliśmy brak własności RLS i po
-   ustaleniu, że własność zachodzi — nie mierzył jej wcale.
-5. **Martwe warunki udające zabezpieczenia** — trzy sztuki, wykryte wyłącznie mutacjami, które **przeżyły**.
+⚠ Zmienna ma typ **wrażliwy**, więc jej wartości **nie da się już odczytać** — weryfikacja tej flagi jest od teraz wyłącznie behawioralna.
 
 ---
 
