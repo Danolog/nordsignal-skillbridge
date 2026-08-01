@@ -1,5 +1,16 @@
 # Decyzje produktowe 1E.7 · placement diagnozy w curriculum — mapa tagów, próg, reguła prefiksowa
 
+**Changelog v0.7 → v0.8 (2026-07-31, Sophia):** **specyfikacja ekranu L6 gotowa do przekazania (§12) + rejestr długu produktowego (§13) + jeden NOWY BLOKER ZAPŁONU znaleziony przy pisaniu specyfikacji.** Rozstrzygnięcia v0.1–v0.7 bez zmian.
+1. **BLOKER 1E.7-D0 — placement nie policzy się nikomu, kto przechodzi onboarding po raz pierwszy.** Hook bierze cel kariery z **wiersza studenta** (`students.career_goal`), a ten w chwili domknięcia diagnozy jest jeszcze **pusty**: Krok 0 zakłada wiersz z `careerGoal: ""` (`src/lib/career-helper/session.ts:81-88`), a cel zapisuje dopiero `POST /api/onboarding`, który leci **po** domknięciu diagnozy. Pusty łańcuch jest fałszywy, więc `pathKey` = `null` i hook wychodzi cicho (`placement-service.ts:452-453`) — bez wierszy, bez zdarzenia miernika, bez ekranu. Dla studenta wracającego („zmień kierunek") jest odwrotny wariant tej samej wady: cel w bazie to **stary** cel, więc placement policzy się na **cudzej drabinie**. Kreator ten rozjazd już zna i obchodzi go dla samej diagnozy (`onboarding-wizard.tsx:381-383`); hook placementu tej poprawki nie dostał. **Dowód, że suita tego nie widzi:** test bramkowania sadza studenta z gotowym `careerGoal: "Data Scientist"` (`assessment-complete-placement-gating.test.ts:50`) — czyli w stanie, którego pilotażowy student w tym momencie nie ma. Rozstrzygnięcie i wymóg: §13, pozycja **1E.7-D0**.
+2. **§12 — pełna specyfikacja ekranu wyniku diagnozy** (Mila + Jack, bez rundy pytań): źródło rekomendacji startu (drabina, **nie** `deepestUnlockedSlug` — trzy niezależne powody), wiążąca kolejność zdań, wyczerpująca mapa **9** powodów na teksty (6 mówi, 3 milczą), dziesięć wariantów renderu, druga powierzchnia (odznaka na drabinie + nagłówek `/curriculum`, który przy zapalonej fladze **kłamie**), lista zdań zakazanych.
+3. **§8 — dopisane warianty „dziura, ale zero odblokowań"** (C5 Leo) dla `below_threshold` i `uncovered` + **reguła generalna**: tekst dla zerowych odblokowań interpoluje **wyłącznie własne pola dziury**, nigdy „ostatniego odblokowanego" ani „kompetencji głębszej". Bez niej ta sama luka wróci przy każdym nowym tekście.
+4. **§13 — rejestr długu produktowego 1E.7** z wagą, kosztem i progiem: 12 pozycji, w tym 6 dopisanych przeze mnie ponad listę Olivera. Rozstrzygnięta decyzja o `'test_out'` w Paszporcie (trzy warunki) i o długoterminowej drodze naprawy sufitu.
+
+**Changelog v0.6 → v0.7 (2026-07-30, Sophia):** **weryfikacja §6a wykonana na kodzie** (zlecenie Olivera, pozycja 2 mojej listy przedzapłonowej). **Rozstrzygnięcia v0.1–v0.6 bez zmian; jedno rozstrzygnięcie nowe (mikrocopy `no_measurement`) i jedna decyzja świadoma.**
+1. **Odpowiedź na pytanie §6a brzmi NIE — i moje pytanie było postawione za wąsko.** Krok wyboru kompetencji nie proponuje domyślnie **niczego**: lista 21 kompetencji rynku startuje pusta (`onboarding-wizard.tsx:130`). Ale ważniejsze jest to, czego nie przewidziałam: **dwie z sześciu kompetencji drabiny — EDA i Uczenie maszynowe — nie istnieją w katalogu rynku ścieżki Data Scientist**, więc student **nie może ich zaznaczyć nawet chcąc**. Placement ma przez to **twardy sufit na `m-pandas`**, niezależny od zachowania studenta. Pełne wyliczenie i dowód w §6a.
+2. **§6a nie jest blokerem zapłonu — z jednym warunkiem wewnątrz L6 i jedną decyzją świadomą.** Warunek: mikrocopy dla powodu `no_measurement` (§8, nowy tekst) — bez niego jedyny pasujący dziś tekst mówi studentowi „wypadła słabo" o kompetencji, **której nigdy nie badaliśmy**. Decyzja świadoma: zapalamy z sufitem na `m-pandas` i z zapisanym zakresem wniosków (§6a, „Co wolno, a czego nie wolno wnioskować z pilotażu").
+3. **Sufit strukturalny (EDA/ML poza katalogiem rynku) NIE jest do naprawy przed zapłonem** — każda z trzech dróg naprawy albo fałszuje dane rynku, albo cofa ratyfikowaną DECYZJĘ 5, albo jest przebudową kroku 3 na dni. Uzasadnienie odrzucenia każdej z nich: §6a, „Trzy drogi naprawy i dlaczego żadna nie wchodzi przed zapłonem".
+
 **Changelog v0.5 → v0.6 (2026-07-30, Sophia):** dwa rozstrzygnięcia po L5 + lista tego, co musi wejść przed zapłonem. **Rozstrzygnięcia v0.1–v0.5 bez zmian.**
 1. **Defekt wyspy — odrzucam OBIE zaproponowane drogi i podaję trzecią (§6e).** (a) przeliczanie placementu łamie niezmiennik, o który sama walczyłam („zapis w chwili odblokowania, nienadpisywany"); (b) świadoma dziura zostawia studenta z modułem **zablokowanym**, o którym UI mówi „do przejścia od nowa" — komunikat obiecuje coś, czego produkt nie pozwala zrobić. Reguła: **reset zeruje ZALICZENIE, nigdy DOSTĘPNOŚĆ.** Dostępność raz przyznana jest monotoniczna — ta sama zasada, co „placement nigdy nie odbiera" (§6b).
 2. **`skipped_by_placement` NIE liczy się jak pozycja przerobiona przy rozstrzyganiu dowodu (§7 pkt 3).** Zgadzam się z Twoim odczuciem i mam na to argument twardszy niż odczucie: pod hybrydą ten status może powstać **wyłącznie** na pozycjach modułu zaliczonego przez `test_out`, więc liczenie go jak przerobionego kazałoby dowodowi `test_out` **skasować samego siebie** i pokazać `exam`.
@@ -26,16 +37,18 @@
 2. **DECYZJA 5, tabela przypadków — „5 tagów" → 6** (`ds-python`, `ds-pandas`, `ds-eda`, `ds-sql`, `ds-uczenie-maszynowe`, `ds-llm`). Liczba w tym wierszu (≈3 na 10 milionów) była policzona dla sześciu i zostaje bez zmian — błędny był wyłącznie licznik w opisie.
 3. **DECYZJA 2 — własna korekta tej samej rodziny, niezgłoszona:** pisałam, że odblokowanie `m-ml` wymaga **czterech** pomiarów (≈4 na 100 000). Z warunku braku dziury (reguła 3) wynika, że `m-ml` musi zakwalifikować się także **na własnym tagu** — czyli **pięć** pomiarów, ≈3 na milion. Ochrona jest o rząd wielkości silniejsza, niż deklarowałam; kierunek wniosku bez zmian.
 
-**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-26 (v0.1–v0.3) · 2026-07-27 (v0.4) · 2026-07-30 (v0.5, v0.6) · **Status:** v0.6 — WIĄŻĄCY KONTRAKT produktowy dla slice'ów L1–L6 funkcji 1E.7 (Ethan — backend, Jack — UI, Mila — ekrany wyniku diagnozy)
+**Autor:** Sophia (PO, dydaktyka) · **Data:** 2026-07-26 (v0.1–v0.3) · 2026-07-27 (v0.4) · 2026-07-30 (v0.5, v0.6, v0.7) · 2026-07-31 (v0.8) · **Status:** v0.8 — WIĄŻĄCY KONTRAKT produktowy dla slice'ów L1–L6 funkcji 1E.7 (Ethan — backend, Jack — UI, Mila — ekrany wyniku diagnozy)
 
-## Co MUSI wejść przed zapłonem — lista zamknięta [v0.6]
+## Co MUSI wejść przed zapłonem — lista zamknięta [v0.8]
 
-Odpowiedź na pytanie Olivera. **Dwie pozycje, obie moje. Nic więcej z mojej strony nie blokuje zapłonu.**
+Odpowiedź na pytanie Olivera. **Trzy pozycje, wszystkie moje.** [v0.6: dwie pozycje. v0.7: pozycja 2 odhaczona weryfikacją. **v0.8: dopisana pozycja 3 — bloker znaleziony przy pisaniu specyfikacji ekranu.**]
 
 1. **L6 — ekran wyniku diagnozy wg §7 i §8.** Rekomendacja startu liczona z **obu** źródeł dostępności (najgłębszy dostępny i niezaliczony) oraz mikrocopy w wiążącej kolejności zdań („najpierw jego praca, potem nasza diagnoza"). Bez tego ekran albo cofa studenta, albo przypisuje sobie jego pracę — a to jedyny ekran, na którym student styka się z placementem.
-2. **Weryfikacja §6a przed pierwszym studentem: czy krok wyboru kompetencji (1.12) na ścieżce DS domyślnie proponuje komplet szóstki** (Python, Pandas, EDA, SQL, ML, LLM). Jeśli nie — placement po cichu nie odpala, bo diagnoza bada tylko zaznaczone kompetencje (Opcja A). **Przy 1–3 studentach pilotażu to różnica między zebraniem danych o placemencie a niezebraniem żadnych.** Nowe pole `blockingHoleReason` pokaże to w danych, ale **po** pilotażu, a pilotaż jest jedynym, jaki mamy. Jeśli poprawka nie mieści się przed zapłonem — decyzja świadoma: zapalamy wiedząc, że placement może nie odpalić, i nie wyciągamy z tego wniosków o progu.
+2. ~~**Weryfikacja §6a przed pierwszym studentem: czy krok wyboru kompetencji (1.12) na ścieżce DS domyślnie proponuje komplet szóstki** (Python, Pandas, EDA, SQL, ML, LLM).~~ **WYKONANA 2026-07-30 (v0.7) — odpowiedź: NIE, i sprawa jest cięższa, niż zakładałam.** Nic nie jest zaznaczone domyślnie, a dwie z sześciu kompetencji są **niewybieralne w ogóle**. Pełne rozstrzygnięcie w §6a. **Werdykt: nie blokuje zapłonu**, ale zostawia po sobie jedną pozycję wewnątrz L6 (mikrocopy `no_measurement`, §8) i jedną decyzję świadomą o zakresie wniosków z pilotażu (§6a).
 
-**Świadomie NIE są blokerami:** defekt wyspy (§6e — nieosiągalny bez funkcji resetu) i reguła `skipped_by_placement` a dowód (§7 pkt 3 — żaden kod produkcyjny tego statusu nie zapisuje). Obie wiążą wykonawcę, który ruszy te obszary; żadna nie wstrzymuje pilotażu.
+3. **[NOWE v0.8] 1E.7-D0 — placement MUSI liczyć się dla celu kariery, dla którego student odbył diagnozę.** Dziś bierze cel z wiersza studenta, a ten w chwili domknięcia diagnozy jest pusty (nowy student) albo nieaktualny (zmiana kierunku). Skutek: funkcja jest **niewykonalna dla persony pilotażu** — zero wierszy, zero zdarzeń miernika, pusty ekran L6. To bloker cięższy niż sufit z §6a: sufit ogranicza placement do `m-pandas`, ten defekt sprowadza go do zera dla każdego, kto wchodzi po raz pierwszy. Pełne rozstrzygnięcie i wymóg: §13, pozycja **1E.7-D0**.
+
+**Świadomie NIE są blokerami:** defekt wyspy (§6e — nieosiągalny bez funkcji resetu) i reguła `skipped_by_placement` a dowód (§7 pkt 3 — żaden kod produkcyjny tego statusu nie zapisuje). Obie wiążą wykonawcę, który ruszy te obszary; żadna nie wstrzymuje pilotażu. Pełny rejestr z wagą, kosztem i progiem: **§13**.
 
 **Stan realizacji (2026-07-30):**
 - **L1** (Max) — most danych `curriculum_modules.diagnostic_concept_id`, migracja **0044**, kontrakt ingestu na literówki w slugach; mapa tagów zweryfikowana w kodzie, zero rozbieżności. **Kolejność wdrożenia na prodzie (strażnik ingestu): migracja 0044 → ingest banku rynkowego → ingest curriculum.** Odwrotna kolejność przerywa ingest na pierwszym tagu — bezpiecznie, ale głośno.
@@ -229,13 +242,71 @@ Drabina jest liniowa i ponumerowana: 1 `l0-start` · 2 `f1-python-1` · 3 `f2-py
 | `ds-python`=4, `ds-pandas`=4, reszta niska | 5 | F1, F2, F3, `m-pandas` | F2/F3 przeciągnięte kompetencją pochodną. Wymagało **dwóch** niezależnych pomiarów. |
 | `ds-pandas`=4, `ds-python`=1 | — | nic | **Kluczowy przypadek ochronny.** Pandas bez Pythona jest niewiarygodny — dziura na pozycji 2 cofa prefiks do zera. Dokładnie po to reguła powstała. |
 | `ds-python`=4, `ds-pandas`=4, `ds-eda`=1, `ds-sql`=4 | 5 | F1, F2, F3, `m-pandas` | SQL wysoki, ale EDA to dziura na pozycji 6 → prefiks staje na 5. Student wchodzi w `m-eda` normalnie albo wyklikuje „test out". Uczciwe: EDA jest w tej drabinie prerekwizytem SQL-a, nie ozdobą. |
-| Wszystkie 6 tagów ≥3 | 9 | cała drabina poza `l0-start` | Wymaga **6** niezależnych pomiarów (`ds-python`, `ds-pandas`, `ds-eda`, `ds-sql`, `ds-uczenie-maszynowe`, `ds-llm`); ślepym trafem ≈0,08⁶ ≈ 3 na 10 milionów. |
+| Wszystkie 6 tagów ≥3 | 9 | cała drabina poza `l0-start` | Wymaga **6** niezależnych pomiarów (`ds-python`, `ds-pandas`, `ds-eda`, `ds-sql`, `ds-uczenie-maszynowe`, `ds-llm`); ślepym trafem ≈0,08⁶ ≈ 3 na 10 milionów. **[v0.7 — ten wiersz jest dziś NIEOSIĄGALNY:** `ds-eda` i `ds-uczenie-maszynowe` nie mają odpowiednika w katalogu rynku ścieżki DS, więc student nie może ich zaznaczyć, a diagnoza — zmierzyć. Realny sufit placementu to `m-pandas` (k=5). Dowód i rozstrzygnięcie: §6a, weryfikacja v0.7.**]** |
 
 ---
 
 ## 6. Przypadki brzegowe — rozstrzygnięte, żeby nikt ich nie zgadywał
 
 **a) `uncovered` (kompetencja niezaznaczona lub bez pokrycia w banku) → NIE kwalifikuje, traktowana jak dziura.** Brak pomiaru nie jest dowodem opanowania. **Ryzyko produktowe, które z tego wynika:** przy Opcji A student sam wybiera badane kompetencje, więc student, który zaznaczy tylko „SQL", dostanie placement pusty i nie zrozumie dlaczego. **[WYMÓG UI — Jack]** wynik diagnozy musi nazwać powód wprost (mikrocopy §8), a **[do sprawdzenia w 1.12 — Mila/Ethan]** krok wyboru kompetencji na ścieżce DS powinien domyślnie proponować komplet konceptów drabiny (Python, Pandas, EDA, SQL, ML, LLM) — inaczej placement po cichu nie działa i wyjdzie to dopiero na pilotażu.
+
+### §6a — WERYFIKACJA NA KODZIE [v0.7, 2026-07-30]
+
+Sprawdziłam sama, w kodzie i w danych, nie w dokumentacji. **Odpowiedź: nie, komplet szóstki nie jest proponowany — i moje pytanie z v0.6 trafiało w węższy problem niż ten, który istnieje.**
+
+**1. Domyślnie nie jest zaznaczone NIC.** Wybór startuje pustą mapą: `useState<Record<string, PossessionLevel>>(initialData?.selections ?? {})` — `src/components/onboarding/onboarding-wizard.tsx:130`. Jedyne dwa źródła wstępnego zaznaczenia to wznawiany onboarding (własne wcześniejsze zaznaczenia studenta) i „zmień kierunek" (przeniesienie samooceny ze starego celu, `page.tsx:80-86`). Nowy student widzi **21 kompetencji rynku Data Scientist, wszystkie odznaczone**, i zaznacza je sam.
+
+**2. Dwie z sześciu kompetencji drabiny są NIEWYBIERALNE.** Lista wyboru pochodzi wyłącznie z tabeli rynku (`job_market_data` per cel kariery → `loadMarketCatalog`, `src/lib/onboarding/market-gaps.ts:44`). W danych rynku dla „Data Scientist" (21 wierszy, `tools/load-job-market-prod.sql:128-148` — ten sam zestaw, który jest na prodzie) **nie ma wiersza „EDA" ani „Uczenie maszynowe"**. Obie kompetencje istnieją w banku pytań (po 6 pytań, komplet trudności 1–3) i w hierarchii ścieżki (`career-model.json`, obszar „Fundamenty: statystyka, uczenie maszynowe i EDA"), ale w ofertach z JustJoinIT nie występują jako osobny znacznik, więc do katalogu rynku nigdy nie weszły.
+
+Skutek: `ds-eda` i `ds-uczenie-maszynowe` **nie mogą się pojawić w wyniku diagnozy żadnego studenta** — diagnoza bada wyłącznie zaznaczone (Opcja A), a zaznaczyć ich nie ma jak. Moduły `m-eda` (poz. 6) i `m-ml` (poz. 8) są więc **trwałą dziurą w prefiksie**.
+
+**3. Ile z szóstki zbada student.** Wybieralne są cztery: **Python** (55% ofert, pozycja 1 listy), **SQL** (28%, pozycja 3), **LLM** (12%, pozycja 6), **Pandas** (5%, pozycja 11 z 21). Niewybieralne: **EDA**, **Uczenie maszynowe**. Test to 2 pytania na kompetencję, więc student zaznaczający „to, co go interesuje" zaznacza zwykle 2–4 pozycje — i trafia w Pythona (góra listy) znacznie częściej niż w Pandas (środek listy, 5% ofert).
+
+**4. Co reguła L2 robi w realnych przypadkach.** Policzone `computePlacement` na prawdziwej drabinie DS, nie z głowy:
+
+| Zachowanie studenta | k | Otwarte moduły | Dziura | Powód dziury |
+|---|---|---|---|---|
+| nic nie zaznaczył | — | **testu w ogóle nie ma** — brak sesji, brak zdarzenia w dzienniku | — | — |
+| Python+SQL, oba ≥3 | 2 | `f1-python-1` (1 moduł) | `m-pandas` | `no_measurement` |
+| Python+SQL, Python=2 | 0 | nic | `f1-python-1` | `below_threshold` |
+| SQL bez Pythona, SQL=4 | 0 | nic | `f1-python-1` | `no_measurement` |
+| **Python+Pandas+SQL+LLM, wszystko =4 — MAKSIMUM OSIĄGALNE** | 5 | `f1`, `f2`, `f3`, `m-pandas` (4 moduły z 8) | `m-eda` | `no_measurement` |
+| wszystkie 6 tagów ≥3 (wiersz z §5) | 9 | cała drabina | — | **przypadek dziś NIEOSIĄGALNY** |
+
+**Sufit: `m-pandas`.** `m-sql`, `m-ml` i `m-llm` nie otworzą się przez placement **nikomu**, niezależnie od wyniku, dopóki EDA jest poza katalogiem rynku. Wiersz „wszystkie 6 tagów ≥3" w tabeli §5 opisuje stan, do którego dziś nie ma drogi.
+
+**5. Czy to jest realne ryzyko.** **Tak, ale nie to, którego się bałam, i nie tej wagi.** Trzy poprawki do mojego własnego sformułowania z v0.6:
+
+- **Nie jest prawdą, że „placement po cichu nie odpala".** Odpala się przy każdej domkniętej diagnozie i przy każdym policzeniu zostawia zdarzenie miernika — także zerowym (P-1, DECYZJA 2). „Po cichu" zniknęło wraz z wymogiem, który postawiłam w v0.4.
+- **Nie jest prawdą, że to „różnica między zebraniem danych a niezebraniem żadnych".** Dane zbieramy w każdym przypadku poza jednym: student, który nie zaznaczy niczego, **nie odbywa testu w ogóle** (`startDiagnosis` przy zerze zaznaczeń idzie prosto do zapisu — `onboarding-wizard.tsx:370-374`), więc nie ma sesji, nie ma domknięcia, nie ma zdarzenia. To jedyna dziura w pomiarze — i jedyna, która przy 1–3 studentach nie boli, bo każdego z nich znamy z imienia.
+- **Zero odblokowań u początkującego to POPRAWNE zachowanie, nie awaria.** Persona pilotażu z ADR-014 to „literalne zero" w Pythonie. Dla niej placement ma nie robić nic, a start od `l0-start` jest właściwy. Placement jest funkcją dla studenta, który **coś już umie** — i tylko na takim studencie da się go ocenić.
+
+### Trzy drogi naprawy sufitu i dlaczego żadna nie wchodzi przed zapłonem
+
+1. **Dopisać „EDA" i „Uczenie maszynowe" do danych rynku.** Najtańsze technicznie (dwa wiersze), **odrzucam**: kolumna nazywa się „% ofert" i jest pokazywana studentowi obok każdej pozycji. Nie mam zmierzonej liczby, a wymyślona liczba psuje trzy rzeczy naraz — mianownik „% pokrycia rynku", priorytet luk i zdanie „uczysz się tego, czego realnie chcą pracodawcy". To jest fałszowanie dowodu, żeby zadziałał mechanizm nawigacyjny. Nigdy.
+2. **Zmienić tagi `m-eda` i `m-ml` na `null`.** Kusząco tanie (dwa pola w manifeście drabiny) i formalnie zgodne ze znaczeniem `null` („nie zmierzyliśmy"), **odrzucam**: cofa DECYZJĘ 5 tam, gdzie ona działa. `m-eda` z `null` przestaje być dziurą, więc student z wysokim SQL-em dostaje otwarty moduł EDA **bez jednego pomiaru EDA**, a `m-ml` otwiera się na cudzej podstawie. Cała analiza asymetrii z DECYZJI 2 mówi, że wrzucenie ponad poziom jest błędem droższym niż przetrzymanie — a to jest właśnie wrzucanie ponad poziom, tyle że wpisane w konfigurację.
+3. **Dołożyć niewybieralne kompetencje do kroku 3 (bez „% ofert", poza mianownikiem pokrycia).** Merytorycznie właściwe, **odrzucam jako niemieszczące się**: rozjeżdża katalog wyboru z katalogiem pokrycia (dziś jedna lista pełni obie role), rusza niezmiennik „suma pozycji grup == lista płaska", a zapis onboardingu odsiewa kompetencje spoza katalogu (`runSubmit` mapuje po `catalog`, `onboarding-wizard.tsx:446-474`) — więc pomiar EDA nie zapisałby się nawet w mapie kompetencji. To dni pracy w kroku 3 i przepisywanie kontraktu, którego pilotaż nie potrzebuje.
+
+**Rozstrzygnięcie: sufit zostaje, zapalamy z sufitem.** Zapisuję go jako **dług produktowy 1E.7-D1** do zamknięcia razem z pierwszą rewizją banku (tam i tak czeka słaba para `m-llm` ↔ `ds-llm`). Właściwa droga długoterminowa to nr 3 — rozdzielenie „co student może zaznaczyć" od „czego wymaga rynek"; nr 1 i nr 2 są zamknięte na stałe, nie odłożone.
+
+### Co MUSI wejść do L6 z tej weryfikacji [WYMÓG UI — Jack]
+
+**Mikrocopy dla powodu `no_measurement`** — nowy tekst w §8. Dziś najczęstszy powód zatrzymania prefiksu to `no_measurement` („kompetencji nie badaliśmy, bo jej nie zaznaczono albo nie ma jej w katalogu"), a jedyny tekst pasujący kształtem to „**{kompetencja}** wypadła słabo" — zdanie **nieprawdziwe** o kompetencji, o którą nie padło ani jedno pytanie. Student, który to sprawdzi, przyłapuje produkt na zmyślaniu — dokładnie ten sam błąd, który rozdzieliłam już raz w v0.3 przy modułach wciąganych prefiksem.
+
+### Co wolno, a czego nie wolno wnioskować z pilotażu [decyzja świadoma, v0.7]
+
+**Wolno:**
+- ocenić próg ≥3 **wyłącznie dla `ds-python` i `ds-pandas`** — tylko te dwa pomiary mogą cokolwiek otworzyć;
+- policzyć, jak często placement nic nie otwiera, **w rozbiciu na przyczynę** (`below_threshold` = zmierzyliśmy i było słabo, kontra `no_measurement` = nie badaliśmy);
+- odróżnić sufit strukturalny od zachowania studenta: dziura na `m-eda`/`m-ml` = sufit, dziura na `f1-python-1`/`m-pandas` = wybór studenta;
+- ocenić, czy student rozumie „otwarte ≠ zaliczone" — z rozmowy z nim, nie z danych.
+
+**Nie wolno:**
+- wyciągać **żadnych** wniosków o progu dla `ds-sql`, `ds-eda`, `ds-uczenie-maszynowe`, `ds-llm` — zero obserwacji, bo te moduły nie mogą się otworzyć;
+- czytać `unlockedCount = 0` jako „próg za wysoki" bez sprawdzenia `blockingHoleReason`; przy `no_measurement` próg nie miał nic do roboty;
+- czytać **braku zdarzeń** jako „placement nie działa" — student bez zaznaczeń nie odbywa testu, więc nie ma czego liczyć;
+- oceniać wartości funkcji na podstawie tego, ilu studentów coś dostało. Przy 1–3 osobach o profilu „zaczynam od zera" **brak odblokowań jest wynikiem oczekiwanym** i nie jest przesłanką ani za wyłączeniem placementu, ani za obniżeniem progu;
+- zmieniać progu w którąkolwiek stronę na tych danych. Jeden student odblokowany na poziomie 3, który oblewa pierwszy egzamin, jest **sygnałem do zbadania**, nie dowodem — próg rewiduję dopiero przy kohorcie, w której da się policzyć różnicę w oblewalności (DECYZJA 2).
 
 **b) Ponowna diagnoza (re-onboarding) → odblokowania są monotoniczne: nigdy nie odbieramy tego, co już otwarte.** Zabranie dostępu do modułu, w którym student może być w połowie, to kara za skorzystanie z naszej funkcji. Nowy wynik liczymy i **sumujemy** z dotychczasowym zbiorem odblokowań. **Warunek nośny:** to jest bezpieczne **wyłącznie dopóki nie ma przycisku „powtórz test"** (spec §8 pkt 3 — powtórki tylko przy re-onboardingu). Powtarzalna diagnoza plus monotoniczność to maszyna do zbierania odblokowań po ≈8% za podejście. **Jeśli powtórki kiedykolwiek wejdą do UI — ta decyzja wymaga rewizji** (wtedy: licz wyłącznie z najnowszej sesji). Zapisuję to jako jawną zależność, nie jako założenie w tle.
 
@@ -349,8 +420,26 @@ Cel: student ma po jednym przeczytaniu rozumieć, że **otwarte ≠ zaliczone**.
   **Uzasadnienie osobnego tekstu:** komunikat dla modułu granicznego mówi o „jednym trafionym pytaniu" — dla F2 i F3 byłby **nieprawdą**, bo o te moduły nie padło ani jedno pytanie. Student, który to sprawdzi (a przebranżowiający się sprawdzają), przyłapie produkt na zmyślaniu przesłanki. Uczciwe nazwanie wnioskowania kosztuje jedno zdanie i jest jedyną wersją zgodną z „AI ocenia jako pierwsze, człowiek decyduje ostatni".
 - **Placement nie zadziałał, bo kompetencja nie była badana (`uncovered`):**
   „Nie badaliśmy **{nazwa kompetencji}** w diagnozie, więc moduł **{tytuł}** zostaje na swoim miejscu. Jeśli znasz ten materiał — zdaj egzamin modułu (**test out**) i przeskocz go."
-- **Placement nie zadziałał z powodu dziury w prefiksie:**
+- **Placement zatrzymał się na kompetencji, której NIE mierzyliśmy (`no_measurement`) — [NOWE v0.7, wymóg z weryfikacji §6a]:**
+  „Nie sprawdzaliśmy **{nazwa kompetencji}** — nie było jej wśród zaznaczonych przez Ciebie kompetencji. Dlatego ścieżkę otwieramy do **{tytuł ostatniego odblokowanego}**, a **{tytuł modułu z dziurą}** zostaje na swoim miejscu. Znasz ten materiał? Zdaj egzamin modułu (**test out**) i przeskocz go."
+  Wariant, gdy nic się nie otworzyło: „Nie sprawdzaliśmy **{nazwa kompetencji}**, więc zaczynamy od początku ścieżki. To nie jest ocena — to brak pomiaru."
+  **Reguła wiążąca dla Jacka:** powód `no_measurement` mapuje się na **ten** tekst albo na tekst `uncovered`, **nigdy** na tekst o dziurze w prefiksie. Zdanie „**{kompetencja}** wypadła słabo" wolno pokazać **wyłącznie** przy powodzie `below_threshold`, czyli gdy pytania realnie padły. To dziś najczęstszy powód zatrzymania prefiksu (§6a), więc pomyłka w tym miejscu nie jest przypadkiem brzegowym — jest przypadkiem domyślnym.
+- **Placement nie zadziałał z powodu dziury w prefiksie (`below_threshold` — kompetencja zmierzona, wynik poniżej progu):**
   „Twój wynik z **{kompetencja głębsza}** jest wysoki, ale **{kompetencja płytsza}** wypadła słabo — a w tej ścieżce to fundament pod resztę. Otwieramy do **{tytuł ostatniego odblokowanego}**; dalej przez naukę albo egzamin."
+
+### Warianty „dziura, ale ZERO odblokowań" — [NOWE v0.8, luka C5 Leo]
+
+**Czego brakowało.** Trzy z czterech tekstów o dziurze interpolują **{tytuł ostatniego odblokowanego}** albo **{kompetencja głębsza}** — pola, które w sesji z zerem odblokowań **nie istnieją**. Trafia to dokładnie w mój **flagowy przypadek ochronny** z DECYZJI 5 (`ds-pandas`=4, `ds-python`=1 → prefiks cofnięty do zera, dziura na `f1-python-1`, powód `below_threshold`) — czyli w przypadek, dla którego cała reguła powstała. `no_measurement` dostał wariant zerowy w v0.7; pozostałe dwa powody go nie miały.
+
+- **`below_threshold`, zero odblokowań:**
+  „**{kompetencja z dziury}** wypadła w teście słabo, a w tej ścieżce to fundament pod resztę — dlatego zaczynamy od początku ścieżki. To wynik dwóch krótkich pytań, nie ocena Ciebie. Znasz materiał modułu **{tytuł modułu z dziurą}**? Zdaj jego egzamin (**test out**) i przeskocz go."
+- **`uncovered`, zero odblokowań:**
+  „Nie badaliśmy **{kompetencja z dziury}** w diagnozie — nie mamy do niej pytań w banku. Dlatego zaczynamy od początku ścieżki. To nie jest ocena, tylko brak pomiaru. Znasz materiał modułu **{tytuł modułu z dziurą}**? Zdaj jego egzamin (**test out**) i przeskocz go."
+- **`no_measurement`, zero odblokowań:** bez zmian, tekst z v0.7 („Nie sprawdzaliśmy **{nazwa kompetencji}**, więc zaczynamy od początku ścieżki. To nie jest ocena — to brak pomiaru.").
+
+**REGUŁA GENERALNA — wiążąca dla każdego przyszłego tekstu o dziurze:** przy zerze odblokowań wolno interpolować **wyłącznie własne pola dziury** — nazwę kompetencji z dziury i tytuł modułu z dziurą. **Nigdy** „ostatniego odblokowanego" (nie istnieje) i **nigdy** „kompetencji głębszej" (też nie musi istnieć: przy `ds-python`=2 i reszcie niezaznaczonej nie ma żadnego wysokiego wyniku, do którego dałoby się nawiązać). Bez tej reguły ta sama luka wraca przy każdym nowym powodzie — dopisuję ją jako regułę, a nie jako dwa teksty, bo dwa teksty łatają objaw.
+
+**Zakaz podstawienia zastępczego.** Jeśli któregokolwiek pola brakuje, Jack **nie renderuje zdania** — nie podstawia pustego napisu, myślnika, sluga ani innego tekstu. Zdanie o dziurze jest wyjaśnieniem, nie ozdobą: brak wyjaśnienia jest neutralny, wyjaśnienie z dziurą po interpolacji („Otwieramy do ****") jest przyłapaniem produktu na niedokończeniu.
 
 ---
 
@@ -359,6 +448,252 @@ Cel: student ma po jednym przeczytaniu rozumieć, że **otwarte ≠ zaliczone**.
 **Jednym zdaniem:** placement steruje wyłącznie **progresją wewnętrzną** — otwiera nawigację po drabinie, nie zalicza modułu, nie tworzy wpisu w Paszporcie i nic z niego nie wychodzi na zewnątrz jako dowód kompetencji wobec pracodawcy, więc mieści się w całości po stronie „ocena formująca — maszyna samowystarczalna", a warstwa kredencjału (capstone → weryfikacja człowieka → receipt) zostaje nietknięta.
 
 Uzupełniająco: wariant hybrydowy **wzmacnia** zgodność z §7 wobec pierwotnego D8. Pod D8 automat przyznawał modułowi status „zaliczony", który wchodził do historii postępu studenta; dziś automat przyznaje wyłącznie prawo wejścia, a każde zaliczenie ma za sobą albo pracę studenta, albo egzamin na ≈90%.
+
+---
+
+## 12. SPECYFIKACJA EKRANU L6 — wynik diagnozy [v0.8, wejście dla Mili i Jacka]
+
+> Sekcje 10 i 11 to bramy domykające dokument — zostają na końcu, za treścią.
+
+Ta sekcja jest **wejściem do pracy**, nie szkicem: ma wystarczyć bez kolejnej rundy pytań. Wszystko poniżej wynika z rozstrzygnięć v0.1–v0.7; tam, gdzie dokładam coś nowego, jest to oznaczone **[NOWE v0.8]**.
+
+**Dlaczego ten ekran ma stawkę.** To jedyne miejsce, w którym student styka się z placementem świadomie. Wariant hybrydowy („diagnoza OTWIERA, egzamin ZALICZA") albo obroni się tutaj, albo wyprodukuje poczucie oszukania — i drugiej okazji nie ma, bo w Becie nie ma przycisku „powtórz test" (§6b).
+
+### 12.1 Gdzie ten ekran żyje — dwie powierzchnie, nie jedna
+
+| # | Powierzchnia | Plik | Co robi | Trwałość |
+|---|---|---|---|---|
+| **A** | Krok 4 onboardingu „Wnioski" | `src/components/onboarding/step-wnioski.tsx` | pełna narracja placementu (trzy zdania + wyjaśnienie dziury + rekomendacja) | **jednorazowa** — patrz 12.7 |
+| **B** | Drabina `/curriculum` | `src/components/curriculum/ladder-view.tsx` + `src/app/(dashboard)/curriculum/page.tsx` | odznaka „Otwarty na podstawie diagnozy · niezaliczony" + naprawa nagłówka | **trwała** — to tu student wraca |
+
+Powierzchnia **B nie jest opcjonalna**. Powierzchnia A znika po jednym przejściu kreatora; jeśli B nie powstanie, student przez resztę pilotażu widzi moduły otwarte i **nie ma skąd wiedzieć, że nie są zaliczone**. Cały cel mikrocopy z §8 („otwarte ≠ zaliczone") realizuje się na B, nie na A.
+
+**[NOWE v0.8] Miejsce w kodzie — kolizja nazw, uwaga wiążąca.** Katalog `src/components/placement/` jest **zajęty przez inną funkcję** — 1.17, śledzenie **placementu ZAWODOWEGO** (zgoda RODO, karta opt-in, historia zatrudnienia). To inna klasa danych i inna podstawa prawna. Komponenty L6 idą do **`src/components/curriculum/`**, nigdy do `src/components/placement/`. Backend rozdzielił te dwa światy prefiksem `curriculum.` w dzienniku audytowym (`placement-service.ts:266-269`) — UI ma trzymać ten sam rozdział.
+
+### 12.2 Rekomendacja startu — co ekran ma policzyć i z czego
+
+**Definicja wiążąca (§7, uogólniona w v0.5): najgłębszy moduł DOSTĘPNY i NIEZALICZONY**, przy dostępności liczonej z **obu** źródeł — łańcucha prerekwizytów **i** odblokowania placementem.
+
+**`deepestUnlockedSlug` z kodu tego NIE realizuje i nie wolno go do tego użyć.** Trzy niezależne powody, każdy wystarczający:
+
+1. **Pomija zaliczone.** Liczy się z `unlockedSlugs`, a te z mocy W-6 **nigdy** nie zawierają modułu zaliczonego (`placement.ts:445` + komentarz przy polu). Student, który zdał `m-eda` egzaminem, dostałby rekomendację `m-pandas` — **cofnięcie**, i to na jedynym ekranie, którego zadaniem jest powiedzieć mu, gdzie jest. To jest dokładnie ten błąd, który poprawiłam w v0.5.
+2. **Nie widzi łańcucha.** Moduł następujący po zaliczonym jest dostępny z mocy prerekwizytu i **nie ma wiersza placementu** — nie ma prawa go mieć. Nota Leo z L4 mówi to wprost: „zbiór modułów otwartych na drabinie jest **szerszy** niż `unlockedSlugs`" (`ladder.ts:24-29`).
+3. **Jest `null` zawsze, gdy placement nic nie otworzył** — czyli w najczęstszym przypadku pilotażu (§6a pkt 5) i u studenta z całą drabiną zdaną. Ekran zostałby bez rekomendacji dokładnie tam, gdzie jest ona najbardziej potrzebna.
+
+**Źródło prawdy dla rekomendacji: drabina, czyli `getLadder(studentId, pathKey)`** (`src/lib/curriculum/ladder.ts`). Ona **już** scala oba źródła dostępności — prerekwizyty i wiersze `curriculum_placements` — i jest tą samą derywacją, która renderuje `/curriculum`. Liczenie rekomendacji z czegokolwiek innego wyprodukuje ekran mówiący co innego niż drabina, na którą ekran odsyła.
+
+**Algorytm — wiążący, w tej kolejności:**
+
+```
+1. kandydaci := moduły drabiny o statusie 'available' LUB 'in_progress'
+2. rekomendacja := kandydat o NAJWYŻSZEJ pozycji
+3. NADPISANIE (DECYZJA 3): jeśli moduł pozycji 1 (`l0-start`) nie ma statusu
+   'completed' → rekomendacja := `l0-start`, niezależnie od kroku 2
+4. brak kandydatów → brak rekomendacji (wariant 9 z 12.6)
+```
+
+**[NOWE v0.8] `coming_soon` NIE jest kandydatem.** Moduł bez pozycji (`itemCount === 0`) ma na drabinie status `coming_soon` i uczciwą etykietę „treść w drodze" (`ladder.ts:194-197`, `ladder-view.tsx:89-92`). Jest **otwarty, ale niezaliczalny**. Rekomendowanie go wysyła studenta w pustkę i psuje jedyne zdanie, które ekran ma do powiedzenia. To uzupełnienie definicji z §7 — tam „dostępny" znaczyło „nie zablokowany"; tu doprecyzowuję: **dostępny = da się w nim dziś coś zrobić**.
+
+**Kolejność wykonania [WYMÓG BACKENDU — Ethan]:** rekomendację liczymy **po** zapisie wierszy placementu tej sesji, nie równolegle. Hook jest dziś best-effort i odpalany bez oczekiwania na skutek w kolejności renderu; rekomendacja policzona przed zapisem nie zobaczy odblokowań z **tej właśnie** diagnozy i pokaże moduł o kilka pozycji za nisko — awaria bezobjawowa, bo wynik nadal wygląda sensownie.
+
+### 12.3 Kolejność zdań — wiążąca
+
+Trzy bloki, **zawsze w tej kolejności**, każdy pomijany, gdy pusty. Kolejność nie jest estetyczna — **najpierw jego praca, potem nasza diagnoza** (§8, uzasadnienie z v0.5).
+
+| # | Blok | Warunek | Tekst (§8, 1:1) |
+|---|---|---|---|
+| 1 | **Jego praca** | zbiór zaliczonych niepusty | „Masz już zaliczone: **{lista tytułów}**." |
+| 2 | **Nasza diagnoza** | `unlockedSlugs` niepuste | „Diagnoza otworzyła dodatkowo: **{lista tytułów}**." (gdy blok 1 pusty: „Diagnoza otworzyła Ci ścieżkę aż do modułu **{tytuł najgłębszego odblokowanego}**. To skrót w nawigacji, nie zaliczenie — moduły po drodze nadal czekają. Żeby moduł liczył się jako zaliczony, przejdź go albo zdaj jego egzamin (**test out**).") |
+| 2b | **Dlaczego nie dalej** | dziura istnieje | tekst per powód dziury — tabela 12.4 |
+| 3 | **Gdzie zacząć** | rekomendacja istnieje | „Zacznij od **{tytuł}**." — a gdy `l0-start` niezaliczony, pełny tekst z §8: „Zacznij od **Start: środowisko pracy** — około 15 minut. Bez działającego notebooka nie ruszysz żadnego ćwiczenia z kodem, nawet jeśli materiał znasz." |
+
+**`l0-start` idzie przed wszystkim, dopóki jest niezaliczony — także u studenta z modułami zaliczonymi wyżej.** To nie formalność: „test out" zdaje się **pytaniami zamkniętymi**, więc można zaliczyć `m-eda`, **nie uruchomiwszy nigdy notatnika**. Rekomendacja `m-sql` dla kogoś bez działającego środowiska trafia dokładnie w scenariusz, przed którym chroni DECYZJA 3 — student nie odbija się od SQL-a, tylko od pustego ekranu, i winę przypisze produktowi.
+
+**Blok 3 jest rekomendacją, nie rozkazem.** Zakazane brzmienia: „musisz zacząć od", „Twój punkt startu to", „przejdź do". Drabina nie skacze studenta automatycznie (§7), wszystkie moduły niżej zostają dostępne i widoczne, a przy poziomie 3 — opartym na **jednym** trafionym pytaniu — student często wie o sobie więcej niż nasz pomiar.
+
+### 12.4 Mapa powodów na teksty — wyczerpująca, 9 wartości
+
+Typ `PlacementReason` ma **dziewięć** wartości (`placement.ts:127-151`), a §8 nazywał sześć. Jack musi napisać wyczerpujący `switch` — poniżej komplet, z jawnym wskazaniem, **gdzie** każdy powód mówi.
+
+| Powód | Poziom | Gdzie mówi | Tekst |
+|---|---|---|---|
+| `qualified` | moduł | odznaka na drabinie + karta wejścia w moduł | odznaka: „Otwarty na podstawie diagnozy · niezaliczony". Karta wejścia **tylko przy `supportMode='full'`**: „Ten moduł otwieramy Ci na podstawie jednego trafionego pytania — zostawiamy pełne wsparcie włączone. Jeśli materiał okaże się znany, przeklikasz go szybko." Przy `'fading'` — sama odznaka, bez zdania o wsparciu |
+| `carried_untagged` | moduł | odznaka + karta wejścia | odznaka jak wyżej. Karta: „Tego modułu nie sprawdzaliśmy w diagnozie. Otwieramy go, bo poradziłeś sobie z **{nazwa kompetencji głębszej}** — a bez tych podstaw to nie byłoby możliwe. Zostawiamy pełne wsparcie włączone; jeśli materiał znasz, przeklikasz go szybko." |
+| `below_threshold` | **wyłącznie dziura** | blok 2b | tekst `below_threshold` z §8; przy zerze odblokowań — wariant zerowy z §8 |
+| `uncovered` | **wyłącznie dziura** | blok 2b | tekst `uncovered` z §8; przy zerze odblokowań — wariant zerowy |
+| `no_measurement` | **wyłącznie dziura** | blok 2b | tekst `no_measurement` z §8 (v0.7); przy zerze odblokowań — wariant zerowy |
+| `already_completed` | moduł | **NIGDZIE — cisza** | §6c: „Co student widzi na jego temat w komunikacie o placemencie: **nic**". Moduł pokazuje własny stan na drabinie („zaliczony — egzamin"), niezależny od diagnozy i wcześniejszy od niej |
+| `root` | moduł | **cisza** | `l0-start` jest dostępny z mocy bycia korzeniem, nigdy „odblokowany" (DECYZJA 3). Nazwanie go odblokowanym byłoby przypisaniem sobie czegoś, czego nie zrobiliśmy |
+| `beyond_prefix` | moduł | **cisza** | moduł kwalifikuje się, ale leży za dziurą. Zdanie „umiesz to, ale nie otworzymy" jest technicznie prawdziwe i produktowo szkodliwe — brzmi jak kara. Powód dziury (2b) już to wyjaśnił, raz i we właściwym miejscu |
+| `untagged_beyond_prefix` | moduł | **cisza** | „nie zmierzyliśmy i leży poza prefiksem" — brak informacji dla studenta, sam szum |
+
+**Dwie reguły twarde dla Jacka:**
+
+1. **„Wypadła słabo" wolno pokazać WYŁĄCZNIE przy `below_threshold`** — czyli tylko wtedy, gdy pytania realnie padły i student realnie wypadł poniżej progu. Dziś **najczęstszym** powodem zatrzymania prefiksu jest `no_measurement` (§6a: `ds-eda` i `ds-uczenie-maszynowe` są poza katalogiem rynku, więc nikt ich nie zaznaczy), więc pomyłka w tym miejscu **nie jest przypadkiem brzegowym — jest przypadkiem domyślnym**. Powiedzenie „**EDA** wypadła słabo" o kompetencji, o którą nie padło **ani jedno** pytanie, to przyłapanie produktu na zmyślaniu, i to wobec studenta, który akurat ma powód, żeby sprawdzić.
+2. **Fail-closed na nieznanym powodzie.** Jeśli powód dziury ma wartość spoza trójki `below_threshold` / `uncovered` / `no_measurement` — **nie renderuj bloku 2b**. Nigdy nie podstawiaj „najbliższego pasującego" tekstu. To jest dokładnie ta ścieżka, którą „wypadła słabo" trafiłoby na `no_measurement`.
+
+**Dowód, że trójka z reguły 2 jest kompletna** (żeby nikt nie musiał zgadywać): dziurą zostaje pierwszy **otagowany** moduł, który nie spełnia warunku, czyli `!(qualifies || completed)` (`placement.ts:299-305`). Otagowany wyklucza `untagged_beyond_prefix`; `!completed` wyklucza `already_completed`; `!qualifies` wyklucza `qualified` i `beyond_prefix`; pozycja > 1 wyklucza `root`; a odblokowany nie może być dziurą, co wyklucza `carried_untagged`. Zostają dokładnie trzy.
+
+### 12.5 Student, dla którego placement nic nie otworzył — najczęstszy przypadek pilotażu
+
+Persona pilotażu z ADR-014 to **„literalne zero"**. Dla niej zero odblokowań jest **wynikiem oczekiwanym i poprawnym**, nie awarią (§6a pkt 5). Ekran ma to odzwierciedlać.
+
+**Reguła wiążąca: zero odblokowań nie jest komunikowane jako wynik negatywny.**
+
+- **Zakazane w nagłówku i w pierwszym zdaniu:** „Diagnoza nic nie otworzyła", „Nie odblokowaliśmy żadnego modułu", „Nie udało się", „Niestety", jakikolwiek licznik w rodzaju „0 z 8 modułów".
+- **Obowiązkowe:** ekran zaczyna od tego, co student **ma** — od ścieżki i pierwszego kroku, nie od tego, czego nie dostał. Blok 3 (rekomendacja `l0-start`) jest tu **całą** treścią, a blok 2b wyjaśnia powód jednym zdaniem, bez przepraszania.
+- **Ton:** to jest start, nie porażka. Tekst wariantu zerowego mówi wprost „to nie jest ocena — to brak pomiaru" (`no_measurement`/`uncovered`) albo „to wynik dwóch krótkich pytań, nie ocena Ciebie" (`below_threshold`).
+
+**Uzasadnienie, nie preferencja stylistyczna.** Placement jest funkcją dla studenta, który **coś już umie** — obsługuje mniejszość przebranżowiających się. Większość pilotażu do tej mniejszości nie należy. Zbudowanie ekranu wokół tego, co placement zrobił, karze **większość** za bycie docelową grupą produktu i produkuje najgorsze możliwe pierwsze wrażenie u osoby, która właśnie uczciwie przyznała, że zaczyna od zera.
+
+### 12.6 Warianty renderu — wyczerpujące, dziesięć
+
+Do zaimplementowania i do przetestowania. Każdy wariant ma jednoznaczny wynik; nie ma stanu „zależy".
+
+| # | Warunek | Co się renderuje |
+|---|---|---|
+| 1 | flaga `placementDiagnostic` OFF **albo** brak sesji diagnozy (0 zaznaczeń → test się nie odbył) | **sekcja nie istnieje** — ekran bajt-w-bajt jak dziś |
+| 2 | cel kariery spoza pilotażu DS (`pathKey === null`) | **sekcja nie istnieje** — nie ma drabiny, o której można mówić |
+| 3 | drabina pusta (`ladderSize === 0`) | **sekcja nie istnieje** |
+| 4 | **placement policzył się z błędem** (hook best-effort padł) | **sekcja nie istnieje.** Wynik diagnozy stoi sam. Nigdy sekcja pusta ani „nie udało się" — placement jest dodatkiem, jego awaria nie ma prawa zająć miejsca na ekranie studenta |
+| 5 | odblokowane 0, zaliczone 0, dziura jest | blok 2b (wariant zerowy) + blok 3 (`l0-start`) — patrz 12.5 |
+| 6 | odblokowane 0, zaliczone 0, dziury brak | wyłącznie blok 3. Na drabinie DS nieosiągalne (pozycja 2 jest otagowana), ale render ma być zdefiniowany, nie przypadkowy |
+| 7 | odblokowane > 0, zaliczone 0 | blok 2 (wariant „aż do modułu") + 2b, jeśli dziura + blok 3 |
+| 8 | odblokowane 0, zaliczone > 0 | „Masz już zaliczone: **{lista}**. Diagnoza nie otworzyła nic ponad to — zacznij od **{moduł}**." (§8) |
+| 9 | odblokowane > 0, zaliczone > 0 | trzy bloki w kolejności wiążącej z 12.3 |
+| 10 | brak kandydatów na rekomendację (wszystko dostępne jest zaliczone) | bloki 1–2 bez bloku 3, zamiast niego: „Masz zaliczone wszystko, co dziś jest w ścieżce." Gdy jedyni kandydaci mieli status `coming_soon`: „Kolejny moduł jest w przygotowaniu." |
+
+### 12.7 Czego ten ekran NIE MOŻE powiedzieć
+
+**1. `unlockedSlugs` to „co otworzyła DIAGNOZA" — nigdy stan drabiny.** Nota Leo z L4 (`ladder.ts:24-29`): zbiór modułów otwartych na drabinie jest **szerszy**, bo (a) korzeń jest dostępny zawsze i z zasady nie ma wiersza, (b) moduł po zaliczonym otwiera się łańcuchem, (c) „test out" obchodzi prefiks z założenia. Zakazane brzmienia: „Otwarte masz: …", „Twoje dostępne moduły to …", „masz otwarte N z 9", każdy licznik i każda lista podana jako **stan ścieżki**. Dozwolone wyłącznie: „**diagnoza otworzyła** …".
+
+**2. Nic, co miesza otwarcie z zaliczeniem.** Zakazane o module odblokowanym: „zaliczone", „masz z głowy", „możesz pominąć", „przerobione", „ukończone". To jest cały punkt sporny hybrydy — moduł otwarty ma **wszystkie pozycje do przejścia**.
+
+**3. Nic o module już zaliczonym w narracji placementu** (§6c). Zdanie „diagnoza otworzyła Ci moduł X" skierowane do osoby, która sama zdała go na ≈90%, przypisuje produktowi cudzą pracę — i trafia w kogoś, kto właśnie zrobił najtrudniejszą rzecz, jaką platforma oferuje.
+
+**4. Żadnych wewnętrznych kodów.** Zakazane na ekranie: slugi (`m-pandas`, `ds-python`), kody powodów (`below_threshold`), numer progu, poziomy 1–4 per **koncept**, `prefixEndPosition`. Poziomy per **kompetencja** pokazuje osobna, istniejąca sekcja „Wynik testu" (`step-wnioski.tsx:186-220`) — sekcja placementu ich nie powtarza i nie komentuje.
+
+**5. Żadnej obietnicy, że placement da się powtórzyć.** W Becie nie ma przycisku „powtórz test" i cała monotoniczność odblokowań stoi na tym założeniu (§6b). Zakazane: „możesz powtórzyć test", „spróbuj ponownie".
+
+**[NOWE v0.8] 6. Ekran jest JEDNORAZOWY i tak ma zostać — decyzja świadoma.** Pełny werdykt (powody `below_threshold` / `uncovered` / `no_measurement`) **nie jest utrwalany**: do bazy idą wyłącznie moduły otwarte, bo świadomie nie utrwalamy tego, na czym student wypadł słabo (minimalizacja, L3). Powody żyją wyłącznie w odpowiedzi trasy domykającej diagnozę. **Skutek: po odświeżeniu strony wyjaśnienia nie ma i nie będzie.** Akceptuję to i zapisuję, żeby nikt tego „nie naprawił" przeliczaniem na odczycie — przeliczanie łamie niezmiennik, o który walczyłam w v0.3/v0.4 („zapis w chwili odblokowania, nigdy wstecz") i po zmianie mapy tagów albo progu pokazałoby **inny powód niż ten, który obowiązywał w chwili pomiaru**. Trwałym nośnikiem jest **powierzchnia B** (drabina + odznaka), nie ten ekran.
+
+### 12.8 Kontrakt danych — co ekran musi dostać [WYMÓG BACKENDU — Ethan]
+
+Kształt i transport = decyzja Ethana. Warunki produktowe, wszystkie wiążące:
+
+1. **Ekran nie liczy reguły placementu ani rekomendacji.** Dostaje policzone. Druga implementacja reguły w UI rozjedzie się z pierwszą — dokładnie tak, jak `getLadder` i `isModuleUnlocked` rozjechałyby się bez testu parytetu (`ladder.ts:46-49`).
+2. **Werdykt musi nieść nazwy czytelne dla człowieka.** `PlacementModuleVerdict` ma dziś `slug`, `conceptSlug`, `level`, `reason` — i **ani jednego tytułu modułu ani nazwy kompetencji** (`placement.ts:157-183`). Wszystkie teksty z §8 interpolują **{tytuł modułu}** i **{nazwa kompetencji}**. Jack **nie ma prawa** budować własnej mapy slug → tytuł po stronie klienta: tytuły są danymi z ingestu, zmienią się przy pierwszej erracie, a mapa w kodzie zgnije w ciszy. Wymagane: tytuł modułu (`curriculum_modules.title`) i nazwa kompetencji (`question_concepts.competency_name` — **ta sama kolumna**, która karmi plan diagnozy, wymóg C6 Leo).
+3. **Dziura przychodzi jako komplet albo nie przychodzi wcale:** `{ tytuł modułu, nazwa kompetencji, powód }`. Brak któregokolwiek pola = brak bloku 2b (12.4, reguła fail-closed).
+4. **Rekomendacja przychodzi jako slug + tytuł**, policzona algorytmem z 12.2 na drabinie, **po** zapisie placementu.
+5. **Powierzchnia B: drabina musi wiedzieć, który moduł jest otwarty placementem.** `LadderModule` dziś tego nie niesie (`ladder.ts:98-107`), choć `getLadder` **już wczytuje** zbiór `placementUnlocked` (`ladder.ts:161`) i po prostu go nie eksponuje. Bez tego odznaka z §8 jest niewykonalna.
+6. **Inwariant flagi OFF bez zmian:** przy `placementDiagnostic` OFF zero dodatkowych zapytań i odpowiedź identyczna jak dziś (wzorzec trzymany w L4).
+
+### 12.9 Powierzchnia B — dwie zmiany na drabinie
+
+**[NOWE v0.8] 1. Nagłówek `/curriculum` przy zapalonej fladze KŁAMIE.** Dziś brzmi: „Moduły od podstaw do projektu. Kolejny moduł otwiera się dopiero po zaliczeniu poprzedniego — **bez skrótów**." (`src/app/(dashboard)/curriculum/page.tsx:62-65`). Placement jest **dokładnie skrótem** — to jego cała funkcja. Po zapłonie student zobaczy zdanie „bez skrótów" i **tuż pod nim** odznakę „Otwarty na podstawie diagnozy" na module, którego nie zaliczył. Sprzeczność na jednym ekranie, w dwóch sąsiadujących liniach — i to ta sama klasa błędu, którą tępię w mikrocopy: produkt mówiący rzecz, którą student może natychmiast sprawdzić i obalić.
+
+Nowe brzmienie (przy fladze ON): „Moduły od podstaw do projektu. Kolejny moduł otwiera się po zaliczeniu poprzedniego — albo od razu, jeśli diagnoza pokazała, że znasz wcześniejszy materiał. **Otwarty moduł to nie zaliczony moduł.**"
+
+**2. Odznaka na module otwartym placementem:** „Otwarty na podstawie diagnozy · niezaliczony" (§8, tekst 1:1). Kształt: ta sama forma co istniejące odznaki statusu (`ladder-view.tsx:80-85`), **obok** odznaki statusu, nie zamiast niej — status mówi „dostępny", odznaka mówi **skąd** ta dostępność się wzięła. Odznaka znika, gdy moduł zostanie zaliczony (wtedy prawdą staje się jego własny stan).
+
+### 12.10 Mila — warstwa wizualna
+
+- **To jest komunikat nawigacyjny, nie wynik.** Zero pasków postępu, zero procentów, zero wykresów w sekcji placementu. Sekcja „Wynik testu" tuż wyżej **już** pokazuje pomiar; placement mówi wyłącznie „gdzie jesteś i gdzie zacząć". Pasek obok tego zdania zamieniłby nawigację w drugą ocenę studenta.
+- **Hierarchia zgodna z kolejnością zdań** (12.3): jego praca wizualnie **nie słabsza** niż nasza diagnoza. Wyróżnienie bloku 2 („diagnoza otworzyła") kosztem bloku 1 („masz już zaliczone") odwraca sens, o który walczy §6c.
+- **Rekomendacja (blok 3) jest jedynym akcentem** — to jedyne zdanie, po którym student ma coś zrobić.
+- **Umiejscowienie na powierzchni A:** pod istniejącą sekcją „Wynik testu", nad `profileNote`. Placement jest konsekwencją diagnozy i ma stać zaraz za nią.
+- **Bez emoji, bez ikon ostrzegawczych przy bloku 2b.** Wyjaśnienie dziury to informacja, nie ostrzeżenie; trójkąt albo wykrzyknik zamienia „nie zmierzyliśmy tego" w „coś jest z tobą nie tak".
+- **Dostępność:** kolejność DOM = kolejność zdań (czytnik ekranu dostaje ją w tej samej kolejności wiążącej). Odznaka na drabinie musi być czytelna tekstem, nie samym kolorem.
+
+---
+
+## 13. Rejestr długu produktowego 1E.7 [NOWE v0.8]
+
+Inwentaryzacja na zlecenie Olivera („nie zostawiaj za sobą żadnych długów"). Waga = koszt niezrobienia. Próg = najpóźniejszy moment, w którym pozycja musi być zamknięta. **Sześć pozycji dopisanych ponad listę Olivera** (D0, D7–D11).
+
+| ID | Pozycja | Waga | Koszt | Próg | Właściciel |
+|---|---|---|---|---|---|
+| **D0** | cel kariery nieznany w chwili liczenia placementu | **krytyczna** | mały | **przed zapłonem** | Ethan |
+| **D7** | nagłówek `/curriculum` („bez skrótów") kłamie przy fladze ON | średnia | znikomy | **przed zapłonem** (część L6) | Jack |
+| **D8** | drabina nie niesie „otwarty placementem" → odznaka niewykonalna | wysoka | mały | **przed zapłonem** (część L6) | Ethan + Jack |
+| **D10** | kolizja nazw `placement` (1.17 zawodowy ⟂ 1E.7 diagnostyczny) | niska merytorycznie, średnia operacyjnie | zero | **przed zapłonem** (jedno zdanie w zleceniu) | Sophia — zrobione w §12.1 |
+| **D9** | pełny werdykt nie przeżywa odświeżenia strony | średnia | zero (decyzja, nie praca) | **przed zapłonem** jako zapis | Sophia — zrobione w §12.7 |
+| **D5** | zakres wniosków z pilotażu bez nośnika poza tym dokumentem | średnia | mały | **przed 1. studentem** | Sophia + Oliver |
+| **D11** | zdarzenie miernika nie ma odbiorcy (brak zapytania odczytującego) | średnia-wysoka | mały | **przed 1. studentem** | Ethan + Ryan |
+| **D4** | §7 pkt 3 — dwie definicje „pozycji zaliczonej" pod jedną nazwą | średnia-wysoka | mały (test pinujący) | **przed 1. studentem** (test), reszta przy pierwszym pisarzu statusu | Ethan |
+| **D1** | sufit strukturalny — EDA i ML poza katalogiem rynku | wysoka | dni | **po pilotażu**, z pierwszą rewizją banku | Sophia + Ethan |
+| **D2** | para `m-llm` ↔ `ds-llm` słaba | średnia (dziś uśpiona) | mały-średni | **razem z D1** | Sophia |
+| **D3** | §6e — reguła resetu niewyegzekwowana kodem | niska dziś, wysoka przy budowie resetu | mały teraz, duży potem | **przy budowie funkcji resetu** | Ethan |
+| **D6** | `'test_out'` a Paszport — moment uruchomienia §7 konstytucji | wysoka w chwili wejścia do Paszportu | średni | **przed pierwszym wpisem modułu w Paszporcie** | Sophia + Ryan |
+
+### D0 — cel kariery nieznany w chwili liczenia placementu [BLOKER ZAPŁONU]
+
+**Stan faktyczny, odczytany z kodu.** Hook bierze cel z wiersza studenta: `student.careerGoal ? pathKeyForCareerGoal(...) : null; if (!pathKey) return null` (`placement-service.ts:452-453`). Tymczasem w kolejności zdarzeń kreatora:
+
+1. Krok 0 (Pomocnik Wyboru Kariery) zakłada wiersz studenta z **`careerGoal: ""`** — placeholder `NOT NULL`, jawnie opisany jako „nadpisywany przez UPSERT w `POST /api/onboarding`" (`src/lib/career-helper/session.ts:81-88`).
+2. Autozapis kroków (`POST /api/onboarding/progress`) zapisuje uczelnię, kierunek, semestr i sylabus — **celu kariery nie zapisuje w ogóle** (`progress/route.ts:144-173`).
+3. Student odbywa diagnozę. Sesja diagnozy cel **zna** — kreator podaje go w ciele żądania właśnie dlatego, że wiersz studenta trzyma stary (`onboarding-wizard.tsx:381-383`), a trasa startowa zapisuje go na sesji (`assessment_sessions.career_goal`, `schema.ts:1313`).
+4. `POST /api/assessment/[id]/complete` odpala hook placementu — **tu**, przed jakimkolwiek zapisem celu.
+5. Dopiero potem `handleDiagnosisFinished` → `runSubmit` → `POST /api/onboarding` zapisuje `careerGoal`.
+
+**Skutek, dwa warianty tej samej wady:**
+
+- **Nowy student** (persona pilotażu): `careerGoal === ""` → łańcuch pusty jest fałszywy → `pathKey = null` → hook wychodzi cicho. **Zero wierszy, zero zdarzenia miernika, pusty ekran L6.** Funkcja nie działa dla nikogo, kto wchodzi po raz pierwszy.
+- **Zmiana kierunku:** `careerGoal` to **stary** cel → placement policzy się na **cudzej drabinie** albo, gdy stary cel był spoza DS, nie policzy się wcale. Wiersze są niezmienne (`ON CONFLICT DO NOTHING` + wyzwalacz), więc odblokowania z niewłaściwej ścieżki **zostają na stałe**.
+
+**Dlaczego nikt tego nie złapał.** Test bramkowania sadza studenta z gotowym `careerGoal: "Data Scientist"` (`assessment-complete-placement-gating.test.ts:50`) — czyli w stanie, którego pilotażowy student **w tym momencie przepływu nie ma**. To ta sama klasa niewidoczności, którą Leo pokazał mutacją przy L5: suita zielona, zachowanie produkcyjne inne.
+
+**Rozstrzygnięcie produktowe (moje): placement liczy się dla celu kariery, DLA KTÓREGO STUDENT ODBYŁ DIAGNOZĘ — nie dla celu zapisanego w wierszu studenta.** Uzasadnienie jest merytoryczne, nie techniczne: diagnoza zmierzyła kompetencje **wybrane pod konkretny cel**, a jej wynik jest twierdzeniem o tym celu. Sesja diagnozy jest jedynym miejscem, gdzie ta para (cel, pomiar) jest związana w chwili pomiaru — i już go niesie. Wiersz studenta jest w tym momencie stanem przejściowym, nie źródłem prawdy.
+
+**[WYMÓG BACKENDU — Ethan]** Źródłem celu dla hooka jest `assessment_sessions.career_goal` tej sesji; wiersz studenta co najwyżej jako zapasowe źródło, gdy sesja go nie ma (zgodność wstecz — kolumna jest `NULL`-owalna). **Warunek kontrolny:** cel z sesji **pusty albo nierozwiązywalny na ścieżkę** ma zostawić ślad w dzienniku, a nie cichy `return null` — dziś „placement nie policzył się, bo nie znamy celu" jest w danych **nieodróżnialne** od „student ma cel spoza pilotażu DS", a to dwie różne rzeczy: pierwsza to defekt, druga to poprawne zachowanie. Bez tego rozróżnienia mój miernik przez cały pilotaż pokaże ciszę i nie powie, co ona znaczy.
+
+**Test, który ma to przypiąć:** student w stanie **realnego kroku 4 kreatora** (wiersz z `careerGoal: ""`, sesja diagnozy z celem „Data Scientist") kończy diagnozę → powstają wiersze placementu. Test na studencie z gotowym celem w wierszu tej awarii nie zobaczy — właśnie ją przepuścił.
+
+### D1 — sufit strukturalny: która droga naprawy jest właściwa i co ją odblokowuje
+
+Trzy drogi rozważone i odrzucone w §6a. **Właściwa długoterminowo jest droga nr 3 — rozdzielenie „co student może zaznaczyć" od „czego wymaga rynek".** Drogi 1 i 2 są zamknięte **na stałe**, nie odłożone: nr 1 (dopisanie EDA/ML do danych rynku) fałszuje dowód, na którym stoi zdanie „uczysz się tego, czego realnie chcą pracodawcy"; nr 2 (tagi na `null`) cofa DECYZJĘ 5 tam, gdzie ona działa, i wpisuje w konfigurację dokładnie to wrzucanie ponad poziom, które cała DECYZJA 2 uznaje za błąd droższy.
+
+**Dlaczego akurat nr 3.** Dziś **jedna lista pełni dwie role naraz** — jest katalogiem wyboru („co mogę zaznaczyć") i katalogiem pokrycia („mianownik procentu rynku"). To zlanie jest źródłem sufitu: kompetencja bez znacznika w ofertach JustJoinIT wypada z katalogu rynku, a **przez to** znika także z listy wyboru — choć ma komplet pytań w banku i istnieje w hierarchii ścieżki. Rozdzielenie ról naprawia przyczynę; wszystko inne łata objaw.
+
+**Co ją odblokowuje — trzy warunki, wszystkie techniczne:** (a) katalog wyboru przestaje być tożsamy z katalogiem pokrycia (dwa źródła, jeden ekran); (b) upada niezmiennik „suma pozycji grup == lista płaska"; (c) zapis onboardingu przestaje odsiewać kompetencje spoza katalogu rynku (`runSubmit` mapuje po `catalog` — `onboarding-wizard.tsx:446-474`), bo inaczej pomiar EDA nie zapisze się nawet w mapie kompetencji. Kompetencje spoza rynku pokazujemy **bez „% ofert"** i **poza mianownikiem pokrycia** — inaczej wracamy do drogi nr 1 tylnymi drzwiami.
+
+**Zdarzenie, do którego jest przypięta:** pierwsza rewizja banku pytań (czeka tam D2) **albo** wejście drugiej ścieżki curriculum — cokolwiek przyjdzie pierwsze. Druga ścieżka wymusza to sama z siebie: przy dwóch rolach jedna lista nie może już być mianownikiem obu.
+
+### D2 — para `m-llm` ↔ `ds-llm`
+
+Bank pyta o RAG kontra dostrajanie, arytmetykę okna kontekstu, ograniczanie halucynacji i liczbę parametrów warstwy transformera; moduł uczy **strukturalnego wyjścia i ewaluacji względem wzorca**. To wiedza ogólna o modelach kontra umiejętność inżynierska — najsłabsza para w całej mapie (DECYZJA 1).
+
+**Rozstrzygnięcie kierunku:** naprawiamy **bank**, nie tag. Podmiana tagu na `null` przenosi `m-llm` do kategorii „nie zmierzyliśmy" i pozwala mu wjechać do prefiksu na cudzym pomiarze — czyli ta sama wada, dla której odrzuciłam drogę nr 2 przy D1, tylko w mniejszej skali. Bank dostaje pytania o strukturalne wyjście i o ewaluację względem wzorca, czyli o to, czego moduł faktycznie uczy.
+
+**Waga dziś: uśpiona.** `m-llm` jest za sufitem D1 — nie otworzy się nikomu, więc słaba para nie może dziś wyprodukować ani jednego złego odblokowania. **Dlatego próg D2 jest związany z D1: rewizja banku i zniesienie sufitu muszą iść razem.** Zniesienie sufitu **bez** poprawy banku byłoby zapaleniem najsłabszej pary w tej samej chwili, w której przestaje być teoretyczna.
+
+### D5 — zakres wniosków z pilotażu: czy to przetrwa sesję
+
+**Uczciwa odpowiedź: dziś NIE.** Ograniczenia wnioskowania („Co wolno, a czego nie wolno wnioskować z pilotażu", §6a) żyją wyłącznie w **niezacommitowanym** dokumencie produktowym. To dokładnie ten sposób, w jaki umierają wszystkie długi zapisane w dokumentach — i sama nazwałam to słabością w self-critique v0.7, po czym zostawiłam pozycję w tym samym miejscu.
+
+**Ryzyko konkretne, nie abstrakcyjne:** ktoś zobaczy w dzienniku `unlockedCount: 0` u wszystkich uczestników i przeczyta to jako „próg za wysoki" — po czym obniży próg. To **odwrotność** mojej decyzji: przy `blockingHoleReason = no_measurement` próg nie miał nic do roboty, bo pytania nie padły. Obniżenie progu na tych danych zwiększy fałszywe odblokowania, nie naprawiając niczego.
+
+**Dwa nośniki wymagane, oba tanie:** (a) **dokument musi zostać scalony do repo** — dopóki żyje w drzewie roboczym, nie istnieje dla nikogo poza tą sesją (scalenie nie należy do mnie: nie commituję, wnoszę to jako wymóg do Olivera i Ethana); (b) **ograniczenia wnioskowania muszą stać przy zapytaniu odczytującym miernik**, nie w rozdziale o przypadkach brzegowych — czytelnik dziennika i czytelnik §6a to nie ta sama osoba w tej samej chwili. Domyka się to razem z D11.
+
+### D11 — miernik nie ma odbiorcy
+
+Zdarzenie `curriculum.placement.computed` leci przy każdym policzeniu, także zerowym (P-1) — warunek mianownika spełniony w L4. **Ale nikt nie ma zapytania, które je czyta.** Bez tego cała DECYZJA 2 („próg alarmowy: jeśli odblokowani na poziomie 3 oblewają istotnie częściej — podnoszę próg do 4") jest deklaracją, a nie decyzją opartą na danych — czyli dokładnie tym, co zarzuciłam sobie w self-critique v0.7 pkt 1 i uznałam za naprawione.
+
+Wymóg minimalny (przy 1–3 studentach to praca ręczna, ale ręczna praca bez zapisanego zapytania nie zostanie wykonana): jedno zapisane zapytanie po `action = 'curriculum.placement.computed'`, zwracające `unlockedCount`, `blockingHoleSlug`, `blockingHoleReason`, `blockingHoleLevel`, `alreadyCompletedCount`, `threshold` — z **ograniczeniami wnioskowania obok** (D5b). **Mianownik bierzemy z listy uczestników pilotażu, nie z dziennika**: student, który nie zaznaczy żadnej kompetencji, nie odbywa testu, więc nie zostawia zdarzenia (§6a pkt 5, jedyna jawna dziura w pomiarze).
+
+### D6 — `'test_out'` a Paszport: kiedy i jak [decyzja moja + Ryana]
+
+**Stan dzisiejszy — uwaga Leo z L5 jest trafna.** Zaliczenie modułu **nie opuszcza platformy**: nie tworzy wpisu w Paszporcie, nie idzie do pracodawcy, nie jest kredencjałem. Mieści się więc w całości po stronie „ocena formująca — maszyna samowystarczalna" (CLAUDE.md §7 v1.13), a §7 **nie jest uruchamiany**. Zapłon 1E.7 tego nie zmienia — placement otwiera nawigację i tym bardziej niczego na zewnątrz nie twierdzi.
+
+**Moment przełomu.** W chwili, gdy zaliczenie modułu pojawi się w Paszporcie, `'test_out'` przestaje być notatką wewnętrzną i staje się **twierdzeniem wobec pracodawcy**: „zaliczył moduł, nie przechodząc go". To jest kredencjał wysokiej stawki w rozumieniu §7 — i wtedy zaczyna obowiązywać zasada „człowiek ma ostatnie słowo".
+
+**Trzy warunki, wszystkie moje, wiążące od tamtej chwili:**
+
+1. **Rozróżnienie musi być widoczne W KREDENCJALE, nie tylko w bazie.** Paszport pokazuje „zaliczony egzaminem, bez przechodzenia modułu" odrębnie od „przerobiony i zaliczony". Zlanie obu w jedno „zaliczony" produkuje twierdzenie mocniejsze niż dowód, który za nim stoi — a rozróżnienie już istnieje w danych (L5) i kosztuje wyłącznie decyzję o pokazaniu go.
+2. **Sam `'test_out'` NIE wystarcza jako samodzielny kredencjał.** Egzamin modułowy to pytania zamknięte, a cała DECYZJA 4 stoi na tym, że mastery pytań zamkniętych **nie transferuje do kodu** — dlatego F3 wieńczy mini-projekt transferowy. Kredencjałem zostaje capstone z weryfikacją człowieka (receipt); `'test_out'` wchodzi do Paszportu wyłącznie jako **element ścieżki**, nigdy jako samodzielny dowód kompetencji. Inaczej produkt mówi na zewnątrz coś, czemu sam wewnętrznie zaprzecza.
+3. **Podniesienie `'test_out'` do rangi samodzielnego kredencjału nie jest moją decyzją.** To zmiana wagi oceny w rozumieniu §7 v1.13 — wymaga człowieka w pętli i sign-offu Darka, nie mojego rozstrzygnięcia produktowego.
+
+**Kiedy:** przy projektowaniu wpisu modułowego w Paszporcie, **przed** pierwszym takim wpisem. Nie przed zapłonem 1E.7 — dziś nie ma czego uruchamiać. **Kto:** ja (waga dowodu, co Paszport twierdzi) + Ryan (RODO i konsekwencja wobec osoby trzeciej); sam wpis w Paszporcie to terytorium Ethana (ADR-021).
 
 ---
 
@@ -375,8 +710,11 @@ Uzupełniająco: wariant hybrydowy **wzmacnia** zgodność z §7 wobec pierwotne
 | 5. Werdykt o regule prefiksowej (potwierdź albo obal) | DECYZJA 5 | ✔ |
 | 6. Sprawdzenie zgodności z §7 + jedno zdanie uzasadnienia | Sekcja 9 | ✔ |
 | 7. Dokument w drzewie roboczym, bez commita | ten plik | ✔ |
+| 8. [v0.7, zlecenie Olivera] Weryfikacja §6a na kodzie: co jest domyślnie zaznaczone, ile z szóstki student zbada, werdykt ryzyka, najtańsza poprawka, zakres wniosków z pilotażu, wystarczalność zdarzenia miernika | §6a, podsekcje „WERYFIKACJA NA KODZIE", „Trzy drogi naprawy…", „Co MUSI wejść do L6…", „Co wolno, a czego nie wolno wnioskować…" | ✔ |
+| **9. [v0.8, zadanie 1] Specyfikacja ekranu wyniku diagnozy gotowa dla Mili i Jacka** (rekomendacja startu i jej źródło, kolejność zdań, `l0-start`, mikrocopy per powód, wariant „dziura bez odblokowań", student bez odblokowań, zdania zakazane) | **§12** (podsekcje 12.1–12.10) + **§8**, podsekcja „Warianty »dziura, ale ZERO odblokowań«" | ✔ |
+| **10. [v0.8, zadanie 2] Inwentaryzacja długu produktowego z wagą, kosztem i progiem** (D1 sufit + właściwa droga, `m-llm`↔`ds-llm`, §6e reset, §7 pkt 3, zakres wniosków, `test_out` a Paszport, plus pozycje dopisane) | **§13** (tabela 12 pozycji + rozstrzygnięcia D0, D1, D2, D5, D6, D11) | ✔ |
 
-Żadne dwie dostawy nie wskazują tej samej sekcji. Sekcje 0, 6, 7, 8 to konsekwencje wymagane przez rozstrzygnięcia (fakty nośne, przypadki brzegowe, ślad w danych, mikrocopy), nie zlane dostawy.
+Żadne dwie dostawy nie wskazują tej samej sekcji. Dostawy 9 i 10 mają rozdzielne nośniki: §12 to **specyfikacja do wykonania**, §13 to **rejestr do rozliczenia** — pozycje D7/D8/D10, które padają w obu, są w §12 opisane jako **wymóg wykonawczy**, a w §13 wyłącznie **zaksięgowane z progiem**. §8 pojawia się przy dostawie 9 jako jej część (teksty wiążące), a nie jako osobna dostawa. Sekcje 0, 6, 7 to konsekwencje wymagane przez rozstrzygnięcia (fakty nośne, przypadki brzegowe, ślad w danych), nie zlane dostawy.
 
 ### A2 — spójność: nic nie opiera się na tym, co wyłączone
 
@@ -387,10 +725,16 @@ Uzupełniająco: wariant hybrydowy **wzmacnia** zgodność z §7 wobec pierwotne
 | „Test out" jako droga naprawcza przy błędzie w dół | egzamin modułowy 1E.3, próg ≈90% | **SPEŁNIONE 2026-07-25** — 1E.3 live na prodzie (`FLAG_MASTERY_GATE=1`). Warunek postawiony w v0.1 („kolejność 1E.3 → 1E.7 jest warunkiem ważności progu ≥3") jest domknięty: droga naprawcza istnieje realnie, nie tylko w projekcie. |
 | Tryb wsparcia dla modułu wciągniętego prefiksem | trzecia gałąź tabeli trybów (DECYZJA 2) | Nie — gałąź dopisana w v0.3, `null` nie jest już stanem osiągalnym dla modułu odblokowanego |
 | Miernik progu — przestrzelenie w górę | pola werdyktu w `curriculum_placements` (L3) | Zbudowane. Pokrywa sesje, w których coś się otworzyło |
-| Miernik progu — niedoszacowanie | **zdarzenie przy każdym policzeniu placementu** (DECYZJA 2) | **Zależność jawna, niedomknięta:** dopóki zdarzenia nie ma, sesje bez odblokowań nie zostawiają śladu i druga strona asymetrii jest niemierzalna. `blocking_hole_slug` na wierszu **nie** wypełnia tego warunku |
+| Miernik progu — niedoszacowanie | **zdarzenie przy każdym policzeniu placementu** (DECYZJA 2) | **DOMKNIĘTE w L4** — zdarzenie leci przy każdym policzeniu, także zerowym. [v0.7: **jedna dziura pozostaje jawnie** — student, który nie zaznaczy żadnej kompetencji, nie odbywa diagnozy, więc nie ma sesji ani zdarzenia. Nie da się jej zamknąć w warstwie placementu; przy 1–3 studentach mianownik bierzemy z listy uczestników pilotażu, nie z dziennika] |
+| Odblokowanie modułów `m-sql`, `m-ml`, `m-llm` przez placement | pomiar `ds-eda` (i dalej `ds-uczenie-maszynowe`) | **OPARTE NA CZYMŚ WYŁĄCZONYM — nazwane w v0.7:** obie kompetencje są poza katalogiem rynku DS, więc pomiar nie może powstać. Sufit placementu = `m-pandas`. Świadomie zostawione (§6a, dług 1E.7-D1); **żaden wniosek z pilotażu nie ma prawa się na tych trzech modułach opierać** |
+| Mikrocopy przy zatrzymaniu prefiksu | powód dziury z werdyktu reguły (`reason`) | **Zależność domknięta w v0.7** — dla najczęstszego powodu (`no_measurement`) tekst dotąd NIE ISTNIAŁ, a najbliższy kształtem mówił nieprawdę („wypadła słabo"). Tekst dopisany w §8 wraz z regułą mapowania powód → zdanie |
 | Pominięcie modułu zaliczonego (§6c) | status `exam`/`test_out` w `curriculum_module_progress` | Nie — status istnieje i jest zapisywany przez 1E.3 (live od 2026-07-25) |
 | Ciągłość prefiksu przy module zaliczonym (§6c, W-7) | wiedza reguły o zaliczeniach | **DOMKNIĘTE w L4** — moduł zaliczony spełnia próg i wyznacza k (v0.5) |
-| Rekomendacja startu (§7, uogólniona) | status modułów + odblokowania placementem | **Zależność jawna, niedomknięta:** wymaga obu źródeł dostępności. Do domknięcia w L6 — dzisiejsza wersja pomija zaliczenia i cofa studenta |
+| Rekomendacja startu (§7, uogólniona) | status modułów z `getLadder` (oba źródła dostępności) | **Zależność NAZWANA i rozwiązana w v0.8 (§12.2):** nie opiera się na `deepestUnlockedSlug`, który wymogu nie realizuje (trzy powody). Stoi na derywacji drabiny, która istnieje i jest w produkcji od L4 |
+| **Cały ekran L6 (§12)** | **policzony placement dla właściwej ścieżki** | **OPARTY NA CZYMŚ, CO DZIŚ NIE DZIAŁA — nazwane w v0.8:** hook bierze cel kariery z wiersza studenta, pustego w chwili domknięcia diagnozy (§13 / D0). Bez naprawy ekran renderuje wariant 2 lub 3 z §12.6 (sekcja nie istnieje) **dla każdego nowego studenta**. To bloker zapłonu, nie dług |
+| Odznaka „Otwarty na podstawie diagnozy" (§8, powierzchnia B) | pole „otwarty placementem" na module drabiny | **OPARTA NA CZYMŚ NIEISTNIEJĄCYM — nazwane w v0.8:** `LadderModule` tego nie niesie, choć `getLadder` już wczytuje zbiór. Dług D8, próg: przed zapłonem (część L6) |
+| Nagłówek `/curriculum` („bez skrótów") | założenie, że placementu nie ma | **SPRZECZNOŚĆ WPROST — nazwana w v0.8:** przy fladze ON zdanie jest nieprawdziwe i stoi dwie linie nad odznaką, która mu przeczy. Dług D7, próg: przed zapłonem |
+| Blok 2b przy zerze odblokowań | pola „ostatni odblokowany" / „kompetencja głębsza" | **DOMKNIĘTE w v0.8** — oba pola nie istnieją w tej sesji; dopisane warianty zerowe dla `below_threshold` i `uncovered` + reguła generalna interpolacji (§8). Dotyczyło flagowego przypadku ochronnego z DECYZJI 5 |
 | Mikrocopy „masz już zaliczone / diagnoza otworzyła" | rozdzielone wielkości z §7 | Nie — obie wielkości istnieją po L4; potrzeba tylko złożyć je w dwa zdania |
 | Reguła resetu modułu (§6e) | status wiersza postępu, nie jego istnienie | Nie opiera się na niczym z OUT; **świadomie NIE wymaga przeliczania placementu**, więc nie narusza niezmiennika miernika |
 | Dowód `exam`/`test_out` (§7 pkt 3) | pozycje faktycznie przerobione | Nie — wymaga wyłącznie **oddzielenia nazw** dwóch istniejących liczników, nie nowej funkcji |
@@ -415,6 +759,34 @@ Rola: senior product lead z SaaS edukacyjnego, świeżo po launchu, w którym ź
 
 **5. „Oddajesz mapę tagów, a nie mówisz, która pozycja jest najsłabsza — Engineering potraktuje wszystkie 9 wierszy jako równie pewne."** Dopasowanie `m-ml` jest niemal idealne, a `m-llm` opiera się na banku pytającym o liczbę parametrów warstwy transformera przy module o ekstrakcji strukturalnej. → **Zmienione:** tabela DECYZJI 1 dostała kolumnę **„siła dopasowania"** z jawnym „słaba — do rewizji jako pierwsza" przy `m-llm` i nazwanym ograniczeniem przy `m-sql` (brak funkcji okna w banku wobec wymagań rubryki capstone'u). Mapa przestaje udawać, że wszystkie wiersze mają ten sam ciężar dowodowy.
 
+### Self-critique v0.7 — pięć słabości weryfikacji §6a i co z nimi zrobiłam
+
+Rola krytyka: senior product lead z SaaS edukacyjnego po launchu, w którym mechanizm nawigacyjny działał na papierze i na nikim w produkcji.
+
+**1. „Twoje pytanie z v0.6 pytało o zachowanie interfejsu, a problem siedział w danych — i sama byś go nie znalazła, gdybyś sprawdziła tylko to, o co pytałaś."** Pytanie brzmiało „czy krok domyślnie proponuje szóstkę". Odpowiedź „nie proponuje niczego" byłaby formalnie pełna i przeoczyłaby sufit. → **Zmienione:** weryfikacja poszła ścieżką danych do końca (wybór → katalog rynku → bank pytań → tagi drabiny → reguła), a nie do pierwszej odpowiedzi. Sufit znalazł się dopiero na czwartym kroku.
+
+**2. „Piszesz «najtańsza poprawka» i odrzucasz wszystkie trzy — to nie jest odpowiedź, to unik."** → **Zmienione:** każde odrzucenie ma nazwany koszt i nazwaną ofiarę (fałszywa liczba w „% ofert" / cofnięcie DECYZJI 5 / przebudowa kontraktu kroku 3), a zamiast nich stoi **poprawka, która się mieści** — mikrocopy `no_measurement` w L6, czyli jedno zdanie na ekranie, który i tak powstaje. Odrzucenie bez alternatywy byłoby unikiem; odrzucenie z tańszą alternatywą jest rozstrzygnięciem.
+
+**3. „Twoja tabela przypadków w §5 przez cztery wersje opisywała stan nieosiągalny i nikt tego nie zauważył, łącznie z Tobą — a Max zbudował na niej regułę."** Reguła jest poprawna (przypadek jest legalny), ale wiersz „wszystkie 6 tagów" sugerował, że pełne odblokowanie jest odległe, nie **niemożliwe**. → **Zmienione:** wiersz oznaczony wprost jako nieosiągalny, z odsyłaczem do dowodu. Dokument przestaje obiecywać ścieżkę, której nie ma.
+
+**4. „Mówisz «zero odblokowań u początkującego to poprawne zachowanie» — to brzmi jak wygodne tłumaczenie funkcji, która nie zadziała."** Uczciwie: to jest prawda **i** wygodne. → **Zmienione:** zamiast obrony wpisałam ograniczenie wnioskowania w obie strony — brak odblokowań nie jest ani dowodem, że próg jest za wysoki, ani dowodem, że funkcja jest zbędna. Przy n=1–3 pilotaż nie rozstrzyga o wartości placementu i nie wolno udawać, że rozstrzygnie.
+
+**5. „Dług 1E.7-D1 zapisany w dokumencie produktowym umrze tam, gdzie umierają wszystkie długi zapisane w dokumentach."** → **Zmienione:** przypięty do konkretnego zdarzenia, które i tak nastąpi (pierwsza rewizja banku pytań — czeka tam słaba para `m-llm` ↔ `ds-llm`), z jawnym wskazaniem właściwej drogi (rozdzielenie „co można zaznaczyć" od „czego wymaga rynek") i z zamknięciem na stałe dwóch dróg, które przy następnej okazji będą kusiły jako tańsze.
+
+### Self-critique v0.8 — pięć słabości specyfikacji ekranu i rejestru długu
+
+Rola krytyka: senior product lead z SaaS edukacyjnego, po launchu, w którym ekran onboardingu przeszedł review, wyglądał dobrze i u połowy kohorty wyrenderował się pusty.
+
+**1. „Pisałaś specyfikację ekranu, przyjmując na wiarę, że jest z czego go zbudować — a to jest dokładnie to założenie, które zawiodło w v0.7."** W v0.7 sprawdziłam, czy student może zaznaczyć kompetencje. Nie sprawdziłam, czy hook w ogóle się odpali. → **Zmienione:** specyfikację pisałam **od strony danych wstecz** (wiersz studenta → sesja diagnozy → hook → werdykt → ekran), zamiast od strony ekranu w przód. **1E.7-D0 znalazł się na trzecim kroku tej ścieżki** i jest cięższy niż wszystko, co jest w tym dokumencie od v0.1: sufit z §6a ograniczał placement do `m-pandas`, a to sprowadza go do zera dla każdego, kto wchodzi po raz pierwszy. Specyfikacja ekranu, którą oddałabym bez tego sprawdzenia, opisywałaby ekran, który u persony pilotażu **nie renderuje się w ogóle**.
+
+**2. „Zamawiający wymienił sześć powodów, kod ma dziewięć — a Ty zamierzałaś opisać sześć."** Trzy nieopisane (`root`, `beyond_prefix`, `untagged_beyond_prefix`) trafiłyby do Jacka jako luka, a luka w mapowaniu powodów domyka się **najbliższym pasującym tekstem** — czyli tym samym mechanizmem, przez który „wypadła słabo" trafiłoby na `no_measurement`. → **Zmienione:** tabela 12.4 ma **komplet dziewięciu** wartości, z jawnym „cisza" przy czterech i uzasadnieniem każdej ciszy, plus **dowód**, że powód dziury może przyjąć tylko trzy wartości — żeby Jack nie musiał tego ustalać zgadywaniem ani czytaniem `resolvePrefixEnd`. Do tego reguła fail-closed: nieznany powód = brak zdania, nigdy tekst zastępczy.
+
+**3. „Wariant »dziura bez odblokowań« łatasz dwoma tekstami — to naprawa objawu, ta sama, którą sama odrzuciłaś przy D1."** Dwa brakujące teksty to dwa teksty; przyczyną jest to, że mikrocopy interpolują pola, których istnienia nikt nie sprawdza. Trzeci taki tekst powstanie przy następnym powodzie. → **Zmienione:** dopisałam **regułę generalną** (przy zerze odblokowań wolno interpolować wyłącznie własne pola dziury) i **zakaz podstawienia zastępczego**. Teksty są skutkiem reguły, nie odwrotnie. Przy okazji wyszło, że mój własny wariant „kompetencja głębsza" też nie zawsze istnieje (`ds-python`=2 i nic więcej) — czyli poprawka oparta na nim byłaby drugą wersją tego samego błędu.
+
+**4. „Twoja definicja »najgłębszy dostępny i niezaliczony« nadal wysyła studenta w pustkę."** Moduł bez pozycji ma status `coming_soon` — jest **otwarty i niezaliczalny**, a definicję z v0.5 spełnia. Przy treści wchodzącej partiami to nie jest przypadek hipotetyczny: to normalny stan drabiny w trakcie pilotażu. Rekomendacja „zacznij od modułu, którego treść jeszcze powstaje" psuje jedyne zdanie, po którym student ma coś zrobić. → **Zmienione:** `coming_soon` wykluczony z kandydatów (12.2) i dopisany wariant 10 dla przypadku, w którym kandydatów zabrakło. Definicja z §7 doprecyzowana: dostępny znaczy **da się w nim dziś coś zrobić**, nie „nie zablokowany".
+
+**5. „Specyfikujesz ekran, który znika po odświeżeniu, i nigdzie tego nie mówisz."** Powody `below_threshold` / `uncovered` / `no_measurement` **nigdy nie trafiają do bazy** — świadoma minimalizacja z L3. Ekran jest jednorazowy, a ja opisywałam go tak, jakby był stanem. Pierwsza osoba, która to zauważy, „naprawi" go przeliczaniem na odczycie — i po cichu złamie niezmiennik „zapis w chwili odblokowania, nigdy wstecz", o który walczyłam przez dwie wersje, pokazując przy okazji **inny powód niż obowiązujący w chwili pomiaru**. → **Zmienione:** §12.7 pkt 6 zapisuje jednorazowość jako **decyzję świadomą z uzasadnieniem**, a nie przeoczenie, i wskazuje trwały nośnik: **powierzchnia B** (drabina + odznaka). Konsekwencja, której wcześniej nie widziałam: powierzchnia B przestaje być dodatkiem do L6 i staje się jego częścią obowiązkową — bez niej cały cel mikrocopy („otwarte ≠ zaliczone") żyje przez jedno przejście kreatora i znika.
+
 ### Lekcja procesowa z v0.2 (dla mnie i dla kolejnych dokumentów)
 
 Numer migracji 0029 wpisałam **z wnioskowania, nie z odczytu pliku migracji** — spec diagnozy wspomina 0029 przy `verified_by_method` i przyjęłam, że chodzi o tę samą kolumnę. Nie sprawdziłam, że nazwa `verified_by_method` występuje w **dwóch tabelach** (`competencies`, migracja 0029 — żywa; `curriculum_module_progress`, migracja 0035 — martwa pod hybrydą). Wszystkie pozostałe fakty w sekcji 0 czytałam z kodu; ten jeden przeszedł z pamięci — i to właśnie on o mało nie zablokował działającej funkcji.
@@ -427,8 +799,11 @@ Numer migracji 0029 wpisałam **z wnioskowania, nie z odczytu pliku migracji** �
 
 | Rola | Zakres | Status |
 |---|---|---|
-| Sophia (PO) | dydaktyka, mapa tagów, próg, mikrocopy | rozstrzygnięte tym dokumentem |
-| Ethan (CTO) | nośnik tagu, nośnik odblokowania, korekta ADR-014 D8, nazewnictwo `skipped_by_placement` | do przeglądu |
+| Sophia (PO) | dydaktyka, mapa tagów, próg, mikrocopy, specyfikacja ekranu L6 (§12), rejestr długu (§13) | rozstrzygnięte tym dokumentem |
+| Ethan (CTO) | nośnik tagu, nośnik odblokowania, korekta ADR-014 D8, nazewnictwo `skipped_by_placement`, **źródło celu kariery dla hooka (D0 — bloker)**, kontrakt danych ekranu (§12.8), pole „otwarty placementem" na drabinie (D8) | do przeglądu |
+| Mila (Design) | warstwa wizualna ekranu wyniku diagnozy (§12.10) | wejście gotowe, praca nierozpoczęta |
+| Jack (Frontend) | implementacja §12 — obie powierzchnie, dziesięć wariantów renderu, mapa dziewięciu powodów | wejście gotowe, praca nierozpoczęta |
+| Ryan (CRCO) | `'test_out'` a Paszport w chwili wejścia do kredencjału (D6), odbiorca miernika (D11) | do uzgodnienia, poza zapłonem |
 | Darek (CEO) | wariant hybrydowy (rama) | ✔ sign-off 2026-07-26 |
 
 Decyzja mieści się w mojej domenie (produkt/dydaktyka — CLAUDE.md §5 v1.11: odwracalna, wewnętrzna, bez wydatku, niewychodząca na zewnątrz), z przeglądem domenowym Ethana dla warstwy technicznej.
