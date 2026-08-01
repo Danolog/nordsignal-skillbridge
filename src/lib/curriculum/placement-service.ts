@@ -425,6 +425,12 @@ export async function recordPlacementForDiagnosis(params: {
 			tenantId: params.tenantId,
 			moduleId,
 			assessmentSessionId: params.assessmentSessionId,
+			// Dług B1 — ŚCIEŻKA, NA KTÓREJ POLICZONO TO ODBLOKOWANIE. Bierzemy ją
+			// z `params`, czyli z TEGO SAMEGO nośnika, który rozstrzygnął ścieżkę
+			// w haku (`resolveDiagnosisPathKey`) i na którym policzono drabinę
+			// (`loadPlacementLadder(params.pathKey)`). Drugie źródło byłoby
+			// odtworzeniem mechanizmu, który był blokerem D0.
+			pathKey: params.pathKey,
 			conceptSlug: verdict.conceptSlug,
 			level: verdict.level,
 			threshold: outcome.threshold,
@@ -440,7 +446,18 @@ export async function recordPlacementForDiagnosis(params: {
 			.insert(curriculumPlacements)
 			.values(values)
 			.onConflictDoNothing({
-				target: [curriculumPlacements.studentId, curriculumPlacements.moduleId],
+				// Dług B1 — cel konfliktu MUSI pokrywać się z indeksem jednoznaczności,
+				// inaczej Postgres odrzuca całą wstawkę („no unique or exclusion constraint
+				// matching the ON CONFLICT specification"). Po poszerzeniu klucza o ścieżkę
+				// semantyka jest ta, o którą chodzi: powtórna diagnoza NA TEJ SAMEJ ŚCIEŻCE
+				// nadal trafia w DO NOTHING (moduł zostaje otwarty na PIERWOTNYCH warunkach),
+				// a odblokowanie tego samego modułu na INNEJ ścieżce to nowy wiersz — nowy
+				// fakt, nie konflikt.
+				target: [
+					curriculumPlacements.studentId,
+					curriculumPlacements.moduleId,
+					curriculumPlacements.pathKey,
+				],
 			})
 			.returning({ id: curriculumPlacements.id });
 		return {

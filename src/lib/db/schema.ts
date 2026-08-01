@@ -2218,6 +2218,27 @@ export const curriculumPlacements = pgTable(
 		assessmentSessionId: uuid("assessment_session_id")
 			.notNull()
 			.references(() => assessmentSessions.id, { onDelete: "cascade" }),
+		// ŚCIEŻKA CURRICULUM, NA KTÓREJ POLICZONO TO ODBLOKOWANIE (dług B1).
+		//
+		// Bez tej kolumny wiersz odpowiadał na pytanie „który moduł otwarty",
+		// ale nie na „w ramach której drabiny". Skutek dla studenta, który zmienia
+		// kierunek: odblokowania z PORZUCONEJ ścieżki zostają i są NIEODRÓŻNIALNE
+		// od bieżących — a naprawić ich nie sposób, bo wiersze są niezmienne
+		// z mocy wyzwalacza (`curriculum_placements_no_update`), więc uzupełnienie
+		// wstecz jest technicznie niewykonalne, nie tylko drogie.
+		//
+		// NOT NULL bez wartości domyślnej — świadomie. Kolumna ma być niemożliwa
+		// do pominięcia przez nowego pisarza; domyślna wartość („data-science")
+		// wpisywałaby po cichu nieprawdę przy drugiej ścieżce. Migracja jest
+		// darmowa TYLKO na pustej tabeli i dlatego powstała natychmiast po zapłonie.
+		//
+		// Wypełniane z tego samego nośnika, który rozstrzyga ścieżkę w haku
+		// (`resolveDiagnosisPathKey` → `recordPlacementForDiagnosis({ pathKey })`),
+		// nigdy z drugiego źródła — dwie kopie tej reguły były blokerem D0.
+		//
+		// Bez FK: ścieżka nie ma własnej tabeli (klucz żyje w `curriculum_path_modules`),
+		// a wiersz ma być MIGAWKĄ decyzji — przetrwać wycofanie ścieżki z katalogu.
+		pathKey: text("path_key").notNull(),
 		// MIGAWKA sluga konceptu tagującego moduł (nie FK): tożsamość tagu
 		// w chwili decyzji. NULL ⟺ reason='carried_untagged' (moduł wciągnięty
 		// prefiksem, bez własnego pomiaru) — CHECK kształtu niżej.
@@ -2244,8 +2265,23 @@ export const curriculumPlacements = pgTable(
 		unlockedAt: timestamp("unlocked_at", { withTimezone: true }).defaultNow().notNull(),
 	},
 	(table) => [
-		// Fundament niezmienności: druga diagnoza trafia w ON CONFLICT DO NOTHING.
-		uniqueIndex("uq_curriculum_placements_student_module").on(table.studentId, table.moduleId),
+		// Fundament niezmienności: druga diagnoza NA TEJ SAMEJ ŚCIEŻCE trafia
+		// w ON CONFLICT DO NOTHING i moduł zostaje otwarty na PIERWOTNYCH warunkach.
+		//
+		// ⚠ KLUCZ OBEJMUJE ŚCIEŻKĘ (dług B1). Dwa odblokowania tego samego modułu
+		// na DWÓCH RÓŻNYCH ścieżkach to DWA RÓŻNE FAKTY, nie konflikt do połknięcia:
+		// każdy powstał z innego pomiaru, innej drabiny i innego progu. Wąski klucz
+		// (student, moduł) kasował ten drugi fakt po cichu — pierwszy zapis wygrywał,
+		// a `ON CONFLICT DO NOTHING` zamieniał utratę danych w brak błędu.
+		uniqueIndex("uq_curriculum_placements_student_module_path").on(
+			table.studentId,
+			table.moduleId,
+			table.pathKey,
+		),
+		// Pusty łańcuch NIE jest ścieżką (ta sama klasa wady co pusty tytuł w L6):
+		// `NOT NULL` go nie zabrania, a wiersz z pustą ścieżką byłby dokładnie tym
+		// wierszem bez ścieżki, przed którym ta kolumna ma chronić.
+		check("curriculum_placements_path_key_not_blank", sql`length(trim(${table.pathKey})) > 0`),
 		index("idx_curriculum_placements_tenant_id").on(table.tenantId),
 		// Indeksy pod kaskadę FK (kasowanie modułu/sesji nie skanuje tabeli)
 		// i pod zapytania miernika „wszystkie odblokowania z tej sesji".

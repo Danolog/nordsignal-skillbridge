@@ -34,6 +34,8 @@ const dBack = isLocalTestDb ? describe : describe.skip;
 const USER_A = "u-1e7-wlasciciel";
 const USER_B = "u-1e7-obcy";
 const PREFIX = "l3p-";
+// Dług B1 — wiersz odblokowania niesie ścieżkę (`path_key`, NOT NULL).
+const PATH_KEY = "l3p-sciezka-testowa"; // gitleaks:allow — slug ścieżki curriculum
 
 // Drizzle opakowuje błąd Postgresa („Failed query: …"), a realna przyczyna
 // ląduje w łańcuchu error.cause — chodzimy po całym łańcuchu, nie po message.
@@ -81,9 +83,9 @@ dBack("1E.7 L3 · curriculum_placements: RLS + niezmienność (realna baza)", ()
 		};
 		return db.execute(
 			sql`INSERT INTO curriculum_placements
-			      (student_id, tenant_id, module_id, assessment_session_id, concept_slug,
+			      (student_id, tenant_id, module_id, assessment_session_id, path_key, concept_slug,
 			       level, threshold, reason, support_mode, blocking_hole_slug)
-			    VALUES (${studentId}, ${tenantId}, ${v.module_id}, ${sessionId}, ${v.concept_slug},
+			    VALUES (${studentId}, ${tenantId}, ${v.module_id}, ${sessionId}, ${PATH_KEY}, ${v.concept_slug},
 			            ${v.level}, ${v.threshold}, ${v.reason}, ${v.support_mode}, ${v.blocking_hole_slug})`,
 		);
 	}
@@ -196,11 +198,12 @@ dBack("1E.7 L3 · curriculum_placements: RLS + niezmienność (realna baza)", ()
 		const wstawione = await db
 			.execute(
 				sql`INSERT INTO curriculum_placements
-				      (student_id, tenant_id, module_id, assessment_session_id, concept_slug,
+				      (student_id, tenant_id, module_id, assessment_session_id, path_key, concept_slug,
 				       level, threshold, reason, support_mode)
-				    VALUES (${studentIds[USER_A]}, ${tenantId}, ${moduleId}, ${drugaSesja.id},
+				    VALUES (${studentIds[USER_A]}, ${tenantId}, ${moduleId}, ${drugaSesja.id}, ${PATH_KEY},
 				            ${`${PREFIX}ds-python`}, 4, 4, 'qualified', 'fading')
-				    ON CONFLICT (student_id, module_id) DO NOTHING
+				    -- Dług B1: cel konfliktu obejmuje ścieżkę (lustro klucza w schemacie).
+				    ON CONFLICT (student_id, module_id, path_key) DO NOTHING
 				    RETURNING id`,
 			)
 			.then((r: { rows: unknown[] }) => r.rows);
@@ -218,7 +221,7 @@ dBack("1E.7 L3 · curriculum_placements: RLS + niezmienność (realna baza)", ()
 		expect(po).toEqual(przed);
 	});
 
-	it("W-1: UNIQUE(student_id, module_id) — drugi INSERT bez ON CONFLICT łamie klucz", async () => {
+	it("W-1: UNIQUE(student_id, module_id, path_key) — drugi INSERT bez ON CONFLICT łamie klucz", async () => {
 		await expect(insertPlacementOwner(studentIds[USER_A], sessionIdA)).rejects.toSatisfy(
 			isUniqueViolation,
 		);
@@ -315,9 +318,14 @@ dBack("1E.7 L3 · curriculum_placements: RLS + niezmienność (realna baza)", ()
 				// biome-ignore lint/suspicious/noExplicitAny: surowe wiersze SQL.
 				async (tx: any) =>
 					tx.execute(
+						// Ścieżka podana jak u dwóch sąsiednich pisarzy w tym pliku (nota N1 Leo).
+						// Test i tak przechodzi z właściwego powodu — baza sprawdza UPRAWNIENIE
+						// przed więzami — ale rekwizyt bez `path_key` byłby jedynym w repozytorium
+						// pisarzem, który nie zna ścieżki, i uczyłby złego wzorca przy kopiowaniu.
 						sql`INSERT INTO curriculum_placements
-						      (student_id, tenant_id, module_id, assessment_session_id, threshold, reason, support_mode)
-						    VALUES (${studentIds[USER_A]}, ${tenantId}, ${otherModuleId}, ${sessionIdA},
+						      (student_id, tenant_id, module_id, assessment_session_id, path_key,
+						       threshold, reason, support_mode)
+						    VALUES (${studentIds[USER_A]}, ${tenantId}, ${otherModuleId}, ${sessionIdA}, ${PATH_KEY},
 						            3, 'carried_untagged', 'full')`,
 					),
 			),
