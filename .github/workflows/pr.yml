@@ -16,10 +16,46 @@ on:
     - cron: "0 3 * * *" # 03:00 UTC ≈ 05:00 Europe/Warsaw — poza godzinami pracy
   workflow_dispatch: {}
 
-# Anuluj starsze przebiegi tego samego PR-a/brancha (oszczędność minut runnera).
+# Anuluj starsze przebiegi tego samego PR-a (oszczędność minut runnera) — ale
+# WYŁĄCZNIE dla PR-ów. Przebiegi `push` do `main` i tor nocny dobiegają do końca.
+#
+# DLACZEGO (Quinn 2026-08-01, sprostowane przez Leo w review #263).
+#
+# Mechanizm, który tu naprawiamy, jest JEDEN: anulowany przebieg `push` kasuje
+# jedyny ślad, że `main` faktycznie przeszedł bramki. Dla treści prywatnej to
+# szczególnie dotkliwe — przebieg PO SCALENIU jest JEDYNYM, który dostaje sekret
+# `CONTENT_REPO_KEY` przy PR-ach Dependabota i z forków, czyli jedynym dowodem, że
+# kontrakty banku pytań i atomów przeszły (docs/runbooks/tresc-prywatna.md §5 pkt 2).
+#
+# CZEGO TU NIE MA, choć w pierwszej wersji tego komentarza było: „przez to stoją
+# scalenia". To NIEPRAWDA przy obecnej konfiguracji. `branches/main/protection` ma
+# `strict: false`, a 12 wymaganych kontekstów PR-a pochodzi z przebiegu
+# `pull_request` na SHA głowy gałęzi (zweryfikowane na `9edf012`: komplet zielony).
+# Przebiegi `push` wieszają check-runy na commitach `main`, które NIE bramkują
+# scalenia żadnego PR-a. Zdanie usunięte, bo komentarz jest rejestrem decyzji —
+# fałszywe uzasadnienie skończyłoby się „naprawą" scalania gdzie indziej i cofnięciem
+# tej zmiany jako zbędnej. (Gdyby kiedyś włączyć `strict: true` albo kolejkę scaleń,
+# zdanie stanie się prawdziwe i wtedy warto je przywrócić — RAZEM z tym warunkiem.)
+#
+# DLACZEGO KLUCZ GRUPY, A NIE SAM `cancel-in-progress` (Leo, N2/N3):
+# `cancel-in-progress: false` NIE wystarcza. Przebiegi tej samej grupy nie są wtedy
+# anulowane w locie, tylko KOLEJKOWANE — a wejście nowszego do kolejki anuluje ten
+# czekający. Przy wspólnej grupie `…-refs/heads/main` seria scaleń pod rząd (czyli
+# dokładnie ceremonia) nadal zostawiałaby anulowane przebiegi pośrednie. Dowód:
+# run 29830179915 — `cancelled`, 15 s, **0 jobów**, czyli zero wystawionych
+# kontekstów. Tor nocny dzieli `github.ref` z `push`, więc scalenie o 03:0x czekałoby
+# na `e2e-llm`, a trzecie zdarzenie skasowałoby czekający przebieg.
+#
+# Stąd klucz grupy PER SHA poza PR-ami: każdy commit na `main` dostaje własną grupę,
+# więc nie ma czego kolejkować ani anulować. `github.event_name` w kluczu rozdziela
+# dodatkowo tor nocny od `push` na tym samym SHA.
+#
+# KOSZT, świadomie kupiony: każdy push do `main` biegnie teraz do końca — ~13 jobów,
+# w tym cztery Playwrightowe. Płacimy minutami runnera za dowód, że `main` jest
+# zielony. To zakup, nie efekt uboczny.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
