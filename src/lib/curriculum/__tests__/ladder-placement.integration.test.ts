@@ -66,20 +66,24 @@ dBack("1E.7 L4 · drabina honoruje placement (realna baza)", () => {
 		process.env.FLAG_MASTERY_GATE = mastery ? "1" : "0";
 	}
 
-	/** Wstawia wiersz odblokowania dokładnie w kształcie, jaki produkuje L3. */
+	/**
+	 * Wstawia wiersz odblokowania dokładnie w kształcie, jaki produkuje L3.
+	 * Od długu B1 wiersz NIESIE ŚCIEŻKĘ (`path_key`, NOT NULL) — rekwizyt podaje
+	 * ścieżkę tej drabiny testowej, tak jak hook podaje ścieżkę diagnozy.
+	 */
 	async function wstawPlacement(slug: string, reason: "qualified" | "carried_untagged") {
 		await db.execute(
 			reason === "qualified"
 				? sql`INSERT INTO curriculum_placements
-				        (student_id, tenant_id, module_id, assessment_session_id, concept_slug,
+				        (student_id, tenant_id, module_id, assessment_session_id, path_key, concept_slug,
 				         level, threshold, reason, support_mode)
-				      VALUES (${studentId}, ${tenantId}, ${moduleIds[slug]}, ${sessionId},
+				      VALUES (${studentId}, ${tenantId}, ${moduleIds[slug]}, ${sessionId}, ${PATH_KEY},
 				              ${`${PREFIX}koncept`}, 4, 3, 'qualified', 'fading')
 				      ON CONFLICT DO NOTHING`
 				: sql`INSERT INTO curriculum_placements
-				        (student_id, tenant_id, module_id, assessment_session_id, concept_slug,
+				        (student_id, tenant_id, module_id, assessment_session_id, path_key, concept_slug,
 				         level, threshold, reason, support_mode)
-				      VALUES (${studentId}, ${tenantId}, ${moduleIds[slug]}, ${sessionId},
+				      VALUES (${studentId}, ${tenantId}, ${moduleIds[slug]}, ${sessionId}, ${PATH_KEY},
 				              NULL, NULL, 3, 'carried_untagged', 'full')
 				      ON CONFLICT DO NOTHING`,
 		);
