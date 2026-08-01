@@ -100,3 +100,8 @@ tools/content/question-bank-ds-partia-1.json
 tools/content/curriculum-atoms/
 docs/curation/sophia-1e2-*-atomy.md
 docs/curation/sophia-1e3-egzamin-*.md
+# Katalog roboczy zaciągu (drugi checkout w CI, ręczne odtworzenie kroków §3
+# runbooka lokalnie). W CI kasowany od razu po nałożeniu drzewa, ale lokalnie
+# zostaje — a leży w nim CAŁE prywatne repo treści. Bez tej reguły `git add -A`
+# wystawiłby je publicznie w komplecie. (W5, audyt Ryana.)
+.tresc-prywatna/

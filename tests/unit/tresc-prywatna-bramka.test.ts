@@ -14,6 +14,7 @@
  * więc nigdy nie pada z powodu braku treści „przypadkiem".
  */
 
+import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import {
 	brakiTresci,
@@ -24,9 +25,60 @@ import {
 
 const braki = brakiTresci();
 
+/** Czy git IGNOROWAŁBY tę ścieżkę. `--no-index` = pytamy o samą regułę .gitignore. */
+function ignorowanyPrzezGita(rel: string): boolean {
+	try {
+		execFileSync("git", ["check-ignore", "--no-index", "-q", "--", rel], { stdio: "pipe" });
+		return true; // kod 0 = ścieżka pasuje do reguły ignorowania
+	} catch {
+		return false; // kod 1 = żadna reguła jej nie łapie
+	}
+}
+
+/** Czy git ŚLEDZI tę ścieżkę (jest w indeksie). */
+function sledzonyPrzezGita(rel: string): boolean {
+	try {
+		execFileSync("git", ["ls-files", "--error-unmatch", "--", rel], { stdio: "pipe" });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 describe("bramka treści prywatnej (klucze odpowiedzi)", () => {
 	it("manifest niepusty — inaczej bramka pilnowałaby pustego zbioru", () => {
 		expect(MANIFEST_TRESCI.length).toBeGreaterThanOrEqual(20);
+	});
+
+	// ── W2 (audyt Ryana) ────────────────────────────────────────────────────
+	// `MANIFEST_TRESCI` i `.gitignore` to dwie ręcznie utrzymywane listy, a runbook
+	// §2 każe dopisywać do OBU. Pierwsze przeoczenie kładzie klucz odpowiedzi
+	// w publicznym repo — czyli dokładnie to, przed czym broni ten PR. Te dwa testy
+	// zamieniają „pamiętaj, żeby" w bramkę maszynową.
+	it("KAŻDA pozycja manifestu jest objęta regułą .gitignore", () => {
+		const nieignorowane = MANIFEST_TRESCI.filter((rel) => !ignorowanyPrzezGita(rel));
+		expect(
+			nieignorowane,
+			[
+				"Te pliki treści NIE są ignorowane przez gita, więc `git add -A` wrzuci",
+				"klucze odpowiedzi do PUBLICZNEGO repo:",
+				...nieignorowane.map((p) => `  - ${p}`),
+				"Dopisz regułę do .gitignore (patrz sekcja „TREŚĆ PRYWATNA”).",
+			].join("\n"),
+		).toEqual([]);
+	});
+
+	it("ŻADNA pozycja manifestu nie jest śledzona przez gita", () => {
+		const sledzone = MANIFEST_TRESCI.filter((rel) => sledzonyPrzezGita(rel));
+		expect(
+			sledzone,
+			[
+				"Te pliki treści są w indeksie gita — .gitignore NIE działa na pliki już",
+				"śledzone, więc klucze odpowiedzi są publiczne mimo reguły ignorowania:",
+				...sledzone.map((p) => `  - ${p}`),
+				"Usuń je ze stanu bieżącego: `git rm --cached <ścieżka>`.",
+			].join("\n"),
+		).toEqual([]);
 	});
 
 	it("treść jest obecna ALBO jej brak jest jawnie zadeklarowany (nigdy po cichu)", () => {
