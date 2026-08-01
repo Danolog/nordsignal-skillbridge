@@ -127,8 +127,10 @@ jobs:
         run: |
           # Log ma mówić, DLACZEGO bramka poszła daną gałęzią — inaczej diagnoza
           # sprowadza się do zgadywania. To wartości logiczne, nie sekrety.
-          # Dane ze zdarzenia idą przez `env:` (niżej), NIGDY przez ${{ }} wprost
-          # w `run:` — to standardowa ochrona przed wstrzyknięciem do polecenia.
+          # Dane ze zdarzenia idą przez `env:` (wyżej), NIGDY przez interpolację
+          # wyrażenia wprost w `run:` — standardowa ochrona przed wstrzyknięciem
+          # do polecenia. (Uwaga: nawiasy wyrażeń są rozwijane także w komentarzu
+          # powłoki — pusty nawias wywala kompilację CAŁEGO workflow.)
           echo "zdarzenie=${ZDARZENIE} autor_pr=${AUTOR_PR}"
           echo "MA_KLUCZ_TRESCI=${MA_KLUCZ_TRESCI} SEKRET_ODCIETY_PRZEZ_GITHUB=${SEKRET_ODCIETY_PRZEZ_GITHUB}"
           if [ "${MA_KLUCZ_TRESCI}" = "true" ]; then
