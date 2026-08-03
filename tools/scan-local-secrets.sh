@@ -23,10 +23,21 @@
 #   magazynu sekretów jest osobnym, otwartym zadaniem (właściciel: Ethan/CTO).
 #   Ich obrona to prawa dostępu 0600 + .gitignore + gitleaks w CI na commitach.
 #
-# DWIE WARSTWY DETEKCJI
+# TRZY WARSTWY DETEKCJI
 #   1) gitleaks (reguły + entropia) — szeroka, ale zależna od zestawu reguł.
+#      Zmierzone 2026-08-03: reguła `anthropic-api-key` łapie wyłącznie kształt
+#      kanoniczny (prefiks z członem api03 + 93 znaki + końcówka AA), 10/10
+#      losowań. Milczy na wariantach: bez końcówki, krótszym, ze starszym
+#      członem api02, bez członu api03. Na te warianty jedyną siatką jest
+#      warstwa 2 — nie ma tu redundancji, którą łatwo założyć.
 #   2) lista zakazanych prefiksów — deterministyczna, łapie kształty kluczy,
-#      które reguła entropijna może przepuścić (np. krótki token).
+#      które reguła entropijna przepuszcza (krótki token, niska entropia).
+#   3) host w .env.test musi być lokalny — poświadczenie produkcyjne wklejone
+#      w całości nie musi mieć rozpoznawalnego prefiksu ani wysokiej entropii,
+#      ale zawsze ma zdalny host. Host jest WYODRĘBNIANY z adresu i porównywany
+#      z listą dozwolonych na równość — dopasowanie podciągu przepuszczało
+#      nazwę typu `localhost.cos-tam.example.com` (N1) i jednocześnie czerwieniło
+#      poprawny adres bez poświadczeń, który nie ma znaku małpy (B1).
 #
 # UŻYCIE
 #   pnpm secrets:scan-local        # ręcznie
@@ -50,6 +61,51 @@ PLIKI_KONTRAKTOWE=(".env.test" ".env.example" ".env.test.example")
 # Prefiksy poświadczeń, które w powyższych plikach nie mają prawa wystąpić.
 # (klucz Anthropic, klucz OpenAI, hasło roli Neona, tokeny GitHuba, klucz Stripe'a)
 ZAKAZANE_PREFIKSY=("sk-ant-" "sk-proj-" "npg_" "github_pat_" "ghp_" "gho_" "sk_live_" "rk_live_")
+
+# Warstwa 3 — program pomocniczy. Wyodrębnia HOST z adresu i porównuje go
+# z listą dozwolonych NA RÓWNOŚĆ. Trzy pułapki, które ta wersja zamyka:
+#   B1 — adres bez poświadczeń nie ma znaku małpy, więc szukanie podciągu
+#        „małpa + localhost" czerwieniło poprawną konfigurację lokalną
+#        (uwierzytelnianie zaufaniem w kontenerze to standard).
+#   N1 — dopasowanie podciągu uznawało zdalną nazwę zaczynającą się od
+#        „localhost." za lokalną; równość na wyodrębnionym hoście — nie.
+#   N2 — brak filtra po nazwie zmiennej: warstwa patrzy na KAŻDĄ zmienną
+#        z adresem, bo wystarczyło nazwać ją inaczej, żeby ją ominąć.
+#   N3 — obsługa przedrostka `export ` — to jest zapis, który zaleca runbook,
+#        więc warstwa, która go nie widzi, uczy wzorca omijającego samą siebie.
+AWK_HOSTY='
+function host_z_adresu(w,   p, reszta, autor, i, c, at, h, zamk, dwu) {
+  p = index(w, "://"); if (p == 0) return ""
+  reszta = substr(w, p + 3)
+  autor = reszta
+  for (i = 1; i <= length(reszta); i++) {
+    c = substr(reszta, i, 1)
+    if (c == "/" || c == "?" || c == "#") { autor = substr(reszta, 1, i - 1); break }
+  }
+  at = 0
+  for (i = 1; i <= length(autor); i++) if (substr(autor, i, 1) == "@") at = i
+  h = (at > 0) ? substr(autor, at + 1) : autor
+  if (substr(h, 1, 1) == "[") { zamk = index(h, "]"); if (zamk > 0) h = substr(h, 2, zamk - 2) }
+  else { dwu = index(h, ":"); if (dwu > 0) h = substr(h, 1, dwu - 1) }
+  return tolower(h)
+}
+/^[[:space:]]*#/ { next }
+{
+  linia = $0
+  sub(/^[[:space:]]*export[[:space:]]+/, "", linia)
+  if (linia !~ /^[A-Za-z_][A-Za-z0-9_]*=/) next
+  rowna = index(linia, "=")
+  nazwa = substr(linia, 1, rowna - 1)
+  wartosc = substr(linia, rowna + 1)
+  cudz = substr(wartosc, 1, 1)
+  if (cudz == "\"" || cudz == sprintf("%c", 39)) wartosc = substr(wartosc, 2, length(wartosc) - 2)
+  host = host_z_adresu(wartosc)
+  if (host == "") next
+  if (host == "localhost" || host == "127.0.0.1" || host == "::1" ||
+      host == "0.0.0.0" || host == "host.docker.internal") next
+  if (host ~ /^127\.[0-9]+\.[0-9]+\.[0-9]+$/) next
+  print NR ":" nazwa ":" host
+}'
 
 if ! command -v gitleaks >/dev/null 2>&1; then
   cat >&2 <<'EOF'
@@ -87,6 +143,7 @@ for plik in "${PLIKI_KONTRAKTOWE[@]}"; do
       | awk -F: '$2 ~ /^[[:space:]]*#/ { next }                        # komentarz nie jest sekretem
                  { pos = index($0, "="); nazwa = "<bez nazwy zmiennej>";
                    if (pos > 0) { przed = substr($0, index($0,":")+1, pos - index($0,":") - 1);
+                                  sub(/^[[:space:]]*export[[:space:]]+/, "", przed);
                                   if (przed ~ /^[A-Za-z_][A-Za-z0-9_]*$/) nazwa = przed }
                    print $1 ":" nazwa }')"
     if [ -n "$trafienia" ]; then
@@ -95,19 +152,14 @@ for plik in "${PLIKI_KONTRAKTOWE[@]}"; do
       status=1
     fi
   done
-  # Warstwa 3 — tylko dla .env.test: każdy adres bazy musi wskazywać maszynę
-  # lokalną. Poświadczenie produkcyjne wklejone tu w całości nie musi mieć
-  # żadnego rozpoznawalnego prefiksu ani wysokiej entropii — ale ZAWSZE ma
-  # zdalny host. To jest siatka na tę klasę, niezależna od reguł skanera.
+  # Warstwa 3 — tylko dla .env.test: KAŻDY adres (dowolnej zmiennej, nie tylko
+  # o nazwie kończącej się na _URL) musi wskazywać maszynę lokalną.
   if [ "$plik" = ".env.test" ]; then
-    obce="$(grep -nE '^[A-Za-z_][A-Za-z0-9_]*=.*://' "$plik" 2>/dev/null \
-      | grep -vE '@(localhost|127\.0\.0\.1)' \
-      | grep -E '(DATABASE|POSTGRES|DB)_URL' \
-      | sed -E 's/^([0-9]+):([A-Za-z_][A-Za-z0-9_]*)=.*$/\1:\2/')"
+    obce="$(awk "$AWK_HOSTY" "$plik" 2>/dev/null)"
     if [ -n "$obce" ]; then
-      echo "SEKRET/POMYŁKA w $plik — adres bazy spoza maszyny lokalnej (linia:zmienna):" >&2
+      echo "SEKRET/POMYŁKA w $plik — adres spoza maszyny lokalnej (linia:zmienna:host):" >&2
       echo "$obce" | sed 's/^/    /' >&2
-      echo "    .env.test wolno wskazywać wyłącznie localhost:5433 (baza w Dockerze)." >&2
+      echo "    .env.test wolno wskazywać wyłącznie maszynę lokalną (baza w Dockerze, port 5433)." >&2
       status=1
     fi
   fi
