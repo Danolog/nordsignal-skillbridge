@@ -341,7 +341,15 @@ NIE WOLNO:
     który wiedział, co chce zobaczyć. To dowód, że MECHANIZM DZIAŁA, i zerowy
     dowód o tym, jak zachowa się student;
   • traktować liczby z tego raportu jako wyniku pilotażu wobec kogokolwiek na
-    zewnątrz (uczelnia, partner, inwestor) — to odczyt roboczy, nie wynik.
+    zewnątrz (uczelnia, partner, inwestor) — to odczyt roboczy, nie wynik;
+  • traktować tych liczb jako TRWAŁYCH W CZASIE. Uczestnik może skorzystać
+    z prawa do usunięcia danych (art. 17 RODO); jego wiersz rejestru znika
+    kaskadą, a wraz z nim jego zdarzenia przestają być obserwacjami — WSTECZ.
+    Odczyt z innego dnia może dać MNIEJ obserwacji przy identycznym kodzie
+    i zerze defektów; naturalny odruch („coś się zepsuło") będzie wtedy błędny.
+    Dlatego każda liczba cytowana dalej MUSI nieść DATĘ ODCZYTU (nagłówek tego
+    raportu ją podaje) — liczba bez daty jest nie do odtworzenia i nie wolno
+    jej cytować jako faktu ustalonego.
 `.trim();
 
 /**

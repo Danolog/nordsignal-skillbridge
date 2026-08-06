@@ -14,33 +14,72 @@ config({ path: ".env.local" });
 // zdarzenia zaczęły się liczyć.
 //
 // Uruchomienie (domyślnie PRÓBA — nic nie zapisuje):
-//   pnpm tsx tools/pilot-enroll.ts --email <adres> --kohorta <nazwa>
-//   pnpm tsx tools/pilot-enroll.ts --email <adres> --kohorta <nazwa> --tak
+//   pnpm tsx tools/pilot-enroll.ts --kohorta <nazwa>
+//   pnpm tsx tools/pilot-enroll.ts --kohorta <nazwa> --tak
+// Adres podaje się na WEJŚCIU STANDARDOWYM, po zapytaniu narzędzia.
+//
+// ⚠ DLACZEGO ADRES NIE JEST ARGUMENTEM POLECENIA (uwaga Leo przy PR #270).
+// Argument polecenia ląduje w historii powłoki i w tablicy procesów, czyli
+// w dwóch miejscach, których nikt nie sprząta i które przeżywają sesję. To ta
+// sama wada, którą konstytucja rozstrzygnęła już dla poświadczeń CI (CLAUDE.md
+// §5, bramka (i) punkt 5: „klucz prywatny wyłącznie przez standardowe wejście —
+// nigdy jako argument polecenia, bo wtedy trafia do audytu i tablicy procesów").
+// Tu chodzi o dane osobowe, nie o sekret, ale mechanizm wycieku jest identyczny,
+// więc stosujemy to samo rozstrzygnięcie zamiast wymyślać dla niego wyjątek.
 //
 // Adres służy WYŁĄCZNIE do odnalezienia konta. Do rejestru trafia identyfikator
 // studenta, nigdy adres — tabela nie zakłada nowego zbioru danych osobowych.
 
-type Argumenty = { email: string | null; kohorta: string | null; wykonaj: boolean };
+type Argumenty = { kohorta: string | null; wykonaj: boolean };
 
 function czytajArgumenty(argv: string[]): Argumenty {
-	const wynik: Argumenty = { email: null, kohorta: null, wykonaj: false };
+	const wynik: Argumenty = { kohorta: null, wykonaj: false };
 	for (let i = 0; i < argv.length; i += 1) {
-		if (argv[i] === "--email") wynik.email = argv[i + 1] ?? null;
 		if (argv[i] === "--kohorta") wynik.kohorta = argv[i + 1] ?? null;
 		if (argv[i] === "--tak") wynik.wykonaj = true;
 	}
 	return wynik;
 }
 
+/** Jedna linia z wejścia standardowego. Zapytanie idzie na stderr, żeby nie
+ *  zabrudzić wyjścia, gdyby ktoś je przekierował do pliku. */
+function wczytajLinie(zapytanie: string): Promise<string> {
+	process.stderr.write(zapytanie);
+	return new Promise((resolve, reject) => {
+		let bufor = "";
+		process.stdin.setEncoding("utf8");
+		const naDane = (kawalek: string) => {
+			bufor += kawalek;
+			const koniec = bufor.indexOf("\n");
+			if (koniec === -1) return;
+			process.stdin.off("data", naDane);
+			process.stdin.pause();
+			resolve(bufor.slice(0, koniec).trim());
+		};
+		process.stdin.on("data", naDane);
+		process.stdin.once("error", reject);
+		process.stdin.once("end", () => resolve(bufor.trim()));
+		process.stdin.resume();
+	});
+}
+
 const args = czytajArgumenty(process.argv.slice(2));
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function main() {
-	if (!args.email || !args.kohorta) {
+	if (!args.kohorta) {
 		console.error(
-			"Użycie: pnpm tsx tools/pilot-enroll.ts --email <adres> --kohorta <nazwa> [--tak]\n" +
+			"Użycie: pnpm tsx tools/pilot-enroll.ts --kohorta <nazwa> [--tak]\n" +
+				"Adres uczestnika podasz na wejściu standardowym (nie jako argument —\n" +
+				"argument zostaje w historii powłoki i w tablicy procesów).\n" +
 				"Bez --tak narzędzie tylko pokazuje, co by zrobiło.",
 		);
+		process.exit(2);
+	}
+
+	const email = await wczytajLinie("Adres konta uczestnika: ");
+	if (!email) {
+		console.error("Pusty adres — przerwane, nic nie zapisano.");
 		process.exit(2);
 	}
 
@@ -54,7 +93,7 @@ async function main() {
 			   FROM "user" u
 			   JOIN students st ON st.user_id = u.id
 			  WHERE lower(u.email) = lower($1)`,
-			[args.email, args.kohorta],
+			[email, args.kohorta],
 		);
 
 		if (rows.length === 0) {

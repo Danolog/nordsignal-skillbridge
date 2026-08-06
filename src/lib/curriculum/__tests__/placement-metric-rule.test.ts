@@ -262,6 +262,37 @@ describe("1E.7 D5b · ograniczenia wnioskowania stoją PRZY liczbie", () => {
 		expect(OGRANICZENIA_WNIOSKOWANIA).toContain("zmieniać progu");
 		expect(OGRANICZENIA_WNIOSKOWANIA).toContain("zdarzeniach ODRZUCONYCH");
 	});
+
+	it("ograniczenia mówią o NIETRWAŁOŚCI liczb w czasie (art. 17) i wymuszają datę odczytu", () => {
+		// Znalezisko Leo przy #270: nietrwałość opisałem w nagłówku pliku i w komentarzu
+		// migracji, czyli tam, gdzie czyta programista — a NIE w jedynym bloku, którego
+		// czytelnik liczb nie może pominąć. To ten sam rozjazd, który sam nazwałem przy
+		// D5b („czytelnik dziennika i czytelnik §6a to nie ta sama osoba"), popełniony
+		// wobec własnego, najnowszego ustalenia.
+		//
+		// Scenariusz, przed którym to broni: odczyt daje 3 obserwacje, liczba zostaje
+		// zacytowana przy DECYZJI 2, uczestnik korzysta z art. 17, ten sam odczyt daje 2 —
+		// bez zmiany kodu i bez defektu. Bez tego zdania naturalny wniosek brzmi „coś się
+		// zepsuło", a stara liczba żyje dalej jako fakt ustalony.
+		expect(OGRANICZENIA_WNIOSKOWANIA).toContain("art. 17");
+		expect(OGRANICZENIA_WNIOSKOWANIA).toContain("WSTECZ");
+		expect(OGRANICZENIA_WNIOSKOWANIA).toContain("DATĘ ODCZYTU");
+	});
+
+	it("raport niesie datę odczytu, bez której poprzednie ograniczenie jest niewykonalne", () => {
+		// Zakaz „cytuj z datą" jest pusty, jeśli raport tej daty nie podaje.
+		const m: Parameters<typeof raportTekstowy>[0] = {
+			kohorta: null,
+			odczytano: new Date("2026-08-06T18:19:47.794Z"),
+			uczestnicyWRejestrze: 0,
+			uczestnicyBezZdarzenia: 0,
+			rejestrPodejrzany: 0,
+			policzenia: [],
+			pominieciaLiczenia: [],
+			odrzucone: { sierota: 0, spozaRejestru: 0, spozaRejestruTechniczne: 0 },
+		};
+		expect(raportTekstowy(m)).toContain("2026-08-06T18:19:47.794Z");
+	});
 });
 
 describe("1E.7 D11 · SQL kandydatów nie filtruje (drugi nośnik reguły byłby tutaj)", () => {
