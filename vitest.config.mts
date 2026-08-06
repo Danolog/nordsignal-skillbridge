@@ -51,14 +51,22 @@ export default defineConfig({
 				},
 			},
 			{
-				// Projekt INTEGRATION — uruchamiany TYLKO w jobie `integration` (ma Postgres
-				// + db:migrate + db:seed). Komenda: `pnpm exec vitest run --project integration`
-				// (skrypt `test:integration`). Bez zmigrowanej bazy testy się POMIJAJĄ
-				// (strażnik isLocalTestDb w samym pliku — druga linia obrony).
+				// Projekt INTEGRATION — uruchamiany w jobie `integration` (ma Postgres
+				// + db:migrate + db:seed). Komenda: `pnpm test:integration`.
+				//
+				// TWARDY WARUNEK WSTĘPNY (2026-08-06). Bez bazy testowej przebieg PADA
+				// — nie pomija się. Do 2026-08-06 brak DATABASE_URL dawał przebieg
+				// zakończony kodem 0 z podsumowaniem „388 skipped", które wyglądało jak
+				// sukces; to była przyczyna, dla której trzy atrapy-strażniki przeżyły
+				// w kodzie do 2026-08-01. Warunek sprawdza się RAZ, przed zebraniem
+				// plików, i wypisuje instrukcję postawienia bazy.
+				// Bramki `describe.skip` w samych plikach zostają jako martwa druga
+				// warstwa — strażnik jest od nich ostrzejszy, więc już nie zadziałają.
 				plugins: [tsconfigPaths(), react()],
 				test: {
 					name: "integration",
 					environment: "node",
+					globalSetup: ["./src/test/integration-db-guard.ts"],
 					// Pliki sekwencyjnie: testy współdzielą jedną bazę :5433 i te same
 					// tabele (np. market-refresh: ingest + decision piszą staging/runy) —
 					// równoległość plików = wzajemne kasowanie stanu w beforeEach.

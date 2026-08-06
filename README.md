@@ -69,9 +69,43 @@ Polish edtech platform that maps students' competencies (from university syllabu
 | `pnpm lint` | Lint with Biome |
 | `pnpm lint:fix` | Auto-fix lint issues |
 | `pnpm format` | Format with Biome |
-| `pnpm test` | Run unit tests (watch mode) |
-| `pnpm test:run` | Run unit tests once |
+| `pnpm test` | Run unit tests (watch mode) — no database needed |
+| `pnpm test:run` | Run unit tests once — no database needed |
+| `pnpm test:integration` | Run integration tests — **requires a test database, fails hard without one** |
 | `pnpm test:e2e` | Run E2E tests |
 | `pnpm db:push` | Push schema to database |
 | `pnpm db:generate` | Generate Drizzle migrations |
 | `pnpm db:studio` | Open Drizzle Studio |
+
+### Integration tests need a real database — on purpose
+
+`pnpm test:integration` runs against a real Postgres. Without a usable
+`DATABASE_URL` the run **aborts with a non-zero exit code** and prints setup
+instructions. It does *not* skip.
+
+This is deliberate. Until 2026-08-06 a missing `DATABASE_URL` made the whole
+integration suite skip silently: the run exited 0 and the summary read
+`388 skipped`, which looks like success. Green runs said nothing about what
+they were supposed to verify — that is why three placeholder guards survived in
+the codebase until 2026-08-01. The precondition lives in the `integration`
+vitest project (`src/test/integration-db-guard.ts`).
+
+Local setup (4 steps):
+
+```bash
+docker compose -f docker-compose.test.yml up -d
+cp .env.test.example .env.test        # template, no real secrets
+set -a; source .env.test; set +a      # loads DATABASE_URL into the shell
+pnpm db:migrate:test && pnpm test:integration
+```
+
+`DATABASE_URL` must point at `localhost` / `127.0.0.1` / `::1` **and** at a
+database named `test` or ending in `_test`, with credentials in the address.
+A remote host or your local dev database is rejected — this suite deletes and
+rewrites rows. `CONFIRM_PROD_DB=1` and `E2E_ALLOW_REMOTE=1` do **not** open a
+door here; they only apply to the migration scripts in `tools/`.
+
+No database at hand? Use `pnpm test:run` — the unit project excludes the
+integration suite and needs no Postgres. Note that `pnpm test:coverage` runs
+*every* project, so it hits the same precondition; that is intended, because
+coverage that quietly omits the integration suite overstates what is covered.
