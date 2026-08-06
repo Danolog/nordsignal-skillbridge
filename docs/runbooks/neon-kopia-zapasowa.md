@@ -1,6 +1,16 @@
 # Runbook: kopia zapasowa Neona przed zmianą danych produkcyjnych
 
-**Wersja:** v0.1 · 2026-08-01 · właściciel: Ethan (CTO)
+**Wersja:** v0.2 · 2026-08-06 · właściciel: Ethan (CTO)
+
+> **Zmiana v0.1 → v0.2 (blok Leo w PR #265).** v0.1 obiecywała w §3, że klucz nie trafia
+> do treści polecenia, i **łamała tę obietnicę w trzech własnych blokach kodu** (`-H
+> "Authorization: Bearer $NEON_API_KEY"` w 3a, 3b i sekcji 4) — powłoka rozwija zmienną
+> przed uruchomieniem procesu, więc wartość lądowała w tablicy procesów. Wszystkie trzy
+> wywołania przeniesione na `curl -K -` (konfiguracja z wejścia standardowego). Obietnica
+> z §3 przestaje być deklaracją: **nowa sekcja 3c niesie pomiar** wycieku przed poprawką,
+> jego braku po poprawce i kontrolę, że nagłówek dociera identyczny. Doprecyzowany też
+> zakres tego, co zweryfikowano (odczyt 3a sprawdzono w starej postaci — patrz nota pod
+> 3c). Reszta dokumentu bez zmian.
 **Po co:** bramka (b) delegacji (`CLAUDE.md` §5) — *„kopia zapasowa Neon przed każdą
 zmianą danych"* — jest warunkiem, pod którym Ethan wykonuje zmiany na produkcji bez
 sign-offu Darka per akcja. Bramka bez sprawdzonej procedury jest deklaracją, nie bramką.
@@ -62,8 +72,9 @@ z pudełka**. Sekcja 3 podaje ścieżkę, która działa bez instalowania czegok
 
 ## 3. Ścieżka A — REST API (działa dziś, bez instalacji)
 
-Uwierzytelnienie: `NEON_API_KEY` z `.env.prod`. **Klucz podajemy wyłącznie przez nagłówek
-z podstawionej zmiennej — nigdy w treści polecenia, nigdy do logu.**
+Uwierzytelnienie: `NEON_API_KEY` z `.env.prod`. **Klucz podajemy wyłącznie przez plik
+konfiguracyjny `curl` czytany z wejścia standardowego (`curl -K -`) — nigdy w argumentach
+polecenia, nigdy do logu.** Uzasadnienie pomiarem: sekcja 3c.
 
 ```bash
 cd <repo>
@@ -71,13 +82,16 @@ NEON_API_KEY=$(grep '^NEON_API_KEY=' .env.prod | cut -d= -f2- | tr -d '"'"'"'')
 PROJ=long-pond-11214233
 ```
 
+Zmiennej **nie eksportujemy** (`export`) — zostaje zmienną powłoki, więc nie trafia do
+środowiska procesu potomnego ani do jego podglądu przez `ps eww`.
+
 **Uwaga o API:** `GET /api/v2/projects` **bez** `org_id` zwraca `400`
 (`"org_id is required"`). Zawsze podawaj `?org_id=org-snowy-credit-81923605`.
 
 ### 3a. Przegląd stanu przed zmianą (zawsze najpierw)
 
 ```bash
-curl -s -H "Authorization: Bearer $NEON_API_KEY" \
+printf 'header = "Authorization: Bearer %s"\n' "$NEON_API_KEY" | curl -s -K - \
   "https://console.neon.tech/api/v2/projects/$PROJ/branches" \
 | python3 -c "import sys,json;d=json.load(sys.stdin);print(len(d['branches']),'galezi');[print(' ',b['created_at'][:10],b['id'],b['name']) for b in d['branches']]"
 ```
@@ -88,8 +102,8 @@ ceremonią (nigdy w jej trakcie).
 ### 3b. Utworzenie kopii zapasowej
 
 ```bash
-curl -s -X POST -H "Authorization: Bearer $NEON_API_KEY" \
-  -H "Content-Type: application/json" \
+printf 'header = "Authorization: Bearer %s"\n' "$NEON_API_KEY" | curl -s -K - \
+  -X POST -H "Content-Type: application/json" \
   "https://console.neon.tech/api/v2/projects/$PROJ/branches" \
   -d '{"branch":{"name":"prod-backup-pre-<CO>-<RRRRMMDD>","parent_id":"br-proud-sun-al3aezrj"}}'
 ```
@@ -97,11 +111,77 @@ curl -s -X POST -H "Authorization: Bearer $NEON_API_KEY" \
 Nazewnictwo trzymamy dotychczasowe — `prod-backup-pre-<zakres>-<data>`; przykłady
 z realnego stanu w sekcji 1.
 
-> **NIEZWERYFIKOWANE:** odczyty (3a) sprawdziłem realnym wywołaniem. Zapisu (3b)
-> **nie wykonałem** — ceremonia 1E.7 była w locie, a bramka (g) zabrania ruszania gałęzi
-> w trakcie ceremonii. Do sprawdzenia przejściem tam-i-z-powrotem (utwórz → potwierdź →
-> skasuj) **przy najbliższym oknie poza ceremonią**. Do tego czasu traktuj 3b jako
-> procedurę opisaną, nie sprawdzoną.
+### 3c. Dlaczego `-K -`, a nie `-H` — pomiar, nie zapewnienie
+
+Wersja v0.1 tego runbooka obiecywała w §3 *„klucz podajemy wyłącznie przez nagłówek
+z podstawionej zmiennej"* i **łamała tę obietnicę w tych samych blokach kodu** (linie
+80/91/116). Powód: powłoka rozwija `$NEON_API_KEY` **przed** uruchomieniem procesu, więc
+gotowa wartość ląduje w argumentach (`argv`) — a `argv` każdego procesu widzi **dowolny
+użytkownik maszyny** przez `ps`. Znalazł to Leo w przeglądzie PR #265.
+
+To jest dokładnie przypadek nazwany w `CLAUDE.md` v1.16, bramka (i) warunek 5: *„klucz
+prywatny podawany wyłącznie przez standardowe wejście — nigdy jako argument polecenia, bo
+wtedy trafia do audytu i tablicy procesów"*. Stawka nie jest teoretyczna: ten klucz ma
+zasięg **całej organizacji Neona** (sekcja 1), nie jednego projektu.
+
+Pomiar wykonany na **wartości udawanej** (nigdy na prawdziwym kluczu), odczyt 2026-08-06.
+Oba warianty strzelały do lokalnego nasłuchu zapisującego odebrany nagłówek:
+
+**Wariant 1 — wzorzec z v0.1 (`-H` z podstawioną zmienną):**
+
+```
+$ ps aux | grep <znacznik> | grep -v grep
+dariuszgradzik 28697 ... curl -s -H Authorization: Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9 http://127.0.0.1:8973/api/v2/projects/projekt-pomiarowy/branches
+--- liczba trafien w tablicy procesow: 1
+```
+
+Wartość stoi otwartym tekstem w tablicy procesów.
+
+**Wariant 2 — wzorzec obowiązujący (`curl -K -`):**
+
+```
+$ ps aux | grep <znacznik> | grep -v grep
+--- liczba trafien w tablicy procesow: 0
+
+$ ps -eo args= | grep '^curl'
+curl -s -K - http://127.0.0.1:8973/api/v2/projects/projekt-pomiarowy/branches
+```
+
+Zero trafień; w `argv` zostaje samo `-K -` i adres.
+
+**Kontrola równoważności** — że poprawka nie psuje uwierzytelnienia. Nasłuch zapisał to,
+co faktycznie odebrał w obu przebiegach:
+
+```
+  ODEBRANY Authorization: Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9
+  ODEBRANY Authorization: Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9
+```
+
+Nagłówek dociera identyczny. Zmienia się wyłącznie droga: wejście standardowe zamiast
+`argv`. Wniosek: różnica jest w widoczności, nie w działaniu — nie ma powodu, żeby
+gdziekolwiek wracać do `-H` z podstawionym kluczem.
+
+**Kontrola trzech kształtów wywołania.** `-K -` zajmuje wejście standardowe, więc osobno
+sprawdzono, czy nie zjada ciała żądania w `POST` (3b) i czy działa z `-X DELETE` (sekcja 4):
+
+```
+GET    | Authorization=Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9 | cialo=(brak ciala)
+POST   | Authorization=Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9 | cialo={"branch":{"name":"prod-backup-pre-TEST-20260806","parent_id":"br-proud-sun-al3aezrj"}}
+DELETE | Authorization=Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9 | cialo=(brak ciala)
+```
+
+Wszystkie trzy niosą nagłówek, a ciało `POST` dociera nienaruszone — `-d` i `-K -` nie
+kolidują. To zamyka obawę, że poprawka działa tylko dla odczytu.
+
+> **NIEZWERYFIKOWANE:** odczyt (3a) był wykonany realnym wywołaniem do Neona 2026-08-01,
+> ale **w starej postaci `-H`** — postaci `-K -` nie odpalono jeszcze przeciw Neonowi,
+> tylko przeciw nasłuchowi lokalnemu (3c). Pomiar 3c pokazuje, że nagłówek dociera
+> identyczny, więc oczekiwana różnica to zero; **oczekiwanie to nie jest jednak to samo co
+> odczyt** — pierwsze realne wywołanie 3a w nowej postaci należy potwierdzić przy
+> najbliższym oknie. Zapisu (3b) **nie wykonano** — ceremonia 1E.7 była w locie, a bramka
+> (g) zabrania ruszania gałęzi w trakcie ceremonii. Do sprawdzenia przejściem
+> tam-i-z-powrotem (utwórz → potwierdź → skasuj) **przy najbliższym oknie poza ceremonią**.
+> Do tego czasu traktuj 3b jako procedurę opisaną, nie sprawdzoną.
 
 ---
 
@@ -113,8 +193,8 @@ tylko wtedy, gdy jest nadpisana nowszą kopią tego samego lub późniejszego st
 **Kasowanie przed ceremonią, nigdy w jej trakcie.**
 
 ```bash
-curl -s -X DELETE -H "Authorization: Bearer $NEON_API_KEY" \
-  "https://console.neon.tech/api/v2/projects/$PROJ/branches/<BRANCH_ID>"
+printf 'header = "Authorization: Bearer %s"\n' "$NEON_API_KEY" | curl -s -K - \
+  -X DELETE "https://console.neon.tech/api/v2/projects/$PROJ/branches/<BRANCH_ID>"
 ```
 
 Po skasowaniu **zweryfikuj** przeglądem 3a — brak weryfikacji to założenie, że się udało.
