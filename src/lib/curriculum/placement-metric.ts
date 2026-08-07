@@ -126,7 +126,7 @@ export const SQL_KANDYDACI = `
 		s.id                                    AS sesja_id,
 		s.student_id                            AS student_id,
 		pp.cohort                               AS kohorta,
-		coalesce(u.email LIKE '%.invalid', false) AS konto_wyglada_technicznie,
+		coalesce(u.email ILIKE '%.invalid', false) AS konto_wyglada_technicznie,
 		a.metadata                              AS metadata
 	FROM audit_log a
 	LEFT JOIN assessment_sessions s ON s.id::text = a.target_id
@@ -139,10 +139,19 @@ export const SQL_KANDYDACI = `
 	ORDER BY a.created_at ASC
 `;
 
+/**
+ * Tożsamość źródła odczytu (wymóg W8 Ryana, CLAUDE.md §8 — dowód ze źródła
+ * autorytatywnego). Bez niej zapisany odczyt jest nie do umiejscowienia: odczyt
+ * rolą aplikacyjną zobaczy przez RLS pusty rejestr i wyprodukuje wiarygodnie
+ * wyglądający plik z zerem obserwacji, po którym nie da się stwierdzić, czy to
+ * stan pilotażu, czy skutek uprawnień połączenia.
+ */
+export const SQL_TOZSAMOSC = "SELECT current_database() AS baza, current_user AS rola";
+
 /** Mianownik — liczony z REJESTRU, nie z dziennika (§6a, wymóg Sophii). */
 export const SQL_REJESTR = `
 	SELECT pp.student_id, pp.cohort, pp.enrolled_at,
-	       coalesce(u.email LIKE '%.invalid', false) AS konto_wyglada_technicznie
+	       coalesce(u.email ILIKE '%.invalid', false) AS konto_wyglada_technicznie
 	FROM pilot_participants pp
 	JOIN students st ON st.id = pp.student_id
 	JOIN "user" u ON u.id = st.user_id
@@ -172,6 +181,9 @@ export type ObserwacjaPominiecia = {
 export type Miernik = {
 	kohorta: string | null;
 	odczytano: Date;
+	/** Skąd i czym odczytano — patrz `SQL_TOZSAMOSC`. */
+	baza: string;
+	rolaPolaczenia: string;
 	/** Mianownik z rejestru: ilu uczestników wpisano. */
 	uczestnicyWRejestrze: number;
 	/** Uczestnicy z rejestru, którzy nie zostawili ŻADNEGO zdarzenia miernika. */
@@ -226,6 +238,7 @@ export async function zbierzMiernik(
 ): Promise<Miernik> {
 	const kohorta = opcje.kohorta ?? null;
 
+	const tozsamosc = await wykonaj(SQL_TOZSAMOSC, []);
 	const rejestr = await wykonaj(SQL_REJESTR, [kohorta]);
 	const kandydaci = (await wykonaj(SQL_KANDYDACI, [kohorta, [...AKCJE_MIERNIKA]])).map(zWierszaSql);
 
@@ -276,6 +289,8 @@ export async function zbierzMiernik(
 	return {
 		kohorta,
 		odczytano: new Date(),
+		baza: napisAlbNull(tozsamosc[0]?.baza) ?? "NIEUSTALONA",
+		rolaPolaczenia: napisAlbNull(tozsamosc[0]?.rola) ?? "NIEUSTALONA",
 		uczestnicyWRejestrze: wRejestrze.length,
 		uczestnicyBezZdarzenia: wRejestrze.filter((u) => !studenciZeZdarzeniem.has(u.studentId)).length,
 		rejestrPodejrzany: wRejestrze.filter((u) => u.techniczne).length,
@@ -366,6 +381,20 @@ export function raportTekstowy(m: Miernik): string {
 	const wiersze: string[] = [];
 	wiersze.push("=== MIERNIK PLACEMENTU 1E.7 (dług D11) ===");
 	wiersze.push(`Kohorta: ${m.kohorta ?? "(wszystkie)"} · odczyt: ${m.odczytano.toISOString()}`);
+	// Tożsamość źródła (W8) — odczyt bez niej jest nie do umiejscowienia: rola
+	// aplikacyjna zobaczy przez RLS pusty rejestr i wyprodukuje wiarygodny plik
+	// z zerem obserwacji. Miernik ma czytać owner.
+	wiersze.push(`Baza: ${m.baza} · rola połączenia: ${m.rolaPolaczenia}`);
+	// W10 — sprostowanie. Twierdzenie „brak identyfikatorów" jest prawdziwe
+	// dosłownie (raport nie wypisuje uuid ani adresów), ale wniosek, który z niego
+	// wyciągnie czytelnik, byłby fałszywy: przy N rzędu jednostek sygnatura czasowa
+	// co do milisekundy wskazuje osobę przez złączenie z dziennikiem, do którego
+	// mamy dostęp. Dlatego mówimy o identyfikatorach BEZPOŚREDNICH i nazywamy skutek.
+	wiersze.push(
+		"⚠ Ten odczyt nie zawiera identyfikatorów BEZPOŚREDNICH (ani uuid, ani adresów),",
+		"  ale przy N rzędu jednostek sygnatura czasowa wskazuje osobę przez złączenie",
+		"  z dziennikiem — traktuj ten tekst i jego zapis jak DANĄ OSOBOWĄ.",
+	);
 	wiersze.push("");
 	wiersze.push(OGRANICZENIA_WNIOSKOWANIA);
 	wiersze.push("");

@@ -105,6 +105,12 @@ describe("1E.7 D11 — jeden czytelnik miernika placementu", () => {
 			DOZWOLONY_URUCHAMIACZ,
 			DOZWOLONY_PISARZ_REJESTRU,
 			"src/lib/db/schema.ts",
+			// STRAŻNIK UPRAWNIEŃ, nie czytelnik treści (W1 Ryana, #270). `k3-validate`
+			// zna tę tabelę wyłącznie z nazwy — sprawdza, że app_student i app_faculty
+			// nie mają na niej ŻADNYCH grantów (w tym TRUNCATE, który wymyka się RLS).
+			// Nie czyta ani jednego wiersza rejestru, więc nie może odtworzyć reguły
+			// wyłączenia ani się z nią rozjechać.
+			"tools/k3-validate.ts",
 		]);
 		const winowajcy: string[] = [];
 		for (const katalog of SKANOWANE) {

@@ -75,7 +75,20 @@ CREATE INDEX "idx_pilot_participants_tenant_id" ON "pilot_participants" USING bt
 --  - zapis i odczyt: wyłącznie owner (`tools/pilot-enroll.ts`,
 --    `tools/report-placement-metric.ts`) — jak raport kosztu AI z 0020.
 -- ENABLE + FORCE RLS mimo braku grantów = obrona w głąb: przyszły omyłkowy GRANT
--- bez polityki nadal zwróci 0 wierszy (deny-default).
+-- bez polityki nadal zwróci 0 wierszy dla SELECT/INSERT/UPDATE/DELETE (deny-default,
+-- zweryfikowane wykonaniem — Ryan, 2026-08-07).
+--
+-- ⚠ JEDEN WYJĄTEK, ŚWIADOMY: TRUNCATE NIE PODLEGA RLS. Omyłkowy `GRANT ALL`
+-- pozwoliłby opróżnić rejestr mimo nienaruszonych polityk (zmierzone: TRUNCATE
+-- przeszło tam, gdzie DELETE zostało odbite). Skutkiem jest ZERO OBSERWACJI, nie
+-- wyciek — tabela nie niesie treści, tylko fakt przynależności — ale kierunek jest
+-- zdradliwy: pusty rejestr wygląda jak „pilotaż słabo idzie", nie jak incydent
+-- uprawnień. Pokrycie: strażnik k3-validate #13a (lista PRAWA_TABELOWE zawiera
+-- TRUNCATE, więc grant zapala się PRZED użyciem) + baner pustego rejestru w raporcie.
+-- Wyzwalacza BEFORE TRUNCATE wzorem 0010 świadomie NIE dokładamy: 0010 chroni
+-- audit_log, który jest śladem rozliczalności i musi być append-only; ten rejestr
+-- jest odtwarzalną listą roboczą, więc zabezpieczenie tej samej wagi byłoby ceną
+-- bez pokrycia w stawce.
 --
 -- ⚠ SKUTEK DLA MIERNIKA, gdyby ktoś kiedyś nadał grant i politykę tenant-ową:
 -- odczyt rolą aplikacyjną zobaczyłby PODZBIÓR rejestru, czyli po cichu MNIEJ

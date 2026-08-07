@@ -20,6 +20,8 @@ import {
 	OGRANICZENIA_WNIOSKOWANIA,
 	raportTekstowy,
 	SQL_KANDYDACI,
+	SQL_REJESTR,
+	SQL_TOZSAMOSC,
 	type WierszKandydat,
 	zbierzMiernik,
 } from "../placement-metric";
@@ -126,6 +128,7 @@ describe("1E.7 D11 · rozliczenie zdarzeń — liczba obserwacji nigdy sama", ()
 	/** Wykonawca-atrapa: podmienia bazę, NIE podmienia reguły. */
 	function wykonawca(kandydaci: WierszKandydat[], rejestr: Record<string, unknown>[]) {
 		return async (sql: string) => {
+			if (sql === SQL_TOZSAMOSC) return [{ baza: "baza_testowa", rola: "rola_testowa" }];
 			if (sql === SQL_KANDYDACI) {
 				return kandydaci.map((k) => ({
 					zdarzenie_id: k.zdarzenieId,
@@ -284,6 +287,8 @@ describe("1E.7 D5b · ograniczenia wnioskowania stoją PRZY liczbie", () => {
 		const m: Parameters<typeof raportTekstowy>[0] = {
 			kohorta: null,
 			odczytano: new Date("2026-08-06T18:19:47.794Z"),
+			baza: "baza_testowa",
+			rolaPolaczenia: "rola_testowa",
 			uczestnicyWRejestrze: 0,
 			uczestnicyBezZdarzenia: 0,
 			rejestrPodejrzany: 0,
@@ -292,6 +297,51 @@ describe("1E.7 D5b · ograniczenia wnioskowania stoją PRZY liczbie", () => {
 			odrzucone: { sierota: 0, spozaRejestru: 0, spozaRejestruTechniczne: 0 },
 		};
 		expect(raportTekstowy(m)).toContain("2026-08-06T18:19:47.794Z");
+	});
+});
+
+describe("1E.7 D11 · odczyt jest umiejscowiony i uczciwie opisany (W8/W10/W11b Ryana)", () => {
+	it("W8 — raport niesie tożsamość bazy i rolę połączenia", async () => {
+		// Bez tego zapisany odczyt jest nie do umiejscowienia: rola aplikacyjna
+		// zobaczy przez RLS pusty rejestr i wyprodukuje wiarygodnie wyglądający plik
+		// z zerem obserwacji, po którym nie da się stwierdzić, czy to stan pilotażu,
+		// czy skutek uprawnień połączenia.
+		const m = await zbierzMiernik(async (sql) =>
+			sql === SQL_TOZSAMOSC ? [{ baza: "skillbridge_prod", rola: "app_student" }] : [],
+		);
+		expect(m.baza).toBe("skillbridge_prod");
+		expect(m.rolaPolaczenia).toBe("app_student");
+		const raport = raportTekstowy(m);
+		expect(raport).toContain("skillbridge_prod");
+		expect(raport).toContain("app_student");
+	});
+
+	it("W8 — brak tożsamości nie udaje, że jest: wypisuje NIEUSTALONA", async () => {
+		// Cicha pustka w tym polu byłaby gorsza niż jej brak — sugerowałaby, że
+		// odczyt pochodzi znikąd, a wygląda tak samo jak odczyt z produkcji.
+		const m = await zbierzMiernik(async () => []);
+		expect(m.baza).toBe("NIEUSTALONA");
+		expect(raportTekstowy(m)).toContain("NIEUSTALONA");
+	});
+
+	it("W10 — raport nazywa się daną osobową, nie 'bez identyfikatorów'", async () => {
+		// Twierdzenie „brak identyfikatorów" jest prawdziwe dosłownie i mylące
+		// w skutku: przy N rzędu jednostek sygnatura czasowa wskazuje osobę przez
+		// złączenie z dziennikiem. Ostrzeżenie musi jechać W TREŚCI, żeby przetrwało
+		// skopiowanie pliku do maila albo do dokumentu.
+		const raport = raportTekstowy(await zbierzMiernik(async () => []));
+		expect(raport).toContain("BEZPOŚREDNICH");
+		expect(raport).toContain("DANĄ OSOBOWĄ");
+	});
+
+	it("W11b — rozpoznanie domeny .invalid jest NIEwrażliwe na wielkość liter", () => {
+		// Zmierzone przez Ryana: `'QA@SkillBridge.INVALID' LIKE '%.invalid'` = fałsz,
+		// ILIKE = prawda. Konto techniczne zapisane wielkimi literami przechodziło
+		// bramkę wpisu i nie zapalało alarmu o zanieczyszczonym rejestrze.
+		for (const zapytanie of [SQL_KANDYDACI, SQL_REJESTR]) {
+			expect(zapytanie).toMatch(/ILIKE\s+'%\.invalid'/i);
+			expect(zapytanie).not.toMatch(/email\s+LIKE\s+'%\.invalid'/);
+		}
 	});
 });
 

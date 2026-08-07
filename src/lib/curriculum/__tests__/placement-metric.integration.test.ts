@@ -178,9 +178,15 @@ dBack("1E.7 D11 · odczyt miernika na realnej bazie", () => {
 		expect(m.rejestrPodejrzany).toBe(0);
 	});
 
-	it("kaskada po skasowaniu konta ZRYWA wiązanie — zdarzenie przestaje być obserwacją", async () => {
-		// To jest dowód kierunku awarii, na którym stoi cały wybór projektowy:
-		// gdyby reguła była WYKLUCZAJĄCA, ten wiersz wróciłby do licznika.
+	it("sierota po koncie SPOZA rejestru — kaskada students → assessment_sessions zrywa wiązanie", async () => {
+		// ⚠ NAZWA SPROSTOWANA (znalezisko Ryana przy #270). Do 2026-08-07 ten test
+		// nazywał się „kaskada po skasowaniu konta ZRYWA wiązanie — zdarzenie przestaje
+		// być obserwacją" i był przywoływany jako dowód właściwości, na której stoi cały
+		// wybór projektowy. Nie dowodził jej: kasowane konto NIGDY nie było w rejestrze,
+		// więc jego zdarzenie i tak nie było obserwacją. Test dowodził wyłącznie kaskady
+		// `students → assessment_sessions` — rzeczy prawdziwej, ale innej i słabszej.
+		// Właściwość „wypisanie z rejestru cofa obserwacje" dowodzi test NIŻEJ.
+		// Dwie właściwości, dwie nazwy.
 		const wiersze = await wykonaj(
 			`SELECT a.id AS zdarzenie_id, a.action AS akcja, a.created_at AS utworzono,
 			        s.id AS sesja_id, s.student_id AS student_id, NULL::text AS kohorta,
@@ -194,6 +200,59 @@ dBack("1E.7 D11 · odczyt miernika na realnej bazie", () => {
 		const kandydat = zWierszaSql(wiersze[0]);
 		expect(kandydat.sesjaId).toBeNull();
 		expect(klasyfikujZdarzenie(kandydat)).toBe("sierota");
+	});
+
+	it("skasowanie WPISANEGO uczestnika (art. 17) wypisuje go z rejestru i COFA jego obserwacje", async () => {
+		// ⚠ TO JEST DOWÓD WŁAŚCIWOŚCI NOŚNEJ całego wyboru projektowego i akapitu
+		// „nietrwałość liczb w czasie" w OGRANICZENIA_WNIOSKOWANIA. Poprzedni test tego
+		// NIE dowodził (kasował konto spoza rejestru) — znalezisko Ryana przy #270.
+		//
+		// Gdyby reguła była WYKLUCZAJĄCA, ten wiersz po skasowaniu konta WRÓCIŁBY do
+		// licznika (nie ma już czego wykluczać). Przy regule WŁĄCZAJĄCEJ wypada — i to
+		// jest cały argument za tym projektem, tu zmierzony, a nie opowiedziany.
+		//
+		// Test jest samowystarczalny: zakłada własnego uczestnika i kasuje go na końcu,
+		// więc stan rejestru wraca do tego, co zastały testy wyżej.
+		const studentId = await zalozStudenta("wypisywany", `${PREFIX}wypisywany@example.com`);
+		const sesjaId = await zalozSesje(studentId, `${PREFIX}h5`);
+		await zdarzenieMiernika(sesjaId, { threshold: 3, unlockedCount: 2 });
+		await db.execute(
+			sql`INSERT INTO pilot_participants (student_id, tenant_id, cohort)
+			    VALUES (${studentId}, ${tenantId}, ${KOHORTA})`,
+		);
+
+		const przed = await zbierzMiernik(wykonaj, { kohorta: KOHORTA });
+		expect(przed.uczestnicyWRejestrze).toBe(2);
+		expect(przed.policzenia).toHaveLength(2);
+
+		// Art. 17 — usunięcie konta uczestnika.
+		await db.execute(sql`DELETE FROM students WHERE id = ${studentId}`);
+
+		// (a) wiersz rejestru zniknął KASKADĄ — nikt go nie kasował ręcznie.
+		const rejestr = await db.execute(
+			sql`SELECT count(*)::int AS n FROM pilot_participants WHERE student_id = ${studentId}`,
+		);
+		expect((rejestr.rows as { n: number }[])[0].n).toBe(0);
+
+		// (b) jego zdarzenie ma klasę `sierota`.
+		const wiersze = await wykonaj(
+			`SELECT a.id AS zdarzenie_id, a.action AS akcja, a.created_at AS utworzono,
+			        s.id AS sesja_id, s.student_id AS student_id, pp.cohort AS kohorta,
+			        false AS konto_wyglada_technicznie, a.metadata AS metadata
+			   FROM audit_log a
+			   LEFT JOIN assessment_sessions s ON s.id::text = a.target_id
+			   LEFT JOIN pilot_participants pp ON pp.student_id = s.student_id
+			  WHERE a.target_id = $1`,
+			[sesjaId],
+		);
+		expect(wiersze).toHaveLength(1);
+		expect(klasyfikujZdarzenie(zWierszaSql(wiersze[0]))).toBe("sierota");
+
+		// (c) mianownik I licznik spadły — liczba obserwacji nie jest trwała w czasie.
+		const po = await zbierzMiernik(wykonaj, { kohorta: KOHORTA });
+		expect(po.uczestnicyWRejestrze).toBe(1);
+		expect(po.policzenia).toHaveLength(1);
+		expect(po.odrzucone.sierota).toBe(przed.odrzucone.sierota + 1);
 	});
 
 	it("zapytanie kandydatów NIE filtruje — widzi też zdarzenia spoza rejestru", async () => {

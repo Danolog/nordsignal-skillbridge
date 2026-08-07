@@ -27,6 +27,14 @@ config({ path: ".env.local" });
 // Tu chodzi o dane osobowe, nie o sekret, ale mechanizm wycieku jest identyczny,
 // więc stosujemy to samo rozstrzygnięcie zamiast wymyślać dla niego wyjątek.
 //
+// ⚠ `echo "adres" | pnpm tsx …` PRZYWRACA DOKŁADNIE TEN WYCIEK, KTÓRY TO ZAMYKA.
+// Adres wraca wtedy do historii powłoki i do tablicy procesów — czyli tam, skąd
+// właśnie go zabraliśmy. Ostrzeżenie stoi tu dlatego, że taki sposób uruchomienia
+// pokazał opis PR #270 (znalezisko Ryana, W11): przykład użycia jest instrukcją,
+// niezależnie od tego, co mówi kod obok.
+// Właściwe użycie: wpisać adres po zapytaniu narzędzia albo podać go
+// przekierowaniem z pliku SPOZA repozytorium (`… --kohorta X < ~/uczestnik.txt`).
+//
 // Adres służy WYŁĄCZNIE do odnalezienia konta. Do rejestru trafia identyfikator
 // studenta, nigdy adres — tabela nie zakłada nowego zbioru danych osobowych.
 
@@ -87,7 +95,7 @@ async function main() {
 	try {
 		const { rows } = await client.query(
 			`SELECT st.id AS student_id, st.tenant_id, u.email,
-			        (u.email LIKE '%.invalid') AS konto_techniczne,
+			        (u.email ILIKE '%.invalid') AS konto_techniczne,
 			        EXISTS (SELECT 1 FROM pilot_participants pp
 			                 WHERE pp.student_id = st.id AND pp.cohort = $2) AS juz_wpisany
 			   FROM "user" u
