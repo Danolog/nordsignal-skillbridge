@@ -102,3 +102,12 @@ Smoke przeglądarkowy/HTTP: login konta testowego → `GET /api/curriculum`
   pytań pozycji z postępem studentów zażąda `CONFIRM_CONTENT_MIGRATION=1`
   (strażnik z ustaleń Ethana) i zrobi jawny downgrade module_progress
   (decyzja Darka 2026-07-11).
+
+---
+
+> **Nota 2026-08-01 (Ethan, CTO).** Krok 1 („backup gałęzią Neona" przez konsolę) jest
+> **niezweryfikowany** — opisany, nigdy nie przejechany w obecnym interfejsie. Kanoniczna
+> procedura kopii zapasowej wraz ze stanem sprawdzonym odczytem (limit 10 gałęzi, 7 w
+> użyciu, identyfikatory projektu/organizacji) oraz ze **ścieżką REST API, która działa
+> bez `neonctl`** (a `neonctl` NIE jest zainstalowany): `docs/runbooks/neon-kopia-zapasowa.md`.
+> Ten plik zostaje jako zapis konkretnego, datowanego wykonania 1E.2.
