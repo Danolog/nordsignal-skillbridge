@@ -1,42 +1,73 @@
 // @vitest-environment node
 //
-// S-A1-2 — STRAŻNIK GŁÓWNY: pełna pętla usunięcia konta (ADR A-1 (a+), §5).
+// S-A1-2 — STRAŻNIK REGUŁY A1+A2 NA PRAWDZIWYCH TRASACH (ADR A-1 (a+), §5).
 //
-// Czego pilnuje: że po skasowaniu konta w `audit_log` nie zostaje NIC, co
-// wskazuje na tę osobę — ani identyfikator aktora (A1), ani kontekst żądania
-// (A2), ani żywy wskaźnik celu.
+// Czego pilnuje: że wiersze `audit_log` powstające na jedenastu miejscach
+// wywołania w zakresie A-1 nie niosą ani identyfikatora aktora (A1), ani
+// kontekstu żądania (A2), ani identyfikatora osoby przemyconego pod inną nazwą.
 //
 // Test jedzie PRAWDZIWYMI trasami na PRAWDZIWEJ bazie. Atrapujemy wyłącznie to,
 // co poza bazą: uwierzytelnienie, limit żądań, potok modelu językowego i sędziego
 // obrony. Ścieżka zapisu audytu — ta, której dotyczy cała naprawa — jest realna
 // od żądania HTTP do wiersza w tabeli.
 //
+// ── ZAKRES ZAWĘŻONY W TRAKCIE WYKONANIA — CZYTAJ, ZANIM DOPISZESZ TU KASOWANIE ─
+//
+// ADR §5 opisywał ten strażnik jako „pełną pętlę usunięcia konta": przejść trasy,
+// wykonać `DELETE FROM "user"` i orzec, że `target_id` osierociał. TEJ POŁOWY
+// TU NIE MA i jej brak jest DECYZJĄ, nie przeoczeniem.
+//
+// Powód (projekt ścieżki usuwania konta, Ethan, E1b §5, decyzja D-U6 i uwaga
+// procesowa do Ryana): pętla kasująca surowym SQL-em byłaby ZIELONA także wtedy,
+// gdyby prawdziwa ścieżka usunięcia konta w produkcie nie działała albo działała
+// niekompletnie. Strażnik zielony przy zepsutej funkcji jest strażnikiem-atrapą —
+// tą samą rodziną awarii, którą opisuje CLAUDE.md v1.17. Do tego byłby DRUGIM
+// NOŚNIKIEM tej samej reguły co strażnik S-U-2 Ethana.
+//
+// Stan faktyczny, zweryfikowany na wersji Z GAŁĘZI (nie z cudzego dysku):
+// `better-auth` 1.6.26 (`node_modules/better-auth/package.json` → "1.6.26";
+// `package.json` gałęzi → "^1.6.26") ma trasę `/delete-user`, ale zamkniętą
+// bramką `if (!ctx.context.options.user?.deleteUser?.enabled) throw
+// APIError.fromStatus("NOT_FOUND")` (`dist/api/routes/update-user.mjs:288`),
+// a nasza konfiguracja (`src/lib/auth/server.ts`) NIE MA klucza `user`
+// (`git grep -c "deleteUser"` → zero trafień, kod wyjścia 1). Czyli: ścieżki
+// usunięcia konta NIE DA SIĘ dziś wywołać z testu, bo produkt jej nie ma.
+//
+// LUKA NAZWANA WPROST (CLAUDE.md v1.17 — etykieta dopuszczalna, udawanie nie):
+// **osierocenie `target_id` po usunięciu konta NIE JEST tu dowiedzione.**
+// Dowodzą go dziś dwie rzeczy, każda od innej strony i żadna w pełni:
+//   • S-A1-3 — że więzi kaskady istnieją w katalogu bazy (struktura),
+//   • S-U-2 Ethana — pełna pętla przez prawdziwą ścieżkę (zachowanie), gdy
+//     ścieżka powstanie.
+// PRÓG KONSOLIDACJI (jawny, wymóg v1.17): w dniu włączenia `user.deleteUser`
+// (E1b, pakiet 1) lista asercji z tego pliku przenosi się do S-U-2 i ten plik
+// zostaje wyłącznie przy regule A1+A2 na trasach. Nie odtwarzać tu kasowania.
+//
 // ── TRZY WYMOGI TWARDE, KAŻDY Z NAZWANYM POWODEM ────────────────────────────
 //
-// (1) NAJPIERW DOWÓD, ŻE WIERSZE POWSTAŁY. Test „po usunięciu konta nie ma
-//     wierszy z actor_id" jest zielony także wtedy, gdy nie wygenerował ANI
-//     JEDNEGO wiersza — a wtedy nie sprawdza niczego. To rodzina awarii
-//     „mechanizm melduje w porządku" (baza wiedzy QA, sesja 1E.7). Dlatego
-//     najpierw padamy, jeśli którykolwiek z CZTERECH obszarów dał zero wierszy.
+// (1) NAJPIERW DOWÓD, ŻE WIERSZE POWSTAŁY. Test „nie ma wierszy z actor_id" jest
+//     zielony także wtedy, gdy nie wygenerował ANI JEDNEGO wiersza — a wtedy nie
+//     sprawdza niczego. To rodzina awarii „mechanizm melduje w porządku" (baza
+//     wiedzy QA, sesja 1E.7). Dlatego najpierw padamy, jeśli którykolwiek
+//     z CZTERECH obszarów dał zero wierszy.
 //
 // (2) OBIE PRZESTRZENIE IDENTYFIKATORÓW W JEDNYM PRZEBIEGU. `actor_id` niósł
 //     dwie różne przestrzenie: `user.id` przy zdarzeniach paszportu i
 //     `students.id` przy reszcie (pomiar produkcji E0, F1/D5). Strażnik
 //     ćwiczący jedną z nich byłby zielony także wtedy, gdyby druga została
 //     nieobsłużona — dokładnie kształt awarii „naprawa wygląda na zrobioną".
-//     Dlatego przebieg obejmuje ZARAZEM paszport, ZARAZEM zgłoszenie, a każdy
-//     wiersz sprawdzamy przeciw OBU wartościom.
 //
 // (3) `actor_id` I `ip_address` SPRAWDZANE OSOBNO. Strażnik patrzący tylko na
 //     pierwsze przepuściłby błąd, który autor ADR popełnił 2026-08-01
 //     (sprostowanie 0.3): adres IP jest daną osobową (motyw 30 RODO; TSUE
 //     Breyer, C-582/14), więc samo pominięcie `actor_id` nie zamyka art. 17.
-//     Stąd dwie rozłączne asercje i dwie rozłączne mutacje w zgłoszeniu zmiany.
+//     Stąd dwie rozłączne asercje i dwie rozłączne mutacje.
 //
 // Wymaga DATABASE_URL na localhost po `pnpm db:migrate:test`.
 
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { CELE_KASKADY } from "./rodo-a1-cele-kaskady";
 
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
 const isLocalTestDb = /@(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//.test(DATABASE_URL);
@@ -95,15 +126,7 @@ type WierszAudytu = {
 	metadata: unknown;
 };
 
-/** `target_type` → tabela, w której wskaźnik ma się NIE rozwiązywać po kaskadzie. */
-const TABELA_CELU: Record<string, string> = {
-	passports: "passports",
-	student: "students",
-	submission: "project_submissions",
-	assessment_session: "assessment_sessions",
-};
-
-dBack("S-A1-2 · pelna petla usuniecia konta — audit_log bez sladu osoby", () => {
+dBack("S-A1-2 · regula A1+A2 na prawdziwych trasach (audit_log bez sladu osoby)", () => {
 	let pool: Pool | undefined;
 	let tenantId = "";
 	let studentId = "";
@@ -347,44 +370,52 @@ dBack("S-A1-2 · pelna petla usuniecia konta — audit_log bez sladu osoby", () 
 		expect(zTozsamoscia).toEqual([]);
 	});
 
-	// ── Kaskada: wskaźnik celu przestaje się rozwiązywać ──────────────────────
+	// ── Jedyne wiązanie z osobą: cel MUSI leżeć na łańcuchu kaskady ───────────
 
-	it("po DELETE konta wiersze audytu zostaja, a KAZDY target_id jest sierota", async () => {
-		expect(wiersze.length).toBeGreaterThan(0);
+	it("kazdy target_type z przebiegu lezy na lancuchu kaskady pilnowanym przez S-A1-3", async () => {
+		// Po A1+A2 `target_id` jest JEDYNYM wiązaniem z osobą. Argument z motywu
+		// 26 RODO działa wyłącznie wtedy, gdy wskazana tabela znika razem z kontem.
+		// Trasa emitująca cel spoza łańcucha (np. `tenants`) utworzyłaby wiersz,
+		// który NIGDY nie osieroci — i nikt by tego nie zauważył, bo `audit_log`
+		// wyglądałby identycznie.
+		//
+		// Sprawdzamy dwie rzeczy naraz: (a) cel jest na liście, (b) wskaźnik
+		// faktycznie rozwiązuje się DZIŚ do istniejącego wiersza tej tabeli —
+		// bez (b) zgodna nazwa celu przy `target_id` z zupełnie innej tabeli
+		// przeszłaby bez mrugnięcia.
+		const spozaLancucha = [
+			...new Set(wiersze.map((w) => w.target_type).filter((c): c is string => c !== null)),
+		].filter((c) => !CELE_KASKADY[c]);
+		expect(
+			spozaLancucha,
+			"target_type spoza łańcucha kaskady. Wiersz z takim celem nie osieroci się " +
+				"po usunięciu konta, więc motyw 26 RODO przestaje się do niego stosować. " +
+				"Dopisz tabelę do CELE_KASKADY i do WIEZI_KASKADY (S-A1-3) — albo zmień trasę.",
+		).toEqual([]);
 
-		// Usunięcie konta MUSI się udać — wariant wyzwalacza `BEFORE UPDATE OR
-		// DELETE` na tabeli kaskadującej uczyniłby konto niekasowalnym
-		// (precedens: migracja 0045, znalezisko P-2).
-		await pool?.query('DELETE FROM "user" WHERE id = $1', [USER_ID]);
-		const konto = await pool?.query('SELECT 1 FROM "user" WHERE id = $1', [USER_ID]);
-		expect(konto?.rowCount, "Konto nie zniknęło — kaskada odbiła się o wyzwalacz.").toBe(0);
-
-		// Wiersze audytu przeżywają (append-only) — sprawdzamy, że nie zniknęły,
-		// bo inaczej „brak śladu osoby" byłby prawdziwy z niewłaściwego powodu.
-		const poUsunieciu = await pool?.query(
-			"SELECT id, target_type, target_id FROM audit_log WHERE created_at >= $1",
-			[poczatekPrzebiegu],
-		);
-		expect(poUsunieciu?.rowCount).toBe(wiersze.length);
-
-		const zywe: string[] = [];
-		for (const w of poUsunieciu?.rows ?? []) {
+		const nierozwiazane: string[] = [];
+		for (const w of wiersze) {
 			if (!w.target_type || !w.target_id) continue;
-			const tabela = TABELA_CELU[w.target_type];
-			expect(
-				tabela,
-				`Nieznany target_type '${w.target_type}' — dopisz tabelę do TABELA_CELU ` +
-					"albo wiązanie z osobą przestało być sprawdzane.",
-			).toBeDefined();
+			const tabela = CELE_KASKADY[w.target_type];
 			const r = await pool?.query(`SELECT 1 FROM ${tabela} WHERE id::text = $1 LIMIT 1`, [
 				w.target_id,
 			]);
-			if ((r?.rowCount ?? 0) > 0) zywe.push(`${w.target_type}:${w.target_id}`);
+			if ((r?.rowCount ?? 0) === 0) nierozwiazane.push(`${w.action} → ${w.target_type}`);
 		}
 		expect(
-			zywe,
-			"Wskaźnik celu nadal rozwiązuje się do żywego wiersza — kaskada nie zerwała " +
-				"wiązania z osobą i motyw 26 RODO się nie stosuje.",
+			nierozwiazane,
+			"Wskaźnik celu nie rozwiązuje się do wiersza deklarowanej tabeli — para " +
+				"(target_type, target_id) jest niespójna, a wtedy zdanie 'wiązanie idzie " +
+				"przez tabelę kaskadującą' nie opisuje tych wierszy.",
 		).toEqual([]);
 	});
+
+	// ŚWIADOMIE NIE MA TU testu „po usunięciu konta target_id jest sierotą".
+	// Powód, próg konsolidacji i nazwana luka — w nagłówku pliku. Zanim ktoś to
+	// dopisze: pętla kasująca surowym SQL-em daje ZIELEŃ przy zepsutej ścieżce
+	// produktu, a ścieżki produktu nie ma (bramka `user.deleteUser`, E1b).
+	it.todo(
+		"S-U-2 (E1b): pelna petla przez PRAWDZIWA sciezke usuniecia konta, rola aplikacyjna — " +
+			"przenosi tu liste asercji A1/A2 po wlaczeniu user.deleteUser",
+	);
 });

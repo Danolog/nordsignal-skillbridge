@@ -22,25 +22,14 @@
 
 import { sql } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
+import { WIEZI_KASKADY } from "./rodo-a1-cele-kaskady";
 
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
 const isLocalTestDb = /@(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//.test(DATABASE_URL);
 const dBack = isLocalTestDb ? describe : describe.skip;
 
-/**
- * Łańcuch, na którym stoi (a+). Korzeniem jest `user`; `students` jest pierwszym
- * ogniwem, reszta wisi na `students`. Wszystkie cele zdarzeń klasy 1
- * (`passports`, `project_submissions`, `students`) leżą na tym drzewie —
- * `assessment_sessions` i `viva_sessions` dokładamy, bo niosą wzorzec A7
- * i wskaźnik w `metadata`.
- */
-const WIEZI = [
-	{ tabela: "students", kolumna: "user_id", rodzic: "user" },
-	{ tabela: "passports", kolumna: "student_id", rodzic: "students" },
-	{ tabela: "project_submissions", kolumna: "student_id", rodzic: "students" },
-	{ tabela: "assessment_sessions", kolumna: "student_id", rodzic: "students" },
-	{ tabela: "viva_sessions", kolumna: "student_id", rodzic: "students" },
-] as const;
+// Lista więzi NIE jest tu przepisana — czytamy ją z jedynego nośnika, z którego
+// czyta też S-A1-2. Dwie kopie tej listy rozjechałyby się bezgłośnie.
 
 type WierszWiezi = {
 	tabela: string;
@@ -85,7 +74,7 @@ dBack("S-A1-3 · kaskada usuniecia konta — przeslanka nosna kierunku (a+)", ()
 		expect(odczyt.length).toBeGreaterThan(10);
 	});
 
-	for (const w of WIEZI) {
+	for (const w of WIEZI_KASKADY) {
 		it(`${w.tabela}.${w.kolumna} → ${w.rodzic} ma ON DELETE CASCADE`, () => {
 			const znalezione = odczyt.filter(
 				(r) => r.tabela === w.tabela && r.kolumna === w.kolumna && r.rodzic === w.rodzic,
