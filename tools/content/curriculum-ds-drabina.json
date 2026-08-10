@@ -18,48 +18,48 @@
 			"slug": "l0-start",
 			"diagnosticConcept": null,
 			"title": "Start: środowisko pracy",
-			"description": "Colab i notebook od zera — pierwsza uruchomiona komórka w ≤15 min od wejścia (ADR-014 D10). Wariant LEAN: 4 atomy-checklisty, zaliczenie przez wykonanie (pkt 10), bez egzaminu. Bez Gita i terminala (just-in-time — pkt 9).",
+			"description": "Zaczynasz od zera: uruchamiasz pierwszy własny kod w przeglądarce, bez instalowania czegokolwiek na komputerze. Cztery krótkie lekcje, każdą zaliczasz wykonaniem zadania — bez egzaminu na koniec.",
 			"items": []
 		},
 		{
 			"slug": "f1-python-1",
 			"diagnosticConcept": "ds-python",
 			"title": "Python I: zmienne, typy, warunki",
-			"description": "Fundamenty od literalnego zera (persona ADR-014): atom = teoria 300–600 słów + worked example + 3 pytania.",
+			"description": "Podstawy języka Python od zera: wartości i ich rodzaje, obliczenia, budowanie tekstu i pierwsze decyzje w kodzie. Każda lekcja to krótka teoria, przykład rozwiązany krok po kroku i trzy pytania sprawdzające.",
 			"items": []
 		},
 		{
 			"slug": "f2-python-2",
 			"diagnosticConcept": null,
 			"title": "Python II: pętle, funkcje, struktury danych",
-			"description": "Ciąg dalszy fundamentów; fading wsparcia wzdłuż modułu (D5).",
+			"description": "Dalszy ciąg podstaw: powtarzanie czynności w pętli, własne funkcje i listy wartości. Z każdą lekcją dostajesz mniej gotowego szkieletu, a piszesz więcej samodzielnie.",
 			"items": []
 		},
 		{
 			"slug": "f3-dane-python",
 			"diagnosticConcept": null,
 			"title": "Dane w Pythonie: kolekcje i rekordy",
-			"description": "Czysty Python na danych: append, filtrowanie, słowniki, lista słowników (pomost do JSON/pandas), agregaty; zwieńczenie: MINI-PROJEKT transferowy (pkt 12b — pozycja dojdzie z treścią 1E.2). Pandas przeniesione do m-pandas (audyt pojemności D10, 2026-07-11).",
+			"description": "Praca z wieloma danymi naraz: listy, które rosną, wybieranie tego, co Cię interesuje, oraz zestawianie danych w rekordy. Moduł kończy samodzielny mini-projekt — od surowych danych do gotowego raportu.",
 			"items": []
 		},
 		{
 			"slug": "m-pandas",
 			"diagnosticConcept": "ds-pandas",
 			"title": "Pandas: dane w tabelach",
-			"description": "DataFrame, selekcja, braki danych, grupowanie, wykresy + import/pakiety/terminal w Colab. Moduł wydzielony z M-EDA decyzją treściową Sophii (audyt pojemności D10, 2026-07-11 — bilans rubryki capstone'u nie mieścił się w 5–6 atomach; docs/curation/sophia-1e2-audyt-pojemnosci-m-eda.md).",
+			"description": "Dane w tabelach: wczytywanie, wybieranie wierszy i kolumn, radzenie sobie z brakami, grupowanie i pierwsze wykresy. Po drodze poznajesz, jak dokładać do Pythona gotowe biblioteki.",
 			"items": []
 		},
 		{
 			"slug": "m-eda",
 			"diagnosticConcept": "ds-eda",
-			"title": "EDA: od API do repozytorium",
-			"description": "API i JSON (GUS BDL), Git/GitHub just-in-time (pkt 9), przebieg EDA; capstone: EDA na danych GUS BDL. Bez egzaminu MC — bramką jest capstone (wariant C, pkt 2).",
+			"title": "Eksploracyjna analiza danych: od pobrania do publikacji",
+			"description": "Pobierasz prawdziwe dane z serwisu Głównego Urzędu Statystycznego, badasz je krok po kroku — od pierwszego spojrzenia po wnioski — i publikujesz gotową pracę w serwisie GitHub. Zamiast egzaminu moduł kończy projekt.",
 			"items": [
 				{
 					"slug": "capstone",
 					"position": 100,
 					"kind": "project",
-					"title": "Capstone: Polska w liczbach — EDA na danych GUS BDL",
+					"title": "Projekt końcowy: Polska w liczbach — analiza danych GUS",
 					"projectSlug": "ds-eda-polska-w-liczbach-bdl"
 				}
 			]
@@ -67,14 +67,14 @@
 		{
 			"slug": "m-sql",
 			"diagnosticConcept": "ds-sql",
-			"title": "SQL: analiza danych w bazie",
-			"description": "Od tabeli i SELECT po agregacje; capstone: analiza przejazdów w DuckDB.",
+			"title": "SQL: pytania do bazy danych",
+			"description": "SQL, czyli język, którym zadaje się pytania bazie danych: od wybrania kolumn i filtrowania wierszy po podsumowania i łączenie tabel. Moduł kończy projekt — analiza przejazdów taksówek.",
 			"items": [
 				{
 					"slug": "capstone",
 					"position": 100,
 					"kind": "project",
-					"title": "Capstone: analiza przejazdów NYC w SQL",
+					"title": "Projekt końcowy: analiza przejazdów taksówek w SQL",
 					"projectSlug": "ds-sql-analiza-przejazdow"
 				}
 			]
@@ -83,13 +83,13 @@
 			"slug": "m-ml",
 			"diagnosticConcept": "ds-uczenie-maszynowe",
 			"title": "Pierwszy model predykcyjny",
-			"description": "Baseline, walidacja, leakage, metryki; capstone: pierwszy model w scikit-learn.",
+			"description": "Uczenie maszynowe od podstaw: punkt odniesienia, uczciwy sprawdzian modelu na danych, których nie widział, trzy najczęstsze pułapki i miary jakości. Moduł kończy projekt — Twój pierwszy model przewidujący.",
 			"items": [
 				{
 					"slug": "capstone",
 					"position": 100,
 					"kind": "project",
-					"title": "Capstone: pierwszy model predykcyjny",
+					"title": "Projekt końcowy: pierwszy model przewidujący",
 					"projectSlug": "ds-pierwszy-model-predykcyjny"
 				}
 			]
@@ -97,14 +97,14 @@
 		{
 			"slug": "m-llm",
 			"diagnosticConcept": "ds-llm",
-			"title": "LLM: ekstrakcja strukturalna",
-			"description": "Czym są LLM, strukturalne wyjście, ewaluacja z ground truth; capstone: ekstrakcja do JSON.",
+			"title": "Duże modele językowe: wyciąganie danych z tekstu",
+			"description": "Duże modele językowe (takie jak ChatGPT) w praktyce: jak działają, jak uzyskać od nich uporządkowaną odpowiedź zamiast swobodnej wypowiedzi i jak sprawdzić, czy nie zmyśliły. Moduł kończy projekt — wyciąganie danych z tekstu.",
 			"items": [
 				{
 					"slug": "capstone",
 					"position": 100,
 					"kind": "project",
-					"title": "Capstone: strukturalna ekstrakcja z LLM",
+					"title": "Projekt końcowy: wyciąganie danych z tekstu",
 					"projectSlug": "ds-llm-strukturalna-ekstrakcja"
 				}
 			]

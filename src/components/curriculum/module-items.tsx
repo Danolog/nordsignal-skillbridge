@@ -4,8 +4,13 @@
  * Sekwencja: pozycja k+1 otwiera się po zaliczeniu k (ladder.getModuleItems).
  * Pozycja `locked` jest widoczna, ale nieklikalna — bramką jest serwer.
  *
- * Lab: mówimy wprost, że automatycznego zaliczania jeszcze NIE MA (wchodzi
- * w 1E.6b — `/complete` zwraca dziś 501). Bez udawania, że da się zaliczyć.
+ * Zadanie praktyczne (`kind === "lab"`): zaliczane kodem wypisanym przez
+ * notatnik i weryfikowanym serwerowo (ADR-015). Podpis NIE twierdzi, że
+ * zaliczenie jest niedostępne — od 1E.6b jest dostępne, a nieaktualne zdanie
+ * odstraszało studenta od pozycji, którą da się zaliczyć (sygnał Darka
+ * 2026-08-10). Jedynym nośnikiem prawdy o dostępności jest widżet zaliczenia
+ * w widoku pozycji, który renderuje się tylko przy skonfigurowanym sekrecie
+ * i niepustym kontrakcie sprawdzeń — tu tego stanu NIE duplikujemy.
  *
  * Komponent czysto prezentacyjny (server component).
  */
@@ -35,9 +40,10 @@ function ItemRow({ item, moduleId }: { item: LadderItem; moduleId: string }) {
 					</span>
 				</div>
 				{item.kind === "lab" && (
-					<p className="mt-1 flex items-center gap-1.5 text-xs text-amber-800">
+					<p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
 						<FlaskConical aria-hidden className="size-3.5" />
-						Automatyczne sprawdzanie labów wchodzi w 1E.6b — tej pozycji nie da się dziś zaliczyć.
+						Zadanie praktyczne — rozwiązujesz je w notatniku, a zaliczasz kodem, który ten notatnik
+						wypisze.
 					</p>
 				)}
 				{item.status === "locked" && (

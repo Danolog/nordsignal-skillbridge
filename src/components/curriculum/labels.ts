@@ -50,7 +50,15 @@ export const ITEM_STATUS_LABEL: Record<LadderItem["status"], string> = {
 	skipped_by_placement: "Pominięta (diagnoza)",
 };
 
-/** kind pozycji — lista miękka w bazie, więc fallback na surową wartość. */
+/**
+ * kind pozycji — lista miękka w bazie, więc fallback na surową wartość.
+ *
+ * JEDYNY NOŚNIK nazw rodzajów lekcji w interfejsie (CLAUDE.md v1.17). Słownictwo
+ * wewnętrzne („atom", „lab", „capstone") żyje w kodzie, w nazwach tabel i w ADR-ach —
+ * do studenta NIE wychodzi (decyzja Sophii 2026-08-10, sygnał Darka: „użytkownik nie
+ * będzie wiedział, co oznacza atom L0.1"). „lab" → „Zadanie praktyczne", bo student
+ * ma wiedzieć, co robi, a nie jak my to nazywamy wewnętrznie.
+ */
 export function itemKindLabel(kind: string): string {
 	switch (kind) {
 		case "theory":
@@ -58,7 +66,7 @@ export function itemKindLabel(kind: string): string {
 		case "exercise":
 			return "Ćwiczenie";
 		case "lab":
-			return "Lab";
+			return "Zadanie praktyczne";
 		case "project":
 			return "Projekt";
 		case "review":
