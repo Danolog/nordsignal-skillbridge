@@ -345,7 +345,7 @@ jobs:
       # Artefakty diagnostyczne przy padzie (trace/screenshot — raport axe w stdout).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-a11y-exam
           path: playwright-report/
@@ -452,7 +452,7 @@ jobs:
       # Artefakty diagnostyczne przy padzie (trace/screenshot — raport axe w stdout).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-a11y-tutor
           path: playwright-report/
@@ -555,7 +555,7 @@ jobs:
       # Artefakty diagnostyczne przy padzie (trace/screenshot — raport axe w stdout).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-a11y-review
           path: playwright-report/
@@ -673,7 +673,7 @@ jobs:
         run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/65-1e4-review-rate-limit.spec.ts
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-rate-limit-${{ matrix.scope }}
           path: playwright-report/
@@ -845,7 +845,7 @@ jobs:
       # Artefakty diagnostyczne przy padzie (trace/screenshot — bez sekretow w logu).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-e2e-llm
           path: playwright-report/
