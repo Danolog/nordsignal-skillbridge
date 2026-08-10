@@ -1,6 +1,11 @@
 # Kompletność wykonania art. 17 — rejestr miejsc, których kaskada nie czyści
 
-**Wersja:** v0.1 · 2026-08-10 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3
+**Wersja:** v0.2 · 2026-08-10 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3
+
+**Changelog v0.1 → v0.2 (2026-08-10) — Ryan, zadanie E2c.** Nowa pozycja **L-8** (`audit_log.target_id`
+zdarzeń paszportowych — osierocony, ale ponownie przypisywalny przez numer dokumentu na wydruku PDF).
+Pozycja **potwierdza ostrzeżenie z nagłówka**, że ten rejestr jest niekompletny: metoda z sekcji 1
+nie mogła jej wykryć, bo drugi koniec powiązania leży poza bazą.
 **Powiązania:** `docs/data/ropa.md` (wpisy #4, #6, #7 + „Oświadczenie administratora") ·
 `docs/data/retention.md` · `docs/data/audit-log-taksonomia.md` §6 · pozycja **E1b** pakietu RODO.
 
@@ -83,11 +88,37 @@ nie z pliku schematu — i to jest zadanie dla wykonawcy E1b, z cytatem wyjścia
 | **L-5** | Gałęzie kopii zapasowych Neona (`prod-backup-*`) | pełne wiersze w kształcie sprzed usunięcia | **niezweryfikowane** — nie mierzyłem, ile gałęzi i z jakich dat zawiera dane osób | częściowo: kasowanie gałęzi (delegacja Ethana, CLAUDE.md v1.15, bramka (g) — zawsze zostają dwie najnowsze) | Ethan (wykonanie) · Ryan (reguła) · próg: pierwsze żądanie z art. 17 |
 | **L-6** | Dziennik uruchomieniowy Vercela | identyfikatory w liniach dziennika (własna retencja dostawcy) | **niezweryfikowane** — nie znam dziś ani okresu retencji Vercela dla naszego planu, ani zawartości | ograniczanie u źródła (`src/lib/log.ts`, warunek W1 §3 taksonomii) | Ethan · próg: razem z E1b |
 | **L-7** | **Brak ścieżki usunięcia konta w produkcie** | wszystko — kaskada jest gotowa, ale **nikt jej nie odpala** | **blokada art. 17 jako całości** | tak — pozycja **E1b** pakietu RODO | Ethan (wykonanie) · Ryan (odbiór) · próg: przed rejestracją osoby nieznanej administratorowi |
+| **L-8** | `audit_log.target_id` zdarzeń paszportowych (`passport.share.*`) — **osierocony, ale ponownie przypisywalny** | identyfikator paszportu, którego **prefiks widnieje jako numer dokumentu na wydruku PDF krążącym poza platformą** | **dług A-3 — NOWY, znaleziony 2026-08-10** przy przeglądzie zasady odpowiedzi dla pracodawcy | częściowo — ochroną jest dziś **środek organizacyjny** (zakaz dopasowywania), nie techniczny | Ryan (klasyfikacja i zakaz) · Sophia (nośnik zasady) · próg: **pierwsze zapytanie pracodawcy** albo projekt A-1 |
 
 **Zmierzone przesłanki do pozycji L-7** (mój odczyt 2026-08-10 15:17 UTC):
 `git grep -c "deleteUser" origin/main -- .` → **zero trafień, kod wyjścia 1**;
 `git grep -n "delete(user)" origin/main -- src/ tools/` → trzy trafienia, **wszystkie poza
 produktem** (`src/lib/db/seed.ts:92`, `tools/b5-contract-test.ts:392,393`).
+
+**Zmierzone przesłanki do pozycji L-8** (odczyty `origin/main`, 2026-08-10). Trzy odczyty, które
+dopiero **czytane razem** pokazują wadę — i to jest powód, dla którego metoda z sekcji 1 nie mogła
+jej znaleźć:
+
+```
+$ git show origin/main:src/components/passport/passport-document.tsx | sed -n '170p'
+	const docNumber = `SB-2026-${data.id.slice(0, 8).toUpperCase()}`;
+$ git show origin/main:src/app/passport/[id]/page.tsx | grep -n "id: passport.id"
+138:		id: passport.id,
+$ git show origin/main:src/app/api/passport/share/route.ts | sed -n '84,85p'
+		targetType: "passports",
+		targetId: shareToken.passportId,
+```
+
+**Wzorzec A7 zakłada, że osierocony `target_id` przestaje być daną osobową, bo nie prowadzi już do
+nikogo. Dla zdarzeń paszportowych to założenie jest fałszywe:** na zewnątrz krąży plik PDF, który
+niesie **prefiks tego samego identyfikatora** obok imienia i nazwiska. Identyfikator jest więc
+ponownie przypisywalny **środkami, którymi rozsądnie może dysponować osoba trzecia** (motyw 26).
+**Konsekwencja dla projektu A-1, którą trzeba znać przed jego wykonaniem:** usunięcie `actor_id`
+**nie czyni tych wierszy anonimowymi** — ochroną pozostaje zakaz dopasowywania (środek
+organizacyjny), a nie własność danych. Pełna ocena prawna i przekwalifikowanie zakazu z decyzji
+produktowej na wymóg zgodności: `scratchpad/przeglad-zasada-pracodawcy-ryan.md` (pytanie 2).
+**Nie znalazłem tego własną metodą** — drugi koniec powiązania leży w pliku u obcej osoby, poza
+zasięgiem jakiegokolwiek zapytania do bazy. Znalazło się przy przeglądzie cudzego dokumentu.
 
 **Zmierzona przesłanka do pozycji L-2** (`git show origin/main:src/lib/db/schema.ts`, linie
 1164–1166, odczyt 2026-08-10):
