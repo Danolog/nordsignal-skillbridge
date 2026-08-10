@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auditContextFromRequest, recordAudit } from "@/lib/audit";
+import { recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth/server";
 import { PASSPORT_SHARE_CONSENT_VERSION } from "@/lib/consent";
 import { db } from "@/lib/db";
@@ -77,22 +77,24 @@ export async function POST(req: Request) {
 
 	// Audit log POZA tx — audit_log = server-only INSERT, RLS deny-all dla
 	// klienta, append-only trigger (0008/0010). Inny model dostępu, inna ścieżka.
-	const { ipAddress, userAgent } = auditContextFromRequest(req);
+	//
+	// A1+A2 (ADR A-1 (a+)): BEZ `actorId` i BEZ kontekstu żądania. Wiązanie
+	// z osobą idzie WYŁĄCZNIE przez `targetId` = `passports.id`, a `passports`
+	// kaskaduje z konta (`passports.student_id` → `students.id` → `user.id`),
+	// więc po usunięciu konta wiersz zostaje sierotą. Reguły pilnuje typ
+	// `AuditEntry` (`src/lib/audit.ts`) — tu jej nie powtarzamy.
 	await recordAudit({
 		actorType: "student",
-		actorId: userId,
 		action: "passport.share.enable",
 		targetType: "passports",
 		targetId: shareToken.passportId,
-		ipAddress,
-		userAgent,
 		metadata: { consentVersion: PASSPORT_SHARE_CONSENT_VERSION },
 	});
 
 	return NextResponse.json({ publicEnabled: true, shareToken: shareToken.token });
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(_req: Request) {
 	const session = await auth.api.getSession({ headers: await headers() });
 	if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -123,15 +125,12 @@ export async function DELETE(req: Request) {
 
 	if (!result) return NextResponse.json({ error: "Passport not found" }, { status: 404 });
 
-	const { ipAddress, userAgent } = auditContextFromRequest(req);
+	// A1+A2 — jak w POST wyżej: bez `actorId`, bez kontekstu żądania.
 	await recordAudit({
 		actorType: "student",
-		actorId: userId,
 		action: "passport.share.disable",
 		targetType: "passports",
 		targetId: result.passportId,
-		ipAddress,
-		userAgent,
 		metadata: {
 			tokenRotated: result.previousTokenHash !== null,
 			// Skrót (16 hex znaków sha256) — wystarczy do correlation w incident
