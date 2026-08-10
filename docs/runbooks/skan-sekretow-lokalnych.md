@@ -1,6 +1,23 @@
 # Runbook — skan sekretów w lokalnych plikach środowiskowych
 
-**Wersja:** v1.1 · 2026-08-03 · właściciel: Eva (Platform/DevOps) · sign-off bezpieczeństwa: Ryan (CRCO)
+**Wersja:** v1.2 · 2026-08-10 · właściciel: Eva (Platform/DevOps) · sign-off bezpieczeństwa: Ryan (CRCO)
+— **sign-off wycofany 2026-08-03, nieprzywrócony; ta wersja odpowiada na oba warunki i wraca do oceny.**
+
+**Changelog v1.1 → v1.2** (dwa warunki Ryana z wycofanego sign-offu, blok Leo z 2026-08-06):
+- **Warstwa 0 — kontrola uzbrojenia** w `tools/scan-local-secrets.sh`: skan sprawdza sam, czy
+  `core.hooksPath` wskazuje `.githooks`, czy katalog istnieje i czy `pre-commit` jest wykonywalny.
+  Rozbieżność = **kod 2**, nigdy ciche przepuszczenie. Sekcje 2 i 3; mutacje U1–U4 + kontrola
+  odwrotna U0 w sekcji 6.
+- **Sekcja 3.1 (nowa)** — `pnpm install` zapisuje `core.hooksPath` do konfiguracji **wspólnej**:
+  jeden plik dla wszystkich drzew roboczych i gałęzi naraz (zmierzone: 21 drzew, brak
+  `extensions.worktreeConfig`). Z klasą ostrzejszą Ryana: kto kontroluje `package.json`, kontroluje,
+  skąd git bierze haki, bez commita w `.githooks/`.
+- **Sekcja 6.3 (nowa)** — trzecia atrapa: bramka uzbrojona tylko z nazwy. Stan odtworzony
+  niezależnie w izolowanym repozytorium; pomiar „git milczy i przepuszcza commit". Z nazwaną
+  granicą: warstwa 0 ratuje tego, kto pyta, nie tego, kto nie pyta.
+- `prepare` w `package.json` **nie połyka już błędu** (`|| true` → głośne ostrzeżenie na stderr).
+- **Niezamknięte i tak oznaczone:** warunek prefiksów `GOCSPX-` / token Upstash (mutacje `M4`/`M5`)
+  — numeracja U1–U4 celowo ich nie zajmuje. Decyzja o zakresie należy do Ryana.
 
 **Changelog v1.0 → v1.1** (blokujące review Leo przy PR #266):
 - **Sprostowanie jawne** przypisania warstw w tabeli mutacji — sekcja 6.1. Stare brzmienie zacytowane.
@@ -36,6 +53,12 @@ Pliki, które **z kontraktu** mają być wolne od realnych poświadczeń:
 - `.env.test` — konfiguracja lokalnej bazy testowej (Docker, port 5433)
 - `.env.example` — szablon śledzony przez gita
 - `.env.test.example` — szablon śledzony przez gita (wzorzec ustalony w commicie `01f9f22`, PR #253)
+
+Zanim skan cokolwiek przeczyta, sprawdza **sam siebie**:
+
+0. **Kontrola uzbrojenia** — czy `core.hooksPath` wskazuje `.githooks`, czy ten katalog istnieje i czy
+   `pre-commit` jest wykonywalny. Rozbieżność = **kod 2**, nigdy ciche przepuszczenie. Bramka, która
+   nie wie, czy jest uzbrojona, jest atrapą (sekcja 6.3).
 
 Trzy warstwy detekcji, wszystkie w `tools/scan-local-secrets.sh`:
 
@@ -75,9 +98,49 @@ start binarki gitleaks, po jednym uruchomieniu na plik. To około jedna piąta s
 (sprostowanie w sekcji 6.1).
 
 **Kiedy bramka jest uzbrojona:** hook działa tam, gdzie jednocześnie (a) `core.hooksPath` wskazuje
-`.githooks` i (b) katalog `.githooks/` istnieje w drzewie roboczym. Do czasu scalenia tej gałęzi do
-`main` warunek (b) spełniają tylko checkouty z tą gałęzią. Po scaleniu — wszystkie.
-`pnpm install` w nowym klonie ustawia `core.hooksPath` sam.
+`.githooks`, (b) katalog `.githooks/` istnieje w drzewie roboczym i (c) `pre-commit` ma bit
+wykonywalności. Do czasu scalenia tej gałęzi do `main` warunek (b) spełniają tylko checkouty z tą
+gałęzią. Po scaleniu — wszystkie.
+
+**Skan sprawdza te trzy warunki sam (warstwa 0) i przy rozbieżności kończy kodem 2**, nigdy nie
+przepuszcza w ciszy. Powód jest zmierzony, nie teoretyczny — patrz sekcja 6.3.
+
+### 3.1. `pnpm install` zmienia konfigurację WSPÓLNĄ, nie „ten checkout"
+
+To jest ostrzeżenie, nie ciekawostka. Skrypt `prepare` wykonuje `git config core.hooksPath .githooks`,
+czyli zapis do `.git/config` w **katalogu wspólnym repozytorium** — jednego pliku dla **wszystkich
+drzew roboczych (worktree) i wszystkich gałęzi naraz**. Nie jest to ustawienie „tego checkoutu".
+
+Zmierzone 2026-08-10 na kanonicznym repozytorium:
+
+```
+$ git -C <katalog główny>   config --show-origin --get core.hooksPath
+file:.git/config        .githooks
+$ git -C <inne drzewo robocze> config --show-origin --get core.hooksPath
+file:/…/SkillBridge/.git/config    .githooks      ← TEN SAM plik
+$ git worktree list | wc -l
+21                                                ← tyle drzew dzieli ten plik
+$ git config --get extensions.worktreeConfig
+(brak)                                            ← rozdzielenia konfiguracji NIE MA
+```
+
+Praktyczne skutki, oba realne:
+
+1. **Jeden `pnpm install` na jednej gałęzi uzbraja — albo rozbraja — wszystkie pozostałe drzewa
+   robocze.** Stąd bierze się stan opisany w sekcji 6.3: ustawienie wskazuje `.githooks`, a w drzewie
+   stojącym na gałęzi bez tego katalogu haka po prostu nie ma. Git w takim stanie milczy.
+2. **Klasa ostrzejsza (znalezisko Ryana/CRCO, 2026-08-03):** kto kontroluje `package.json`, ten
+   kontroluje, **skąd git bierze haki** — jednym `pnpm install`, bez żadnego commita w `.githooks/`.
+   Dziś jest to nasz własny, poprawny skrypt. Jako wzorzec jest to **przekierowanie strażnika
+   ustawieniem spoza jego katalogu**: przegląd zmian w `.githooks/` nie wystarcza, bo miejsce, z
+   którego git czyta haki, ustala plik leżący gdzie indziej. Przy przeglądzie `package.json` skrypt
+   `prepare` czyta się więc jak zmianę w konfiguracji bezpieczeństwa, a nie jak drobiazg build'owy.
+
+Skrypt `prepare` **nie połyka już błędu w ciszy**: przy niepowodzeniu wypisuje głośne ostrzeżenie na
+wyjście błędów. Świadomie nie kończy instalacji błędem — `pnpm install` bywa uruchamiany tam, gdzie
+katalogu `.git` nie ma (obraz kontenera budowany z samego `package.json`), a wysadzanie instalacji
+w takim miejscu zamieniłoby jedną cichą awarię na inną, głośniejszą i niezwiązaną. Egzekucję niesie
+warstwa 0 skanu, nie `prepare`.
 
 **Brak binarki `gitleaks` = błąd twardy (kod 2), nie ciche przepuszczenie.** Bramka bez skanera jest
 atrapą; instalacja: `brew install gitleaks`.
@@ -157,6 +220,19 @@ Po każdej mutacji: `pnpm secrets:scan-local` ma zwrócić kod `1`, a `git commi
 **zablokowany** przez hook (zmierzone: kod 1, HEAD bez zmian). Po przywróceniu pliku — kod `0`,
 zero fałszywych alarmów na realnych plikach kanonicznego checkoutu.
 
+Mutacje **uzbrojenia** (warstwa 0) — mają dawać **kod 2**, czyli błąd konfiguracji, a nie „czysto":
+
+| # | Stan uzbrojenia | Oczekiwane | 2026-08-10 |
+|---|---|---|---|
+| U0 | poprawnie uzbrojona (kontrola odwrotna) | kod 0 | kod 0 |
+| U1 | `core.hooksPath` **odpięty** | kod 2 | kod 2 |
+| U2 | `core.hooksPath` = `.githooks`, **katalogu brak** — stan `main` | kod 2 | kod 2 |
+| U3 | `core.hooksPath` wskazuje **inny istniejący** katalog haków | kod 2 | kod 2 |
+| U4 | katalog jest, `pre-commit` **bez bitu wykonywalności** | kod 2 | kod 2 |
+
+U1–U4 numerujemy osobno od `M4`/`M5`, które są **zarezerwowane** dla mutacji prefiksów `GOCSPX-`
+i tokenu Upstash z warunku Ryana — żeby numeracja nie sugerowała, że ten warunek został zamknięty.
+
 ### 6.1. Sprostowanie jawne (v1.0 → v1.1)
 
 CLAUDE.md §8 wymaga sprostowania jawnego, nie cichego przeredagowania — tym bardziej że Ryan czytał
@@ -212,3 +288,32 @@ brzmienie w sekcji 3.
 Stąd twarda reguła: **każda zmiana skryptu przechodzi całą tabelę z sekcji 6 — mutacje i kontrole
 odwrotne** — a nowa warstwa wchodzi razem z mutacją, która ją czerwieni, i konfiguracją, która ma
 przez nią przejść.
+
+### 6.3. Trzecia atrapa — bramka uzbrojona tylko z nazwy
+
+Najgroźniejsza z trzech, bo nie zostawia żadnego objawu. Znalazł ją Leo (2026-08-06), a stan
+**odtworzyłam niezależnie** w izolowanym repozytorium 2026-08-10 — nie w kanonicznym, bo mutowanie
+`core.hooksPath` zmienia konfigurację wspólną dla 21 drzew roboczych i zepsułoby pracę innych sesji.
+
+Stan wyjściowy: `core.hooksPath` = `.githooks` (ustawione), katalogu `.githooks/` **nie ma** — czyli
+dokładnie to, co było na `main` (sprawdzone 2026-08-10 na `1da1f93`: `git ls-tree origin/main .githooks`
+zwraca pusto).
+
+Pomiar, ten sam ładunek w obu przebiegach:
+
+| Stan | `git commit` | HEAD | Co powiedział git |
+|---|---|---|---|
+| bramka **uzbrojona** | kod 1 | **bez zmian** | zablokował, wskazał znalezisko |
+| `hooksPath` ustawiony, **katalogu brak** | **kod 0** | **przesunięty** | **nic — ani słowa** |
+
+Trzy ciche „w porządku" składały się na bramkę, której nie było: git nie protestuje na wskazanie
+nieistniejącego katalogu haków, `prepare` miał doklejone `|| true`, więc `pnpm install` kończył się
+zielono także przy nieudanym uzbrojeniu, a sam skan uruchamiany ręcznie mówił „zielona", bo pliki
+faktycznie były czyste. Żaden z trzech sygnałów nie kłamał z osobna; razem dawały fałsz.
+
+**Czego warstwa 0 nie umie — granica nazwana wprost.** Gdy `core.hooksPath` jest zepsuty, hak
+`pre-commit` **nie uruchamia się w ogóle**, więc kontrola uzbrojenia nie ma jak wykonać się w ścieżce
+commita. Zamienia cichy brak bramki w **głośny błąd przy uruchomieniu skanu** — ratuje więc tego, kto
+pyta (`pnpm secrets:scan-local`), a nie tego, kto nie pyta. Domknięcie od strony serwera (egzekucja
+warstwy 2 na śledzonych szablonach w CI) to domena Leo i osobny PR. Do tego czasu: **nazwane, nie
+zamknięte**.

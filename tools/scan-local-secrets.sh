@@ -23,6 +23,13 @@
 #   magazynu sekretów jest osobnym, otwartym zadaniem (właściciel: Ethan/CTO).
 #   Ich obrona to prawa dostępu 0600 + .gitignore + gitleaks w CI na commitach.
 #
+# WARSTWA 0 — KONTROLA UZBROJENIA (przed skanowaniem czegokolwiek)
+#   Skan sprawdza sam siebie: czy `core.hooksPath` wskazuje `.githooks`, czy ten
+#   katalog istnieje i czy `pre-commit` jest wykonywalny. Rozbieżność = kod 2,
+#   nigdy ciche przepuszczenie. Powód jest zmierzony, nie teoretyczny: git przy
+#   `core.hooksPath` wskazującym nieistniejący katalog MILCZY i przepuszcza
+#   commit (stan `main` na 2026-08-06 i 2026-08-10). Szczegóły przy kodzie niżej.
+#
 # TRZY WARSTWY DETEKCJI
 #   1) gitleaks (reguły + entropia) — szeroka, ale zależna od zestawu reguł.
 #      Zmierzone 2026-08-03: reguła `anthropic-api-key` łapie wyłącznie kształt
@@ -55,6 +62,84 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
   exit 2
 }
 cd "$ROOT" || exit 2
+
+# ─────────────────────────────────────────────────────────────────────────────
+# WARSTWA 0 — KONTROLA UZBROJENIA. Bramka, która nie wie, czy jest uzbrojona,
+# jest atrapą (warunek Ryana/CRCO z sign-offu 2026-08-03).
+#
+# ZMIERZONY STAN, KTÓRY TO ZAMYKA (Leo, 2026-08-06; potwierdzone ponownie
+# 2026-08-10 na `main` = 1da1f93): `core.hooksPath` = `.githooks` było ustawione,
+# a katalogu `.githooks/` na `main` NIE BYŁO. Git w takim stanie **nie protestuje**
+# — po prostu nie odpala żadnego haka i przepuszcza commit. Do tego `prepare` miał
+# doklejone `|| true`, więc `pnpm install` kończył się zielono także wtedy, gdy
+# uzbrojenie się nie udało. Trzy ciche „w porządku" składały się na bramkę,
+# której nie było.
+#
+# CZEGO TA KONTROLA NIE UMIE — i nie wolno tego przemilczeć:
+# gdy `core.hooksPath` jest zepsuty, hak `pre-commit` NIE URUCHAMIA SIĘ WCALE,
+# więc ten kod nie ma jak się wykonać w ścieżce commita. Kontrola zamienia cichy
+# brak uzbrojenia w **głośny błąd przy uruchomieniu skanu** (`pnpm
+# secrets:scan-local`) — czyli ratuje tego, kto pyta, nie tego, kto nie pyta.
+# Domknięcie od strony serwera (egzekucja na śledzonych szablonach w CI) to
+# domena Leo i osobny PR; tu jest nazwane, nie udawane.
+KAT_HOOKOW_OCZEKIWANY="$ROOT/.githooks"
+
+sciezka_bezwzgledna() {
+  # Dopuszczamy zapis względny (`.githooks`, `./.githooks`) i bezwzględny.
+  local p="${1%/}"        # bez końcowego ukośnika
+  p="${p#./}"             # bez wiodącego „./"
+  case "$p" in
+    /*) printf '%s\n' "$p" ;;
+    *)  printf '%s\n' "$ROOT/$p" ;;
+  esac
+}
+
+HOOKS_PATH="$(git config --get core.hooksPath 2>/dev/null || true)"
+
+if [ -z "$HOOKS_PATH" ]; then
+  cat >&2 <<EOF
+BŁĄD: bramka NIE JEST UZBROJONA — \`core.hooksPath\` nie jest ustawione.
+      Hak pre-commit się nie uruchomi, a git NIE ostrzeże o tym ani słowem.
+      Uzbrojenie: git config core.hooksPath .githooks   (robi to \`pnpm install\`)
+EOF
+  exit 2
+fi
+
+KAT_HOOKOW="$(sciezka_bezwzgledna "$HOOKS_PATH")"
+
+if [ "$KAT_HOOKOW" != "$KAT_HOOKOW_OCZEKIWANY" ]; then
+  cat >&2 <<EOF
+BŁĄD: \`core.hooksPath\` wskazuje CUDZY katalog haków, nie bramkę tego repo.
+      jest:      $HOOKS_PATH  (po rozwinięciu: $KAT_HOOKOW)
+      oczekiwane: $KAT_HOOKOW_OCZEKIWANY
+      Skan kończy się błędem zamiast udawać, że bramka stoi.
+EOF
+  exit 2
+fi
+
+if [ ! -d "$KAT_HOOKOW" ]; then
+  cat >&2 <<EOF
+BŁĄD: \`core.hooksPath\` wskazuje \`$HOOKS_PATH\`, ale tego katalogu NIE MA.
+      Dokładnie ten stan git przepuszcza w ciszy — ustawienie wygląda na
+      uzbrojone, haka nie ma, commit przechodzi bez skanu.
+      Napraw: przełącz się na gałąź, która zawiera \`.githooks/\`, albo odepnij
+      ustawienie: git config --unset core.hooksPath
+EOF
+  exit 2
+fi
+
+# Dodane ponad literalny warunek Ryana (do wykreślenia, jeśli uzna za nadmiar):
+# katalog może istnieć, a mimo to bramki nie ma — plik haka usunięty albo bez
+# bitu wykonywalności. Git i w tym wypadku milczy. To ta sama klasa „nie wiem,
+# czy jestem uzbrojona", więc domykam ją tu, a nie w osobnym zadaniu.
+if [ ! -x "$KAT_HOOKOW/pre-commit" ]; then
+  cat >&2 <<EOF
+BŁĄD: katalog haków istnieje, ale \`pre-commit\` jest nieobecny albo bez bitu
+      wykonywalności — git pominie go w ciszy. Bramka jest wyłączona.
+      Napraw: chmod +x $KAT_HOOKOW/pre-commit
+EOF
+  exit 2
+fi
 
 PLIKI_KONTRAKTOWE=(".env.test" ".env.example" ".env.test.example")
 
