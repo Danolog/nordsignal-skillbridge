@@ -5,7 +5,11 @@
  * ------------------------
  * Do 2026-08-06 każdy plik `*.integration.test.ts` niósł własną bramkę
  * pomijania: `const dBack = isLocalTestDb ? describe : describe.skip;`
- * (regexp na hoście z DATABASE_URL, powielony w 53 plikach).
+ * (regexp na hoście z DATABASE_URL, powielony w każdym z nich).
+ *
+ * Ile jest kopii — NIE wpisujemy tu liczbą. Liczy je przebieg:
+ * `__tests__/bramki-powielone-spis.test.ts`. Powód w sekcji „PRÓG
+ * KONSOLIDACJI" niżej: każda liczba wpisana ręcznie opisuje przeszłość.
  *
  * Bez ustawionej `DATABASE_URL` cały zestaw pomijał się PO CICHU: przebieg
  * kończył się kodem 0, a podsumowanie („388 skipped") wyglądało jak sukces.
@@ -32,7 +36,7 @@
  * Strażnik przepuszcza WYŁĄCZNIE adresy, które przepuszczają też bramki
  * w plikach. Skutek: jeśli strażnik przepuścił, żadna bramka w pliku już nie
  * pominie testu — ciche pominięcie przestaje być osiągalne, mimo że stare
- * `describe.skip` zostają w 53 plikach jako martwa druga warstwa.
+ * `describe.skip` zostają w plikach jako martwa druga warstwa.
  *
  * Sam `isDedicatedTestDbUrl` NIE wystarcza do tej własności i to nie jest
  * detal: bramka w plikach wymaga w adresie znaku `@` przed hostem (czyli
@@ -49,6 +53,31 @@
  * BEZ FURTKI. `CONFIRM_PROD_DB=1` i `E2E_ALLOW_REMOTE=1` (furtki skryptów
  * migracyjnych z `tools/assert-test-db.ts`) świadomie NIE działają tutaj:
  * zestaw integracyjny nie ma powodu dotykać czegokolwiek zdalnego.
+ *
+ * ═══ PRÓG KONSOLIDACJI POWIELONYCH BRAMEK (wymóg CLAUDE.md §8 v1.17) ═══
+ *
+ * Ten strażnik świadomie ZOSTAWIA bramki powielone w plikach zamiast je usuwać:
+ * mechaniczny diff przez pół repo, wykonany razem ze zmianą bramkującą cały
+ * zestaw, dałby przegląd, w którym nikt nie odróżni naprawy od przenosin.
+ * v1.17 dopuszcza taki drugi nośnik wyłącznie ze strażnikiem kopii I jawnym
+ * progiem. Jedno i drugie stoi w `__tests__/bramki-powielone-spis.test.ts`:
+ *
+ *   PRÓG A — przy PIERWSZEJ ZMIANIE WZORCA bramki (kopia rozjeżdża się
+ *            z kanonem → spis czerwieni się i nazywa plik oraz linię).
+ *   PRÓG B — przy POJAWIENIU SIĘ TRZECIEGO NOŚNIKA poza projektem
+ *            `integration` (tam ten warunek wstępny nie sięga, więc nowy
+ *            nośnik to nowa dziura na ciche pominięcie, nie kolejna kopia).
+ *
+ * Właściciel: Quinn (QA). Dług i plan:
+ * `docs/2026-08-10-dlug-bramki-powielone-i-syllabus.md`.
+ *
+ * PRÓG A JEST JUŻ CZĘŚCIOWO PRZEKROCZONY i to zmierzone, nie przewidywane:
+ * `tools/__tests__/ingest-curriculum.integration.test.ts` zaostrzył swoją kopię
+ * do `isDedicatedTestDbUrl` już 2026-07-26 (commit `d33ba28`). Kopie NIE są
+ * więc „dosłownie identyczne" — jedna poszła własną drogą, w dodatku w dobrą
+ * stronę: to prototyp semantyki, którą ten plik uogólnia na cały zestaw.
+ * Wniosek dla konsolidacji: jedno źródło ma nieść `isDedicatedTestDbUrl`,
+ * nie sam regexp na host.
  */
 
 import { isDedicatedTestDbUrl, parseDbHost } from "../../tools/assert-test-db";
@@ -60,14 +89,16 @@ const ZMIENNA = "DATABASE_URL";
 const HOSTY_LOKALNE = ["localhost", "127.0.0.1", "::1"];
 
 /**
- * Bramka powielona w 53 plikach `*.integration.test.ts` — DOSŁOWNIE ten sam
- * wzorzec, celowo skopiowany, nie „podobny":
+ * Bramka powielona w plikach `*.integration.test.ts` — kopiowana dosłownie,
+ * z jednym uzgodnionym wariantem (patrz nagłówek: `ingest-curriculum`):
  *
  *     const isLocalTestDb = /@(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//.test(DATABASE_URL);
  *
- * Trzymamy go tu po to, żeby strażnik mógł sprawdzić własność podzbioru
- * (patrz nagłówek pliku). Gdy bramki w plikach zostaną kiedyś usunięte,
- * ta stała i powód `niewidoczny-dla-bramek` znikają razem z nimi.
+ * Trzymamy ją tu po to, żeby strażnik mógł sprawdzić własność podzbioru
+ * (patrz nagłówek pliku). Zgodności kopii z tym zapisem pilnuje spis
+ * `__tests__/bramki-powielone-spis.test.ts` (PRÓG A). Gdy bramki w plikach
+ * zostaną kiedyś usunięte, ta stała i powód `niewidoczny-dla-bramek` znikają
+ * razem z nimi.
  */
 const BRAMKA_W_PLIKACH = /@(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//;
 
@@ -182,7 +213,7 @@ export function zdiagnozujBazeIntegracyjna(dbUrl: string | undefined): DiagnozaB
 				naglowek,
 				komunikat: zbudujKomunikat(
 					naglowek,
-					"Bramki w 53 plikach testowych rozpoznają bazę po fragmencie\n" +
+					"Bramki w plikach testowych rozpoznają bazę po fragmencie\n" +
 						"`uzytkownik@host` — adres bez poświadczeń ich nie uruchamia. Gdybym to\n" +
 						"przepuścił, przebieg byłby ZIELONY i pominąłby wszystko po cichu.\n" +
 						"Podaj adres z poświadczeniami (tak wygląda ten z `.env.test.example`\n" +

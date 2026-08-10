@@ -16,7 +16,7 @@
 import { describe, expect, it } from "vitest";
 import { wymagajBazyIntegracyjnej, zdiagnozujBazeIntegracyjna } from "../integration-db-guard";
 
-// Bramka DOSŁOWNIE taka, jak powielona w 53 plikach integracyjnych.
+// Bramka DOSŁOWNIE taka, jak powielona w plikach integracyjnych.
 // Kopiowana tu niezależnie od modułu strażnika — gdyby ktoś zmienił ją tam
 // i nie tu, test podzbioru zaświeci na czerwono. O to chodzi.
 const BRAMKA_W_PLIKACH = /@(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//;
@@ -161,9 +161,29 @@ describe("własność podzbioru — to ona likwiduje ciche pomijanie", () => {
 		},
 	);
 
+	// KONTROLA DODATNIA dla bloku wyżej. Bez niej cały ten blok jest sondą,
+	// której milczenie czyta się jako „własność zachodzi".
+	//
+	// Zmierzone 2026-08-07: po zneutralizowaniu strażnika tak, żeby ODRZUCAŁ
+	// KAŻDY adres, blok „własność podzbioru" pokazywał `10 passed` — komplet
+	// zieleni, choć żadna asercja nie została wykonana ani razu (każdy przypadek
+	// kończył się przedwczesnym `return`). Ślepota jest jednostronna: mutacja
+	// ROZLUŹNIAJĄCA strażnika blok czerwieni (potwierdził to Leo w review),
+	// mutacja ZACIEŚNIAJĄCA — nie.
+	//
+	// Reguła: sonda, której wynik negatywny jest tym uspokajającym, wymaga
+	// kontroli dodatniej (`skills/qa/SKILL.md` §8).
+	it("kontrola dodatnia: blok wyżej NAPRAWDĘ wykonał asercję, i to na czterech adresach", () => {
+		const przepuszczone = WSZYSTKIE_ADRESY.filter((a) => zdiagnozujBazeIntegracyjna(a).ok);
+
+		// Liczba jest jawna, nie „> 0": gdyby strażnik zaczął przepuszczać
+		// pięć adresów z tej listy, to też jest zmiana warta zatrzymania.
+		expect(przepuszczone).toEqual([ADRES_CI, ADRES_COMPOSE, ADRES_IPV4, ADRES_IPV6]);
+	});
+
 	it("adres testowy bez poświadczeń jest odrzucany WŁAŚNIE przez tę własność", () => {
 		// Kontrola negatywna: gdyby strażnik pytał tylko o „dedykowana baza
-		// testowa", ten adres by przeszedł, a wszystkie 53 pliki pominęłyby
+		// testowa", ten adres by przeszedł, a wszystkie pliki integracyjne pominęłyby
 		// się po cichu przy zielonym przebiegu.
 		expect(BRAMKA_W_PLIKACH.test(ADRES_BEZ_POSWIADCZEN)).toBe(false);
 		expect(zdiagnozujBazeIntegracyjna(ADRES_BEZ_POSWIADCZEN).ok).toBe(false);
