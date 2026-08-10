@@ -25,11 +25,21 @@
   <key>Label</key>
   <string>cc.nordsignal.czujnik-nocny</string>
 
+  <!--
+    ŚCIEŻKA POZA DRZEWEM ROBOCZYM — to nie jest wygoda, to wymóg.
+    Pierwsza wersja tego pliku wskazywała `…/SkillBridge/tools/…` w kanonicznym
+    checkoucie i była BŁĘDNA z dwóch powodów, oba wyszły przy instalacji 2026-08-10:
+      1. checkout stoi na `main`, a skrypt żyje na gałęzi — pliku tam po prostu NIE MA;
+      2. nawet po scaleniu drzewo robocze zmienia gałęzie, a repozytorium ma 21 drzew.
+         Harmonogram wskazujący w drzewo robocze przestawałby działać za każdym razem,
+         gdy ktoś przełączy gałąź — i to w ciszy, bo launchd nie ma komu tego zgłosić.
+    Kopia operacyjna leży więc w stałym miejscu. Cena: może się rozjechać z repo —
+    dlatego runbook (sekcja 3) każe porównać skrót po każdej aktualizacji.
+  -->
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <!-- ZMIEŃ na bezwzględną ścieżkę swojego checkoutu -->
-    <string>/Users/dariuszgradzik/Claude_Projekty/nordsignal-operating-system/SkillBridge/tools/czujnik-nocnego-przebiegu.sh</string>
+    <string>/Users/dariuszgradzik/.nordsignal/bin/czujnik-nocnego-przebiegu.sh</string>
   </array>
 
   <key>StartCalendarInterval</key>

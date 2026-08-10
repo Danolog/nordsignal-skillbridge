@@ -64,10 +64,12 @@ na_epoch() {
   fi
 }
 
+DIAG="(brak)"   # co czujnik FAKTYCZNIE zobaczył — do diagnozy powtórki
+
 zapisz_stan() { # $1=werdykt $2=szczegol
-  printf 'odczyt=%s\nwerdykt=%s\nszczegol=%s\nokno_h=%s\nrepo=%s\n' \
-    "$TERAZ_ISO" "$1" "$2" "$OKNO_H" "$REPO" > "$PLIK_TETNA" 2>/dev/null || true
-  printf '%s\t%s\t%s\n' "$TERAZ_ISO" "$1" "$2" >> "$PLIK_LOG" 2>/dev/null || true
+  printf 'odczyt=%s\nwerdykt=%s\nszczegol=%s\nokno_h=%s\nrepo=%s\ndiagnostyka=%s\n' \
+    "$TERAZ_ISO" "$1" "$2" "$OKNO_H" "$REPO" "$DIAG" > "$PLIK_TETNA" 2>/dev/null || true
+  printf '%s\t%s\t%s\t%s\n' "$TERAZ_ISO" "$1" "$2" "$DIAG" >> "$PLIK_LOG" 2>/dev/null || true
 }
 
 # Alarm idzie KILKOMA kanałami naraz, bo najgroźniejszy przypadek to ten,
@@ -125,24 +127,63 @@ command -v gh >/dev/null 2>&1 || alarm "brak narzedzia 'gh' — czujnik nie moze
 # przebieg NAJSTARSZY z dziesięciu, i czujnik krzyczał „219 h" przy przebiegu sprzed
 # pięciu godzin. Fałszywy alarm zabija czujnik równie skutecznie jak milczenie:
 # operator uczy się go ignorować. Stąd `--jq` zamiast tekstu.
-OSTATNI_TS="$(gh run list --repo "$REPO" --workflow "$WORKFLOW" --event schedule \
-        --limit 20 --json createdAt --jq '[.[].createdAt] | max // empty' 2>/dev/null)" || \
-  alarm "zapytanie do API GitHuba nie powiodlo sie (siec? uwierzytelnienie?)"
+odczyt_najnowszego() { # ustawia OSTATNI_TS i DIAG
+  local odp
+  odp="$(gh run list --repo "$REPO" --workflow "$WORKFLOW" --event schedule \
+          --limit 20 --json createdAt \
+          --jq '[.[].createdAt] | "\(length)|\(max // "")"' 2>/dev/null)" || return 1
+  DIAG="rekordow=${odp%%|*} najnowszy=${odp#*|}"
+  OSTATNI_TS="${odp#*|}"
+  [ -n "$OSTATNI_TS" ]
+}
+
+odczyt_najnowszego || alarm "zapytanie do API GitHuba nie powiodlo sie (siec? uwierzytelnienie?)"
 
 # Rozróżnienie ważne: „zapytanie się udało, ale nie ma ANI JEDNEGO przebiegu"
 # to nie błąd techniczny, tylko dokładnie ten stan, którego szukamy.
 [ -n "${OSTATNI_TS:-}" ] || alarm "brak JAKIEGOKOLWIEK przebiegu 'schedule' w historii workflow $WORKFLOW"
 
-OSTATNI_EPOCH="$(na_epoch "$OSTATNI_TS")"
-[ -n "${OSTATNI_EPOCH:-}" ] || alarm "nie umiem odczytac znacznika czasu '$OSTATNI_TS'"
+wiek_godzin() { # $1=znacznik → wiek w sekundach na standardowe wyjście
+  local e; e="$(na_epoch "$1")"
+  [ -n "${e:-}" ] || return 1
+  echo $(( TERAZ_EPOCH - e ))
+}
 
-WIEK_S=$(( TERAZ_EPOCH - OSTATNI_EPOCH ))
-WIEK_H=$(( WIEK_S / 3600 ))
+WIEK_S="$(wiek_godzin "$OSTATNI_TS")" || alarm "nie umiem odczytac znacznika czasu '$OSTATNI_TS'"
 LIMIT_S=$(( OKNO_H * 3600 ))
 
+# ─── POTWIERDZENIE PRZED ALARMEM ───────────────────────────────────────────
+# API GitHuba potrafi zwrócić OKNO NIEAKTUALNE. Zmierzone 2026-08-10, pierwszy
+# przebieg tego czujnika na żywej maszynie: odpowiedź pominęła PIĘĆ najnowszych
+# przebiegów nocnych i jako najnowszy podała ten sprzed 124 h (2026-08-05T05:40:53Z
+# — realny przebieg, nie śmieć). Dwie i pół minuty później ta sama komenda z tego
+# samego środowiska zwróciła poprawny stan. Czujnik zaufał odpowiedzi i wywołał
+# FAŁSZYWY ALARM (zgłoszenie #286).
+#
+# To jest dokładnie luka nazwana w runbooku jako „API odpowiada, ale nieprawdę" —
+# zmaterializowała się przy pierwszym uruchomieniu, więc przestaje być teoretyczna.
+# Stąd: zanim czujnik krzyknie, PYTA DRUGI RAZ. Alarmuje dopiero, gdy oba odczyty
+# się zgadzają. To NIE ukrywa prawdziwej ciszy — przy realnym braku przebiegu oba
+# odczyty pokażą to samo. Zawęża wyłącznie klasę „chwilowo nieaktualna odpowiedź".
 if [ "$WIEK_S" -gt "$LIMIT_S" ]; then
-  alarm "ostatni nocny przebieg ma ${WIEK_H} h (limit ${OKNO_H} h) — przebieg sie NIE ODBYL"
+  PIERWSZY_DIAG="$DIAG"
+  sleep "${CZUJNIK_POTWIERDZENIE_S:-20}"
+  TERAZ_EPOCH="$(date -u +%s)"
+  if odczyt_najnowszego; then
+    WIEK2_S="$(wiek_godzin "$OSTATNI_TS")" || WIEK2_S="$LIMIT_S"
+    if [ "$WIEK2_S" -le "$LIMIT_S" ]; then
+      DIAG="odczyt1[$PIERWSZY_DIAG] ODRZUCONY jako nieaktualny; odczyt2[$DIAG]"
+      zapisz_stan "OK-PO-POTWIERDZENIU" "pierwszy odczyt byl nieaktualny, drugi potwierdzil przebieg sprzed $(( WIEK2_S / 3600 )) h"
+      echo "Czujnik: pierwszy odczyt byl nieaktualny (API), drugi potwierdzil przebieg sprzed $(( WIEK2_S / 3600 )) h — bez alarmu."
+      exit 0
+    fi
+    WIEK_S="$WIEK2_S"
+  fi
+  DIAG="odczyt1[$PIERWSZY_DIAG] odczyt2[$DIAG]"
+  alarm "ostatni nocny przebieg ma $(( WIEK_S / 3600 )) h (limit ${OKNO_H} h), potwierdzone DWOMA odczytami — przebieg sie NIE ODBYL"
 fi
+
+WIEK_H=$(( WIEK_S / 3600 ))
 
 zapisz_stan "OK" "ostatni przebieg sprzed ${WIEK_H} h (${OSTATNI_TS})"
 echo "Czujnik: nocny przebieg potwierdzony — sprzed ${WIEK_H} h (${OSTATNI_TS}), limit ${OKNO_H} h."

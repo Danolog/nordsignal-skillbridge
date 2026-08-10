@@ -58,16 +58,42 @@ Zamknięcie zgłoszenia jest **ręczne** — to potwierdzenie, że ktoś sygnał
 ## 3. Instalacja
 
 ```bash
-# 1. Podmień ścieżkę w pliku plist na własny checkout (launchd nie rozwija `~`).
-# 2. Wgraj harmonogram:
+# 1. Kopia OPERACYJNA poza drzewem roboczym (uzasadnienie niżej):
+mkdir -p ~/.nordsignal/bin
+cp tools/czujnik-nocnego-przebiegu.sh ~/.nordsignal/bin/
+chmod +x ~/.nordsignal/bin/czujnik-nocnego-przebiegu.sh
+
+# 2. Kontrola zgodności kopii z repo — po KAŻDEJ aktualizacji skryptu:
+shasum -a 256 ~/.nordsignal/bin/czujnik-nocnego-przebiegu.sh
+shasum -a 256 tools/czujnik-nocnego-przebiegu.sh      # skróty muszą się zgadzać
+
+# 3. Harmonogram (launchd nie rozwija `~` — ścieżka w plist jest bezwzględna):
 cp ops/launchd/cc.nordsignal.czujnik-nocny.plist ~/Library/LaunchAgents/
 launchctl unload ~/Library/LaunchAgents/cc.nordsignal.czujnik-nocny.plist 2>/dev/null
 launchctl load  ~/Library/LaunchAgents/cc.nordsignal.czujnik-nocny.plist
 launchctl list | grep czujnik-nocny        # weryfikacja: ma być na liście
 
-# 3. Sprawdzenie ręczne w dowolnej chwili:
-bash tools/czujnik-nocnego-przebiegu.sh; echo "kod=$?"
+# 4. Sprawdzenie ręczne w dowolnej chwili:
+bash ~/.nordsignal/bin/czujnik-nocnego-przebiegu.sh; echo "kod=$?"
 ```
+
+**Dlaczego kopia operacyjna leży POZA drzewem roboczym.** Pierwsza wersja wskazywała plik w
+kanonicznym checkoucie i była błędna z dwóch powodów, oba wyszły dopiero przy realnej instalacji:
+checkout stoi na `main`, gdzie tego pliku **nie ma**; a nawet po scaleniu drzewo robocze zmienia
+gałęzie, a repozytorium ma **21 drzew** — harmonogram wskazujący w drzewo robocze przestawałby
+działać przy każdym przełączeniu gałęzi, **w ciszy**. Cena tego rozwiązania: kopia może rozjechać
+się z repo, stąd obowiązkowy krok 2.
+
+**Weryfikacja, że czujnik naprawdę żyje** (nie: że polecenie zwróciło zero):
+
+```bash
+launchctl list | grep czujnik-nocny         # wpis + kod wyjścia ostatniego przebiegu
+cat ~/.nordsignal/czujnik-nocnego-przebiegu/ostatni-odczyt.txt   # tętno: data + werdykt
+cat ~/.nordsignal/czujnik-nocnego-przebiegu/historia.log         # ślad kolejnych przebiegów
+cat /tmp/nordsignal-czujnik-nocny.out.log                        # dziennik launchd
+```
+
+Data w tętnie starsza niż doba = czujnik nie żyje (patrz sekcja 6, luka 2).
 
 Parametry przez zmienne środowiskowe: `CZUJNIK_OKNO_H` (domyślnie 26), `CZUJNIK_REPO`,
 `CZUJNIK_WORKFLOW`, `CZUJNIK_STAN`, `CZUJNIK_ETYKIETA`.
@@ -98,13 +124,31 @@ Zmierzone 2026-08-10:
 
 | # | Stan | Oczekiwane | Wynik |
 |---|---|---|---|
-| K1 | okno 26 h, nocny przebieg **był** (5 h temu) | cisza, kod 0 | **kod 0** |
-| K2 | **kontrola dodatnia** — okno 2 h, ostatni przebieg 5 h temu, czyli w oknie **nic nie ma** | ALARM, kod 1 | **kod 1** |
+| K1 | okno 26 h, nocny przebieg **był** (6 h temu) | cisza, kod 0 | **kod 0** |
+| K2 | **kontrola dodatnia** — okno 2 h, czyli w oknie **nic nie ma** | ALARM, kod 1 | **kod 1** |
 | K3 | API nieosiągalne (nieistniejące repozytorium) | ALARM, kod 1 | **kod 1** |
 | K4 | workflow bez **żadnego** przebiegu `schedule` | ALARM, kod 1 | **kod 1** |
+| K5 | **pierwszy odczyt nieaktualny** (124 h), drugi poprawny | cisza, kod 0 | **kod 0** |
+| K6 | **oba** odczyty pokazują brak świeżego przebiegu | ALARM, kod 1 | **kod 1** |
+
+K5 i K6 są parą: pierwsza dowodzi, że potwierdzenie **odsiewa chwilową nieaktualność API**, druga —
+że **nie chowa prawdziwej ciszy**. Sam K5 byłby dowodem, że nauczyłam czujnik milczeć.
 
 Deduplikacja sprawdzona przy okazji: cztery alarmy dały **jedno** zgłoszenie (#277) z komentarzami
 odświeżającymi, zero duplikatów.
+
+### 5.2. Uruchomienie na żywej maszynie — 2026-08-10
+
+Harmonogram wgrany i **wyzwolony przez `launchd`, nie ręcznie**:
+
+```
+$ launchctl list | grep czujnik-nocny
+-	0	cc.nordsignal.czujnik-nocny
+zaladowany 12:20:34, wyzwolenie zaplanowane na 12:25 -> WYZWOLILO SIE o 12:25:04
+```
+
+**Pierwszy przebieg na żywej maszynie dał FAŁSZYWY ALARM** — i to jest najważniejszy wynik tej
+instalacji, patrz sekcja 5.3.
 
 ### 5.1. Fałszywy alarm w pierwszej wersji — nie usuwać
 
@@ -115,6 +159,43 @@ przebiegu sprzed pięciu godzin — i otworzył zgłoszenie #277, które jest ar
 Zapis zostaje, bo niesie regułę: **fałszywy alarm zabija czujnik równie skutecznie jak milczenie**,
 tylko wolniej i przez przyzwyczajenie. Wybór najnowszego znacznika robi teraz `jq` (`max`), nie
 kolejność zwracana przez API ani parsowanie tekstu.
+
+### 5.3. Luka „API odpowiada nieprawdę" zmaterializowała się przy pierwszym uruchomieniu
+
+W wersji v1.0 wypisałam wśród luk: *„API GitHuba odpowiada, ale nieprawdę. Czujnik ufa odpowiedzi."*
+Napisałam to jako możliwość teoretyczną. **Zdarzyło się w pierwszym przebiegu na żywej maszynie**,
+około 40 minut później.
+
+Pomiar, dwa przebiegi tego samego czujnika, ta sama maszyna, to samo środowisko:
+
+```
+2026-08-10T10:25:04Z  ALARM  ostatni nocny przebieg ma 124 h (limit 26 h)
+2026-08-10T10:27:42Z  OK     ostatni przebieg sprzed 6 h (2026-08-10T04:24:49Z)
+```
+
+Odpowiedź z 10:25:04Z **pominęła pięć najnowszych przebiegów nocnych** i jako najnowszy podała
+`2026-08-05T05:40:53Z`. To nie był śmieć ani błąd arytmetyki — **to jest realny przebieg**, tylko
+sprzed pięciu dni (5 d 4 h 44 min = 124,7 h, zgadza się co do godziny z komunikatem). Zapytanie
+powtórzone z tego samego środowiska, z katalogu `/`, przy minimalnym zestawie zmiennych — zwracało
+poprawny stan. Przyczyny po stronie GitHuba **nie ustaliłam i jej nie zmyślam**; obserwacja jest
+taka, że odpowiedź bywa nieaktualna.
+
+Skutek: fałszywy alarm i zgłoszenie #286.
+
+**Naprawa — potwierdzenie przed alarmem.** Zanim czujnik krzyknie, pyta drugi raz i alarmuje dopiero,
+gdy oba odczyty się zgadzają. Oba odczyty trafiają do dziennika (`diagnostyka=…`), więc powtórka
+będzie diagnozowalna zamiast zagadkowa. Dowód, że naprawa działa w obie strony: K5 i K6 wyżej.
+
+**Czego naprawa NIE robi:** nie chroni przed nieaktualnością **trwałą**. Gdyby API konsekwentnie
+podawało stary stan, oba odczyty zgodzą się co do nieprawdy i alarm będzie fałszywy. Wykrycie
+wymagałoby drugiego, niezależnego źródła prawdy — czyli usługi zewnętrznej (sekcja 7). Luka zostaje
+**zawężona, nie zamknięta**.
+
+**Wniosek ogólniejszy, wart zapisania:** to jest drugi fałszywy alarm tego czujnika w ciągu godziny
+(pierwszy — zachłanne wyrażenie regularne, sekcja 5.1; drugi — zaufanie odpowiedzi API). Oba
+mówią to samo: **czujnik alarmujący bez pokrycia zużywa zaufanie szybciej, niż buduje je czujnik
+milczący**. Dlatego każda kolejna zmiana w tym skrypcie przechodzi całą tabelę K1–K6, a nie tylko
+tę kontrolę, której akurat dotyczy.
 
 ## 6. Czego czujnik NIE złapie — i gdzie stawiam dno rekurencji
 
