@@ -340,12 +340,18 @@ jobs:
       # ZAKRES: TYLKO plik 62 (3 testy @safe). Podanie ŚCIEŻKI PLIKU = zero
       # zależności od --grep → nie ma jak zostać zeskipowanym przez filtr (w
       # przeciwieństwie do e2e-llm, który --grep @llm wyklucza @safe).
+      # MUTACJA DOWODOWA — gałąź jednorazowa `dowod/upload-artifact-v7`, NIE scalać.
+      # Zamiast bramki 1E.3 uruchamiamy spec, który pada celowo, żeby wyzwolić krok
+      # `if: failure()` niżej i sprawdzić, czy `upload-artifact@v7` faktycznie wgrywa
+      # artefakt. Oryginalna linia (do przywrócenia — a właściwie do skasowania razem
+      # z gałęzią):
+      #   run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/62-1e3-exam-a11y.spec.ts
       - name: Playwright — skan a11y egzaminu (bramka 1E.3)
-        run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/62-1e3-exam-a11y.spec.ts
+        run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/99-dowod-upload-v7.spec.ts
       # Artefakty diagnostyczne przy padzie (trace/screenshot — raport axe w stdout).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-a11y-exam
           path: playwright-report/
@@ -452,7 +458,7 @@ jobs:
       # Artefakty diagnostyczne przy padzie (trace/screenshot — raport axe w stdout).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-a11y-tutor
           path: playwright-report/
@@ -555,7 +561,7 @@ jobs:
       # Artefakty diagnostyczne przy padzie (trace/screenshot — raport axe w stdout).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-a11y-review
           path: playwright-report/
@@ -673,7 +679,7 @@ jobs:
         run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/65-1e4-review-rate-limit.spec.ts
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-rate-limit-${{ matrix.scope }}
           path: playwright-report/
@@ -845,7 +851,7 @@ jobs:
       # Artefakty diagnostyczne przy padzie (trace/screenshot — bez sekretow w logu).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-e2e-llm
           path: playwright-report/
