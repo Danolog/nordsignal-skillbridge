@@ -879,6 +879,24 @@ jobs:
   # go czerwieni, nie jest strazikiem). Alarm NIE biega na `pull_request` ani `push`
   # — tam czerwien ma juz swojego odbiorce (autor PR-a widzi czerwony check).
   #
+  # CO ZOSTALO PRZECWICZONE WYMUSZONYM PRZEBIEGIEM (CLAUDE.md §8 — odczyt, nie
+  # rozumowanie). Cztery elementy, bo alarm musi i ODPALAC SIE, KIEDY TRZEBA,
+  # i MILCZEC, KIEDY NIE TRZEBA — alarm odpalajacy sie za czesto umiera tak samo
+  # szybko jak milczacy, tylko przez ignorowanie (Leo, review #274):
+  #   a) 31370229895 — komplet bramek czerwony  -> zgloszenie #273 OTWARTE;
+  #   b) 31371256673 — `deps-scan` ZIELONY, `typecheck` czerwony -> zgloszenie
+  #      ODSWIEZONE komentarzem. Rozstrzyga DWIE rzeczy naraz: alarm nie jest
+  #      przywiazany do `deps-scan` (inaczej milczalby) i dedup dziala (jedno
+  #      zgloszenie, nie dwa). Przebieg (a) sam tego nie rozstrzygal — tam
+  #      `deps-scan` tez byl czerwony;
+  #   c) 31371606535 — zdarzenie `pull_request` z CZERWONYM `deps-scan`: alarm
+  #      `skipped`, ZADNE zgloszenie nie powstalo. Przypadek negatywny — dowod,
+  #      ze zakres zdarzen dziala w obie strony;
+  #   d) 31372880646 — jedna bramka `skipped` (`a11y-tutor`) + druga `failure`
+  #      (`typecheck`) w tym samym przebiegu: alarm ZADZIALAL. Domyka pytanie,
+  #      czy `failure()` nie gubi sie przy pominietej zaleznosci — rzecz nie
+  #      teoretyczna, bo `e2e-llm` jest w `needs` i bywa pomijany.
+  #
   # CZEGO TEN ALARM NIE ZLAPIE — luki nazwane wprost, nie przemilczane:
   #   1. PRZEBIEG, KTORY W OGOLE NIE WYSTARTOWAL. Jesli cron nie odpali (awaria
   #      GitHub Actions — zdarzylo sie 2026-08-06; GitHub wygasza tez cron w repo
@@ -891,6 +909,12 @@ jobs:
   #      NIE dokladam tu `cancelled()`: nie umiem tego udowodnic ta sama mutacja, a
   #      nieudowodniona galaz strazika to atrapa dajaca falszywy spokoj. Osobne
   #      zadanie z wlasnym dowodem.
+  #      RYZYKO SZCZATKOWE JEST MNIEJSZE, NIZ WYNIKA Z SAMEJ NAZWY TEJ LUKI (Leo,
+  #      review #274): blok `concurrency` wyzej ma `cancel-in-progress` prawdziwe
+  #      WYLACZNIE dla `pull_request`, a poza PR-ami klucz grupy zawiera
+  #      `github.sha`, wiec kazdy przebieg ma wlasna grupe. Tor nocny NIE MOZE
+  #      wiec zostac anulowany tym mechanizmem. Zostaje anulowanie RECZNE i awaria
+  #      po stronie GitHuba — czyli waski margines, nie otwarte pole.
   #   3. BRAMKA, KTORA JEST ZIELONA, A NIE POWINNA (falszywa zielen — np. testy ciche
   #      pomijane przy braku `DATABASE_URL`). Alarm doreecza sygnal, nie ocenia go.
   #   4. PAD SAMEGO ALARMU. Jesli `gh issue create` padnie (blad API, cofniete
