@@ -893,6 +893,13 @@ jobs:
   #      zadanie z wlasnym dowodem.
   #   3. BRAMKA, KTORA JEST ZIELONA, A NIE POWINNA (falszywa zielen — np. testy ciche
   #      pomijane przy braku `DATABASE_URL`). Alarm doreecza sygnal, nie ocenia go.
+  #   4. PAD SAMEGO ALARMU. Jesli `gh issue create` padnie (blad API, cofniete
+  #      uprawnienie `issues: write`), zadanie konczy sie czerwono i zgloszenie NIE
+  #      POWSTAJE — a czerwony przebieg to znowu tylko check-run, ktorego nikt nie
+  #      oglada. Strazik nie pilnuje sam siebie. To ta sama rodzina co luka 1:
+  #      domkniecie wymaga sygnalu SPOZA Actions, nie kolejnego zadania w Actions.
+  #      Dlatego odczyty diagnostyczne nizej sa tolerancyjne (`|| true`) — zwezamy
+  #      pas awarii do samego zapisu zgloszenia, ale go NIE ZAMYKAMY.
   nocny-alarm:
     name: nocny-alarm (zgloszenie przy czerwonym torze nocnym)
     runs-on: ubuntu-latest
