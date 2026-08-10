@@ -385,7 +385,7 @@ pilnuje go review, nie test.
 > **Ale jego treść nie jest już prawdziwa i nie wolno jej stąd kopiować:** fraza
 > „Egzekwowanie: BRAK SKRYPTU" jest **nieprawdą** — skrypt istnieje (`tools/enforce-retention.ts`,
 > reguła `hints-at`) i egzekwuje dokładnie ten wiersz. Brzmienie obowiązujące i sprostowanie:
-> `docs/data/retention.md` v0.3.
+> `docs/data/retention.md` (nagłówek + wiersz „Znaczniki czasu odsłonięcia podpowiedzi").
 >
 > **Nośnikiem okresów przechowywania jest `docs/data/retention.md`, nie ten plik.** Wiersze niżej
 > są cytatem zamówienia, nie źródłem prawdy — jeśli szukasz aktualnego okresu, idź tam.
@@ -421,7 +421,7 @@ dostępności przy pierwszym renderze przycisku podpowiedzi.
 > **Co z zamówienia zostało otwarte:** uruchamianie cykliczne — skrypt nie ma wyzwalacza ani wpisu
 > w `package.json`, więc okresy są **egzekwowalne, ale nie egzekwowane automatycznie**. Ta jedna
 > pozycja jest długiem; reszta R-1 nie.
-> Aktualny status egzekucji per wiersz trzyma **`docs/data/retention.md`** (v0.3), nie ten plik.
+> Aktualny status egzekucji per wiersz trzyma **`docs/data/retention.md`**, nie ten plik.
 
 Rejestr deklaruje dziś okresy, których nic nie wykonuje: 12 miesięcy dla `viva_answers.content`
 (ADR-013 D3, od 2026-07-09) i od tego PR-a 12 miesięcy dla `at[]`. Deklarowana i niewyegzekwowana
