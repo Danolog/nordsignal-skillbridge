@@ -417,6 +417,23 @@ async function main() {
 				"assessment_answers",
 				"viva_answers",
 				"review_logs",
+				// 1E.7 / D11 (migracja 0047) — REJESTR UCZESTNIKÓW PILOTAŻU, klasa
+				// OPS-META: metadana badawcza „kto jest uczestnikiem", zero grantów dla
+				// app_student (student nie dowiaduje się z bazy o swoim statusie
+				// w pomiarze) i app_faculty (ta sama granica co curriculum_placements,
+				// warunek nośny A22-3 — wiedza „kto jest w pilotażu" otwierałaby ją bokiem).
+				//
+				// ⚠ DLACZEGO WPIS TUTAJ JEST KONIECZNY, choć tabela MA RLS: test 13.
+				// (kompletność wyjątków) filtruje `r.rls !== true`, więc tabela z RLS
+				// z niego WYPADA — a 13a to jedyne miejsce, które sprawdza, że granty
+				// pozostaną zerowe. Bez tego wpisu `pilot_participants` nie miałaby
+				// ŻADNEGO strażnika (znalezisko Ryana przy #270).
+				//
+				// To pokrywa też jedyną dziurę RLS na tej tabeli: TRUNCATE nie podlega
+				// politykom wierszowym w ogóle, więc omyłkowy GRANT pozwoliłby opróżnić
+				// rejestr mimo deny-default. `PRAWA_TABELOWE` zawiera TRUNCATE, więc taki
+				// grant zapali się właśnie tutaj.
+				"pilot_participants",
 			];
 			const istnieja = await istniejaceTabele(client, denyObie);
 			const nieistnieja = denyObie.filter((t) => !istnieja.includes(t));
@@ -425,7 +442,7 @@ async function main() {
 				...(await nadaneUprawnienia(client, "app_faculty", istnieja)).map((x) => `faculty:${x}`),
 			];
 			check(
-				"13a. AG.3/B6/A5 — zero uprawnień app_student/app_faculty na tabelach DENY (staging/runy/ukryte testy/bank pytań/odpowiedzi/logi powtórek)",
+				"13a. AG.3/B6/A5 — zero uprawnień app_student/app_faculty na tabelach DENY (staging/runy/ukryte testy/bank pytań/odpowiedzi/logi powtórek/rejestr pilotażu)",
 				nadane.length === 0,
 				[
 					nadane.length === 0

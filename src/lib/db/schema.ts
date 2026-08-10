@@ -9,6 +9,7 @@ import {
 	numeric,
 	pgEnum,
 	pgTable,
+	primaryKey,
 	real,
 	smallint,
 	text,
@@ -2330,5 +2331,101 @@ export const curriculumPlacementsRelations = relations(curriculumPlacements, ({ 
 	assessmentSession: one(assessmentSessions, {
 		fields: [curriculumPlacements.assessmentSessionId],
 		references: [assessmentSessions.id],
+	}),
+}));
+
+// ============================================================================
+// 1E.7 / DŁUG D11 — REJESTR UCZESTNIKÓW PILOTAŻU.
+//
+// PO CO TA TABELA ISTNIEJE. Miernik placementu (`curriculum.placement.computed`
+// w `audit_log`) nie miał ani jednego czytelnika, a pierwsze zdarzenie na
+// produkcji pochodzi z weryfikacji zapłonu kontem QA (2026-08-01) i wygląda jak
+// UDANY placement. Pierwszy odczyt bez wyłączenia pokazałby stuprocentową
+// skuteczność zbudowaną na sesji odegranej przez nas samych. Od 2026-08-06
+// dochodzi drugie źródło tego samego zanieczyszczenia: Darek przechodzi całą
+// ścieżkę jako pierwszy — jego wiersz WYGLĄDA jak wiersz uczestnika, a nim nie
+// jest (zna system od środka).
+//
+// REGUŁA (Sophia, §6a „Pierwszy wiersz na produkcji jest TECHNICZNY"):
+//   Miernik czyta się wobec IMIENNEJ LISTY uczestników pilotażu. Zdarzenie,
+//   którego nie da się przypisać do sesji diagnozy NAZWANEGO uczestnika, NIE
+//   JEST OBSERWACJĄ — niezależnie od tego, jak sensownie wygląda.
+// Ta tabela jest tą listą, zapisaną jako DANE. Reguła ma dokładnie jeden
+// nośnik: `klasyfikujZdarzenie` w `src/lib/curriculum/placement-metric.ts`
+// (strażnik: `placement-metric-one-reader.test.ts`).
+//
+// DLACZEGO REJESTR WŁĄCZAJĄCY, A NIE ZNACZNIK WYŁĄCZAJĄCY NA KONCIE. Sophia
+// odrzuciła rozróżniki wyłączające (domena `.invalid`, oznaczenie uczelni)
+// z powodu, który dotyczy KIERUNKU AWARII, nie samego złączenia: zdarzenie nie
+// niesie `actor_id` (art. 17 RODO), więc do konta dociera się wyłącznie przez
+// `assessment_sessions`, a to złączenie znika kaskadą przy skasowaniu konta.
+// Filtr WYKLUCZAJĄCY przestaje wtedy działać i wiersz techniczny po cichu wraca
+// do licznika (awaria „na otwarcie"). Rejestr WŁĄCZAJĄCY korzysta z tego samego,
+// kruchego złączenia — ale gdy ono znika, zdarzenie przestaje być obserwacją
+// (awaria „na zamknięcie"). To samo złączenie, przeciwny kierunek awarii.
+//
+// Trzy dalsze powody, dla których lista uczestników bije listę wyjątków:
+//  • zbiór do wyłączenia jest OTWARTY (konto QA, Darek, demo dla partnera,
+//    szkolenie, powtórka przy incydencie) — trzeba go zgadywać na przyszłość;
+//    zbiór uczestników jest ZAMKNIĘTY i znany dziś (1–3 osoby z imienia),
+//  • koszt pomyłki jest asymetryczny: brak wpisu = niedoszacowanie WIDOCZNE
+//    w rozliczeniu raportu; brak wyjątku = przeszacowanie NIEWIDOCZNE, i to
+//    zawyżające skuteczność — dokładnie ten błąd, przed którym ostrzega §6a,
+//  • Sophia liczy MIANOWNIK „z listy uczestników, nie z dziennika" — ta tabela
+//    daje licznikowi i mianownikowi jedno źródło zamiast dwóch.
+//
+// CZEGO TU CELOWO NIE MA: imienia, adresu, żadnej nowej danej osobowej. Wiersz
+// to (kto już jest w bazie) + (do której kohorty) + (kiedy wpisany). „Imienność"
+// listy niesie konto, które i tak istnieje — powielanie jej tutaj byłoby nowym
+// zbiorem PII bez ani jednego nowego zastosowania. Powód wpisu idzie do
+// `audit_log` (`pilot.participant.enrolled`), czyli tam, gdzie rozliczalność
+// już mieszka.
+//
+// KASKADA JEST NOŚNA, NIE KOSMETYCZNA: usunięcie konta (art. 17) kasuje wiersz
+// rejestru, więc zdarzenia tej osoby przestają być obserwacjami — zgodnie
+// z projektem Ryana, w którym po usunięciu konta zdarzenie zostaje sierotą.
+//
+// RLS (0047, rls-matrix wiersz #29): klasa ai_usage_ledger — ZERO grantów dla
+// app_student i app_faculty + ENABLE/FORCE RLS + owner_passthrough. To metadana
+// BADAWCZA („kto jest uczestnikiem pilotażu"), nie dana produktowa: student nie
+// ma się z niej dowiadywać o swoim statusie w pomiarze, a wykładowca nie ma
+// prawa jej widzieć w ogóle (warunek nośny A22-3 jak przy curriculum_placements).
+// ============================================================================
+
+export const pilotParticipants = pgTable(
+	"pilot_participants",
+	{
+		studentId: uuid("student_id")
+			.notNull()
+			.references(() => students.id, { onDelete: "cascade" }),
+		tenantId: uuid("tenant_id")
+			.notNull()
+			.references(() => tenants.id),
+		// Która kohorta pilotażu. Klucz złożony (student, kohorta) — ta sama osoba
+		// może wejść do drugiego pilotażu bez kasowania śladu udziału w pierwszym,
+		// a miernik czyta się per kohorta albo łącznie (oba są fail-closed: liczą
+		// wyłącznie wpisanych).
+		cohort: text("cohort").notNull(),
+		enrolledAt: timestamp("enrolled_at", { withTimezone: true }).defaultNow().notNull(),
+	},
+	(table) => [
+		primaryKey({
+			name: "pilot_participants_pkey",
+			columns: [table.studentId, table.cohort],
+		}),
+		index("idx_pilot_participants_cohort").on(table.cohort),
+		index("idx_pilot_participants_tenant_id").on(table.tenantId),
+		check("pilot_participants_cohort_not_blank", sql`length(trim(${table.cohort})) > 0`),
+	],
+);
+
+export const pilotParticipantsRelations = relations(pilotParticipants, ({ one }) => ({
+	student: one(students, {
+		fields: [pilotParticipants.studentId],
+		references: [students.id],
+	}),
+	tenant: one(tenants, {
+		fields: [pilotParticipants.tenantId],
+		references: [tenants.id],
 	}),
 }));
