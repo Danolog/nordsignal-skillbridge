@@ -850,3 +850,188 @@ jobs:
           name: playwright-report-e2e-llm
           path: playwright-report/
           retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # nocny-alarm — zamiana cichej czerwieni toru nocnego na imienne zgloszenie.
+  #
+  # MECHANIZM AWARII, ktory tu zamykamy (i tylko ten): nocny przebieg `main` moze
+  # byc czerwony dowolnie dlugo, bo NIKT GO NIE OGLADA. Czerwony check-run wisi na
+  # commicie `main`, ktory nie bramkuje juz zadnego PR-a, wiec nie zatrzymuje pracy
+  # i nie rzuca sie w oczy. Zdarzylo sie DWA razy:
+  #   - 2026-08-02..05 — cztery doby, wykryte przypadkiem;
+  #   - 2026-08-08..10 — trzy doby (przebiegi 31238746259, 31294101208, 31355398651),
+  #     wykryte przypadkiem przy zupelnie innej kontroli.
+  # Za kazdym razem 12 zadan zielonych i JEDNO czerwone. Brakujacym elementem nie byl
+  # czujnik (bramka dzialala poprawnie) — brakowalo doreczenia sygnalu do czlowieka.
+  #
+  # DLACZEGO `needs` OBEJMUJE WSZYSTKIE 12 BRAMEK, A NIE `deps-scan`:
+  # oba incydenty padly na `deps-scan`, ale to wlasnosc probki, nie mechanizmu.
+  # Mechanizm brzmi „nikt nie oglada nocnego przebiegu" i dotyczy KAZDEJ bramki.
+  # Alarm wpiety w jedna bramke bylby strazikiem pilnujacym dokladnie tego wypadku,
+  # ktory juz nas ugryzl — i milczalby, gdyby nocna czerwien przyszla z `integration`
+  # albo `e2e-llm`. Stad zaleznosc od kompletu; `failure()` jest prawdziwe, gdy
+  # padnie DOWOLNA z nich.
+  #
+  # DLACZEGO `schedule` I `workflow_dispatch` (a nie sam `schedule`):
+  # ten sam warunek co `e2e-llm` wyzej — w tym pliku „tor nocny" jest juz zdefiniowany
+  # jako ta para. Dodatkowo czyni alarm ODPALALNYM NA ZADANIE, czyli mozliwym do
+  # ponownego udowodnienia w kazdej chwili (CLAUDE.md §8: strazik bez mutacji, ktora
+  # go czerwieni, nie jest strazikiem). Alarm NIE biega na `pull_request` ani `push`
+  # — tam czerwien ma juz swojego odbiorce (autor PR-a widzi czerwony check).
+  #
+  # CO ZOSTALO PRZECWICZONE WYMUSZONYM PRZEBIEGIEM (CLAUDE.md §8 — odczyt, nie
+  # rozumowanie). Cztery elementy, bo alarm musi i ODPALAC SIE, KIEDY TRZEBA,
+  # i MILCZEC, KIEDY NIE TRZEBA — alarm odpalajacy sie za czesto umiera tak samo
+  # szybko jak milczacy, tylko przez ignorowanie (Leo, review #274):
+  #   a) 31370229895 — komplet bramek czerwony  -> zgloszenie #273 OTWARTE;
+  #   b) 31371256673 — `deps-scan` ZIELONY, `typecheck` czerwony -> zgloszenie
+  #      ODSWIEZONE komentarzem. Rozstrzyga DWIE rzeczy naraz: alarm nie jest
+  #      przywiazany do `deps-scan` (inaczej milczalby) i dedup dziala (jedno
+  #      zgloszenie, nie dwa). Przebieg (a) sam tego nie rozstrzygal — tam
+  #      `deps-scan` tez byl czerwony;
+  #   c) 31371606535 — zdarzenie `pull_request` z CZERWONYM `deps-scan`: alarm
+  #      `skipped`, ZADNE zgloszenie nie powstalo. Przypadek negatywny — dowod,
+  #      ze zakres zdarzen dziala w obie strony;
+  #   d) 31372880646 — jedna bramka `skipped` (`a11y-tutor`) + druga `failure`
+  #      (`typecheck`) w tym samym przebiegu: alarm ZADZIALAL. Domyka pytanie,
+  #      czy `failure()` nie gubi sie przy pominietej zaleznosci — rzecz nie
+  #      teoretyczna, bo `e2e-llm` jest w `needs` i bywa pomijany.
+  #
+  # CZEGO TEN ALARM NIE ZLAPIE — luki nazwane wprost, nie przemilczane:
+  #   1. PRZEBIEG, KTORY W OGOLE NIE WYSTARTOWAL. Jesli cron nie odpali (awaria
+  #      GitHub Actions — zdarzylo sie 2026-08-06; GitHub wygasza tez cron w repo
+  #      bez aktywnosci przez 60 dni), nie ma przebiegu, wiec nie ma czego zaczerwienic
+  #      i alarm MILCZY. Cisza jest wtedy NIEODROZNIALNA OD SUKCESU. To luka
+  #      strukturalna: czujnik zywosci nie moze mieszkac w tym samym systemie, ktory
+  #      ma obserwowac. Zamkniecie wymaga sygnalu Z ZEWNATRZ (monitoring typu
+  #      dead-man's switch — domena 13, osobne zadanie).
+  #   2. PRZEBIEG ANULOWANY (`cancelled`) — `failure()` jest wtedy falszywe. Swiadomie
+  #      NIE dokladam tu `cancelled()`: nie umiem tego udowodnic ta sama mutacja, a
+  #      nieudowodniona galaz strazika to atrapa dajaca falszywy spokoj. Osobne
+  #      zadanie z wlasnym dowodem.
+  #      RYZYKO SZCZATKOWE JEST MNIEJSZE, NIZ WYNIKA Z SAMEJ NAZWY TEJ LUKI (Leo,
+  #      review #274): blok `concurrency` wyzej ma `cancel-in-progress` prawdziwe
+  #      WYLACZNIE dla `pull_request`, a poza PR-ami klucz grupy zawiera
+  #      `github.sha`, wiec kazdy przebieg ma wlasna grupe. Tor nocny NIE MOZE
+  #      wiec zostac anulowany tym mechanizmem. Zostaje anulowanie RECZNE i awaria
+  #      po stronie GitHuba — czyli waski margines, nie otwarte pole.
+  #   3. BRAMKA, KTORA JEST ZIELONA, A NIE POWINNA (falszywa zielen — np. testy ciche
+  #      pomijane przy braku `DATABASE_URL`). Alarm doreecza sygnal, nie ocenia go.
+  #   4. PAD SAMEGO ALARMU. Jesli `gh issue create` padnie (blad API, cofniete
+  #      uprawnienie `issues: write`), zadanie konczy sie czerwono i zgloszenie NIE
+  #      POWSTAJE — a czerwony przebieg to znowu tylko check-run, ktorego nikt nie
+  #      oglada. Strazik nie pilnuje sam siebie. To ta sama rodzina co luka 1:
+  #      domkniecie wymaga sygnalu SPOZA Actions, nie kolejnego zadania w Actions.
+  #      Dlatego odczyty diagnostyczne nizej sa tolerancyjne (`|| true`) — zwezamy
+  #      pas awarii do samego zapisu zgloszenia, ale go NIE ZAMYKAMY.
+  nocny-alarm:
+    name: nocny-alarm (zgloszenie przy czerwonym torze nocnym)
+    runs-on: ubuntu-latest
+    needs:
+      - lint
+      - typecheck
+      - test
+      - integration
+      - build
+      - secret-scan
+      - deps-scan
+      - a11y-exam
+      - a11y-tutor
+      - a11y-review
+      - rate-limit-review
+      - e2e-llm
+    if: failure() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+      issues: write # otwarcie/odswiezenie zgloszenia + utworzenie etykiety
+      actions: read # odczyt listy zadan tego przebiegu (ktore dokladnie padly)
+    steps:
+      - name: Otworz albo odswiez zgloszenie o czerwonym torze nocnym
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GALAZ: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+          ZDARZENIE: ${{ github.event_name }}
+          ETYKIETA: nocny-przebieg
+          # Jedyne konto przypisywalne w tym repo (sprawdzone: `gh api
+          # repos/.../assignees` zwraca wylacznie `Danolog`). Agenty nie maja kont
+          # GitHuba, wiec role odpowiedzialne nazywamy w TRESCI zgloszenia.
+          PRZYPISZ: Danolog
+        run: |
+          set -uo pipefail
+
+          # Ktore zadania faktycznie padly — lista do tresci zgloszenia.
+          #
+          # CELOWO BEZ `set -e` I Z `|| true`: diagnostyka alarmu NIE MOZE zabic
+          # alarmu. Gdyby odczyt listy zadan padl (limit API, chwilowy blad), przy
+          # `set -e` caly krok konczy sie bledem i zgloszenie NIE POWSTAJE — czyli
+          # dokladnie ta cisza, ktorej to zadanie ma zapobiegac. Lepsze zgloszenie
+          # bez listy zadan niz brak zgloszenia.
+          PADLE=$(gh run view "$RUN_ID" --repo "$REPO" --json jobs \
+            --jq '[.jobs[] | select(.conclusion=="failure") | "- `\(.name)`"] | join("\n")' || true)
+          if [ -z "${PADLE:-}" ]; then
+            PADLE="- (nie udalo sie odczytac listy zadan — patrz przebieg)"
+          fi
+          LICZBA_PADLYCH=$(gh run view "$RUN_ID" --repo "$REPO" --json jobs \
+            --jq '[.jobs[] | select(.conclusion=="failure")] | length' || true)
+          LICZBA_PADLYCH=${LICZBA_PADLYCH:-"?"}
+
+          # Etykieta idempotentnie — pierwszy przebieg w swiezym repo tez ma zadzialac.
+          gh label create "$ETYKIETA" --repo "$REPO" \
+            --color B60205 --description "Tor nocny CI czerwony — wymaga reakcji" \
+            2>/dev/null || true
+
+          TERAZ=$(date -u '+%Y-%m-%d %H:%M UTC')
+
+          {
+            echo "**Tor nocny jest czerwony.** Odczyt: $TERAZ"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Przebieg | [$RUN_ID]($RUN_URL) |"
+            echo "| Zdarzenie | \`$ZDARZENIE\` |"
+            echo "| Galaz | \`$GALAZ\` |"
+            echo "| Commit | \`$SHA\` |"
+            echo "| Zadan czerwonych | $LICZBA_PADLYCH |"
+            echo
+            echo "**Co padlo:**"
+            echo
+            echo "$PADLE"
+          } > tresc.md
+
+          # Dedup: JEDNO zgloszenie odswiezane, nie jedno na noc. Trzy czerwone noce
+          # pod rzad maja dac jeden watek z trzema wpisami — inaczej alarm sam
+          # zamienia sie w szum, ktory sie ignoruje (czyli w te sama awarie).
+          NUMER=$(gh issue list --repo "$REPO" --label "$ETYKIETA" --state open \
+            --limit 1 --json number --jq '.[0].number // empty')
+
+          if [ -n "$NUMER" ]; then
+            echo "Zgloszenie #$NUMER juz otwarte — odswiezam komentarzem (bez duplikatu)."
+            gh issue comment "$NUMER" --repo "$REPO" --body-file tresc.md
+            echo "ODSWIEZONO=#$NUMER" >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo
+              echo "---"
+              echo
+              echo "Zgloszenie otwarte automatycznie przez zadanie \`nocny-alarm\`."
+              echo "Zostaje otwarte i odswiezane kolejnymi wpisami, dopoki tor nocny"
+              echo "nie wroci na zielono — **zamkniecie jest recznym potwierdzeniem**,"
+              echo "ze ktos to widzial."
+              echo
+              echo "Odpowiedzialni (agenty nie maja kont GitHuba, wiec imiennie w tresci):"
+              echo "**Eva** (platforma/CI) prowadzi, **Ethan** (CTO) scala naprawe,"
+              echo "**Leo** recenzuje. Przypisanie techniczne: @$PRZYPISZ."
+            } >> tresc.md
+            # `gh issue create` NIE wspiera `--json` — zwraca URL nowego zgloszenia.
+            # Jedno wywolanie, zeby zadna sciezka bledu nie mogla utworzyc duplikatu.
+            NOWY=$(gh issue create --repo "$REPO" \
+              --title "Tor nocny CI na \`main\` jest czerwony" \
+              --label "$ETYKIETA" \
+              --assignee "$PRZYPISZ" \
+              --body-file tresc.md | tail -1)
+            echo "OTWARTO=$NOWY" >> "$GITHUB_STEP_SUMMARY"
+          fi
