@@ -6,9 +6,18 @@
  * rehype-sanitize, pozytywna allowlista, bez rehype-raw) — treść atomów jest
  * częściowo generowana LLM, więc render jest granicą XSS.
  *
- * Lab: `/complete` zwraca dziś 501 (automatyczne checki wchodzą w 1E.6b), więc
- * pozycja jest NIEZALICZALNA i mówimy to wprost. Nie pokazujemy przycisku
- * „zalicz" ani pętli pytań, która sugerowałaby postęp.
+ * Pozycja `kind === "lab"` (nazwa dla studenta: `itemKindLabel`) — stan aktualny:
+ * zalicza się kodem z notatnika, weryfikowanym serwerowo (ADR-015, PR #181).
+ * Widżet zaliczenia (`LabStamp`) renderuje się, gdy pozycja MA kontrakt sprawdzeń
+ * i kod; przy jego braku pokazujemy `LAB_AUTOCHECK_NOTICE` — blokada dotyczy
+ * WTEDY tej jednej pozycji, nie mechanizmu.
+ *
+ * SPROSTOWANIE (#291): do 2026-08-12 stało tu „`/complete` zwraca dziś 501
+ * (automatyczne checki wchodzą w 1E.6b), więc pozycja jest NIEZALICZALNA".
+ * Było prawdą do PR #180 i przestało nim być w PR #181 — ten sam nieusunięty
+ * opis nieistniejącego już stanu, co w mikrocopy naprawionym w tym zgłoszeniu,
+ * tylko w komentarzu, więc nikt go nie zobaczył. Plik od dawna renderuje
+ * `LabStamp` niżej, czyli nagłówek przeczył własnemu kodowi.
  *
  * Server component (interakcję ma tylko `ItemRunner`).
  */
@@ -17,7 +26,12 @@ import { ArrowLeft, ExternalLink, FlaskConical } from "lucide-react";
 import Link from "next/link";
 import { ItemRunner } from "@/components/curriculum/item-runner";
 import { LabStamp } from "@/components/curriculum/lab-stamp";
-import { ITEM_STATUS_LABEL, itemKindLabel, statusBadgeClass } from "@/components/curriculum/labels";
+import {
+	ITEM_STATUS_LABEL,
+	itemKindLabel,
+	LAB_AUTOCHECK_NOTICE,
+	statusBadgeClass,
+} from "@/components/curriculum/labels";
 import { TheoryMarkdown } from "@/components/skillbridge/b3/TheoryMarkdown";
 import type { CurriculumItemView } from "@/lib/curriculum/item-view";
 
@@ -71,11 +85,7 @@ export function ItemDetail({
 						<FlaskConical aria-hidden className="size-4" />
 						Ta pozycja jest zablokowana — jeszcze nie da się jej zaliczyć
 					</h2>
-					<p className="mt-1 text-sm text-amber-900">
-						Lab zalicza się automatycznym sprawdzeniem wykonanej pracy (bez samodeklaracji). Dla tej
-						pozycji sprawdzenie nie jest jeszcze skonfigurowane — możesz przeczytać instrukcję i
-						wykonać ją u siebie, ale drabina nie zapisze zaliczenia.
-					</p>
+					<p className="mt-1 text-sm text-amber-900">{LAB_AUTOCHECK_NOTICE}</p>
 				</div>
 			)}
 

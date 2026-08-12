@@ -157,8 +157,12 @@ const CHECKS_F1_4: Check[] = [
 	{
 		id: "C2",
 		kind: "relation",
-		note: "`srednio_dziennie` = `razem` / 30",
-		rule: { op: "eq", left: "srednio_dziennie", right: { div: ["razem", 30] } },
+		// Liczone z `cena`, NIE z `razem`: cena kromki nie zależy od liczby
+		// kupionych bochenków. Dzięki temu C2 jest niezależne od C1 — pomyłka
+		// w luce 1 nie przewraca luki 2 (poprzednia wersja `razem / 30` kaskadowała
+		// błąd i, co gorsza, była drogą tożsamościową: × 30 ÷ 30 zwraca to samo).
+		note: "`cena_kromki` = `cena` / `kromek_w_bochenku`",
+		rule: { op: "eq", left: "cena_kromki", right: { div: ["cena", "kromek_w_bochenku"] } },
 	},
 ];
 

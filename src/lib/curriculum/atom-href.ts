@@ -45,16 +45,16 @@ export function humanizeConceptSlug(slug: string): string {
 	return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/** Etykieta rodzaju atomu w wierszu correctives (spójna z labels.itemKindLabel). */
-export function atomKindLabel(kind: string): string {
-	switch (kind) {
-		case "theory":
-			return "Teoria";
-		case "exercise":
-			return "Ćwiczenie";
-		case "lab":
-			return "Lab";
-		default:
-			return kind;
-	}
-}
+// `atomKindLabel` SKASOWANA 2026-08-12 (przegląd #291, warunek 1 Leo).
+//
+// Była drugą kopią nazw rodzajów pozycji i już się rozjechała z nośnikiem:
+// dla „lab" zwracała surowe „Lab", podczas gdy `itemKindLabel` zwraca „Zadanie
+// praktyczne" — a jej własny komentarz twierdził, że jest „spójna z
+// labels.itemKindLabel". Rozjazdu nie widział student wyłącznie dlatego, że
+// `CORRECTIVES_ATOM_KINDS = ["theory","exercise"]` odfiltrowuje laby w zapytaniu
+// w `exam-service.ts` — bezpiecznik z innego modułu, niepowiązany z tą decyzją
+// i mogący zniknąć przy niezwiązanej zmianie.
+//
+// Jedyny nośnik nazw: `itemKindLabel` w `@/components/curriculum/labels`.
+// Wołają go bezpośrednio komponenty (m.in. `exam/correctives-panel.tsx`) —
+// tu nie ma opakowania, żeby nie odtworzyć drugiego nośnika przez zaniechanie.
