@@ -19,7 +19,7 @@
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import { evaluateChecks, parseChecks, type StampPayload } from "@/lib/curriculum/lab-checks";
 import { atomCode, parseToken, signToken } from "@/lib/curriculum/lab-token";
 import {
@@ -27,6 +27,9 @@ import {
 	listNotebookSources,
 	sharedStampBlock,
 } from "../../../tools/build-notebooks";
+// Atomy niosą klucze odpowiedzi → prywatne repo treści (tools/tresc-prywatna.ts).
+// Notebooki i ich źródła ZOSTAJĄ publiczne — student je pobiera.
+import { czytajTrescJson, describeTresc } from "../../support/tresc-prywatna";
 
 const ROOT = process.cwd();
 const SRC_DIR = join(ROOT, "tools", "content", "notebooks");
@@ -58,9 +61,9 @@ type PackedF1 = {
 };
 
 function packedF1(): PackedF1 {
-	return JSON.parse(
-		readFileSync(join(ROOT, "tools", "content", "curriculum-atoms", "f1-python-1.json"), "utf8"),
-	) as PackedF1;
+	return czytajTrescJson<PackedF1>("tools/content/curriculum-atoms/f1-python-1.json", {
+		items: [],
+	} as PackedF1);
 }
 
 beforeAll(() => {
@@ -68,7 +71,7 @@ beforeAll(() => {
 	process.env.LAB_TOKEN_SECRET = ["fixture", "testowy", "krok4", "nie", "sekret"].join("-");
 });
 
-describe("notebooki F1 — warstwy, drift buildera i podział lab/ćwiczenie", () => {
+describeTresc("notebooki F1 — warstwy, drift buildera i podział lab/ćwiczenie", () => {
 	const sources = listNotebookSources().filter((s) => s.module === "f1");
 	const items = packedF1().items;
 	const atoms = items.filter((i) => i.slug !== "f1-przeglad");
@@ -130,7 +133,7 @@ describe("notebooki F1 — warstwy, drift buildera i podział lab/ćwiczenie", (
 	});
 });
 
-describe("parytet pieczątki F1: stringi wielolinijkowe (klasa ładunku `_zrodlo`)", () => {
+describeTresc("parytet pieczątki F1: stringi wielolinijkowe (klasa ładunku `_zrodlo`)", () => {
 	const PARITY_PAYLOADS: { name: string; payload: StampPayload }[] = [
 		{
 			name: "źródło komórki z newline'ami i wcięciami",
@@ -167,7 +170,7 @@ describe("parytet pieczątki F1: stringi wielolinijkowe (klasa ładunku `_zrodlo
 	}
 });
 
-describe("symulacja sesji studenta F1: komórki → token → checki z prodowego JSON-a", () => {
+describeTresc("symulacja sesji studenta F1: komórki → token → checki z prodowego JSON-a", () => {
 	const checksBySlug = new Map(
 		packedF1()
 			.items.filter((i) => i.kind === "lab")

@@ -16,7 +16,7 @@
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import { evaluateChecks, parseChecks, type StampPayload } from "@/lib/curriculum/lab-checks";
 import { atomCode, parseToken, signToken } from "@/lib/curriculum/lab-token";
 import {
@@ -24,6 +24,9 @@ import {
 	listNotebookSources,
 	sharedStampBlock,
 } from "../../../tools/build-notebooks";
+// Atomy niosą klucze odpowiedzi → prywatne repo treści (tools/tresc-prywatna.ts).
+// Notebooki i ich źródła ZOSTAJĄ publiczne — student je pobiera.
+import { czytajTrescJson, describeTresc } from "../../support/tresc-prywatna";
 
 const ROOT = process.cwd();
 const SRC_DIR = join(ROOT, "tools", "content", "notebooks");
@@ -54,9 +57,9 @@ type PackedF2 = {
 };
 
 function packedF2(): PackedF2 {
-	return JSON.parse(
-		readFileSync(join(ROOT, "tools", "content", "curriculum-atoms", "f2-python-2.json"), "utf8"),
-	) as PackedF2;
+	return czytajTrescJson<PackedF2>("tools/content/curriculum-atoms/f2-python-2.json", {
+		items: [],
+	} as PackedF2);
 }
 
 beforeAll(() => {
@@ -64,7 +67,7 @@ beforeAll(() => {
 	process.env.LAB_TOKEN_SECRET = ["fixture", "testowy", "krok4", "nie", "sekret"].join("-");
 });
 
-describe("notebooki F2 — warstwy, drift buildera i podział lab/ćwiczenie", () => {
+describeTresc("notebooki F2 — warstwy, drift buildera i podział lab/ćwiczenie", () => {
 	const sources = listNotebookSources().filter((s) => s.module === "f2");
 	const items = packedF2().items;
 	const atoms = items.filter((i) => i.slug !== "f2-przeglad");
@@ -126,7 +129,7 @@ describe("notebooki F2 — warstwy, drift buildera i podział lab/ćwiczenie", (
 	});
 });
 
-describe("symulacja sesji studenta F2: komórki → token → checki z prodowego JSON-a", () => {
+describeTresc("symulacja sesji studenta F2: komórki → token → checki z prodowego JSON-a", () => {
 	const checksBySlug = new Map(
 		packedF2()
 			.items.filter((i) => i.kind === "lab")

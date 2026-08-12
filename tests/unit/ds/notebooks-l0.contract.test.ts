@@ -20,7 +20,7 @@
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import { evaluateChecks, parseChecks, type StampPayload } from "@/lib/curriculum/lab-checks";
 import { atomCode, parseToken, signToken } from "@/lib/curriculum/lab-token";
 import {
@@ -28,6 +28,9 @@ import {
 	listNotebookSources,
 	sharedStampBlock,
 } from "../../../tools/build-notebooks";
+// Atomy niosą klucze odpowiedzi → prywatne repo treści (tools/tresc-prywatna.ts).
+// Notebooki i ich źródła ZOSTAJĄ publiczne — student je pobiera.
+import { czytajTrescJson, describeTresc } from "../../support/tresc-prywatna";
 
 const ROOT = process.cwd();
 const SRC_DIR = join(ROOT, "tools", "content", "notebooks");
@@ -59,9 +62,9 @@ type PackedL0 = {
 };
 
 function packedL0(): PackedL0 {
-	return JSON.parse(
-		readFileSync(join(ROOT, "tools", "content", "curriculum-atoms", "l0-start.json"), "utf8"),
-	) as PackedL0;
+	return czytajTrescJson<PackedL0>("tools/content/curriculum-atoms/l0-start.json", {
+		items: [],
+	} as PackedL0);
 }
 
 function labChecksBySlug(): Map<string, ReturnType<typeof parseChecks>> {
@@ -77,7 +80,7 @@ beforeAll(() => {
 	process.env.LAB_TOKEN_SECRET = ["fixture", "testowy", "krok4", "nie", "sekret"].join("-");
 });
 
-describe("notebooki L0 — warstwy i drift buildera", () => {
+describeTresc("notebooki L0 — warstwy i drift buildera", () => {
 	const sources = listNotebookSources().filter((s) => s.module === "l0");
 
 	it("istnieją 4 źródła L0 i po jednym notebooku na każdy lab z l0-start.json", () => {
@@ -136,7 +139,7 @@ describe("notebooki L0 — warstwy i drift buildera", () => {
 	});
 });
 
-describe("parytet pieczątki: token z python3 przechodzi serwerową weryfikację", () => {
+describeTresc("parytet pieczątki: token z python3 przechodzi serwerową weryfikację", () => {
 	const PARITY_PAYLOADS: { name: string; payload: StampPayload; floatKeys?: string[] }[] = [
 		{ name: "proste typy", payload: { a: 7, b: "tekst", c: true, d: null } },
 		{ name: "polskie znaki bez escapowania", payload: { imie: "Michał Żółć — ćma" } },
@@ -177,121 +180,124 @@ describe("parytet pieczątki: token z python3 przechodzi serwerową weryfikację
 	});
 });
 
-describe("symulacja sesji studenta: komórki notebooka → token → checki z prodowego JSON-a", () => {
-	const checksBySlug = labChecksBySlug();
-	const notebookPath = (slug: string) => {
-		const file = readdirSync(join(OUT_DIR, "l0")).find((f) => f.startsWith(`${slug}-`));
-		if (!file) throw new Error(`brak notebooka dla ${slug}`);
-		return join(OUT_DIR, "l0", file);
-	};
+describeTresc(
+	"symulacja sesji studenta: komórki notebooka → token → checki z prodowego JSON-a",
+	() => {
+		const checksBySlug = labChecksBySlug();
+		const notebookPath = (slug: string) => {
+			const file = readdirSync(join(OUT_DIR, "l0")).find((f) => f.startsWith(`${slug}-`));
+			if (!file) throw new Error(`brak notebooka dla ${slug}`);
+			return join(OUT_DIR, "l0", file);
+		};
 
-	const OWN_SCRIPT = [
-		"strony = 20",
-		"wieczory = 14",
-		"wynik = strony * wieczory",
-		'print("Przeczytam stron:")',
-		"print(wynik)",
-	].join("\n");
+		const OWN_SCRIPT = [
+			"strony = 20",
+			"wieczory = 14",
+			"wynik = strony * wieczory",
+			'print("Przeczytam stron:")',
+			"print(wynik)",
+		].join("\n");
 
-	const HAPPY: {
-		slug: string;
-		replacements?: [string, string][];
-		expectPayload: StampPayload;
-	}[] = [
-		{ slug: "l0-1", expectPayload: { _wykonano: true } },
-		{
-			slug: "l0-2",
-			replacements: [['imie = "Alex"', 'imie = "Michał"']],
-			expectPayload: { imie: "Michał" },
-		},
-		{ slug: "l0-3", expectPayload: { _wykonano: true } },
-		{
-			slug: "l0-4",
-			replacements: [
-				["przejazdy = _luka_", "przejazdy = 3"],
-				["print(bilet * _luka_)", "print(bilet * przejazdy)"],
-				["# Twój skrypt — pisz tutaj:", OWN_SCRIPT],
-			],
-			// strony, wieczory, wynik — 3 własne zmienne liczbowe.
-			expectPayload: { _wlasne_zmienne: 3 },
-		},
-	];
+		const HAPPY: {
+			slug: string;
+			replacements?: [string, string][];
+			expectPayload: StampPayload;
+		}[] = [
+			{ slug: "l0-1", expectPayload: { _wykonano: true } },
+			{
+				slug: "l0-2",
+				replacements: [['imie = "Alex"', 'imie = "Michał"']],
+				expectPayload: { imie: "Michał" },
+			},
+			{ slug: "l0-3", expectPayload: { _wykonano: true } },
+			{
+				slug: "l0-4",
+				replacements: [
+					["przejazdy = _luka_", "przejazdy = 3"],
+					["print(bilet * _luka_)", "print(bilet * przejazdy)"],
+					["# Twój skrypt — pisz tutaj:", OWN_SCRIPT],
+				],
+				// strony, wieczory, wynik — 3 własne zmienne liczbowe.
+				expectPayload: { _wlasne_zmienne: 3 },
+			},
+		];
 
-	for (const scenario of HAPPY) {
-		it(`${scenario.slug}: wykonany notebook daje token, który zalicza checki`, () => {
-			const itemId = itemIdFor(scenario.slug);
-			const code = atomCode(STUDENT_ID, itemId);
-			const result = runHarness({
-				mode: "notebook",
-				notebookPath: notebookPath(scenario.slug),
-				atomCode: code,
-				replacements: scenario.replacements ?? [],
+		for (const scenario of HAPPY) {
+			it(`${scenario.slug}: wykonany notebook daje token, który zalicza checki`, () => {
+				const itemId = itemIdFor(scenario.slug);
+				const code = atomCode(STUDENT_ID, itemId);
+				const result = runHarness({
+					mode: "notebook",
+					notebookPath: notebookPath(scenario.slug),
+					atomCode: code,
+					replacements: scenario.replacements ?? [],
+				});
+				expect(result.error).toBeNull();
+				const token = tokenFrom(result.stdout);
+				expect(token, `token w stdout:\n${result.stdout}`).not.toBeNull();
+
+				const parsed = parseToken(STUDENT_ID, itemId, token as string);
+				expect(parsed.ok).toBe(true);
+				if (!parsed.ok) return;
+				expect(parsed.payload).toEqual(scenario.expectPayload);
+
+				const checks = checksBySlug.get(scenario.slug);
+				expect(checks, `checki ${scenario.slug} w l0-start.json`).toBeDefined();
+				expect(checks?.length).toBeGreaterThan(0);
+				const verdict = evaluateChecks(checks ?? [], parsed.payload);
+				expect(verdict.passed, JSON.stringify(verdict.results)).toBe(true);
 			});
-			expect(result.error).toBeNull();
-			const token = tokenFrom(result.stdout);
-			expect(token, `token w stdout:\n${result.stdout}`).not.toBeNull();
+		}
 
-			const parsed = parseToken(STUDENT_ID, itemId, token as string);
-			expect(parsed.ok).toBe(true);
-			if (!parsed.ok) return;
-			expect(parsed.payload).toEqual(scenario.expectPayload);
+		const REFUSALS: {
+			name: string;
+			slug: string;
+			replacements?: [string, string][];
+			skipCells?: number[];
+			atomCode?: string;
+			message: RegExp;
+		}[] = [
+			{
+				name: "l0-2: imie nadal domyślne — pieczątka odmawia",
+				slug: "l0-2",
+				message: /domyślne/,
+			},
+			{
+				name: "l0-3: komórki nie wykonane w sesji — pieczątka odmawia",
+				slug: "l0-3",
+				skipCells: [0, 1],
+				message: /Uruchom wszystkie/,
+			},
+			{
+				name: "l0-4: brak własnych zmiennych — pieczątka odmawia",
+				slug: "l0-4",
+				replacements: [
+					["przejazdy = _luka_", "przejazdy = 3"],
+					["print(bilet * _luka_)", "print(bilet * przejazdy)"],
+				],
+				message: /za mało własnych/,
+			},
+			{
+				name: "l0-1: pusty kod atomu — pieczątka prosi o kod zamiast liczyć",
+				slug: "l0-1",
+				atomCode: "",
+				message: /Nie wpisano kodu/,
+			},
+		];
 
-			const checks = checksBySlug.get(scenario.slug);
-			expect(checks, `checki ${scenario.slug} w l0-start.json`).toBeDefined();
-			expect(checks?.length).toBeGreaterThan(0);
-			const verdict = evaluateChecks(checks ?? [], parsed.payload);
-			expect(verdict.passed, JSON.stringify(verdict.results)).toBe(true);
-		});
-	}
-
-	const REFUSALS: {
-		name: string;
-		slug: string;
-		replacements?: [string, string][];
-		skipCells?: number[];
-		atomCode?: string;
-		message: RegExp;
-	}[] = [
-		{
-			name: "l0-2: imie nadal domyślne — pieczątka odmawia",
-			slug: "l0-2",
-			message: /domyślne/,
-		},
-		{
-			name: "l0-3: komórki nie wykonane w sesji — pieczątka odmawia",
-			slug: "l0-3",
-			skipCells: [0, 1],
-			message: /Uruchom wszystkie/,
-		},
-		{
-			name: "l0-4: brak własnych zmiennych — pieczątka odmawia",
-			slug: "l0-4",
-			replacements: [
-				["przejazdy = _luka_", "przejazdy = 3"],
-				["print(bilet * _luka_)", "print(bilet * przejazdy)"],
-			],
-			message: /za mało własnych/,
-		},
-		{
-			name: "l0-1: pusty kod atomu — pieczątka prosi o kod zamiast liczyć",
-			slug: "l0-1",
-			atomCode: "",
-			message: /Nie wpisano kodu/,
-		},
-	];
-
-	for (const scenario of REFUSALS) {
-		it(scenario.name, () => {
-			const result = runHarness({
-				mode: "notebook",
-				notebookPath: notebookPath(scenario.slug),
-				atomCode: scenario.atomCode ?? atomCode(STUDENT_ID, itemIdFor(scenario.slug)),
-				replacements: scenario.replacements ?? [],
-				skipCells: scenario.skipCells ?? [],
+		for (const scenario of REFUSALS) {
+			it(scenario.name, () => {
+				const result = runHarness({
+					mode: "notebook",
+					notebookPath: notebookPath(scenario.slug),
+					atomCode: scenario.atomCode ?? atomCode(STUDENT_ID, itemIdFor(scenario.slug)),
+					replacements: scenario.replacements ?? [],
+					skipCells: scenario.skipCells ?? [],
+				});
+				expect(result.error).toBeNull();
+				expect(tokenFrom(result.stdout)).toBeNull();
+				expect(result.stdout).toMatch(scenario.message);
 			});
-			expect(result.error).toBeNull();
-			expect(tokenFrom(result.stdout)).toBeNull();
-			expect(result.stdout).toMatch(scenario.message);
-		});
-	}
-});
+		}
+	},
+);

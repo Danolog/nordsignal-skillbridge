@@ -13,26 +13,26 @@
  *   4. d2/d3 bez single_choice i bez short_text; d1 bez short_text (spec §5),
  *   5. klucz odpowiedzi samozgodny z gradeAnswer (jedno źródło prawdy oceny).
  */
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import { getPathLeafNames } from "../../../tools/content-cyber-projects";
 import {
 	type QuestionConceptInput,
 	validateConceptStructure,
 } from "../../../tools/content-question-bank";
+// Bank pytań niesie klucze odpowiedzi → mieszka w prywatnym repo treści
+// (tools/tresc-prywatna.ts). Brak treści = twardy błąd; fork bez sekretu =
+// jawne pominięcie. Ścieżka bez zmian — zaciąg kładzie plik w to samo miejsce.
+import { czytajTrescJson, describeTresc } from "../../support/tresc-prywatna";
 
 const DS_PATH_LABEL = "Data Scientist";
 const dsLeaves = getPathLeafNames(DS_PATH_LABEL);
 
-function loadBank(): QuestionConceptInput[] {
-	const path = resolve(__dirname, "../../../tools/content/question-bank-ds-partia-1.json");
-	return JSON.parse(readFileSync(path, "utf8")) as QuestionConceptInput[];
-}
+const concepts = czytajTrescJson<QuestionConceptInput[]>(
+	"tools/content/question-bank-ds-partia-1.json",
+	[],
+);
 
-const concepts = loadBank();
-
-describe("bank pytań DS partia 1 — kontrakt treści", () => {
+describeTresc("bank pytań DS partia 1 — kontrakt treści", () => {
 	it("plik ma unikalne slugi konceptów", () => {
 		const slugs = concepts.map((c) => c.slug);
 		expect(new Set(slugs).size).toBe(slugs.length);

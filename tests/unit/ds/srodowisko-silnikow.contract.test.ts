@@ -48,6 +48,7 @@ import {
 	type WynikSondy,
 	wyjmijWynik,
 } from "../../../tools/zapisz-sonde";
+import { describeTresc, gdyTresc } from "../../support/tresc-prywatna";
 
 const ROOT = process.cwd();
 const HARNESS = join(ROOT, "tests", "unit", "ds", "silniki-harness.py");
@@ -239,8 +240,12 @@ describe("ADR-016 poziom 2 — cytaty komunikatów silnika wykonane, nie zadekla
 	});
 });
 
-describe("ADR-016 poziom 2a — inwentarz cytatów domknięty (tablica ≡ treść)", () => {
-	const inwentarz = inwentarzCytatow(ROOT);
+// Zależność POŚREDNIA od treści prywatnej: `inwentarzCytatow` skanuje m.in.
+// tools/content/curriculum-atoms/ (klucze odpowiedzi → prywatne repo treści).
+// Test sam żadnego pliku treści nie otwiera, więc bramka musi opasać wywołanie
+// narzędzia — inaczej brak zaciągu dałby surowy ENOENT z wnętrza skanera.
+describeTresc("ADR-016 poziom 2a — inwentarz cytatów domknięty (tablica ≡ treść)", () => {
+	const inwentarz = gdyTresc(() => inwentarzCytatow(ROOT), [], "tools/content/curriculum-atoms/");
 	const cytatyTablicy = new Set(CYTATY_SILNIKOW.map((w) => w.cytat));
 
 	it("skaner w ogóle coś widzi (regres skanera byłby cichym rozbrojeniem bramki)", () => {

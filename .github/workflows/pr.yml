@@ -91,6 +91,34 @@ jobs:
     name: test (vitest)
     runs-on: ubuntu-latest
     env:
+      # ── TREŚĆ PRYWATNA (klucze odpowiedzi) ──────────────────────────────────
+      # To repo jest publiczne od 2026-08-01; bank diagnozy, atomy curriculum i
+      # bank egzaminu F1 mieszkają w prywatnym Danolog/nordsignal-skillbridge-content
+      # (manifest: tools/tresc-prywatna.ts). Zaciągamy je deploy keyem read-only.
+      #
+      # MA_KLUCZ_TRESCI — czy sekret faktycznie dotarł do tego przebiegu.
+      MA_KLUCZ_TRESCI: ${{ secrets.CONTENT_REPO_KEY != '' }}
+      # SEKRET_ODCIETY_PRZEZ_GITHUB — czy brak sekretu jest NORMĄ, bo GitHub sam go
+      # odciął, a nie awarią po naszej stronie. To rozróżnienie jest tu całą pointą:
+      # tylko w tych przebiegach wolno pominąć kontrakty treści.
+      #
+      # Dwie klasy przebiegów, obie z udokumentowanego zachowania GitHuba:
+      #  (1) PR z FORKA — sekrety repo nie są przekazywane obcemu kodowi;
+      #  (2) PR DEPENDABOTA — biegnie z osobnego magazynu „Dependabot secrets",
+      #      więc `secrets.CONTENT_REPO_KEY` jest pusty.
+      #
+      # Nazwa (2) kosztowała nas omal wyłączenia kontroli bezpieczeństwa (audyt
+      # Ryana, W1). Poprzedni warunek nazywał się `Z_FORKA` i sprawdzał WYŁĄCZNIE
+      # `head.repo != repository`. Gałęzie Dependabota są w NASZYM repo
+      # (`head-owner=Danolog` na wszystkich 7 otwartych PR-ach), więc wychodziło
+      # `fork=false` + `sekret=false` → gałąź „awaria konfiguracji" → exit 1.
+      # A `test (vitest)` jest jednym z 12 wymaganych checków, więc KAŻDY PR
+      # Dependabota stawał się trwale niescalny — czyli `deps-scan` wykrywałby
+      # podatną zależność, a łatka nie miałaby jak wejść.
+      #
+      # Kierunek zostaje bez zmian (warunek Ryana): brak sekretu = pominięcie
+      # WIDOCZNE w totalach i w logu. Nigdy ciche zielone, nigdy `skip-if-absent`.
+      SEKRET_ODCIETY_PRZEZ_GITHUB: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.full_name != github.repository || github.event.pull_request.user.login == 'dependabot[bot]') }}
       # Placeholdery — testy unit nie łączą się z bazą; klient db
       # konstruuje się leniwie (src/lib/db/index.ts), env tylko by import nie pękł.
       DATABASE_URL: postgresql://test:test@localhost:5432/test
@@ -104,6 +132,53 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Drugi checkout — repo treści, do podkatalogu. Deploy key READ-ONLY o
+      # zakresie jednego repo; nigdy token o szerszym zasięgu.
+      - name: Zaciąg treści prywatnej (klucze odpowiedzi)
+        if: env.MA_KLUCZ_TRESCI == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: Danolog/nordsignal-skillbridge-content
+          ssh-key: ${{ secrets.CONTENT_REPO_KEY }}
+          path: .tresc-prywatna
+      # Ścieżki w repo treści są IDENTYCZNE z tutejszymi, więc nałożenie drzewa
+      # kładzie pliki dokładnie tam, gdzie kod i testy ich szukają. Zero
+      # przepisywania ścieżek, zero zmiennej „katalog treści".
+      - name: Nałóż treść na drzewo robocze
+        if: env.MA_KLUCZ_TRESCI == 'true'
+        run: |
+          cp -a .tresc-prywatna/tools/content/. tools/content/
+          cp -a .tresc-prywatna/docs/curation/. docs/curation/
+          rm -rf .tresc-prywatna
+      # BRAMKA — trzy stany, żadnego czwartego, a zwłaszcza żadnego „zielono, bo
+      # nic nie pobiegło". Precedens, którego nie powtarzamy: `pnpm test:integration`
+      # bez DATABASE_URL pomijał 46 z 51 plików i kończył się kodem 0 z tymi samymi
+      # totalami w nawiasach. Pominięcie jest możliwe WYŁĄCZNIE tam, gdzie GitHub
+      # sam odciął sekret (fork, Dependabot) i wyłącznie jako jawna deklaracja
+      # w środowisku + ostrzeżenie w logu.
+      - name: Bramka treści prywatnej
+        env:
+          ZDARZENIE: ${{ github.event_name }}
+          AUTOR_PR: ${{ github.event.pull_request.user.login }}
+        run: |
+          # Log ma mówić, DLACZEGO bramka poszła daną gałęzią — inaczej diagnoza
+          # sprowadza się do zgadywania. To wartości logiczne, nie sekrety.
+          # Dane ze zdarzenia idą przez `env:` (wyżej), NIGDY przez interpolację
+          # wyrażenia wprost w `run:` — standardowa ochrona przed wstrzyknięciem
+          # do polecenia. (Uwaga: nawiasy wyrażeń są rozwijane także w komentarzu
+          # powłoki — pusty nawias wywala kompilację CAŁEGO workflow.)
+          echo "zdarzenie=${ZDARZENIE} autor_pr=${AUTOR_PR}"
+          echo "MA_KLUCZ_TRESCI=${MA_KLUCZ_TRESCI} SEKRET_ODCIETY_PRZEZ_GITHUB=${SEKRET_ODCIETY_PRZEZ_GITHUB}"
+          if [ "${MA_KLUCZ_TRESCI}" = "true" ]; then
+            # Nasz przebieg: treść MUSI być kompletna. Brakujący plik = exit 1.
+            pnpm tresc:sprawdz
+          elif [ "${SEKRET_ODCIETY_PRZEZ_GITHUB}" = "true" ]; then
+            echo "::warning title=Tresc prywatna pominieta::GitHub nie przekazal sekretu temu przebiegowi (PR z forka albo PR Dependabota — osobny magazyn sekretow). Kontrakty tresci (bank diagnozy, atomy curriculum, bank egzaminu F1) NIE pobiegna; widac to w totalach jako pominiete. Ten przebieg nie dowodzi poprawnosci tresci — rozstrzyga go dopiero przebieg po scaleniu, ktory sekret dostaje."
+            echo "SKILLBRIDGE_TRESC_OPCJONALNA=1" >> "$GITHUB_ENV"
+          else
+            echo "::error title=Brak sekretu CONTENT_REPO_KEY::GitHub NIE mial powodu odcinac sekretu temu przebiegowi (to nie fork i nie Dependabot), a sekretu nie ma. Zaciag tresci prywatnej jest niemozliwy, wiec kontrakty tresci nie maja czego sprawdzac. NIE degradujemy tego do pominiecia — przywroc deploy key read-only do Danolog/nordsignal-skillbridge-content."
+            exit 1
+          fi
       # Krok 4 partia 5+6+7: kontrakt-testy notebooków M-PD/M-SQL/M-EDA wykonują
       # komórki realnym python3 (harness ADR-015). M-PD importuje pandas, laby
       # M-SQL dodatkowo duckdb, a M-EDA — requests (EDA.1/EDA.4 wychodzą do API

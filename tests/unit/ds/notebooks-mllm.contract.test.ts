@@ -22,7 +22,7 @@
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import { evaluateChecks, parseChecks, type StampPayload } from "@/lib/curriculum/lab-checks";
 import { atomCode, parseToken, signToken } from "@/lib/curriculum/lab-token";
 import {
@@ -30,6 +30,9 @@ import {
 	listNotebookSources,
 	sharedStampBlock,
 } from "../../../tools/build-notebooks";
+// Atomy niosą klucze odpowiedzi → prywatne repo treści (tools/tresc-prywatna.ts).
+// Notebooki i ich źródła ZOSTAJĄ publiczne — student je pobiera.
+import { czytajTrescJson, describeTresc } from "../../support/tresc-prywatna";
 
 const ROOT = process.cwd();
 const SRC_DIR = join(ROOT, "tools", "content", "notebooks");
@@ -56,9 +59,9 @@ type PackedMllm = {
 	items: { slug: string; kind: string; config?: { notebookUrl?: unknown; checks?: unknown } }[];
 };
 function packedMllm(): PackedMllm {
-	return JSON.parse(
-		readFileSync(join(ROOT, "tools", "content", "curriculum-atoms", "m-llm.json"), "utf8"),
-	) as PackedMllm;
+	return czytajTrescJson<PackedMllm>("tools/content/curriculum-atoms/m-llm.json", {
+		items: [],
+	} as PackedMllm);
 }
 function notebookPath(slug: string): string {
 	const file = readdirSync(join(OUT_DIR, "mllm")).find((f) => f.startsWith(`${slug}-`));
@@ -221,7 +224,7 @@ beforeAll(() => {
 	process.env.LAB_TOKEN_SECRET = ["fixture", "testowy", "partia8", "nie", "sekret"].join("-");
 });
 
-describe("notebooki M-LLM — warstwy, drift buildera i podział lab/ćwiczenie", () => {
+describeTresc("notebooki M-LLM — warstwy, drift buildera i podział lab/ćwiczenie", () => {
 	const sources = listNotebookSources().filter((s) => s.module === "mllm");
 	const items = packedMllm().items;
 	const labSlugs = items.filter((i) => i.kind === "lab").map((i) => i.slug);
@@ -309,7 +312,7 @@ describe("notebooki M-LLM — warstwy, drift buildera i podział lab/ćwiczenie"
 // Guard z realnych danych świeci na zielono, gdy nikt nie popełnił wpadki. Te testy
 // wstrzykują wpadki w KOPIE realnych obiektów i wymagają, by guard je ODRZUCIŁ —
 // bronią samego guardu przed cichym osłabieniem (fail-closed, nie fail-open).
-describe("M-LLM bramka notebooków — klasy wpadek, które NIE mogą przejść", () => {
+describeTresc("M-LLM bramka notebooków — klasy wpadek, które NIE mogą przejść", () => {
 	const files = new Set(readdirSync(join(OUT_DIR, "mllm")).filter((f) => f.endsWith(".ipynb")));
 	// Bazowy, POPRAWNY towarzysz — punkt odniesienia; sam w sobie nie ma naruszeń.
 	const bazowy: NbItem = {
@@ -400,185 +403,188 @@ describe("M-LLM bramka notebooków — klasy wpadek, które NIE mogą przejść"
 	});
 });
 
-describe("symulacja sesji studenta M-LLM: komórki → token → checki strukturalne z prodowego JSON-a", () => {
-	const checksBySlug = new Map(
-		packedMllm()
-			.items.filter((i) => i.kind === "lab")
-			.map((i) => [i.slug, parseChecks(i.config)]),
-	);
-
-	const HAPPY: {
-		name: string;
-		slug: string;
-		replacements: [string, string][];
-		payload: StampPayload;
-	}[] = [
-		{
-			name: "llm-4: trzy luki wzorcowo → token; rozdział parse(5)/schema(4) na 6 odpowiedziach",
-			slug: "llm-4",
-			replacements: L4_LUKI,
-			payload: L4_PAYLOAD,
-		},
-		{
-			name: "llm-7: pełna tabela ewaluacji → token; zgodnosc 0.75, kotwice 4/2, trafność per pole",
-			slug: "llm-7",
-			replacements: [[L7_PUSTE, L7_RS]],
-			payload: L7_PAYLOAD,
-		},
-	];
-
-	for (const s of HAPPY) {
-		it(
-			s.name,
-			() => {
-				const code = atomCode(STUDENT_ID, itemIdFor(s.slug));
-				const result = runHarness({
-					mode: "notebook",
-					notebookPath: notebookPath(s.slug),
-					atomCode: code,
-					replacements: s.replacements,
-				});
-				expect(result.error).toBeNull();
-				const token = tokenFrom(result.stdout);
-				expect(token, `token w stdout:\n${result.stdout}`).not.toBeNull();
-				// Python i TS produkują IDENTYCZNY token (parytet kanoniczny, round 6).
-				expect(token).toBe(signToken(code, s.payload));
-
-				const parsed = parseToken(STUDENT_ID, itemIdFor(s.slug), token as string);
-				expect(parsed.ok).toBe(true);
-				if (!parsed.ok) return;
-				const checks = checksBySlug.get(s.slug);
-				expect(checks?.length ?? 0, `checki ${s.slug}`).toBeGreaterThan(0);
-				const verdict = evaluateChecks(checks ?? [], parsed.payload);
-				expect(verdict.passed, JSON.stringify(verdict.results)).toBe(true);
-			},
-			HARNESS_TIMEOUT_MS,
+describeTresc(
+	"symulacja sesji studenta M-LLM: komórki → token → checki strukturalne z prodowego JSON-a",
+	() => {
+		const checksBySlug = new Map(
+			packedMllm()
+				.items.filter((i) => i.kind === "lab")
+				.map((i) => [i.slug, parseChecks(i.config)]),
 		);
-	}
 
-	// ── Cztery błędne drogi finału (ADR-022 §2.5) + LLM.4 — odmowa PRZED tokenem ──
-	const REFUSALS: {
-		name: string;
-		slug: string;
-		replacements: [string, string][];
-		message: RegExp;
-	}[] = [
-		{
-			name: "llm-7: `zgodnosc` = powodzenia parsowania (0.875) — ODMOWA D3 (parse ≠ schema)",
-			slug: "llm-7",
-			replacements: [
-				[
-					L7_PUSTE,
-					L7_RS.replace(
-						"    if rekord is not None and all(pole in rekord for pole in POLA):\n        zgodne = zgodne + 1",
-						"    if rekord is not None:\n        zgodne = zgodne + 1",
-					),
-				],
-			],
-			message: /zgodnosc` wyszla 0\.875[\s\S]*SPARSOWANE \(7/,
-		},
-		{
-			name: "llm-7: trafność zdegenerowana [1,1,1] — ODMOWA D2 (per pole)",
-			slug: "llm-7",
-			replacements: [
-				[
-					L7_PUSTE,
-					L7_RS.replace(
-						"trafnosc = {pole: trafienia[pole] / liczba_zgodnych for pole in POLA}",
-						"trafnosc = {pole: 1.0 for pole in POLA}",
-					),
-				],
-			],
-			message: /trafnosc` nie zgadza sie ze wzorcem[\s\S]*6 zgodnych ze schematem/,
-		},
-		{
-			name: "llm-7: trafność na WSZYSTKICH parsowalnych (7, bez filtra schema) — ODMOWA D2",
-			slug: "llm-7",
-			replacements: [[L7_PUSTE, L7_RS.replace(L7_TRAF_ZGODNI, L7_TRAF_WSZ)]],
-			message: /trafnosc` nie zgadza sie ze wzorcem[\s\S]*Odfiltruj przed liczeniem/,
-		},
-		{
-			name: "llm-7: błąd wcięcia w pętli halucynacji (1/2 = 0.5 kolizja) — ODMOWA D1 (składniki)",
-			slug: "llm-7",
-			replacements: [
-				[
-					L7_PUSTE,
-					L7_RS.replace(
-						"        if prawda[pole] is None:",
-						'        if pole == "miasto" and prawda[pole] is None:',
-					),
-				],
-			],
-			message: /wskaznik` = 0\.5 zgadza sie[\s\S]*pola-braki=2 i halucynacje=1[\s\S]*WCIECIE/,
-		},
-		{
-			name: "llm-4: niezdjęty płotek (parsujesz tekst zamiast czysty) — ODMOWA (sparsowane 4)",
-			slug: "llm-4",
-			replacements: [["json.loads(______)", "json.loads(tekst)"], L4_LUKI[1], L4_LUKI[2]],
-			message: /sparsowane` = 4[\s\S]*NIEZDJETY PLOTEK/,
-		},
-		{
-			name: "llm-4: rekord bez kompletu pól policzony jako zgodny — ODMOWA (zgodne 5)",
-			slug: "llm-4",
-			replacements: [
-				...L4_LUKI,
-				[
-					"if rekord is not None and all(pole in rekord for pole in POLA):\n        zgodne = zgodne + 1",
-					"if rekord is not None:\n        zgodne = zgodne + 1",
-				],
-			],
-			message: /zgodne` = 5[\s\S]*bez kompletu pol jako zgodny/,
-		},
-	];
-
-	for (const s of REFUSALS) {
-		it(
-			s.name,
-			() => {
-				const result = runHarness({
-					mode: "notebook",
-					notebookPath: notebookPath(s.slug),
-					atomCode: atomCode(STUDENT_ID, itemIdFor(s.slug)),
-					replacements: s.replacements,
-				});
-				// Odmowa = KOMUNIKAT pieczątki, nie wyjątek sesji…
-				expect(result.error, `harness error:\n${result.error}`).toBeNull();
-				// …i pod żadnym pozorem nie wypada token.
-				expect(tokenFrom(result.stdout)).toBeNull();
-				expect(result.stdout).toMatch(s.message);
+		const HAPPY: {
+			name: string;
+			slug: string;
+			replacements: [string, string][];
+			payload: StampPayload;
+		}[] = [
+			{
+				name: "llm-4: trzy luki wzorcowo → token; rozdział parse(5)/schema(4) na 6 odpowiedziach",
+				slug: "llm-4",
+				replacements: L4_LUKI,
+				payload: L4_PAYLOAD,
 			},
-			HARNESS_TIMEOUT_MS,
-		);
-	}
+			{
+				name: "llm-7: pełna tabela ewaluacji → token; zgodnosc 0.75, kotwice 4/2, trafność per pole",
+				slug: "llm-7",
+				replacements: [[L7_PUSTE, L7_RS]],
+				payload: L7_PAYLOAD,
+			},
+		];
 
-	// ── Regresja na filtr schema-valid (ADR-022 §D3 — WARUNEK BUDOWY) ──
-	// Naiwny `is not None` (bez `all(pole in rekord …)`) na przypadku C8 (sparsowany bez
-	// `widelki_min`) rzuca KeyError w PĘTLI STUDENTA — to jest „mina", przed którą chroni
-	// zaostrzony filtr. Dowód wykonaniem, że filtr jest load-bearing (parytet 0.75↔0.75:
-	// pieczątka recompute i uczona proza używają identycznego filtra; naiwny wariant pada).
-	it(
-		"llm-7: naiwny filtr `is not None` (bez all) → KeyError na C8, ZERO tokenu (mina schema-valid)",
-		() => {
-			const naiwny = L7_RS.replace(
-				"    if not (rekord is not None and all(pole in rekord for pole in POLA)):\n        continue\n    liczba_zgodnych",
-				"    if rekord is None:\n        continue\n    liczba_zgodnych",
+		for (const s of HAPPY) {
+			it(
+				s.name,
+				() => {
+					const code = atomCode(STUDENT_ID, itemIdFor(s.slug));
+					const result = runHarness({
+						mode: "notebook",
+						notebookPath: notebookPath(s.slug),
+						atomCode: code,
+						replacements: s.replacements,
+					});
+					expect(result.error).toBeNull();
+					const token = tokenFrom(result.stdout);
+					expect(token, `token w stdout:\n${result.stdout}`).not.toBeNull();
+					// Python i TS produkują IDENTYCZNY token (parytet kanoniczny, round 6).
+					expect(token).toBe(signToken(code, s.payload));
+
+					const parsed = parseToken(STUDENT_ID, itemIdFor(s.slug), token as string);
+					expect(parsed.ok).toBe(true);
+					if (!parsed.ok) return;
+					const checks = checksBySlug.get(s.slug);
+					expect(checks?.length ?? 0, `checki ${s.slug}`).toBeGreaterThan(0);
+					const verdict = evaluateChecks(checks ?? [], parsed.payload);
+					expect(verdict.passed, JSON.stringify(verdict.results)).toBe(true);
+				},
+				HARNESS_TIMEOUT_MS,
 			);
-			const result = runHarness({
-				mode: "notebook",
-				notebookPath: notebookPath("llm-7"),
-				atomCode: atomCode(STUDENT_ID, itemIdFor("llm-7")),
-				replacements: [[L7_PUSTE, naiwny]],
-			});
-			expect(result.error, "naiwny filtr ma paść KeyError").toMatch(/KeyError/);
-			expect(result.error).toMatch(/widelki_min/);
-			expect(tokenFrom(result.stdout)).toBeNull();
-		},
-		HARNESS_TIMEOUT_MS,
-	);
+		}
 
-	it("token llm-4 wklejony w llm-7 jest odrzucany (bad_signature)", () => {
-		const token = signToken(atomCode(STUDENT_ID, itemIdFor("llm-4")), L4_PAYLOAD);
-		const parsed = parseToken(STUDENT_ID, itemIdFor("llm-7"), token);
-		expect(parsed).toEqual({ ok: false, reason: "bad_signature" });
-	});
-});
+		// ── Cztery błędne drogi finału (ADR-022 §2.5) + LLM.4 — odmowa PRZED tokenem ──
+		const REFUSALS: {
+			name: string;
+			slug: string;
+			replacements: [string, string][];
+			message: RegExp;
+		}[] = [
+			{
+				name: "llm-7: `zgodnosc` = powodzenia parsowania (0.875) — ODMOWA D3 (parse ≠ schema)",
+				slug: "llm-7",
+				replacements: [
+					[
+						L7_PUSTE,
+						L7_RS.replace(
+							"    if rekord is not None and all(pole in rekord for pole in POLA):\n        zgodne = zgodne + 1",
+							"    if rekord is not None:\n        zgodne = zgodne + 1",
+						),
+					],
+				],
+				message: /zgodnosc` wyszla 0\.875[\s\S]*SPARSOWANE \(7/,
+			},
+			{
+				name: "llm-7: trafność zdegenerowana [1,1,1] — ODMOWA D2 (per pole)",
+				slug: "llm-7",
+				replacements: [
+					[
+						L7_PUSTE,
+						L7_RS.replace(
+							"trafnosc = {pole: trafienia[pole] / liczba_zgodnych for pole in POLA}",
+							"trafnosc = {pole: 1.0 for pole in POLA}",
+						),
+					],
+				],
+				message: /trafnosc` nie zgadza sie ze wzorcem[\s\S]*6 zgodnych ze schematem/,
+			},
+			{
+				name: "llm-7: trafność na WSZYSTKICH parsowalnych (7, bez filtra schema) — ODMOWA D2",
+				slug: "llm-7",
+				replacements: [[L7_PUSTE, L7_RS.replace(L7_TRAF_ZGODNI, L7_TRAF_WSZ)]],
+				message: /trafnosc` nie zgadza sie ze wzorcem[\s\S]*Odfiltruj przed liczeniem/,
+			},
+			{
+				name: "llm-7: błąd wcięcia w pętli halucynacji (1/2 = 0.5 kolizja) — ODMOWA D1 (składniki)",
+				slug: "llm-7",
+				replacements: [
+					[
+						L7_PUSTE,
+						L7_RS.replace(
+							"        if prawda[pole] is None:",
+							'        if pole == "miasto" and prawda[pole] is None:',
+						),
+					],
+				],
+				message: /wskaznik` = 0\.5 zgadza sie[\s\S]*pola-braki=2 i halucynacje=1[\s\S]*WCIECIE/,
+			},
+			{
+				name: "llm-4: niezdjęty płotek (parsujesz tekst zamiast czysty) — ODMOWA (sparsowane 4)",
+				slug: "llm-4",
+				replacements: [["json.loads(______)", "json.loads(tekst)"], L4_LUKI[1], L4_LUKI[2]],
+				message: /sparsowane` = 4[\s\S]*NIEZDJETY PLOTEK/,
+			},
+			{
+				name: "llm-4: rekord bez kompletu pól policzony jako zgodny — ODMOWA (zgodne 5)",
+				slug: "llm-4",
+				replacements: [
+					...L4_LUKI,
+					[
+						"if rekord is not None and all(pole in rekord for pole in POLA):\n        zgodne = zgodne + 1",
+						"if rekord is not None:\n        zgodne = zgodne + 1",
+					],
+				],
+				message: /zgodne` = 5[\s\S]*bez kompletu pol jako zgodny/,
+			},
+		];
+
+		for (const s of REFUSALS) {
+			it(
+				s.name,
+				() => {
+					const result = runHarness({
+						mode: "notebook",
+						notebookPath: notebookPath(s.slug),
+						atomCode: atomCode(STUDENT_ID, itemIdFor(s.slug)),
+						replacements: s.replacements,
+					});
+					// Odmowa = KOMUNIKAT pieczątki, nie wyjątek sesji…
+					expect(result.error, `harness error:\n${result.error}`).toBeNull();
+					// …i pod żadnym pozorem nie wypada token.
+					expect(tokenFrom(result.stdout)).toBeNull();
+					expect(result.stdout).toMatch(s.message);
+				},
+				HARNESS_TIMEOUT_MS,
+			);
+		}
+
+		// ── Regresja na filtr schema-valid (ADR-022 §D3 — WARUNEK BUDOWY) ──
+		// Naiwny `is not None` (bez `all(pole in rekord …)`) na przypadku C8 (sparsowany bez
+		// `widelki_min`) rzuca KeyError w PĘTLI STUDENTA — to jest „mina", przed którą chroni
+		// zaostrzony filtr. Dowód wykonaniem, że filtr jest load-bearing (parytet 0.75↔0.75:
+		// pieczątka recompute i uczona proza używają identycznego filtra; naiwny wariant pada).
+		it(
+			"llm-7: naiwny filtr `is not None` (bez all) → KeyError na C8, ZERO tokenu (mina schema-valid)",
+			() => {
+				const naiwny = L7_RS.replace(
+					"    if not (rekord is not None and all(pole in rekord for pole in POLA)):\n        continue\n    liczba_zgodnych",
+					"    if rekord is None:\n        continue\n    liczba_zgodnych",
+				);
+				const result = runHarness({
+					mode: "notebook",
+					notebookPath: notebookPath("llm-7"),
+					atomCode: atomCode(STUDENT_ID, itemIdFor("llm-7")),
+					replacements: [[L7_PUSTE, naiwny]],
+				});
+				expect(result.error, "naiwny filtr ma paść KeyError").toMatch(/KeyError/);
+				expect(result.error).toMatch(/widelki_min/);
+				expect(tokenFrom(result.stdout)).toBeNull();
+			},
+			HARNESS_TIMEOUT_MS,
+		);
+
+		it("token llm-4 wklejony w llm-7 jest odrzucany (bad_signature)", () => {
+			const token = signToken(atomCode(STUDENT_ID, itemIdFor("llm-4")), L4_PAYLOAD);
+			const parsed = parseToken(STUDENT_ID, itemIdFor("llm-7"), token);
+			expect(parsed).toEqual({ ok: false, reason: "bad_signature" });
+		});
+	},
+);

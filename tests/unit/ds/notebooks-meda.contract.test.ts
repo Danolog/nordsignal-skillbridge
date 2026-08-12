@@ -64,7 +64,7 @@
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import { evaluateChecks, parseChecks, type StampPayload } from "@/lib/curriculum/lab-checks";
 import { atomCode, parseToken, signToken } from "@/lib/curriculum/lab-token";
 import {
@@ -72,6 +72,9 @@ import {
 	listNotebookSources,
 	sharedStampBlock,
 } from "../../../tools/build-notebooks";
+// Atomy niosą klucze odpowiedzi → prywatne repo treści (tools/tresc-prywatna.ts).
+// Notebooki i ich źródła ZOSTAJĄ publiczne — student je pobiera.
+import { czytajTrescJson, describeTresc } from "../../support/tresc-prywatna";
 
 const ROOT = process.cwd();
 const SRC_DIR = join(ROOT, "tools", "content", "notebooks");
@@ -110,9 +113,9 @@ type PackedMeda = {
 };
 
 function packedMeda(): PackedMeda {
-	return JSON.parse(
-		readFileSync(join(ROOT, "tools", "content", "curriculum-atoms", "m-eda.json"), "utf8"),
-	) as PackedMeda;
+	return czytajTrescJson<PackedMeda>("tools/content/curriculum-atoms/m-eda.json", {
+		items: [],
+	} as PackedMeda);
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -255,7 +258,7 @@ beforeAll(() => {
 	process.env.LAB_TOKEN_SECRET = ["fixture", "testowy", "krok4", "nie", "sekret"].join("-");
 });
 
-describe("notebooki M-EDA — warstwy, drift buildera i podział lab/ćwiczenie", () => {
+describeTresc("notebooki M-EDA — warstwy, drift buildera i podział lab/ćwiczenie", () => {
 	const sources = listNotebookSources().filter((s) => s.module === "meda");
 	const items = packedMeda().items;
 	const atoms = items.filter((i) => i.slug !== "eda-przeglad");
@@ -324,7 +327,7 @@ describe("notebooki M-EDA — warstwy, drift buildera i podział lab/ćwiczenie"
 	});
 });
 
-describe("parytet pieczątki M-EDA: stringi wielolinijkowe i typy w ładunku", () => {
+describeTresc("parytet pieczątki M-EDA: stringi wielolinijkowe i typy w ładunku", () => {
 	const STAMP_PATH = join(SRC_DIR, "pieczatka.py");
 	const PARITY_PAYLOADS: { name: string; payload: StampPayload; floatKeys?: string[] }[] = [
 		{
@@ -372,7 +375,7 @@ describe("parytet pieczątki M-EDA: stringi wielolinijkowe i typy w ładunku", (
 	}
 });
 
-describe("odcięcie od żywego API BDL — atrapa, strażnik i niezależność ładunku", () => {
+describeTresc("odcięcie od żywego API BDL — atrapa, strażnik i niezależność ładunku", () => {
 	const notebookPath = (slug: string) => {
 		const file = readdirSync(join(OUT_DIR, "meda")).find((f) => f.startsWith(`${slug}-`));
 		if (!file) throw new Error(`brak notebooka dla ${slug}`);
@@ -488,7 +491,7 @@ describe("odcięcie od żywego API BDL — atrapa, strażnik i niezależność �
 	);
 });
 
-describe("symulacja sesji studenta EDA.4: komórki → token → checki z prodowego JSON-a", () => {
+describeTresc("symulacja sesji studenta EDA.4: komórki → token → checki z prodowego JSON-a", () => {
 	const checksBySlug = new Map(
 		packedMeda()
 			.items.filter((i) => i.kind === "lab")
