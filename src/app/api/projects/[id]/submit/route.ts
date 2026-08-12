@@ -5,7 +5,7 @@ import { z } from "zod";
 import { runReviewPipeline } from "@/lib/ai/pipeline";
 import type { DeliverableType } from "@/lib/ai/pipeline/types";
 import { parseNotebookUrl, parseRepoUrl } from "@/lib/ai/sanitize";
-import { auditContextFromRequest, recordAudit } from "@/lib/audit";
+import { recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import {
@@ -246,11 +246,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 		if (vivaInconclusive) {
 			await recordAudit({
 				actorType: "system",
-				actorId: studentMeta.id,
 				action: "submission.viva.inconclusive",
 				targetType: "submission",
 				targetId: submission.id,
-				...auditContextFromRequest(req),
 				metadata: { reason: "generation_failed", projectId },
 			});
 		}
@@ -292,14 +290,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
 	// Audit log idzie przez owner db — audit_log ma deny-all RLS dla
 	// klienta, INSERT tylko server (jak dziś). Append-only chroni trigger.
+	//
+	// A1+A2 (ADR A-1 (a+)): `actorType: "system"` → ani `actorId`, ani kontekstu
+	// żądania podać się NIE DA (typ `AuditEntry`, `src/lib/audit.ts`). Wiązanie
+	// przez `targetId` = `project_submissions.id`, tabela kaskaduje z konta.
 	if (status === "verified") {
 		await recordAudit({
 			actorType: "system",
-			actorId: studentMeta.id,
 			action: "submission.verified",
 			targetType: "submission",
 			targetId: submission.id,
-			...auditContextFromRequest(req),
 			metadata: {
 				score: review.score,
 				cheatRiskScore: review.cheatRiskScore,

@@ -117,8 +117,17 @@ dBack("1.17 · placement: zgoda, baseline, zdarzenia, delete-on-revoke, RLS (rea
 
 		const audit = await db
 			.execute(
+				// A-1 (a+): slad zgody NIE niesie juz `actor_id` — ta sama wartosc
+				// (`students.id`) stoi obok w `target_id`, ktory ZOSTAJE jako jedyny
+				// nosnik „czyja zgoda" (ADR D-1). Warunek `actor_id IS NULL` jest tu
+				// czescia asercji, nie ozdoba: bez niego test przeszedlby po cofnieciu A1.
 				sql`SELECT count(*)::int AS c FROM audit_log
-			    WHERE action = 'placement.consent.granted' AND actor_id = ${studentIds[USER_A]}`,
+			    WHERE action = 'placement.consent.granted'
+			      AND target_type = 'student'
+			      AND target_id = ${studentIds[USER_A]}
+			      AND actor_id IS NULL
+			      AND ip_address IS NULL
+			      AND user_agent IS NULL`,
 			)
 			.then((r: { rows: { c: number }[] }) => r.rows[0].c);
 		expect(audit).toBeGreaterThanOrEqual(1);
@@ -208,8 +217,17 @@ dBack("1.17 · placement: zgoda, baseline, zdarzenia, delete-on-revoke, RLS (rea
 
 		const audit = await db
 			.execute(
+				// A-1 (a+): slad zgody NIE niesie juz `actor_id` — ta sama wartosc
+				// (`students.id`) stoi obok w `target_id`, ktory ZOSTAJE jako jedyny
+				// nosnik „czyja zgoda" (ADR D-1). Warunek `actor_id IS NULL` jest tu
+				// czescia asercji, nie ozdoba: bez niego test przeszedlby po cofnieciu A1.
 				sql`SELECT count(*)::int AS c FROM audit_log
-			    WHERE action = 'placement.consent.revoked' AND actor_id = ${studentIds[USER_A]}`,
+			    WHERE action = 'placement.consent.revoked'
+			      AND target_type = 'student'
+			      AND target_id = ${studentIds[USER_A]}
+			      AND actor_id IS NULL
+			      AND ip_address IS NULL
+			      AND user_agent IS NULL`,
 			)
 			.then((r: { rows: { c: number }[] }) => r.rows[0].c);
 		expect(audit).toBeGreaterThanOrEqual(1);
