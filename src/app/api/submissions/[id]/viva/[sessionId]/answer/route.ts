@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { detectCrisis } from "@/lib/ai/career-helper";
-import { auditContextFromRequest, recordAudit } from "@/lib/audit";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { vivaAnswers, vivaSessions } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
@@ -33,6 +33,9 @@ export const maxDuration = 60;
  * w trakcie (werdykty wychodzą dopiero w resultJson po zamknięciu). Sędzia
  * LLM ZAWSZE poza tx; jego awaria/niejednoznaczność = sesja inconclusive →
  * człowiek (fail-closed: nie oblewa i nie zdaje).
+ *
+ * A1+A2 (ADR A-1 (a+)): cztery ślady w tym pliku NIE niosą `actorId` ani
+ * kontekstu żądania — reguła żyje w `src/lib/audit.ts` (`REGULA_AKTORA`).
  */
 
 const ParamsSchema = z.object({ id: z.string().uuid(), sessionId: z.string().uuid() });
@@ -105,11 +108,9 @@ export async function POST(
 			const resolved = await resolveExpiredSession(session);
 			await recordAudit({
 				actorType: "system",
-				actorId: auth_.studentId,
 				action: `submission.viva.${resolved}`,
 				targetType: "submission",
 				targetId: session.submissionId,
-				...auditContextFromRequest(req),
 				metadata: { sessionId: session.id },
 			});
 			return NextResponse.json(
@@ -146,11 +147,9 @@ export async function POST(
 			await closeSessionInconclusive({ session, lastAnswer: { position, content: answer } });
 			await recordAudit({
 				actorType: "system",
-				actorId: auth_.studentId,
 				action: "submission.viva.inconclusive",
 				targetType: "submission",
 				targetId: session.submissionId,
-				...auditContextFromRequest(req),
 				metadata: { sessionId: session.id, reason: "judge_failed", position },
 			});
 			return NextResponse.json({ state: "inconclusive", position });
@@ -190,11 +189,9 @@ export async function POST(
 
 		await recordAudit({
 			actorType: "system",
-			actorId: auth_.studentId,
 			action: `submission.viva.${outcome}`,
 			targetType: "submission",
 			targetId: session.submissionId,
-			...auditContextFromRequest(req),
 			metadata: { sessionId: session.id, totalPoints: result.totalPoints },
 		});
 		if (outcome === "passed") {
@@ -202,11 +199,9 @@ export async function POST(
 			// (przy fladze ON gałąź w submit route nigdy nie strzela — emituje viva).
 			await recordAudit({
 				actorType: "system",
-				actorId: auth_.studentId,
 				action: "submission.verified",
 				targetType: "submission",
 				targetId: session.submissionId,
-				...auditContextFromRequest(req),
 				metadata: { via: "viva", totalPoints: result.totalPoints },
 			});
 		}
