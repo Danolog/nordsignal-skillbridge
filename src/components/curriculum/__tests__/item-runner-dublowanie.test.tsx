@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
 /**
- * STRAŻNIK — jedna informacja zwrotna, jeden raz w oknie pytania (CLAUDE.md v1.17).
+ * STRAŻNIK — jedna informacja zwrotna, wypisana raz (CLAUDE.md v1.17).
  *
  * CZEGO PILNUJE (reguła o konsekwencji zewnętrznej — to widzi student):
- * żaden akapit informacji zwrotnej nie może pojawić się w oknie pytania dwa razy.
+ * żaden akapit REGIONU INFORMACJI ZWROTNEJ (`role="status"`, element `<output>`)
+ * nie powtarza się. Zakres jest celowo węższy niż całe okno pytania: powtórzenie
+ * fragmentu treści pytania wewnątrz informacji zwrotnej strażnik PRZEPUSZCZA —
+ * to osobne pytanie (czy takie powtórzenie jest wadą, czy zamierzone), którego
+ * to zgłoszenie nie rozstrzyga. Zawężenie z przeglądu Leo (W1, #292).
  *
  * DLACZEGO ISTNIEJE (zgłoszenie 8 z przejazdu Darka, 2026-08-10):
  * kontrakt treści mówi wprost „`explanationMd` pytania = feedback opcji poprawnej"
@@ -13,8 +17,17 @@
  * zdanie dwa razy przy każdej poprawnej odpowiedzi w całym produkcie.
  *
  * DWUSTRONNOŚĆ (v1.17): strażnik czerwieni się na dublowaniu ORAZ pilnuje, że naprawa
- * nie połknęła wyjaśnienia tam, gdzie jest ono jedyną informacją zwrotną — pytania
- * z banku egzaminacyjnego (24/24 w repo) nie mają feedbacku opcji.
+ * nie połknęła wyjaśnienia tam, gdzie jest ono jedyną informacją zwrotną — żadne
+ * ze 144 pytań banku egzaminacyjnego nie ma feedbacku opcji, a wszystkie 144 mają
+ * `explanationMd` (zmierzone na `question-bank-ds-partia-1.json`, 2026-08-12).
+ *
+ * ZNANA GRANICA — dług D-292.1 (przegląd Leo, #292): porównanie idzie po tekście
+ * ŹRÓDŁOWYM, a dublowanie jest zjawiskiem tekstu WYRENDEROWANEGO. Dwa zapisy różne
+ * w źródle, a identyczne na ekranie (`*napis*` kontra `_napis_`, podwójna spacja
+ * w środku zdania) przejdą przez warunek i strażnik ich nie złapie. Dziś nieosiągalne,
+ * bo pakowarka kopiuje bajt w bajt — ale specyfikacja (pkt 4) jawnie dopuszcza edycję
+ * obu pól w miejscu, w bazie. PRÓG: przy pierwszej ręcznej edycji `explanationMd`
+ * albo `option_feedback_json` w bazie przenieść porównanie na tekst wyrenderowany.
  *
  * MUTACJA DOWODOWA — patrz nagłówek zgłoszenia; przywrócenie bezwarunkowego
  * renderu `explanationMd` w item-runner.tsx czerwieni przypadki 1–3.
@@ -81,9 +94,10 @@ function feedbackParagraphs(region: HTMLElement): string[] {
 }
 
 /**
- * Sedno strażnika. Zdanie wypisane dwa razy = ten sam akapit dwa razy w oknie.
- * Asercja jest OGÓLNA (dowolny duplikat), nie przywiązana do dwóch konkretnych pól —
- * przeżyje refaktor, który przeniesie dublowanie w inne miejsce tego okna.
+ * Sedno strażnika. Zdanie wypisane dwa razy = ten sam akapit dwa razy w regionie
+ * informacji zwrotnej. Asercja jest OGÓLNA w obrębie tego regionu (dowolny duplikat),
+ * nie przywiązana do dwóch konkretnych pól — przeżyje refaktor, który przeniesie
+ * dublowanie w inne miejsce TEGO REGIONU. Poza region nie sięga (W1).
  */
 function expectNoDuplicateParagraph(region: HTMLElement) {
 	const paragraphs = feedbackParagraphs(region);
@@ -153,7 +167,7 @@ describe("ItemRunner — informacja zwrotna nie dubluje się", () => {
 		expect(within(region).getByText(/Cudzysłów przesądza/)).toBeInTheDocument();
 	});
 
-	it("5. brak feedbacku opcji (bank egzaminacyjny, 24/24) → wyjaśnienie MUSI się pokazać", async () => {
+	it("5. brak feedbacku opcji (bank egzaminacyjny, 144/144) → wyjaśnienie MUSI się pokazać", async () => {
 		const region = await answerAndGetFeedback({
 			correct: true,
 			optionFeedbackMd: null,
