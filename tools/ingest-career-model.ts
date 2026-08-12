@@ -28,7 +28,7 @@ config({ path: ".env" });
 const ARTIFACT_PATH = join(process.cwd(), "src", "lib", "db", "data", "career-model.json");
 
 async function main(): Promise<void> {
-	assertTestDb(process.env.DATABASE_URL, "DATABASE_URL");
+	assertTestDb(process.env.DATABASE_URL, "DATABASE_URL", { allowProduction: true });
 
 	// Bajty 1:1 (utf8 string — dokładnie to, co porówna test bajtowej identyczności).
 	const content = readFileSync(ARTIFACT_PATH, "utf8");

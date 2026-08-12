@@ -2,12 +2,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { assertTestDb, isDedicatedTestDbUrl, parseDbHost } from "../../../tools/assert-test-db";
 
 // 0.14 — guard bezpieczeństwa bazy był NIETESTOWANY, a zależy od niego run-sql-file
-// (i db-guard-*). Pokrywamy sześć ścieżek decyzyjnych + parsowanie hosta.
+// (i db-guard-*). Pokrywamy ścieżki decyzyjne obu polityk + parsowanie hosta.
+//
+// 2026-08-12 (Ryan/CRCO) — poprzednia wersja tego pliku była STRAŻNIKIEM-ATRAPĄ.
+// Testowała warstwę „hard-deny" na DSN, który sama zmyśliła
+// (`…ep-skill-bridge-ai-123.neon.tech…`), dobranym tak, żeby zawierał szukany
+// fragment. Fragment `"skill-bridge-ai"` to nazwa projektu na Vercelu i w adresie
+// naszej bazy produkcyjnej NIE WYSTĘPUJE — test świecił się na zielono, a warstwa
+// nie broniła przed niczym, co nazywała. Test potwierdzał, że kod robi to, co
+// napisano w kodzie; o rzeczywistości nie mówił nic.
+//
+// Dziś reguła nie zna żadnej nazwy produkcji: przechodzi WYŁĄCZNIE host lokalny.
+// Host produkcyjny i host zmyślony leżą więc w tej samej klasie równoważności
+// Z KONSTRUKCJI (oba są „nie-lokalne"), i przykład o produkcyjnym KSZTAŁCIE nie
+// jest już zgadywaniem. Prawdziwy DSN produkcyjny sprawdzono osobno, sondą na
+// żywym środowisku (odczyt `vercel env run -e production`, 2026-08-12): przed
+// zmianą „PRZEPUSZCZONY", po zmianie „ZABLOKOWANY". Samego adresu produkcji
+// celowo nie publikujemy w repo (repo jest publiczne) — reguła go nie potrzebuje.
+//
+// DSN-y bez poświadczeń (polityka sekretów) — guard patrzy na host, nie na hasło.
 
-const LOCAL = "postgres://u:p@localhost:5432/app";
-const LOCAL_IP = "postgres://u:p@127.0.0.1:5432/app";
-const REMOTE = "postgres://u:p@db.example.com:5432/app";
-const PROD_FRAGMENT = "postgres://u:p@ep-skill-bridge-ai-123.neon.tech/app";
+const LOCAL = "postgres://localhost:5432/app";
+const LOCAL_IP = "postgres://127.0.0.1:5432/app";
+const REMOTE = "postgres://db.example.com:5432/app";
+// Kształt zgodny z produkcyjnym punktem dostępowym Neona (endpoint-pooler-region).
+const PROD_SHAPE = "postgres://ep-przyklad-123-pooler.c-3.eu-central-1.aws.neon.tech/neondb";
+/** Polityka B — narzędzie z udokumentowaną ceremonią produkcyjną. */
+const CEREMONIA = { allowProduction: true } as const;
 
 beforeEach(() => {
 	// Domyślnie brak flag (nie dziedzicz z ambientu CI/dev).
@@ -32,39 +53,97 @@ describe("parseDbHost", () => {
 	});
 });
 
-describe("assertTestDb", () => {
-	it("host lokalny → przechodzi cicho (localhost / 127.0.0.1)", () => {
+// ── POLITYKA A (domyślna): „to narzędzie nigdy nie tyka produkcji" ──────────
+// Sedno naprawy 2026-08-12: odmowy NIE wolno obejść zmienną środowiskową.
+// Realny scenariusz, przed którym to broni: operator eksportuje CONFIRM_PROD_DB=1
+// do legalnej ceremonii (migracja schemy), a potem w TEJ SAMEJ powłoce odpala
+// narzędzie destrukcyjne (np. egzekucję retencji). Flaga jest dziedziczona i nie
+// wie, co właśnie uruchomiono — więc to kod narzędzia, nie powłoka, musi decydować.
+describe("assertTestDb — polityka domyślna (bez ceremonii produkcyjnej)", () => {
+	it("host lokalny → przechodzi cicho (kontrola dodatnia: nie blokujemy pracy)", () => {
 		expect(() => assertTestDb(LOCAL)).not.toThrow();
 		expect(() => assertTestDb(LOCAL_IP)).not.toThrow();
 	});
 
-	it("host zdalny + brak flagi → ABORT", () => {
-		expect(() => assertTestDb(REMOTE)).toThrow(/zdalny host/);
-	});
-
-	it("host zdalny + CONFIRM_PROD_DB=1 → przechodzi", () => {
+	it("host lokalny przechodzi TAKŻE przy ustawionych flagach (brak fałszywego alarmu)", () => {
 		vi.stubEnv("CONFIRM_PROD_DB", "1");
-		expect(() => assertTestDb(REMOTE)).not.toThrow();
-	});
-
-	it("host zdalny + E2E_ALLOW_REMOTE=1 → przechodzi", () => {
 		vi.stubEnv("E2E_ALLOW_REMOTE", "1");
-		expect(() => assertTestDb(REMOTE)).not.toThrow();
+		expect(() => assertTestDb(LOCAL)).not.toThrow();
 	});
 
-	it("hard-deny prod fragment blokuje NAWET z CONFIRM_PROD_DB=1", () => {
+	it("host zdalny + brak flagi → ODMOWA", () => {
+		expect(() => assertTestDb(REMOTE)).toThrow(/ODMOWA/);
+	});
+
+	it("host o KSZTAŁCIE produkcyjnym → ODMOWA MIMO CONFIRM_PROD_DB=1", () => {
 		vi.stubEnv("CONFIRM_PROD_DB", "1");
-		expect(() => assertTestDb(PROD_FRAGMENT)).toThrow(/ODMOWA|skill-bridge-ai/i);
+		expect(() => assertTestDb(PROD_SHAPE)).toThrow(/ODMOWA/);
+	});
+
+	it("host o KSZTAŁCIE produkcyjnym → ODMOWA MIMO E2E_ALLOW_REMOTE=1", () => {
+		vi.stubEnv("E2E_ALLOW_REMOTE", "1");
+		expect(() => assertTestDb(PROD_SHAPE)).toThrow(/ODMOWA/);
+	});
+
+	it("host o KSZTAŁCIE produkcyjnym → ODMOWA MIMO OBU flag naraz", () => {
+		vi.stubEnv("CONFIRM_PROD_DB", "1");
+		vi.stubEnv("E2E_ALLOW_REMOTE", "1");
+		expect(() => assertTestDb(PROD_SHAPE)).toThrow(/ODMOWA/);
+	});
+
+	it("dowolny inny dostawca zdalny → ODMOWA mimo flag (reguła nie starzeje się z nazwą)", () => {
+		vi.stubEnv("CONFIRM_PROD_DB", "1");
+		// Gdyby produkcja przeniosła się poza Neona, reguła nadal obowiązuje —
+		// bo nie zna żadnej nazwy dostawcy, tylko allowlistę hostów lokalnych.
+		expect(() => assertTestDb("postgres://baza.inny-dostawca.example/neondb")).toThrow(/ODMOWA/);
+		expect(() => assertTestDb("postgres://10.4.0.7:5432/neondb")).toThrow(/ODMOWA/);
+	});
+
+	it("komunikat odmowy mówi wprost, że flaga jej nie obchodzi", () => {
+		vi.stubEnv("CONFIRM_PROD_DB", "1");
+		expect(() => assertTestDb(PROD_SHAPE)).toThrow(/nie obchodzi żadna zmienna środowiskowa/i);
+	});
+
+	it("nieparseowalny DSN → ODMOWA nawet z flagą (nie rozumiem = nie przepuszczam)", () => {
+		expect(() => assertTestDb("nie-dsn")).toThrow(/ODMOWA/);
+		vi.stubEnv("CONFIRM_PROD_DB", "1");
+		expect(() => assertTestDb("nie-dsn")).toThrow(/ODMOWA/);
 	});
 
 	it("brak DATABASE_URL → STOP", () => {
 		expect(() => assertTestDb(undefined)).toThrow(/nie jest ustawiona/);
 	});
+});
 
-	it("nieparseowalny DSN + brak flagi → STOP; + flaga → przechodzi", () => {
-		expect(() => assertTestDb("nie-dsn")).toThrow(/sparsować hosta/);
+// ── POLITYKA B (ceremonia): migracja schemy, zaciąg treści, remediacja ──────
+// Zachowanie z v0.14 zostaje bez zmian — te narzędzia MAJĄ udokumentowaną
+// ceremonię produkcyjną (delegacja v1.12, CLAUDE.md §5). Zmieniło się tylko to,
+// że wejście do tej polityki jest deklaracją w kodzie, a nie domyślnym stanem.
+describe("assertTestDb — polityka ceremonii produkcyjnej", () => {
+	it("host lokalny → przechodzi cicho", () => {
+		expect(() => assertTestDb(LOCAL, "DATABASE_URL", CEREMONIA)).not.toThrow();
+	});
+
+	it("host zdalny + brak flagi → ABORT z instrukcją", () => {
+		expect(() => assertTestDb(REMOTE, "DATABASE_URL", CEREMONIA)).toThrow(/ABORT/);
+	});
+
+	it("host zdalny + CONFIRM_PROD_DB=1 → przechodzi (ceremonia Ethana nie jest zepsuta)", () => {
 		vi.stubEnv("CONFIRM_PROD_DB", "1");
-		expect(() => assertTestDb("nie-dsn")).not.toThrow();
+		expect(() => assertTestDb(REMOTE, "DATABASE_URL", CEREMONIA)).not.toThrow();
+		expect(() => assertTestDb(PROD_SHAPE, "DATABASE_URL", CEREMONIA)).not.toThrow();
+	});
+
+	it("host zdalny + E2E_ALLOW_REMOTE=1 → przechodzi", () => {
+		vi.stubEnv("E2E_ALLOW_REMOTE", "1");
+		expect(() => assertTestDb(REMOTE, "DATABASE_URL", CEREMONIA)).not.toThrow();
+	});
+
+	it("allowProduction: false jest równoważne polityce domyślnej", () => {
+		vi.stubEnv("CONFIRM_PROD_DB", "1");
+		expect(() => assertTestDb(PROD_SHAPE, "DATABASE_URL", { allowProduction: false })).toThrow(
+			/ODMOWA/,
+		);
 	});
 });
 
