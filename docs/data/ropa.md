@@ -6,7 +6,14 @@
 > z art. 13 — osobny artefakt, którego jeszcze nie ma; patrz E-1 w
 > `docs/security/hint-reveals-retencja-signoff.md` §7).
 
-**Wersja:** v0.5 · 2026-08-10 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
+**Wersja:** v0.6 · 2026-08-12 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
+
+**Changelog v0.5 → v0.6 (2026-08-12) — Ryan (CRCO), domknięcie warunku Leo przy zgłoszeniu #288.**
+Jedna zmiana, **bez ruszania choćby jednego okresu, celu, podstawy prawnej ani odbiorcy**:
+sprostowane zdanie we wpisie #7 („rejestr retencji jest jedynym nośnikiem okresów") — obalało je
+zdanie leżące bezpośrednio nad nim. Ten rejestr **powtarza okres** i musi go powtarzać
+(art. 30 ust. 1 lit. f); nie powtarza uzasadnienia. Pełny opis nośników i próg ich zgodności:
+`docs/data/retention.md` v0.3.
 **Administrator danych:** nordsignal (podmiot w rejestracji — NIP TBD, trigger A/B/C, CLAUDE.md §9).
 **Status:** **rejestr minimalny, zasiany** — założony przy sign-offie FSRS (1E.4, rls-matrix v0.30).
 Kompletny przegląd wszystkich czynności przetwarzania w produkcie = **Wendy, Faza 3**, przed pierwszą
@@ -800,8 +807,16 @@ widzieć: rejestr zaprojektowano tak, że prawo osoby daje się wykonać jednym 
 
 **Retencja.** Czas trwania konta studenta, z **przeglądem celowanym przy zamknięciu kohorty** —
 pełne uzasadnienie i analiza (dlaczego to **nie** jest ten sam przypadek co `curriculum_placements`)
-w `docs/data/retention.md`, wiersz `pilot_participants`. **Tu tego nie powtarzam** — rejestr retencji
-jest jedynym nośnikiem okresów.
+w `docs/data/retention.md`, wiersz `pilot_participants`.
+
+> **SPROSTOWANIE 2026-08-12 (Ryan).** Stały tu dwa zdania, cytowane dosłownie: „**Tu tego nie
+> powtarzam** — rejestr retencji jest jedynym nośnikiem okresów." **Obala je zdanie bezpośrednio
+> nad nimi** — okres („czas trwania konta studenta, z przeglądem…") jest tu powtórzony, i **musi
+> być**: art. 30 ust. 1 lit. f RODO każe rejestrowi czynności podać planowane terminy usunięcia.
+> Nie powtarzam **uzasadnienia** — i tylko to miałem prawo napisać.
+> **Brzmienie obowiązujące:** `retention.md` jest **źródłem** okresu (tam się go ustala); ten
+> rejestr jest jego **kopią wymuszoną przepisem**. Pełna lista nośników i próg ich zgodności:
+> `docs/data/retention.md`, nagłówek (v0.3).
 
 **Art. 17.** `student_id … ON DELETE CASCADE` (`drizzle/0047_sad_la_nuit.sql`, `schema.ts:2398-2400`,
 odczyt 2026-08-10) — usunięcie konta kasuje wiersz rejestru, a zdarzenia tej osoby automatycznie

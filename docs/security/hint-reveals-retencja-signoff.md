@@ -379,6 +379,20 @@ pilnuje go review, nie test.
 
 **(a)** Do `docs/data/retention.md` dopisać **dwa** wiersze, dosłownie:
 
+> **⚠ ADNOTACJA 2026-08-12 (Ryan) — TRZECIE WYSTĄPIENIE FRAZY „BRAK SKRYPTU". Blok niżej jest
+> wiernym cytatem tego, co zamówiłem 2026-07-22, i dlatego go NIE przepisuję** — to zapis
+> historyczny pod sign-offem, a przepisanie go zatarłoby, co faktycznie było zamówione.
+> **Ale jego treść nie jest już prawdziwa i nie wolno jej stąd kopiować:** fraza
+> „Egzekwowanie: BRAK SKRYPTU" jest **nieprawdą** — skrypt istnieje (`tools/enforce-retention.ts`,
+> reguła `hints-at`) i egzekwuje dokładnie ten wiersz. Brzmienie obowiązujące i sprostowanie:
+> `docs/data/retention.md` v0.3.
+>
+> **Nośnikiem okresów przechowywania jest `docs/data/retention.md`, nie ten plik.** Wiersze niżej
+> są cytatem zamówienia, nie źródłem prawdy — jeśli szukasz aktualnego okresu, idź tam.
+> Znalezisko frazy w dwóch pierwszych miejscach: Leo (Tech Lead), bramka przy #288; to trzecie
+> znalazłem, sprawdzając na jego polecenie, czy fraza nie żyje gdzieś jeszcze
+> (`git grep -n -i 'BRAK SKRYPTU'`, odczyt 2026-08-12).
+
 ```
 | Znaczniki czasu odsłonięcia podpowiedzi | `curriculum_item_progress.hints_revealed_json` → `at[]` | **12 miesięcy** | każdy znacznik osobno (data jego zapisu) | `d` — maksymalna głębokość (stan nauki, bez ograniczenia czasowego) | `docs/security/hint-reveals-retencja-signoff.md` (Ryan, 2026-07-22); ADR-018 D1. **Egzekwowanie: BRAK SKRYPTU — dług, termin: pierwsza realna rejestracja studenta** |
 | Stan ścieżki nauki (postęp i odpowiedzi) | `curriculum_item_progress`, `curriculum_item_answers` (całe wiersze, w tym `answered_at`) | **czas trwania konta studenta** | utworzenie wiersza | nic (kaskada `student_id ON DELETE CASCADE`) | `docs/security/hint-reveals-retencja-signoff.md` (Ryan, 2026-07-22) — okres podyktowany celem FSRS (model zapominania w skali miesięcy); przegląd przed pierwszą realną rejestracją |
@@ -398,6 +412,16 @@ dostępności przy pierwszym renderze przycisku podpowiedzi.
 ## 7. Poza tym PR-em — warunki towarzyszące i eskalacja
 
 ### R-1 (WAŻNE) — skrypt egzekucji retencji, jeden dla całego rejestru
+
+> **⚠ STATUS 2026-08-12 (Ryan): R-1 JEST DOSTARCZONY. Poniższy tekst to zamówienie z 2026-07-22
+> i zostaje w brzmieniu z tamtego dnia** — słowa „dziś", „wymagane" i „skryptu brak" opisują stan
+> sprzed dostawy, nie stan bieżący. Dostarczono: `tools/enforce-retention.ts` (tablica reguł
+> `RULES`, dziś dwie: `hints-at`, `viva-content`) + test integracyjny
+> `tools/__tests__/enforce-retention.integration.test.ts`.
+> **Co z zamówienia zostało otwarte:** uruchamianie cykliczne — skrypt nie ma wyzwalacza ani wpisu
+> w `package.json`, więc okresy są **egzekwowalne, ale nie egzekwowane automatycznie**. Ta jedna
+> pozycja jest długiem; reszta R-1 nie.
+> Aktualny status egzekucji per wiersz trzyma **`docs/data/retention.md`** (v0.3), nie ten plik.
 
 Rejestr deklaruje dziś okresy, których nic nie wykonuje: 12 miesięcy dla `viva_answers.content`
 (ADR-013 D3, od 2026-07-09) i od tego PR-a 12 miesięcy dla `at[]`. Deklarowana i niewyegzekwowana
