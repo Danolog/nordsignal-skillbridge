@@ -8,7 +8,8 @@ wychodzący na zewnątrz (CLAUDE.md §4).
 **Ani jedno zdanie CZĘŚCI I (treści dla studenta) nie zostało zmienione co do sensu** — sekcja 7
 dostała wyłącznie niewidoczne klucze maszynowe w komentarzach HTML, po których strażnik rozpoznaje
 wiersze. Zmiany merytoryczne są w CZĘŚCI II: powstał **strażnik maszynowy zgodności okresów**
-(`tests/unit/rodo/okresy-retencji.contract.test.ts`, cztery mutacje czerwieniące go), a moje
+(`tests/unit/rodo/okresy-retencji.contract.test.ts`, z udokumentowanymi w nim mutacjami
+czerwieniącymi go), a moje
 zdanie „strażnik nie istnieje, oznaczam go jako niepotwierdzony" zostało **sprostowane jawnie**
 w sekcji Z-3 — etykieta była uczciwa, ale użyta szerzej, niż CLAUDE.md v1.17 pozwala.
 
@@ -40,7 +41,7 @@ z rejestru czynności przetwarzania i z kodu, a nie z szablonu z internetu — c
 **faktograficznie**, ale nie czyni go zweryfikowanym **prawnie**. Lista rzeczy, które musi
 sprawdzić prawnik **przed pierwszą osobą spoza zespołu**: sekcja Z-5.
 
-### Z-2. Warunki wejścia w życie — cztery, wszystkie twarde
+### Z-2. Warunki wejścia w życie — wszystkie twarde
 
 Klauzula obiecuje prawa. **Obietnica prawa, którego nie umiemy wykonać, jest gorsza niż brak
 klauzuli** — to zasada, która ustawiła kolejność całego pakietu RODO i ona się nie zmieniła.
@@ -75,8 +76,8 @@ z `retention.md` są tu fizycznie powtórzone. Zgodnie z CLAUDE.md v1.17 wymaga 
 - **próg** zapisany w `docs/data/retention.md` (nagłówek): zmiana okresu tam jest niedomknięta,
   dopóki nie trafi do **wszystkich** nośników;
 - **strażnik maszynowy: `tests/unit/rodo/okresy-retencji.contract.test.ts`** — porównuje okresy
-  w trzech nośnikach naraz i pada, gdy się rozjadą. Cztery mutacje czerwieniące go (w tym jedna
-  na tej klauzuli i jedna na źródle) są zacytowane w nagłówku tego testu.
+  w trzech nośnikach naraz i pada, gdy się rozjadą. Mutacje czerwieniące go — w tym po jednej
+  na tej klauzuli i na źródle — są zacytowane w nagłówku tego testu, i to on jest ich nośnikiem.
 
 > **SPROSTOWANIE 2026-08-12 — moje własne zdanie o strażniku.** Stało tu, cytowane dosłownie:
 >
@@ -376,7 +377,7 @@ Kolejność od najcięższego. **Żadna z tych pozycji nie jest kosmetyczna.**
 Pięć słabości, które sam bym sobie wytknął, i co z każdą zrobiłem.
 
 1. **„Twoja klauzula obiecuje usunięcie konta, którego nie ma."** — Słuszne wobec draftu bez
-   bramki. Dlatego sekcja Z-2 ustawia **cztery** warunki wejścia w życie, a nie jeden, i wiąże
+   bramki. Dlatego sekcja Z-2 wiąże zapłon klauzuli z **całą tabelą** warunków, a nie z jednym, i wiąże
    zapłon klauzuli z zapłonem flagi `FLAG_ACCOUNT_DELETION`. Bez W-1 sekcja 8 jest nieprawdziwa
    w chwili wypowiadania — i tak to nazywam.
 2. **„Piszesz, że po usunięciu konta ślad nie wskazuje na osobę — a dziś wskazuje."** — Prawda,
