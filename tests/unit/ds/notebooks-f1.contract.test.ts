@@ -213,15 +213,16 @@ describe("symulacja sesji studenta F1: komórki → token → checki z prodowego
 			slug: "f1-4",
 			replacements: [
 				["razem = _luka_", "razem = cena * sztuki"],
-				["srednio_dziennie = _luka_", "srednio_dziennie = razem / 30"],
+				["cena_kromki = _luka_", "cena_kromki = cena / kromek_w_bochenku"],
 				['print(f"Razem: {_luka_} zł")', 'print(f"Razem: {razem} zł")'],
 			],
 			// Arytmetyka JAK w Pythonie (ten sam IEEE 754) — parytet tokenu.
 			expectPayload: {
 				cena: 5.5,
 				sztuki: 3,
+				kromek_w_bochenku: 20,
 				razem: 5.5 * 3,
-				srednio_dziennie: (5.5 * 3) / 30,
+				cena_kromki: 5.5 / 20,
 			},
 		},
 		{
@@ -309,10 +310,23 @@ describe("symulacja sesji studenta F1: komórki → token → checki z prodowego
 			slug: "f1-4",
 			replacements: [
 				["razem = _luka_", "razem = 999"],
-				["srednio_dziennie = _luka_", "srednio_dziennie = razem / 30"],
+				["cena_kromki = _luka_", "cena_kromki = cena / kromek_w_bochenku"],
 				['print(f"Razem: {_luka_} zł")', 'print(f"Razem: {razem} zł")'],
 			],
-			message: /nie zgadzają się|Uruchom komórki od góry/,
+			message: /nie zgadza się z danymi wejściowymi|Uruchom komórki od góry/,
+		},
+		{
+			// Regresja sygnału Darka 2026-08-10: droga tożsamościowa (× 30 ÷ 30)
+			// zwracała `razem` i wyglądała na poprawną. Po przeprojektowaniu labu
+			// luka 2 liczy się z `cena`, więc podstawienie `razem` MUSI zostać odrzucone.
+			name: "f1-4: luka 2 policzona z `razem` zamiast z `cena` — pieczątka odmawia",
+			slug: "f1-4",
+			replacements: [
+				["razem = _luka_", "razem = cena * sztuki"],
+				["cena_kromki = _luka_", "cena_kromki = razem / kromek_w_bochenku"],
+				['print(f"Razem: {_luka_} zł")', 'print(f"Razem: {razem} zł")'],
+			],
+			message: /cena_kromki|nie zależy od tego, ile bochenków/,
 		},
 		{
 			// Komórki kodu f1-7: 0=program, 1=pieczątka.
@@ -345,7 +359,13 @@ describe("symulacja sesji studenta F1: komórki → token → checki z prodowego
 	}
 
 	it("token f1-4 wklejony w f1-7 jest odrzucany (bad_signature)", () => {
-		const payload: StampPayload = { cena: 5.5, sztuki: 3, razem: 16.5, srednio_dziennie: 0.55 };
+		const payload: StampPayload = {
+			cena: 5.5,
+			sztuki: 3,
+			kromek_w_bochenku: 20,
+			razem: 16.5,
+			cena_kromki: 0.275,
+		};
 		const token = signToken(atomCode(STUDENT_ID, itemIdFor("f1-4")), payload);
 		const parsed = parseToken(STUDENT_ID, itemIdFor("f1-7"), token);
 		expect(parsed).toEqual({ ok: false, reason: "bad_signature" });

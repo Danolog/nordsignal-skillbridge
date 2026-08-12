@@ -68,12 +68,15 @@ liczbę z ułamkiem i tekst — i sprawdzisz typ dowolnej wartości poleceniem
 
 W L0.4 rozdzieliliśmy liczbę `12` od tekstu `"12"`. Dziś ta sama myśl
 w pełnej wersji: **każda wartość w Pythonie ma swój typ**, a typ decyduje,
-co z wartością można zrobić. Na liczbach się liczy, tekstów się nie podzieli.
+co z wartością można zrobić. Liczby dodasz i pomnożysz; tekstów nie dodasz
+do liczby — Python odmówi.
 
 Trzy typy, które wystarczą na długo:
 
-- **`int`** (od ang. *integer*) — liczba całkowita: `12`, `0`, `-5`. Dobra do
-  liczenia sztuk, dni, punktów — wszystkiego, co się nie dzieli.
+- **`int`** (od ang. *integer*) — liczba całkowita: `12`, `0`, `-5`. Tak
+  zapisujemy to, czego nie liczy się w połówkach: sztuki, dni, punkty.
+  Dzielić wolno i tu — `7 / 2` daje `3.5` — tylko wynik dzielenia nie jest
+  już liczbą całkowitą.
 - **`float`** (ang. „zmiennoprzecinkowa") — liczba z częścią ułamkową:
   `12.5`, `0.1`. Dobra do cen, wag, temperatur. Uwaga: Python używa
   **kropki**, nie przecinka — `12,5` to NIE jest jedna liczba.
@@ -464,51 +467,58 @@ Szkielet w notebooku:
 ```python
 # --- dane wejściowe programu (w F1 "wejściem" są zmienne na górze) ---
 produkt = "chleb"
-cena = 5.50          # cena za sztukę, zł
-sztuki = 3
+cena = 5.50              # cena za bochenek, zł
+sztuki = 3               # ile bochenków kupuję
+kromek_w_bochenku = 20   # ile kromek ma jeden bochenek
 
 # --- obliczenia ---
-razem = ______              # luka 1: kwota za wszystkie sztuki
-srednio_dziennie = ______   # luka 2: ile to dziennie przy 30 dniach
+razem = ______           # luka 1: kwota za wszystkie bochenki
+cena_kromki = ______     # luka 2: ile kosztuje jedna kromka
 
 # --- paragon ---
 print(f"Kupuję: {produkt}, {sztuki} szt. po {cena} zł")
-print(f"Razem: {______} zł")            # luka 3: co w klamrze?
-print(f"W skali dnia: {srednio_dziennie} zł")
+print(f"Razem: {______} zł")                  # luka 3: co w klamrze?
+print(f"Jedna kromka: {cena_kromki} zł")
 ```
 
 Wymagania: luka 1 to wyrażenie z `*`; luka 2 — wyrażenie z `/` (zauważ kropkę
 w wyniku — wiesz z F1.2, skąd się bierze); luka 3 — nazwa albo wyrażenie
-(reguła 2 z F1.3). Po uzupełnieniu uruchom całość i przeczytaj swój paragon.
-Potem podmień dane wejściowe na własne zakupy i uruchom ponownie — program ma
-policzyć wszystko sam, bez zmian poniżej linii „obliczenia".
+(reguła 2 z F1.3). Każda liczba, której potrzebujesz, jest w sekcji „dane
+wejściowe" — nie musisz niczego zakładać ani dopisywać. Po uzupełnieniu
+uruchom całość i przeczytaj swój paragon. Potem podmień dane wejściowe na
+własne zakupy i uruchom ponownie — program ma policzyć wszystko sam, bez
+zmian poniżej linii „obliczenia".
 
-**Zaliczenie:** komórka-pieczątka (mechanizm z L0): sprawdza deterministycznie,
-że `razem` i `srednio_dziennie` istnieją i spełniają relacje
-`razem == cena * sztuki` oraz `srednio_dziennie == razem / 30` dla bieżących
-danych wejściowych — i wtedy liczy token z kodu atomu. Jawny limit (klasa
-limitów z L0): relacje da się spełnić także ręcznie policzonymi stałymi —
-to świadome oszustwo, które szkodzi tylko oszukującemu; check mierzy
-wykonanie, nie drogę dojścia.
+**Zaliczenie:** komórka, która wypisuje kod zaliczenia (mechanizm z L0):
+sprawdza deterministycznie, że `razem` i `cena_kromki` istnieją i spełniają
+relacje `razem == cena * sztuki` oraz `cena_kromki == cena / kromek_w_bochenku`
+dla bieżących danych wejściowych — i dopiero wtedy wypisuje kod. Obie relacje
+liczone są niezależnie od siebie: pomyłka w luce 1 nie przesądza o luce 2.
+Jawny limit (klasa limitów z L0): relacje da się spełnić także ręcznie
+policzonymi stałymi — to świadome oszustwo, które szkodzi tylko oszukującemu;
+sprawdzenie mierzy wykonanie, nie drogę dojścia.
 
 ### Drabinka hintów
 
 1. **Koncepcyjny:** Każda luka to jedno z Twoich narzędzi: luka 1 — mnożenie
-   dwóch zmiennych (jak `kawa * dni` w L0.4); luka 2 — dzielenie świeżo
-   policzonej wartości; luka 3 — f-stringowa klamra przyjmie nazwę `razem`
-   albo całe wyrażenie. Nie wpisuj gotowych liczb — paragon ma się przeliczać
-   sam po zmianie danych.
-2. **Szkielet:** luka 1: `cena * ______`; luka 2: `razem / ______`; luka 3:
-   nazwa zmiennej z sekcji „obliczenia", ta sama, którą właśnie policzyła
-   luka 1.
+   dwóch zmiennych (jak `kawa * dni` w L0.4); luka 2 — dzielenie ceny bochenka
+   przez liczbę kromek, którą masz podaną w danych wejściowych; luka 3 —
+   f-stringowa klamra przyjmie nazwę `razem` albo całe wyrażenie. Nie wpisuj
+   gotowych liczb — paragon ma się przeliczać sam po zmianie danych.
+2. **Szkielet:** luka 1: `cena * ______`; luka 2: `cena / ______` (mianownik
+   to zmienna z sekcji „dane wejściowe", nie liczba wpisana z palca); luka 3:
+   nazwa zmiennej z sekcji „obliczenia", ta sama, którą policzyła luka 1.
 3. **Pełne rozwiązanie z objaśnieniem:** luka 1: `cena * sztuki` (5.50 · 3 =
-   16.5 — float, bo `cena` ma kropkę); luka 2: `razem / 30` (0.55 — wynik
-   z kropką: dzielenie ZAWSZE daje float); luka 3: `razem` (albo `cena * sztuki` —
-   identyczny wynik, reguła „klamra przyjmuje nazwę i wyrażenie"). Jeśli
-   pieczątka odmawia tokenu, a paragon wygląda dobrze — najczęściej
-   zmieniłeś(-aś) dane wejściowe i nie uruchomiłeś(-aś) PONOWNIE komórki
-   obliczeń: w pamięci sesji siedzą stare wartości (mechanizm z L0.3).
-   Uruchom komórki od góry i spróbuj jeszcze raz.
+   16.5 — float, bo `cena` ma kropkę); luka 2: `cena / kromek_w_bochenku`
+   (5.50 / 20 = 0.275 — wynik z kropką: dzielenie ZAWSZE daje float, nawet
+   gdy dzielisz równo); luka 3: `razem` (albo `cena * sztuki` — identyczny
+   wynik, reguła „klamra przyjmuje nazwę i wyrażenie"). Zwróć uwagę, że luka 2
+   liczy się z `cena`, a nie z `razem`: cena kromki nie zależy od tego, ile
+   bochenków kupiłeś(-aś). Jeśli kod zaliczenia nie chce się wypisać,
+   a paragon wygląda dobrze — najczęściej zmieniłeś(-aś) dane wejściowe
+   i nie uruchomiłeś(-aś) PONOWNIE komórki obliczeń: w pamięci sesji siedzą
+   stare wartości (mechanizm z L0.3). Uruchom komórki od góry i spróbuj
+   jeszcze raz.
 
 ---
 
@@ -1140,3 +1150,96 @@ GO Z NOTAMI (0 KRYT / 3 WAŻN / 5 INFO)** — wszystkie WAŻN wcielone przed PR-
 Parytet Python↔TS i drift buildera przybite testem
 `tests/unit/ds/notebooks-f1.contract.test.ts` (kontrakt: laby z pieczątką ze
 wspólnym blokiem, ćwiczenia bez; happy + odmowy na checkach z prod-JSON-a).
+
+---
+
+## Log QG — errata 2026-08-10 (sygnał ludzki: przejazd Darka przez produkt)
+
+**Wykonała:** Sophia (PO). **Źródło zgłoszenia:** przejazd Darka przez produkt
+2026-08-10 (zapis dosłowny: `scratchpad/sygnal-ludzki-przejazd-darka.md`).
+**Zakres erraty:** dwa znaleziska KRYT w F1 — oba wcielone przed oddaniem.
+
+### KRYT-1 — teoria F1.1 uczyła reguły nieprawdziwej
+
+Brzmienie sprzed erraty (cytat dosłowny):
+
+> „co z wartością można zrobić. **Na liczbach się liczy, tekstów się nie podzieli.**"
+> „**`int`** … Dobra do liczenia sztuk, dni, punktów — **wszystkiego, co się nie dzieli**."
+
+Oba zdania są fałszywe i sprawdzalne w jednej komórce. Weryfikacja empiryczna
+(python3 3.14.6, 2026-08-10):
+
+| twierdzenie treści | komenda | wynik | werdykt |
+|---|---|---|---|
+| „liczb całkowitych się nie dzieli" | `print(7/2)` | `3.5` (typ `float`) | FAŁSZ |
+| „tekstów się nie podzieli" | `print("Ala ma kota".split())` | `['Ala','ma','kota']` | FAŁSZ |
+| „`"12" + 1` to błąd" (nowe brzmienie) | `"12" + 1` | `TypeError: can only concatenate str (not "int") to str` | PRAWDA |
+
+Mnemotechnika była zbudowana pod rytm zdania, nie pod prawdę. Waga: wyższa niż
+żargon — żargon student pominie, **fałszywą regułę zapamięta i zastosuje**, a złamie
+się ona przy pierwszym dzieleniu, czyli już w F1.2. Nowe brzmienie mówi prawdę
+i zachowuje intuicję („czego nie liczy się w połówkach"), a różnicę typu wyniku
+nazywa wprost.
+
+**Sprawdzenie rozprzestrzenienia (obowiązkowe — szablon powiela błąd):** wzorzec
+„nie dzieli / nie podzieli" przeszukany w 9 dokumentach kuracji i w całej treści
+atomów — **poza F1.1 zero wystąpień**. Mnemotechnika NIE wyszła z szablonu, była
+jednostkowa. Pozostałe definicje `int` (F2 konwersja, egzamin F1) mówią o zapisie
+i konwersji, nie o dzieleniu — sprzeczności brak.
+
+### KRYT-2 — LAB „Paragon" (F1.4): brak danej wejściowej + droga tożsamościowa
+
+Zadanie sprzed erraty dawało `cena` (za sztukę) i `sztuki`, a kazało policzyć
+`srednio_dziennie` = „ile to dziennie przy 30 dniach". Dwie wady naraz:
+
+1. **Brak danej wejściowej.** Nic w zadaniu nie mówi, ile chleba schodzi dziennie
+   ani że 3 bochenki starczają na miesiąc. `razem` to koszt **jednorazowego
+   zakupu**, więc „w skali dnia" nie ma z czego powstać — polecenie milcząco
+   przemianowywało „3 sztuki" na „miesięczne zużycie".
+2. **Droga tożsamościowa.** Jedyne odczytanie, które nadaje sens „skali dnia",
+   to „dzienne × 30 dni", a wtedy dzielenie przez 30 zwraca wejście. Zysk
+   informacyjny zerowy. Darek, rozwiązując zadanie, wpisał dokładnie
+   `srednio_dziennie = (30 * razem)/30` i zobaczył **dwie identyczne kwoty pod
+   dwiema różnymi etykietami** (`Razem: 16.5 zł`, `W skali dnia: 16.5 zł`) —
+   a check (`srednio_dziennie == razem / 30`) i tak by go odrzucił, komunikatem
+   o nieodświeżonej komórce, czyli **z błędną diagnozą**.
+
+Autor napisał polecenie, **nie rozwiązując go** — reguła twarda 3 („każda liczba
+policzona, nie oszacowana") nie została zastosowana do sensu zadania, tylko do
+arytmetyki.
+
+**Naprawa.** Dane wejściowe dostają brakującą wielkość (`kromek_w_bochenku = 20`),
+a luka 2 liczy **cenę jednej kromki** — pytanie genuinnie nowe, nie odwrotność
+mnożenia z luki 1:
+
+| wielkość | wyrażenie | wartość (policzona, nie oszacowana) | typ |
+|---|---|---|---|
+| `razem` | `cena * sztuki` | `5.5 * 3` = **16.5** | `float` |
+| `cena_kromki` | `cena / kromek_w_bochenku` | `5.5 / 20` = **0.275** | `float` |
+
+Zyski dydaktyczne: (a) każda potrzebna liczba jest w sekcji „dane wejściowe";
+(b) dzielenie odpowiada na nowe pytanie, zamiast cofać mnożenie; (c) **C2 nie
+zależy już od C1** — pomyłka w luce 1 nie przewraca luki 2 (poprzednio kaskadowała);
+(d) wynik `0.275` wzmacnia lekcję z F1.1, że dzielenie daje `float`.
+
+**Komunikaty odmowy rozdzielone na dwa** (reguła twarda 4 — „co jest × co powinno
+być × co zrobić"). Poprzednio jeden komunikat zgadywał przyczynę („nie uruchomiłeś
+ponownie komórki"); teraz osobny dla luki 1 i osobny dla luki 2, a ten drugi nazywa
+najczęstszą realną pomyłkę wprost: dzieli się `cena`, nie `razem`.
+
+### Bramka część A (T1–T5)
+
+| test | wynik | dowód |
+|---|---|---|
+| **T1 źródło i determinizm** | pass | poprawki wyłącznie w tym `.md`; `tools/content/curriculum-atoms/f1-python-1.json` wyłącznie z repacku; `curriculum-atoms.contract.test.ts` **20/20 w dwóch biegach pod rząd**, `git status` bez dryfu po drugim biegu |
+| **T2 czystość widoku studenta** | pass | erraty i meta wyłącznie w tym logu; sekcje Cel/Teoria/Zadanie/Zaliczenie/Drabinka bez znaczników „errata/QG/KRYT/TODO" |
+| **T3 liczby policzone** | pass | tabele wyżej — `7/2`, `split()`, `TypeError`, `5.5*3`, `5.5/20` wykonane w python3 3.14.6 |
+| **T4 błędy zapowiedziane i placeholdery** | pass | `NameError: name '_luka_' is not defined` bez zmian (placeholder `_luka_`, nigdy `___`); komórki kodu skompilowane realnym `compile()` |
+| **T5 cudze UI** | n/d | errata nie cytuje żadnej etykiety cudzego interfejsu |
+
+Regresja przybita testem: `tests/unit/ds/notebooks-f1.contract.test.ts` **17/17**,
+w tym **nowy scenariusz odmowy** „luka 2 policzona z `razem` zamiast z `cena`" —
+gdyby ktoś przywrócił drogę tożsamościową, test padnie.
+
+**NIE wykonano ingestu na produkcję** — czerwona linia (ADR-010). Zakres do
+wykonania przez Ethana opisany w raporcie `scratchpad/przeglad-jezyka-produktu-sophia.md`.
