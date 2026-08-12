@@ -16,12 +16,20 @@
  *   A1. Pola drabiny czytane przez studenta: tytuł i opis modułu, tytuły pozycji.
  *   A2. Eksportowane stałe etykiet interfejsu (`labels.ts`) — jedyny nośnik nazw
  *       rodzajów lekcji i statusów.
+ *   A3. DRUGI NOŚNIK nazwy: czy któraś z nazw z `labels.ts` jest przepisana
+ *       literałem w widokach `src/components/curriculum/**` (warunek 1 Leo, #291).
  *   B.  Treść atomów (tytuł, teoria, podpowiedzi, pytania, opcje, informacja
  *       zwrotna, tytuły zasobów) — jako ZAPADKA, patrz niżej.
  *
  * ── CZEGO NIE WIDZI (jawne granice, nie przeoczenie) ──────────────────────────
- *   • Tekstu wpisanego wprost w JSX komponentów (np. akapit w `module-items.tsx`) —
- *     odróżnienie go od komentarza wymaga parsera, nie regexpa. Luka znana.
+ *   • ŻARGONU wpisanego wprost w JSX komponentów — odróżnienie tekstu na ekranie
+ *     od komentarza wymaga parsera, nie regexpa. Luka znana, NIE zamknięta.
+ *     A3 nie jest jej zamknięciem: A3 szuka skończonej listy ZNANYCH wartości
+ *     etykiet, a nie dowolnego żargonu, więc parser nie jest mu potrzebny —
+ *     zakazuje literału i w JSX, i w komentarzu, bez rozróżniania ich.
+ *   • Literału wpisanego w samym `labels.ts` zamiast interpolacji z nośnika,
+ *     jeśli autor wpisze tekst IDENTYCZNY z dzisiejszym. A3c łapie dopiero
+ *     rozjazd — czyli ten stan, który szkodzi studentowi.
  *   • Notatników (`tools/content/notebooks/**`) — student czyta je w Colab.
  *   • Treści, która leży WYŁĄCZNIE w bazie produkcyjnej i nie ma źródła w repo.
  *     Repo jest źródłem dla drabiny i atomów, ale zgodność bazy z repo gwarantuje
@@ -36,14 +44,17 @@
  * słownictwo atomów sufity schodzą do zera i zapadka znika na rzecz zera twardego.
  */
 
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	CURRICULUM_INTRO,
 	CURRICULUM_INTRO_WITH_PLACEMENT,
+	ITEM_LOCKED_HINT,
 	ITEM_STATUS_LABEL,
 	itemKindLabel,
+	LAB_ITEM_HINT,
+	MODULE_LOCKED_HINT,
 	MODULE_STATUS_LABEL,
 	PLACEMENT_BADGE_LABEL,
 } from "@/components/curriculum/labels";
@@ -144,6 +155,9 @@ describe("A2 — etykiety interfejsu: zero kodu wewnętrznego", () => {
 			PLACEMENT_BADGE_LABEL,
 			CURRICULUM_INTRO,
 			CURRICULUM_INTRO_WITH_PLACEMENT,
+			LAB_ITEM_HINT,
+			ITEM_LOCKED_HINT,
+			MODULE_LOCKED_HINT,
 			...["theory", "exercise", "lab", "project", "review"].map(itemKindLabel),
 		];
 		const hits = etykiety.flatMap((e) =>
@@ -157,6 +171,108 @@ describe("A2 — etykiety interfejsu: zero kodu wewnętrznego", () => {
 
 	it("„lab” nie jest etykietą pokazywaną studentowi", () => {
 		expect(itemKindLabel("lab")).toBe("Zadanie praktyczne");
+	});
+});
+
+/**
+ * A3 — nazwa ma DOKŁADNIE JEDEN nośnik (CLAUDE.md v1.17).
+ *
+ * Geneza: przegląd #291, warunek 1 Leo. Nazwy rodzajów pozycji żyły w TRZECH
+ * miejscach naraz i jedno już się rozjechało (`atomKindLabel` zwracała „Lab").
+ * Widok wolno WOŁAĆ nazwę, nie wolno jej PRZEPISAĆ — inaczej przemianowanie
+ * naprawia nośnik i test, a akapit obok zostaje stary i produkt pokazuje
+ * studentowi dwie nazwy tej samej rzeczy.
+ *
+ * Zakaz obejmuje też KOMENTARZ, i to celowo — komentarz z wpisaną nazwą
+ * dezaktualizuje się tak samo, tylko ciszej (dwa takie były: `module-items.tsx`
+ * i `placement-badge.ts`). Dzięki temu strażnik nie musi odróżniać komentarza
+ * od JSX, czyli nie potrzebuje parsera.
+ */
+const KATALOG_WIDOKU = join(process.cwd(), "src", "components", "curriculum");
+
+/** Wszystkie wartości nazw, których widok nie ma prawa przepisać literałem. */
+function nazwyZNosnika(): { nazwa: string; wartosc: string }[] {
+	const out: { nazwa: string; wartosc: string }[] = [];
+	for (const [k, v] of Object.entries(MODULE_STATUS_LABEL))
+		out.push({ nazwa: `MODULE_STATUS_LABEL.${k}`, wartosc: v });
+	for (const [k, v] of Object.entries(ITEM_STATUS_LABEL))
+		out.push({ nazwa: `ITEM_STATUS_LABEL.${k}`, wartosc: v });
+	for (const k of ["theory", "exercise", "lab", "project", "review"])
+		out.push({ nazwa: `itemKindLabel("${k}")`, wartosc: itemKindLabel(k) });
+	return out;
+}
+
+/** Pliki widoku curriculum poza `labels.ts` (nośnik) i testami. */
+function plikiWidoku(katalog = KATALOG_WIDOKU): string[] {
+	const out: string[] = [];
+	for (const wpis of readdirSync(katalog)) {
+		const pelna = join(katalog, wpis);
+		if (statSync(pelna).isDirectory()) {
+			if (wpis === "__tests__") continue;
+			out.push(...plikiWidoku(pelna));
+			continue;
+		}
+		if (!/\.tsx?$/.test(wpis)) continue;
+		if (pelna === join(KATALOG_WIDOKU, "labels.ts")) continue;
+		out.push(pelna);
+	}
+	return out;
+}
+
+/**
+ * Czy `wartosc` stoi w `tekst` jako OSOBNE słowo, a nie w środku identyfikatora.
+ *
+ * Bez tego warunku strażnik czerwieni się na własnych nazwach zmiennych: przy
+ * mutacji M3 (nazwa „lab" → „Lab") wartość „Lab" trafiała w „itemKindLabel"
+ * i dawała cztery fałszywe trafienia. Fałszywe trafienie jest tu kosztowne —
+ * uczy wyłączania strażnika zamiast poprawiania kodu.
+ *
+ * Sąsiedztwo sprawdzamy znakami, nie `\b`: wartości są polskie („Ćwiczenie"),
+ * a `\b` w JS opiera się o `\w`, czyli ASCII — „Ćwiczenie" zaczyna się znakiem,
+ * którego `\w` nie obejmuje, więc granica wypadałaby w złym miejscu.
+ */
+function stoiJakoOsobneSlowo(tekst: string, wartosc: string): boolean {
+	const identyfikator = /[A-Za-z0-9_]/;
+	let od = tekst.indexOf(wartosc);
+	while (od !== -1) {
+		const przed = od > 0 ? tekst[od - 1] : "";
+		const po = tekst[od + wartosc.length] ?? "";
+		const wSrodkuNazwy =
+			(przed !== "" && identyfikator.test(przed)) || (po !== "" && identyfikator.test(po));
+		if (!wSrodkuNazwy) return true;
+		od = tekst.indexOf(wartosc, od + 1);
+	}
+	return false;
+}
+
+describe("A3 — nazwa ma jeden nośnik: widok WOŁA etykietę, nie PRZEPISUJE jej", () => {
+	it("żaden plik `src/components/curriculum/**` nie powtarza wartości etykiety literałem", () => {
+		const nazwy = nazwyZNosnika();
+		const złe: string[] = [];
+		for (const plik of plikiWidoku()) {
+			const tekst = readFileSync(plik, "utf8");
+			for (const { nazwa, wartosc } of nazwy) {
+				if (stoiJakoOsobneSlowo(tekst, wartosc)) {
+					złe.push(
+						`  • ${relative(process.cwd(), plik)} — literał „${wartosc}" (nośnik: ${nazwa})`,
+					);
+				}
+			}
+		}
+		expect(
+			złe,
+			`Drugi nośnik nazwy — widok przepisuje etykietę zamiast ją wołać:\n${złe.join("\n")}\n` +
+				"Wstaw wartość z `labels.ts` (interpolacja), a w komentarzu napisz o nośniku, nie o nazwie.",
+		).toEqual([]);
+	});
+
+	it("zdania widoku są ZBUDOWANE z nośnika, nie wpisane obok niego", () => {
+		// Łapie rozjazd: gdy ktoś zamieni interpolację na literał i zmieni nazwę
+		// w jednym miejscu. Nie łapie literału identycznego z dzisiejszym tekstem —
+		// granica zapisana w nagłówku pliku.
+		expect(LAB_ITEM_HINT.startsWith(`${itemKindLabel("lab")} — `)).toBe(true);
+		expect(ITEM_LOCKED_HINT.startsWith(`${ITEM_STATUS_LABEL.locked} — `)).toBe(true);
+		expect(MODULE_LOCKED_HINT.startsWith(`${MODULE_STATUS_LABEL.locked} — `)).toBe(true);
 	});
 });
 

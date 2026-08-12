@@ -58,6 +58,13 @@ export const ITEM_STATUS_LABEL: Record<LadderItem["status"], string> = {
  * do studenta NIE wychodzi (decyzja Sophii 2026-08-10, sygnał Darka: „użytkownik nie
  * będzie wiedział, co oznacza atom L0.1"). „lab" → „Zadanie praktyczne", bo student
  * ma wiedzieć, co robi, a nie jak my to nazywamy wewnętrznie.
+ *
+ * „JEDYNY" jest tu od 2026-08-12 twierdzeniem zmierzonym, nie deklaracją. Wcześniej
+ * nośniki były trzy i JEDEN JUŻ SIĘ ROZJECHAŁ: `atomKindLabel` w `lib/curriculum/
+ * atom-href.ts` zwracał dla „lab" surowe „Lab", pod komentarzem twierdzącym, że jest
+ * „spójna z labels.itemKindLabel". Studenta chronił wyłącznie filtr z innego modułu
+ * (`CORRECTIVES_ATOM_KINDS = ["theory","exercise"]`), niepowiązany z tą decyzją.
+ * Funkcja została skasowana, a jej wywołania wskazane tutaj (przegląd #291).
  */
 export function itemKindLabel(kind: string): string {
 	switch (kind) {
@@ -75,6 +82,49 @@ export function itemKindLabel(kind: string): string {
 			return kind;
 	}
 }
+
+/**
+ * ── ZDANIA WIDOKU, KTÓRE ZACZYNAJĄ SIĘ NAZWĄ ──────────────────────────────────
+ *
+ * Widok kilka razy pisze zdanie objaśniające tuż pod plakietką: „<nazwa> — co
+ * z tym zrobić". Nazwa w takim zdaniu to TA SAMA decyzja nazewnicza, co
+ * w plakietce — więc nie wolno jej przepisać literałem w JSX, tylko wstawić
+ * z nośnika (CLAUDE.md v1.17: „pozostałe miejsca ją WOŁAJĄ, nie POWTARZAJĄ").
+ *
+ * Bez tego przemianowanie naprawia plakietkę i test, a akapit zostaje stary —
+ * i produkt pokazuje studentowi dwie różne nazwy tej samej rzeczy w dwóch
+ * sąsiadujących liniach (warunek 1 Leo, przegląd #291).
+ *
+ * Zdania są tu także dlatego, że są mikrocopy Sophii i podlegają cytatowi 1:1
+ * jak `CURRICULUM_INTRO` wyżej. Strażnik A3 (`jezyk-produktu.contract.test.ts`)
+ * pilnuje, że w `src/components/curriculum/**` nie ma drugiej kopii żadnej z tych
+ * nazw — ani w JSX, ani w komentarzu.
+ */
+
+/**
+ * Podpis pozycji typu `lab` w widoku modułu.
+ *
+ * Celowo BEZ zaimka („rozwiązujesz w notatniku", nie „rozwiązujesz je"): zaimek
+ * uzgadniałby rodzaj z nazwą, więc przemianowanie „Zadanie praktyczne" (nijaki)
+ * na cokolwiek innego rodzaju psułoby gramatykę zdania złożonego z nośnika.
+ * Druga część („a zaliczasz kodem") i tak dopełnienie pomija — zdanie jest
+ * spójne stylistycznie i odporne na przemianowanie.
+ */
+export const LAB_ITEM_HINT = `${itemKindLabel("lab")} — rozwiązujesz w notatniku, a zaliczasz kodem, który ten notatnik wypisze.`;
+
+/**
+ * Wyjaśnienie w widoku pozycji, gdy zadanie praktyczne nie ma jeszcze sprawdzenia.
+ *
+ * Interpolacja jest tu bezpieczna gramatycznie: „zalicza się" nie uzgadnia rodzaju
+ * z podmiotem, więc zdanie zniesie każdą przyszłą nazwę rodzaju pozycji.
+ */
+export const LAB_AUTOCHECK_NOTICE = `${itemKindLabel("lab")} zalicza się automatycznym sprawdzeniem wykonanej pracy (bez samodeklaracji). Dla tej pozycji sprawdzenie nie jest jeszcze skonfigurowane — możesz przeczytać instrukcję i wykonać ją u siebie, ale drabina nie zapisze zaliczenia.`;
+
+/** Podpis pozycji zablokowanej („ją" = pozycję, nie nazwę statusu — bez sprzężenia). */
+export const ITEM_LOCKED_HINT = `${ITEM_STATUS_LABEL.locked} — zalicz poprzednią pozycję, żeby ją otworzyć.`;
+
+/** Podpis modułu zablokowanego („go" = moduł, nie nazwę statusu — bez sprzężenia). */
+export const MODULE_LOCKED_HINT = `${MODULE_STATUS_LABEL.locked} — zalicz wcześniejszy moduł, żeby go otworzyć.`;
 
 /** Klasy odznaki statusu — spójne dla modułów i pozycji. */
 export function statusBadgeClass(status: string): string {

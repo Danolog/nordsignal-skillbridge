@@ -8,6 +8,7 @@
 
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { LAB_ITEM_HINT } from "@/components/curriculum/labels";
 import type { LadderItem } from "@/lib/curriculum/ladder";
 import { ModuleItems } from "../module-items";
 
@@ -41,9 +42,12 @@ describe("ModuleItems", () => {
 	// test to potwierdzał (sygnał Darka 2026-08-10, „to po co próbować?").
 	// Dlatego dziś pilnujemy DWÓCH rzeczy: że podpis opisuje czynność po polsku
 	// ORAZ że nie twierdzi, iż zaliczenie jest niemożliwe.
+	// Od #291 asercja idzie po STAŁEJ, nie po przepisanym tutaj zdaniu: test ma
+	// dowodzić, że widok renderuje nośnik, a nie być trzecią kopią tekstu.
+	// Za samą TREŚĆ stałej odpowiada A2/A3 w `tests/unit/ds/jezyk-produktu.contract.test.ts`.
 	it("zadanie praktyczne: podpis opisuje czynność, nie odstrasza kodem wewnętrznym", () => {
 		render(<ModuleItems items={items} moduleId="m-1" />);
-		expect(screen.getByText(/rozwiązujesz je w notatniku/)).toBeInTheDocument();
+		expect(screen.getByText(LAB_ITEM_HINT)).toBeInTheDocument();
 		expect(screen.queryByText(/nie da się dziś zaliczyć/)).not.toBeInTheDocument();
 		expect(screen.queryByText(/1E\.\d/)).not.toBeInTheDocument();
 	});

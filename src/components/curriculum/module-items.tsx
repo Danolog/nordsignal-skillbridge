@@ -4,8 +4,8 @@
  * Sekwencja: pozycja k+1 otwiera się po zaliczeniu k (ladder.getModuleItems).
  * Pozycja `locked` jest widoczna, ale nieklikalna — bramką jest serwer.
  *
- * Zadanie praktyczne (`kind === "lab"`): zaliczane kodem wypisanym przez
- * notatnik i weryfikowanym serwerowo (ADR-015). Podpis NIE twierdzi, że
+ * Pozycja `kind === "lab"` (nazwa dla studenta: `itemKindLabel`): zaliczana kodem
+ * wypisanym przez notatnik i weryfikowanym serwerowo (ADR-015). Podpis NIE twierdzi, że
  * zaliczenie jest niedostępne — od 1E.6b jest dostępne, a nieaktualne zdanie
  * odstraszało studenta od pozycji, którą da się zaliczyć (sygnał Darka
  * 2026-08-10). Jedynym nośnikiem prawdy o dostępności jest widżet zaliczenia
@@ -17,7 +17,13 @@
 
 import { CheckCircle2, FlaskConical, Lock } from "lucide-react";
 import Link from "next/link";
-import { ITEM_STATUS_LABEL, itemKindLabel, statusBadgeClass } from "@/components/curriculum/labels";
+import {
+	ITEM_LOCKED_HINT,
+	ITEM_STATUS_LABEL,
+	itemKindLabel,
+	LAB_ITEM_HINT,
+	statusBadgeClass,
+} from "@/components/curriculum/labels";
 import type { LadderItem } from "@/lib/curriculum/ladder";
 
 function ItemRow({ item, moduleId }: { item: LadderItem; moduleId: string }) {
@@ -42,14 +48,11 @@ function ItemRow({ item, moduleId }: { item: LadderItem; moduleId: string }) {
 				{item.kind === "lab" && (
 					<p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
 						<FlaskConical aria-hidden className="size-3.5" />
-						Zadanie praktyczne — rozwiązujesz je w notatniku, a zaliczasz kodem, który ten notatnik
-						wypisze.
+						{LAB_ITEM_HINT}
 					</p>
 				)}
 				{item.status === "locked" && (
-					<p className="mt-1 text-xs text-muted-foreground">
-						Zablokowana — zalicz poprzednią pozycję, żeby ją otworzyć.
-					</p>
+					<p className="mt-1 text-xs text-muted-foreground">{ITEM_LOCKED_HINT}</p>
 				)}
 			</div>
 			{item.status === "completed" || item.status === "skipped_by_placement" ? (
