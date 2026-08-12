@@ -287,7 +287,11 @@ const MUTACJE = [
 		filtr: "S-U-4 ·",
 		opis: "usunięte metadata.reviewerType",
 		zastosuj: () => podmien(TRASA_DECYZJI, "						reviewerType: reviewer.kind,\n", ""),
-		sprawdz: () => !czytaj(TRASA_DECYZJI).includes("reviewerType: reviewer.kind"),
+		// ⚠ PREDYKAT MUSI BYĆ PRECYZYJNY. `reviewerType: reviewer.kind` występuje
+		// w tym pliku DWA razy — raz w kolumnie `submission_reviews` (zostaje) i raz
+		// w metadanych audytu (mutowane). Szerszy predykat dawał FAŁSZYWY
+		// „NIEROZSTRZYGNIĘTY" przy poprawnie nałożonej mutacji (2026-08-12).
+		sprawdz: () => !czytaj(TRASA_DECYZJI).includes("\t\t\t\t\t\treviewerType: reviewer.kind,"),
 	},
 	{
 		id: "M9",
