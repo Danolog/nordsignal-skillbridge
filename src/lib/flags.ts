@@ -192,6 +192,20 @@ export const FLAGS = {
 		// w kodzie ewaluacji flagi, a nie w runbooku wdrożenia.
 		requires: ["masteryGate"],
 	},
+	accountDeletion: {
+		envVar: "FLAG_ACCOUNT_DELETION",
+		description:
+			"E1b (RODO art. 17): ścieżka usunięcia konta przez studenta — włączona ścieżka " +
+			"biblioteki uwierzytelniającej (`user.deleteUser`) z zaczepami before/after, " +
+			"śladem audytowym wzorca A7 i usunięciem natychmiastowym bez karencji (D-U3). " +
+			"Off = trasa `/api/auth/delete-user` odpowiada 404, konto bez zmian. " +
+			"⚠ ZAPŁON NA PRODUKCJI wymaga ZIELONEGO S-U-1 (kompletność kaskady czytana " +
+			"z katalogu bazy) — granica postawiona przez Ethana w E1b §6: „ścieżka bez " +
+			"S-U-1 nie zapala się na produkcji”. Bez tego strażnika pierwsza tabela dodana " +
+			"bez klucza obcego zrywa usuwanie BEZGŁOŚNIE, a ceną nie jest awaria techniczna, " +
+			"tylko niewykonane prawo podmiotu danych.",
+		defaultValue: false,
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).

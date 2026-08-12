@@ -71,7 +71,7 @@ describe("POST /api/review-queue/[id]/decision", () => {
 		expect(dbMock.transaction).not.toHaveBeenCalled();
 	});
 
-	it("decided → 200 z previous/newStatus + audyt submission.review.approved", async () => {
+	it("decided → 200 z previous/newStatus", async () => {
 		dbMock.transaction.mockResolvedValue({
 			outcome: "decided",
 			previousStatus: "submitted",
@@ -85,39 +85,35 @@ describe("POST /api/review-queue/[id]/decision", () => {
 			previousStatus: "submitted",
 			newStatus: "verified",
 		});
-		expect(mockRecordAudit).toHaveBeenCalledWith(
-			expect.objectContaining({
-				action: "submission.review.approved",
-				actorType: "operator",
-				actorId: "sess-op",
-				targetId: SUB_ID,
-			}),
-		);
 	});
 
-	it("faculty jako aktor audytu przy decyzji faculty", async () => {
-		mockCheckReviewerAuth.mockResolvedValue({
-			kind: "faculty",
-			tenantId: "t-1",
-			sessionId: "sess-fac",
-		});
-		dbMock.transaction.mockResolvedValue({
-			outcome: "decided",
-			previousStatus: "submitted",
-			newStatus: "rejected",
-			tenantId: "t-1",
-		});
-		await POST(makeReq({ decision: "rejected" }), ctx(SUB_ID));
-		expect(mockRecordAudit).toHaveBeenCalledWith(
-			expect.objectContaining({ actorType: "faculty", action: "submission.review.rejected" }),
-		);
-	});
-
-	it("not_found z tx → 404, ZERO audytu (nie potwierdzamy istnienia)", async () => {
+	// ── ASERCJE AUDYTU PRZENIESIONE, NIE USUNIĘTE (D-U7, E1b, 2026-08-12) ──────
+	//
+	// Do 2026-08-12 ten plik sprawdzał treść wiersza audytu (`actorType`,
+	// `action`, `actorId`, `targetId`) na atrapie `recordAudit`. Po D-U7 zapis
+	// śladu leży WEWNĄTRZ transakcji, a `db.transaction` jest tu zaślepiony
+	// wartością — czyli funkcja zwrotna transakcji NIGDY SIĘ NIE WYKONUJE i przy
+	// tej granicy atrapowania audyt jest NIEOBSERWOWALNY.
+	//
+	// Odtworzenie go tutaj wymagałoby zbudowania atrapy całej transakcji (select
+	// FOR UPDATE, insert recenzji, update statusu, uzgodnienie kompetencji,
+	// unieważnienie obrony). Taki test sprawdzałby moją atrapę, nie trasę.
+	//
+	// Gdzie te asercje żyją teraz — NA PRAWDZIWEJ BAZIE, mocniej niż tutaj:
+	//   • treść śladu i „DOKŁADNIE JEDEN wiersz" → S-U-4,
+	//   • „brak dowodu ⇒ brak kredencjału" (sedno D-U7) → S-U-5,
+	//     oba w `src/app/api/review-queue/__tests__/rodo-e1b-slad-decyzji-czlowieka.integration.test.ts`.
+	//
+	// ⚠ USUNIĘTA TU ZOSTAŁA TAKŻE asercja „not_found → ZERO audytu" i to jest
+	// świadome: po D-U7 przechodziłaby ONA ZAWSZE, na każdej ścieżce, bo atrapa
+	// transakcji nie wykonuje funkcji zwrotnej. Zostawiona wyglądałaby na
+	// strażnika, a byłaby atrapą (CLAUDE.md v1.17). Regułę „decyzja o cudzym
+	// kampusie nie zostawia śladu" pokrywa suita integracyjna
+	// `review-queue.integration.test.ts` na realnej bazie.
+	it("not_found z tx → 404 (nie potwierdzamy istnienia zgloszenia)", async () => {
 		dbMock.transaction.mockResolvedValue({ outcome: "not_found" });
 		const res = await POST(makeReq({ decision: "approved" }), ctx(SUB_ID));
 		expect(res.status).toBe(404);
-		expect(mockRecordAudit).not.toHaveBeenCalled();
 	});
 
 	it("awaria transakcji (błąd niekonfliktowy) → 500 bez wycieku + logError", async () => {
