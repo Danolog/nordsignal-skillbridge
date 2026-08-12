@@ -60,7 +60,34 @@
  * Zasięg polityki B jest policzalny i pilnowany: strażnik
  * `tests/unit/tools/assert-test-db-zasieg-ceremonii.test.ts` czerwieni się,
  * gdy `allowProduction` pojawi się w narzędziu spoza spisanej listy. Poszerzenie
- * dostępu do produkcji nie da się zrobić po cichu.
+ * dostępu do produkcji nie da się zrobić PRZEZ PRZEOCZENIE. Świadomego zacierania
+ * śladu ten strażnik nie łapie i nie udaje, że łapie: dopasowanie jest tekstowe,
+ * więc `{ allowProduction: STALA }` przez stałą logiczną przechodzi i jego, i
+ * kontrolę typów (zmierzone przez Leo, przegląd #298). Strażnik broni przed
+ * pomyłką i rutyną — nie przed autorem, który chce go obejść.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * DLACZEGO BRAMKA NIE PYTA BAZY, KIM JEST
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Kuszące jest rozstrzygać tożsamość bazy z połączenia (`current_database()`,
+ * identyfikator klastra) zamiast z adresu. Odrzucone — i nie dlatego, że
+ * kosztowne, tylko dlatego, że **sprzeczne samo w sobie**: żeby zapytać bazę
+ * „kim jesteś", trzeba się z nią POŁĄCZYĆ, czyli wykonać dokładnie tę czynność,
+ * przed którą ta bramka ma zatrzymać. Bramka, która musi dotknąć produkcji, by
+ * stwierdzić, że nie wolno jej dotykać, nie jest bramką. U dostawcy usypiającego
+ * instancje obudziłaby ją i zostawiła ślad.
+ *
+ * Odczyt tożsamości ma legalne miejsce — **w ceremonii, PO połączeniu**, jako
+ * asercja „jestem na gałęzi, na którą się umówiłem". Nie tutaj.
+ *
+ * ── OGRANICZENIE, KTÓRE Z TEGO WYNIKA (nazwane, nie przemilczane) ──────────
+ * Bramka rozstrzyga z rozdzielnością HOSTA, więc **nie odróżnia produkcji od
+ * jej kopii zapasowej ani od gałęzi deweloperskiej u tego samego dostawcy**.
+ * Pod polityką ceremonii jedna flaga otwiera wszystkie trzy tak samo. Klasa
+ * wypadku „właściwe narzędzie, niewłaściwa gałąź" pozostaje NIEPOKRYTA — tak
+ * samo jak przed tą zmianą. Domknięcie należy do asercji tożsamości w ceremonii
+ * (wyżej), nie do tego pliku. Próg: pierwsza ceremonia produkcyjna wykonywana
+ * na gałęzi innej niż główna.
  *
  * Dozwolone hosty lokalne:
  *   localhost / 127.0.0.1 / ::1
@@ -68,6 +95,8 @@
  * Nie zmieniaj drizzle.config.ts — guard żyje w wrapperach skryptów.
  * db:generate nie łączy się z bazą i nie używa tego guarda.
  */
+
+import pg from "pg";
 
 /** Hosty bezwarunkowo dozwolone — lokalny kontener / loopback. */
 const ALLOWED_LOCAL_HOSTS = ["localhost", "127.0.0.1", "::1"];
@@ -93,20 +122,55 @@ export type AssertTestDbOptions = {
  *   IPv6: postgresql://u@[::1]:5432/db → zwraca "::1" (bez nawiasów)
  *
  * Zwraca null gdy nie udało się sparsować (nieznany format DSN).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * JEDNA WYROCZNIA: HOST LICZY TEN, KTO ZESTAWIA POŁĄCZENIE
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Host wyliczamy przez `pg.Client` — czyli ten sam obiekt, który potem otworzy
+ * połączenie. NIE przez `new URL().hostname`. To nie jest szczegół stylu, tylko
+ * naprawa dziury (znalezisko Leo, przegląd #298, 2026-08-12):
+ *
+ *   adres postaci  postgres://localhost:5432/neondb?host=<punkt-produkcji>
+ *     new URL().hostname          → "localhost"      ← co widziała bramka
+ *     pg.Client…connectionParameters.host → "ep-….neon.tech"  ← dokąd szło połączenie
+ *
+ * Bramka przepuszczała TO CICHO: polityka domyślna, zero flag, zero ostrzeżenia,
+ * a `new pg.Client({ connectionString })` łączył się z produkcją. Poprzednia
+ * dziura (fragment `"skill-bridge-ai"`) wymagała przynajmniej flagi — ta nie
+ * wymagała niczego. Dotyczyła wprost `tools/run-sql-file.ts`, wykonującego
+ * dowolny plik `.sql` i słusznie stojącego na liście „nigdy produkcja".
+ *
+ * Wada tej samej rodziny co reszta tego pliku, o poziom głębiej: reguła miała
+ * DWA NOŚNIKI odpowiedzi na pytanie „co jest hostem" i drugi z nich milczał.
+ * Dlatego lekarstwem nie jest wyliczanie kolejnych sztuczek w adresie
+ * (`host=`, `options=`, …), tylko usunięcie drugiej wyroczni: pytamy sterownik.
+ * Rozjazd między bramką a połączeniem staje się wtedy NIEMOŻLIWY z konstrukcji,
+ * a nie „niewystępujący na znanych nam przykładach".
+ *
+ * Zmierzone przy naprawie (`pg@8.22.0`, 2026-08-12): `?hostaddr=` i `?options=`
+ * NIE przekierowują hosta w node-postgres — jedynym wektorem był `?host=`.
+ * Świadomie nie robimy z tego listy zakazanych parametrów: lista znów byłaby
+ * drugim nośnikiem, a `options=endpoint%3D…` jest u Neona użyciem legalnym.
  */
 export function parseDbHost(url: string): string | null {
+	// Warunek wstępny bez zmian: guard rozumie wyłącznie DSN PostgreSQL. Cokolwiek
+	// innego → null → traktowane jak host zdalny (nie rozumiem = nie przepuszczam).
+	if (!url.startsWith("postgresql://") && !url.startsWith("postgres://")) return null;
 	try {
-		if (url.startsWith("postgresql://") || url.startsWith("postgres://")) {
-			const parsed = new URL(url);
-			const hostname = parsed.hostname || null;
-			if (!hostname) return null;
-			// Normalizacja IPv6: URL.hostname zwraca "[::1]" z nawiasami — stripujemy.
-			return hostname.replace(/^\[|\]$/g, "");
-		}
+		// JEDNA WYROCZNIA: pytamy o host DOKŁADNIE ten obiekt, który zestawi
+		// połączenie. `new pg.Client(...)` niczego nie otwiera — konstruktor tylko
+		// wylicza parametry połączenia; gniazdo powstaje dopiero w `connect()`.
+		// `Client.host` jest publiczne i otypowane (@types/pg) — bierzemy je, a nie
+		// wewnętrzne `connectionParameters`. Zmierzone: obie drogi dają ten sam host
+		// dla adresu czystego, z `?host=` zdalnym i z `?host=` wracającym na localhost.
+		const host = new pg.Client({ connectionString: url }).host;
+		if (!host) return null;
+		// Normalizacja IPv6: bywa zwracany w nawiasach — stripujemy.
+		return String(host).replace(/^\[|\]$/g, "");
 	} catch {
-		// URL.parse rzucił — prawdopodobnie nieparseable DSN
+		// Konstruktor rzucił — DSN nie do odczytania nawet dla sterownika.
+		return null;
 	}
-	return null;
 }
 
 /**

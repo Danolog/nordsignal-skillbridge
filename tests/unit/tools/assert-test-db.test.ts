@@ -1,3 +1,4 @@
+import pg from "pg";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { assertTestDb, isDedicatedTestDbUrl, parseDbHost } from "../../../tools/assert-test-db";
 
@@ -26,7 +27,8 @@ const LOCAL = "postgres://localhost:5432/app";
 const LOCAL_IP = "postgres://127.0.0.1:5432/app";
 const REMOTE = "postgres://db.example.com:5432/app";
 // Kształt zgodny z produkcyjnym punktem dostępowym Neona (endpoint-pooler-region).
-const PROD_SHAPE = "postgres://ep-przyklad-123-pooler.c-3.eu-central-1.aws.neon.tech/neondb";
+const ZDALNY_PUNKT = "ep-przyklad-123-pooler.c-3.eu-central-1.aws.neon.tech";
+const PROD_SHAPE = `postgres://${ZDALNY_PUNKT}/neondb`;
 /** Polityka B — narzędzie z udokumentowaną ceremonią produkcyjną. */
 const CEREMONIA = { allowProduction: true } as const;
 
@@ -112,6 +114,65 @@ describe("assertTestDb — polityka domyślna (bez ceremonii produkcyjnej)", () 
 
 	it("brak DATABASE_URL → STOP", () => {
 		expect(() => assertTestDb(undefined)).toThrow(/nie jest ustawiona/);
+	});
+});
+
+// ── ROZJAZD WYROCZNI (znalezisko Leo, #298) ────────────────────────────────
+// Bramka liczyła host przez `new URL().hostname`, a połączenie zestawiał `pg`.
+// Adres z parametrem `?host=` rozjeżdżał te dwie odpowiedzi: bramka widziała
+// „localhost", sterownik szedł na produkcję. Przechodziło CICHO — bez flagi,
+// bez ostrzeżenia. Dlatego host liczy dziś ten, kto otwiera połączenie.
+describe("assertTestDb — host liczy sterownik, nie adres URL", () => {
+	// Kształt produkcyjny w parametrze `host=`; sam adres wygląda na lokalny.
+	const PODSZYCIE = `postgres://localhost:5432/neondb?host=${ZDALNY_PUNKT}`;
+
+	it("parseDbHost zwraca host, z którym POŁĄCZY SIĘ sterownik, nie ten z adresu", () => {
+		expect(new URL(PODSZYCIE).hostname).toBe("localhost"); // co widział stary parser
+		expect(parseDbHost(PODSZYCIE)).toBe(ZDALNY_PUNKT); // co widzi bramka dziś
+	});
+
+	it("adres lokalny z parametrem host= wskazującym host zdalny → ODMOWA", () => {
+		expect(() => assertTestDb(PODSZYCIE)).toThrow(/ODMOWA/);
+	});
+
+	it("…także przy obu flagach naraz (polityka domyślna nie ma furtki)", () => {
+		vi.stubEnv("CONFIRM_PROD_DB", "1");
+		vi.stubEnv("E2E_ALLOW_REMOTE", "1");
+		expect(() => assertTestDb(PODSZYCIE)).toThrow(/ODMOWA/);
+	});
+
+	it("…a w ceremonii wymaga flagi jak każdy inny host zdalny", () => {
+		expect(() => assertTestDb(PODSZYCIE, "DATABASE_URL", CEREMONIA)).toThrow(/ABORT/);
+		vi.stubEnv("CONFIRM_PROD_DB", "1");
+		expect(() => assertTestDb(PODSZYCIE, "DATABASE_URL", CEREMONIA)).not.toThrow();
+	});
+
+	it("kontrola dodatnia: czysty DSN bazy testowej nadal przechodzi", () => {
+		expect(() => assertTestDb("postgres://localhost:5433/skillbridge_test")).not.toThrow();
+		expect(isDedicatedTestDbUrl("postgres://localhost:5433/skillbridge_test")).toBe(true);
+	});
+
+	it("kontrola dodatnia: host= wskazujący z powrotem na localhost NIE jest blokowany", () => {
+		// Połączenie faktycznie idzie na localhost, więc odmowa byłaby fałszywym alarmem.
+		expect(() => assertTestDb("postgres://example.invalid:5432/app?host=localhost")).not.toThrow();
+	});
+
+	it("NAZWA bazy nie ma dziś rozjazdu wyroczni — i to jest pilnowane, nie założone", () => {
+		// `isDedicatedTestDbUrl` czyta nazwę bazy ze ścieżki adresu, nie ze sterownika.
+		// Zmierzone (pg@8.22): `?dbname=` NIE nadpisuje bazy, więc rozjazdu nie ma.
+		// Celowo NIE przechodzimy tu na `Client.database`: przy pustej ścieżce
+		// sterownik podstawia nazwę konta systemowego, co uzależniłoby predykat od
+		// maszyny. Ta asercja czerwieni się, gdyby sterownik zaczął honorować
+		// `?dbname=` — wtedy trzeba wrócić do tej decyzji.
+		const podszycie = "postgres://localhost:5433/skillbridge_test?dbname=neondb";
+		expect(new pg.Client({ connectionString: podszycie }).database).toBe("skillbridge_test");
+		expect(isDedicatedTestDbUrl(podszycie)).toBe(true);
+	});
+
+	it("predykat bazy testowej też nie daje się podszyć", () => {
+		expect(
+			isDedicatedTestDbUrl(`postgres://localhost:5433/skillbridge_test?host=${ZDALNY_PUNKT}`),
+		).toBe(false);
 	});
 });
 

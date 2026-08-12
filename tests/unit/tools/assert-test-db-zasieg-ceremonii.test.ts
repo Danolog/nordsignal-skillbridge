@@ -23,7 +23,14 @@ import { describe, expect, it } from "vitest";
  */
 
 const REPO = resolve(__dirname, "../../..");
-const TOOLS_DIR = join(REPO, "tools");
+
+/**
+ * Katalogi skanowane. NIE tylko `tools/` — konsumenci guarda są też w `src/`
+ * (`src/test/integration-db-guard.ts`) i w `tests/` (pomocnicy Playwrighta).
+ * Pomocnik w `src/`, który dopisałby sobie ceremonię, byłby dla strażnika
+ * skanującego wyłącznie `tools/` NIEWIDZIALNY (znalezisko Leo N2, #298).
+ */
+const KATALOGI_SKANOWANE = ["tools", "src", "tests"];
 
 /**
  * Narzędzia z UDOKUMENTOWANĄ ceremonią produkcyjną (delegacja v1.12, CLAUDE.md §5).
@@ -67,24 +74,33 @@ const NIGDY_PRODUKCJA = [
 	"tools/fixtures/seed-a11y-fixtures.ts",
 ];
 
-/** Wszystkie pliki .ts w tools/ (rekurencyjnie), ścieżki względne do repo. */
+/**
+ * Pliki .ts w skanowanych katalogach (rekurencyjnie), ścieżki względne do repo.
+ *
+ * Pomijamy SAME TESTY (`*.test.ts`, katalogi `__tests__`): test opisujący tę
+ * regułę musi cytować `allowProduction`, więc liczony jako konsument dawałby
+ * fałszywy alarm — dokładnie ta wada, przez którą strażnik A-1 czerwienił się
+ * na własnej dokumentacji. Pomocnicy testowi NIE-będący testami zostają w zasięgu.
+ */
 function plikiTs(dir: string): string[] {
 	const out: string[] = [];
 	for (const wpis of readdirSync(dir)) {
 		const pelna = join(dir, wpis);
 		if (statSync(pelna).isDirectory()) {
-			if (wpis === "node_modules" || wpis === "__tests__") continue;
+			if (wpis === "node_modules" || wpis === "__tests__" || wpis === ".next") continue;
 			out.push(...plikiTs(pelna));
 			continue;
 		}
-		if (wpis.endsWith(".ts")) out.push(relative(REPO, pelna).split("\\").join("/"));
+		if (!wpis.endsWith(".ts") && !wpis.endsWith(".tsx")) continue;
+		if (/\.(test|spec)\.tsx?$/.test(wpis)) continue;
+		out.push(relative(REPO, pelna).split("\\").join("/"));
 	}
 	return out;
 }
 
 /** Pliki, które deklarują wejście do polityki ceremonii produkcyjnej. */
 function narzedziaZCeremonia(): string[] {
-	return plikiTs(TOOLS_DIR)
+	return KATALOGI_SKANOWANE.flatMap((k) => plikiTs(join(REPO, k)))
 		.filter((sciezka) => {
 			// Sam guard definiuje opcję — nie jest jej konsumentem.
 			if (sciezka === "tools/assert-test-db.ts") return false;
