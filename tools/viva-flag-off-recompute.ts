@@ -72,11 +72,18 @@ async function main() {
 					  WHERE id = $1 AND status = 'submitted'`,
 					[r.submission_id],
 				);
+				// A1 (ADR A-1 (a+)): BEZ `actor_id`. To jedyna w drzewie ścieżka
+				// surowego SQL-a, która łamała regułę — omijała kontrakt TypeScriptu
+				// (`AuditEntry`), więc typ jej nie widział. Inwentaryzacja w ADR §3.3
+				// wymieniała dwie ścieżki surowego SQL-a; w drzewie są cztery i to
+				// właśnie ta czwarta pisała identyfikator studenta.
+				// Wiązanie idzie przez `target_id` = `project_submissions.id`
+				// (kaskada z konta). Pilnuje tego strażnik S-A1-4.
 				await pool.query(
-					`INSERT INTO audit_log (actor_type, actor_id, action, target_type, target_id, metadata)
-					 VALUES ('system', $1, 'submission.verified', 'submission', $2,
+					`INSERT INTO audit_log (actor_type, action, target_type, target_id, metadata)
+					 VALUES ('system', 'submission.verified', 'submission', $1,
 					         '{"via":"viva-flag-off-recompute"}'::jsonb)`,
-					[r.student_id, r.submission_id],
+					[r.submission_id],
 				);
 				await pool.query("COMMIT");
 				console.log(`✅ podniesione: ${r.submission_id}`);

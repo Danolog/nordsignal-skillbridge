@@ -13,6 +13,7 @@
 import { CheckCircle2, ChevronRight, ClipboardCheck, Clock, Lock } from "lucide-react";
 import Link from "next/link";
 import {
+	MODULE_LOCKED_HINT,
 	MODULE_STATUS_LABEL,
 	PLACEMENT_BADGE_LABEL,
 	statusBadgeClass,
@@ -131,9 +132,7 @@ function ModuleRow({ module: m }: { module: LadderModuleWithProgress }) {
 					</div>
 				)}
 				{m.status === "locked" && (
-					<p className="mt-2 text-sm text-muted-foreground">
-						Zablokowany — zalicz wcześniejszy moduł, żeby go otworzyć.
-					</p>
+					<p className="mt-2 text-sm text-muted-foreground">{MODULE_LOCKED_HINT}</p>
 				)}
 			</div>
 			<StatusIcon status={m.status} />

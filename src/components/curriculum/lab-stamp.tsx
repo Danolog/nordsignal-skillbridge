@@ -42,7 +42,7 @@ export function LabStamp({
 		return (
 			<div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-900">
 				<CheckCircle2 aria-hidden className="size-4" />
-				Lab zaliczony — sprawdzenie przeszło.
+				Sprawdzenie przeszło — zaliczenie zapisane.
 			</div>
 		);
 	}
@@ -60,7 +60,9 @@ export function LabStamp({
 			const data = await res.json().catch(() => ({}));
 
 			if (res.ok) {
-				toast.success(data.moduleCompleted ? "Lab zaliczony — moduł ukończony!" : "Lab zaliczony.");
+				toast.success(
+					data.moduleCompleted ? "Zadanie zaliczone — moduł ukończony!" : "Zadanie zaliczone.",
+				);
 				setToken("");
 				router.refresh();
 				return;
@@ -68,19 +70,21 @@ export function LabStamp({
 			if (res.status === 409) {
 				// Token poprawny, ale praca nie spełnia checków.
 				setFailed((data.results as CheckResult[])?.filter((r) => !r.passed) ?? []);
-				toast.error("Jeszcze nie — popraw pracę w notebooku i uruchom pieczątkę ponownie.");
+				toast.error(
+					"Jeszcze nie — popraw pracę w notatniku i uruchom komórkę zaliczenia ponownie.",
+				);
 				return;
 			}
 			if (res.status === 400) {
 				toast.error(
 					data.reason === "bad_signature"
-						? "Ten token nie pasuje do tej pozycji — najczęściej to literówka w kodzie atomu przepisanym do notebooka (sprawdź punkt 1) albo token z innego konta."
-						: "Token wygląda na uszkodzony — skopiuj go jeszcze raz w całości.",
+						? "Ten kod nie pasuje do tej lekcji — najczęściej to literówka w kodzie lekcji przepisanym do notatnika (sprawdź punkt 1) albo kod z innego konta."
+						: "Kod wygląda na uszkodzony — skopiuj go jeszcze raz w całości.",
 				);
 				return;
 			}
 			if (res.status === 501) {
-				toast.error("Sprawdzanie labów jest chwilowo niedostępne — to po naszej stronie.");
+				toast.error("Sprawdzanie zadań jest chwilowo niedostępne — to po naszej stronie.");
 				return;
 			}
 			toast.error("Nie udało się zapisać zaliczenia.");
@@ -95,18 +99,18 @@ export function LabStamp({
 		<section className="rounded-xl border border-border bg-card p-5">
 			<h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
 				<ClipboardCheck aria-hidden className="size-4" />
-				Pieczątka — zalicz lab
+				Zalicz zadanie praktyczne
 			</h2>
 
 			<ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
 				<li>
-					Wpisz w komórce-pieczątce w notebooku ten kod atomu:{" "}
+					Wpisz w komórce zaliczenia w notatniku ten kod lekcji:{" "}
 					<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
 						{atomCode}
 					</code>
 				</li>
-				<li>Uruchom komórkę-pieczątkę — wypisze token.</li>
-				<li>Wklej token poniżej.</li>
+				<li>Uruchom komórkę zaliczenia — wypisze kod potwierdzający.</li>
+				<li>Wklej ten kod poniżej.</li>
 			</ol>
 
 			<div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -114,21 +118,21 @@ export function LabStamp({
 					value={token}
 					onChange={(e) => setToken(e.target.value)}
 					onKeyDown={(e) => e.key === "Enter" && submit()}
-					placeholder="Wklej token z komórki-pieczątki"
-					aria-label="Token pieczątki"
+					placeholder="Wklej kod z komórki zaliczenia"
+					aria-label="Kod potwierdzający z notatnika"
 					disabled={sending}
 					className="font-mono"
 				/>
 				<Button onClick={submit} disabled={!token.trim() || sending}>
 					{sending ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
-					Zalicz lab
+					Zalicz zadanie
 				</Button>
 			</div>
 
 			{failed && failed.length > 0 && (
 				<div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
 					<p className="text-sm font-medium text-amber-900">
-						Token jest poprawny, ale praca nie spełnia warunków:
+						Kod jest poprawny, ale praca nie spełnia warunków:
 					</p>
 					<ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm text-amber-900">
 						{failed.map((r) => (
@@ -139,7 +143,8 @@ export function LabStamp({
 						))}
 					</ul>
 					<p className="mt-2 text-xs text-amber-800">
-						Popraw notebook i uruchom pieczątkę jeszcze raz. Liczba prób jest nieograniczona.
+						Popraw notatnik i uruchom komórkę zaliczenia jeszcze raz. Liczba prób jest
+						nieograniczona.
 					</p>
 				</div>
 			)}

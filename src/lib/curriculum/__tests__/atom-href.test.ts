@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { CorrectivesAtom } from "@/lib/assessment/correctives";
-import { atomKindLabel, humanizeConceptSlug, resolveAtomHref } from "../atom-href";
+import { humanizeConceptSlug, resolveAtomHref } from "../atom-href";
 
 const atom = (over: Partial<CorrectivesAtom> = {}): CorrectivesAtom => ({
 	slug: "f-string-teoria",
@@ -43,10 +43,7 @@ describe("humanizeConceptSlug", () => {
 	});
 });
 
-describe("atomKindLabel", () => {
-	it("tłumaczy znane rodzaje, fallback na surową wartość", () => {
-		expect(atomKindLabel("theory")).toBe("Teoria");
-		expect(atomKindLabel("exercise")).toBe("Ćwiczenie");
-		expect(atomKindLabel("nieznany")).toBe("nieznany");
-	});
-});
+// Blok „atomKindLabel" usunięty razem z funkcją (przegląd #291). Nazwy rodzajów
+// pozycji mają jeden nośnik — `itemKindLabel` — i jedno miejsce asercji:
+// `tests/unit/ds/jezyk-produktu.contract.test.ts` (A2, wszystkie rodzaje naraz).
+// Render wiersza correctives z tą nazwą pilnuje `exam/__tests__/correctives-panel.test.tsx`.
