@@ -153,9 +153,14 @@ export const WYJATKI_KOLUMN_BEZ_FK: Record<string, string> = {
  * migracji, więc nie ma jej w bazie testowej.
  *
  * Domknięcie tej luki NIE JEST testem: jest nim porównanie katalogu produkcji
- * z katalogiem migracji przy ceremonii wdrożeniowej. Właściciel: Ethan.
- * Zapisuję to tutaj, bo etykieta „niepotwierdzone” jest dopuszczalna,
- * a udawanie pokrycia nie jest (CLAUDE.md v1.17).
+ * z katalogiem migracji. Zapisuję to tutaj, bo etykieta „niepotwierdzone” jest
+ * dopuszczalna, a udawanie pokrycia nie jest (CLAUDE.md v1.17).
+ *
+ * ⚠ SAMA TA STAŁA NIKOGO NIE OBUDZI W DNIU WDROŻENIA — i to był słuszny zarzut
+ * z przeglądu Leo (#293). Procedura z właścicielem (Ethan) i miejscem w kolejce
+ * bramek żyje w JEDNYM nośniku:
+ *     `docs/runbooks/zaplon-flagi-usuwania-konta.md`, bramka 2.
+ * Ten komentarz jej NIE POWTARZA — wskazuje ją.
  */
 export const GRANICA_STRAZNIKA_TABELE_SPOZA_MIGRACJI = [
 	"job_market_data_bak — kopia robocza utworzona ręcznie na produkcji, poza migracjami",

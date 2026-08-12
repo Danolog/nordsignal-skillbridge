@@ -8,8 +8,15 @@
 //
 // ── ZAKRES JEST ZAWĘŻONY JAWNIE I TO JEST CAŁA TRUDNOŚĆ TEGO STRAŻNIKA ──────
 //
-// Pomiar całego drzewa (gałąź E1b, 2026-08-12, `q-drogi.mjs`):
-//     RAZEM: 44  |  w __tests__: 38  |  poza: 6
+// Pomiar całego drzewa (gałąź E1b przebazowana na `main`, 2026-08-12):
+//     RAZEM: 49  |  w __tests__: 43  |  poza: 6
+//
+// SPROSTOWANIE (blok Leo na #293): pierwotnie stało tu `44 / 38 / 6` — pomiar
+// zrobiony ZANIM dopisałem własne pliki testowe, które same sprzątają po sobie
+// konta i wpadają w te wzorce. Liczby ROZSTRZYGAJĄCE nie drgnęły: **6 poza
+// testami i dokładnie te trzy zatwierdzone pliki**. Prostuję mimo to, z tego
+// samego powodu, który sam podałem gdzie indziej — liczba raz zapisana bywa
+// cytowana później jako ustalenie faktu (CLAUDE.md v1.16).
 // Strażnik w brzmieniu „nigdzie w drzewie nie wolno kasować konta” byłby
 // CZERWONY OD PIERWSZEGO DNIA albo — gorzej — dostałby listę wyjątków na
 // czterdzieści pozycji. Lista wyjątków, której nikt nie czyta, jest ATRAPĄ

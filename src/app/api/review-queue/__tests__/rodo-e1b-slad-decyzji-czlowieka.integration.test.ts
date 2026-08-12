@@ -48,7 +48,13 @@ type WierszAudytu = {
 	metadata: Record<string, unknown> | null;
 };
 
-dBack("S-U-4 / S-U-5 · slad decyzji czlowieka pod kredencjalem", () => {
+// ⚠ NAZWA BLOKU ZEWNĘTRZNEGO CELOWO BEZ IDENTYFIKATORÓW STRAŻNIKÓW.
+// Wcześniej brzmiała „S-U-4 / S-U-5 · …", przez co filtr `-t "S-U-4"` łapał blok
+// ZEWNĘTRZNY i uruchamiał także testy S-U-5 (i odwrotnie) — mianownik w raporcie
+// z mutacji mówił wtedy „11", choć strażnik miał ćwiczyć pięć testów. Wyników to
+// nie unieważniało, ale ETYKIETA OPISYWAŁA ZAMIAR, NIE WYKONANIE. Znalezisko Leo
+// przy przeglądzie #293.
+dBack("E1b · slad decyzji czlowieka pod kredencjalem", () => {
 	let pool: Pool | undefined;
 	// biome-ignore lint/suspicious/noExplicitAny: handler ładowany dynamicznie po atrapach.
 	let decisionPOST: any;
