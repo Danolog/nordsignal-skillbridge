@@ -38,24 +38,47 @@
  *   Nie zgaduję tu okresu ani kolumny; nazwane, żeby nie wyglądało na przemilczane.
  *
  * BEZPIECZEŃSTWO: guard tools/assert-test-db.ts (jak remediate-duplicate-submissions).
- *   Host lokalny → PASS. Host zdalny bez CONFIRM_PROD_DB=1 → ABORT. Fragment
- *   produkcyjnej bazy ("skill-bridge-ai") → ABORT bezwarunkowo, nawet z flagą.
- *   Domyślnie DRY-RUN (tylko raport per reguła, zero zapisów) — wymaga jawnej
- *   flagi --execute. Wykonanie idzie w JEDNEJ transakcji na JEDNYM połączeniu
- *   (BEGIN…COMMIT); dowolny błąd którejkolwiek reguły → ROLLBACK całości.
- *   Weryfikacja idempotencji przed COMMIT: po przycięciu każda reguła musi
- *   raportować 0 pozostałych wierszy, inaczej ROLLBACK.
+ *   To narzędzie woła guard w POLITYCE DOMYŚLNEJ (bez `allowProduction`), więc:
+ *   host lokalny → PASS; KAŻDY host zdalny → ODMOWA bezwarunkowa. Odmowy nie
+ *   obchodzi żadna zmienna środowiskowa — ani CONFIRM_PROD_DB=1, ani
+ *   E2E_ALLOW_REMOTE=1. Domyślnie DRY-RUN (tylko raport per reguła, zero
+ *   zapisów) — wymaga jawnej flagi --execute. Wykonanie idzie w JEDNEJ
+ *   transakcji na JEDNYM połączeniu (BEGIN…COMMIT); dowolny błąd którejkolwiek
+ *   reguły → ROLLBACK całości. Weryfikacja idempotencji przed COMMIT: po
+ *   przycięciu każda reguła musi raportować 0 pozostałych wierszy, inaczej ROLLBACK.
  *
  * [CZERWONA LINIA gdy prod] — na bazie produkcyjnej to nieodwracalna modyfikacja
- *   realnych danych osobowych. Uruchamia się po kopii zapasowej gałęzią Neona,
- *   ścieżką operacyjną Ethana (delegacja v1.12), NIE z tego skryptu bez pełnej
- *   świadomości. UWAGA na zakres ochrony guarda: bezwarunkowe ODMÓWIENIE
- *   produkcyjnego DSN (nawet z CONFIRM_PROD_DB=1) działa WYŁĄCZNIE dzięki
- *   dopasowaniu fragmentu hard-deny "skill-bridge-ai" w assert-test-db.ts — to
- *   nie jest ogólna reguła „guard nigdy nie tknie prod". Każdy inny zdalny host
- *   BEZ tego fragmentu przechodzi po ustawieniu CONFIRM_PROD_DB=1. Przy zmianie
- *   nazwy bazy produkcyjnej trzeba zaktualizować HARD_DENY_FRAGMENTS, inaczej ta
- *   linia obrony znika po cichu.
+ *   realnych danych osobowych.
+ *
+ *   ⚠ SPROSTOWANIE NAGŁÓWKA (Ryan/CRCO, 2026-08-12; PR #298). Poprzednia wersja
+ *   tego bloku opisywała mechanizm, KTÓRY JUŻ NIE ISTNIEJE, i odsyłała do stałej,
+ *   której nie ma. Gwarancja „produkcyjny DSN zostanie odrzucony nawet przy
+ *   CONFIRM_PROD_DB=1" jest dziś PRAWDZIWA, ale **z zupełnie innego powodu** niż
+ *   opisywał stary nagłówek — nie czytaj tej poprawki jako potwierdzenia starej
+ *   procedury:
+ *     • BYŁO (i nie działało): odmowy pilnował rzekomo fragment „skill-bridge-ai"
+ *       na liście HARD_DENY_FRAGMENTS. To nazwa projektu na Vercelu; w adresie
+ *       naszej bazy produkcyjnej NIE WYSTĘPUJE ANI RAZU (pomiar 2026-08-12,
+ *       odczyt ze źródła autorytatywnego). Warstwa nie broniła przed niczym, co
+ *       nazywała — produkcyjny DSN z flagą PRZECHODZIŁ.
+ *     • JEST: odmowa wynika z POLARYZACJI guarda (allowlista hostów lokalnych),
+ *       a nie z rozpoznania nazwy produkcji. Guard nie zna i nie musi znać nazwy
+ *       naszej bazy. Stała HARD_DENY_FRAGMENTS została USUNIĘTA — nie ma czego
+ *       aktualizować „przy zmianie nazwy bazy produkcyjnej"; ta procedura ze
+ *       starego nagłówka jest nieaktualna w całości.
+ *     • SKUTEK OPERACYJNY: egzekucja retencji na produkcji jest dziś ZAMKNIĘTA
+ *       (fail-closed) i żadna flaga jej nie otworzy. To stan świadomy, nie awaria
+ *       — przegląd Ethana (CTO) przy PR #298 zmierzył, że najstarsze konto na
+ *       produkcji ma ~5 miesięcy przy horyzoncie reguł 12 miesięcy, więc nic nie
+ *       dojrzeje przed 2027-03.
+ *     • ŻEBY OTWORZYĆ (warunek Ethana, termin 2027-01): dopisać temu narzędziu
+ *       `{ allowProduction: true }` przy wywołaniu guarda ORAZ przenieść je na
+ *       listę ceremonii w strażniku zasięgu
+ *       (tests/unit/tools/assert-test-db-zasieg-ceremonii.test.ts), wraz z
+ *       mutacją potwierdzającą, że BEZ tej deklaracji narzędzie pada na hoście
+ *       zdalnym. To zmiana w KODZIE pod przeglądem — nie flaga w powłoce.
+ *   Uruchomienie na prod (gdy już otwarte) nadal wyłącznie po kopii zapasowej
+ *   gałęzią Neona, ścieżką operacyjną Ethana (delegacja v1.12).
  *
  * Użycie:
  *   pnpm exec tsx tools/enforce-retention.ts                 (dry-run, lokalna baza)

@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { config } from "dotenv";
 import { Pool } from "pg";
+import { assertTestDb } from "./assert-test-db";
 
 config({ path: ".env.local" });
 
@@ -9,6 +10,19 @@ if (!process.env.DATABASE_URL) {
 	process.exit(1);
 }
 const ownerUrl: string = process.env.DATABASE_URL;
+
+// #305 klasa A — POLITYKA DOMYŚLNA (odmowa dla każdego hosta zdalnego), świadomie
+// BEZ ceremonii. Powód: to narzędzie nadaje ROLĘ i UPRAWNIENIA (CREATE ROLE /
+// ALTER ROLE ... PASSWORD / GRANT), a to NIE MIEŚCI SIĘ w delegacji v1.12 — nie
+// jest ani migracją schemy, ani zaciągiem danych. Otwarcie ścieżki produkcyjnej
+// wymaga osobnej ceremonii z sign-offem Darka (eskalacja Olivera, 2026-08-12);
+// do tego czasu fail-closed jest stanem docelowym, nie długiem.
+try {
+	assertTestDb(ownerUrl, "DATABASE_URL");
+} catch (e) {
+	console.error(e instanceof Error ? e.message : String(e));
+	process.exit(1);
+}
 
 // Generuje hasło na żądanie LUB używa ustawionego (gdy ten skrypt
 // uruchamiany jest powtórnie z pre-istniejącym hasłem do regeneracji

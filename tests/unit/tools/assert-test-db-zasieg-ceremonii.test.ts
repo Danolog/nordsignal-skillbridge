@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -52,6 +53,12 @@ const CEREMONIE_PRODUKCYJNE = [
 	"tools/content-cyber-projects.ts",
 	// Remediacja duplikatów — nagłówek narzędzia: uruchamiana na prod po backupie.
 	"tools/remediate-duplicate-submissions.ts",
+	// #305 partia A — właz operacyjny na gaszenie flagi vivaDefense; własny
+	// nagłówek: „Prod = czerwona linia: odpala Darek po backupie gałęzią Neona".
+	"tools/viva-flag-off-recompute.ts",
+	// #305 partia A — rejestr pilotażu o realnych osobach; miernik §6a czyta go
+	// na produkcji. Do potwierdzenia przez Sophię (właścicielka produktu).
+	"tools/pilot-enroll.ts",
 ].sort();
 
 /**
@@ -67,6 +74,11 @@ const NIGDY_PRODUKCJA = [
 	// Narzędzie wykonujące DOWOLNY plik .sql — najszerszy możliwy kształt ryzyka,
 	// bez udokumentowanej ceremonii prod (wgranie rynku 2026-06-25 szło konsolą Neona).
 	"tools/run-sql-file.ts",
+	// #305 partia A — nadaje ROLĘ i UPRAWNIENIA (CREATE ROLE / ALTER ROLE ...
+	// PASSWORD / GRANT). NIE mieści się w delegacji v1.12 (to nie migracja schemy
+	// ani zaciąg danych), więc ścieżka produkcyjna wymaga osobnej ceremonii
+	// z sign-offem Darka. Eskalacja Olivera 2026-08-12 — do decyzji fail-closed.
+	"tools/activate-app-runtime.ts",
 	// Narzędzia testowe / fixture'owe.
 	"tools/b5-contract-test.ts",
 	"tools/seed-e2e.ts",
@@ -98,13 +110,32 @@ function plikiTs(dir: string): string[] {
 	return out;
 }
 
+/**
+ * Treść pliku BEZ KOMENTARZY — czyli to, co widzi kompilator, a nie to, co widzi
+ * `grep`. Strażnik pyta „które narzędzie DEKLARUJE ceremonię", a deklaracją jest
+ * kod, nie proza.
+ *
+ * Dlaczego to jest osobny krok, a nie regex po surowym pliku: pierwsza wersja
+ * czerwieniła się na WŁASNEJ DOKUMENTACJI. Sprostowany nagłówek
+ * `tools/enforce-retention.ts` cytuje `{ allowProduction: true }` w instrukcji
+ * „jak to kiedyś otworzyć" — i strażnik uznał cytat za deklarację. To dokładnie
+ * ta wada, którą zamyka #296 (strażnik A-1 karał za precyzyjny opis reguły);
+ * lekarstwem nie jest pisanie dokumentacji nieprecyzyjnie, tylko czytanie kodu
+ * jako kodu. Komentarze zdejmuje kompilator TypeScriptu, nie własny parser —
+ * ta sama zasada co w `parseDbHost`: nie buduj drugiej wyroczni.
+ */
+function kodBezKomentarzy(sciezka: string): string {
+	const zrodlo = readFileSync(join(REPO, sciezka), "utf8");
+	return ts.transpileModule(zrodlo, { compilerOptions: { removeComments: true } }).outputText;
+}
+
 /** Pliki, które deklarują wejście do polityki ceremonii produkcyjnej. */
 function narzedziaZCeremonia(): string[] {
 	return KATALOGI_SKANOWANE.flatMap((k) => plikiTs(join(REPO, k)))
 		.filter((sciezka) => {
 			// Sam guard definiuje opcję — nie jest jej konsumentem.
 			if (sciezka === "tools/assert-test-db.ts") return false;
-			return /allowProduction\s*:\s*true/.test(readFileSync(join(REPO, sciezka), "utf8"));
+			return /allowProduction\s*:\s*true/.test(kodBezKomentarzy(sciezka));
 		})
 		.sort();
 }
@@ -119,6 +150,26 @@ describe("zasięg ceremonii produkcyjnej (allowProduction)", () => {
 		for (const sciezka of NIGDY_PRODUKCJA) {
 			expect(zCeremonia.has(sciezka), `${sciezka} nie może mieć allowProduction`).toBe(false);
 		}
+	});
+
+	it("CYTAT w komentarzu nie jest deklaracją, a kod jest (kontrola dwustronna)", () => {
+		// Wada, na której ten strażnik już raz się przewrócił: sprostowany nagłówek
+		// `enforce-retention.ts` cytuje `{ allowProduction: true }` w instrukcji
+		// „jak to kiedyś otworzyć", a strażnik uznał cytat za deklarację.
+		const tylkoKomentarz = `// przyklad: { allowProduction: true }\n/* { allowProduction: true } */\nconst x = 1;\n`;
+		const wKodzie = `const x = { allowProduction: true };\n`;
+		const bezKomentarzy = (zrodlo: string) =>
+			ts.transpileModule(zrodlo, { compilerOptions: { removeComments: true } }).outputText;
+
+		expect(/allowProduction\s*:\s*true/.test(bezKomentarzy(tylkoKomentarz))).toBe(false);
+		expect(/allowProduction\s*:\s*true/.test(bezKomentarzy(wKodzie))).toBe(true);
+
+		// I dowód na żywym pliku: enforce-retention cytuje frazę w nagłówku…
+		expect(readFileSync(join(REPO, "tools/enforce-retention.ts"), "utf8")).toMatch(
+			/allowProduction/,
+		);
+		// …a mimo to NIE jest liczony jako narzędzie z ceremonią.
+		expect(narzedziaZCeremonia()).not.toContain("tools/enforce-retention.ts");
 	});
 
 	it("każde narzędzie z zakazem zasadniczym nadal istnieje i woła guard", () => {
