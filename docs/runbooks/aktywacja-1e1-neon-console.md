@@ -85,9 +85,13 @@ wykonuje Krok 7 runbooka 1E.2.
 > czyta student. Kopia została zamrożona 2026-07-11 (commit `ce4fe18`) i od tego
 > dnia rozjeżdżała się z manifestem: w chwili usunięcia **8 z 8 opisów i 4 z 8
 > tytułów** różniły się od manifestu, brakowało całego modułu `m-pandas`
-> (manifest: 9 modułów), a sam ładunek zawierał **19 trafień** kodu wewnętrznego
+> (manifest: 9 modułów), a sam ładunek zawierał **18 trafień** kodu wewnętrznego
 > („ADR-014", „LEAN", „pkt 10", „Capstone: …"), którego strażnik języka
 > `tests/unit/ds/jezyk-produktu.contract.test.ts` nie dopuszcza w manifescie.
+> (18 = wystąpienia wewnątrz literałów `title`/`description`, czyli w tekście,
+> który widzi student. Surowy `grep` po całym bloku daje 22 — dolicza 4
+> wystąpienia w komentarzach SQL i w `RAISE EXCEPTION`. Wcześniejsze „19" było
+> błędem arytmetycznym, poprawione 2026-08-13.)
 > Wklejenie tego bloku po dzisiejszej kuracji treści cofnęłoby ją po cichu — a
 > dodatkowo `DELETE FROM curriculum_path_modules WHERE path_key = 'data-science'`
 > wyrzuciłoby `m-pandas` ze ścieżki. Ładunku świadomie **nie odtwarzamy**: kto
