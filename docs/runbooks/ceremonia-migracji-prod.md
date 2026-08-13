@@ -1,5 +1,6 @@
 # Runbook: ceremonia migracji produkcyjnej
 
+**Wersja:** v1.1 · 2026-08-13 — nowy krok **3.1: migracje oczekujące**. Ceremonia stosuje KAŻDĄ migrację czekającą na produkcji, nie tylko tę, po którą ją zwołano — więc migracja scalona wcześniej w innym celu wchodzi „przy okazji". Skutek bywa pożądany, ryzykiem jest to, że zostaje skutkiem ubocznym zamiast decyzją (zgłoszone przez Leo przy `#293`). Krok 3.1 wymaga nazwania każdej pozycji oczekującej z osobna we wpisie ceremonii i zatrzymuje ceremonię przy pozycji, której nie da się przypisać do decyzji. Otwarta pozycja na dziś: `0048_regula_aktora_w_bazie` (weszła na `main` scaleniem `#293`, świadomie nienałożona na produkcję).
 **Wersja:** v1.0 · 2026-08-13 · **Właściciel:** Ethan (CTO) · **Delegacja:** `CLAUDE.md` v1.12 pkt 3 (zmiany bazy produkcyjnej), bramki jakości (a)–(f).
 
 **Dlaczego ten plik powstał.** Ogólnego runbooka ceremonii migracji **nie było**. Istniejące dokumenty tego nie pokrywały: `k3-prod-migration.md` jest specyficzny dla K3 z maja 2026, `aktywacja-1e1/1e2-neon-console.md` to warianty konsolowe pojedynczych zapłonów, a `protokol-przejazdu-darka-v0.1.md` opisuje przejazd użytkownika, nie ceremonię techniczną. Krok pre-flightu wciśnięty w którykolwiek z nich byłby drugim nośnikiem w cudzym dokumencie (`CLAUDE.md` §8, v1.17).
@@ -42,6 +43,14 @@ pnpm db:migrate
 ```
 
 Wyłącznie po kodzie `0` z kroku 2. Zaciąg danych: **transakcyjny** `DELETE WHERE …` + `INSERT`, **nigdy** niszczący `db:seed` na produkcji (bramka (c)).
+
+### 3.1 ⚠ MIGRACJE OCZEKUJĄCE — ceremonia nakłada WSZYSTKO, co czeka, nie tylko to, po co ją zwołano
+
+`pnpm db:migrate` stosuje **każdą** migrację obecną na `main`, a nieobecną w dzienniku produkcji. Zwołanie ceremonii w jednym celu **nakłada więc także migracje scalone wcześniej w innych celach**. Skutek bywa pożądany — ryzykiem jest to, że zostaje **skutkiem ubocznym zamiast decyzją** (zgłoszone przez Leo przy `#293`).
+
+**Krok obowiązkowy, przed krokiem 3:** wypisz listę oczekujących z pre-flightu i **nazwij każdą pozycję z osobna** we wpisie ceremonii (krok 5) — razem z tym, kto jej zapłon zatwierdził. Pozycja, której nie umiesz przypisać do decyzji, **zatrzymuje ceremonię**; nie stosuje się jej „przy okazji".
+
+**Otwarta pozycja na dziś (2026-08-13):** migracja **`0048_regula_aktora_w_bazie`** — ograniczenie `audit_log_regula_aktora`, drugi egzekutor reguły aktora. Weszła na `main` scaleniem `#293` (`404add2`) i **świadomie NIE została wtedy nałożona na produkcję**. Najbliższa ceremonia, **także zwołana w zupełnie innym celu, nałoży ją razem ze swoją migracją** — czyli spełni bramkę 5 runbooka zapłonu flagi usuwania konta (`docs/runbooks/zaplon-flagi-usuwania-konta.md`). Ma to być odnotowane jako **decyzja**: dwie rzeczy, nie jedna. Właściciel: Ethan (CTO). Pozycja znika z tego runbooka dopiero po nałożeniu `0048` i wpisaniu tego do `docs/ceremonie/`.
 
 ## 4. Weryfikacja po
 
