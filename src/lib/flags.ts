@@ -178,9 +178,10 @@ export const FLAGS = {
 			"curriculum_placements hookiem po domknięciu diagnozy (best-effort, po transakcji). " +
 			"Off = hook nie odpala, zero wierszy curriculum_placements, odpowiedź " +
 			"/api/assessment/[id]/complete identyczna jak dziś. ⚠ Zapłon WYMAGA FLAG_MASTERY_GATE=1 " +
-			"na tym samym środowisku — droga alternatywna „test out” to warunek nośny A22-2 oceny " +
-			"art. 22 RODO (RoPA wpis #5), nie tylko wybór produktowy. Wymóg jest EGZEKWOWANY " +
-			"(`requires` niżej), nie tylko opisany.",
+			"ORAZ FLAG_DIAGNOSTIC_ASSESSMENT=1 na tym samym środowisku — pierwsze, bo droga " +
+			"alternatywna „test out” to warunek nośny A22-2 oceny art. 22 RODO (RoPA wpis #5); " +
+			"drugie, bo bez diagnozy drabina obiecuje studentowi pomiar, którego produkt nie " +
+			"zawiera. Oba wymogi są EGZEKWOWANE (`requires` niżej), nie tylko opisane.",
 		defaultValue: false,
 		// TWARDA BRAMKA SPRZĘŻENIA (decyzja Ethana, 1E.7 L4). Placement OTWIERA moduły,
 		// egzamin ZALICZA — przy zgaszonym `masteryGate` student wrzucony placementem
@@ -190,7 +191,31 @@ export const FLAGS = {
 		// automatycznego"). Zapalenie placementu przy zgaszonym egzaminie nie jest więc
 		// „gorszym UX" — WYWRACA PODSTAWĘ PRAWNĄ przetwarzania. Dlatego bramka jest
 		// w kodzie ewaluacji flagi, a nie w runbooku wdrożenia.
-		requires: ["masteryGate"],
+		//
+		// DRUGI CZŁON (N3, rozpoznanie Sophii — scratchpad/lejek-diagnozy-sophia.md
+		// §4.3 WADA 3): `diagnosticAssessment`. Ta flaga wybiera brzmienie wstępu na
+		// `/curriculum` i na kafelku pulpitu — przy zapalonej mówi studentowi
+		// „…albo od razu, jeśli DIAGNOZA pokazała, że znasz wcześniejszy materiał".
+		// Przy zgaszonej diagnozie tego mechanizmu w produkcie NIE MA: trasy
+		// /api/assessment/* odpowiadają 404, więc placement nie ma z czego powstać,
+		// a zdanie jest nieprawdziwe W CHWILI WYPOWIADANIA. Ten sam argument, co
+		// przy sprzężeniu klauzuli art. 13 z usuwaniem konta niżej: obietnica
+		// mechanizmu, którego nie umiemy wykonać, jest gorsza niż jego brak.
+		//
+		// Zmierzone wykonaniem, nie wyczytane z kodu (2026-08-13): przy
+		// FLAG_MASTERY_GATE=1, FLAG_PLACEMENT_DIAGNOSTIC=1, FLAG_DIAGNOSTIC_ASSESSMENT=0
+		// `isFeatureEnabled("placementDiagnostic")` zwracało `true`, kafelek pulpitu
+		// renderował zdanie o diagnozie, a POST /api/assessment/start w tej samej
+		// konfiguracji odpowiadał 404. Strażnik: tests/unit/ds/obietnica-diagnozy-
+		// -sprzezenie.contract.test.tsx (kontrakt „obietnica ⟹ diagnoza istnieje").
+		//
+		// SKUTEK ZAPALENIA/ZGASZENIA (dla runbooku wdrożenia): zgaszenie
+		// FLAG_DIAGNOSTIC_ASSESSMENT gasi teraz TAKŻE placement — istniejące wiersze
+		// `curriculum_placements` przestają otwierać moduły (drabina czyta flagę).
+		// To jest zamierzone: konfiguracja „diagnoza wyłączona, placement włączony"
+		// jest błędem, nie wyborem. Kolejność zapłonu: diagnoza + egzamin, potem
+		// placement; kolejność gaszenia odwrotna.
+		requires: ["masteryGate", "diagnosticAssessment"],
 	},
 	accountDeletion: {
 		envVar: "FLAG_ACCOUNT_DELETION",
