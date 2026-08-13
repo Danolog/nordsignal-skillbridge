@@ -192,6 +192,21 @@ export const FLAGS = {
 		// w kodzie ewaluacji flagi, a nie w runbooku wdrożenia.
 		requires: ["masteryGate"],
 	},
+	privacyNoticeArt13: {
+		envVar: "FLAG_PRIVACY_NOTICE_ART13",
+		description:
+			"E4: klauzula informacyjna art. 13 RODO w interfejsie — strona /prywatnosc renderuje " +
+			"CZĘŚĆ I dokumentu docs/legal/klauzula-informacyjna-art13.md + odnośnik ze ścieżki " +
+			"rejestracji. Off = trasa nie istnieje (404), odnośnik się nie renderuje. " +
+			"⚠ ZAPŁON NIE JEST DECYZJĄ TECHNICZNĄ: dokument ma PIĘĆ twardych warunków wejścia " +
+			"w życie (sekcja Z-2 — cała tabela, nie wybrane wiersze), z których W-4 i W-5 leżą " +
+			"poza kodem. Zapalenie tej flagi przed nimi publikuje obietnice praw, których nie " +
+			"umiemy wykonać — a to jest gorsze niż brak klauzuli (zasada porządkująca cały " +
+			"pakiet RODO). Sprzężenie z flagą usuwania konta (W-1) NIE jest tu jeszcze " +
+			"zadeklarowane, bo tamta flaga nie istnieje w rejestrze; pilnuje tego strażnik " +
+			"z progiem — tests/unit/rodo/klauzula-zaplon-flaga.contract.test.ts.",
+		defaultValue: false,
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).

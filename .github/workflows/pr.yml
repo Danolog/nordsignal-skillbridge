@@ -562,6 +562,74 @@ jobs:
           retention-days: 7
 
   # ─────────────────────────────────────────────────────────────────────────
+  # a11y-klauzula — Playwright + @axe-core, bramka na stronie klauzuli art. 13
+  # RODO (E4, /prywatnosc). BLOKUJĄCY, jak pozostałe bramki a11y.
+  #
+  # Sprawdza DWIE rzeczy naraz, i to druga jest tu ważniejsza:
+  #   (1) 0 naruszeń WCAG 2.1 AA na jedynym dokumencie prawnym w produkcie;
+  #   (2) że aparat wewnętrzny dokumentu (CZĘŚĆ II — „Nie jestem prawnikiem",
+  #       tabela warunków zapłonu, lista rzeczy do sprawdzenia przez prawnika)
+  #       NIE JEST W DOM. Strażnik jednostkowy mierzy REPOZYTORIUM; ten job mierzy
+  #       WYRENDEROWANĄ STRONĘ, czyli to, co realnie zobaczy pierwszy uczestnik
+  #       spoza zespołu.
+  #
+  # NAJTAŃSZY z jobów Playwrighta: BEZ Postgresa, BEZ Redis/SRH, BEZ seedu i BEZ
+  # logowania. /prywatnosc jest publiczna, nie dotyka bazy i nie woła modelu —
+  # renderuje dokument z repozytorium. Boot-guard rate-limitera sprawdza wyłącznie
+  # OBECNOŚĆ zmiennych Upstash (src/lib/rate-limit.ts: `hasUpstashConfig`), nie
+  # łączność, więc placeholdery wystarczą, żeby `next start` wstał.
+  #
+  # FLAGA ZAPALONA TYLKO TUTAJ: FLAG_PRIVACY_NOTICE_ART13=1 dotyczy procesu joba,
+  # nie produkcji. Na prod klauzula pozostaje ZGASZONA do czasu kompletu warunków
+  # z sekcji Z-2 dokumentu. Pierwszy test pliku wywala się na kodzie 404, więc job
+  # nie ma jak zzielenieć na nieistniejącej stronie.
+  a11y-klauzula:
+    name: a11y-klauzula (Playwright + @axe-core skan klauzuli art. 13 — E4)
+    runs-on: ubuntu-latest
+    env:
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      UPSTASH_REDIS_REST_URL: http://localhost:8079
+      UPSTASH_REDIS_REST_TOKEN: example-e2e-ci-token
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      FLAG_PRIVACY_NOTICE_ART13: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Placeholdery, nie poświadczenia: strona nie dotyka bazy ani limitera —
+      # zmienne istnieją wyłącznie po to, żeby moduły (Better Auth, Drizzle,
+      # rate-limit) w ogóle wstały. Składane w kroku, nie wpisane literałem
+      # (ta sama konwencja co w jobie a11y-exam wyżej).
+      - name: Placeholdery środowiska (baza + klucz podpisu sesji)
+        env:
+          PGUSER: test
+          PGPASS: test
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGDB: test
+          SUFIKS: SECRET
+        run: |
+          AT='@'
+          echo "DATABASE_URL=postgresql://${PGUSER}:${PGPASS}${AT}${PGHOST}:${PGPORT}/${PGDB}" >> "$GITHUB_ENV"
+          echo "BETTER_AUTH_${SUFIKS}=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" >> "$GITHUB_ENV"
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+      # ZAKRES: ścieżka pliku, nie --grep → nie ma jak zostać zeskipowanym filtrem.
+      - name: Playwright — a11y + brak wycieku CZĘŚCI II (E4)
+        run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/80-e4-klauzula-art13.spec.ts
+      - name: Upload raportu Playwright (przy padzie)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-a11y-klauzula
+          path: playwright-report/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────
   # rate-limit-review — Playwright, DOWÓD ŻYWEGO LIMITERA na POST /api/review/answer
   # (1E.4 R4/CF-2, bramka Quinn — domknięcie zapłonu FLAG_SPACED_REPETITION). W
   # przeciwieństwie do a11y-review (mock trasy przez page.route) TU walimy w PRAWDZIWY
