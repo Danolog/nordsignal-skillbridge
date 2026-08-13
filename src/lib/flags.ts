@@ -206,6 +206,29 @@ export const FLAGS = {
 			"zapasowe, sign-off Ryana i ekran w interfejsie. Nie zapalaj bez przejścia listy.",
 		defaultValue: false,
 	},
+	privacyNoticeArt13: {
+		envVar: "FLAG_PRIVACY_NOTICE_ART13",
+		description:
+			"E4: klauzula informacyjna art. 13 RODO w interfejsie — strona /prywatnosc renderuje " +
+			"CZĘŚĆ I dokumentu docs/legal/klauzula-informacyjna-art13.md + odnośnik ze ścieżki " +
+			"rejestracji. Off = trasa nie istnieje (404), odnośnik się nie renderuje. " +
+			"⚠ ZAPŁON NIE JEST DECYZJĄ TECHNICZNĄ: dokument ma PIĘĆ twardych warunków wejścia " +
+			"w życie (sekcja Z-2 — cała tabela, nie wybrane wiersze), z których W-4 i W-5 leżą " +
+			"poza kodem. Zapalenie tej flagi przed nimi publikuje obietnice praw, których nie " +
+			"umiemy wykonać — a to jest gorsze niż brak klauzuli (zasada porządkująca cały " +
+			"pakiet RODO). W-1 (sprzężenie z usuwaniem konta) jest od 2026-08-13 " +
+			"ZADEKLAROWANE w `requires` niżej — flaga `accountDeletion` weszła do rejestru " +
+			"scaleniem #293, więc próg strażnika minął i kontrakt kompilacji na nazwy flag " +
+			"go przyjmuje.",
+		defaultValue: false,
+		// W-1 (sekcja Z-2 dokumentu): sekcja 8 klauzuli obiecuje studentowi, że usunie
+		// konto samodzielnie w ustawieniach profilu. Przy zgaszonej ścieżce usunięcia to
+		// zdanie jest NIEPRAWDZIWE W CHWILI WYPOWIADANIA — a obietnica prawa, którego nie
+		// umiemy wykonać, jest gorsza niż brak klauzuli. Dlatego bramka stoi w ewaluacji
+		// flagi (fail-closed + wpis [flags.requires] w logu), nie w runbooku wdrożenia —
+		// ten sam argument, co przy sprzężeniu placementu z egzaminem wyżej.
+		requires: ["accountDeletion"],
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).
