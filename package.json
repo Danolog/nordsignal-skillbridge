@@ -24,6 +24,7 @@
 		"seed:e2e": "tsx tools/seed-e2e.ts",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "tsx tools/db-guard-migrate.ts",
+		"db:preflight": "tsx tools/prod-journal-check.ts",
 		"db:migrate:test": "tsx tools/migrate-test.ts",
 		"db:push": "tsx tools/db-guard-push.ts",
 		"db:studio": "tsx tools/db-guard-studio.ts",
