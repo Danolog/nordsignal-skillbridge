@@ -81,25 +81,46 @@ describe("feature flags (1.1)", () => {
 	// bez deployu — sprawdzenie w skrypcie wdrożeniowym nie chroni przed niczym.
 	// ─────────────────────────────────────────────────────────────────────────
 	describe("sprzężenie flag (`requires`) — fail-closed", () => {
-		it("placementDiagnostic wymaga masteryGate (deklaracja w rejestrze)", () => {
-			expect(requirementsOf("placementDiagnostic")).toEqual(["masteryGate"]);
+		it("placementDiagnostic wymaga masteryGate I diagnosticAssessment (deklaracja w rejestrze)", () => {
+			// Dwa człony, dwa różne powody (komentarz przy `requires` w rejestrze):
+			// masteryGate — warunek nośny A22-2 art. 22 RODO; diagnosticAssessment —
+			// prawdziwość zdania o diagnozie na drabinie (N3, Sophia §4.3 WADA 3).
+			expect(requirementsOf("placementDiagnostic")).toEqual([
+				"masteryGate",
+				"diagnosticAssessment",
+			]);
 		});
 
-		it("env ON + przesłanka OFF → flaga WYŁĄCZONA (fail-closed, nie 'ostrzeżenie')", () => {
+		it("env ON + przesłanki OFF → flaga WYŁĄCZONA (fail-closed, nie 'ostrzeżenie')", () => {
 			process.env[FLAGS.placementDiagnostic.envVar] = "1";
-			// FLAG_MASTERY_GATE skasowany w beforeEach — przesłanka niespełniona.
+			// Zmienne przesłanek skasowane w beforeEach — obie niespełnione.
 			expect(isFeatureEnabled("placementDiagnostic")).toBe(false);
 		});
 
-		it("env ON + przesłanka ON → flaga włączona", () => {
+		it("env ON + KOMPLET przesłanek ON → flaga włączona", () => {
 			process.env[FLAGS.placementDiagnostic.envVar] = "1";
 			process.env[FLAGS.masteryGate.envVar] = "1";
+			process.env[FLAGS.diagnosticAssessment.envVar] = "1";
 			expect(isFeatureEnabled("placementDiagnostic")).toBe(true);
+		});
+
+		it("KAŻDA przesłanka z osobna wystarcza do zgaszenia (koniunkcja, nie alternatywa)", () => {
+			// Warunek złożony z dwóch członów wymaga sprawdzenia OBU po kolei —
+			// jednostronny asert przepuszcza bliźniaczą dziurę w tym samym warunku.
+			process.env[FLAGS.placementDiagnostic.envVar] = "1";
+			process.env[FLAGS.masteryGate.envVar] = "1";
+			process.env[FLAGS.diagnosticAssessment.envVar] = "0";
+			expect(isFeatureEnabled("placementDiagnostic")).toBe(false);
+
+			process.env[FLAGS.masteryGate.envVar] = "0";
+			process.env[FLAGS.diagnosticAssessment.envVar] = "1";
+			expect(isFeatureEnabled("placementDiagnostic")).toBe(false);
 		});
 
 		it("zgaszenie przesłanki GASI flagę zależną bez dotykania jej env", () => {
 			process.env[FLAGS.placementDiagnostic.envVar] = "1";
 			process.env[FLAGS.masteryGate.envVar] = "1";
+			process.env[FLAGS.diagnosticAssessment.envVar] = "1";
 			expect(isFeatureEnabled("placementDiagnostic")).toBe(true);
 			// Dokładnie scenariusz z Vercela: ktoś gasi egzamin, placementu nie rusza.
 			process.env[FLAGS.masteryGate.envVar] = "0";
@@ -108,8 +129,9 @@ describe("feature flags (1.1)", () => {
 			expect(isFeatureEnabled("masteryGate")).toBe(false);
 		});
 
-		it("bramka nie zapala niczego sama: przesłanka ON + flaga OFF → nadal OFF", () => {
+		it("bramka nie zapala niczego sama: przesłanki ON + flaga OFF → nadal OFF", () => {
 			process.env[FLAGS.masteryGate.envVar] = "1";
+			process.env[FLAGS.diagnosticAssessment.envVar] = "1";
 			expect(isFeatureEnabled("placementDiagnostic")).toBe(false);
 		});
 
