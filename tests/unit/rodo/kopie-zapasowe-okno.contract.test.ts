@@ -117,11 +117,24 @@ describe("okno kopii zapasowych · sędzia (kontrola dwustronna)", () => {
 		expect(w.przeterminowane).toEqual([]);
 	});
 
-	it("gałąź produkcyjna NIE jest kopią — inaczej sędzia zażądałby skasowania produkcji", () => {
-		// `main` ma dziś 155 dni. Bez tego rozróżnienia werdykt brzmiałby „skasuj main".
+	it("gałąź produkcyjna NIE jest kopią, NAWET gdy nazywa się jak kopia", () => {
+		// ⚠ TEN PRZYPADEK POWSTAŁ Z MUTACJI, NIE Z PROJEKTU. Pierwsze brzmienie
+		// sprawdzało wyłącznie `main` — a `main` odsiewa już sprawdzenie NAZWY, więc
+		// warunek „gałąź domyślna nie jest kopią" NIE BYŁ ĆWICZONY: mutacja M16
+		// (usunięcie `g.default !== true`) przeszła na ZIELONO. Klasyczny
+		// strażnik-atrapa (CLAUDE.md v1.17), znaleziony mutacją, nie czytaniem.
+		//
+		// Przypadek NIE jest teoretyczny: procedura odtworzenia (runbook §9) każe
+		// odtworzyć do NOWEJ gałęzi i dopiero potem ją promować. Promowana gałąź
+		// może więc nosić nazwę `prod-backup-*` i BYĆ produkcją. Bez rozróżnienia
+		// narzędzie doradziłoby wtedy skasowanie produkcji.
+		const odtworzonaProdukcja = g("prod-backup-odtworzona-20260813", OKNO + 40, true);
+		expect(czyKopiaProdukcji(odtworzonaProdukcja)).toBe(false);
+		expect(ocen([odtworzonaProdukcja], OKNO, TERAZ).kod).toBe(0);
+
+		// Zwykła produkcja — druga strona tego samego rozróżnienia.
 		expect(czyKopiaProdukcji(g("main", 155, true))).toBe(false);
-		const w = ocen([g("main", 155, true)], OKNO, TERAZ);
-		expect(w.kod).toBe(0);
+		expect(ocen([g("main", 155, true)], OKNO, TERAZ).kod).toBe(0);
 	});
 
 	it("kolejność odwrotna, gdy kasowanie zeszłoby poniżej dwóch kopii (bramka (g))", () => {
