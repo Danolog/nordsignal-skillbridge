@@ -2,7 +2,11 @@
 
 **Wykonał:** Ethan (CTO) · **Podstawa:** `CLAUDE.md` sekcja 5, delegacja nieodwracalnych działań technicznych, punkt 3 (zmiany bazy produkcyjnej) · **Runbook:** `docs/runbooks/ceremonia-migracji-prod.md` v1.2 · **Zlecenie:** Oliver (COO), pozycja 2 ścieżki krytycznej.
 
+> **Rama czasowa (wzorzec gatunku, warunek Leo przy `#301`).** Wszystkie twierdzenia o stanie — produkcji, migracji, bramek — opisują **chwilę ceremonii, 2026-08-13**. Wpis jest zapisem chwili i **nie aktualizujemy go**; stan bieżący czyta się ze źródła autorytatywnego, nie z tego pliku.
+
 > **Pierwszy przejazd, w którym obowiązuje krok 2.1** (migracje oczekujące jako decyzja). Wnioski z jego działania w praktyce — sekcja „Jak zadziałał krok 2.1".
+
+**Żargon (tłumaczenie).** *Pre-flight* — sprawdzenie przed startem, które ma prawo powiedzieć „nie startuj". *`NOT VALID`* — ograniczenie założone tak, że obowiązuje **nowe** wiersze, a **nie sprawdza wstecz** tych, które już są w tabeli. *Pipeline* (potok wdrożeniowy) — zautomatyzowana ścieżka, którą zmiana trafia na produkcję, w odróżnieniu od wykonania ręcznego. *RLS* (ang. *row-level security*, izolacja na poziomie wiersza) — mechanizm bazy, w którym reguła decyduje, **które wiersze** dany rozmówca w ogóle widzi.
 
 ---
 
@@ -32,9 +36,13 @@ Poświadczenie pobrane **ze źródła autorytatywnego** (`vercel env pull --envi
 | **`0047_sad_la_nuit`** | `CREATE TABLE pilot_participants` + dwa klucze obce (`student_id ON DELETE CASCADE`, `tenant_id`) + indeks kohorty + RLS | **TAK** — to jest migracja, po którą zwołano ceremonię | Ryan (CRCO), 2026-08-10, bramka projektowa migracji `0047`; RoPA wpis #7; wiersz retencji `pilot_participants` (`docs/data/retention.md` v0.4) |
 | **`0048_regula_aktora_w_bazie`** | `ADD CONSTRAINT audit_log_regula_aktora … NOT VALID` — drugi egzekutor reguły aktora | **NIE** — czekała od `#293` | Ryan (CRCO) — sign-off domeny 8 przy `#293` (`issuecomment-5283049204`); Leo (Tech Lead) — przegląd `#293`; scalone `404add2` |
 
-**Decyzja o `0048`, podjęta świadomie, nie „przy okazji".** Bramka 5 runbooka zapłonu flagi (`docs/runbooks/zaplon-flagi-usuwania-konta.md`) przypisuje **wdrożenie** `0048` Evie (pipeline) przy sign-offie schemy przez Ethana. Nałożyłem ją **własną ręką w tej ceremonii** — mieści się to w delegacji z `CLAUDE.md` sekcja 5 punkt 3 (zmiany bazy produkcyjnej to mój mandat), a rozbicie na osobny przejazd oznaczałoby drugą ceremonię, drugą kopię zapasową i drugie okno ryzyka dla zmiany w pełni addytywnej. **Skutek dla bramki 5: DOMKNIĘTA tą ceremonią** — i to jest decyzja zapisana tutaj, a nie skutek uboczny, którego nikt nie nazwał.
+**Decyzja o `0048`, podjęta świadomie, nie „przy okazji".** Bramka 5 runbooka zapłonu flagi przypisywała **wdrożenie** `0048` Evie (potok wdrożeniowy) przy sign-offie schemy przez Ethana. Nałożyłem ją **własną ręką w tej ceremonii** — mieści się to w delegacji z `CLAUDE.md` sekcja 5 punkt 3 (zmiany bazy produkcyjnej to mój mandat), a rozbicie na osobny przejazd oznaczałoby drugą ceremonię, drugą kopię zapasową i drugie okno ryzyka dla zmiany w pełni addytywnej.
 
-**Pozycja do zdjęcia:** wpis „Otwarta pozycja na dziś (2026-08-13)" w `docs/runbooks/ceremonia-migracji-prod.md` §2.1 dotyczył `0048` i **przestaje obowiązywać** — warunek jego zniknięcia („po nałożeniu i wpisaniu do `docs/ceremonie/`") jest spełniony tym plikiem.
+**Czego to uzasadnienie NIE tłumaczy — i co dlatego zapisuję wprost.** Pytanie „czy wolno mi było" ma odpowiedź twierdzącą, ale audytor za pół roku zapyta inaczej: *skoro bramka mówiła „Eva", dlaczego nie Eva?* **Przypisanie miało własny powód — rozdzielało wykonawcę od sign-offującego**, więc zmianę produkcyjną oglądały dwie pary oczu **przed** faktem. **Przejęcie ten bezpiecznik znosi: 2026-08-13 byłem wykonawcą i sign-offującym naraz.** Zastąpiły go kontrole nierównoważne, bo mechaniczne albo działające po fakcie (pre-flight z kodem wyjścia, kopia zapasowa, weryfikacja z katalogu bazy, przegląd tego wpisu przez Leo). Próg powrotu rozdzielenia — przy pierwszej migracji nie-addytywnej — zapisany w nośniku bramek, nie tutaj.
+
+**Stan bramki 5 ma jeden nośnik i nie jest nim ten plik.** Mieszka w `docs/runbooks/zaplon-flagi-usuwania-konta.md` i **tam** został zmieniony tą samą zmianą co ten wpis. Ceremonia dostarcza fakt (migracja jest na produkcji, dowód w sekcji 5); listę bramek czyta się u niej, nie tutaj.
+
+**Ta sama zasada dotyczy pozycji oczekujących w runbooku ceremonii** (`docs/runbooks/ceremonia-migracji-prod.md` §2.1): warunek zdjęcia pozycji `0048` brzmiał „po nałożeniu i wpisaniu do `docs/ceremonie/`" i jest spełniony, więc **zdjęto ją tam**, tą samą zmianą — a nie ogłoszono tutaj.
 
 ## 4. Bramki jakości (`CLAUDE.md` sekcja 5)
 
@@ -113,7 +121,7 @@ Zero pozycji oczekujących.
 
 **Wykonalny, nie życzeniowy.** Lista pozycji przyszła gotowa z wyjścia kroku 2 — nie trzeba było wymyślać komendy pod presją, dokładnie jak zakładał Leo przy `#312`.
 
-**Zadziałał merytorycznie, i to na pozycji, dla której powstał.** `0048` była pozycją bez przypisanej decyzji o zapłonie na produkcji. Krok wymusił nazwanie jej z osobna i sprawdzenie, **kto** jej zapłon zatwierdził — a przy okazji wyszła rzecz, której nie widać z listy migracji: bramka 5 runbooka zapłonu przypisuje jej wdrożenie **innemu wykonawcy** (Eva, pipeline). Bez kroku 2.1 `0048` weszłaby cicho razem z `0047` i bramka 5 zostałaby spełniona przez nikogo w szczególności.
+**Zadziałał merytorycznie, i to na pozycji, dla której powstał.** `0048` była pozycją bez przypisanej decyzji o zapłonie na produkcji. Krok wymusił nazwanie jej z osobna i sprawdzenie, **kto** jej zapłon zatwierdził — a przy okazji wyszła rzecz, której nie widać z listy migracji: bramka 5 runbooka zapłonu przypisywała jej wdrożenie **innemu wykonawcy** (Eva, potok wdrożeniowy). Bez kroku 2.1 `0048` weszłaby cicho razem z `0047` i bramka 5 zostałaby spełniona przez nikogo w szczególności.
 
 **Znaleziona granica kroku — dla przyszłej edycji, nie do naprawy tutaj.** Krok pyta „**kto zatwierdził zapłon**", a trudniejsze okazało się pytanie „**kto miał ją nałożyć**". Te dwa pytania rozjeżdżają się dokładnie tam, gdzie stawka jest najwyższa: przy pozycji przyniesionej z cudzego zgłoszenia. Właściciel: Ethan. Próg: pierwsza ceremonia, w której pozycja oczekująca ma przypisanego wykonawcę **innego niż prowadzący ceremonię** — czyli następna taka sytuacja.
 
