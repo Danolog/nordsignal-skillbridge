@@ -97,15 +97,27 @@ const DOPUSZCZONE = [
  *       `audit_log` jest append-only (wyzwalacz blokuje `UPDATE`/`DELETE`),
  *       więc sonda zapisująca na trwałe zatruwa bazę bez możliwości sprzątnięcia.
  *
- * DZIŚ LISTA JEST PUSTA I TO JEST POPRAWNY STAN. Mechanizm powstaje tutaj, bo
- * tutaj mieszka reguła; pierwszy wpis przychodzi RAZEM ze zmianą, która go
- * potrzebuje — sonda parytetu D-U8 z `#293`
- * (`rodo-e1b-parytet-regula-aktora.integration.test.ts`). Wyjątek dopisuje
- * zgłoszenie, które go wnosi, nie zgłoszenie, które buduje mechanizm: inaczej
- * lista od pierwszego dnia niesie pozycję bez pokrycia, a kontrola martwych
- * pozycji (niżej) słusznie się na tym czerwieni. Sprawdzone wykonaniem.
+ * MECHANIZM POWSTAŁ PUSTY (`#296`) I TAK MIAŁO BYĆ — wyjątek dopisuje
+ * zgłoszenie, które go wnosi, nie zgłoszenie, które buduje mechanizm. Pierwszy
+ * i na dziś jedyny wpis przyszedł z `#293` (sonda parytetu D-U8), po przeglądzie
+ * obu warunków na kodzie sondy, nie na jej opisie.
  */
-const SONDY_ODRZUCENIA: Record<string, string> = {};
+const SONDY_ODRZUCENIA: Record<string, string> = {
+	// Sonda parytetu D-U8: podaje `actor_id` UMYŚLNIE, bo mierzy, czy ograniczenie
+	// `audit_log_regula_aktora` w bazie robi DOKŁADNIE to, co mówi `REGULA_AKTORA`.
+	// Warunek (1) — to test, i to zamknięty w bazie lokalnej: cały blok jest pod
+	// `describe.skip`, dopóki `DATABASE_URL` nie wskazuje na `localhost`/`127.0.0.1`/`[::1]`.
+	// Warunek (2) — `ROLLBACK` stoi w `finally`, więc wykonuje się na KAŻDEJ ścieżce,
+	// także przy zapisie przyjętym; ani jeden wiersz nie powstaje.
+	// ⚠ Zakres szerszy niż nazwa listy: dla `faculty`/`operator` nośnik POZWALA na
+	// `actor_id`, więc tam sonda jest bodźcem DODATNIM (baza przyjmuje) i też jest
+	// wycofywana. Warunek wpisu (test + ROLLBACK) spełniony w obie strony; rozbieżność
+	// nazwy z klasą zgłoszona Ryanowi jako pozycja przeglądu, nie naprawiana tutaj.
+	"src/lib/db/__tests__/rodo-e1b-parytet-regula-aktora.integration.test.ts":
+		"Sonda parytetu D-U8 — podaje `actor_id` celowo, żeby zmierzyć, czy ograniczenie " +
+		"w bazie odrzuca dokładnie to, czego zabrania REGULA_AKTORA; każda próba biegnie " +
+		"w transakcji zakończonej ROLLBACK-iem, więc nie zostaje po niej ani jeden wiersz.",
+};
 
 type Trafienie = { plik: string; linia: number; tresc: string };
 
