@@ -1,4 +1,5 @@
 import { test as base } from "@playwright/test";
+import { sprawdzAdresDlaZapisow, ZMIENNA_ZDALNEGO_HOSTA } from "./base-url-policy";
 
 /**
  * Zawory bezpieczeństwa dla pakietu E2E.
@@ -14,16 +15,15 @@ import { test as base } from "@playwright/test";
  * test() (np. grupy @safe). Skip odpala ZANIM ciało testu zaloguje się do bazy.
  *
  * Dodatkowo: jeśli E2E_ALLOW_DB_WRITES=1, ale PLAYWRIGHT_BASE_URL wskazuje
- * publiczny prod, test się WYWALA z jasnym komunikatem.
+ * cokolwiek spoza środowiska lokalnego, test się WYWALA z jasnym komunikatem.
+ *
+ * Reguła adresu ma JEDEN nośnik — `./base-url-policy.ts`. Tutaj jest tylko jej
+ * wywołanie. Poprzednia wersja trzymała w tym pliku listę zakazanych fragmentów
+ * adresu produkcji, która w prawdziwy adres produkcji nie trafiała ani razu
+ * (pomiar Ryan/CRCO 2026-08-12 — szczegóły w nośniku reguły).
  */
 const ALLOW_DB_WRITES = process.env.E2E_ALLOW_DB_WRITES === "1";
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
-
-const PROD_HOST_FRAGMENTS = [
-	"skill-bridge-ai.vercel.app",
-	"skillbridge.nordsignal",
-	"nordsignal.cc",
-];
 
 // biome-ignore lint/suspicious/noConfusingVoidType: idiom fixture Playwright — void jest wymagany przez base.extend<T> gdy fixture nie zwraca wartości.
 export const dbWriteTest = base.extend<{ _dbWriteGuard: void }>({
@@ -35,12 +35,8 @@ export const dbWriteTest = base.extend<{ _dbWriteGuard: void }>({
 				!ALLOW_DB_WRITES,
 				"Test zapisujący do bazy/wołający model pominięty: ustaw E2E_ALLOW_DB_WRITES=1 i wskaż bazę testową.",
 			);
-			const onProd = PROD_HOST_FRAGMENTS.some((frag) => BASE_URL.includes(frag));
-			if (ALLOW_DB_WRITES && onProd) {
-				throw new Error(
-					`ODMOWA: E2E_ALLOW_DB_WRITES=1 przy URL produkcji (${BASE_URL}). ` +
-						"Testy zapisujące wolno odpalać tylko na bazie testowej (lokalny dev / preview z testową bazą).",
-				);
+			if (ALLOW_DB_WRITES) {
+				sprawdzAdresDlaZapisow(BASE_URL, process.env[ZMIENNA_ZDALNEGO_HOSTA]);
 			}
 			await use();
 		},
