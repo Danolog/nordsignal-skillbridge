@@ -129,15 +129,46 @@ function kodBezKomentarzy(sciezka: string): string {
 	return ts.transpileModule(zrodlo, { compilerOptions: { removeComments: true } }).outputText;
 }
 
-/** Pliki, które deklarują wejście do polityki ceremonii produkcyjnej. */
+/**
+ * Pliki, które deklarują wejście do polityki ceremonii produkcyjnej.
+ *
+ * ── DWA SITA, w tej kolejności — i to nie jest mikrooptymalizacja ──────────
+ * (1) TANIE, po surowym tekście: plik, który nie zawiera nawet napisu
+ *     `allowProduction`, nie może go mieć w kodzie. Odpada ~96% drzewa.
+ * (2) DROGIE, przez kompilator: dopiero dla tej garstki zdejmujemy komentarze,
+ *     żeby CYTAT w dokumentacji nie liczył się jako deklaracja.
+ * Sito (1) nie może przepuścić niczego, co odrzuciłoby sito (2) — działa
+ * w stronę bezpieczną: zawęża zbiór kandydatów, nie zbiór trafień.
+ *
+ * ── Dlaczego to jest naprawa BŁĘDU, nie przyspieszenie ────────────────────
+ * Pierwsza wersja transpilowała CAŁE drzewo (360 plików) przy KAŻDYM z czterech
+ * wywołań — 1440 przebiegów kompilatora na jeden plik testowy. Uruchomiona sama
+ * mieściła się w limicie czasu; uruchomiona w pełnej suicie, przy rywalizacji
+ * o procesor, przekraczała 5 s i padała z `Test timed out`. Czyli strażnik
+ * MELDOWAŁ RÓŻNE RZECZY W ZALEŻNOŚCI OD TOWARZYSTWA: sam — zielony, w suicie —
+ * czerwony, a komunikat („timed out") nie wskazywał na przyczynę, więc wyglądał
+ * jak rozjazd listy. Diagnoza pojedynczym plikiem dawała zieleń i zamykała
+ * sprawę — pułapka, w którą wpadł też pierwszy diagnozujący.
+ *
+ * Wniosek szerszy: strażnik, którego wynik zależy od obciążenia maszyny, jest
+ * atrapą w trzecią stronę — nie kłamie o regule, tylko o tym, czy ją sprawdził.
+ * Dlatego wynik liczymy RAZ (`memo`) i mierzymy tani warunek przed drogim.
+ */
+let memo: string[] | null = null;
+
 function narzedziaZCeremonia(): string[] {
-	return KATALOGI_SKANOWANE.flatMap((k) => plikiTs(join(REPO, k)))
+	if (memo) return memo;
+	memo = KATALOGI_SKANOWANE.flatMap((k) => plikiTs(join(REPO, k)))
 		.filter((sciezka) => {
 			// Sam guard definiuje opcję — nie jest jej konsumentem.
 			if (sciezka === "tools/assert-test-db.ts") return false;
+			// Sito (1): tanie odsianie po surowym tekście.
+			if (!readFileSync(join(REPO, sciezka), "utf8").includes("allowProduction")) return false;
+			// Sito (2): dopiero teraz kompilator — cytat w komentarzu nie liczy się.
 			return /allowProduction\s*:\s*true/.test(kodBezKomentarzy(sciezka));
 		})
 		.sort();
+	return memo;
 }
 
 describe("zasięg ceremonii produkcyjnej (allowProduction)", () => {
