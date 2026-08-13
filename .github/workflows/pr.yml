@@ -592,6 +592,13 @@ jobs:
       UPSTASH_REDIS_REST_TOKEN: example-e2e-ci-token
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
       FLAG_PRIVACY_NOTICE_ART13: "1"
+      # W-1 (sprzężenie `requires` w src/lib/flags.ts, od scalenia #293): klauzula
+      # obiecuje w sekcji 8 samodzielne usunięcie konta, więc przy zgaszonej ścieżce
+      # usunięcia zostaje WYŁĄCZONA mimo zapalonego env — a `/prywatnosc` odpowiada
+      # wtedy 404 i ten job pada na własnej treści. Zapalamy więc obie flagi: to
+      # bramka jakości strony, nie decyzja o zapłonie na produkcji (tam zapłon ma
+      # pięć warunków sekcji Z-2 i własny runbook usuwania konta).
+      FLAG_ACCOUNT_DELETION: "1"
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
