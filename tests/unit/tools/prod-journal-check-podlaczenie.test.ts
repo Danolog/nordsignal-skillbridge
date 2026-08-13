@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 /**
  * R1/O1 — STRAŻNIK PRZEWODU, nie reguły.
@@ -48,36 +48,51 @@ function uruchomSkrypt(env: Record<string, string>): { kod: number; wyjscie: str
 /** Niepusty napis, świadomie NIE będący adresem połączenia — patrz nagłówek. */
 const ZMIENNA_USTAWIONA = "ustawione-lecz-nieuzywane-bramka-wyprzedza-polaczenie";
 
+/**
+ * WYNIK LICZONY RAZ — lekcja Ryana z `#298` (trzecia odmiana atrapy).
+ *
+ * Tam strażnik transpilował całe drzewo przy KAŻDYM wywołaniu: pojedynczo mieścił
+ * się w limicie czasu, w pełnej suicie padał na limicie, nie dochodząc do asercji.
+ * Kłamał nie o regule, tylko o tym, CZY ZDĄŻYŁ JĄ SPRAWDZIĆ — a diagnoza
+ * pojedynczym plikiem dawała zieleń i zamykała sprawę.
+ *
+ * Ten plik ma tę samą wrażliwość: każdy przebieg to osobny start `tsx`. Trzy
+ * wywołania przy rywalizacji o procesor zbliżały się do limitu. Naprawiamy
+ * PRZYCZYNĘ (dwa scenariusze zamiast trzech wywołań, wynik policzony raz),
+ * NIE podnosimy limitu — podniesienie zamieniłoby wadę na dług o tym samym objawie.
+ */
+let bezFetch: { kod: number; wyjscie: string };
+let refLokalna: { kod: number; wyjscie: string };
+
+beforeAll(() => {
+	bezFetch = uruchomSkrypt({
+		DATABASE_URL: ZMIENNA_USTAWIONA,
+		PROD_JOURNAL_SKIP_FETCH: "1",
+	});
+	refLokalna = uruchomSkrypt({
+		DATABASE_URL: ZMIENNA_USTAWIONA,
+		PROD_JOURNAL_SKIP_FETCH: "1",
+		PROD_JOURNAL_REF: "HEAD",
+	});
+});
+
 describe("R1: przewód od main() do reguły — skrypt naprawdę stosuje bramkę", () => {
 	it("pominięty fetch => kod wyjścia 2 i NIEROZSTRZYGNIĘTY (nie „spójny”)", () => {
-		const { kod, wyjscie } = uruchomSkrypt({
-			DATABASE_URL: ZMIENNA_USTAWIONA,
-			PROD_JOURNAL_SKIP_FETCH: "1",
-		});
-		expect(kod).toBe(2);
-		expect(wyjscie).toContain("NIEROZSTRZYGNIĘTY");
+		expect(bezFetch.kod).toBe(2);
+		expect(bezFetch.wyjscie).toContain("NIEROZSTRZYGNIĘTY");
 		// Najważniejsza asercja całego pliku: słowo „spójny" NIE PADA bez potwierdzenia.
-		expect(wyjscie).not.toContain("WYNIK: SPÓJNY");
+		expect(bezFetch.wyjscie).not.toContain("WYNIK: SPÓJNY");
 	});
 
 	it("referencja lokalna (HEAD) => kod wyjścia 2, bazy nie dotyka", () => {
-		const { kod, wyjscie } = uruchomSkrypt({
-			DATABASE_URL: ZMIENNA_USTAWIONA,
-			PROD_JOURNAL_SKIP_FETCH: "1",
-			PROD_JOURNAL_REF: "HEAD",
-		});
-		expect(kod).toBe(2);
-		expect(wyjscie).toContain("Bazy NIE odpytywano");
+		expect(refLokalna.kod).toBe(2);
+		expect(refLokalna.wyjscie).toContain("Bazy NIE odpytywano");
 	});
 
 	it("komunikat błędu NIE reklamuje obejścia (regresja z przeglądu Leo)", () => {
-		const { wyjscie } = uruchomSkrypt({
-			DATABASE_URL: ZMIENNA_USTAWIONA,
-			PROD_JOURNAL_SKIP_FETCH: "1",
-		});
 		// Skrypt na własnej ścieżce błędu podsuwał operatorowi drogi do zieleni.
-		expect(wyjscie).not.toMatch(/Offline:\s*PROD_JOURNAL_SKIP_FETCH=1/);
-		expect(wyjscie).not.toMatch(/wskaż właściwą referencję/i);
+		expect(bezFetch.wyjscie).not.toMatch(/Offline:\s*PROD_JOURNAL_SKIP_FETCH=1/);
+		expect(bezFetch.wyjscie).not.toMatch(/wskaż właściwą referencję/i);
 	});
 });
 
