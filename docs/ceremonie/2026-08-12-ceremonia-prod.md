@@ -3,6 +3,8 @@
 **Wykonał:** Ethan (CTO), delegacja `CLAUDE.md` v1.12 (zmiany bazy produkcyjnej) ·
 **Zlecił:** Oliver (COO) · **Charakter tury:** wyłącznie **odczyt** — zero zapisów, zero migracji, zero scaleń.
 
+> **Rama czasowa (warunek Leo przy `#301`).** Wszystkie twierdzenia o stanie — produkcji, flag, zgłoszeń — opisują **chwilę ceremonii, 2026-08-12**. Wpis jest zapisem chwili i **nie aktualizujemy go**; stan bieżący czyta się ze źródła autorytatywnego, nie z tego pliku.
+
 **Po co ten plik istnieje.** Dowód, który żyje w oknie czatu, ma wartość audytową zero. Ceremonie produkcyjne rozliczamy z zasady „Built-to-Sell od dnia 1" (`CLAUDE.md` §2), więc pomiar na produkcji ma zostawić ślad odnajdywalny komendą, a nie wspomnienie. To pierwszy plik w `docs/ceremonie/` — katalog zakładany tym wpisem.
 
 **Żargon (tłumaczenie).** *Zrzut* (ang. *dump*) — plik powstały ze skopiowania konfiguracji w jakiejś chwili, np. `.env.prod`. *Źródło autorytatywne* — miejsce, które **jest** stanem (konsola albo interfejs programowy dostawcy), a nie jego opisem. *Migracja* — wersjonowana zmiana struktury bazy. *Dziennik migracji* — tabela, w której baza notuje, które migracje już nałożono. *Flaga* — przełącznik włączający funkcję bez wdrażania nowego kodu. *Placement* — automatyczne przypisanie studenta do miejsca w drabinie nauki na podstawie diagnozy.
