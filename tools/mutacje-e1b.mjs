@@ -70,7 +70,10 @@ const S = {
 	slad: "src/app/api/review-queue/__tests__/rodo-e1b-slad-decyzji-czlowieka.integration.test.ts",
 	parytet: "src/lib/db/__tests__/rodo-e1b-parytet-regula-aktora.integration.test.ts",
 	konfig: "src/lib/auth/__tests__/account-deletion-konfiguracja.test.ts",
+	kopie: "tests/unit/rodo/kopie-zapasowe-okno.contract.test.ts",
 };
+
+const PLIK_KOPII = "tools/kopie-zapasowe-przeglad.ts";
 
 // ── warunki wstępne ─────────────────────────────────────────────────────────
 
@@ -418,6 +421,49 @@ const MUTACJE = [
 				'const SONDY_ODRZUCENIA: Record<string, string> = {\n\t"src/lib/curriculum/__tests__/placement-metric.integration.test.ts": "mutacja M14 — test bez wycofania zapisu",',
 			),
 		sprawdz: () => czytaj(PLIK_STRAZNIKA_A1).includes("mutacja M14"),
+	},
+	{
+		id: "M15",
+		straznik: "okno kopii",
+		plik: S.kopie,
+		projekt: "unit",
+		filtr: "JEDEN nośnik",
+		opis: "drugi nośnik liczby — okno przepisane do narzędzia zamiast wołane",
+		// Wada, której ten strażnik broni: liczba dni żyje w dwóch miejscach i po
+		// pierwszej zmianie klauzuli rozjeżdża się po cichu. Mutacja wpisuje wartość
+		// okna wprost do narzędzia — dokładnie tak, jak zrobiłby ktoś w pośpiechu.
+		zastosuj: () =>
+			podmien(
+				PLIK_KOPII,
+				"const ZNACZNIK_OKNA =",
+				"const OKNO_NA_SKROTY = 30; // mutacja M15 — drugi nośnik\nconst ZNACZNIK_OKNA =",
+			),
+		sprawdz: () => czytaj(PLIK_KOPII).includes("mutacja M15"),
+	},
+	{
+		id: "M16",
+		straznik: "okno kopii",
+		plik: S.kopie,
+		projekt: "unit",
+		filtr: "produkcyjna",
+		opis: "gałąź produkcyjna liczona jako kopia zapasowa",
+		// Najgroźniejszy fałszywy alarm, jaki ten sędzia może wyprodukować: `main`
+		// ma dziś 155 dni, więc bez rozróżnienia werdykt brzmiałby „skasuj produkcję".
+		zastosuj: () => podmien(PLIK_KOPII, "return g.default !== true &&", "return"),
+		sprawdz: () => !czytaj(PLIK_KOPII).includes("g.default !== true"),
+	},
+	{
+		id: "M17",
+		straznik: "okno kopii",
+		plik: S.kopie,
+		projekt: "unit",
+		filtr: "kolejność odwrotna",
+		opis: "próg bramki (g) obniżony z dwóch kopii do jednej",
+		// Bramka (g) CLAUDE.md v1.15 każe zostawić DWIE najnowsze kopie. Przy progu
+		// jednej narzędzie każe kasować przeterminowaną bez uprzedniego odświeżenia
+		// — czyli doradza złamanie bramki, która chroni odtworzenie.
+		zastosuj: () => podmien(PLIK_KOPII, "zostaloby < 2", "zostaloby < 1"),
+		sprawdz: () => czytaj(PLIK_KOPII).includes("zostaloby < 1"),
 	},
 ];
 
