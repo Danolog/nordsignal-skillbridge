@@ -192,6 +192,20 @@ export const FLAGS = {
 		// w kodzie ewaluacji flagi, a nie w runbooku wdrożenia.
 		requires: ["masteryGate"],
 	},
+	accountDeletion: {
+		envVar: "FLAG_ACCOUNT_DELETION",
+		description:
+			"E1b (RODO art. 17): ścieżka usunięcia konta przez studenta — włączona ścieżka " +
+			"biblioteki uwierzytelniającej (`user.deleteUser`) z zaczepami before/after, " +
+			"śladem audytowym wzorca A7 i usunięciem natychmiastowym bez karencji (D-U3). " +
+			"Off = trasa `/api/auth/delete-user` odpowiada 404, konto bez zmian. " +
+			"⚠ ZAPŁON NA PRODUKCJI MA WŁASNY RUNBOOK Z LISTĄ BRAMEK — jeden nośnik: " +
+			"`docs/runbooks/zaplon-flagi-usuwania-konta.md` (właściciel: Ethan). Ta flaga " +
+			"NIE JEST przełącznikiem „gotowe/niegotowe”: zielony S-U-1 to dopiero bramka 1 " +
+			"z ośmiu. Otwarte są m.in. porównanie katalogu produkcji z migracjami, kopie " +
+			"zapasowe, sign-off Ryana i ekran w interfejsie. Nie zapalaj bez przejścia listy.",
+		defaultValue: false,
+	},
 	privacyNoticeArt13: {
 		envVar: "FLAG_PRIVACY_NOTICE_ART13",
 		description:
@@ -202,10 +216,18 @@ export const FLAGS = {
 			"w życie (sekcja Z-2 — cała tabela, nie wybrane wiersze), z których W-4 i W-5 leżą " +
 			"poza kodem. Zapalenie tej flagi przed nimi publikuje obietnice praw, których nie " +
 			"umiemy wykonać — a to jest gorsze niż brak klauzuli (zasada porządkująca cały " +
-			"pakiet RODO). Sprzężenie z flagą usuwania konta (W-1) NIE jest tu jeszcze " +
-			"zadeklarowane, bo tamta flaga nie istnieje w rejestrze; pilnuje tego strażnik " +
-			"z progiem — tests/unit/rodo/klauzula-zaplon-flaga.contract.test.ts.",
+			"pakiet RODO). W-1 (sprzężenie z usuwaniem konta) jest od 2026-08-13 " +
+			"ZADEKLAROWANE w `requires` niżej — flaga `accountDeletion` weszła do rejestru " +
+			"scaleniem #293, więc próg strażnika minął i kontrakt kompilacji na nazwy flag " +
+			"go przyjmuje.",
 		defaultValue: false,
+		// W-1 (sekcja Z-2 dokumentu): sekcja 8 klauzuli obiecuje studentowi, że usunie
+		// konto samodzielnie w ustawieniach profilu. Przy zgaszonej ścieżce usunięcia to
+		// zdanie jest NIEPRAWDZIWE W CHWILI WYPOWIADANIA — a obietnica prawa, którego nie
+		// umiemy wykonać, jest gorsza niż brak klauzuli. Dlatego bramka stoi w ewaluacji
+		// flagi (fail-closed + wpis [flags.requires] w logu), nie w runbooku wdrożenia —
+		// ten sam argument, co przy sprzężeniu placementu z egzaminem wyżej.
+		requires: ["accountDeletion"],
 	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje

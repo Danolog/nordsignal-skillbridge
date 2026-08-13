@@ -414,8 +414,27 @@ dBack("S-A1-2 · regula A1+A2 na prawdziwych trasach (audit_log bez sladu osoby)
 	// Powód, próg konsolidacji i nazwana luka — w nagłówku pliku. Zanim ktoś to
 	// dopisze: pętla kasująca surowym SQL-em daje ZIELEŃ przy zepsutej ścieżce
 	// produktu, a ścieżki produktu nie ma (bramka `user.deleteUser`, E1b).
+	// AKTUALIZACJA 2026-08-12 (E1b): S-U-2 ISTNIEJE —
+	// `rodo-e1b-usuniecie-konta-petla.integration.test.ts`. Luka nazwana w nagłówku
+	// tego pliku („osierocenie target_id nie jest tu dowiedzione”) jest tam
+	// domknięta ZACHOWANIEM: przebieg rejestruje konto prawdziwą ścieżką, zasiewa
+	// dane, wywołuje `auth.api.deleteUser` i orzeka, że cel śladu nie rozwiązuje
+	// się do żadnego konta.
+	//
+	// CZEGO TO NIE ZNACZY — i nikomu nie wolno raportować inaczej: tamten dowód
+	// biegnie na BAZIE TESTOWEJ z flagą zapaloną w teście. Na produkcji flaga jest
+	// zgaszona, więc zachowanie ścieżki na produkcji pozostaje NIEZWERYFIKOWANE
+	// do dnia zapłonu.
+	//
+	// PRÓG KONSOLIDACJI Z NAGŁÓWKA — NADAL OTWARTY: lista asercji A1/A2 miała się
+	// przenieść do S-U-2 w dniu włączenia `user.deleteUser`. Włączenie nastąpiło
+	// (za flagą), przeniesienie NIE. Zostawiam świadomie i nazywam, zamiast
+	// odhaczyć: dopóki obie listy żyją osobno, pilnują RÓŻNYCH rzeczy (tu: reguła
+	// A1+A2 na trasach; tam: kompletność usunięcia), więc nie ma jeszcze dwóch
+	// nośników jednej reguły — ale będzie, jeśli ktoś skopiuje asercje A1/A2 do
+	// S-U-2 zamiast je przenieść.
 	it.todo(
-		"S-U-2 (E1b): pelna petla przez PRAWDZIWA sciezke usuniecia konta, rola aplikacyjna — " +
-			"przenosi tu liste asercji A1/A2 po wlaczeniu user.deleteUser",
+		"E1b (dlug): przeniesc liste asercji A1/A2 do S-U-2 albo zapisac decyzje, ze zostaja tu " +
+			"na stale — patrz komentarz wyzej",
 	);
 });

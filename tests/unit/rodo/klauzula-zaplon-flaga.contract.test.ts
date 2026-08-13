@@ -97,14 +97,28 @@ describe("klauzula art. 13 · zapłon", () => {
 		).toEqual([]);
 	});
 
-	it("dopóki tamtej flagi nie ma, próg jest jawny (a nie zapomniany)", () => {
-		// Kontrola dodatnia progu: gdyby ten test zaczął padać, znaczy to, że
-		// E1b wszedł do rejestru — i że test wyżej właśnie zaczął pilnować czegoś
-		// realnego. Wtedy usuwa się ten test, nie tamten.
-		expect(
-			flagiUsuwaniaKonta(),
-			"Flaga usuwania konta pojawiła się w rejestrze — próg minął. Dopisz ją do " +
-				"`requires` flagi privacyNoticeArt13 i skasuj ten test (jego rolę przejmuje test wyżej).",
-		).toEqual([]);
+	// PRÓG MINĄŁ 2026-08-13. Stał tu test „dopóki tamtej flagi nie ma, próg jest
+	// jawny (a nie zapomniany)" — kontrola dodatnia progu, która pilnowała, żeby
+	// wejście flagi usuwania konta do rejestru nie przeszło niezauważone. Flaga
+	// `accountDeletion` weszła scaleniem #293, próg minął zgodnie z planem, więc
+	// test skasowany dokładnie tak, jak nakazywał jego własny komunikat. Jego rolę
+	// przejmuje test W-1 wyżej, który od tej chwili pilnuje czegoś REALNEGO:
+	// sprzężenia zadeklarowanego w `requires`, a nie pustego zbioru.
+	//
+	// Kasowanie asercji jest najtańszym zielonym i zwykle najgorszym — tu jest
+	// poprawne wyłącznie dlatego, że reguła nie znika, tylko zmienia strażnika.
+	// Dowód, że nowy strażnik naprawdę strzeże: mutacja w nagłówku tego pliku.
+
+	it("W-1 realnie GASI klauzulę, gdy ścieżka usunięcia konta jest zgaszona", () => {
+		// Pomiar zachowania, nie kształtu rejestru: „test przestał świecić na
+		// czerwono" to nie to samo co „sprzężenie działa". Env klauzuli zapalony
+		// w obu przypadkach — różnicę robi wyłącznie druga flaga.
+		vi.stubEnv("FLAG_PRIVACY_NOTICE_ART13", "1");
+
+		vi.stubEnv("FLAG_ACCOUNT_DELETION", "");
+		expect(isFeatureEnabled("privacyNoticeArt13")).toBe(false);
+
+		vi.stubEnv("FLAG_ACCOUNT_DELETION", "1");
+		expect(isFeatureEnabled("privacyNoticeArt13")).toBe(true);
 	});
 });
