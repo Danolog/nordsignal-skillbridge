@@ -367,10 +367,17 @@ const MUTACJE = [
 		// ⚠ SPROSTOWANIE DO ZALECENIA RYANA. Ryan zapisał, że ten plik „nie ma
 		// ROLLBACK (łamie (b))". Zmierzone na drzewie `#293`: MA —
 		// `tools/viva-flag-off-recompute.ts:102` → `await pool.query("ROLLBACK")`.
-		// Mutacja ćwiczy więc warunek (1), nie oba. Warunek (2) zostaje
-		// NIEPOTWIERDZONY mutacją i jest tak nazwany w opisie zgłoszenia — na
-		// dzisiejszym drzewie żaden plik z trafieniem nie jest go w stanie złamać
-		// (wszystkie cztery zawierają `ROLLBACK`, zmierzone).
+		// Mutacja ćwiczy więc warunek (1), nie oba — warunek (2) domyka M14.
+		//
+		// ⚠ SPROSTOWANIE DO MOJEGO WŁASNEGO KOMENTARZA (jawne, nie po cichu).
+		// Pierwsze brzmienie tej uwagi mówiło: „na dzisiejszym drzewie żaden plik
+		// z trafieniem nie jest w stanie złamać warunku (2) — wszystkie cztery
+		// zawierają ROLLBACK". NIEPRAWDA, i to z winy zakresu pomiaru: zmierzyłem
+		// cztery pliki z `tools/` i `drizzle/`, pomijając DWA pliki testowe, które
+		// też mają trafienie. `placement-metric.integration.test.ts` ma
+		// `ROLLBACK` = 0 i jest podstawą M14. Wniosek na przyszłość: pomiar
+		// „żaden plik nie…" wymaga policzenia WSZYSTKICH plików z trafieniem,
+		// nie tych, które akurat miałem przed oczami.
 		zastosuj: () =>
 			podmien(
 				PLIK_STRAZNIKA_A1,
@@ -378,6 +385,39 @@ const MUTACJE = [
 				'const SONDY_ODRZUCENIA: Record<string, string> = {\n\t"tools/viva-flag-off-recompute.ts": "mutacja M13 — narzedzie operacyjne, nie test",',
 			),
 		sprawdz: () => czytaj(PLIK_STRAZNIKA_A1).includes("mutacja M13"),
+	},
+	{
+		id: "M14",
+		straznik: "S-A1-4",
+		plik: PLIK_STRAZNIKA_A1,
+		projekt: "unit",
+		filtr: "warunki wpisu",
+		opis: "test BEZ wycofania zapisu dopisany do SONDY_ODRZUCENIA (brak ROLLBACK)",
+		// DRUGA POŁOWA tej samej asercji. M13 czerwieni warunek (1); bez M14
+		// warunek (2) byłby zapisany, ale nieudowodniony — a strażnik bez mutacji
+		// nie liczy się jako strażnik (CLAUDE.md v1.17). Decyzja Olivera (COO)
+		// po sprostowaniu przesłanki Ryana: to dokończenie punktu 3 warunku
+		// wiążącego, nie utwardzanie narzędzia ponad zamówienie.
+		//
+		// KSZTAŁT JEDNOPRZYCZYNOWY, lustro M13:
+		// `placement-metric.integration.test.ts` ma ścieżkę testu (warunek (1)
+		// milczy), ma trafienie (kontrola pozycji martwych cicho), jest na
+		// `DOPUSZCZONE` (lista przejrzanych cicho), jego linia `INSERT` nie
+		// zawiera `actor_id` (A1 cicho). Łamie wyłącznie warunek (2): zmierzone
+		// `grep -c -i ROLLBACK` → 0.
+		//
+		// DLACZEGO NIE „usuń ROLLBACK z samej sondy", co było tańsze na papierze:
+		// warunek (2) czyta CAŁĄ treść pliku, a sonda zawiera słowo `ROLLBACK`
+		// trzykrotnie (kod + dwa zdania komentarza, zmierzone). Usunięcie jednej
+		// linii kodu NIE zaczerwieniłoby asercji i dałoby fałszywą zieleń —
+		// dokładnie tę wadę, którą to narzędzie ma z konstrukcji wykluczać.
+		zastosuj: () =>
+			podmien(
+				PLIK_STRAZNIKA_A1,
+				"const SONDY_ODRZUCENIA: Record<string, string> = {",
+				'const SONDY_ODRZUCENIA: Record<string, string> = {\n\t"src/lib/curriculum/__tests__/placement-metric.integration.test.ts": "mutacja M14 — test bez wycofania zapisu",',
+			),
+		sprawdz: () => czytaj(PLIK_STRAZNIKA_A1).includes("mutacja M14"),
 	},
 ];
 
