@@ -51,7 +51,15 @@ function plikiProdukcyjne(): { sciezka: string; tresc: string }[] {
 		.map((p) => join(SRC, p))
 		.map((sciezka) => ({
 			sciezka: relative(process.cwd(), sciezka).replace(/\\/g, "/"),
-			tresc: bezKomentarzy(readFileSync(sciezka, "utf8")),
+			// NORMALIZACJA BIAŁYCH ZNAKÓW — warunek przeglądu Leo (#313).
+			// Bez niej strażnik gasi się sam przy czynności wykonywanej przed każdym
+			// commitem: `biome check --write` (wymuszany bramką `lint`) łamie długie
+			// zdanie JSX W ŚRODKU FRAZY, a skan po surowym tekście przestaje ją widzieć.
+			// Zmierzona sekwencja: strażnik czerwony → formater → strażnik ZIELONY,
+			// kopia dalej w kodzie. Ślepota na kształt, który produkuje NASZE narzędzie,
+			// jest gorsza niż ślepota na kształt wymyślony — ekspozycja rośnie sama,
+			// przy pierwszym dłuższym zdaniu, bez niczyjego udziału.
+			tresc: bezKomentarzy(readFileSync(sciezka, "utf8")).replace(/\s+/g, " "),
 		}));
 }
 
