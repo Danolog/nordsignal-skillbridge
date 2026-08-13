@@ -85,10 +85,21 @@ export async function beforeDeleteAccount(_user: UzytkownikZaczepu): Promise<voi
  * rozjechany i mylący (to samo rozumowanie, co wariant (B) odrzucony w D-U7).
  *
  * ⚠ GRANICA, KTÓRĄ ZAPISUJĘ ZAMIAST PRZEMILCZEĆ: przy awarii zapisu ten ślad
- * NIE POWSTANIE. Nie czyni to rejestru żądań usunięcia dziurawym, bo rejestrem
- * rozstrzygającym NIE JEST ta tabela — jest nim audit log firmy poza bazą
- * produktu (D-U5 pkt 2: odtworzenie bazy z kopii cofnęłoby także `audit_log`,
- * więc tabela produktu nie może być jedynym rejestrem żądań).
+ * NIE POWSTANIE. Powód, dla którego ta tabela nie może być JEDYNYM rejestrem
+ * żądań, jest osobny i mocniejszy: odtworzenie bazy z kopii zapasowej cofa także
+ * `audit_log`, więc ślad żądania znika razem z danymi, które miał przeżyć.
+ *
+ * ⚠ SPROSTOWANIE CYTATU (2026-08-13, Ethan). Stało tu odesłanie do „D-U5 pkt 2".
+ * **Takiego nośnika nie ma i nigdy nie było w repozytorium** — sprawdzone:
+ * `git log --all -S "D-U5"` wskazuje wyłącznie commity wnoszące ten komentarz,
+ * a w repozytorium systemu operacyjnego plan pakietu RODO zna tylko `D-U8`.
+ * Cytat wskazywał dokument z sesji projektowej, więc czytelnik kodu nie miał
+ * jak do niego dotrzeć — ta sama klasa wady co nieistniejące „ADR-004 §4.3"
+ * (`CLAUDE.md` v1.13). **Nie odtwarzam treści D-U5 z domysłu**; zamieniam
+ * odesłanie na nośnik, który istnieje i tę regułę faktycznie niesie:
+ * `docs/runbooks/neon-kopia-zapasowa.md` §9 („Odtworzenie z kopii — i krok
+ * »ponów usunięcia«"), razem z jawnie nazwaną luką: dla usunięć samoobsługowych
+ * rejestr poza bazą produktu **dziś nie istnieje**.
  */
 export async function afterDeleteAccount(user: UzytkownikZaczepu): Promise<void> {
 	await recordAudit({
