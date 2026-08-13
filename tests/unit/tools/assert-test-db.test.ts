@@ -195,8 +195,21 @@ describe("assertTestDb — polityka ceremonii produkcyjnej", () => {
 		expect(() => assertTestDb(PROD_SHAPE, "DATABASE_URL", CEREMONIA)).not.toThrow();
 	});
 
-	it("host zdalny + E2E_ALLOW_REMOTE=1 → przechodzi", () => {
+	// C1 (przegląd Leo, 2026-08-13) — ceremonię otwiera JEDNA flaga, nie dwie.
+	// Wcześniej wystarczył `E2E_ALLOW_REMOTE=1`, o którym runbook ceremonii nie
+	// wspominał ani słowem: operator czytał dokument mówiący o `CONFIRM_PROD_DB`,
+	// a produkcję otwierała mu też flaga odziedziczona w powłoce po testach
+	// przeglądarkowych. Druga wyrocznia dla tego samego pytania — usunięta.
+	it("E2E_ALLOW_REMOTE=1 NIE otwiera już ceremonii (usunięta druga wyrocznia)", () => {
 		vi.stubEnv("E2E_ALLOW_REMOTE", "1");
+		expect(() => assertTestDb(REMOTE, "DATABASE_URL", CEREMONIA)).toThrow(/ABORT/);
+		expect(() => assertTestDb(PROD_SHAPE, "DATABASE_URL", CEREMONIA)).toThrow(/ABORT/);
+	});
+
+	it("…a razem z CONFIRM_PROD_DB=1 decyduje wyłącznie ta druga", () => {
+		// Kontrola dodatnia: obecność martwej flagi niczego nie psuje ceremonii.
+		vi.stubEnv("E2E_ALLOW_REMOTE", "1");
+		vi.stubEnv("CONFIRM_PROD_DB", "1");
 		expect(() => assertTestDb(REMOTE, "DATABASE_URL", CEREMONIA)).not.toThrow();
 	});
 

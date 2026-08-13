@@ -15,8 +15,10 @@
  *       (`{ allowProduction: true }`), nie zmienna w powłoce. Zmienna jest
  *       dziedziczona przez każdy proces potomny i nie wie, które narzędzie
  *       właśnie odpalasz.
- *   (2) CZY operator jest świadomy → flaga CONFIRM_PROD_DB=1 (albo
- *       E2E_ALLOW_REMOTE=1), czytana WYŁĄCZNIE u narzędzi z punktu (1).
+ *   (2) CZY operator jest świadomy → flaga CONFIRM_PROD_DB=1, czytana
+ *       WYŁĄCZNIE u narzędzi z punktu (1). JEDNA flaga, nie dwie —
+ *       druga (`E2E_ALLOW_REMOTE`) była drugą wyrocznią dla tego samego
+ *       pytania i została usunięta 2026-08-13 (warunek C1 przeglądu Leo).
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * POLARYZACJA: ALLOWLISTA. ŻADNEJ NAZWY PRODUKCJI W TYM PLIKU
@@ -47,15 +49,15 @@
  * A. DOMYŚLNA — `assertTestDb(dsn, varName)` — „to narzędzie nigdy nie tyka
  *    produkcji". Przechodzi wyłącznie host lokalny; host zdalny i DSN
  *    nieparseowalny → ABORT. **Żadna zmienna środowiskowa tego nie obchodzi**
- *    (ani CONFIRM_PROD_DB=1, ani E2E_ALLOW_REMOTE=1). To jest realna „ostatnia
+ *    (w szczególności CONFIRM_PROD_DB=1). To jest realna „ostatnia
  *    linia obrony": operator, który wyeksportował flagę do legalnej ceremonii
  *    i w tej samej powłoce odpalił narzędzie destrukcyjne, zostaje zatrzymany.
  *
  * B. CEREMONIA — `assertTestDb(dsn, varName, { allowProduction: true })` —
  *    dla narzędzi, których udokumentowanym zadaniem jest ceremonia produkcyjna
  *    (migracja schemy, zaciąg treści, remediacja — delegacja v1.12, CLAUDE.md
- *    §5). Host lokalny → PASS. Host zdalny + CONFIRM_PROD_DB=1 (albo
- *    E2E_ALLOW_REMOTE=1) → PASS z ostrzeżeniem. Host zdalny bez flagi → ABORT.
+ *    §5). Host lokalny → PASS. Host zdalny + CONFIRM_PROD_DB=1 → PASS
+ *    z ostrzeżeniem. Host zdalny bez flagi → ABORT.
  *
  * Zasięg polityki B jest policzalny i pilnowany: strażnik
  * `tests/unit/tools/assert-test-db-zasieg-ceremonii.test.ts` czerwieni się,
@@ -210,7 +212,7 @@ export function isDedicatedTestDbUrl(dbUrl: string | undefined): boolean {
  *   3. Host lokalny → PASS cicho (obie polityki; CI stoi na loopbacku).
  *   4. Polityka DOMYŚLNA (bez `allowProduction`) → ODMOWA bezwarunkowa.
  *      Zmienne środowiskowe NIE są tu w ogóle czytane.
- *   5. Polityka CEREMONII + flaga (CONFIRM_PROD_DB=1 / E2E_ALLOW_REMOTE=1) → PASS z ostrzeżeniem.
+ *   5. Polityka CEREMONII + CONFIRM_PROD_DB=1 → PASS z ostrzeżeniem.
  *   6. Polityka CEREMONII bez flagi → ABORT z instrukcją jak postąpić.
  *
  * DSN nieparseowalny jest traktowany jak host zdalny (nie jak host lokalny) —
@@ -256,23 +258,27 @@ export function assertTestDb(
 			`[assert-test-db] ODMOWA: ${varName} wskazuje na ${opisHosta}, ` +
 				`a to narzędzie nie ma ceremonii produkcyjnej — wolno mu wyłącznie na host lokalny ` +
 				`(${ALLOWED_LOCAL_HOSTS.join(", ")}). ` +
-				`Tej odmowy NIE obchodzi żadna zmienna środowiskowa ` +
-				`(ani CONFIRM_PROD_DB=1, ani E2E_ALLOW_REMOTE=1). ` +
+				`Tej odmowy NIE obchodzi ŻADNA zmienna środowiskowa, w tym CONFIRM_PROD_DB=1. ` +
 				`Jeśli to narzędzie naprawdę ma mieć ceremonię produkcyjną — to zmiana w kodzie ` +
 				`(opcja { allowProduction: true }) plus dopisanie go do strażnika zasięgu, ` +
 				`a nie flaga w powłoce.`,
 		);
 	}
 
-	// ── 5/6. Polityka CEREMONII — decyduje jawna flaga operatora ──────────────
-	const confirmProd = process.env.CONFIRM_PROD_DB === "1";
-	const allowRemote = process.env.E2E_ALLOW_REMOTE === "1";
-
-	if (confirmProd || allowRemote) {
-		const flagName = confirmProd ? "CONFIRM_PROD_DB=1" : "E2E_ALLOW_REMOTE=1";
+	// ── 5/6. Polityka CEREMONII — decyduje JEDNA jawna flaga operatora ────────
+	// Świadomie JEDNA. Wcześniej otwierała tę ścieżkę także `E2E_ALLOW_REMOTE=1`
+	// — druga wyrocznia dla tego samego pytania („czy operator wie, że to zdalna
+	// baza"), o której runbook ceremonii nawet nie wspominał. Operator ceremonii
+	// czytał więc dokument mówiący o jednej fladze, a produkcję otwierała mu też
+	// druga, odziedziczona w powłoce po testach przeglądarkowych.
+	// Pomiar przy usuwaniu (2026-08-13): żaden przepływ CI jej nie ustawiał,
+	// a oba narzędzia, dla których powstała (`seed-e2e`, `b5-contract-test`),
+	// są dziś w polityce domyślnej, gdzie żadna zmienna i tak nic nie otwiera.
+	// Flaga przeżyła swój cel — usunięta, zamiast pilnowana.
+	if (process.env.CONFIRM_PROD_DB === "1") {
 		console.warn(
 			`[assert-test-db] OSTRZEŻENIE: ${varName} wskazuje na ${opisHosta}. ` +
-				`${flagName} ustawione — przyjmuję świadomą decyzję operatora. ` +
+				`CONFIRM_PROD_DB=1 ustawione — przyjmuję świadomą decyzję operatora. ` +
 				`NIE używaj z bazą prod bez pełnej świadomości konsekwencji.`,
 		);
 		return;
