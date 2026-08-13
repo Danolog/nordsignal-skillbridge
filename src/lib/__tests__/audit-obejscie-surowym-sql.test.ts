@@ -15,6 +15,28 @@
 //       akurat jest zgodne. Reguła „nikt nie pisze tu bokiem bez przeglądu"
 //       jest tu ważniejsza niż jednorazowa poprawność wstawki.
 //
+// ── ZASIĘG: ARTEFAKTY WYKONYWALNE, NIE „wszystko, co śledzi git" ────────────
+//
+// Strażnik w pierwszym brzmieniu (#289) czytał WSZYSTKIE śledzone pliki i przez
+// to czerwienił się na WŁASNEJ DOKUMENTACJI: zdanie w
+// `docs/data/audit-log-taksonomia.md`, które OPISUJE tę regułę, musi zacytować
+// jej literał — i stawało się „naruszeniem". Reguła karała za dokładne
+// opisanie samej siebie, czyli tworzyła zachętę do pisania dokumentacji
+// bezpieczeństwa NIEPRECYZYJNIE. Od tej zmiany skan obejmuje wyłącznie
+// artefakty WYKONYWALNE (`ROZSZERZENIA_WYKONYWALNE`) — dokument nie zapisuje
+// nic do bazy, więc nie może być miejscem zapisu. `drizzle/*.sql` i `tools/`
+// zostają w zasięgu w całości.
+//
+// ── DWIE LISTY, BO DWA RÓŻNE PYTANIA ────────────────────────────────────────
+//
+// `DOPUSZCZONE`      — „wolno omijać `recordAudit`" (asercja 3).
+// `SONDY_ODRZUCENIA` — „wolno podać `actor_id`, bo sprawdzam, że baza go
+//                      ODRZUCA, i wycofuję zapis" (asercja A1).
+// Asercja A1 świadomie NIE czyta `DOPUSZCZONE` — inaczej przestałaby pilnować
+// rdzenia długu A-1. Komunikaty obu asercji mówią to wprost, bo pierwsza próba
+// naprawy kolizji poszła właśnie tą ścieżką („dopisz do DOPUSZCZONE") i NIE
+// zadziałała: strażnik zalecał lekarstwo, które w tym przypadku nie leczy.
+//
 // ZNALEZISKO PRZY WDROŻENIU (zgłoszone Ryanowi): inwentaryzacja w ADR §3.3
 // wymienia DWIE ścieżki surowego SQL-a (`tools/pilot-enroll.ts`,
 // `drizzle/0006_far_shaman.sql`). W drzewie na `origin/main` = `06d0040` są
@@ -50,23 +72,91 @@ const DOPUSZCZONE = [
 	"drizzle/0006_far_shaman.sql",
 	// Oprzyrządowanie testu miernika placementu — wiersz-atrapa bez `actor_id`.
 	"src/lib/curriculum/__tests__/placement-metric.integration.test.ts",
-	// Ten plik — cytuje wzorzec w komentarzu i w danych testu.
-	"src/lib/__tests__/audit-obejscie-surowym-sql.test.ts",
+	// UWAGA: pozycji „ten plik" tu NIE MA i to jest świadome. Wzorzec zapisany
+	// jest w nim wyłącznie jako wyrażenie regularne (`insert +into +…`, ze
+	// znakami `+`), więc sam siebie nie łapie — pozycja była MARTWA i wypadła
+	// razem z dołożeniem kontroli martwych pozycji.
 ];
 
+/**
+ * SONDY ODRZUCENIA — miejsca, które zapisują `actor_id` CELOWO, po to żeby
+ * udowodnić, że baza taki zapis ODRZUCA.
+ *
+ * To jest lista ODDZIELNA od `DOPUSZCZONE` i musi taka zostać, bo odpowiada na
+ * INNE pytanie:
+ *   • `DOPUSZCZONE`        → „temu miejscu wolno ominąć `recordAudit`",
+ *   • `SONDY_ODRZUCENIA`   → „to miejsce podaje `actor_id` UMYŚLNIE, jako
+ *                             bodziec ujemny, i sprawdza, że baza mówi »nie«".
+ * Zlanie ich w jedną listę zdjęłoby asercję A1 ze WSZYSTKICH miejsc mogących
+ * pisać surowym SQL-em — czyli wyłączyłoby jedyną asercję pilnującą rdzenia
+ * długu A-1. Dlatego lista jest osobna, krótka i obwarowana.
+ *
+ * WARUNEK WPISU (obie rzeczy naraz, do sprawdzenia w przeglądzie):
+ *   (1) to TEST, nie kod produktu ani narzędzie operacyjne;
+ *   (2) zapis jest WYCOFYWANY (`ROLLBACK`) — sonda nie zostawia wiersza.
+ *       `audit_log` jest append-only (wyzwalacz blokuje `UPDATE`/`DELETE`),
+ *       więc sonda zapisująca na trwałe zatruwa bazę bez możliwości sprzątnięcia.
+ *
+ * DZIŚ LISTA JEST PUSTA I TO JEST POPRAWNY STAN. Mechanizm powstaje tutaj, bo
+ * tutaj mieszka reguła; pierwszy wpis przychodzi RAZEM ze zmianą, która go
+ * potrzebuje — sonda parytetu D-U8 z `#293`
+ * (`rodo-e1b-parytet-regula-aktora.integration.test.ts`). Wyjątek dopisuje
+ * zgłoszenie, które go wnosi, nie zgłoszenie, które buduje mechanizm: inaczej
+ * lista od pierwszego dnia niesie pozycję bez pokrycia, a kontrola martwych
+ * pozycji (niżej) słusznie się na tym czerwieni. Sprawdzone wykonaniem.
+ */
+const SONDY_ODRZUCENIA: Record<string, string> = {};
+
 type Trafienie = { plik: string; linia: number; tresc: string };
+
+/**
+ * Rozszerzenia plików objętych skanem — LISTA DOZWOLONYCH, nie czarna lista.
+ *
+ * DLACZEGO ALLOWLISTA, A NIE „wyklucz `*.md`". Strażnik odpowiada na pytanie
+ * „które MIEJSCE ZAPISUJE do audit_log". Zapisać może wyłącznie artefakt
+ * WYKONYWALNY: kod (`.ts`/`.tsx`/`.js`/`.mjs`/`.cjs`) albo migracja (`.sql`).
+ * Dokument nie zapisuje niczego — cytuje regułę. Czarna lista `*.md` usunęłaby
+ * JEDEN format i wróciłaby przy `.mdx`, `.txt`, `.adoc`, przy notatce w `.json`
+ * albo przy dzienniku zmian. Allowlista usuwa KLASĘ.
+ *
+ * PRÓG POWROTU: pierwszy artefakt wykonywalny w rozszerzeniu spoza tej listy
+ * (np. `.py` w `tools/`) — wtedy dopisz rozszerzenie, nie wyjątek na plik.
+ */
+const ROZSZERZENIA_WYKONYWALNE = [
+	"*.ts",
+	"*.tsx",
+	"*.js",
+	"*.mjs",
+	"*.cjs",
+	"*.mts",
+	"*.cts",
+	"*.sql",
+];
 
 /**
  * Szuka po ŚLEDZONYCH plikach repozytorium (`git grep`), nie po dysku — dzięki
  * temu wynik nie zależy od tego, co ktoś ma w `node_modules`, w `.next`
  * ani w niezacommitowanym śmieciu obok.
+ *
+ * Zasięg zawężony do artefaktów wykonywalnych (patrz wyżej). Zawężenie jest
+ * pilnowane WŁASNĄ mutacją w obie strony: dokument z literałem NIE czerwieni,
+ * nowe narzędzie w `tools/` czerwieni.
  */
 function znajdzSuroweWstawki(): Trafienie[] {
 	let wyjscie = "";
 	try {
 		wyjscie = execFileSync(
 			"git",
-			["grep", "-n", "-I", "-i", "-E", 'insert +into +"?audit_log', "--", "."],
+			[
+				"grep",
+				"-n",
+				"-I",
+				"-i",
+				"-E",
+				'insert +into +"?audit_log',
+				"--",
+				...ROZSZERZENIA_WYKONYWALNE,
+			],
 			{ cwd: KORZEN, encoding: "utf8" },
 		);
 	} catch (err) {
@@ -95,24 +185,54 @@ describe("S-A1-4 · obejscie kontraktu TypeScriptu — surowy INSERT do audit_lo
 	});
 
 	it("A1: zadna surowa wstawka nie zapisuje kolumny actor_id", () => {
-		const lamiace = trafienia.filter((t) => /\bactor_id\b/.test(t.tresc));
+		// Wyłączone są WYŁĄCZNIE sondy odrzucenia — NIE `DOPUSZCZONE`. Miejsce
+		// z listy dopuszczonych, które zacznie pisać `actor_id`, ma się tu
+		// zaczerwienić i to jest sedno tej asercji (mutacja 3 w opisie zmiany).
+		const lamiace = trafienia
+			.filter((t) => /\bactor_id\b/.test(t.tresc))
+			.filter((t) => !SONDY_ODRZUCENIA[t.plik]);
 		expect(
 			lamiace.map((t) => `${t.plik}:${t.linia} → ${t.tresc.trim()}`),
 			"Surowy INSERT do audit_log z kolumną actor_id omija typ AuditEntry " +
-				"i przywraca dług A-1. Usuń kolumnę albo — jeśli to zdarzenie klasy 2 " +
-				"(faculty/operator) — przeprowadź przez recordAudit.",
+				"i przywraca dług A-1. Trzy wyjścia i ani jednego czwartego: (a) usuń kolumnę; " +
+				"(b) jeśli to zdarzenie klasy 2 (faculty/operator) — przeprowadź przez recordAudit; " +
+				"(c) jeśli to SONDA UJEMNA (test, który podaje actor_id po to, żeby sprawdzić, " +
+				"że baza go ODRZUCA, i wycofuje zapis ROLLBACK-iem) — dopisz plik do " +
+				"SONDY_ODRZUCENIA, nie do DOPUSZCZONE. ⚠ Dopisanie do DOPUSZCZONE NIE wycisza " +
+				"tej asercji i nie ma tego wyciszyć — to dwie różne reguły.",
 		).toEqual([]);
 	});
 
 	it("kazde miejsce zapisu surowym SQL-em jest na liscie przejrzanych", () => {
-		const nieznane = [...new Set(trafienia.map((t) => t.plik))].filter(
-			(p) => !DOPUSZCZONE.includes(p),
-		);
+		const znane = new Set([...DOPUSZCZONE, ...Object.keys(SONDY_ODRZUCENIA)]);
+		const nieznane = [...new Set(trafienia.map((t) => t.plik))].filter((p) => !znane.has(p));
 		expect(
 			nieznane,
 			"Nowe miejsce zapisu do audit_log z pominięciem recordAudit. " +
 				"Jeśli jest świadome i zgodne z A1 — dopisz je do DOPUSZCZONE w tym pliku " +
-				"razem z jednozdaniowym uzasadnieniem (to pozycja przeglądu, nie formalność).",
+				"razem z jednozdaniowym uzasadnieniem (to pozycja przeglądu, nie formalność). " +
+				"⚠ Jeśli linia zawiera też `actor_id`, samo DOPUSZCZONE NIE wystarczy — " +
+				"czerwona zostanie asercja A1, która listy dopuszczonych świadomie nie czyta. " +
+				"Wtedy właściwą listą jest SONDY_ODRZUCENIA (o ile to sonda ujemna z ROLLBACK-iem) " +
+				"albo zapis nie ma prawa istnieć.",
 		).toEqual([]);
+	});
+
+	// ── Kontrola martwych pozycji — w OBIE strony, wzorem S-U-1/S-U-3 ─────────
+
+	it("listy przejrzanych nie zawieraja pozycji martwych", () => {
+		// Lista, która puchnie o pozycje bez pokrycia, przestaje być czytana —
+		// a wtedy dopisanie kolejnej nie budzi nikogo. To atrapa w drugą stronę.
+		// Ta asercja jest DOKŁADANA w tej zmianie: `S-A1-4` jej nie miał, a jedna
+		// martwa pozycja już się w nim uchowała (pomiar w opisie zmiany).
+		const plikiZTrafieniami = new Set(trafienia.map((t) => t.plik));
+		const martweDopuszczone = DOPUSZCZONE.filter((p) => !plikiZTrafieniami.has(p));
+		const martweSondy = Object.keys(SONDY_ODRZUCENIA).filter((p) => !plikiZTrafieniami.has(p));
+		expect(
+			{ martweDopuszczone, martweSondy },
+			"Pozycja na liście przejrzanych bez ani jednego trafienia — plik zmienił nazwę, " +
+				"przestał pisać surowym SQL-em albo wypadł z zasięgu skanu. Usuń ją; listy mają " +
+				"być krótkie i prawdziwe.",
+		).toEqual({ martweDopuszczone: [], martweSondy: [] });
 	});
 });
