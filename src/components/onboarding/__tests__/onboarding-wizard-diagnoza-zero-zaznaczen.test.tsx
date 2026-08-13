@@ -158,9 +158,10 @@ describe("N2′ — zero zaznaczeń w trybie diagnozy nie przechodzi dalej samo"
 		expect(assessmentStarts(fetchMock)).toBe(0);
 
 		// I nie stoi w miejscu bez wyjścia: są DWA jawne wyjścia, oba do kliknięcia.
-		const fork = screen.getByRole("region", { name: /Nie zaznaczono żadnej kompetencji/i });
-		expect(within(fork).getByRole("button", { name: /Przejdź dalej bez testu/i })).toBeEnabled();
-		expect(within(fork).getByRole("button", { name: /Wróć i zaznacz/i })).toBeEnabled();
+		// Kotwicą są ETYKIETY SOPHII (§3 N2′, wiążące), nie nagłówek sekcji — nagłówek
+		// jest mój i może zniknąć po jej przeglądzie, a strażnik ma przeżyć redakcję copy.
+		expect(screen.getByRole("button", { name: /Przejdź dalej bez testu/i })).toBeEnabled();
+		expect(screen.getByRole("button", { name: /Wróć i zaznacz/i })).toBeEnabled();
 	});
 
 	it("KONTROLA DWUSTRONNA: ≥1 zaznaczenie → test rusza, rozwidlenie się NIE pokazuje", async () => {
@@ -178,7 +179,7 @@ describe("N2′ — zero zaznaczeń w trybie diagnozy nie przechodzi dalej samo"
 		expect(assessmentStarts(fetchMock)).toBe(1);
 		// Strażnik nie może czerwienić się na poprawnym kodzie: rozwidlenia tu nie ma.
 		expect(
-			screen.queryByRole("region", { name: /Nie zaznaczono żadnej kompetencji/i }),
+			screen.queryByRole("button", { name: /Przejdź dalej bez testu/i }),
 		).not.toBeInTheDocument();
 	});
 
@@ -206,7 +207,7 @@ describe("N2′ — zero zaznaczeń w trybie diagnozy nie przechodzi dalej samo"
 		// Wiersz akcji wrócił, rozwidlenie zniknęło, zapisu nie było.
 		expect(screen.getByRole("button", { name: /Zatwierdź i przejdź dalej/i })).toBeInTheDocument();
 		expect(
-			screen.queryByRole("region", { name: /Nie zaznaczono żadnej kompetencji/i }),
+			screen.queryByRole("button", { name: /Przejdź dalej bez testu/i }),
 		).not.toBeInTheDocument();
 		expect(onboardingPosts(fetchMock)).toBe(0);
 	});
@@ -223,7 +224,7 @@ describe("N2′ — zero zaznaczeń w trybie diagnozy nie przechodzi dalej samo"
 		// a nie mijaniem pomiaru — naprawa N2′ NIE MOŻE tego zablokować.
 		await waitFor(() => expect(onboardingPosts(fetchMock)).toBe(1));
 		expect(
-			screen.queryByRole("region", { name: /Nie zaznaczono żadnej kompetencji/i }),
+			screen.queryByRole("button", { name: /Przejdź dalej bez testu/i }),
 		).not.toBeInTheDocument();
 	});
 });

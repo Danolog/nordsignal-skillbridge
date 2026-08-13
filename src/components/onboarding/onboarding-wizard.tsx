@@ -768,16 +768,19 @@ export function OnboardingWizard({
 				) : step === 3 ? (
 					<>
 						<h2 className="font-heading text-2xl font-extrabold">Twoje kompetencje</h2>
-						{/* N2a — ZAPOWIEDŹ TESTU PRZED KLIKNIĘCIEM. Do 2026-08 krok mówił tylko,
-						    że „poziom zmierzy krótki test"; nie mówił, że test rusza zaraz po
-						    tym przycisku, ani co się stanie przy zerze zaznaczeń. Człowiek ma
-						    wiedzieć, co go czeka, ZANIM naciśnie. Świadomie bez liczby pytań:
-						    `total` = 2 × liczba kompetencji POKRYTYCH BANKIEM (start/route.ts:159),
-						    a nie zaznaczonych — obietnica „2 pytania na każdą zaznaczoną" nie
-						    miałaby pokrycia przy zaznaczeniach spoza banku (one idą do mini-samooceny). */}
+						{/* N2a — ZAPOWIEDŹ TESTU PRZED KLIKNIĘCIEM (Sophia §3, wiersz N2a: „jedno
+						    zdanie, że po zatwierdzeniu przyjdzie krótki test zaznaczonych pozycji").
+						    Zdanie środkowe realizuje ten zapis; brzmienie MOJE — Sophia podała kształt,
+						    nie tekst wiążący (inaczej niż przy N2′, gdzie tekst jest jej 1:1).
+						    ŚWIADOMIE BEZ LICZBY PYTAŃ: `total` = 2 × kompetencje POKRYTE BANKIEM
+						    (start/route.ts:159), nie zaznaczone — „2 pytania na każdą zaznaczoną"
+						    byłoby obietnicą bez pokrycia przy zaznaczeniach spoza banku (te idą do
+						    mini-samooceny). ŚWIADOMIE BEZ zdania o zerze zaznaczeń: ten przypadek
+						    ma teraz swój nośnik w rozwidleniu N2′ (tekst Sophii 1:1) i powtórzenie
+						    go tutaj dałoby dwa nośniki jednej reguły. */}
 						<p className="mb-6 mt-1.5 text-sm text-muted-foreground">
 							{diagnosticMode
-								? "Zaznacz, z czym masz styczność — poziom zmierzy krótki test, nie deklaracja. Test zaczyna się od razu po zatwierdzeniu tego kroku i obejmuje wyłącznie to, co zaznaczysz. Jeśli nie zaznaczysz nic, nie ma czego mierzyć i testu nie będzie. Czego nie zaznaczysz, zostaje Twoim planem nauki."
+								? "Zaznacz, z czym masz styczność — poziom zmierzy krótki test, nie deklaracja. Po zatwierdzeniu tego kroku przyjdzie krótki test zaznaczonych pozycji. Czego nie zaznaczysz, zostaje Twoim planem nauki."
 								: "Zaznacz przy każdej umiejętności poziom, jaki masz. Czego nie zaznaczysz, zostaje Twoim planem nauki. Nie musisz zaznaczać nic — możesz zacząć od zera."}
 						</p>
 						<StepMarketCompetencies
@@ -802,13 +805,20 @@ export function OnboardingWizard({
 								className="mt-8 rounded-lg border border-ed-amber bg-ed-badge-bg p-4"
 								aria-labelledby="ob-brak-zaznaczen-tytul"
 							>
+								{/* Nagłówek — MÓJ, nie Sophii: jej §3 N2′ nie przewiduje nagłówka sekcji.
+								    Dołożyłem go wyłącznie jako nośnik `aria-labelledby` (sekcja bez
+								    nazwy nie ma się czym przedstawić czytnikowi ekranu). Do skreślenia
+								    albo przepisania na jej słowo — wtedy zostaje sam `aria-label`. */}
 								<h3 id="ob-brak-zaznaczen-tytul" className="font-heading text-base font-bold">
 									Nie zaznaczono żadnej kompetencji
 								</h3>
+								{/* TEKST SOPHII, 1:1 — `scratchpad/gdzie-jest-diagnoza-sophia.md` §3, wiersz
+								    N2′ („Tekst mój, 1:1"). Nie parafrazować przy refaktorze: to mikrocopy
+								    wiążące dosłownie, nie propozycja. Wcześniej stał tu mój własny akapit
+								    — zdjęty, bo tekst wiążący już istniał. */}
 								<p className="mt-1.5 text-sm text-muted-foreground">
-									Nie ma więc czego zmierzyć testem i tego kroku nie da się zmierzyć za Ciebie.
-									Możesz przejść dalej bez testu — wtedy cały katalog rynku staje się Twoim planem
-									nauki — albo wrócić i zaznaczyć to, z czym masz styczność.
+									Nic nie zaznaczyłeś, więc nie mamy czego zmierzyć — zaczniesz od podstaw. Zaznacz
+									cokolwiek, żeby test sprawdził Twój poziom.
 								</p>
 								<div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
 									<Button
