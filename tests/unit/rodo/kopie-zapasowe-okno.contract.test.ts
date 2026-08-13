@@ -137,6 +137,31 @@ describe("okno kopii zapasowych · sędzia (kontrola dwustronna)", () => {
 		expect(ocen([g("main", 155, true)], OKNO, TERAZ).kod).toBe(0);
 	});
 
+	it("gałąź robocza NIE jest kopią, choć jest nie-domyślna i starsza niż okno", () => {
+		// ⚠ BLIŹNIACZKA M16, ZNALEZIONA PRZEZ LEO (przegląd #314) — druga strona tej
+		// samej koniunkcji. `czyKopiaProdukcji` niesie DWA warunki; M16 ćwiczyła
+		// wyłącznie pierwszy, a przy wypatroszonym drugim (`g.name.startsWith(…)`
+		// usunięte) cała suita nadal dawała `8 passed`. Powód był w danych: każda
+		// gałąź nie-domyślna nazywała się `prod-backup-*`, a każda o innej nazwie
+		// była domyślna — więc warunek nazwy nie miał czego rozstrzygać.
+		//
+		// METODA, NIE POJEDYNCZA WPADKA: koniunkcja wymaga tylu mutacji, ilu ma
+		// członów. Jednostronna mutacja dowodzi, że test czerwieni się na CZYMŚ,
+		// nie że pilnuje TEJ reguły. Stąd M18 obok M16.
+		//
+		// Stawka jest lustrzana wobec M16: tam narzędzie doradziłoby skasowanie
+		// PRODUKCJI, tu — skasowanie CUDZEJ PRACY (gałąź robocza, podglądowa),
+		// bo runbook §8 każe operatorowi skasować to, co narzędzie wskaże.
+		const robocza = g("dev-eksperyment-etl", OKNO + 43);
+		const podgladowa = g("preview-1e7-placement", OKNO + 55);
+		expect(czyKopiaProdukcji(robocza)).toBe(false);
+		expect(czyKopiaProdukcji(podgladowa)).toBe(false);
+
+		const w = ocen([robocza, podgladowa, g("prod-backup-swieza", 1)], OKNO, TERAZ);
+		expect(w.kod).toBe(0);
+		expect(w.przeterminowane).toEqual([]);
+	});
+
 	it("kolejność odwrotna, gdy kasowanie zeszłoby poniżej dwóch kopii (bramka (g))", () => {
 		const w = ocen([g("prod-backup-stara", OKNO + 5), g("prod-backup-swieza", 1)], OKNO, TERAZ);
 		expect(w.kod).toBe(1);

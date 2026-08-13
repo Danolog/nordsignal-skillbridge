@@ -453,6 +453,29 @@ const MUTACJE = [
 		sprawdz: () => !czytaj(PLIK_KOPII).includes("g.default !== true"),
 	},
 	{
+		id: "M18",
+		straznik: "okno kopii",
+		plik: S.kopie,
+		projekt: "unit",
+		filtr: "gałąź robocza",
+		opis: "warunek nazwy usunięty — gałąź robocza liczona jako kopia zapasowa",
+		// BLIŹNIACZKA M16, znaleziona przez Leo przy przeglądzie #314. Predykat jest
+		// KONIUNKCJĄ dwóch warunków; M16 ćwiczyła tylko pierwszy i przy wypatroszonym
+		// drugim suita dawała `8 passed`. Reguła metody, ważniejsza od samego
+		// znaleziska: koniunkcja wymaga tylu mutacji, ilu ma członów — inaczej
+		// dowodzimy, że test czerwieni się na CZYMŚ, a nie że pilnuje TEJ reguły.
+		//
+		// Stawka lustrzana wobec M16: tam sędzia doradzał skasowanie PRODUKCJI,
+		// tu — skasowanie CUDZEJ PRACY (gałęzie robocze i podglądowe starsze niż okno).
+		zastosuj: () =>
+			podmien(
+				PLIK_KOPII,
+				'return g.default !== true && g.name.startsWith("prod-backup-");',
+				"return g.default !== true;",
+			),
+		sprawdz: () => !czytaj(PLIK_KOPII).includes('g.name.startsWith("prod-backup-")'),
+	},
+	{
 		id: "M17",
 		straznik: "okno kopii",
 		plik: S.kopie,
