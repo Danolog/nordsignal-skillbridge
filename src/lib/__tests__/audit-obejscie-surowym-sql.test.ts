@@ -46,6 +46,7 @@
 // takie miejsce nie przeszło po cichu.
 
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -91,11 +92,30 @@ const DOPUSZCZONE = [
  * pisać surowym SQL-em — czyli wyłączyłoby jedyną asercję pilnującą rdzenia
  * długu A-1. Dlatego lista jest osobna, krótka i obwarowana.
  *
- * WARUNEK WPISU (obie rzeczy naraz, do sprawdzenia w przeglądzie):
+ * WARUNEK WPISU (obie rzeczy naraz) — od `#293` sprawdzany MASZYNOWO, asercją
+ * „kazdy wpis na SONDY_ODRZUCENIA spelnia oba warunki wpisu" niżej:
  *   (1) to TEST, nie kod produktu ani narzędzie operacyjne;
  *   (2) zapis jest WYCOFYWANY (`ROLLBACK`) — sonda nie zostawia wiersza.
  *       `audit_log` jest append-only (wyzwalacz blokuje `UPDATE`/`DELETE`),
  *       więc sonda zapisująca na trwałe zatruwa bazę bez możliwości sprzątnięcia.
+ *
+ * DLACZEGO ASERCJA, SKORO PIERWSZY WPIS OBA WARUNKI SPEŁNIA. Bo dziś pilnuje
+ * ich KOD SONDY (`describe.skip` poza bazą lokalną, `ROLLBACK` w `finally`), a
+ * nie ta lista — czyli DRUGI wpis wszedłby przy zielonej suicie i bez śladu.
+ * Wyciszenie działa na CAŁY PLIK (`!SONDY_ODRZUCENIA[t.plik]`), a klucz jest
+ * zwykłym napisem: bez tej asercji „warunek wpisu" byłby wyłącznie komentarzem.
+ * Warunek wiążący Ryana (CRCO) przy `#293`, domena 8; podstawa: CLAUDE.md v1.17.
+ *
+ * ZASIĘG ŚWIADOMIE STATYCZNY — sprawdzamy KSZTAŁT wpisu, nie jego zachowanie:
+ * że ścieżka jest ścieżką testu i że plik zawiera `ROLLBACK`. Że wycofanie
+ * NAPRAWDĘ zachodzi w czasie wykonania — tego ta asercja nie dowodzi i nie
+ * udaje, że dowodzi (Ryan jawnie nie wymaga dowodu wykonaniowego).
+ *
+ * NAZWA LISTY JEST WĘŻSZA NIŻ JEJ ZAKRES (przyjęte przez Ryana, nie blokuje):
+ * dla `faculty`/`operator` nośnik `REGULA_AKTORA` `actor_id` DOPUSZCZA, więc
+ * sonda parytetu bywa bodźcem DODATNIM — baza przyjmuje, zapis i tak wraca
+ * `ROLLBACK`-iem. Warunek wpisu brzmi „test + wycofanie", nie „musi zostać
+ * odrzucone", i tak jest sprawdzany.
  *
  * MECHANIZM POWSTAŁ PUSTY (`#296`) I TAK MIAŁO BYĆ — wyjątek dopisuje
  * zgłoszenie, które go wnosi, nie zgłoszenie, które buduje mechanizm. Pierwszy
@@ -118,6 +138,14 @@ const SONDY_ODRZUCENIA: Record<string, string> = {
 		"w bazie odrzuca dokładnie to, czego zabrania REGULA_AKTORA; każda próba biegnie " +
 		"w transakcji zakończonej ROLLBACK-iem, więc nie zostaje po niej ani jeden wiersz.",
 };
+
+/**
+ * Warunek (1) wpisu na `SONDY_ODRZUCENIA` — „to jest test", wyrażone ścieżką:
+ * katalog `__tests__/` albo nazwa `*.test.ts(x)` / `*.spec.ts(x)`. To jest ta
+ * sama konwencja, po której zbiera testy `vitest.config.ts` — jeśli plik jej nie
+ * spełnia, nie jest testem także dla narzędzia, które go uruchamia.
+ */
+const WZORZEC_SCIEZKI_TESTU = /(^|\/)__tests__\/|\.(test|spec)\.tsx?$/;
 
 type Trafienie = { plik: string; linia: number; tresc: string };
 
@@ -227,6 +255,40 @@ describe("S-A1-4 · obejscie kontraktu TypeScriptu — surowy INSERT do audit_lo
 				"czerwona zostanie asercja A1, która listy dopuszczonych świadomie nie czyta. " +
 				"Wtedy właściwą listą jest SONDY_ODRZUCENIA (o ile to sonda ujemna z ROLLBACK-iem) " +
 				"albo zapis nie ma prawa istnieć.",
+		).toEqual([]);
+	});
+
+	it("kazdy wpis na SONDY_ODRZUCENIA spelnia oba warunki wpisu", () => {
+		// Sprawdzenie KSZTAŁTU wpisu, statyczne — patrz „ZASIĘG ŚWIADOMIE
+		// STATYCZNY" przy liście. Każdy wpis raportuje WSZYSTKIE złamane warunki
+		// naraz, nie pierwszy z brzegu: inaczej naprawa jednego odsłaniałaby drugi
+		// dopiero w kolejnej rundzie CI.
+		const naruszenia = Object.keys(SONDY_ODRZUCENIA).flatMap((plik) => {
+			const powody: string[] = [];
+			if (!WZORZEC_SCIEZKI_TESTU.test(plik)) {
+				powody.push("(1) ścieżka nie jest ścieżką testu");
+			}
+			let tresc = "";
+			try {
+				tresc = readFileSync(resolve(KORZEN, plik), "utf8");
+			} catch {
+				powody.push("plik nie istnieje w drzewie roboczym");
+			}
+			if (tresc && !/\bROLLBACK\b/i.test(tresc)) {
+				powody.push("(2) brak `ROLLBACK` w treści pliku");
+			}
+			return powody.length ? [`${plik}: ${powody.join("; ")}`] : [];
+		});
+		expect(
+			naruszenia,
+			"Wpis na SONDY_ODRZUCENIA nie spełnia warunku wpisu. Wyciszenie asercji A1 " +
+				"działa na CAŁY PLIK, więc na tę listę wchodzi wyłącznie miejsce, które " +
+				"(1) JEST TESTEM — ścieżka w `__tests__/` albo nazwa `*.test.ts(x)`/`*.spec.ts(x)` — " +
+				"oraz (2) WYCOFUJE ZAPIS — treść pliku zawiera `ROLLBACK`; `audit_log` jest " +
+				"dopisywalny-tylko (wyzwalacz blokuje UPDATE/DELETE), więc sonda zapisująca na " +
+				"trwałe zatruwa bazę bez możliwości sprzątnięcia. Narzędzie operacyjne nie wchodzi " +
+				"na tę listę nigdy — dla niego właściwą listą jest DOPUSZCZONE, a `actor_id` " +
+				"nie ma prawa się w nim znaleźć.",
 		).toEqual([]);
 	});
 

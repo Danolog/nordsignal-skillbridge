@@ -61,6 +61,7 @@ const TRASA_DECYZJI = "src/app/api/review-queue/[id]/decision/route.ts";
 const PLIK_ZACZEPOW = "src/lib/auth/account-deletion.ts";
 const PLIK_AUDYTU = "src/lib/audit.ts";
 const PLIK_AUTH = "src/lib/auth/server.ts";
+const PLIK_STRAZNIKA_A1 = "src/lib/__tests__/audit-obejscie-surowym-sql.test.ts";
 
 const S = {
 	petla: "src/lib/db/__tests__/rodo-e1b-usuniecie-konta-petla.integration.test.ts",
@@ -345,6 +346,38 @@ const MUTACJE = [
 				"	return;",
 			),
 		sprawdz: () => !czytaj(PLIK_ZACZEPOW).includes("APIError.fromStatus"),
+	},
+	{
+		id: "M13",
+		straznik: "S-A1-4",
+		plik: PLIK_STRAZNIKA_A1,
+		projekt: "unit",
+		filtr: "warunki wpisu",
+		opis: "narzędzie operacyjne dopisane do SONDY_ODRZUCENIA (nie jest testem)",
+		// Warunek wiążący Ryana (CRCO) przy #293: bez tej mutacji asercja
+		// „kazdy wpis na SONDY_ODRZUCENIA spelnia oba warunki wpisu" byłaby
+		// strażnikiem bez dowodu, że potrafi się zaczerwienić (CLAUDE.md v1.17).
+		//
+		// KSZTAŁT JEDNOPRZYCZYNOWY — pozostałe asercje S-A1-4 mają milczeć:
+		// `tools/viva-flag-off-recompute.ts` ma trafienie (kontrola pozycji
+		// martwych cicho), jego linia `INSERT` nie zawiera `actor_id` (A1 cicho),
+		// jest już na `DOPUSZCZONE` (lista przejrzanych cicho). Łamie wyłącznie
+		// warunek (1): to narzędzie operacyjne, nie test.
+		//
+		// ⚠ SPROSTOWANIE DO ZALECENIA RYANA. Ryan zapisał, że ten plik „nie ma
+		// ROLLBACK (łamie (b))". Zmierzone na drzewie `#293`: MA —
+		// `tools/viva-flag-off-recompute.ts:102` → `await pool.query("ROLLBACK")`.
+		// Mutacja ćwiczy więc warunek (1), nie oba. Warunek (2) zostaje
+		// NIEPOTWIERDZONY mutacją i jest tak nazwany w opisie zgłoszenia — na
+		// dzisiejszym drzewie żaden plik z trafieniem nie jest go w stanie złamać
+		// (wszystkie cztery zawierają `ROLLBACK`, zmierzone).
+		zastosuj: () =>
+			podmien(
+				PLIK_STRAZNIKA_A1,
+				"const SONDY_ODRZUCENIA: Record<string, string> = {",
+				'const SONDY_ODRZUCENIA: Record<string, string> = {\n\t"tools/viva-flag-off-recompute.ts": "mutacja M13 — narzedzie operacyjne, nie test",',
+			),
+		sprawdz: () => czytaj(PLIK_STRAZNIKA_A1).includes("mutacja M13"),
 	},
 ];
 
