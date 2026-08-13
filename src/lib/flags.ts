@@ -192,6 +192,20 @@ export const FLAGS = {
 		// w kodzie ewaluacji flagi, a nie w runbooku wdrożenia.
 		requires: ["masteryGate"],
 	},
+	accountDeletion: {
+		envVar: "FLAG_ACCOUNT_DELETION",
+		description:
+			"E1b (RODO art. 17): ścieżka usunięcia konta przez studenta — włączona ścieżka " +
+			"biblioteki uwierzytelniającej (`user.deleteUser`) z zaczepami before/after, " +
+			"śladem audytowym wzorca A7 i usunięciem natychmiastowym bez karencji (D-U3). " +
+			"Off = trasa `/api/auth/delete-user` odpowiada 404, konto bez zmian. " +
+			"⚠ ZAPŁON NA PRODUKCJI MA WŁASNY RUNBOOK Z LISTĄ BRAMEK — jeden nośnik: " +
+			"`docs/runbooks/zaplon-flagi-usuwania-konta.md` (właściciel: Ethan). Ta flaga " +
+			"NIE JEST przełącznikiem „gotowe/niegotowe”: zielony S-U-1 to dopiero bramka 1 " +
+			"z ośmiu. Otwarte są m.in. porównanie katalogu produkcji z migracjami, kopie " +
+			"zapasowe, sign-off Ryana i ekran w interfejsie. Nie zapalaj bez przejścia listy.",
+		defaultValue: false,
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).
