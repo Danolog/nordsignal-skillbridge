@@ -7,17 +7,37 @@
 > `docs/security/hint-reveals-retencja-signoff.md` §7).
 
 **Wersja:** v0.6 · 2026-08-12 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
-
-**Changelog v0.5 → v0.6 (2026-08-12) — Ryan (CRCO), domknięcie warunku Leo przy zgłoszeniu #288.**
-Jedna zmiana, **bez ruszania choćby jednego okresu, celu, podstawy prawnej ani odbiorcy**:
-sprostowane zdanie we wpisie #7 („rejestr retencji jest jedynym nośnikiem okresów") — obalało je
-zdanie leżące bezpośrednio nad nim. Ten rejestr **powtarza okres** i musi go powtarzać
-(art. 30 ust. 1 lit. f); nie powtarza uzasadnienia. Pełny opis nośników i próg ich zgodności:
-`docs/data/retention.md` v0.3.
 **Administrator danych:** nordsignal (podmiot w rejestracji — NIP TBD, trigger A/B/C, CLAUDE.md §9).
 **Status:** **rejestr minimalny, zasiany** — założony przy sign-offie FSRS (1E.4, rls-matrix v0.30).
 Kompletny przegląd wszystkich czynności przetwarzania w produkcie = **Wendy, Faza 3**, przed pierwszą
 realną rejestracją studenta. Poniższe wpisy to stan wiedzy zweryfikowany na kodzie na dziś.
+
+**Changelog v0.5 → v0.6 (2026-08-10, uzupełniony 2026-08-12) — Ryan (CRCO), zadanie E2c pakietu RODO
+(klauzula z art. 13) + domknięcie warunku Leo przy zgłoszeniu #288. Pięć zmian, z czego trzy to
+sprostowania moich własnych zdań.** Jedna wersja niesie oba zgłoszenia pakietu, bo scalają się tego
+samego dnia i renumerowanie rozjechałoby dziewięć wewnętrznych odsyłaczy do „przeliczenia v0.6".
+
+1. **Przeliczona klasa długu A-1** po doprecyzowaniu administratora z 17:56 („wszystkie 9 kont to
+   moje") i domknięciu rozbieżności z 17:57 (drugie konto Google). Klasa **wraca z „WAŻNE dla
+   danych" na „INFO dla danych"** — ale **nie wraca stare zdanie** i nie wraca stary sposób jego
+   uzasadnienia. Pełne przeliczenie, z jawnym powiedzeniem, że zmiana idzie **na moją korzyść**:
+   sekcja „Klasyfikacja ryzyka — przeliczenie v0.6".
+2. **Przepisane BRZMIENIE DO PODPISU** — grupa (b) („proszeni znajomi") znika, bo administrator
+   oświadcza, że jej nie ma; wchodzi **zamknięty punkt uzgadniający** o rozbieżności między
+   oświadczeniem a pomiarem J1/K1. Rekomendacja informacji post factum staje się
+   **bezprzedmiotowa** i jest przepisana na warunkową.
+3. **Nowy wpis #8 — przetwarzanie treści studenta przez dostawcę modelu językowego.**
+   To **domknięcie luki, nie porządkowanie**: rejestr opisywał siedem czynności i **ani jednym
+   zdaniem** nie opisywał tej, w której dane studenta **opuszczają naszą infrastrukturę**.
+   Wpis powstał, bo klauzula z art. 13 (E2c) nie dała się napisać rzetelnie bez niego — art. 13
+   ust. 1 lit. e (odbiorcy) i lit. f (transfer) nie miały z czego być wyprowadzone.
+4. **Sprostowanie mojego zdania o rejestrze sub-procesorów** (wpis #3) — pisałem, że jest
+   „prowadzony osobno". **Nie jest prowadzony w ogóle.** Zmierzone, sekcja sprostowania niżej.
+5. **(dodane 2026-08-12, zgłoszenie #288) Sprostowanie mojego zdania „rejestr retencji jest jedynym
+   nośnikiem okresów"** (wpis #7). Obalało je zdanie leżące **bezpośrednio nad nim** — ten rejestr
+   okres **powtarza** i musi powtarzać (art. 30 ust. 1 lit. f); nie powtarza **uzasadnienia**,
+   i tylko tyle wolno mi było napisać. Pełny opis trzech nośników okresów i próg ich zgodności:
+   `docs/data/retention.md`, nagłówek. **Żaden okres, cel, podstawa prawna ani odbiorca nie zmieniony.**
 
 **Changelog v0.4 → v0.5 (2026-08-10) — Ryan (CRCO), zadanie E2b pakietu RODO. Pięć zmian, z czego
 trzy to sprostowania moich własnych zdań.**
@@ -135,48 +155,77 @@ konta — w bazie nie ma pola, które to rozstrzyga.
 
 ### Odpowiedź administratora i co dokładnie domyka
 
-Darek odpowiedział 2026-08-10, godz. 17:06 (czas lokalny), wyborem z przedstawionych wariantów:
-**„Znam je — to moje albo proszeni znajomi."** Źródło tej wiedzy: przekaz w zleceniu Olivera (COO);
-**to jest powód, dla którego wymagam podpisu — moja parafraza cudzej wypowiedzi nie jest
-oświadczeniem administratora i nie może nim zostać przez samo zapisanie jej w pliku.**
+Odpowiedź przyszła w **dwóch krokach tego samego dnia** i drugi krok zmienia rozstrzygnięcie, więc
+zapisuję oba. Źródło obu: przekaz w zleceniu Olivera (COO). **To jest powód, dla którego wymagam
+podpisu — moja parafraza cudzej wypowiedzi nie jest oświadczeniem administratora i nie może nim
+zostać przez samo zapisanie jej w pliku.**
+
+| Godz. (2026-08-10) | Treść odpowiedzi | Co zmienia |
+|---|---|---|
+| 17:06 | „Znam je — **to moje albo proszeni znajomi**." | zostawia otwartą grupę osób trzecich |
+| **17:56** | **„Wszystkie 9 to moje konta."** | **zamyka grupę osób trzecich — nie ma jej** |
+| **17:57** | „Tak, mam drugie konto Google." | domyka rozbieżność z pomiarem (niżej) |
+
+**Punkt uzgadniający — rozbieżność zauważona i wyjaśniona, nie przemilczana.** Pomiar E0 (J1/K1)
+pokazuje, że jedno z kont klasy F logowało się przez dostawcę tożsamości Google **adresem
+zweryfikowanym innym niż podstawowy adres administratora**. Oświadczenie „wszystkie 9 to moje konta"
+jest z tym pomiarem zgodne **wyłącznie wtedy**, gdy administrator dysponuje drugim kontem Google —
+i tak właśnie odpowiedział (17:57). **Zapisuję to jako punkt zamknięty**, bo wartość zapisu nie leży
+w samym fakcie (drugie konto pocztowe to nic), tylko w tym, że rejestr niesie **ślad pytania
+i odpowiedzi**: czytający za trzy lata zobaczy, że rozbieżność została zauważona i wyjaśniona.
+Adresu **nie wypisuję** — odesłanie do pomiaru wystarcza, a wpisanie adresu byłoby dokładaniem
+danych osobowych do dokumentu, który ich nie potrzebuje.
 
 Odpowiedź domyka trzy człony mojego starego zdania **różnie** i to jest sedno:
 
-| Człon starego zdania | Stan po odpowiedzi |
+| Człon starego zdania | Stan po doprecyzowaniu z 17:56 |
 |---|---|
-| „28 kont testowych" | **NIEPRAWDA** i odpowiedź tego nie zmienia — kont jest **33**, wierszy `students` **30**. Liczba była zmyślona niezależnie od tego, czyje są konta |
-| „zero prawdziwych studentów" | **potwierdzone w wąskim znaczeniu**: nie ma podmiotu danych **nieznanego administratorowi**. Zwrot „prawdziwy student" wycofuję jako mylący — znajomy, który przeszedł ścieżkę, jest **prawdziwym podmiotem danych**, choć nie jest studentem uczelni-partnera |
-| „administrator i podmiot danych to ta sama osoba" | **NADAL NIEPRAWDA dla części zbioru.** „Proszeni znajomi" to **osoby trzecie** — osoby fizyczne, którym przysługują prawa z rozdziału III RODO i którym należała się informacja z art. 13 **w chwili zbierania danych** |
+| „28 kont testowych" | **NIEPRAWDA** i żadna odpowiedź tego nie zmienia — kont jest **33**, wierszy `students` **30**. Liczba była zmyślona niezależnie od tego, czyje są konta. **Ten człon zostaje obalony na stałe** |
+| „zero prawdziwych studentów" | **potwierdzone** — nie ma podmiotu danych innego niż administrator. Zwrot „prawdziwy student" **i tak wycofuję jako mylący**: o obowiązkach nie rozstrzyga to, czy ktoś jest studentem uczelni-partnera, tylko to, czy jest osobą fizyczną inną niż administrator |
+| „administrator i podmiot danych to ta sama osoba" | **WRACA JAKO PRAWDZIWY dla całego zbioru** — ale na innej podstawie niż w v0.4. Wtedy było to zdanie **niesprawdzone i wygodne**; dziś stoi na pomiarze (33 konta w klasach A–F) **plus** oświadczeniu administratora co do tych 9, których pomiar nie rozstrzyga |
 
-**Ekspozycja spadła o rząd wielkości — nie do zera.** Znani, osiągalni, dający się poinformować,
-zbiór domknięty i policzalny; ale istnieją i mają prawa. Zdanie „nie ma dziś zagrożonego podmiotu
-danych" **nie wraca do obiegu w żadnym brzmieniu.**
+**Ekspozycja spadła do zera — ale zdanie z v0.4 i tak nie wraca do obiegu.** To rozróżnienie jest
+całą treścią tej sekcji, więc mówię je wprost: **wniosek wraca, uzasadnienie nie**. W v0.4 napisałem
+„nie ma dziś zagrożonego podmiotu danych", nie sprawdziwszy niczego — i przez dziewięć dni zdanie
+pełniło rolę faktu. Dziś ten sam wniosek stoi na pomiarze i na oświadczeniu człowieka, który
+odpowiada za jego prawdziwość. **Ta sama konkluzja o innym statusie dowodowym nie jest tą samą
+konkluzją** — i tylko dlatego wolno mi ją napisać ponownie.
 
-### Klasyfikacja ryzyka — moja, nie administratora
+**To jest moment, w którym muszę uważać najbardziej.** Zmiana idzie **na moją korzyść**: czyni mój
+własny dług lżejszym i zdejmuje ze mnie presję terminu. CLAUDE.md §8 (v1.16) mówi, że przesłankę
+działającą na korzyść autora sprawdza się **przed** publikacją, nie po. Sprawdzam ją więc tak —
+**czego ta odpowiedź NIE dowodzi.** Nie dowodzi jej żaden pomiar i **nie da się jej dowieść
+pomiarem**: w bazie nie ma pola „czyje to konto" i nigdy nie będzie. Klasyfikacja niżej stoi
+**wyłącznie na oświadczeniu człowieka** — dlatego jest **warunkowa wobec podpisu**, a nie wobec
+rozmowy, i dlatego próg 2 („okazuje się, że któregoś konta administrator jednak nie zna") zostaje
+w mocy bez zmian.
 
-**Klasa długu A-1: WAŻNE dla kontroli · WAŻNE dla danych** (podniesione z „INFO dla danych").
-Podnoszę klasę **mimo korzystnej odpowiedzi**, i to jest świadome:
+### Klasyfikacja ryzyka — przeliczenie v0.6 (moja, nie administratora)
 
-1. **Obowiązek z art. 13 już powstał i nie został wykonany.** Powstaje w chwili zbierania danych od
-   osoby, nie przy „oficjalnym" starcie. Klauzula informacyjna nie istnieje w żadnym pliku —
-   zweryfikowane przeze mnie (odczyt 2026-08-10 15:17 UTC):
-   `git ls-tree -r --name-only origin/main | grep -i "klauzul\|art-13\|informacyjn"`
-   → **zero trafień, kod wyjścia 1**. Wyjątek z art. 13 ust. 4 (osoba już dysponuje
-   informacjami) trzeba by **wykazać per osoba**; rozmowa przy proszeniu o test tego nie wykazuje.
-2. **Art. 17 jest dla tych osób dziś niewykonalny z dwóch niezależnych powodów** — nie ma ścieżki
-   usunięcia konta w produkcie **oraz** wiersze `audit_log` z ich identyfikatorem, adresem IP
-   i sygnaturą przeglądarki są chronione wyzwalaczem append-only. Pierwszy człon zmierzony przeze
-   mnie (odczyt 2026-08-10 15:17 UTC): `git grep -c "deleteUser" origin/main -- .` → **zero
-   trafień, kod wyjścia 1**; `git grep -n "delete(user)" origin/main -- src/ tools/` → **trzy
-   trafienia, wszystkie poza produktem**: `src/lib/db/seed.ts:92` (zasiew) oraz
-   `tools/b5-contract-test.ts:392,393` (sprzątanie po teście kontraktowym).
-3. **Cztery z tych kont mają zgłoszenia projektów**, czyli przeszły ścieżkę produktu, a nie samo
-   założenie konta.
+**Klasa długu A-1: WAŻNE dla kontroli · INFO dla danych** — obniżone z „WAŻNE dla danych" (v0.5).
+Przeliczam **przesłanka po przesłance**, tak jak przeliczałem przy podnoszeniu, bo obniżenie
+na moją korzyść wymaga **więcej** staranności niż podniesienie, nie mniej.
 
-**Dlaczego mimo to nie KRYTYCZNE:** zbiór jest domknięty i imiennie znany administratorowi, osoby są
-osiągalne, dane nie opuszczają platformy (brak odbiorców zewnętrznych), nie ma wśród nich kategorii
-z art. 9, a naprawa jest w toku i ma nazwanego wykonawcę. Ryzyko jest realne i ograniczone —
-i tak je nazywam.
+| # | Przesłanka z v0.5 | Co z nią robi doprecyzowanie z 17:56 |
+|---|---|---|
+| 1 | **Obowiązek z art. 13 powstał i nie został wykonany** | **UPADA.** Była to przesłanka **nośna** i tak ją oznaczałem. Obowiązek informacyjny biegnie wobec **osoby, od której zbieramy dane**. Gdy tą osobą jest sam administrator, art. 13 ust. 4 (osoba już dysponuje informacjami) jest spełniony **dla całego zbioru i wykazywalny bez badania per osoba** — administrator zna cele, podstawy i okresy, bo sam je ustanowił. W v0.5 pisałem, że wyjątku „nie wykazuje rozmowa przy proszeniu o test"; to było prawdą **dla osób trzecich** i przestaje mieć przedmiot, gdy osób trzecich nie ma |
+| 2 | **Art. 17 niewykonalny z dwóch powodów** | **STOI CO DO FAKTU, SPADA CO DO WAGI.** Fakt bez zmian: nie ma ścieżki usunięcia konta **i** wiersze `audit_log` chroni wyzwalacz append-only. Zmienia się to, **czyje prawo jest dziś niewykonalne** — wyłącznie administratora wobec siebie samego. Nie ma osoby, której odmawiamy prawa wbrew jej woli, i nie ma komu złożyć skargi do organu. To wada **gotowości**, nie **szkoda dla osoby**: dokładnie „WAŻNE dla kontroli, INFO dla danych" |
+| 3 | **Cztery konta mają zgłoszenia projektów** | **STOI CO DO FAKTU, TRACI CIĘŻAR.** Przejście ścieżki produktu podnosiło wagę, bo mówiło „to nie są puste konta, tam są dane o człowieku". Człowiekiem jest administrator; zgłoszenia są jego własne |
+
+**Nie wracam natomiast do niczego, co v0.5 obaliła.** Zdanie „28 kont testowych" pozostaje obalone,
+zwrot „prawdziwy student" pozostaje wycofany, a sposób, w jaki v0.4 doszła do tej samej klasy
+(zdanie niesprawdzone, wygodne dla autora), pozostaje nazwany błędem. **Obniżam klasę, nie
+przywracam zdania.**
+
+**Dlaczego nie schodzę niżej niż „WAŻNE dla kontroli":** niewykonalność art. 17 jest zmierzona
+i realna, a bramka przed pierwszą osobą z zewnątrz stoi dokładnie na niej. Zdolności, której nie
+mamy, nie ratuje to, że dziś nikt jej nie potrzebuje.
+
+**Warunek zawieszający całą tę klasyfikację.** Obniżenie stoi na oświadczeniu, którego **nie da się
+zweryfikować pomiarem**. Dopóki oświadczenie nie jest podpisane, obowiązuje klasa **surowsza
+(WAŻNE dla danych)** — domyślnie zamknięte, bo pomyłka w tę stronę kosztuje tydzień pracy, a
+w drugą stronę kosztuje pominiętą osobę. To ta sama reguła domyślnego zamknięcia, którą v0.5
+stosowała do listy adresatów.
 
 **Co podnosi klasę do KRYTYCZNEJ — cztery progi, żeby „WAŻNE" nie było przymiotnikiem bez warunku.
 Wystarczy pierwszy z brzegu:**
@@ -186,44 +235,47 @@ Wystarczy pierwszy z brzegu:**
    w toku**.
 2. **Okazuje się, że któregoś konta administrator jednak nie zna** — wtedy upada cała podstawa
    tej klasyfikacji, bo znikają „znani i osiągalni".
-3. **Termin 2026-08-24 mija bez przekazania informacji z art. 13** — zwłoka przestaje być
-   nazwana i policzalna, a staje się zaniechaniem.
+3. ~~**Termin 2026-08-24 mija bez przekazania informacji z art. 13**~~ — **próg wygaszony w v0.6
+   jako bezprzedmiotowy.** Nie ma adresata informacji post factum. Próg **nie znika po cichu**:
+   zostaje przekreślony, żeby widać było, że istniał i dlaczego przestał obowiązywać. Gdyby
+   zadziałał próg 2, wraca razem z nim.
 4. **Rejestruje się pierwsza osoba pozyskana kanałem publicznym** przed domknięciem pakietu —
-   niezależnie od stanu tych 9 kont.
+   niezależnie od stanu tych 9 kont. **Po v0.6 to jest próg jedyny realnie czynny** i to on
+   trzyma cały pakiet.
 
 **Kto pilnuje progów:** Ryan (CRCO). Próg 1 i 2 są zdarzeniowe i eskalują natychmiast do Darka;
-próg 3 sprawdza się z kalendarza; próg 4 jest wprost warunkiem ukończenia pakietu RODO.
+próg 3 wygaszony (wraca z progiem 2); próg 4 jest wprost warunkiem ukończenia pakietu RODO.
+
+**Co doprecyzowanie z 17:56 zmienia dla harmonogramu, powiedziane wprost:** presja terminowa
+2026-08-24 **znika**, bo znika zaległość wobec osoby. **Pozycja z pakietu nie znika** — klauzula
+z art. 13 przestaje być naprawą zaległości i wraca do roli, którą miała mieć od początku:
+**dokumentu wyprzedzającego, gotowego przed pierwszą osobą z zewnątrz.** To zmiana charakteru
+pracy, nie jej odwołanie.
 
 ### Próg naprawy — rozdzielony na przeszłość i przyszłość
 
 | Kierunek | Próg | Właściciel |
 |---|---|---|
 | **Przyszłość** — pierwsza osoba **nieznana administratorowi** | pakiet RODO domknięty (klauzula art. 13 widoczna w rejestracji + wykonalne art. 17) **przed** jej rejestracją | Oliver (pakiet), Darek (sign-off klauzuli) |
-| **Przeszłość** — osoby trzecie już w bazie | informacja z art. 13 **post factum**, rekomendacja niżej | **Darek** — akt wychodzący na zewnątrz, poza moim mandatem Poziomu 2 |
+| ~~**Przeszłość** — osoby trzecie już w bazie~~ | **wygaszone w v0.6 — brak osób trzecich** (oświadczenie 17:56). Wraca wyłącznie z progiem 2 | — |
 
-### Rekomendacja: informacja post factum dla znajomych — TAK, ale po domknięciu pakietu
+### Informacja post factum — BEZPRZEDMIOTOWA (przepisane w v0.6)
 
-To jest moja ocena, nie decyzja: **poinformować, jednorazowo i imiennie, po domknięciu pakietu RODO,
-najpóźniej 2026-08-24.** Trzy powody i jeden warunek zrywający:
+**Rekomendacja z v0.5 („poinformować znajomych, najpóźniej 2026-08-24") traci przedmiot: nie ma
+adresata.** Nie kasuję jej jednak bez śladu — była rekomendacją wobec organu i wobec kupującego,
+a dokument, w którym zobowiązania znikają po cichu, jest gorszy niż dokument, w którym widać, co
+i dlaczego przestało obowiązywać.
 
-1. **Informacja wysłana dziś musiałaby zawierać zdanie nieprawdziwe albo wstydliwe.** Klauzula mówi
-   m.in. „możesz żądać usunięcia danych". Dziś nie umiemy tego wykonać. Obietnica bez pokrycia jest
-   gorsza niż tydzień zwłoki — to ta sama zasada, dla której cały pakiet ma taką, a nie inną
-   kolejność.
-2. **Jeden nośnik.** Treść, którą wyślemy znajomym, to **ta sama** klauzula z art. 13, którą E2c
-   pisze dla rejestracji. Napisanie osobnego listu teraz i klauzuli za tydzień daje dwie wersje tej
-   samej informacji, które natychmiast się rozjadą.
-3. **Zwłoka jest krótka, nazwana i ma termin.** Zwłoka bez terminu byłaby ukryciem sprawy.
+**Brzmienie warunkowe, które ją zastępuje:** *gdyby okazało się, że którekolwiek z 9 kont należy
+do osoby innej niż administrator* (próg 2), obowiązek informacji z art. 13 wobec tej osoby
+**odżywa natychmiast**, w kształcie z v0.5: jednorazowo, imiennie, treścią **tej samej** klauzuli,
+którą E2c pisze dla rejestracji (jeden nośnik — nigdy osobny list), a na wcześniejsze pytanie
+osoby — niezwłocznie i uczciwie, w tym o tym, czego jeszcze nie umiemy zrobić.
 
-**Warunek zrywający (unieważnia punkty 1–3):** jeżeli którakolwiek z tych osób **zapyta wcześniej**
-o swoje dane, o ich usunięcie albo o cokolwiek z rozdziału III — odpowiadamy **natychmiast**
-i uczciwie, w tym o tym, czego dziś nie umiemy zrobić. Czekanie na pakiet dotyczy naszej inicjatywy,
-nigdy cudzego pytania.
-
-**Czego do informacji post factum brakuje i kto to daje:** rozdziału 9 kont na „moje własne adresy"
-i „osoby trzecie". Bez tego lista adresatów nie istnieje. **Domyślnie zamknięte:** dopóki podziału
-nie ma, wszystkie 9 traktujemy jako osoby trzecie — pomyłka w tę stronę kosztuje jeden zbędny list,
-pomyłka w drugą stronę kosztuje pominiętą osobę.
+**Co z v0.5 zostaje w mocy niezależnie od tego, czyje są konta:** zasada, że **nie wysyłamy
+klauzuli obiecującej prawo, którego nie umiemy wykonać**. To ona ustawiła kolejność całego pakietu
+(najpierw ścieżka usunięcia konta, potem klauzula) i doprecyzowanie administratora jej nie rusza —
+patrz warunek wejścia w życie w samej klauzuli.
 
 ### BRZMIENIE DO PODPISU
 
@@ -233,20 +285,23 @@ pomyłka w drugą stronę kosztuje pominiętą osobę.
 > oświadczam co następuje wobec stanu bazy produkcyjnej zmierzonego 2026-08-10 (33 konta `user`,
 > 30 wierszy `students`, projekt Neona `long-pond-11214233`, gałąź `br-proud-sun-al3aezrj`):
 >
-> 1. **Znam pochodzenie wszystkich kont na produkcji.** Żadne z nich nie należy do osoby nieznanej
->    mi osobiście. Nie zarejestrował się dotąd żaden student uczelni-partnera ani żadna osoba
->    pozyskana kanałem publicznym.
-> 2. **Konta dzielą się na dwie grupy:** (a) konta założone przeze mnie lub przez zespół
->    (w tym techniczne, weryfikacyjne i demonstracyjne); (b) konta osób, które **osobiście
->    poprosiłem o przejście ścieżki produktu**.
-> 3. **Przyjmuję do wiadomości, że osoby z grupy (b) są osobami trzecimi i podmiotami danych**
->    w rozumieniu RODO — przysługują im prawa z rozdziału III, a informacja z art. 13 była im
->    należna w chwili zakładania konta i **nie została im przekazana**.
-> 4. Liczba kont z grupy (b): ______ (do uzupełnienia; brak uzupełnienia = wszystkie 9 kont
->    z pomiaru J1/J3 traktujemy jako grupę (b)).
-> 5. **Zobowiązuję się przekazać tym osobom informację z art. 13** po domknięciu pakietu RODO,
->    najpóźniej do **2026-08-24**, a na wcześniejsze pytanie którejkolwiek z nich — odpowiedzieć
->    niezwłocznie.
+> 1. **Znam pochodzenie wszystkich kont na produkcji.** Nie zarejestrował się dotąd żaden student
+>    uczelni-partnera ani żadna osoba pozyskana kanałem publicznym.
+> 2. **Dziewięć kont klasy F z pomiaru J1/J3 — tych, których pomiar nie potrafi przypisać —
+>    to konta moje własne.** Żadne z nich nie należy do innej osoby fizycznej. Pozostałe konta
+>    to konta założone przeze mnie lub przez zespół (techniczne, weryfikacyjne, demonstracyjne).
+> 3. **Punkt uzgadniający — rozbieżność z pomiarem, zamknięta.** Przyjmuję do wiadomości, że
+>    pomiar E0 (J1/K1) wykazał jedno konto logujące się przez dostawcę tożsamości Google adresem
+>    zweryfikowanym **innym niż mój adres podstawowy**. Potwierdzam, że **ten adres również
+>    należy do mnie** (drugie konto Google). Oświadczenie z punktu 2 jest z pomiarem zgodne
+>    i nie zawiera przemilczanej sprzeczności.
+> 4. **Rozumiem, co z tego wynika dla obowiązków.** Skoro podmiotem danych jestem ja sam,
+>    informacja z art. 13 nie była należna nikomu innemu, a prawa z rozdziału III nie są dziś
+>    nikomu odmawiane. **Nie zwalnia to z przygotowania jednego i drugiego** przed pierwszą osobą
+>    spoza zespołu.
+> 5. **Zobowiązuję się zgłosić niezwłocznie**, gdyby okazało się, że którekolwiek konto należy
+>    jednak do innej osoby — wiem, że wtedy obowiązek informacyjny wobec niej odżywa
+>    natychmiast, a klasa ryzyka wraca na wyższą.
 > 6. **Zakres tego oświadczenia.** Dotyczy wyłącznie stanu na 2026-08-10 i wyłącznie bazy
 >    produkcyjnej. Nie obejmuje rejestracji późniejszych, kopii zapasowych ani środowisk innych
 >    niż produkcyjne. Nie jest zgodą na rejestrację kogokolwiek spoza zespołu przed domknięciem
@@ -265,12 +320,13 @@ i zmienia ją wyłącznie nowy pomiar albo nowa okoliczność.
 | # | Czynność | Podstawa prawna | Zgoda? | Retencja | Odbiorcy zewn. |
 |---|---|---|---|---|---|
 | 1 | Konto i uwierzytelnianie (Better Auth: e-mail, hasło/OAuth Google) | art. 6 ust. 1 lit. b (umowa) | nie | czas trwania konta (kaskada) | brak *(wpis skrócony — do uzupełnienia, Wendy Faza 3)* |
-| 2 | Mapowanie kompetencji i analiza luk (sylabus → kompetencje → rynek) | art. 6 ust. 1 lit. b (umowa) | nie | czas trwania konta | brak *(wpis skrócony)* |
+| 2 | Mapowanie kompetencji i analiza luk (sylabus → kompetencje → rynek) | art. 6 ust. 1 lit. b (umowa) | nie | czas trwania konta | **dostawca modelu językowego — patrz wpis #8** *(sprostowane w v0.6; było „brak")* |
 | **3** | **Profilowanie uczenia się — dobór i harmonogram powtórek (FSRS)** | **art. 6 ust. 1 lit. b (umowa)** | **nie** | `review_logs` 12 m-cy; `review_states` czas trwania konta | **brak** |
 | 4 | Zdarzenia **zawodowe** / placement zawodowy (staż, praca — deklarowane) | art. 6 ust. 1 lit. a (zgoda) | **tak** — odwoływalna, delete-on-revoke **co do `placement_events`** (zasięg sprostowany w v0.5 — patrz sekcja „Wpis #4 — sprostowanie") | do odwołania zgody; ślad decyzji o zgodzie wg wpisu #6 | brak *(wpis skrócony)* |
 | **5** | **Automatyczne dopasowanie ścieżki nauki (placement curriculum — odblokowanie modułów wynikiem diagnozy)** | **art. 6 ust. 1 lit. b (umowa)** | **nie** | `curriculum_placements` — czas trwania konta | **brak** |
 | **6** | **Ślad rozliczalności i bezpieczeństwa (`audit_log`)** | **art. 6 ust. 1 lit. f (prawnie uzasadniony interes) + art. 5 ust. 2 / art. 32** | **nie** | **bezterminowa — tabela append-only; patrz dług A-1** | **brak** |
 | **7** | **Rejestr uczestników pilotażu (`pilot_participants`) — kto liczy się jako obserwacja w mierniku** | **art. 6 ust. 1 lit. f (prawnie uzasadniony interes: ewaluacja własnej reguły produktowej)** | **nie** — ale **przysługuje sprzeciw z art. 21** | czas trwania konta studenta; przegląd przy zamknięciu kohorty (`docs/data/retention.md`) | **brak** |
+| **8** | **Funkcje oparte na modelu językowym (Pomocnik kariery, tutor projektu, obrona ustna, generowanie mapy umiejętności i uzasadnień luk)** | **art. 6 ust. 1 lit. b (umowa)** | **nie** | treść zapisana u nas wg tabel czynności macierzystych; u dostawcy — patrz wpis #8 | **TAK — dostawca modelu językowego jako podmiot przetwarzający (art. 28) + transfer poza EOG (art. 44 i nast.)** |
 
 Pełny opis niżej mają **wpis #3** (przedmiot sign-offu 1E.4), **wpis #5** (bramka projektowa
 1E.7 L3), **wpis #6** (warunek rozstrzygnięcia taksonomii `audit_log`) i **wpis #7** (bramka
@@ -363,9 +419,24 @@ jako dowód kompetencji. Nie trafia do Paszportu (kredencjał wysokiej stawki) a
 wykładowcy: `review_states` — `app_faculty` bez grantu; `review_logs` — DENY-both (`REVOKE ALL`
 app_student+app_faculty). Nikt poza samym studentem (i silnikiem owner-side) nie widzi profilu.
 
-**Odbiorcy zewnętrzni.** Brak. Dane nie opuszczają platformy. Podprocesorzy infrastruktury (Neon,
-Vercel) — rejestr sub-procesorów prowadzony osobno, poza zakresem tego wpisu.
+**Odbiorcy zewnętrzni.** Brak — **i to twierdzenie zostaje**: profil FSRS nie jest wysyłany do
+modelu językowego (silnik jest algorytmem, nie modelem — patrz wpis #8, sekcja „Czego dostawca
+NIE dostaje").
 
+> **SPROSTOWANIE (v0.6) — moje własne zdanie o rejestrze sub-procesorów.**
+> **Stare brzmienie, cytowane dosłownie:** „Podprocesorzy infrastruktury (Neon, Vercel) — *rejestr
+> sub-procesorów prowadzony osobno, poza zakresem tego wpisu*."
+> **Taki rejestr nie istnieje.** Zmierzone (odczyt 2026-08-10):
+> `git ls-tree -r --name-only origin/main | grep -iE "subproces|sub-proces|podproces|dpa|powierzen"`
+> → **zero trafień, kod wyjścia 1**. Zwrot „prowadzony osobno" sugerował, że dokument gdzieś jest
+> i tylko nie tutaj — a nie ma go nigdzie. To ta sama klasa wady co przesłanka, która zrodziła
+> CLAUDE.md §8 v1.16: zdanie **wygodne dla autora**, bo czyniło wpis kompletnym bez pracy.
+> **Stan faktyczny:** podmioty przetwarzające naszej infrastruktury (Neon — baza, Vercel —
+> hosting) oraz dostawca modelu językowego (wpis #8) są opisani **wyłącznie** we wpisie #8 i
+> w klauzuli z art. 13. Pełny rejestr sub-procesorów z umowami powierzenia (art. 28 ust. 3) —
+> **dług nazwany, właściciel Wendy (Faza 3), próg: przed pierwszą osobą spoza zespołu**.
+
+<!-- retencja: review_logs, review_states -->
 **Retencja.** `review_logs` — 12 miesięcy (ślad behawioralny, art. 5 ust. 1 lit. e); `review_states`
 — czas trwania konta (stan roboczy). Szczegóły i uzasadnienie: `docs/data/retention.md`.
 Art. 17 (usunięcie): `student_id ON DELETE CASCADE` na obu tabelach — kasowanie konta czyści profil
@@ -519,6 +590,7 @@ autora klauzuli:
 
 **Odbiorcy zewnętrzni.** Brak. Dane nie opuszczają platformy.
 
+<!-- retencja: curriculum_placements -->
 **Retencja.** Czas trwania konta — uzasadnienie i zastrzeżenie co do `blocking_hole_slug`:
 `docs/data/retention.md`. Art. 17 realizowany kaskadą `student_id ON DELETE CASCADE`.
 **Uwaga konstrukcyjna:** wiersz jest nośnikiem uprawnienia, więc mechanizm append-only **nie może
@@ -596,6 +668,7 @@ audytowy nie jest elementem usługi świadczonej studentowi. Test równowagi: da
 kodów i identyfikatorów technicznych, brak treści, brak odbiorców zewnętrznych, brak profilowania
 na tej podstawie — interes osoby nie przeważa.
 
+<!-- retencja: audit_log -->
 **Retencja: BEZTERMINOWA — okres nazwany, nie domyślny.** Uzasadnienie, konstrukcja zgodności
 (ograniczenie przechowywania realizowane **przez zawartość wiersza**, skoro czasu ograniczyć się nie
 da) i dwa nazwane ograniczenia mają **jeden nośnik: `docs/data/retention.md`, wiersz `audit_log`**.
@@ -805,6 +878,7 @@ widzieć: rejestr zaprojektowano tak, że prawo osoby daje się wykonać jednym 
 
 **Odbiorcy zewnętrzni.** Brak.
 
+<!-- retencja: pilot_participants -->
 **Retencja.** Czas trwania konta studenta, z **przeglądem celowanym przy zamknięciu kohorty** —
 pełne uzasadnienie i analiza (dlaczego to **nie** jest ten sam przypadek co `curriculum_placements`)
 w `docs/data/retention.md`, wiersz `pilot_participants`.
@@ -816,7 +890,7 @@ w `docs/data/retention.md`, wiersz `pilot_participants`.
 > Nie powtarzam **uzasadnienia** — i tylko to miałem prawo napisać.
 > **Brzmienie obowiązujące:** `retention.md` jest **źródłem** okresu (tam się go ustala); ten
 > rejestr jest jego **kopią wymuszoną przepisem**. Pełna lista nośników i próg ich zgodności:
-> `docs/data/retention.md`, nagłówek (v0.3).
+> `docs/data/retention.md`, nagłówek.
 
 **Art. 17.** `student_id … ON DELETE CASCADE` (`drizzle/0047_sad_la_nuit.sql`, `schema.ts:2398-2400`,
 odczyt 2026-08-10) — usunięcie konta kasuje wiersz rejestru, a zdarzenia tej osoby automatycznie
@@ -856,6 +930,119 @@ studenta — żeby druga kohorta nie wymagała kasowania śladu udziału w pierw
    automatycznego dopasowania ścieżki nauki".
 2. **Informacja o prawie sprzeciwu z art. 21** — obowiązkowa przy podstawie z lit. f i najczęściej
    pomijana w klauzulach kopiowanych z sieci. Razem ze wskazaniem, jak sprzeciw wykonać.
+
+---
+
+## Wpis #8 — Funkcje oparte na modelu językowym (dostawca jako podmiot przetwarzający)
+
+**Dlaczego ten wpis powstaje dopiero teraz — i dlaczego to jest luka, nie porządkowanie.**
+Rejestr opisywał siedem czynności i **ani jednym zdaniem** nie opisywał tej jednej, w której dane
+studenta **opuszczają naszą infrastrukturę**. Cztery wpisy (#3, #5, #6, #7) niosły w kolumnie
+„Odbiorcy zewnętrzni" słowo **„brak"**, a wpisy #1/#2/#4 były zasiane skrótowo z tym samym słowem.
+Dla #3, #5, #6 i #7 to słowo jest **prawdziwe**; dla #2 było **nieprawdziwe** i prostuję je w tej
+wersji. Wykryła to nie moja czujność, tylko próba napisania klauzuli z art. 13: **art. 13 ust. 1
+lit. e (odbiorcy) i lit. f (przekazanie poza EOG) nie miały z czego być wyprowadzone.** Zapisuję
+genezę, bo to drugi raz w tym rejestrze, gdy dokument wychodzący na zewnątrz wykrywa brak
+w dokumencie wewnętrznym.
+
+**Czynność.** Przetwarzanie treści wytworzonej przez studenta i o studencie przez **zewnętrzny
+model językowy** (ang. *large language model* — program generujący tekst na podstawie podanego
+tekstu) w celu realizacji funkcji produktu: rozmowa z Pomocnikiem kariery, tutor projektu,
+prowadzenie i ocena obrony ustnej, budowa mapy umiejętności z sylabusa, uzasadnienia luk
+kompetencyjnych, dobór projektów.
+
+**Kategorie osób.** Studenci korzystający z platformy; wtórnie — wykładowcy (generowanie sugestii
+dla panelu wykładowcy).
+
+**Zakres wysyłanych danych — zmierzony, nie założony.** Warstwa modelu to **13 modułów**
+(odczyt `origin/main`, 2026-08-10):
+
+```
+$ git grep -ln "generateText\|streamText\|generateObject" origin/main -- 'src/lib/ai/**' 'src/app/api/**' | grep -v __tests__
+career-helper.ts · generate-brief.ts · generate-faculty-suggestions.ts · generate-skill-map.ts
+generate-why.ts · learning-steps.ts · match-projects.ts · model.ts · parse-syllabus.ts
+pipeline/step3-semantic.ts · project-tutor.ts · timeout.ts · usage.ts · verify-gaps.ts
+```
+
+Do dostawcy trafia przede wszystkim **treść swobodna**: wiadomości studenta w rozmowie z Pomocnikiem
+kariery, jego odpowiedzi w obronie ustnej, opisy projektów, treść sylabusa. To jest **najbogatsza
+w treść** kategoria danych w całym produkcie — bogatsza niż cokolwiek we wpisach #3 i #5, które są
+zbiorami liczb.
+
+**Czego dostawca NIE dostaje** (istotne, bo ogranicza zakres i pozwala napisać klauzulę uczciwie,
+nie strasząc):
+- **adresu pocztowego ani hasła** — adres występuje w bazie w dokładnie jednym miejscu (`user.email`,
+  pomiar S2d Ethana, E1b §2.3) i nie wchodzi do żadnego zapytania do modelu;
+- **profilu powtórek FSRS** (wpis #3) — silnik jest algorytmem liczbowym, nie modelem;
+- **decyzji o odblokowaniu modułów** (wpis #5) — `src/lib/curriculum/placement.ts` to funkcja
+  czysta, „zero LLM, zero losowości" (cytat z wpisu #5).
+
+**Cel.** Realizacja funkcji rdzeniowych produktu edukacyjnego. Bez modelu językowego Pomocnik
+kariery, tutor i obrona ustna **nie istnieją jako funkcje**.
+
+**Podstawa prawna: art. 6 ust. 1 lit. b RODO — wykonanie umowy.** Ta sama granica co we wpisach
+#3 i #5: dane niezbędne do działania rdzenia usługi = umowa; dane opcjonalne ponad rdzeń = zgoda
+(wpis #4).
+
+**Rola dostawcy: podmiot przetwarzający (art. 28), nie odbiorca-administrator.** Dostawca
+przetwarza treść **na nasze polecenie**, w celu przez nas określonym; nie staje się administratorem
+tych danych. Dostawcą jest **Anthropic** — zmierzone, nie przyjęte:
+
+```
+$ git show origin/main:src/lib/ai/model.ts | head -1
+import { anthropic } from "@ai-sdk/anthropic";
+   (modele domyślne produkcji: claude-sonnet-4-6 / claude-haiku-4-5-20251001 / claude-opus-4-8)
+```
+
+**Transfer poza EOG (Europejski Obszar Gospodarczy) — zachodzi.** Nie ustawiamy własnego adresu
+punktu dostępowego dostawcy, więc obowiązuje jego domyślny:
+
+```
+$ git grep -n "baseURL\|baseUrl" origin/main -- 'src/lib/ai/**'
+(brak wyjścia)   kod wyjścia: 1
+```
+
+**Luki dowodowe — nazwane, NIEZWERYFIKOWANE, i nikt nie cytuje ich później jako domkniętych:**
+
+| # | Czego nie wiem | Dlaczego nie zmierzyłem | Kto domyka |
+|---|---|---|---|
+| P-1 | Czy mamy zawartą **umowę powierzenia (art. 28 ust. 3)** z dostawcą modelu | To fakt umowny, nie fakt w kodzie — nie da się go odczytać komendą z repozytorium; wymaga sprawdzenia warunków konta u dostawcy | Darek (posiadacz konta) → Wendy (Faza 3) |
+| P-2 | Na jakiej **podstawie z rozdziału V RODO** stoi transfer (decyzja o adekwatności / standardowe klauzule umowne) | jak wyżej — dokument, nie kod | Darek → Wendy |
+| P-3 | Czy treść jest u dostawcy **wykorzystywana do trenowania** modeli i jak długo jest przechowywana | warunki dostawcy, nie nasz kod. **To jest pytanie, które student zada jako pierwsze** | Darek → Wendy |
+| P-4 | **Region** przetwarzania u dostawcy bazy (Neon) i hostingu (Vercel) | `vercel.json` **nie zawiera klucza `regions`** (zmierzone, odczyt 2026-08-10 — cały plik ma 9 linii), więc obowiązuje region domyślny dostawcy, którego nie odczytałem ze źródła autorytatywnego | Ethan (odczyt z konsoli dostawcy) |
+
+**Wszystkie cztery są warunkiem, nie ozdobą:** klauzula z art. 13 musi podać podstawę transferu
+(art. 13 ust. 1 lit. f). Do czasu domknięcia P-1…P-3 klauzula **mówi o tym wprost, zamiast
+zmyślać podstawę** — patrz `docs/legal/klauzula-informacyjna-art13.md`, sekcja „Czego jeszcze nie
+możemy potwierdzić".
+
+<!-- retencja: odsyla -->
+**Retencja.** Po naszej stronie: treść zapisana w tabelach czynności macierzystych
+(`career_helper_turns`, `tutor_turns`, `viva_answers`, `project_submissions`) wg
+`docs/data/retention.md` — **tam okres się ustala; ten wpis żadnego nie ustala i żadnego nie
+powtarza** (poprawione 2026-08-12; brzmiało „ten plik jest jedynym nośnikiem okresów" — patrz
+sprostowanie w nagłówku `retention.md` v0.4). Po stronie dostawcy: **nieustalone (P-3)**.
+
+**Art. 22 — nie ma zastosowania, ale z innego powodu niż we wpisie #5.** Werdykt modelu w obronie
+ustnej dotyczy **kredencjału wysokiej stawki**, a ten z konstytucji §7 (v1.13) **zawsze przechodzi
+przez człowieka** — decyzja nie jest więc „wyłącznie zautomatyzowana" w rozumieniu art. 22 ust. 1.
+To zabezpieczenie jest **produktowe i wcześniejsze niż RODO** w naszym porządku; nośnikiem reguły
+jest ADR-008, nie ten wpis.
+
+**Środki bezpieczeństwa.** Treść studenta jest opakowywana w znacznik `<user_input untrusted="true">`
+i przycinana (`sanitizeForPrompt`, limit 4000 znaków) — środek przeciw wstrzyknięciu polecenia
+(ang. *prompt injection*), nie środek ochrony danych; nazywam go tak, jak działa. Rozliczenie
+zużycia modelu idzie do `ai_usage_ledger` **bez identyfikatora konta** (kolumna `user_id` ma zero
+wierszy i zero producentów — pomiar Ethana E1b §1.3, dług A-2 do zamknięcia w E1b).
+
+**Wymóg dla klauzuli art. 13 (E2c) — cztery rzeczy, wszystkie wiążące:**
+1. **Wymienić dostawcę modelu językowego jako odbiorcę** (art. 13 ust. 1 lit. e). Przemilczenie
+   byłoby najcięższą wadą całej klauzuli — to jedyny podmiot, do którego wychodzi treść.
+2. **Powiedzieć wprost, że dane wychodzą poza EOG** (lit. f) i **nie zmyślać podstawy transferu**,
+   dopóki P-1…P-3 nie są domknięte.
+3. **Odpowiedzieć na pytanie o trenowanie modeli** — albo faktem, albo jawnym „ustalamy to".
+4. **Nie obiecywać, że treść zostaje u nas.** Zdanie „Twoje dane nie opuszczają platformy" jest dla
+   tej czynności **nieprawdziwe** i nie wolno go użyć w żadnym brzmieniu.
 
 ---
 
