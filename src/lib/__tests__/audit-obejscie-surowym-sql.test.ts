@@ -27,6 +27,14 @@
 // nic do bazy, więc nie może być miejscem zapisu. `drizzle/*.sql` i `tools/`
 // zostają w zasięgu w całości.
 //
+// ⚠ CZEGO TEN STRAŻNIK NIE PILNUJE (etykieta, nie naprawa): zasięg detektora
+// obejmuje wyłącznie `INSERT INTO` w JEDNEJ LINII — zapis złamany na dwie linie
+// jest dla niego niewidoczny (M-D, #299). Zmierzone 2026-08-13: 0 wieloliniowych
+// na 6 miejsc zapisu. Domknięcie wymaga skanu po zdaniach, co przepisuje model
+// `Trafienie` i asercję A1 — właściciel Leo, przegląd Ryan, próg: pierwsza zmiana
+// `znajdzSuroweWstawki`/`ROZSZERZENIA_WYKONYWALNE` albo siódme miejsce zapisu,
+// zapora 2026-08-31.
+//
 // ── DWIE LISTY, BO DWA RÓŻNE PYTANIA ────────────────────────────────────────
 //
 // `DOPUSZCZONE`      — „wolno omijać `recordAudit`" (asercja 3).
