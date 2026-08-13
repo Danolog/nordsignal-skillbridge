@@ -26,17 +26,23 @@
  * M4 — próg przekroczony bez domknięcia sprzężenia (dokładnie to, co się stanie,
  *      gdy E1b Ethana wejdzie do rejestru, a ktoś zapomni o `requires`).
  *   Zmiana: `src/lib/flags.ts` — do rejestru dopisana flaga
- *           `accountDeletion: { envVar: "FLAG_ACCOUNT_DELETION", description: "E1b",
- *           defaultValue: false }`, bez dopisania jej do `requires` klauzuli.
- *   Padł: „gdy flaga usuwania konta wejdzie do rejestru, klauzula MUSI ją wymagać (W-1)".
- *   Komunikat: „W rejestrze jest flaga usuwania konta (accountDeletion), a klauzula
- *          art. 13 jej NIE wymaga. Warunek W-1 sekcji Z-2: sekcja 8 klauzuli obiecuje
- *          studentowi samodzielne usunięcie konta — przy zgaszonej ścieżce to zdanie
- *          jest nieprawdziwe w chwili wypowiadania. Dopisz ją do `requires`."
- *   Data: 2026-08-13. Mutacja cofnięta.
+ *           `accountDeletion: { envVar: "FLAG_ACCOUNT_DELETION", description:
+ *           "MUTACJA M4 — atrapa flagi E1b.", defaultValue: false }`, BEZ dopisania
+ *           jej do `requires` flagi klauzuli.
+ *   Padły 2 testy: „gdy flaga usuwania konta wejdzie do rejestru, klauzula MUSI
+ *           ją wymagać (W-1)" oraz „dopóki tamtej flagi nie ma, próg jest jawny
+ *           (a nie zapomniany)".
+ *   Komunikat: „AssertionError: W rejestrze jest flaga usuwania konta
+ *           (accountDeletion), a klauzula art. 13 jej NIE wymaga. Warunek W-1
+ *           sekcji Z-2: sekcja 8 klauzuli obiecuje studentowi samodzielne usunięcie
+ *           konta — przy zgaszonej ścieżce to zdanie jest nieprawdziwe w chwili
+ *           wypowiadania. Dopisz ją do `requires` flagi privacyNoticeArt13.:
+ *           expected [ 'accountDeletion' ] to deeply equal []"
+ *   Wykonana 2026-08-13 na zacommitowanym drzewie, cofnięta (`git checkout
+ *           src/lib/flags.ts`).
  *
- * Kontrola dwustronna: bez mutacji wszystkie testy tego pliku są zielone, a test
- * „domyślnie zgaszona" dowodzi, że pilnujemy stanu, nie samego istnienia wpisu.
+ * Kontrola dwustronna: bez mutacji „Tests 5 passed (5)", a test „domyślnie
+ * zgaszona" dowodzi, że pilnujemy STANU flagi, nie samego istnienia wpisu.
  */
 
 import { afterEach, describe, expect, it, vi } from "vitest";

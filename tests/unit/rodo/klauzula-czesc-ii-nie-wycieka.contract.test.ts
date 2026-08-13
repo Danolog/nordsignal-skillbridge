@@ -21,42 +21,53 @@
  * „Pokaż, co się da" jest tu gorsze niż brak strony.
  *
  * ── DOWÓD, ŻE STRAŻNIK STRZEŻE (CLAUDE.md v1.17 — mutacja, nie zielona suita) ─
- * Trzy mutacje, każda po innym nośniku wady, wszystkie 2026-08-13, wszystkie
- * cofnięte. Wyjścia cytowane dosłownie z `pnpm test:run`.
+ * Trzy mutacje, każda po innym nośniku wady. Wszystkie wykonane 2026-08-13 NA
+ * ZACOMMITOWANYM drzewie i wszystkie cofnięte (`git checkout <plik>`). Wyjścia
+ * cytowane dosłownie z `pnpm test:run <ten plik>`.
  *
  * M1 — treść aparatu przeniesiona do CZĘŚCI I (najbardziej realna wpadka: autor
- *      dopisuje notkę dla recenzenta w środku tekstu dla studenta).
- *   Zmiana: `klauzula-informacyjna-art13.md`, po linii 126 (koniec akapitu
- *           wstępnego CZĘŚCI I) dopisane: „Uwaga dla recenzenta: nie jestem
- *           prawnikiem, to draft."
- *   Padły: 4 testy — „dokument w repozytorium przechodzi przez bramkę bez
- *          wyjątku", „w treści dla studenta nie ma ANI JEDNEGO odcisku aparatu",
- *          „bloki do renderowania też są czyste", „render nie zna żadnej treści
- *          spoza tego, co dostał".
- *   Komunikat: „[klauzula art. 13] W treści dla studenta znalazłem aparat
- *          wewnętrzny: - zastrzeżenie autora, że nie jest prawnikiem
- *          (nie jestem prawnikiem) → „nie jestem prawnikiem"".
+ *      dopisuje notkę dla recenzenta w środku tekstu dla studenta; cięcie po
+ *      znacznikach jej NIE widzi, bo formalnie leży w miejscu treści studenta).
+ *   Zmiana: `docs/legal/klauzula-informacyjna-art13.md`, po akapicie wstępnym
+ *           CZĘŚCI I („…przeczytać raz i zrozumieć.", linia 126) dopisana linia:
+ *           „Uwaga dla recenzenta: nie jestem prawnikiem, to draft."
+ *   Padło 8 testów, m.in. „dokument w repozytorium przechodzi przez bramkę bez
+ *           wyjątku", „w treści dla studenta nie ma ANI JEDNEGO odcisku aparatu",
+ *           „bloki do renderowania też są czyste (nie tylko surowy tekst)",
+ *           „klucze maszynowe strażnika okresów nie trafiają do DOM".
+ *   Komunikat: „KlauzulaError: [klauzula art. 13] W treści dla studenta znalazłem
+ *           aparat wewnętrzny:  - zastrzeżenie autora, że nie jest prawnikiem
+ *           (nie jestem prawnikiem) → „nie jestem prawnikiem""
+ *   TA SAMA mutacja czerwieni bramkę E2E (`tests/e2e-pw/80-e4-klauzula-art13.spec.ts`,
+ *           job `a11y-klauzula`): „3 failed, 2 passed", pierwszy test —
+ *           „Expected: 200 / Received: 500". Czyli fail-closed zadziałał do końca:
+ *           strona się NIE wyrenderowała, zamiast wyrenderować się z wyciekiem.
  *
  * M2 — zniknął znacznik końca (ktoś przemianował nagłówek CZĘŚCI II-B).
- *   Zmiana: `klauzula-informacyjna-art13.md` linia 358,
+ *   Zmiana: `docs/legal/klauzula-informacyjna-art13.md` linia 358,
  *           „# CZĘŚĆ II-B — aparat wewnętrzny (nie publikujemy)" → „# Aneks B".
- *   Padły: te same 4 testy.
- *   Komunikat: „[klauzula art. 13] Po CZĘŚCI I nie ma nagłówka CZĘŚCI II.
- *          Bez znacznika końca nie umiem odciąć aparatu wewnętrznego, a „do końca
- *          pliku" opublikowałoby go w całości."
+ *   Padło 9 testów (te co przy M1 + „nierozpoznana treść przed pierwszym
+ *           nagłówkiem = wyjątek", który przy tym kształcie dokumentu przestaje
+ *           dostawać spodziewany wyjątek).
+ *   Komunikat: „KlauzulaError: [klauzula art. 13] Po CZĘŚCI I nie ma nagłówka
+ *           CZĘŚCI II. Bez znacznika końca nie umiem odciąć aparatu wewnętrznego,
+ *           a „do końca pliku” opublikowałoby go w całości."
  *
- * M3 — osłabiona bramka w KODZIE (a nie w dokumencie): odciski palców przestają
- *      obowiązywać. To mutacja pod drugą warstwę — sprawdza, czy testy nie
- *      opierają się wyłącznie na cięciu po znacznikach.
- *   Zmiana: `src/lib/legal/klauzula-art13.ts`, ciało
- *           `assertBezAparatuWewnetrznego` zastąpione przez `return;`.
- *   Padł: „bramka odcisków palców w ogóle działa (kontrola ujemna)".
- *   Komunikat: „expected [Function] to throw an error".
+ * M3 — osłabiona bramka w KODZIE (a nie w dokumencie). Mutacja pod DRUGĄ warstwę:
+ *      sprawdza, czy suita nie opiera się wyłącznie na cięciu po znacznikach.
+ *   Zmiana: `src/lib/legal/klauzula-art13.ts` — na początku ciała
+ *           `assertBezAparatuWewnetrznego` wstawione `return;`.
+ *   Padł 1 test: „bramka odcisków palców w ogóle działa (kontrola ujemna)".
+ *   Komunikat: „AssertionError: expected [Function] to throw an error".
+ *   To celowo mutacja o wąskim zasięgu — pokazuje, że kontrola UJEMNA (bramka
+ *   rzuca na spreparowanym tekście) jest niezależna od kontroli DODATNIEJ
+ *   (dokument przechodzi). Bez niej wypatroszenie bramki przeszłoby na zielono.
  *
- * Kontrola dwustronna: na drzewie bez mutacji „Tests 11 passed (11)" — strażnik
- * czerwieni się na każdej z trzech wad ORAZ milczy na poprawnym dokumencie.
- * Testy „kontrola dodatnia" niżej pilnują, żeby cisza nie brała się z pustki:
- * wycięta treść musi zawierać realne zdania klauzuli i wszystkie 13 sekcji.
+ * Kontrola dwustronna: na drzewie bez mutacji „Tests 13 passed (13)" (a w całym
+ * katalogu `tests/unit/rodo/` — „30 passed") — strażnik czerwieni się na każdej
+ * z trzech wad ORAZ milczy na poprawnym dokumencie. Testy „kontrola dodatnia"
+ * niżej pilnują, żeby cisza nie brała się z pustki: wycięta treść musi zawierać
+ * realne zdania klauzuli, wszystkie 13 sekcji i pięć tabel.
  */
 
 import { readFileSync } from "node:fs";
