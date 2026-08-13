@@ -276,7 +276,7 @@ harmonogram powtórek, dane o stażu i pracy, udział w pilotażu.
    wskazujących na Ciebie**. Trzymamy go bezterminowo, bo to jedyny sposób, żeby wykazać, że system
    działał tak, jak twierdzimy — również wtedy, gdy ktoś zarzuci nam coś przeciwnego.
 2. **Kopie zapasowe — do 30 dni.** Robimy kopie bazy na wypadek awarii. Twoje dane mogą jeszcze
-   przez pewien czas istnieć w takiej kopii; **najpóźniej po 30 dniach kopie z Twoimi danymi
+   przez pewien czas istnieć w takiej kopii; <!-- kopie:okno_dni --> **najpóźniej po 30 dniach kopie z Twoimi danymi
    wygasają**. Kopii nie używamy do niczego poza odtworzeniem systemu po awarii, a jeśli musimy
    go odtworzyć — **ponawiamy na nim Twoje usunięcie**.
 3. **Pliki, które sam pobrałeś i wysłałeś.** Pliki, które pobierzesz ze SkillBridge (na przykład
