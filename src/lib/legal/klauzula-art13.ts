@@ -106,8 +106,22 @@ class KlauzulaError extends Error {
  * wołając samo cięcie.
  */
 export function assertBezAparatuWewnetrznego(tekst: string): void {
-	const trafienia = ODCISKI_APARATU.filter(({ wzorzec }) => wzorzec.test(tekst)).map(
-		({ wzorzec, co }) => `${co} (${wzorzec.source}) → „${tekst.match(wzorzec)?.[0]}"`,
+	// NORMALIZACJA BIAŁYCH ZNAKÓW — warunek przeglądu Leo (#310).
+	//
+	// Markdown łamie akapity w środku zdania (twarde zawijanie w pliku `.md` to
+	// rutyna, a soft break znika przy renderowaniu). Bez tej linii notka „Uwaga dla
+	// recenzenta: nie jestem\nprawnikiem, to jest draft." wpisana w środek CZĘŚCI I
+	// przechodziła przez OBIE warstwy na zielono — cięcie po znacznikach jej nie
+	// widzi z definicji (kształt się nie zmienił), a odciski palców szukały frazy
+	// CIĄGŁEJ. Student czytał ją w całości, bo przeglądarka skleja miękkie łamanie.
+	// Zmierzone: cała suita RODO 30/30 zielona przy tym zdaniu na stronie.
+	//
+	// Kolejność ma znaczenie: normalizujemy PO wycięciu komentarzy HTML w
+	// `wytnijCzescI` (te wycina wzorzec wielolinijkowy) — przy odwrotnej kolejności
+	// znacznik komentarza nie miałby gdzie się skończyć.
+	const plaski = tekst.replace(/\s+/g, " ");
+	const trafienia = ODCISKI_APARATU.filter(({ wzorzec }) => wzorzec.test(plaski)).map(
+		({ wzorzec, co }) => `${co} (${wzorzec.source}) → „${plaski.match(wzorzec)?.[0]}"`,
 	);
 	if (trafienia.length > 0) {
 		throw new KlauzulaError(

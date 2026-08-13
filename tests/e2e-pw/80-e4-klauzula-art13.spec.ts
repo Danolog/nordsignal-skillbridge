@@ -25,17 +25,33 @@ import { expect, test } from "@playwright/test";
 
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"];
 
-/** Zdania z CZĘŚCI II — żadne nie ma prawa pojawić się w DOM. */
-const APARAT_WEWNETRZNY = [
-	"Nie jestem prawnikiem",
-	"Warunki wejścia w życie",
-	"NIE POKAZUJEMY GO NIKOMU",
-	"Co musi sprawdzić prawnik",
-	"aparat wewnętrzny",
-	"CZĘŚĆ II",
-	"W-1",
-	"Ryan",
-	"Ethan",
+/**
+ * Zdania z CZĘŚCI II — żadne nie ma prawa pojawić się w DOM.
+ *
+ * `wielkoscLiter: "obojetna"` tam, gdzie zdanie jest ZDANIEM: autor dopisujący
+ * notkę w środku akapitu napisze „…nie jestem prawnikiem…" małą literą, a warstwa
+ * w kodzie łapie to wzorcem z modyfikatorem `i` (`ODCISKI_APARATU`). Warstwa
+ * mierząca stronę musi widzieć ten sam zakres — inaczej nie jest drugą warstwą,
+ * tylko węższą kopią pierwszej. ZMIERZONE: przy porównaniu wrażliwym na wielkość
+ * liter mutacja Leo („Uwaga dla recenzenta: nie jestem / prawnikiem") przechodzi
+ * przez tę warstwę na zielono nawet po normalizacji białych znaków.
+ *
+ * `wielkoscLiter: "dokladna"` tam, gdzie fraza jest KODEM, nie zdaniem: `W-1`
+ * małą literą to `w-1` — nazwa klasy narzędziowej szerokości (Tailwind). Dziś na
+ * tej stronie nie występuje (zmierzone: 0 trafień), ale strażnik nie ma stać na
+ * tym, że tak zostanie — pierwszy element o szerokości 4 px zamieniłby go
+ * w fałszywy alarm, a wyciszony strażnik nie broni już niczego.
+ */
+const APARAT_WEWNETRZNY: readonly { zdanie: string; wielkoscLiter: "obojetna" | "dokladna" }[] = [
+	{ zdanie: "Nie jestem prawnikiem", wielkoscLiter: "obojetna" },
+	{ zdanie: "Warunki wejścia w życie", wielkoscLiter: "obojetna" },
+	{ zdanie: "NIE POKAZUJEMY GO NIKOMU", wielkoscLiter: "obojetna" },
+	{ zdanie: "Co musi sprawdzić prawnik", wielkoscLiter: "obojetna" },
+	{ zdanie: "aparat wewnętrzny", wielkoscLiter: "obojetna" },
+	{ zdanie: "CZĘŚĆ II", wielkoscLiter: "dokladna" },
+	{ zdanie: "W-1", wielkoscLiter: "dokladna" },
+	{ zdanie: "Ryan", wielkoscLiter: "dokladna" },
+	{ zdanie: "Ethan", wielkoscLiter: "dokladna" },
 ];
 
 test.describe("@safe E4 — klauzula art. 13 pod /prywatnosc", () => {
@@ -73,14 +89,25 @@ test.describe("@safe E4 — klauzula art. 13 pod /prywatnosc", () => {
 
 	test("w DOM nie ma ANI JEDNEGO zdania z aparatu wewnętrznego", async ({ page }) => {
 		await page.goto("/prywatnosc");
-		const html = await page.content();
-		for (const zdanie of APARAT_WEWNETRZNY) {
+		// NORMALIZACJA BIAŁYCH ZNAKÓW — warunek przeglądu Leo (#310).
+		// Bez niej ta warstwa jest ślepa dokładnie na to samo, co warstwa w kodzie:
+		// zdanie zawinięte w pliku markdown (twarde łamanie akapitu, rutyna w `.md`)
+		// zostaje w HTML-u przełamane znakiem końca wiersza, więc `toContain` na
+		// ciągłej frazie go nie widzi — a PRZEGLĄDARKA skleja miękkie łamanie i
+		// student czyta zdanie w całości. Zmierzone: „Uwaga dla recenzenta: nie
+		// jestem\nprawnikiem" w HTML, jedno zdanie na ekranie, obie warstwy zielone.
+		// Ta warstwa mierzy stronę, tamta repozytorium — ale bez tej linii nie były
+		// niezależne w tym jednym wymiarze, tylko ślepe na ten sam kształt.
+		const html = (await page.content()).replace(/\s+/g, " ");
+		for (const { zdanie, wielkoscLiter } of APARAT_WEWNETRZNY) {
+			const igla = wielkoscLiter === "obojetna" ? zdanie.toLowerCase() : zdanie;
+			const stog = wielkoscLiter === "obojetna" ? html.toLowerCase() : html;
 			expect(
-				html,
+				stog,
 				`„${zdanie}" WYCIEKŁO na stronę widzianą przez studenta. CZĘŚĆ II dokumentu ` +
 					`nigdy nie jest publikowana — student, który to zobaczy, dostaje dowód, ` +
 					`że klauzuli nie napisał prawnik.`,
-			).not.toContain(zdanie);
+			).not.toContain(igla);
 		}
 		// Klucze maszynowe strażnika okresów też nie są treścią dla człowieka.
 		expect(html).not.toContain("retencja:");
