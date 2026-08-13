@@ -156,6 +156,10 @@ export function OnboardingWizard({
 	// 422 ze startu (bank nie pokrywa ścieżki) → jawny fallback do klasycznej samooceny.
 	const [diagnosisFallback, setDiagnosisFallback] = useState(false);
 	const [startingDiagnosis, setStartingDiagnosis] = useState(false);
+	// N2′ — rozwidlenie „zero zaznaczeń" otwarte. true = zamiast wiersza akcji krok
+	// pokazuje DWA jawne wyjścia (dalej bez testu / wróć i zaznacz). Nie jest to
+	// ostrzeżenie do przeczytania: dopóki student nie wybierze, krok stoi.
+	const [noSelectionFork, setNoSelectionFork] = useState(false);
 	// Tryb diagnozy aktywny: flaga ON i bank nie odmówił pokrycia tej ścieżki.
 	const diagnosticMode = diagnosticEnabled && !diagnosisFallback;
 
@@ -357,6 +361,9 @@ export function OnboardingWizard({
 
 	// ── Wybór kompetencji (krok 3) ──────────────────────────────────────────
 	const handleSelectionChange = (name: string, level: PossessionLevel | null) => {
+		// N2′: rozwidlenie mówi „nic nie zaznaczono". Każda zmiana zaznaczeń może to
+		// zdanie unieważnić, więc panel znika — zamiast wisieć i kłamać o stanie listy.
+		if (noSelectionFork) setNoSelectionFork(false);
 		// Zmiana zaznaczeń unieważnia trwający/ukończony test (1.12) — pomiar
 		// dotyczył innego zestawu; serwer i tak wznowi/odrzuci po odcisku wejścia.
 		if (diagnosis || diagnosisOutcome) {
@@ -378,8 +385,15 @@ export function OnboardingWizard({
 	const startDiagnosis = async () => {
 		const names = Object.keys(selections);
 		if (names.length === 0) {
-			// 0 zaznaczeń = nie ma czego mierzyć — klasyczny zapis (cały rynek luką, D5).
-			await runSubmit();
+			// ── N2′ — JEDYNY NOŚNIK REGUŁY „zero zaznaczeń nie przechodzi samo" ──
+			// Dawniej stało tu `await runSubmit()`: przy zerze zaznaczeń ten sam
+			// przycisk, w tym samym miejscu, po cichu przenosił do Wniosków — student
+			// mijał JEDYNY pomiar, jaki produkt ma, nie dowiadując się, że go mija
+			// (przejazd Darka 2026-08-10: „gdzie miałem zobaczyć ekran diagnozy").
+			// Teraz krok się zatrzymuje i pyta. Reguła ma tu DOKŁADNIE JEDEN nośnik
+			// (CLAUDE.md v1.17): przycisk kroku 3 nie zna warunku `length === 0` i nie
+			// wolno go tam powielić — inaczej powstaje druga, cicha droga wyjścia.
+			setNoSelectionFork(true);
 			return;
 		}
 		setStartingDiagnosis(true);
@@ -754,9 +768,16 @@ export function OnboardingWizard({
 				) : step === 3 ? (
 					<>
 						<h2 className="font-heading text-2xl font-extrabold">Twoje kompetencje</h2>
+						{/* N2a — ZAPOWIEDŹ TESTU PRZED KLIKNIĘCIEM. Do 2026-08 krok mówił tylko,
+						    że „poziom zmierzy krótki test"; nie mówił, że test rusza zaraz po
+						    tym przycisku, ani co się stanie przy zerze zaznaczeń. Człowiek ma
+						    wiedzieć, co go czeka, ZANIM naciśnie. Świadomie bez liczby pytań:
+						    `total` = 2 × liczba kompetencji POKRYTYCH BANKIEM (start/route.ts:159),
+						    a nie zaznaczonych — obietnica „2 pytania na każdą zaznaczoną" nie
+						    miałaby pokrycia przy zaznaczeniach spoza banku (one idą do mini-samooceny). */}
 						<p className="mb-6 mt-1.5 text-sm text-muted-foreground">
 							{diagnosticMode
-								? "Zaznacz, z czym masz styczność — poziom zmierzy krótki test, nie deklaracja. Czego nie zaznaczysz, zostaje Twoim planem nauki."
+								? "Zaznacz, z czym masz styczność — poziom zmierzy krótki test, nie deklaracja. Test zaczyna się od razu po zatwierdzeniu tego kroku i obejmuje wyłącznie to, co zaznaczysz. Jeśli nie zaznaczysz nic, nie ma czego mierzyć i testu nie będzie. Czego nie zaznaczysz, zostaje Twoim planem nauki."
 								: "Zaznacz przy każdej umiejętności poziom, jaki masz. Czego nie zaznaczysz, zostaje Twoim planem nauki. Nie musisz zaznaczać nic — możesz zacząć od zera."}
 						</p>
 						<StepMarketCompetencies
@@ -772,46 +793,88 @@ export function OnboardingWizard({
 							profileNote={profileNote}
 							binaryMode={diagnosticMode}
 						/>
-						<div className="mt-8 flex items-center justify-between">
-							<Button variant="ghost" onClick={() => goToStep(2)} className="gap-2">
-								<ChevronLeft className="h-4 w-4" />
-								Wstecz
-							</Button>
-							{/* MUST-FIX (Leo): blokuj domknięcie pustym paszportem + nierealnym celem.
+						{/* N2′ — ROZWIDLENIE PRZY ZERZE ZAZNACZEŃ (tryb diagnozy).
+						    Zastępuje wiersz akcji, więc oba wyjścia stoją dokładnie tam, gdzie
+						    przed chwilą był przycisk — student nie musi niczego szukać ani
+						    przewijać. To jest WYBÓR, nie komunikat: krok nie idzie dalej sam. */}
+						{noSelectionFork ? (
+							<section
+								className="mt-8 rounded-lg border border-ed-amber bg-ed-badge-bg p-4"
+								aria-labelledby="ob-brak-zaznaczen-tytul"
+							>
+								<h3 id="ob-brak-zaznaczen-tytul" className="font-heading text-base font-bold">
+									Nie zaznaczono żadnej kompetencji
+								</h3>
+								<p className="mt-1.5 text-sm text-muted-foreground">
+									Nie ma więc czego zmierzyć testem i tego kroku nie da się zmierzyć za Ciebie.
+									Możesz przejść dalej bez testu — wtedy cały katalog rynku staje się Twoim planem
+									nauki — albo wrócić i zaznaczyć to, z czym masz styczność.
+								</p>
+								<div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+									<Button
+										variant="ghost"
+										autoFocus
+										onClick={() => setNoSelectionFork(false)}
+										className="gap-2"
+									>
+										<ChevronLeft className="h-4 w-4" />
+										Wróć i zaznacz
+									</Button>
+									<Button
+										onClick={() => {
+											setNoSelectionFork(false);
+											void runSubmit();
+										}}
+										disabled={submitting}
+										className="ob-btn-accent gap-2"
+									>
+										<Check className="h-4 w-4" />
+										Przejdź dalej bez testu
+									</Button>
+								</div>
+							</section>
+						) : (
+							<div className="mt-8 flex items-center justify-between">
+								<Button variant="ghost" onClick={() => goToStep(2)} className="gap-2">
+									<ChevronLeft className="h-4 w-4" />
+									Wstecz
+								</Button>
+								{/* MUST-FIX (Leo): blokuj domknięcie pustym paszportem + nierealnym celem.
 							    Pusty katalog / cel spoza 23 ścieżek → krok pokazuje bursztynowy
 							    komunikat „wróć i wybierz realną ścieżkę", a submit jest WYŁĄCZONY.
 							    Warunek dotyczy KATALOGU (length===0) / realności celu — NIE liczby
 							    zaznaczeń: realny cel + niepusty katalog + 0 zaznaczeń zostaje aktywny
 							    (próg min-5→0, D5). Nie mylić tych dwóch. */}
-							<Button
-								onClick={diagnosticMode ? startDiagnosis : () => runSubmit()}
-								disabled={
-									submitting ||
-									startingDiagnosis ||
-									catalogLoading ||
-									!isRealGoal ||
-									catalog.length === 0
-								}
-								className="ob-btn-accent gap-2"
-							>
-								{submitting || startingDiagnosis ? (
-									<>
-										<BookOpen className="h-4 w-4 animate-spin" />
-										{startingDiagnosis ? "Przygotowuję test…" : "Zapisywanie…"}
-									</>
-								) : diagnosticMode && Object.keys(selections).length > 0 ? (
-									<>
-										<Check className="h-4 w-4" />
-										Zatwierdź i sprawdź się testem
-									</>
-								) : (
-									<>
-										<Check className="h-4 w-4" />
-										Zatwierdź i przejdź dalej
-									</>
-								)}
-							</Button>
-						</div>
+								<Button
+									onClick={diagnosticMode ? startDiagnosis : () => runSubmit()}
+									disabled={
+										submitting ||
+										startingDiagnosis ||
+										catalogLoading ||
+										!isRealGoal ||
+										catalog.length === 0
+									}
+									className="ob-btn-accent gap-2"
+								>
+									{submitting || startingDiagnosis ? (
+										<>
+											<BookOpen className="h-4 w-4 animate-spin" />
+											{startingDiagnosis ? "Przygotowuję test…" : "Zapisywanie…"}
+										</>
+									) : diagnosticMode && Object.keys(selections).length > 0 ? (
+										<>
+											<Check className="h-4 w-4" />
+											Zatwierdź i sprawdź się testem
+										</>
+									) : (
+										<>
+											<Check className="h-4 w-4" />
+											Zatwierdź i przejdź dalej
+										</>
+									)}
+								</Button>
+							</div>
+						)}
 					</>
 				) : null}
 
