@@ -18,6 +18,14 @@ Równoległy tor (a) — pytania do dostawcy modelu — ma własny nośnik:
 **(3) Nowa sekcja Z-7** — co zmienia nabór 3–5 osób wobec akceptacji ryzyka, które wyceniałem
 na **jednego** uczestnika. Dwie z nich przestają działać przy naborze; nazywam je przed podpisem,
 nie po.
+**(4) Nowa sekcja Z-8 i zmiana w CZĘŚCI I — kolizja podstaw (R-3), zgłoszona przez Sophię.**
+Regulamin czyni udział w pilotażu treścią umowy, a wtedy podstawa czytana jako wykonanie umowy
+**odbiera obiecane prawo sprzeciwu**. Sekcja 4 dostała **dwa osobne wiersze** (przyjęcie do grupy =
+umowa; analiza skuteczności = uzasadniony interes), a sekcja 4 i 8 mówią teraz **wprost**, że
+sprzeciw **nie odbiera dostępu do platformy**. To jedyna zmiana **merytoryczna** w treści dla
+studenta w tej wersji poza usunięciem zdania blokującego — i czyni obietnicę mocniejszą, nie słabszą.
+Nowe pozycje dla prawnika: **L-k** (czy rozdział wytrzyma), **L-l** (odstąpienie przy usłudze
+nieodpłatnej); waga **L-a** podniesiona — administrator jest teraz także **stroną umowy**.
 
 **Changelog v0.1 → v0.2 (2026-08-12) — domknięcie warunku W-B Leo przy zgłoszeniu #290.**
 **Ani jedno zdanie CZĘŚCI I (treści dla studenta) nie zostało zmienione co do sensu** — sekcja 7
@@ -354,7 +362,8 @@ prawa nie przeważają).
 | **Prowadzenie funkcji opartych na modelu językowym** — Pomocnik kariery, tutor projektu, obrona ustna | wykonanie umowy | bez tego te funkcje nie istnieją (sekcja 5) |
 | **Dane o Twoim stażu i pracy** | **Twoja zgoda** (art. 6 ust. 1 lit. a) | jedyna rzecz, której możesz odmówić i dalej normalnie korzystać z platformy |
 | **Ślad zdarzeń bezpieczeństwa** | nasz uzasadniony interes (art. 6 ust. 1 lit. f) | musimy umieć wykazać, kto co zrobił — w tym my sami wobec Ciebie |
-| **Lista uczestników pilotażu** — kto liczy się w ocenie, czy nasze reguły działają | nasz uzasadniony interes (art. 6 ust. 1 lit. f) | sprawdzamy, czy platforma uczy skutecznie. **Możesz się temu sprzeciwić** (sekcja 8) |
+| **Przyjęcie Cię do grupy pilotażowej** — sam fakt, że jesteś jednym z uczestników | wykonanie umowy | grupa jest ograniczona; musimy wiedzieć, kogo do niej przyjęliśmy, żeby dać Ci dostęp |
+| **Sprawdzanie, czy platforma uczy skutecznie** — analiza Twoich postępów razem z postępami innych uczestników | nasz uzasadniony interes (art. 6 ust. 1 lit. f) | to jest **osobna sprawa** od samego udziału. **Możesz się temu sprzeciwić i nadal normalnie korzystać z platformy** — sprzeciw **nie odbiera Ci dostępu** (sekcja 8) |
 
 ### 5. Komu przekazujemy Twoje dane
 
@@ -421,7 +430,7 @@ Masz wobec nas następujące prawa. Żeby z któregokolwiek skorzystać, wystarc
 | **Usunięcie** (art. 17) | **usunąć konto razem z danymi** — samodzielnie w ustawieniach profilu albo pisząc do nas. Co dokładnie znika, a co zostaje: sekcja 9 |
 | **Ograniczenie** (art. 18) | zażądać, żebyśmy chwilowo przestali używać Twoich danych — np. gdy kwestionujesz ich poprawność |
 | **Przenoszenie** (art. 20) | dostać swoje dane w formacie, który da się wczytać gdzie indziej |
-| **Sprzeciw** (art. 21) | sprzeciwić się przetwarzaniu opartemu na naszym uzasadnionym interesie — w praktyce: **udziałowi w pilotażu**. Wtedy przestajemy Cię w nim liczyć |
+| **Sprzeciw** (art. 21) | sprzeciwić się przetwarzaniu opartemu na naszym uzasadnionym interesie — w praktyce: **analizie, czy platforma uczy skutecznie**. Wtedy przestajemy liczyć Twoje wyniki w tej ocenie. **Nie tracisz przez to dostępu do platformy ani niczego, co już zdobyłeś** — sprzeciw jest darmowy i nie musisz go uzasadniać |
 | **Cofnięcie zgody** (art. 7) | wycofać zgodę na dane o stażu i pracy — sekcja 6 |
 
 **Skarga do organu nadzorczego.** Jeśli uważasz, że przetwarzamy Twoje dane niezgodnie z prawem,
@@ -539,7 +548,7 @@ Kolejność od najcięższego. **Żadna z tych pozycji nie jest kosmetyczna.**
 
 | # | Rzecz | Dlaczego to pytanie do prawnika, nie do mnie |
 |---|---|---|
-| **L-a** | **Tożsamość administratora.** Piszę „nordsignal — firma prowadzona przez Dariusza Grądzika", bo **spółka nie jest zarejestrowana** (CLAUDE.md §9, NIP TBD). Administratorem jest więc dziś **osoba fizyczna prowadząca działalność**, nie spółka. Klauzula musi wskazywać administratora **jednoznacznie i prawdziwie** | Wskazanie nieistniejącego podmiotu jako administratora to wada, która podważa cały dokument. Wymaga też rozstrzygnięcia, co się dzieje z danymi **przy rejestracji spółki** (przejście administratora) |
+| **L-a** | **Tożsamość administratora.** Piszę „nordsignal — firma prowadzona przez Dariusza Grądzika", bo **spółka nie jest zarejestrowana** (CLAUDE.md §9, NIP TBD). Administratorem jest więc dziś **osoba fizyczna prowadząca działalność**, nie spółka. Klauzula musi wskazywać administratora **jednoznacznie i prawdziwie** | Wskazanie nieistniejącego podmiotu jako administratora to wada, która podważa cały dokument. Wymaga też rozstrzygnięcia, co się dzieje z danymi **przy rejestracji spółki** (przejście administratora). **Waga podniesiona 2026-08-14:** dochodzi **regulamin**, czyli dokument o charakterze **umowy** — a umowa potrzebuje strony, którą da się **jednoznacznie wskazać, pozwać i doręczyć jej pismo**. Przy jednym uczestniku znanym administratorowi dało się to przyjąć; przy **naborze i dokumencie umownym** trzeba rozstrzygnąć, kto dokładnie jest stroną i jaki adres podajemy do doręczeń. **Ta sama pozycja obciąża teraz dwa dokumenty naraz**, nie jeden |
 | **L-b** | **Podstawa transferu poza EOG** (P-1, P-2) i **status trenowania modeli** (P-3) | To lektura warunków dostawcy i ocena prawna, nie pomiar. Sekcja 11 jest dziś **przyznaniem się do luki** — świadomie, ale nie może nim zostać |
 | **L-c** | **Umowy powierzenia (art. 28 ust. 3)** z Neon, Vercel i Anthropic — czy są zawarte i czy pokrywają nasz przypadek | Rejestr sub-procesorów **nie istnieje** (sprostowanie w `ropa.md` v0.6, wpis #3) |
 | **L-d** | **Podstawa z lit. f dla pilotażu** — czy test równowagi (nasz interes kontra prawa studenta) wypada tak, jak zakładam, i czy prawo sprzeciwu jest opisane wystarczająco | Ocena, nie fakt. Ja ją postawiłem; prawnik ma ją potwierdzić lub obalić |
@@ -549,6 +558,8 @@ Kolejność od najcięższego. **Żadna z tych pozycji nie jest kosmetyczna.**
 | **L-h** | **Regulamin.** Klauzula informacyjna **nie jest** umową. Powołuję się na „wykonanie umowy" jako podstawę, a **regulaminu nie ma** — zmierzone: `git ls-tree -r --name-only origin/main \| grep -iE "regulamin\|terms"` → zero trafień, kod wyjścia 1 | Podstawa z lit. b wymaga umowy, która istnieje. To jest **luka konstrukcyjna całego pakietu**, wykryta przy pisaniu tej klauzuli, i nie jest moja do zamknięcia |
 | **L-i** | **Czy „odmowa uniformna" jest właściwą konstrukcją wobec organu.** Sekcja 9 obiecuje, że nikomu — w tym pracodawcy — nie potwierdzimy ani nie zaprzeczymy istnienia konta, i że **nie sprawdzamy**, o który przypadek chodzi. Pytanie: czy ta konstrukcja obroni się wobec żądania organu nadzorczego lub sądu, i **jak ją pogodzić** ze zdaniem z sekcji 5 („możemy przekazać dane, jeśli wymaga tego prawo") | Zgłoszone przez Sophię przy nośniku W-5. To ocena prawna, nie produktowa: obietnica „nie sprawdzamy" jest wobec pracodawcy ochroną, a wobec organu może być czym innym. **Nie rozstrzygam tego sam** — mogę najwyżej powiedzieć, że dziś oba zdania stoją w jednym dokumencie bez wskazania, które ustępuje |
 | **L-j** | **Czy zakaz zestawiania numeru dokumentu z wydruku PDF ze śladem zdarzeń przekwalifikować z decyzji produktowej na wymóg zgodności** (pozycja **L-8** rejestru art. 17, dług **A-3**) | Dziś ochroną jest **zakaz organizacyjny** — czyli obietnica firmy, że czegoś nie zrobi. Jeśli identyfikator jest „ponownie przypisywalny środkami, którymi rozsądnie może dysponować osoba trzecia" (motyw 26), to wiersze śladu **pozostają danymi osobowymi po usunięciu konta**, a wtedy zakaz musi być wymogiem, nie preferencją. **Przesłanka zmierzona przez Sophię 2026-08-14:** numer na wydruku (`SB-2026-XXXXXXXX`, `src/components/passport/passport-document.tsx:170`) jest **prefiksem identyfikatora obecnego w śladzie zdarzeń**. Przy jednym uczestniku to była hipoteza; przy naborze krąży **tyle wydruków, ilu uczestników** |
+| **L-k** | **Czy rozdział „umowa / uzasadniony interes" w pilotażu wytrzyma ocenę prawną** (pełny wywód: sekcja Z-8). Przyjęcie do grupy = wykonanie umowy; analiza skuteczności nauczania = uzasadniony interes ze sprzeciwem **bez utraty dostępu** | Regulamin czyni udział treścią umowy, a wobec lit. b **art. 21 nie przysługuje** — więc dokument domykający jedną lukę potrafi unieważnić obietnicę z innego. Rozdział uważam za właściwy, ale jest pozorny, jeśli regulamin uczyni udział w badaniu **warunkiem przyjęcia**. To lektura dwóch dokumentów naraz i ocena, czy sprzeciw jest realny — nie mój wniosek do postawienia samodzielnie |
+| **L-l** | **Czy przy usłudze nieodpłatnej powstaje obowiązek pouczenia o odstąpieniu od umowy** (i szerzej: czy pilotaż jest umową z konsumentem zawieraną na odległość) | Zgłoszone przez Sophię przy regulaminie. **Nie jest oczywiste w żadną stronę**: klasycznie prawo konsumenckie wiąże się z ceną, ale przepisy objęły też usługi cyfrowe świadczone w zamian za **dane osobowe**, a uczestnik płaci nam właśnie danymi i pracą. Jeśli obowiązek istnieje, brak pouczenia jest wadą **regulaminu**, nie klauzuli — ale wyjdzie na tym samym dokumencie |
 
 ### Z-6. Self-critique — head of GRC po audycie SOC 2 Type II
 
@@ -601,6 +612,73 @@ Zrobiłem to na podstawie zdania, którego **nie da się zweryfikować żadnym p
 obniżenie jest **warunkowe wobec podpisu**, a nie wobec rozmowy, i dlatego zostawiłem w mocy próg
 mówiący, co się dzieje, **gdybym się mylił**. Gdyby oświadczenie nie zostało podpisane, obowiązuje
 klasa surowsza.
+
+### Z-8. R-3 — kolizja podstaw, którą tworzy regulamin. Ocena i co z niej wynika
+
+Zgłoszone przez Sophię 2026-08-14 przy regulaminie pilotażu (`docs/product/regulamin-pilotazu.md`
+v0.1, draft). **Zgłoszenie jest trafne i jest to najpoważniejsza rzecz, jaka wyszła w tej turze** —
+poważniejsza niż oba sprostowania z Z-2a, bo tamte dotyczyły adresu dowodu, a to dotyczy obietnicy
+złożonej studentowi.
+
+**Na czym polega kolizja.** Klauzula opierała udział w pilotażu na **uzasadnionym interesie**
+(art. 6 ust. 1 lit. f) i obiecywała z tego tytułu **prawo sprzeciwu** (art. 21). Regulamin z natury
+czyni udział w pilotażu **treścią umowy**. Gdy udział jest treścią umowy, ktoś odczyta podstawę
+jako **wykonanie umowy** (lit. b) — a wobec lit. b **art. 21 w ogóle nie przysługuje**. Dokument,
+który dokładamy, żeby domknąć brakującą podstawę (pozycja L-h), po drodze **unieważniałby obietnicę
+złożoną w innym dokumencie**. To jest wada tej samej klasy co zdanie blokujące z W-4: dokument
+obalałby sam siebie, tylko przez pośrednika.
+
+**Moja ocena rozdziału zaproponowanego przez Sophię — trzyma się, i to jest właściwa konstrukcja.**
+Rozdzielenie *korzystania z platformy* (umowa) od *analizy skuteczności nauczania* (nasz interes,
+sprzeciw bez utraty dostępu) jest standardowym i uczciwym rozwiązaniem, bo odzwierciedla rzecz
+prawdziwą: **grupa pilotażowa i badanie skuteczności to naprawdę dwie różne czynności**, a nie
+jedna nazwana dwa razy. Przyjęcie kogoś do ograniczonej grupy jest wykonaniem umowy — musimy
+wiedzieć, komu daliśmy dostęp. Zestawianie jego wyników z wynikami innych po to, żeby ocenić
+**nasz** produkt, jest naszą korzyścią, nie jego.
+
+**Warunek, bez którego cała konstrukcja się wywraca — i to on jest tu istotą, nie nazewnictwo.**
+Sprzeciw musi być **realny**, czyli **nie może kosztować dostępu**. Jeśli odmowa udziału w analizie
+oznaczałaby wypadnięcie z pilotażu, to sprzeciw jest pozorny, a wtedy całość i tak jest lit. b —
+i obietnica z sekcji 8 staje się nieprawdziwa, tyle że mniej widocznie. **Dlatego zmieniłem CZĘŚĆ I,
+a nie tylko aparat:**
+- sekcja 4 ma teraz **dwa osobne wiersze** zamiast jednego: „przyjęcie do grupy" (umowa)
+  i „sprawdzanie, czy platforma uczy skutecznie" (uzasadniony interes);
+- oba wiersze i wiersz sprzeciwu w sekcji 8 mówią **wprost**, że sprzeciw **nie odbiera dostępu**.
+
+**Czego NIE rozstrzygam i co idzie do prawnika.** Czy rozdział wytrzyma ocenę prawną, zależy od
+brzmienia regulaminu, którego **nie jestem autorem i którego nie edytuję**. W szczególności:
+jeśli regulamin uczyni udział w badaniu **warunkiem przyjęcia do grupy**, rozdział jest pozorny
+i wracamy do punktu wyjścia. Zapisane jako pozycja **L-k**.
+
+**Do Sophii, do jej dokumentu — czego w nim potrzebuję** (nie edytuję go, więc piszę, czego brakuje):
+paragraf o analizie skuteczności musi zawierać zdanie, że **odmowa udziału w analizie nie wpływa
+na dostęp do platformy ani na zdobyte kredencjały**, oraz nie może wiązać przyjęcia do grupy ze
+zgodą na badanie. Bez tego zdania rozdział istnieje w klauzuli i nie istnieje w umowie — a przy
+sporze wygrywa umowa.
+
+**§12 regulaminu — usunięcie kont w 30 dni ścieżką, która jest za zgaszonym przełącznikiem.**
+Sophia obietnicy nie wykreśliła, tylko związała zapłon regulaminu z warunkiem **W-1**. Kierunek
+dobry, **brzmienie samo w sobie nie wystarcza** — i wiem to z własnego podwórka. Przełącznik nie
+jest drzwiami jednokierunkowymi: można go zapalić, wypuścić regulamin, a potem zgasić przełącznik
+zmienną środowiskową **bez żadnego wdrożenia**, i obietnica z §12 stanie się nieprawdziwa
+**w milczeniu**. Klauzula rozwiązała dokładnie ten problem **mechanizmem, nie zdaniem**:
+sprzężeniem flag (`requires` w `src/lib/flags.ts`), pilnowanym przez strażnika
+`tests/unit/rodo/klauzula-zaplon-flaga.contract.test.ts` z udokumentowaną mutacją M4 i jawnym
+progiem. **Rekomendacja: regulamin dostaje własną flagę zapłonu, sprzężoną z tą samą flagą
+usunięcia konta** — wtedy „związany z W-1" jest stanem systemu, a nie zdaniem w dokumencie.
+Właściciel mechanizmu: Ethan. Bez tego pozycja zostaje długiem z progiem, nie warunkiem spełnionym.
+
+**Przesłanka, którą Sophia mi obaliła — odnotowuję, bo działa na moją niekorzyść.** Podałem jej,
+że ludzka warstwa kredencjału nie jest zaimplementowana. **To nieprawda** i sprawdziłem to sam
+(odczyty 2026-08-14, `git ls-files` i `git grep` na `origin/main`): istnieją trasy przeglądu
+(`src/app/api/review-queue/route.ts`, `…/[id]/decision/route.ts`, `…/[id]/viva/route.ts`), logowanie
+operatora jakości (`src/app/api/operator/login/route.ts`), plakietka „Oceniał człowiek" w **czterech**
+plikach produkcyjnych — w tym na **publicznym** paszporcie (`src/app/passport/[id]/page.tsx`) —
+oraz `docs/decisions/011-kto-ocenia-w-becie.md`. Kontrola dwustronna: `git grep` na frazie
+nieistniejącej kończy się kodem 1, na frazie istniejącej kodem 0. **Sprawdzam, czy zbudowałem coś
+na tej fałszywej przesłance: nie.** Zdanie z sekcji 10 („zatwierdza, zmienia albo odrzuca człowiek")
+było napisane wcześniej i jest **prawdziwe** — gdybym oparł się na tym, co jej powiedziałem,
+musiałbym je dziś wykreślać jako obietnicę bez pokrycia.
 
 ### Z-7. Nabór 3–5 osób — akceptacje ryzyka, które wyceniałem na JEDNEGO uczestnika
 

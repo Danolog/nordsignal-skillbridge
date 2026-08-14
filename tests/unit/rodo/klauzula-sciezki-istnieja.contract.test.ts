@@ -73,6 +73,10 @@ const SCIEZKI_JESZCZE_NIEISTNIEJACE: Readonly<Record<string, string>> = {
 	"docs/product/zasada-odpowiedzi-dla-pracodawcy.md":
 		"nośnik warunku W-5, draft Sophii z 2026-08-14 poza kontrolą wersji; " +
 		"zdejmujemy z listy w zgłoszeniu, które wprowadza go na `main`",
+	"docs/product/regulamin-pilotazu.md":
+		"regulamin pilotażu, draft Sophii z 2026-08-14 poza kontrolą wersji; " +
+		"cytowany w sekcji Z-8 klauzuli (kolizja podstaw R-3); zdejmujemy z listy " +
+		"w zgłoszeniu, które wprowadza go na `main`",
 };
 
 /**
