@@ -5,6 +5,19 @@
 osobne uruchomienie w Neon SQL Editor, PO KOLEI. Rozjazd na którymkolwiek
 kroku = STOP i wołaj Olivera.
 
+> **Status: zapis konkretnego, datowanego wykonania (2026-07-11), nie procedura
+> bieżąca.** Liczby kontrolne w Krokach 1, 3 i 5 opisują stan z tamtego dnia
+> i od tego czasu urosły (dziennik migracji, liczba modułów). Bieżący stan
+> drabiny wynika z manifestu `tools/content/curriculum-ds-drabina.json`, nie
+> z tego pliku. Ten sam status ma runbook 1E.2 (nota na jego końcu).
+>
+> **Zasięg wariantu konsolowego: wyłącznie kroki schemy (0, 1, 2, 3, 5).**
+> Krok 4 — treść — wchodzi narzędziem ingestu z terminala i celowo wychodzi poza
+> konsolę: treść ma jeden nośnik (manifest), a konsola wymusza jej przepisanie.
+> Wykonawcą nie jest już Darek przy konsoli, tylko Ethan (CTO) narzędziem
+> (CLAUDE.md v1.12, delegacja zmian w bazie produkcyjnej), więc ograniczenie
+> „bez terminala", które kształtowało ten plik w lipcu, przestało obowiązywać.
+
 ## Krok 0 — backup (Neon UI, nie SQL)
 
 Konsola Neon → **Branches → Create branch** z gałęzi głównej, nazwa:
@@ -48,76 +61,42 @@ VALUES ('b09d56d49846e3d72de4063e0b3098bbf31973aaa132d8e9ff5677603f7c5bb8', 1783
 (hash = sha256 pliku 0035; created_at = `when` z `drizzle/meta/_journal.json`.)
 Kontrola: zapytanie z Kroku 1 ma teraz zwrócić **36**.
 
-## Krok 4 — ingest struktury drabiny (odpowiednik `pnpm db:ingest-curriculum`)
+## Krok 4 — ingest struktury drabiny (z manifestu, nie z tego pliku)
 
-Idempotentny (drugi bieg = ten sam stan); guard w DO-bloku wycofa transakcję,
-jeśli brakuje któregoś capstone'a w `projects`.
+Struktura drabiny — moduły, ich tytuły i opisy, kolejność w ścieżce,
+prerekwizyty i pozycje projektów końcowych — ma **dokładnie jeden nośnik**:
+manifest `tools/content/curriculum-ds-drabina.json`. Ten runbook go **woła**,
+nie **przepisuje** (CLAUDE.md v1.17, sekcja 8).
 
-```sql
-BEGIN;
-
--- Guard: 4 capstone'y muszą istnieć w projects
-DO $$
-DECLARE brakuje int;
-BEGIN
-  SELECT 4 - count(*) INTO brakuje FROM projects WHERE slug IN
-    ('ds-eda-polska-w-liczbach-bdl','ds-sql-analiza-przejazdow',
-     'ds-pierwszy-model-predykcyjny','ds-llm-strukturalna-ekstrakcja');
-  IF brakuje <> 0 THEN
-    RAISE EXCEPTION 'Brakuje % capstone(ow) w projects — ingest przerwany', brakuje;
-  END IF;
-END $$;
-
--- Moduły (upsert po slug)
-INSERT INTO curriculum_modules (slug, title, description) VALUES
-  ('l0-start', 'Start: środowisko pracy', 'Colab i notebook od zera — pierwsza uruchomiona komórka w ≤15 min od wejścia (ADR-014 D10). Wariant LEAN: 4 atomy-checklisty, zaliczenie przez wykonanie (pkt 10), bez egzaminu. Bez Gita i terminala (just-in-time — pkt 9).'),
-  ('f1-python-1', 'Python I: zmienne, typy, warunki', 'Fundamenty od literalnego zera (persona ADR-014): atom = teoria 300–600 słów + worked example + 3 pytania.'),
-  ('f2-python-2', 'Python II: pętle, funkcje, struktury danych', 'Ciąg dalszy fundamentów; fading wsparcia wzdłuż modułu (D5).'),
-  ('f3-dane-python', 'Dane w Pythonie: pandas i pliki', 'Wejście w dane; zwieńczenie: MINI-PROJEKT transferowy (pkt 12b — pozycja dojdzie z treścią 1E.2).'),
-  ('m-eda', 'EDA: eksploracja danych', 'Koncepty EDA + Git/terminal just-in-time; capstone: EDA na danych GUS BDL.'),
-  ('m-sql', 'SQL: analiza danych w bazie', 'Od tabeli i SELECT po agregacje; capstone: analiza przejazdów w DuckDB.'),
-  ('m-ml', 'Pierwszy model predykcyjny', 'Baseline, walidacja, leakage, metryki; capstone: pierwszy model w scikit-learn.'),
-  ('m-llm', 'LLM: ekstrakcja strukturalna', 'Czym są LLM, strukturalne wyjście, ewaluacja z ground truth; capstone: ekstrakcja do JSON.')
-ON CONFLICT (slug) DO UPDATE
-  SET title = EXCLUDED.title, description = EXCLUDED.description, updated_at = now();
-
--- Ścieżka data-science (delete+reinsert — czyste definicje)
-DELETE FROM curriculum_path_modules WHERE path_key = 'data-science';
-INSERT INTO curriculum_path_modules (path_key, module_id, position)
-SELECT 'data-science', id, pos FROM (VALUES
-  ('l0-start',1),('f1-python-1',2),('f2-python-2',3),('f3-dane-python',4),
-  ('m-eda',5),('m-sql',6),('m-ml',7),('m-llm',8)
-) AS l(slug,pos) JOIN curriculum_modules m ON m.slug = l.slug;
-
--- Prereqi: łańcuch liniowy z kolejności
-DELETE FROM curriculum_module_prereqs WHERE module_id IN
-  (SELECT id FROM curriculum_modules WHERE slug IN
-   ('l0-start','f1-python-1','f2-python-2','f3-dane-python','m-eda','m-sql','m-ml','m-llm'));
-INSERT INTO curriculum_module_prereqs (module_id, requires_module_id)
-SELECT m.id, r.id FROM (VALUES
-  ('f1-python-1','l0-start'),('f2-python-2','f1-python-1'),
-  ('f3-dane-python','f2-python-2'),('m-eda','f3-dane-python'),
-  ('m-sql','m-eda'),('m-ml','m-sql'),('m-llm','m-ml')
-) AS chain(slug, req_slug)
-JOIN curriculum_modules m ON m.slug = chain.slug
-JOIN curriculum_modules r ON r.slug = chain.req_slug;
-
--- Pozycje capstone (upsert po (module_id, position))
-INSERT INTO curriculum_module_items (module_id, position, kind, title, project_id)
-SELECT m.id, 100, 'project', c.title, p.id FROM (VALUES
-  ('m-eda','Capstone: Polska w liczbach — EDA na danych GUS BDL','ds-eda-polska-w-liczbach-bdl'),
-  ('m-sql','Capstone: analiza przejazdów NYC w SQL','ds-sql-analiza-przejazdow'),
-  ('m-ml','Capstone: pierwszy model predykcyjny','ds-pierwszy-model-predykcyjny'),
-  ('m-llm','Capstone: strukturalna ekstrakcja z LLM','ds-llm-strukturalna-ekstrakcja')
-) AS c(module_slug, title, project_slug)
-JOIN curriculum_modules m ON m.slug = c.module_slug
-JOIN projects p ON p.slug = c.project_slug
-ON CONFLICT (module_id, position) DO UPDATE
-  SET kind = EXCLUDED.kind, title = EXCLUDED.title,
-      project_id = EXCLUDED.project_id, updated_at = now();
-
-COMMIT;
+```bash
+git pull && pnpm install
+DATABASE_URL='<PROD DIRECT — wariant bez poolera, z Connect w konsoli Neona>' \
+  CONFIRM_PROD_DB=1 pnpm db:ingest-curriculum
 ```
+
+Narzędzie jest idempotentne i transakcyjne (drugi bieg = ten sam stan, błąd
+w środku = wycofanie całości) i samo sprawdza, czy projekty końcowe istnieją
+w `projects` — bez nich przerywa. Ten sam wariant, w tym samym kształcie,
+wykonuje Krok 7 runbooka 1E.2.
+
+> **Dlaczego nie ma tu gotowego SQL-a do wklejenia (zmiana 2026-08-12, Sophia).**
+> Do dziś ten krok niósł blok `INSERT … ON CONFLICT (slug) DO UPDATE SET
+> description = …` z **kopią** tytułów i opisów modułów — czyli z treścią, którą
+> czyta student. Kopia została zamrożona 2026-07-11 (commit `ce4fe18`) i od tego
+> dnia rozjeżdżała się z manifestem: w chwili usunięcia **8 z 8 opisów i 4 z 8
+> tytułów** różniły się od manifestu, brakowało całego modułu `m-pandas`
+> (manifest: 9 modułów), a sam ładunek zawierał **18 trafień** kodu wewnętrznego
+> („ADR-014", „LEAN", „pkt 10", „Capstone: …"), którego strażnik języka
+> `tests/unit/ds/jezyk-produktu.contract.test.ts` nie dopuszcza w manifescie.
+> (18 = wystąpienia wewnątrz literałów `title`/`description`, czyli w tekście,
+> który widzi student. Surowy `grep` po całym bloku daje 22 — dolicza 4
+> wystąpienia w komentarzach SQL i w `RAISE EXCEPTION`. Wcześniejsze „19" było
+> błędem arytmetycznym, poprawione 2026-08-13.)
+> Wklejenie tego bloku po dzisiejszej kuracji treści cofnęłoby ją po cichu — a
+> dodatkowo `DELETE FROM curriculum_path_modules WHERE path_key = 'data-science'`
+> wyrzuciłoby `m-pandas` ze ścieżki. Ładunku świadomie **nie odtwarzamy**: kto
+> potrzebuje stanu z 2026-07-11, czyta manifest z commita `a009cde`.
+> Klasy pilnuje strażnik `tests/unit/ds/dokumentacja-bez-tresci.contract.test.ts`.
 
 ## Krok 5 — weryfikacja końcowa (odczyt)
 
@@ -133,7 +112,10 @@ SELECT
   (SELECT count(*) FROM drizzle.__drizzle_migrations) AS dziennik;   -- 36
 ```
 
-**Oczekiwane: 8 / 8 / 7 / 4 / 6 / 36.** Zgadza się → migracja i ingest domknięte.
+**Oczekiwane 2026-07-11: 8 / 8 / 7 / 4 / 6 / 36.** Zgadza się → migracja i ingest
+domknięte. Liczby modułów/pozycji/prereqów są **z tamtego dnia** — dziś wynikają
+z manifestu (po podziale M-EDA na `m-pandas` + `m-eda` jest ich 9). Nie traktuj
+ich jako bieżącego oczekiwania.
 
 ## Krok 6 — flaga (OSOBNA decyzja, kiedy zechcesz)
 

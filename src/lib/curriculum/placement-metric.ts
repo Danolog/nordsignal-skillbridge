@@ -81,6 +81,14 @@ export type WierszKandydat = {
 	studentId: string | null;
 	/** `null` = właściciela sesji NIE MA w rejestrze uczestników. */
 	kohorta: string | null;
+	/**
+	 * Kiedy właściciela sesji WPISANO do rejestru; `null` = nie ma go w rejestrze.
+	 *
+	 * Pole jest tu WYŁĄCZNIE po to, żeby dało się zobaczyć rozjazd kolejności
+	 * (W2 Sophii). Klasyfikator go NIE CZYTA i czytać nie może — patrz
+	 * `czyObserwacjaWsteczna`.
+	 */
+	wpisano: Date | null;
 	/** Rozróżnik POMOCNICZY — alarm o stanie rejestru, nigdy podstawa werdyktu. */
 	kontoWygladaTechnicznie: boolean;
 	metadata: Record<string, unknown> | null;
@@ -107,6 +115,38 @@ export function klasyfikujZdarzenie(w: WierszKandydat): KlasaZdarzenia {
 }
 
 /**
+ * Czy ta obserwacja weszła do miernika WSTECZ — zdarzenie jest wcześniejsze niż
+ * wpis uczestnika do rejestru (W2 Sophii, 2026-08-13).
+ *
+ * ── Co to mierzy i czego NIE zmienia ──────────────────────────────────────
+ * NIE zmienia klasyfikacji. Obserwacja wpisana wstecz **pozostaje obserwacją** —
+ * `klasyfikujZdarzenie` zostaje jedynym miejscem orzekającym „obserwacja / nie".
+ * Ta funkcja odpowiada na inne pytanie: **ile z policzonych obserwacji weszło po
+ * fakcie**. Rozliczenie „obserwacje + odrzucone = zdarzenia" zostaje nienaruszone.
+ *
+ * ── Dlaczego to w ogóle musi być widoczne ─────────────────────────────────
+ * Złączenie w mierniku idzie wyłącznie po tożsamości; nigdzie nie ma porównania
+ * czasu. Wpisanie kogoś do rejestru DZIŚ sprawia więc, że jego zeszłotygodniowa
+ * diagnoza staje się obserwacją — po cichu. To znaczy, że regułę „wpis przed
+ * diagnozą" trzyma wyłącznie dyscyplina operatora, a nie mechanizm: można
+ * puścić dziesięć osób przez diagnozę, obejrzeć wyniki i wpisać do rejestru tę
+ * siódemkę, której wyszło. Miernik pokaże wtedy siedem obserwacji prawdziwych
+ * co do wiersza — i **mianownik dobrany do licznika**, czego dziś nie widać.
+ *
+ * Nie próbujemy tego blokować (blokada kusiłaby do obejścia i psuła pilotaż
+ * z powodów opisanych przez Sophię). Robimy to, co ten miernik robi wszędzie
+ * indziej: **pokazujemy rozjazd, zamiast go wygładzać**.
+ *
+ * Zwraca `false`, gdy zdarzenie nie jest obserwacją albo gdy brak daty wpisu —
+ * niewiedza nie jest oskarżeniem.
+ */
+export function czyObserwacjaWsteczna(w: WierszKandydat): boolean {
+	if (klasyfikujZdarzenie(w) !== "obserwacja") return false;
+	if (w.wpisano === null) return false;
+	return w.utworzono.getTime() < w.wpisano.getTime();
+}
+
+/**
  * Zapytanie po kandydatów — CELOWO BEZ FILTRA po rejestrze (patrz nagłówek).
  *
  * Złączenie `s.id::text = a.target_id`, a nie `a.target_id::uuid = s.id`:
@@ -126,6 +166,7 @@ export const SQL_KANDYDACI = `
 		s.id                                    AS sesja_id,
 		s.student_id                            AS student_id,
 		pp.cohort                               AS kohorta,
+		pp.enrolled_at                          AS wpisano,
 		coalesce(u.email ILIKE '%.invalid', false) AS konto_wyglada_technicznie,
 		a.metadata                              AS metadata
 	FROM audit_log a
@@ -190,6 +231,13 @@ export type Miernik = {
 	uczestnicyBezZdarzenia: number;
 	/** Wiersze rejestru wskazujące konto o adresie technicznym — błąd wpisu. */
 	rejestrPodejrzany: number;
+	/**
+	 * Ile obserwacji weszło WSTECZ (zdarzenie wcześniejsze niż wpis do rejestru).
+	 * Zero = dyscyplina „wpis przed diagnozą" utrzymana. Niezerowe NIE unieważnia
+	 * odczytu — mówi, ile obserwacji trzeba odjąć albo świadomie zostawić
+	 * z adnotacją, zanim ktokolwiek zacytuje ten miernik jako dowód prerejestracji.
+	 */
+	obserwacjeWsteczne: number;
 	policzenia: ObserwacjaPoliczenia[];
 	pominieciaLiczenia: ObserwacjaPominiecia[];
 	/** Rozliczenie zdarzeń ODRZUCONYCH — bez niego liczba obserwacji kłamie. */
@@ -220,6 +268,7 @@ export function zWierszaSql(r: Record<string, unknown>): WierszKandydat {
 		sesjaId: napisAlbNull(r.sesja_id),
 		studentId: napisAlbNull(r.student_id),
 		kohorta: napisAlbNull(r.kohorta),
+		wpisano: r.wpisano instanceof Date ? r.wpisano : r.wpisano ? new Date(String(r.wpisano)) : null,
 		kontoWygladaTechnicznie: r.konto_wyglada_technicznie === true,
 		metadata: (r.metadata as Record<string, unknown> | null) ?? null,
 	};
@@ -246,6 +295,7 @@ export async function zbierzMiernik(
 	const pominieciaLiczenia: ObserwacjaPominiecia[] = [];
 	const odrzucone = { sierota: 0, spozaRejestru: 0, spozaRejestruTechniczne: 0 };
 	const studenciZeZdarzeniem = new Set<string>();
+	let obserwacjeWsteczne = 0;
 
 	for (const k of kandydaci) {
 		const klasa = klasyfikujZdarzenie(k);
@@ -259,6 +309,7 @@ export async function zbierzMiernik(
 			continue;
 		}
 		if (k.studentId) studenciZeZdarzeniem.add(k.studentId);
+		if (czyObserwacjaWsteczna(k)) obserwacjeWsteczne += 1;
 		const m = k.metadata ?? {};
 		if (k.akcja === "curriculum.placement.computed") {
 			policzenia.push({
@@ -294,6 +345,7 @@ export async function zbierzMiernik(
 		uczestnicyWRejestrze: wRejestrze.length,
 		uczestnicyBezZdarzenia: wRejestrze.filter((u) => !studenciZeZdarzeniem.has(u.studentId)).length,
 		rejestrPodejrzany: wRejestrze.filter((u) => u.techniczne).length,
+		obserwacjeWsteczne,
 		policzenia,
 		pominieciaLiczenia,
 		odrzucone,
@@ -411,6 +463,20 @@ export function raportTekstowy(m: Miernik): string {
 	wiersze.push("--- MIANOWNIK (z rejestru uczestników, nie z dziennika) ---");
 	wiersze.push(`uczestnicy w rejestrze:            ${m.uczestnicyWRejestrze}`);
 	wiersze.push(`w tym bez ŻADNEGO zdarzenia:       ${m.uczestnicyBezZdarzenia}`);
+	// W2 (Sophia, 2026-08-13) — kolejności „wpis przed diagnozą" nie pilnuje ŻADEN
+	// mechanizm: złączenie idzie po tożsamości, więc wpis działa wstecz i po cichu.
+	// Skoro nie blokujemy, to przynajmniej pokazujemy — jak wszędzie w tym raporcie.
+	wiersze.push(`obserwacje wpisane WSTECZ:         ${m.obserwacjeWsteczne}`);
+	if (m.obserwacjeWsteczne > 0) {
+		wiersze.push(
+			"⚠ CZĘŚĆ OBSERWACJI WESZŁA PO FAKCIE — zdarzenie jest wcześniejsze niż wpis",
+			"  uczestnika do rejestru. Liczby niżej są prawdziwe co do wiersza, ale pilotaż",
+			"  w tej części NIE BYŁ prerejestrowany: uczestnika dopisano, gdy jego wynik już",
+			"  istniał. Zanim zacytujesz ten odczyt poza zespołem — odejmij te obserwacje",
+			"  albo zostaw je świadomie z adnotacją. Nie wolno przedstawiać ich jako dowodu",
+			"  prerejestracji.",
+		);
+	}
 	if (m.rejestrPodejrzany > 0) {
 		wiersze.push(
 			`⚠ WPISY PODEJRZANE W REJESTRZE:     ${m.rejestrPodejrzany} (adres w domenie .invalid,`,
