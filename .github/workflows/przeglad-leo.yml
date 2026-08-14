@@ -54,8 +54,47 @@ on:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
 # Zero uprawnien zapisu. Ta bramka tylko czyta wlasne zdarzenie.
+# WIAZANIE ETYKIETY Z COMMITEM (dolozone 2026-08-14, znalezisko Leo)
+# ------------------------------------------------------------------
+# Pierwsza wersja tej bramki sprawdzala TYLKO obecnosc etykiety. Etykieta
+# przezywa nowe commity — GitHub jej nie zdejmuje — wiec przeglad commita A
+# plus dopchniety commit B dawal ZIELONA BRAMKE NA KODZIE, KTOREGO NIKT NIE
+# WIDZIAL. Bramka majaca chronic przed brakiem przegladu sama by go prala.
+#
+# To nie byla teoria. Zmierzone na zgloszeniu #318, ktore te bramke wprowadzalo:
+#     etykieta nadana : 2026-08-14T14:28:07Z
+#     commit glowy    : 2026-08-14T14:43:38Z   (odswiezenie galezi, 15 min pozniej)
+#     werdykt bramki  : success
+# Bramka przepuscila commit, ktory nie istnial w chwili przegladu.
+#
+# DLACZEGO ODSWIEZENIE GALEZI TEZ UNIEWAZNIA PRZEGLAD (swiadomie, mimo tarcia):
+# przy `strict: true` kazde scalenie w partii wymusza odswiezenie pozostalych,
+# wiec Leo bedzie etykietowal ponownie po kazdym odswiezeniu. To jest cecha, nie
+# koszt: scalenie `main` do galezi POTRAFI po cichu skasowac czyjas prace przy
+# zielonej suicie (konflikt rozwiazany „biore swoja strone"). Drzewo po scaleniu
+# to inne drzewo niz to, ktore Leo czytal — wiec przeglad faktycznie wygasl.
+# Zadnych sprytnych wyjatkow dla „to tylko scalenie main": sprytna bramka
+# bezpieczenstwa to bramka, ktorej nikt nie umie zweryfikowac.
+#
+# DLACZEGO PORZADEK CZASOWY, A NIE AUTOMATYCZNE ZDEJMOWANIE ETYKIETY:
+# zdejmowanie wymagaloby uprawnienia ZAPISU (`pull-requests: write`) i psuloby
+# sie CICHO — nieudane zdjecie zostawia zielona bramke (awaria w strone
+# niebezpieczna). Odczyt psuje sie GLOSNO: nie da sie odczytac osi czasu, job
+# pada, bramka jest czerwona. Przy bramce bezpieczenstwa wybieramy awarie
+# w strone zamknieta.
+#
+# ZNANA GRANICA (nazwana, nie ukryta): daty commitow ustawia klient, wiec commit
+# z data cofnieta w przeszlosc przeszedlby te bramke. Nie domykamy tego, bo model
+# zagrozenia to ZAPOMNIENIE wlasnych agentow, nie falszerstwo. Gdyby kiedys stal
+# sie falszerstwem — trzeba porownywac ze zdarzeniem `synchronize`, nie z data
+# commita.
+
 permissions:
   contents: read
+  # Odczyt osi czasu zgloszenia (zdarzenia `labeled`). Wylacznie odczyt —
+  # ta bramka niczego nie zapisuje.
+  pull-requests: read
+  issues: read
 
 concurrency:
   group: przeglad-leo-${{ github.ref }}
@@ -66,7 +105,7 @@ jobs:
     name: przeglad-leo (bramka (a) delegacji — etykieta po przegladzie)
     runs-on: ubuntu-latest
     steps:
-      - name: Sprawdz etykiete przegladu
+      - name: Sprawdz etykiete przegladu i jej swiezosc
         # Etykiety przez `env:`, NIGDY przez interpolacje `${{ }}` wprost do
         # skryptu: nazwa etykiety jest trescia sterowana przez czlowieka, wiec
         # w ciele `run:` bylaby wektorem wstrzyku polecen. Ten job nie ma
@@ -75,16 +114,19 @@ jobs:
         # Separator `|`, nie przecinek: nazwy etykiet GitHuba moga zawierac
         # przecinek, nie moga zawierac `|`.
         env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMER: ${{ github.event.pull_request.number }}
+          GLOWA_SHA: ${{ github.event.pull_request.head.sha }}
           ETYKIETY: ${{ join(github.event.pull_request.labels.*.name, '|') }}
           WYMAGANA: przeglad-leo-ok
         run: |
           set -euo pipefail
-          if printf '%s' "$ETYKIETY" | tr '|' '\n' | grep -Fxq "$WYMAGANA"; then
-            echo "Etykieta '$WYMAGANA' obecna — przeglad Leo potwierdzony."
-            exit 0
-          fi
-          echo "::error title=Brak przegladu Leo::Zgloszenie nie ma etykiety '$WYMAGANA'."
-          cat >&2 <<'KONIEC'
+
+          # ── CZLON 1: czy etykieta w ogole jest ──────────────────────────────
+          if ! printf '%s' "$ETYKIETY" | tr '|' '\n' | grep -Fxq "$WYMAGANA"; then
+            echo "::error title=Brak przegladu Leo::Zgloszenie nie ma etykiety '$WYMAGANA'."
+            cat >&2 <<'KONIEC'
 
           BRAMKA (a) DELEGACJI: scalenie wymaga przegladu Leo (CLAUDE.md sekcja 5).
 
@@ -93,12 +135,51 @@ jobs:
           po przegladzie.
 
           Nie nadawaj jej sobie sam, zeby „odblokowac": to jedyny slad, ze
-          przeglad sie odbyl. Etykieta bez przegladu zamienia bramke w ozdobe —
-          dokladnie tak, jak naglowek `a11y-klauzula` deklarowal „BLOKUJACY"
-          przez trzy miesiace, nie bedac podpiety do niczego.
-
-          Doszly zmiany merytoryczne po przegladzie? GitHub NIE zdejmuje etykiety
-          sam przy nowym commicie. Leo zdejmuje ja recznie i nadaje ponownie po
-          ponownym przegladzie.
+          przeglad sie odbyl.
           KONIEC
-          exit 1
+            exit 1
+          fi
+
+          # ── CZLON 2: czy etykieta jest MLODSZA niz commit glowy ─────────────
+          # Awaria w strone zamknieta: pusty odczyt = czerwone, nigdy zielone.
+          CZAS_ETYKIETY="$(gh api "repos/$REPO/issues/$NUMER/timeline" --paginate \
+            --jq "[.[] | select(.event == \"labeled\" and .label.name == \"$WYMAGANA\") | .created_at] | last // empty")"
+          CZAS_GLOWY="$(gh api "repos/$REPO/commits/$GLOWA_SHA" \
+            --jq '[.commit.committer.date, .commit.author.date] | max // empty')"
+
+          if [ -z "$CZAS_ETYKIETY" ] || [ -z "$CZAS_GLOWY" ]; then
+            echo "::error title=Nie da sie zweryfikowac swiezosci::Pusty odczyt osi czasu albo commita."
+            echo "etykieta='$CZAS_ETYKIETY' glowa='$CZAS_GLOWY'" >&2
+            exit 1
+          fi
+
+          echo "Etykieta nadana : $CZAS_ETYKIETY"
+          echo "Commit glowy    : $CZAS_GLOWY  ($GLOWA_SHA)"
+
+          # Oba znaczniki sa w UTC w formacie ISO 8601, wiec porownanie
+          # leksykograficzne jest rownowazne porownaniu chronologicznemu.
+          if [ "$CZAS_ETYKIETY" \< "$CZAS_GLOWY" ]; then
+            echo "::error title=Przeglad wygasl::Etykieta jest starsza niz commit glowy."
+            cat >&2 <<KONIEC
+
+          PRZEGLAD WYGASL — ETYKIETA STARSZA NIZ KOD.
+
+          Etykieta nadana : $CZAS_ETYKIETY
+          Commit glowy    : $CZAS_GLOWY
+
+          Po przegladzie Leo doszedl nowy commit. Etykieta zostala, bo GitHub jej
+          nie zdejmuje — ale potwierdza przeglad KODU, KTOREGO JUZ NIE MA.
+
+          Dotyczy to takze zwyklego odswiezenia galezi: scalenie `main` do galezi
+          potrafi po cichu skasowac czyjas prace przy zielonej suicie. Drzewo po
+          scaleniu to inne drzewo niz to, ktore Leo czytal.
+
+          Co zrobic: Leo zdejmuje etykiete i nadaje ja PONOWNIE po obejrzeniu
+          biezacej glowy. Nadanie bez ponownego spojrzenia zamienia te bramke
+          w ozdobe.
+          KONIEC
+            exit 1
+          fi
+
+          echo "Przeglad Leo potwierdzony i swiezy (etykieta mlodsza niz commit glowy)."
+          exit 0
