@@ -776,12 +776,16 @@ jobs:
   #   - NIGDY pull_request_target. Job nie biega na pull_request, wiec fork/dependabot
   #     i tak nigdy nie dotykaja tego toru (warunek antyforkowy stal sie zbedny).
   #
-  # MODEL (Z6 §4 — cel: Haiku w CI): ZREALIZOWANE. Cala warstwa AI (src/lib/ai/*)
-  # wybiera model przez centralny helper getModel (src/lib/ai/model.ts), sterowany
-  # zmienna srodowiskowa SKILLBRIDGE_AI_MODEL. Job e2e-llm ustawia ja na Haiku 4.5
-  # (env nizej) — caly dzial AI jedzie w CI na Haiku zamiast Sonnet/Opus. PRODUKCJA
-  # bez zmiany: Vercel NIE ustawia tej zmiennej, wiec modele prod (Sonnet/Haiku/Opus
-  # wg warstwy) zostaja bez regresji. Sufit wydatkow klucza CI dodatkowo chroni koszt.
+  # MODEL (Z6 §4 — cel: tanszy model w CI): ZREALIZOWANE, ale WARSTWOWO.
+  # Cala warstwa AI (src/lib/ai/*) wybiera model przez centralny helper getModel
+  # (src/lib/ai/model.ts). Job e2e-llm nadpisuje TYLKO warstwy `standard` i `fast`
+  # (na Haiku 4.5, env nizej) — one wykonuja wiekszosc wywolan, wiec oszczednosc
+  # zostaje. Warstwa `premium` (podsumowanie kariery + sedzia, §7 konstytucji)
+  # jedzie na swoim modelu produkcyjnym, zeby tor sprawdzal produkt, a nie jego
+  # tansza atrape. Uzasadnienie i historia wady: komentarz przy env nizej.
+  # PRODUKCJA bez zmiany: Vercel NIE ustawia zadnej z tych zmiennych, wiec modele
+  # prod (Sonnet/Haiku/Opus wg warstwy) zostaja bez regresji. Sufit wydatkow
+  # klucza CI dodatkowo chroni koszt.
   e2e-llm:
     name: e2e-llm (Playwright + onboarding sciezka #1)
     runs-on: ubuntu-latest
@@ -838,10 +842,31 @@ jobs:
       E2E_ALLOW_DB_WRITES: "1"
       # Klucz modelu — TYLKO tutaj, przez env. Nigdy echo/print. (Ryan, warunek higieny.)
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_CI }}
-      # Override modelu CALEJ warstwy AI (src/lib/ai/model.ts → getModel): w CI caly
-      # dzial AI jedzie na Haiku 4.5 zamiast Sonnet/Opus — ~3–5x tanszy token, ta sama
-      # sciezka kodu. Prod (Vercel) tej zmiennej NIE ma → modele prod bez zmiany.
-      SKILLBRIDGE_AI_MODEL: claude-haiku-4-5-20251001
+      # Override modelu PER WARSTWA — nigdy globalny SKILLBRIDGE_AI_MODEL.
+      #
+      # DLACZEGO NIE GLOBALNY (naprawa 2026-08-14): `SKILLBRIDGE_AI_MODEL` ma
+      # w `src/lib/ai/model.ts` priorytet 1 i nadpisuje WSZYSTKIE warstwy naraz —
+      # takze `premium`. A `premium` to podsumowanie kariery + sedzia
+      # (career-helper.ts: getModel("premium") x2), czyli dokladnie to, co §7
+      # konstytucji nazywa kredencjalem wysokiej stawki. Skutek byl taki, ze
+      # jedyny tor sprawdzajacy te sciezke NIGDY nie wykonywal jej na modelu
+      # produkcyjnym: prod mial Opus 4.8, CI cicho podmienialo na Haiku.
+      #
+      # To nie byla teoria. Komunikat asercji w tests/e2e-pw/helpers/b0-summary.ts
+      # wymienial ten override jako NAJCZESTSZA przyczyne padu w CI: Haiku nie
+      # trafial w schemat wymagajacy etykiet z katalogu 23 sciezek. Czyli tor
+      # jednoczesnie nie mierzyl produkcji I migotal z powodu tej podmiany.
+      #
+      # Teraz: `standard` i `fast` jada w CI na Haiku (oszczednosc zostaje —
+      # to one wykonuja wiekszosc wywolan), a `premium` bez nadpisania, czyli na
+      # swoim modelu produkcyjnym (Opus 4.8 z DEFAULT_MODEL_IDS). Kredencjal
+      # wysokiej stawki jest testowany tym, czym jedzie na produkcji.
+      #
+      # KOSZT: swiadomie wyzszy — kilka wywolan Opusa na nocny przebieg zamiast
+      # Haiku. Sufit wydatkow klucza CI bez zmian. To cena za to, zeby bramka
+      # mierzyla produkt, a nie tansza atrape produktu.
+      SKILLBRIDGE_AI_MODEL_STANDARD: claude-haiku-4-5-20251001
+      SKILLBRIDGE_AI_MODEL_FAST: claude-haiku-4-5-20251001
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -1013,6 +1038,12 @@ jobs:
       - a11y-exam
       - a11y-tutor
       - a11y-review
+      # Dopisane 2026-08-14. Naglowek joba a11y-klauzula deklarowal „BLOKUJACY,
+      # jak pozostale bramki a11y" — a bramka nie byla ani w wymaganych
+      # sprawdzeniach galezi `main`, ani tutaj. Czyli czerwona klauzula art. 13
+      # RODO nie blokowala scalenia I nie budzila nocnego alarmu: deklaracja
+      # w komentarzu zastepowala okablowanie. (Pomiar: Quinn, 2026-08-14.)
+      - a11y-klauzula
       - rate-limit-review
       - e2e-llm
     if: failure() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')

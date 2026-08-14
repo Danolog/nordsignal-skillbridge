@@ -143,9 +143,13 @@ export async function domknijPodsumowanieZeSciezkami(
 			`sesji) ekran 3 wciąż pokazuje „Coś poszło nie tak z podsumowaniem". Produkt zachował ` +
 			`się poprawnie — uczciwie zdegradował — ale podsumowanie NIE powstało ani razu. ` +
 			`Diagnoza: log serwera career-helper.summary.generate.no-object-retry (które pole ` +
-			`schematu padło) oraz .exhausted. Najczęstsza przyczyna w CI: warstwa „premium" ` +
-			`jedzie na modelu z override'u SKILLBRIDGE_AI_MODEL (Haiku), który nie trafia ` +
-			`w schemat wymagający etykiet skopiowanych z katalogu 23 ścieżek.`,
+			`schematu padło) oraz .exhausted. UWAGA — historyczna przyczyna ZNIKNĘŁA ` +
+			`2026-08-14: do tej daty warstwa „premium" jechała w CI na Haiku, bo job ` +
+			`ustawiał globalny SKILLBRIDGE_AI_MODEL nadpisujący wszystkie warstwy naraz, ` +
+			`a Haiku nie trafiał w schemat wymagający etykiet z katalogu 23 ścieżek. ` +
+			`Teraz „premium" jedzie na modelu produkcyjnym (nadpisywane są tylko ` +
+			`SKILLBRIDGE_AI_MODEL_STANDARD i _FAST), więc pad na tej asercji znaczy ` +
+			`realny problem produktu, nie podmianę modelu w CI.`,
 	).not.toBe("blad_generacji");
 
 	await expect(
