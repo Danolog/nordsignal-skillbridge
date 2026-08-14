@@ -1,8 +1,23 @@
-# Klauzula informacyjna (art. 13 RODO) — SkillBridge · DRAFT v0.2
+# Klauzula informacyjna (art. 13 RODO) — SkillBridge · DRAFT v0.3
 
-**Wersja:** v0.2 · 2026-08-12 · **Autor:** Ryan (CRCO nordsignal) · **Zadanie:** E2c pakietu RODO
+**Wersja:** v0.3 · 2026-08-14 · **Autor:** Ryan (CRCO nordsignal) · **Zadanie:** E2c pakietu RODO
 (artefakt **E-1**) · **Zleceniodawca:** Oliver (COO) · **Sign-off:** Darek (CEO) — wymagany, akt
 wychodzący na zewnątrz (CLAUDE.md §4).
+
+**Changelog v0.2 → v0.3 (2026-08-14) — dwie zmiany, obie w trybie sprostowania jawnego.**
+**(1) Sprostowanie tabeli Z-2, wiersz W-5** (sekcja **Z-2a**): dwa miejsca deklarowały przegląd
+RODO jako **wykonany** i powoływały się na artefakt, którego **nigdy nie było w kontroli wersji**.
+Stare brzmienie zacytowane dosłownie, przesłanka zmierzona, wniosek metodyczny zapisany.
+**(2) Usunięcie z CZĘŚCI I zdania blokującego** z sekcji 11 („do czasu ustalenia nie rejestrujemy
+osób spoza zespołu") — decyzją Darka z 2026-08-14, wariant (b) pozycji W-4: ryzyko przyjęte
+świadomie, sekcja 11 **zostaje** w brzmieniu „ustalamy to". Zapis przyjęcia ryzyka: sekcja **Z-2b**.
+Powód usunięcia: zdanie było prawdziwe wyłącznie dopóki nikogo nie rejestrujemy — w chwili
+rejestracji uczestnika klauzula **obalałaby samą siebie** w tekście pokazywanym temu uczestnikowi.
+Równoległy tor (a) — pytania do dostawcy modelu — ma własny nośnik:
+`docs/legal/pytania-do-dostawcy-modelu-p1-p3.md`. **Nie blokuje** wpuszczenia grupy.
+**(3) Nowa sekcja Z-7** — co zmienia nabór 3–5 osób wobec akceptacji ryzyka, które wyceniałem
+na **jednego** uczestnika. Dwie z nich przestają działać przy naborze; nazywam je przed podpisem,
+nie po.
 
 **Changelog v0.1 → v0.2 (2026-08-12) — domknięcie warunku W-B Leo przy zgłoszeniu #290.**
 **Ani jedno zdanie CZĘŚCI I (treści dla studenta) nie zostało zmienione co do sensu** — sekcja 7
@@ -18,7 +33,7 @@ w sekcji Z-3 — etykieta była uczciwa, ale użyta szerzej, niż CLAUDE.md v1.1
 
 > **Ten dokument ma dwie części i to rozróżnienie jest wiążące.**
 > **CZĘŚĆ I** (sekcje 1–12) to **treść pokazywana studentowi** — po sign-offie idzie do produktu
-> słowo w słowo. **CZĘŚĆ II** (sekcje Z-1…Z-6) to **aparat wewnętrzny**: skąd wzięło się każde
+> słowo w słowo. **CZĘŚĆ II** (sekcje oznaczone `Z-`) to **aparat wewnętrzny**: skąd wzięło się każde
 > zdanie, czego nie wiemy, co wymaga prawnika. Część II **nigdy** nie jest publikowana.
 
 ---
@@ -52,11 +67,143 @@ Dlatego klauzula zapala się **razem z** poniższymi, nigdy przed nimi:
 | **W-1** | **Ścieżka usunięcia konta działa w produkcie** (pozycja E1b; flaga `FLAG_ACCOUNT_DELETION` zapalona po zielonych strażnikach) | Ethan (CTO) | Sekcja 8 mówi „możesz usunąć konto samodzielnie". Dziś ścieżka **istnieje i jest zamknięta przełącznikiem** — trasa biblioteki uwierzytelniającej odpowiada „nie znaleziono" (pomiar Ethana, E1b §1.1). Bez W-1 zdanie w sekcji 8 jest nieprawdziwe w chwili wypowiadania |
 | **W-2** | **Pozycje rejestru kompletności art. 17 rozstrzygnięte** — każda albo naprawiona, albo świadomie przyjęta i **opisana w sekcji 9 tej klauzuli** | Ryan (odbiór), Ethan (wykonanie) | Nośnik listy: `docs/data/art17-kompletnosc-usuniecia.md`. Sekcja 9 mówi studentowi, co zostaje po usunięciu konta — jeśli rejestr nie jest rozstrzygnięty, **nie wiemy, co tam napisać** |
 | **W-3** | **Dług A-1 zamknięty dla nowych wierszy śladu rozliczalności** (kierunek (a+): nowe zdarzenia bez identyfikatora osoby, bez adresu IP) | Ryan (kierunek), Ethan (kod) | Bez tego zdanie z sekcji 9 („zostaje zapis, że coś się wydarzyło, bez danych wskazujących na Ciebie") jest **nieprawdziwe dla osoby rejestrującej się po zapłonie klauzuli** |
-| **W-4** | **Odpowiedzi na pytania P-1…P-3** (umowa powierzenia z dostawcą modelu, podstawa transferu, trenowanie modeli) — albo uzyskane, albo sekcja 11 zostaje w brzmieniu „ustalamy to" i Darek to **świadomie akceptuje** | Darek (posiadacz konta u dostawcy) | Art. 13 ust. 1 lit. f wymaga podania podstawy przekazania danych poza EOG. **Nie wolno jej zmyślić** |
-| **W-5** | **Zasada odpowiedzi dla pracodawcy podpisana i wdrożona** — nośnik: `docs/product/zasada-odpowiedzi-dla-pracodawcy.md` (Sophia), przegląd RODO wykonany (`scratchpad/przeglad-zasada-pracodawcy-ryan.md`), z **poprawką R-2** w treści strony martwego odnośnika | Sophia (treść), Ryan (przegląd — wykonany), Darek (sign-off) | Sekcja 9 klauzuli **obiecuje studentowi konkretne zachowanie wobec pracodawcy** („nie potwierdzimy ani nie zaprzeczymy"). Obietnica bez wdrożonej zasady i bez strony pod martwym odnośnikiem jest obietnicą bez pokrycia — tą samą klasą wady, którą naprawia W-1 |
+| **W-4** | **Odpowiedzi na pytania P-1…P-3** (umowa powierzenia z dostawcą modelu, podstawa transferu, trenowanie modeli) — albo uzyskane, albo sekcja 11 zostaje w brzmieniu „ustalamy to" i Darek to **świadomie akceptuje**. **Domknięty drugą drogą 2026-08-14** — Darek wybrał wariant (b) i przyjął ryzyko; zapis decyzji: **Z-2b**. Tor uzyskiwania odpowiedzi idzie dalej, **równolegle i bez blokowania**: `docs/legal/pytania-do-dostawcy-modelu-p1-p3.md` | Darek (posiadacz konta u dostawcy) | Art. 13 ust. 1 lit. f wymaga podania podstawy przekazania danych poza EOG. **Nie wolno jej zmyślić.** Przyznanie się do luki jest dopuszczalne; zmyślona podstawa nie jest |
+| **W-5** | **Zasada odpowiedzi dla pracodawcy podpisana i wdrożona** — nośnik: `docs/product/zasada-odpowiedzi-dla-pracodawcy.md` (Sophia), **na 2026-08-14 draft poza kontrolą wersji** (pozycja na liście `SCIEZKI_JESZCZE_NIEISTNIEJACE` strażnika ścieżek). Mój przegląd RODO **odbył się merytorycznie i pozostawił ślad w rejestrze** (pozycja L-8 / dług A-3, commit `e66312d`), ale **artefaktu przeglądu nie ma**, a wraz z nim przepadła treść „poprawki R-2" — **nie odtwarzam jej z pamięci**; obowiązuje wymóg **R-2′** postawiony na nowo w **Z-2a** | Sophia (treść), Ryan (przegląd — **ślad w rejestrze, artefakt utracony**), Darek (sign-off) | Sekcja 9 klauzuli **obiecuje studentowi konkretne zachowanie wobec pracodawcy** („nie potwierdzimy ani nie zaprzeczymy"). Obietnica bez wdrożonej zasady i bez strony pod martwym odnośnikiem jest obietnicą bez pokrycia — tą samą klasą wady, którą naprawia W-1 |
 
 **Nośnikiem tej listy jest ta tabela.** Rejestr czynności (`ropa.md`) i rejestr kompletności art. 17
 **wołają ją**, nie powtarzają.
+
+### Z-2a. SPROSTOWANIE JAWNE 2026-08-14 — „przegląd wykonany" bez odtwarzalnego artefaktu
+
+**Stare brzmienie, cytowane dosłownie** (v0.2, tabela Z-2, wiersz **W-5**, dwa miejsca w jednym
+wierszu):
+
+> „…nośnik: `docs/product/zasada-odpowiedzi-dla-pracodawcy.md` (Sophia), **przegląd RODO wykonany**
+> (`scratchpad/przeglad-zasada-pracodawcy-ryan.md`), z **poprawką R-2** w treści strony martwego
+> odnośnika"
+>
+> „Sophia (treść), **Ryan (przegląd — wykonany)**, Darek (sign-off)"
+
+**Co było faktem.** Przegląd odbył się **merytorycznie** — i to jest sprawdzalne. Jego wynikiem
+jest pozycja **L-8** w rejestrze kompletności art. 17 (dług **A-3**: prefiks identyfikatora
+paszportu widnieje jako numer dokumentu na wydruku PDF krążącym poza platformą), wprowadzona
+commitem `e66312d`. Wpis mówi wprost, że znalezisko powstało „przy przeglądzie zasady odpowiedzi
+dla pracodawcy". Przegląd **nie jest** więc fikcją.
+
+**Czego faktem nie było.** Obu cytowanych artefaktów **nie ma i nigdy nie było w kontroli wersji**.
+Odczyty z 2026-08-14, repozytorium produktu:
+
+```
+$ git log --all --oneline -- 'scratchpad/przeglad-zasada-pracodawcy-ryan.md' '**/przeglad-zasada-pracodawcy*'
+(brak wyjścia)   kod wyjścia: 0
+
+$ find <oba repozytoria> -name "przeglad-zasada-pracodawcy*" -not -path "*/node_modules/*"
+(brak wyjścia)
+
+$ git ls-tree -r --name-only origin/main | grep -i "zasada-odpowiedzi"
+(brak wyjścia)   kod wyjścia: 1
+```
+
+Kontrola dwustronna do powyższego — to samo narzędzie **widzi** artefakt, o którym wiadomo, że
+istnieje:
+
+```
+$ git show --stat --oneline e66312d
+e66312d docs(rodo): E2c — klauzula art. 13 + RoPA #8 (dostawca modelu) + przeliczenie klasy A-1 (#304)
+ docs/data/art17-kompletnosc-usuniecia.md           |  33 +-
+ …
+ 7 files changed, 1284 insertions(+), 104 deletions(-)
+```
+
+Zero trafień nie jest więc dowodem na to, że zapytanie nic nie widzi — jest dowodem na to, że
+tych plików nie ma.
+
+**Co dokładnie dołożono.** (1) Wiersz W-5 nie mówi już „wykonany" — mówi, gdzie leży **realny
+ślad** przeglądu (pozycja L-8, commit `e66312d`) i że **artefaktu przeglądu nie ma**. (2) Nośnik
+zasady jest oznaczony jako **nieistniejący na dzień 2026-08-14** — bo taki jest stan, a wiersz
+W-5 pozostaje warunkiem niespełnionym. (3) Powstał strażnik maszynowy
+`tests/unit/rodo/klauzula-sciezki-istnieja.contract.test.ts`, który pada, gdy ta klauzula powołuje
+się na ścieżkę **nieobecną w kontroli wersji** i nieumieszczoną na jawnej liście pozycji jeszcze
+niepowstałych. Mutacja czerwieniąca go jest zacytowana w nagłówku tego testu.
+
+**Wniosek metodyczny — błąd metody, nie pech.** Powołanie się w dokumencie prawnym na ścieżkę
+w katalogu **ignorowanym przez kontrolę wersji** (`scratchpad/`) jest wadą konstrukcyjną, a nie
+niefortunnym zbiegiem okoliczności. Taki dowód jest z definicji nieodtwarzalny: żyje na jednym
+dysku, znika bez śladu w historii i **nie da się go pokazać ani recenzentowi, ani kupującemu firmę,
+ani organowi nadzorczemu**. Dokument, który idzie na zewnątrz, wolno opierać wyłącznie na
+artefaktach, które **przetrwają autora i jego laptop**. Reguła na przyszłość: cytat ścieżki
+w CZĘŚCI II jest dowodem tylko wtedy, gdy ścieżka jest w kontroli wersji; ścieżkę spoza niej wolno
+przywołać jedynie jako **notatkę roboczą, jawnie oznaczoną**, i nigdy jako podstawę słowa
+„wykonany". Od teraz pilnuje tego strażnik, nie moja pamięć.
+
+**Klasa wady jest ta sama, którą sam opisałem w Z-3**: mechanizm zameldował „w porządku", nie
+sprawdzając tego, co miał sprawdzać. Tam była etykieta użyta szerzej, niż wolno; tu jest słowo
+„wykonany" bez dowodu. **To trzecie z rzędu sprostowanie tego samego wzorca w tym dokumencie** —
+i to jest sygnał o mnie, nie o dokumencie: piszę „zrobione" szybciej, niż zostawiam po tym ślad.
+
+**To samo wystąpiło DRUGI raz, w drugim dokumencie — i nie znalazłem tego sam.** Ta sama
+nieistniejąca ścieżka była cytowana również w rejestrze kompletności art. 17
+(`docs/data/art17-kompletnosc-usuniecia.md`, akapit pod pozycją L-8, jako adres „pełnej oceny
+prawnej"). Oba wpisy są moje i oba powstały tego samego dnia. Wystąpienie w rejestrze znalazła
+**Sophia**, pisząc nośnik W-5 — nie ja, mimo że pisałem to sprostowanie i szukałem właśnie tego.
+Sprostowałem je osobno, w tamtym dokumencie, z cytatem starego brzmienia. **Wniosek: szukałem
+wystąpień tam, gdzie spodziewałem się je znaleźć, zamiast przeszukać oba repozytoria pod kątem
+wzorca.** Naprawa jednego wystąpienia przy żywym drugim byłaby sprostowaniem pozornym — to ono
+trafiłoby do kolejnego cytowania.
+
+**Poprawka „R-2" — przepadła i nie odtwarzam jej z pamięci.** Wiersz W-5 wymagał w v0.2, żeby
+strona pod martwym odnośnikiem uwzględniała „poprawkę R-2" z mojego przeglądu. **Nie mam do niej
+żadnego zapisu.** Sprawa jest gorsza niż zwykłe zapomnienie, bo etykieta jest **niejednoznaczna
+z zasady**: numeruję znaleziska lokalnie, per dokument, bez wspólnej przestrzeni nazw — a „R-2"
+oznacza w kontroli wersji **co najmniej dwie inne rzeczy**, obie niezwiązane ze stroną paszportu
+(zmierzone `git grep -n "\bR-2\b" origin/main -- docs/`, odczyt 2026-08-14):
+`docs/security/hint-reveals-retencja-signoff.md:452` → „R-2 (WAŻNE) — okres dla kont
+nieaktywnych"; `docs/security/rate-limit-ailight-signoff.md:118` → „R-2 (INFORMACYJNE) — klient
+nie sygnalizuje 429 tury czatu". Cytat „poprawka R-2" bez artefaktu jest więc
+**nierozstrzygalny nawet w zasadzie**, a nie tylko trudny do odtworzenia.
+
+**Co robię zamiast zgadywania.** Zgadnięcie własnego werdyktu i podanie go Sophii jako
+„odtworzonego" byłoby gorsze niż jego brak — dostałaby wymóg o nieznanym pochodzeniu, wyglądający
+na ustalenie. Zamiast tego **wycofuję etykietę R-2 z wiersza W-5** i stawiam wymóg **na nowo,
+z dzisiejszą datą i jako nowy**, w zakresie, który wynika z pozycji L-8 i jest sprawdzalny bez
+tamtego artefaktu:
+
+> **R-2′ (nowy wymóg, 2026-08-14, NIE jest odtworzeniem R-2).** Strona pod nieaktualnym
+> odnośnikiem do paszportu **nie może różnicować odpowiedzi** w zależności od tego, dlaczego
+> odnośnik nie działa — musi odpowiadać identycznie, gdy właściciel wyłączył udostępnianie, gdy
+> odnośnik wygasł, gdy konto zostało usunięte i gdy dokument nigdy nie powstał. **W szczególności
+> nie wolno jej ujawnić, że identyfikator w odnośniku był kiedykolwiek znany systemowi** — bo
+> prefiks tego identyfikatora widnieje jako numer dokumentu na wydruku PDF krążącym poza
+> platformą (pozycja L-8, dług A-3), a odpowiedź różnicowana zamienia ten wydruk w narzędzie
+> potwierdzania, że dana osoba miała u nas konto. Kod odpowiedzi, czas odpowiedzi i treść:
+> jednakowe we wszystkich czterech przypadkach.
+
+Czy R-2′ pokrywa się z utraconym R-2 — **nie wiem i tak to zapisuję**. Jeśli pierwotna poprawka
+niosła coś ponadto, ta wiedza przepadła razem z plikiem i **jest to realna strata**, nie formalność.
+
+### Z-2b. ZAPIS PRZYJĘCIA RYZYKA — W-4, decyzja Darka 2026-08-14
+
+Ślad audytowy, nie przypis. Zapisuję go tutaj, bo za pięć lat pytanie „kto i kiedy zgodził się
+wysyłać treść studenta poza EOG bez ustalonej podstawy" musi mieć odpowiedź w dokumencie, a nie
+w czyjejś pamięci.
+
+| Pozycja | Treść |
+|---|---|
+| **Data decyzji** | 2026-08-14 |
+| **Kto zdecydował** | Darek (CEO), administrator danych — jedyna osoba uprawniona (CLAUDE.md §4) |
+| **Co dokładnie** | Wariant **(b)** pozycji W-4: **nie czekamy** na odpowiedzi dostawcy modelu; sekcja 11 **zostaje** w brzmieniu „ustalamy to"; **zdanie blokujące zostaje usunięte** z CZĘŚCI I; równolegle idzie tor (a) — uzyskiwanie odpowiedzi P-1…P-3 |
+| **Co jest przyjmowanym ryzykiem** | Treść pisana przez uczestnika do Pomocnika kariery i w obronie ustnej trafia do dostawcy przetwarzającego dane **poza EOG**, a my **nie potrafimy dziś wskazać podstawy prawnej tego przekazania** (art. 13 ust. 1 lit. f), ani rozstrzygnąć, czy dostawca używa tej treści do trenowania modeli |
+| **Czego decyzja NIE obejmuje** | Nie jest zgodą na **zmyślenie** podstawy. Nie jest stwierdzeniem, że podstawa istnieje. Nie zwalnia z toru (a). Nie rozciąga się na inne warunki z Z-2 — każdy z nich obowiązuje osobno |
+| **Dlaczego zdanie blokujące musiało zniknąć** | Zmierzone: znajdowało się w **treści pokazywanej uczestnikowi**. Zostawienie go przy jednoczesnej rejestracji ludzi znaczy, że pierwszy dokument prawny, jaki uczestnik u nas czyta, **kłamie w chwili czytania**. To gorsze niż nazwana luka — podważa wiarygodność całej klauzuli, w tym zdań, które są prawdziwe |
+| **Warunek odwrócenia** | Odpowiedzi na P-1…P-3 (albo choćby na P-3 — trenowanie modeli) zastępują sekcję 11 konkretem; uczestnicy dostają informację o zmianie (sekcja 13 zobowiązuje nas do tego wprost) |
+| **Kto ma to na biurku** | Tor (a): Darek (posiadacz konta u dostawcy). Nośnik pytań: `docs/legal/pytania-do-dostawcy-modelu-p1-p3.md` |
+
+**Moje zdanie jako CRCO, zapisane obok decyzji, bo do tego jestem.** Uważam wariant (b) za
+obronialny **przy tej skali i przy tej jawności** — przyznanie się do luki wprost jest uczciwsze
+niż wpisanie standardowej klauzuli o „standardowych klauzulach umownych", której nikt u nas nie
+czytał. Uważam natomiast, że luka ma **twardy termin**, a nie „kiedyś": tor (a) zamknięty **przed
+drugą grupą uczestników**. Luka nazwana i żyjąca dalej bez terminu przestaje być decyzją i staje
+się nawykiem — pisałem to o cudzych etykietach 2026-08-10 i wtedy również dotyczyło mnie.
 
 ### Z-3. Jeden nośnik — jak to jest rozwiązane i gdzie zostaje dług
 
@@ -68,7 +215,7 @@ Klauzula **wywodzi** treść z trzech rejestrów i **nie jest** dla nich źród�
 | Okresy przechowywania | `docs/data/retention.md` | sekcja 7 **renderuje** tabelę; **żadnego okresu nie wymyślam** |
 | Co przeżywa usunięcie konta | `docs/data/art17-kompletnosc-usuniecia.md` | sekcja 9 renderuje rozstrzygnięcia pozycji L-1…L-7 |
 | Trwałość podpisu człowieka pod kredencjałem | **ADR-008** (`docs/decisions/008-hitl-rozdzial-wagi-oceny.md`) | sekcja 10 **cytuje regułę Sophii, nie formułuje własnej** |
-| Co odpowiadamy pracodawcy po usunięciu konta | `docs/product/zasada-odpowiedzi-dla-pracodawcy.md` (Sophia) | sekcja 9 **renderuje zasadę dla studenta**; nie ustanawia jej i nie rozstrzyga jej brzmienia zewnętrznego |
+| Co odpowiadamy pracodawcy po usunięciu konta | `docs/product/zasada-odpowiedzi-dla-pracodawcy.md` (Sophia) | sekcja 9 **powtarza zasadę własnymi słowami** — **świadomy drugi nośnik**, patrz akapit niżej; nie ustanawia jej i nie rozstrzyga jej brzmienia zewnętrznego |
 
 **Świadomy drugi nośnik — nazwany, nie ukryty.** Okresy przechowywania **muszą** paść wobec
 studenta (art. 13 ust. 2 lit. a nie pozwala odesłać go do rejestru wewnętrznego), więc liczby
@@ -78,6 +225,29 @@ z `retention.md` są tu fizycznie powtórzone. Zgodnie z CLAUDE.md v1.17 wymaga 
 - **strażnik maszynowy: `tests/unit/rodo/okresy-retencji.contract.test.ts`** — porównuje okresy
   w trzech nośnikach naraz i pada, gdy się rozjadą. Mutacje czerwieniące go — w tym po jednej
   na tej klauzuli i na źródle — są zacytowane w nagłówku tego testu, i to on jest ich nośnikiem.
+
+**Drugi świadomy drugi nośnik — zasada odpowiedzi dla pracodawcy (sprostowanie 2026-08-14).**
+Wiersz tabeli wyżej mówił do v0.2, że sekcja 9 **„renderuje"** zasadę. **To było nieprawdziwe
+twierdzenie o mechanizmie**, a nie nieporęczne słowo: po zgłoszeniu #310 „renderuje" znaczy w tym
+repozytorium rzecz konkretną i sprawdzalną — treść jest **wczytywana z nośnika w chwili
+wyświetlenia** (tak działa ta klauzula: `src/lib/legal/klauzula-art13.ts` czyta plik markdown).
+Sekcja 9 **nic nie wczytuje** — niesie własne sformułowanie tej samej zasady, napisane pod
+studenta. To **drugi nośnik**, i to konieczny: art. 13 wymaga, żeby student przeczytał obietnicę
+w klauzuli, a nie został odesłany do dokumentu produktowego. Zgłosiła to Sophia przy pisaniu
+nośnika W-5 i ma rację — przy audycie „renderuje" jest twierdzeniem o mechanizmie, sprawdzalnym
+w pięć minut i obalalnym w te same pięć minut.
+
+Skoro nośnik jest świadomie drugi, CLAUDE.md v1.17 wymaga progu i strażnika:
+- **próg konsolidacji:** pierwsza zmiana brzmienia zasady w nośniku Sophii **albo** pierwsze realne
+  zapytanie pracodawcy — co przyjdzie pierwsze;
+- **strażnik:** cztery zdania obietnicy w sekcji 9 dostały **niewidoczne klucze maszynowe**
+  (`<!-- pracodawca:* -->`), tym samym wzorem co klucze okresów przechowywania, żeby porównywarka
+  obu nośników miała po czym rozpoznać wiersze. **Sama porównywarka jeszcze nie istnieje** — nie
+  da się jej napisać przed wejściem nośnika Sophii do kontroli wersji, bo nie ma czego porównywać
+  z czym. **Etykieta: niepotwierdzony, z wykonawcą i terminem** — Ryan, w tym samym zgłoszeniu,
+  w którym nośnik `docs/product/zasada-odpowiedzi-dla-pracodawcy.md` trafi na `main`. Zapisuję to
+  z wykonawcą i progiem właśnie dlatego, że etykieta bez nich działa jak zwolnienie z obowiązku —
+  napisałem to o sobie w sprostowaniu wyżej i nie zamierzam powtórzyć tego dwa akapity dalej.
 
 > **SPROSTOWANIE 2026-08-12 — moje własne zdanie o strażniku.** Stało tu, cytowane dosłownie:
 >
@@ -285,13 +455,13 @@ harmonogram powtórek, dane o stażu i pracy, udział w pilotażu.
    i nie możemy go skasować; dotyczy to także zrzutów ekranu. Przestanie natomiast działać
    odnośnik do Twojego paszportu na platformie.
 
-**A jeśli ktoś zapyta nas o Ciebie po usunięciu konta:** **nikomu — także pracodawcy, który ma
+**A jeśli ktoś zapyta nas o Ciebie po usunięciu konta:** <!-- pracodawca:odmowa_uniformna --> **nikomu — także pracodawcy, który ma
 Twój plik PDF — nie potwierdzimy ani nie zaprzeczymy, że miałeś u nas konto.** Odpowiadamy tak samo
 w każdej sytuacji: gdy ktoś sam wyłączył udostępnianie, gdy odnośnik jest nieaktualny, gdy konto
-zostało usunięte i gdy dokument nigdy u nas nie powstał. **Nie sprawdzamy, o który przypadek
+zostało usunięte i gdy dokument nigdy u nas nie powstał. <!-- pracodawca:brak_rozroznienia_przypadku --> **Nie sprawdzamy, o który przypadek
 chodzi** — bo samo różnicowanie odpowiedzi mówiłoby o Tobie dokładnie to, co miało zostać usunięte.
-Jedynym potwierdzeniem, jakie wystawiamy, jest **działający odnośnik, który udostępnia właściciel
-dokumentu**; sam plik PDF jest wydrukiem, nie dowodem.
+<!-- pracodawca:jedyne_potwierdzenie_to_odnosnik --> Jedynym potwierdzeniem, jakie wystawiamy, jest **działający odnośnik, który udostępnia właściciel
+dokumentu**; <!-- pracodawca:pdf_to_wydruk_nie_dowod --> sam plik PDF jest wydrukiem, nie dowodem.
 
 ### 10. Automatyczne decyzje i profilowanie
 
@@ -331,9 +501,15 @@ wersji **kończymy ustalanie trzech rzeczy**: na jakiej dokładnie podstawie pra
 przekazanie, jakie zobowiązania umowne wiążą dostawcę wobec nas oraz przez jaki czas i w jakim celu
 przechowuje on przekazaną treść — **w szczególności, czy używa jej do trenowania swoich modeli**.
 
-**Do czasu ustalenia i opisania tego w tym dokumencie nie rejestrujemy osób spoza zespołu
-twórców.** Gdy tylko to domkniemy, ta sekcja zostanie zastąpiona konkretną odpowiedzią, a Ty
-dostaniesz informację o zmianie.
+**Piszemy Ci o tym, zanim założysz konto, a nie po fakcie.** Nie potrafimy dziś podać podstawy
+prawnej tego przekazania i nie zamierzamy w to miejsce wpisać zdania, które ładnie wygląda —
+wolimy, żebyś wiedział, czego nie wiemy, i mógł na tej podstawie zdecydować. Gdy tylko to
+domkniemy, ta sekcja zostanie zastąpiona konkretną odpowiedzią, a Ty dostaniesz informację
+o zmianie.
+
+**Co możesz z tym zrobić już teraz:** napisz do nas na `kontakt@nordsignal.cc` — odpowiemy, co
+udało nam się ustalić na dany dzień. Masz też prawo złożyć skargę do Prezesa Urzędu Ochrony
+Danych Osobowych (sekcja 8) i możesz w każdej chwili usunąć konto (sekcja 9).
 
 ### 12. Czy musisz podawać dane
 
@@ -371,6 +547,8 @@ Kolejność od najcięższego. **Żadna z tych pozycji nie jest kosmetyczna.**
 | **L-f** | **Relacja z uczelnią** — kto jest administratorem, gdy uczelnia zacznie być stroną (próg T-P1 Sophii) | Dziś nieaktualne (zero umów), ale zmienia całą konstrukcję dokumentu, gdy zadziała |
 | **L-g** | **Wiek użytkowników.** Nie sprawdzamy, czy student jest pełnoletni. Przy osobie poniżej 16 lat podstawa „zgoda" (dane o stażu) wymaga zgody opiekuna (art. 8) | Nie badałem tego wątku w ogóle — **nazywam lukę, nie zamykam jej** |
 | **L-h** | **Regulamin.** Klauzula informacyjna **nie jest** umową. Powołuję się na „wykonanie umowy" jako podstawę, a **regulaminu nie ma** — zmierzone: `git ls-tree -r --name-only origin/main \| grep -iE "regulamin\|terms"` → zero trafień, kod wyjścia 1 | Podstawa z lit. b wymaga umowy, która istnieje. To jest **luka konstrukcyjna całego pakietu**, wykryta przy pisaniu tej klauzuli, i nie jest moja do zamknięcia |
+| **L-i** | **Czy „odmowa uniformna" jest właściwą konstrukcją wobec organu.** Sekcja 9 obiecuje, że nikomu — w tym pracodawcy — nie potwierdzimy ani nie zaprzeczymy istnienia konta, i że **nie sprawdzamy**, o który przypadek chodzi. Pytanie: czy ta konstrukcja obroni się wobec żądania organu nadzorczego lub sądu, i **jak ją pogodzić** ze zdaniem z sekcji 5 („możemy przekazać dane, jeśli wymaga tego prawo") | Zgłoszone przez Sophię przy nośniku W-5. To ocena prawna, nie produktowa: obietnica „nie sprawdzamy" jest wobec pracodawcy ochroną, a wobec organu może być czym innym. **Nie rozstrzygam tego sam** — mogę najwyżej powiedzieć, że dziś oba zdania stoją w jednym dokumencie bez wskazania, które ustępuje |
+| **L-j** | **Czy zakaz zestawiania numeru dokumentu z wydruku PDF ze śladem zdarzeń przekwalifikować z decyzji produktowej na wymóg zgodności** (pozycja **L-8** rejestru art. 17, dług **A-3**) | Dziś ochroną jest **zakaz organizacyjny** — czyli obietnica firmy, że czegoś nie zrobi. Jeśli identyfikator jest „ponownie przypisywalny środkami, którymi rozsądnie może dysponować osoba trzecia" (motyw 26), to wiersze śladu **pozostają danymi osobowymi po usunięciu konta**, a wtedy zakaz musi być wymogiem, nie preferencją. **Przesłanka zmierzona przez Sophię 2026-08-14:** numer na wydruku (`SB-2026-XXXXXXXX`, `src/components/passport/passport-document.tsx:170`) jest **prefiksem identyfikatora obecnego w śladzie zdarzeń**. Przy jednym uczestniku to była hipoteza; przy naborze krąży **tyle wydruków, ilu uczestników** |
 
 ### Z-6. Self-critique — head of GRC po audycie SOC 2 Type II
 
@@ -388,15 +566,29 @@ Pięć słabości, które sam bym sobie wytknął, i co z każdą zrobiłem.
    być, bo należą do administratora (`ropa.md`, oświadczenie).
 3. **„Zbudowałeś drugi nośnik okresów przechowywania i nazwałeś to renderowaniem."** — Częściowo
    słuszne. Odpowiedź: drugiego nośnika **nie da się uniknąć** (art. 13 ust. 2 lit. a), więc
-   zamiast udawać, że go nie ma, zapisałem go jawnie w obu plikach, dołożyłem próg i **jawnie
-   oznaczyłem strażnika jako nieistniejącego**. To jest dokładnie postępowanie przewidziane
-   CLAUDE.md v1.17 dla świadomego drugiego nośnika. Czego nie zrobiłem: strażnika. Nie udaję,
-   że zrobiłem.
+   zamiast udawać, że go nie ma, zapisałem go jawnie w obu plikach i dołożyłem próg. To jest
+   dokładnie postępowanie przewidziane CLAUDE.md v1.17 dla świadomego drugiego nośnika.
+   **Sprostowanie 2026-08-14 do brzmienia z v0.2** — stało tu: *„…i **jawnie oznaczyłem strażnika
+   jako nieistniejącego**. […] Czego nie zrobiłem: strażnika. Nie udaję, że zrobiłem."* To
+   przestało być prawdą **w tej samej wersji, w której zostało napisane**: v0.2 zbudowała
+   strażnika `tests/unit/rodo/okresy-retencji.contract.test.ts` i opisała to w Z-3, a ten akapit
+   został nietknięty. **Stan strażnika miał dwa nośniki i jeden z nich się nie dowiedział** —
+   dosłownie wada, przed którą broni cała sekcja Z-3. Jedynym nośnikiem stanu strażnika jest
+   **Z-3**; ten punkt go teraz **woła**, zamiast powtarzać.
 4. **„Sekcja 11 to przyznanie się, że nie wiesz, dokąd wysyłasz dane studenta."** — Tak jest
-   i uważam to za mniejsze zło niż zmyślona podstawa transferu. Ale nie zostawiam tego jako
-   „luki nazwanej i żyjącej dalej": brzmienie sekcji 11 zawiera **zdanie blokujące** („do czasu
-   ustalenia nie rejestrujemy osób spoza zespołu"), które czyni tę lukę **bramką**, nie przypisem.
-   Gdyby nie ono, sekcja 11 byłaby wygodnym sposobem na wysłanie klauzuli bez odrobienia pracy.
+   i uważam to za mniejsze zło niż zmyślona podstawa transferu. **Sprostowanie 2026-08-14 do
+   brzmienia z v0.2** — stało tu: *„Ale nie zostawiam tego jako »luki nazwanej i żyjącej dalej«:
+   brzmienie sekcji 11 zawiera **zdanie blokujące** („do czasu ustalenia nie rejestrujemy osób
+   spoza zespołu"), które czyni tę lukę **bramką**, nie przypisem. Gdyby nie ono, sekcja 11 byłaby
+   wygodnym sposobem na wysłanie klauzuli bez odrobienia pracy."* Zdanie blokujące **zostało
+   usunięte** decyzją Darka z 2026-08-14 (zapis: **Z-2b**), więc powyższa obrona przestała
+   obowiązywać i nie wolno jej zostawić jako opisu stanu.
+   **Zarzut wraca w mocy i tak go zapisuję:** od dziś sekcja 11 **jest** luką nazwaną i żyjącą
+   dalej. Jedyne, co ją odróżnia od wygodnej wymówki, to **termin** i **nośnik** — tor (a)
+   domknięty przed drugą grupą uczestników, pytania w
+   `docs/legal/pytania-do-dostawcy-modelu-p1-p3.md`, przyjęcie ryzyka podpisane imiennie i z datą.
+   Jeśli ten termin minie bez odpowiedzi, zarzut z tego punktu jest **trafiony bez obrony** i mam
+   obowiązek zgłosić to sam, zanim zrobi to ktoś z zewnątrz.
 5. **„Nie jesteś prawnikiem, a napisałeś dokument prawny."** — Słuszne i dlatego sekcja Z-1 jest
    pierwszą rzeczą w dokumencie, a Z-5 wymienia osiem pozycji do weryfikacji, z których **dwie
    (L-a, L-h) podważają konstrukcję, a nie szczegół**. Znalazłem je, pisząc: nie mamy regulaminu,
@@ -409,3 +601,34 @@ Zrobiłem to na podstawie zdania, którego **nie da się zweryfikować żadnym p
 obniżenie jest **warunkowe wobec podpisu**, a nie wobec rozmowy, i dlatego zostawiłem w mocy próg
 mówiący, co się dzieje, **gdybym się mylił**. Gdyby oświadczenie nie zostało podpisane, obowiązuje
 klasa surowsza.
+
+### Z-7. Nabór 3–5 osób — akceptacje ryzyka, które wyceniałem na JEDNEGO uczestnika
+
+Darek zdecydował 2026-08-14 o wpuszczeniu **3–5 osób**, nie jednej. To nie jest ta sama decyzja
+w większej liczbie egzemplarzy. Kilka moich wcześniejszych akceptacji ryzyka było **jawnie
+wycenionych na jednego uczestnika znanego administratorowi osobiście** — i przy naborze przestają
+działać. Wypisuję je **przed podpisem**, bo po podpisie byłoby to tłumaczenie się, a nie ostrzeżenie.
+
+**Wspólny mechanizm awarii wszystkich trzech pozycji poniżej:** milcząco zakładały, że administrator
+**zna osobiście każdego posiadacza konta**. Przy jednym uczestniku z imiennej listy to była prawda
+i dawało się na niej oprzeć proces prowadzony w głowie. Nabór tę przesłankę kasuje — i kasuje ją
+**od pierwszej osoby**, nie od piątej.
+
+| # | Akceptacja i jej pierwotna wycena | Co się psuje przy naborze | Co proponuję |
+|---|---|---|---|
+| **S-1** | **Pakiet B — rejestr żądań usunięcia poza bazą.** Moja rekomendacja brzmiała dosłownie: *„(3) przyjąć ryzyko na jednego uczestnika, (1) osobny projekt bazy **przed naborem**"*. Przesłanka zmierzona i nadal aktualna: produkt na hostingu **nie ma ani jednego odwołania** do dziennika firmy, więc rejestr żądań usunięcia jest pusty z konstrukcji | **Wariant (3) wygasa z definicji** — nabór to jest właśnie ten próg, który sam postawiłem. Przy jednej osobie żądanie usunięcia pamięta administrator; przy pięciu, rozłożonych w czasie, „pamięta" przestaje być procesem. Dowód wykonania art. 17 wobec organu **nie może być zeznaniem administratora** | **Rejestr żądań usunięcia poza gałęzią produkcyjną — przed wpuszczeniem grupy.** Wariant (2) z pakietu (rejestr ręczny prowadzony przez operatora) jest **wystarczający i tani**: data żądania, identyfikator skrótem, data wykonania, potwierdzenie ponowienia po odtworzeniu kopii. Wariant (1) — osobny projekt bazy — to czerwona linia (nowe źródło danych) i **decyzja Darka**; nie jest konieczny przy pięciu osobach, jeśli powstanie wariant (2) |
+| **S-2** | **Brak regulaminu (pozycja L-h).** Zapisałem: *„Przy jednym uczestniku znanym administratorowi do przyjęcia; **przy naborze nie**"*. Klauzula powołuje się na **wykonanie umowy** (art. 6 ust. 1 lit. b) jako podstawę dla konta, mapowania kompetencji i funkcji modelu — a umowy nie ma | Podstawa z lit. b wymaga umowy, która **istnieje**. Przy osobie znanej administratorowi da się bronić tezy o umowie zawartej ustnie; **przy naborze z listy — nie**, bo nie ma czego okazać. To nie jest wada klauzuli, to wada pakietu, którego klauzula jest częścią | **Regulamin przed pierwszą rejestracją** — plan już to przewiduje i to jest właściwa kolejność. Zaznaczam tylko, że to **warunek działania klauzuli**, a nie równoległy drobiazg: bez regulaminu połowa wierszy tabeli z sekcji 4 wskazuje podstawę, której nie ma |
+| **S-3** | **Dług A-3 / pozycja L-8 — prefiks identyfikatora paszportu jako numer na wydruku PDF.** Klasyfikowałem go jako ryzyko **teoretyczne**, z progiem „pierwsze zapytanie pracodawcy" | Przy jednym uczestniku istniał **najwyżej jeden** wydruk i to zwykle wydruk testowy. Przy naborze krąży **tyle wydruków, ilu uczestników**, i trafiają do prawdziwych pracodawców. Ryzyko przestaje być teoretyczne **z chwilą wpuszczenia grupy**, a nie z chwilą pierwszego zapytania — próg, który postawiłem, jest o krok za późny | **Zakaz zestawiania numeru dokumentu ze śladem zdarzeń trafia do pytań dla prawnika jako pozycja L-j**, z wnioskiem o przekwalifikowanie z decyzji produktowej na wymóg zgodności. Do czasu odpowiedzi zakaz obowiązuje jako **środek organizacyjny z nazwanym właścicielem** (Ryan), nie jako preferencja |
+
+**Czego ta sekcja NIE mówi.** Nie mówi, że nabór jest zły — decyzja o skali należy do Darka i ma
+dobre uzasadnienie produktowe (jeden uczestnik nie daje sygnału o niczym). Mówi, że **trzy z moich
+akceptacji były wycenione na inną skalę** i przeniesienie ich bez przeliczenia byłoby cichym
+rozszerzeniem zgody, której nikt nie udzielił. **S-1 i S-2 uważam za bramki przed pierwszą
+rejestracją**; S-3 za dług z właścicielem i terminem, nie za bramkę.
+
+**Osobno, i to nie jest część W-4 ani żadnego warunku z Z-2 — oświadczenie administratora o kontach.**
+Oświadczenie „wszystkie konta zarejestrowane obecnie na platformie są kontami testowymi" jest
+**twierdzeniem o stanie na dany dzień** i tak musi być zapisane: z datą i z liczbą. Bez daty stanie
+się nieprawdziwe automatycznie w dniu, w którym wpuścimy pierwszego uczestnika — a wtedy dokument,
+na którym opiera się klasyfikacja długu A-1, zacznie kłamać, **nie zmieniając ani jednego słowa**.
+Pomiar stanu na 2026-08-14 i jego wynik: `docs/audyty/2026-08-14-konta-produkcyjne-pomiar-ryan.md`.
