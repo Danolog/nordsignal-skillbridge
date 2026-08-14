@@ -1,0 +1,104 @@
+name: Przeglad Leo
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MASZYNOWA EGZEKUCJA BRAMKI (a) DELEGACJI ETHANA.
+#
+# `CLAUDE.md` sekcja 5 mowi: „Leo review przed kazdym scaleniem". Przez trzy
+# miesiace ta bramka trzymala sie WYLACZNIE dyscypliny dwoch agentow — nic jej
+# nie egzekwowalo. 2026-08-14 Ethan zatrzymal scalenie #306 (zero przegladow)
+# recznie; nic go do tego nie zmuszalo, wiec rownie dobrze mogl nie zauwazyc.
+#
+# DLACZEGO NIE NATYWNY MECHANIZM PRZEGLADU GITHUBA
+# ------------------------------------------------
+# Wszystkie nasze zgloszenia otwiera to samo konto — wymog Vercela: autor commita
+# musi byc Darek (bramka (d) delegacji). GitHub odmawia przegladu wlasnego
+# zgloszenia:
+#     „Can not request changes on your own pull request"   (zmierzone przez Leo)
+# Czyli przeglad Leo NIGDY nie stanie sie natywnym statusem. Etykieta jest
+# obejsciem tego ograniczenia, nie wynalazkiem.
+#
+# POLARYZACJA: DOMYSLNIE ZAMKNIETE
+# --------------------------------
+# Swiadoma zmiana wobec pierwotnej propozycji („etykieta ZABLOKOWANE, bramka pada
+# gdy etykieta obecna"). Tamta polaryzacja NIE ZLAPALABY przypadku, ktory ja
+# zrodzil: #306 nie mialo zadnej etykiety, wiec bramka „pada gdy obecna"
+# przepuscilaby je bez slowa.
+#
+#   etykieta-weto  chroni przed Leo, ktory ZDAZYL zareagowac;
+#   etykieta-zgoda chroni przed przegladem, ktorego NIKT NIE ZROBIL.
+#
+# Bramka (a) mowi o tym drugim. Zapomnienie ma konczyc sie zablokowaniem, nie
+# przepuszczeniem — domyslny stan ma byc bezpieczny.
+#
+# DLACZEGO OSOBNY PLIK, A NIE JOB W `pr.yml`
+# ------------------------------------------
+# Bramka musi reagowac na zdarzenia `labeled`/`unlabeled`, inaczej po nadaniu
+# etykiety status nigdy sie nie odswiezy. Dopisanie tych zdarzen do `pr.yml`
+# przeliczaloby przy KAZDEJ zmianie etykiety cala suite — z czterema zadaniami
+# Playwrighta wlacznie. Osobny plik kosztuje kilkanascie sekund runnera.
+#
+# CZEGO TA BRAMKA NIE ROBI — granica jawna
+# ----------------------------------------
+# NIE jest rozdzialem obowiazkow. Ta sama osoba moze nadac etykiete i scalic.
+# Wymusza SWIADOMOSC i zostawia SLAD (kto nadal, kiedy, na ktorym commicie), ale
+# nie uniemozliwia obejscia. Prawdziwy rozdzial wymaga drugiej tozsamosci
+# w GitHubie — osobna decyzja Darka (koszt, nowe poswiadczenie), nie efekt
+# uboczny sprzatania CI.
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  pull_request:
+    branches: [main]
+    # `labeled`/`unlabeled` sa tu istota rzeczy: bez nich status nie odswiezylby
+    # sie po nadaniu etykiety i bramka byla by wiecznie czerwona.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+# Zero uprawnien zapisu. Ta bramka tylko czyta wlasne zdarzenie.
+permissions:
+  contents: read
+
+concurrency:
+  group: przeglad-leo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  przeglad-leo:
+    name: przeglad-leo (bramka (a) delegacji — etykieta po przegladzie)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sprawdz etykiete przegladu
+        # Etykiety przez `env:`, NIGDY przez interpolacje `${{ }}` wprost do
+        # skryptu: nazwa etykiety jest trescia sterowana przez czlowieka, wiec
+        # w ciele `run:` bylaby wektorem wstrzyku polecen. Ten job nie ma
+        # uprawnien zapisu, ale wzorzec ma byc poprawny tam, gdzie ktos go skopiuje.
+        #
+        # Separator `|`, nie przecinek: nazwy etykiet GitHuba moga zawierac
+        # przecinek, nie moga zawierac `|`.
+        env:
+          ETYKIETY: ${{ join(github.event.pull_request.labels.*.name, '|') }}
+          WYMAGANA: przeglad-leo-ok
+        run: |
+          set -euo pipefail
+          if printf '%s' "$ETYKIETY" | tr '|' '\n' | grep -Fxq "$WYMAGANA"; then
+            echo "Etykieta '$WYMAGANA' obecna — przeglad Leo potwierdzony."
+            exit 0
+          fi
+          echo "::error title=Brak przegladu Leo::Zgloszenie nie ma etykiety '$WYMAGANA'."
+          cat >&2 <<'KONIEC'
+
+          BRAMKA (a) DELEGACJI: scalenie wymaga przegladu Leo (CLAUDE.md sekcja 5).
+
+          Ta bramka jest DOMYSLNIE ZAMKNIETA. Zieleni sie dopiero, gdy na
+          zgloszeniu pojawi sie etykieta `przeglad-leo-ok` — nadaje ja Leo
+          po przegladzie.
+
+          Nie nadawaj jej sobie sam, zeby „odblokowac": to jedyny slad, ze
+          przeglad sie odbyl. Etykieta bez przegladu zamienia bramke w ozdobe —
+          dokladnie tak, jak naglowek `a11y-klauzula` deklarowal „BLOKUJACY"
+          przez trzy miesiace, nie bedac podpiety do niczego.
+
+          Doszly zmiany merytoryczne po przegladzie? GitHub NIE zdejmuje etykiety
+          sam przy nowym commicie. Leo zdejmuje ja recznie i nadaje ponownie po
+          ponownym przegladzie.
+          KONIEC
+          exit 1
