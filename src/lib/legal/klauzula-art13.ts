@@ -72,9 +72,11 @@ const NAGLOWEK_TRESCI = /^##\s+\S/;
  */
 const ODCISKI_APARATU: readonly { wzorzec: RegExp; co: string }[] = [
 	{ wzorzec: /CZĘŚĆ II/, co: "nagłówek CZĘŚCI II (aparat wewnętrzny)" },
-	{ wzorzec: /\bZ-[1-9]\b/, co: "oznaczenie sekcji aparatu (Z-1…Z-6)" },
+	// Sufiks literowy: sekcje wstawiane między istniejące (Z-2a, Z-2b) — 2026-08-14.
+	{ wzorzec: /\bZ-[1-9][a-z]?\b/, co: "oznaczenie sekcji aparatu (Z-…)" },
 	{ wzorzec: /\bW-[1-9]\b/, co: "warunek wejścia w życie z tabeli Z-2" },
-	{ wzorzec: /\bL-[a-h]\b/, co: "pozycja listy dla prawnika (Z-5)" },
+	// Zakres do [a-z]: lista dla prawnika przekroczyła literę „h" (L-i, L-j) — 2026-08-14.
+	{ wzorzec: /\bL-[a-z]\b/, co: "pozycja listy dla prawnika (Z-5)" },
 	{ wzorzec: /nie jestem prawnikiem/i, co: "zastrzeżenie autora, że nie jest prawnikiem" },
 	{ wzorzec: /NIE POKAZUJEMY|nie publikujemy|STATUS: PROJEKT/i, co: "banner statusu draftu" },
 	{ wzorzec: /aparat wewnętrzn/i, co: "nazwa własna CZĘŚCI II" },

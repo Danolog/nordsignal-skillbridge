@@ -1,6 +1,13 @@
 # Kompletność wykonania art. 17 — rejestr miejsc, których kaskada nie czyści
 
-**Wersja:** v0.2 · 2026-08-10 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3
+**Wersja:** v0.3 · 2026-08-14 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3
+
+**Changelog v0.2 → v0.3 (2026-08-14) — sprostowanie jawne, jedna pozycja.** Akapit pod pozycją
+**L-8** odsyłał po ocenę prawną do pliku w katalogu **ignorowanym przez kontrolę wersji** (nazwa
+zacytowana dosłownie przy samej pozycji), którego **nie ma i nigdy nie było**. Znalezisko L-8 / dług A-3 **stoi bez zmian**;
+nieprawdziwy był adres dowodu. Odesłanie prowadzi teraz do pozycji **L-j** w sekcji Z-5 klauzuli
+art. 13. Stare brzmienie zacytowane dosłownie przy pozycji. Drugie wystąpienie tego samego
+nieistniejącego pliku (tabela Z-2 klauzuli) sprostowane równolegle — sekcja Z-2a klauzuli.
 
 **Changelog v0.1 → v0.2 (2026-08-10) — Ryan, zadanie E2c.** Nowa pozycja **L-8** (`audit_log.target_id`
 zdarzeń paszportowych — osierocony, ale ponownie przypisywalny przez numer dokumentu na wydruku PDF).
@@ -116,9 +123,33 @@ ponownie przypisywalny **środkami, którymi rozsądnie może dysponować osoba 
 **Konsekwencja dla projektu A-1, którą trzeba znać przed jego wykonaniem:** usunięcie `actor_id`
 **nie czyni tych wierszy anonimowymi** — ochroną pozostaje zakaz dopasowywania (środek
 organizacyjny), a nie własność danych. Pełna ocena prawna i przekwalifikowanie zakazu z decyzji
-produktowej na wymóg zgodności: `scratchpad/przeglad-zasada-pracodawcy-ryan.md` (pytanie 2).
+produktowej na wymóg zgodności — **pozycja L-j w sekcji Z-5 klauzuli art. 13**
+(`docs/legal/klauzula-informacyjna-art13.md`), pytanie do prawnika.
 **Nie znalazłem tego własną metodą** — drugi koniec powiązania leży w pliku u obcej osoby, poza
 zasięgiem jakiegokolwiek zapytania do bazy. Znalazło się przy przeglądzie cudzego dokumentu.
+
+> **SPROSTOWANIE JAWNE 2026-08-14 — to samo, co w klauzuli, tylko drugie wystąpienie.**
+> **Stare brzmienie, cytowane dosłownie** (v0.2, ten akapit): *„Pełna ocena prawna
+> i przekwalifikowanie zakazu z decyzji produktowej na wymóg zgodności:
+> `scratchpad/przeglad-zasada-pracodawcy-ryan.md` (pytanie 2)."*
+>
+> **Tego pliku nie ma i nigdy nie było w kontroli wersji** — zmierzone 2026-08-14:
+> `git log --all --oneline -- 'scratchpad/przeglad-zasada-pracodawcy-ryan.md'` → brak wyjścia;
+> `find` po obu repozytoriach → brak wyjścia. Kontrola dwustronna: to samo narzędzie widzi
+> artefakt istniejący (`git show --stat e66312d` → 7 plików, 1284 wstawienia).
+>
+> **Znalezisko merytoryczne stoi bez zmian** — pozycja L-8 i dług A-3 są prawdziwe i zmierzone.
+> Nieprawdziwy był **adres dowodu**, nie dowód. Odesłanie prowadzi teraz do nośnika w kontroli
+> wersji (L-j w Z-5 klauzuli).
+>
+> **Dlaczego to nie jest drobiazg.** Ten sam nieistniejący plik był cytowany w **dwóch**
+> dokumentach pakietu — tu i w tabeli Z-2 klauzuli. Naprawienie jednego wystąpienia zostawiłoby
+> drugie żywe, a to ono trafiłoby do kolejnego cytowania. Drugie wystąpienie znalazła Sophia
+> przy pisaniu nośnika W-5, **nie ja** — mimo że oba wpisy są moje i oba powstały tego samego dnia.
+> Wniosek metodyczny (pełne brzmienie: sekcja Z-2a klauzuli): **ścieżka w katalogu ignorowanym
+> przez kontrolę wersji nie jest dowodem w dokumencie zgodności — to błąd metody, nie pech.**
+> Od 2026-08-14 pilnuje tego strażnik
+> `tests/unit/rodo/klauzula-sciezki-istnieja.contract.test.ts`.
 
 **Zmierzona przesłanka do pozycji L-2** (`git show origin/main:src/lib/db/schema.ts`, linie
 1164–1166, odczyt 2026-08-10):
