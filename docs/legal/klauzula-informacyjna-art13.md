@@ -516,9 +516,9 @@ wolimy, żebyś wiedział, czego nie wiemy, i mógł na tej podstawie zdecydowa�
 domkniemy, ta sekcja zostanie zastąpiona konkretną odpowiedzią, a Ty dostaniesz informację
 o zmianie.
 
-**Co możesz z tym zrobić już teraz:** napisz do nas na `kontakt@nordsignal.cc` — odpowiemy, co
-udało nam się ustalić na dany dzień. Masz też prawo złożyć skargę do Prezesa Urzędu Ochrony
-Danych Osobowych (sekcja 8) i możesz w każdej chwili usunąć konto (sekcja 9).
+**Co możesz z tym zrobić już teraz:** napisz do nas — adres podaliśmy w sekcji 1 — a odpowiemy, co
+udało nam się ustalić na dany dzień. Masz też prawo złożyć skargę do organu nadzorczego
+(sekcja 8) i możesz w każdej chwili usunąć konto (sekcja 9).
 
 ### 12. Czy musisz podawać dane
 
