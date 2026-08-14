@@ -180,10 +180,34 @@ jobs:
           CZAS_GLOWY="$(gh api "repos/$REPO/commits/$GLOWA_SHA" \
             --jq '[.commit.committer.date, .commit.author.date] | max')"
 
-          if [ -z "$CZAS_ETYKIETY" ] || [ -z "$CZAS_GLOWY" ] \
-             || [ "$CZAS_ETYKIETY" = "null" ] || [ "$CZAS_GLOWY" = "null" ]; then
-            echo "::error title=Nie da sie zweryfikowac swiezosci::Pusty albo nieczytelny odczyt osi czasu lub commita."
+          # SPRAWDZENIE KSZTALTU, NIE LISTY ZAKAZANYCH WARTOSCI (uwaga Leo).
+          #
+          # Poprzednia wersja odrzucala pustke i `null` — czyli wyliczala WARTOSCI,
+          # ktore znamy. Zmierzone przez Leo: `"false"` i `"brak"` przechodzily na
+          # zielono. Nie chodzi o to, ze interfejs je zwroci; chodzi o to, ze
+          # bylismy JEDNA WARTOSCIA od tej samej wady, a dwie osoby zdazyly sie
+          # dzis pomylic przy tej logice.
+          #
+          # Teraz orzekamy POZYTYWNIE: przechodzi wylacznie to, co ma ksztalt
+          # znacznika czasu ISO 8601 w UTC. Cokolwiek innego — pustka, `null`,
+          # `false`, komunikat bledu, uszkodzone zdarzenie osi czasu — pada.
+          #
+          # Efekt uboczny, ktory jest tu celem: to sprawdzenie EGZEKWUJE zalozenie
+          # o UTC, na ktorym stoi porownanie tekstowe nizej. Do tej pory zalozenie
+          # bylo opisane w komentarzu i nie pilnowane niczym — gdyby interfejs
+          # zaczal zwracac przesuniecie strefy (`+02:00`), porownanie milczaloby,
+          # a wynik bylby bledny. Teraz zatrzyma sie glosno.
+          znacznik_poprawny() {
+            case "$1" in
+              [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          if ! znacznik_poprawny "$CZAS_ETYKIETY" || ! znacznik_poprawny "$CZAS_GLOWY"; then
+            echo "::error title=Nie da sie zweryfikowac swiezosci::Odczyt osi czasu lub commita nie ma ksztaltu znacznika UTC."
             echo "etykieta='$CZAS_ETYKIETY' glowa='$CZAS_GLOWY'" >&2
+            echo "Oczekiwany ksztalt: RRRR-MM-DDTHH:MM:SSZ (ISO 8601, UTC)." >&2
             exit 1
           fi
 
