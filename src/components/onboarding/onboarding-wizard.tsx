@@ -202,11 +202,16 @@ export function OnboardingWizard({
 		async (careerGoal: string) => {
 			if (!careerGoal) return;
 			// N2′: rozwidlenie orzeka o KONKRETNEJ liście („nic nie zaznaczyłeś"). Lista
-			// właśnie się przeładowuje, więc panel nie ma o czym orzekać — gaśnie razem z
-			// nią. Warstwa nadmiarowa: każde wejście tutaj idzie dziś przez `advanceTo`
-			// (nawigacja) albo `onRetry` po błędzie katalogu, a oba stany wykluczają otwarte
-			// rozwidlenie. Zostawiona świadomie — trzeci pisarz `selections` (carryover, niżej)
-			// siedzi w tej samej funkcji i to on kiedyś zapali panel na cudzej liście.
+			// właśnie się przeładowuje, więc panel nie ma o czym orzekać — gaśnie razem z nią.
+			//
+			// STRAŻNIK NIEPOTWIERDZONY (CLAUDE.md §8 v1.17 — mówię to wprost, zamiast liczyć
+			// tę linię jako pilnowaną). Mutacja „usuń tę linię" NIE czerwieni żadnego testu
+			// (pomiar 2026-08-14: 12/12 zielone). Powód: każde wejście tutaj idzie dziś przez
+			// `advanceTo` (nawigacja) albo `onRetry` po błędzie katalogu, a oba stany już
+			// wykluczają otwarte rozwidlenie — czyli warstwa jest nadmiarowa, nie martwa.
+			// PRÓG, PRZY KTÓRYM ZACZNIE PRACOWAĆ: pierwsze przeładowanie katalogu BEZ zmiany
+			// kroku (odświeżanie w tle albo carryover zasiewający zaznaczenia niżej w tej
+			// samej funkcji). Wtedy dopisuje się przypadek do strażnika.
 			setNoSelectionFork(false);
 			setCatalogLoading(true);
 			setCatalogError(false);
@@ -848,13 +853,23 @@ export function OnboardingWizard({
 						    przed chwilą był przycisk — student nie musi niczego szukać ani
 						    przewijać. To jest WYBÓR, nie komunikat: krok nie idzie dalej sam.
 
-						    WARUNEK RENDEROWANIA MA DWA CZŁONY, oba potrzebne: flaga (student
-						    kliknął i czeka na rozstrzygnięcie) ORAZ realny stan listy (zaznaczeń
-						    nadal zero). Panel orzeka o stanie listy, więc nie wolno mu przeżyć
-						    zdania, które orzeka — a `selections` ma CZTERECH pisarzy
-						    (`handleSelectionChange`, carryover w `loadCatalog`, zmiana celu,
-						    wynik testu) i tylko pierwszy gasi flagę u siebie. Drugi człon jest
-						    tu tanią barierą deklaratywną dla pozostałych trzech. */}
+						    WARUNEK RENDEROWANIA MA DWA CZŁONY: flaga (student kliknął i czeka na
+						    rozstrzygnięcie) ORAZ realny stan listy (zaznaczeń nadal zero). Panel
+						    orzeka o stanie listy, więc nie wolno mu przeżyć zdania, które orzeka —
+						    a `selections` ma CZTERECH pisarzy (`handleSelectionChange`, carryover
+						    w `loadCatalog`, zmiana celu, wynik testu) i tylko pierwszy gasi flagę
+						    u siebie.
+
+						    DRUGI CZŁON — STRAŻNIK NIEPOTWIERDZONY (CLAUDE.md §8 v1.17). Mutacja
+						    „zdejmij człon o zaznaczeniach" NIE czerwieni żadnego testu (pomiar
+						    2026-08-14: 12/12 zielone), bo pozostali trzej pisarze są dziś
+						    nieosiągalni przy otwartym rozwidleniu. Zostaje jako bariera na
+						    przyszłość, nazwana wprost, nie liczona jako pilnowana.
+						    PRÓG: pierwszy pisarz `selections`, który zadziała przy otwartym
+						    panelu — wtedy przypadek dopisuje się do strażnika.
+						    UWAGA: ten człon NIE zastępuje gaszenia flagi w `handleSelectionChange`
+						    — bez tamtego panel wraca sam po odznaczeniu z powrotem do zera
+						    (mutacja m5 czerwieni „rozwidlenie nie WRACA samo"). */}
 						{noSelectionFork && Object.keys(selections).length === 0 ? (
 							<section
 								ref={forkRef}

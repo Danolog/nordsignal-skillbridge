@@ -13,16 +13,34 @@
  * skutkować zapisem onboardingu bez jawnego wyboru studenta. Miarą „cichego przejścia"
  * jest POST /api/onboarding — bo to on kończy krok 3 i wypycha do Wniosków.
  *
+ * DRUGA WADA, ZMIERZONA PRZEZ LEO 2026-08-14 12:56 CEST (naprawa w tym samym pliku).
+ * Naprawa N2′ postawiła drugie wyjście z kroku — „Przejdź dalej bez testu" — i dała mu
+ * WŁASNĄ, uboższą bramkę (`disabled={submitting}`) obok pełnego predykatu przycisku
+ * wiersza akcji. Realną ścieżką (krok 3 → 0 zaznaczeń → rozwidlenie → krok „Cel kariery" →
+ * cel spoza 23 ścieżek → powrót → klik) szło:
+ *     POST BODY: {"careerGoal":"Zaklinacz deszczu", …, "competencies":[]}
+ * czyli onboarding domknięty pustym paszportem na celu, którego katalog nie zna. Dlatego
+ * bramka ma teraz JEDEN nośnik (`canCloseStep3`), a panel nie przeżywa zmiany kontekstu.
+ *
  * KONTROLA DWUSTRONNA (obowiązkowa — strażnik krzyczący na poprawny kod zostaje
  * wyciszony i przestaje bronić czegokolwiek):
  *   - czerwony przy zerze zaznaczeń bez wyboru (test 1);
  *   - ZIELONY, gdy zaznaczono ≥1 → ścieżka do diagnozy działa bez zmian (test 2);
  *   - ZIELONY, gdy student wybierze „dalej bez testu" → zapis idzie (test 3);
- *   - ZIELONY dla trybu bez diagnozy (flaga off) → zachowanie D5 nietknięte (test 5).
+ *   - ZIELONY dla trybu bez diagnozy (flaga off) → zachowanie D5 nietknięte.
  * Bez tych czterech test 1 przechodziłby także dla naprawy, która po prostu blokuje krok.
  *
- * MUTACJA, KTÓRA GO CZERWIENI — patrz nagłówek zgłoszenia i `startDiagnosis`
- * (onboarding-wizard.tsx): przywrócenie `await runSubmit()` w gałęzi `names.length === 0`.
+ * MUTACJE — pomiar 2026-08-14, komplet w opisie PR #309. Każdy człon koniunkcji osobno,
+ * bo jeden pomiar nie dowodzi dwóch (CLAUDE.md §8 v1.17):
+ *   m1  `setNoSelectionFork(true)` → `await runSubmit()` .............. 7 czerwonych
+ *   m2a zdjęty człon `isRealGoal` z `canCloseStep3` .................. 1 (CZŁON 1/2)
+ *   m2b zdjęty człon `catalog.length > 0` z `canCloseStep3` .......... 1 (CZŁON 2/2)
+ *   m3  zdjęte gaszenie panelu w `advanceTo` ......................... 1 (zmiana kroku)
+ *   m4  bramka przycisku rozwidlenia z powrotem na `submitting` ...... 1 (JEDEN NOŚNIK)
+ *   m5  zdjęte gaszenie flagi w `handleSelectionChange` .............. 1 (panel wraca)
+ * PRZEŻYŁY MUTACJĘ (mówimy to wprost, zamiast liczyć jako pilnowane): gaszenie panelu
+ * w `loadCatalog` i drugi człon warunku renderowania — obie warstwy są dziś nieosiągalne
+ * przy otwartym rozwidleniu. Powody i progi spłaty: komentarze w tych dwóch miejscach.
  *
  * KOSZT CZASU: `userEvent.setup({ delay: null })` zdejmuje sztuczną zwłokę między
  * zdarzeniami. Limit czasu został przy domyślnym 5 s ŚWIADOMIE — podnoszenie limitu
@@ -286,6 +304,31 @@ describe("N2′ — zero zaznaczeń w trybie diagnozy nie przechodzi dalej samo"
 		expect(forkSection()).not.toBeInTheDocument();
 		expect(forkSubmitButton()).not.toBeInTheDocument();
 		// Krok wrócił do wiersza akcji i nadal nic nie zapisał.
+		expect(rowSubmitButton()).toBeEnabled();
+		expect(onboardingPosts(fetchMock)).toBe(0);
+	});
+
+	it("rozwidlenie nie WRACA samo: zaznacz → panel znika → odznacz → panel nadal go nie ma", async () => {
+		const fetchMock = mockFetch();
+		const user = userEvent.setup({ delay: null });
+		renderWizard(true);
+		await goToStep3(user);
+
+		await user.click(rowSubmitButton());
+		expect(forkSection()).toBeInTheDocument();
+
+		// Zaznaczenie unieważnia zdanie panelu („nic nie zaznaczyłeś") → panel gaśnie.
+		const sqlGroup = screen.getByRole("group", { name: "Poziom: SQL" });
+		await user.click(within(sqlGroup).getByRole("button", { name: /Mam styczność/i }));
+		expect(forkSection()).not.toBeInTheDocument();
+
+		// A teraz sedno: powrót do zera zaznaczeń NIE jest kliknięciem „Zatwierdź". Panel
+		// wisiałby na starej fladze i pytał o coś, o co student nie pytał. Rozdziela to dwa
+		// mechanizmy, które łatwo pomylić: flaga gaśnie u pisarza zaznaczeń (żeby nie
+		// zmartwychwstała), a warunek renderowania pilnuje zgodności ze stanem listy.
+		await user.click(within(sqlGroup).getByRole("button", { name: /^Brak$/i }));
+		expect(screen.getByText(/Zaznaczono 0 z 2 kompetencji rynku/i)).toBeInTheDocument();
+		expect(forkSection()).not.toBeInTheDocument();
 		expect(rowSubmitButton()).toBeEnabled();
 		expect(onboardingPosts(fetchMock)).toBe(0);
 	});
