@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#
+# pre-commit — bramka skanu sekretów w lokalnych plikach środowiskowych.
+#
+# Skanowane pliki (.env.test, .env.example, .env.test.example) są w .gitignore
+# albo są szablonami; ten hook to JEDYNE miejsce, w którym skaner sekretów
+# w ogóle je widzi — CI skanuje commity, a `.env.test` do gita nie wchodzi.
+#
+# Aktywacja (robi ją automatycznie `pnpm install` przez skrypt `prepare`):
+#     git config core.hooksPath .githooks
+# Dezaktywacja awaryjna pojedynczego commita: git commit --no-verify
+# (zostawia ślad tylko w głowie autora — używaj świadomie).
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+exec bash "$ROOT/tools/scan-local-secrets.sh"
