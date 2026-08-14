@@ -1,34 +1,13 @@
 import type { Metadata } from "next";
-import { DM_Sans, Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { AuthProvider } from "@/components/auth/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
+// Kroje pisma zaciągnięte lokalnie (`src/app/fonts/*.woff2`) — NIE `next/font/google`.
+// Powód i zakresy znaków: komentarz na górze `fonts.css`. W skrócie: pobieranie
+// kroju z `fonts.gstatic.com` w trakcie kompilacji czyniło cudzy serwer treści
+// zależnością WYMAGANEJ bramki i 2026-08-14 zaczerwieniło ją błędem 404.
+// Musi stać PRZED `globals.css`: to on konsumuje zmienne `--font-*`.
+import "./fonts.css";
 import "./globals.css";
-
-const geistSans = Geist({
-	variable: "--font-geist-sans",
-	subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
-});
-
-// Landing #6 „Papierowy editorial": Playfair Display (nagłówki) + DM Sans (treść).
-// next/font wbudowany — bez pakietu npm. latin-ext = polskie znaki diakrytyczne.
-const playfairDisplay = Playfair_Display({
-	variable: "--font-playfair",
-	subsets: ["latin", "latin-ext"],
-	weight: ["700"],
-	display: "swap",
-});
-
-const dmSans = DM_Sans({
-	variable: "--font-dm-sans",
-	subsets: ["latin", "latin-ext"],
-	weight: ["400", "500", "700"],
-	display: "swap",
-});
 
 export const metadata: Metadata = {
 	title: "SkillBridge — Twój Paszport Kompetencji",
@@ -43,9 +22,9 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="pl" suppressHydrationWarning>
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} ${playfairDisplay.variable} ${dmSans.variable} antialiased`}
-			>
+			{/* Zmienne `--font-*` definiuje `:root` w `fonts.css`, więc na `<body>`
+			    nie ma już klas generowanych przez `next/font`. */}
+			<body className="antialiased">
 				<AuthProvider>{children}</AuthProvider>
 				<Toaster />
 			</body>
