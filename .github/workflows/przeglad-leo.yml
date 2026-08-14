@@ -159,15 +159,30 @@ jobs:
           CZAS_ETYKIETY="$(gh api "repos/$REPO/issues/$NUMER/timeline" --paginate \
             --jq ".[] | select(.event == \"labeled\" and .label.name == \"$WYMAGANA\") | .created_at" \
             | sort | tail -n 1)"
-          # Tu `--paginate` nie wystepuje (pojedynczy obiekt), wiec `max` liczy sie
-          # raz. Swiadomie bez `// empty`: gdy pola nie ma, `--jq` zwraca pusty
-          # napis, a pustka jest ponizej obslugiwana jako CZERWONE. Dokladanie
-          # `// empty` sugerowaloby, ze istnieje jakas inna sciezka pustki.
+          # Tu `--paginate` nie wystepuje (pojedynczy obiekt), wiec `max` liczy sie raz.
+          #
+          # UWAGA NA `null` (sprostowanie Leo, 2026-08-14): gdy pol nie ma, `max`
+          # NIE daje pustego napisu — `jq` wypisuje czteroznakowy napis `null`.
+          # Zmierzone:
+          #     $ echo '{"commit":{"committer":{},"author":{}}}' \
+          #         | jq '[.commit.committer.date, .commit.author.date] | max'
+          #     null
+          # Wczesniejszy komentarz twierdzil, ze pustka zalatwia sprawe. Nieprawda:
+          # `[ -z "null" ]` jest FALSZEM, wiec galaz „pusty odczyt" sie NIE odpala.
+          # Bramka i tak konczy sie czerwono, ale INNYM mechanizmem — porownaniem
+          # tekstowym, bo cyfry sortuja sie przed literami, wiec "2026-…" < "null".
+          # To jest poprawnosc PRZYPADKOWA: trzyma sie tego, ze data zaczyna sie
+          # cyfra, a slowo `null` litera. Ktos, kto zmieni format daty albo doda
+          # `// empty`, rozbroi ja nie wiedzac, ze cokolwiek rozbraja.
+          #
+          # Dlatego `null` odrzucamy JAWNIE, razem z pustka — zeby zamkniecie
+          # bramki bylo wlasnoscia zapisana, a nie skutkiem ubocznym tablicy ASCII.
           CZAS_GLOWY="$(gh api "repos/$REPO/commits/$GLOWA_SHA" \
             --jq '[.commit.committer.date, .commit.author.date] | max')"
 
-          if [ -z "$CZAS_ETYKIETY" ] || [ -z "$CZAS_GLOWY" ]; then
-            echo "::error title=Nie da sie zweryfikowac swiezosci::Pusty odczyt osi czasu albo commita."
+          if [ -z "$CZAS_ETYKIETY" ] || [ -z "$CZAS_GLOWY" ] \
+             || [ "$CZAS_ETYKIETY" = "null" ] || [ "$CZAS_GLOWY" = "null" ]; then
+            echo "::error title=Nie da sie zweryfikowac swiezosci::Pusty albo nieczytelny odczyt osi czasu lub commita."
             echo "etykieta='$CZAS_ETYKIETY' glowa='$CZAS_GLOWY'" >&2
             exit 1
           fi
