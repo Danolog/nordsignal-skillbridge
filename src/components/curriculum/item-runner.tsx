@@ -248,6 +248,21 @@ export function ItemRunner({
 	const visibleHints = revealed[question.id] ?? [];
 	const revealedCount = visibleHints.length;
 
+	// JEDEN NOŚNIK WYJAŚNIENIA (CLAUDE.md v1.17). Kontrakt treści mówi wprost:
+	// „explanationMd pytania = feedback opcji poprawnej"
+	// (docs/design/curriculum-atomy-format-spec-v0.1.md §4), a packer wyprowadza
+	// jedno pole z drugiego (tools/pack-curriculum-atoms.ts:1338). Dla poprawnej
+	// odpowiedzi oba pola niosą więc TEN SAM tekst z założenia, a wypisanie obu
+	// pokazywało go studentowi dwa razy — w 129 z 129 pytań drabinki.
+	//
+	// Warunek jest o RÓŻNICY TREŚCI, nie o typie pytania: pytania z banku
+	// egzaminacyjnego nie mają feedbacku opcji i wyjaśnienie jest tam JEDYNĄ
+	// informacją zwrotną — musi się pokazać. Reguła brzmi „pokaż wyjaśnienie,
+	// gdy wnosi coś ponad to, co już widać", nie „nigdy nie pokazuj wyjaśnienia".
+	const explanationAddsSomething =
+		!!feedback?.explanationMd &&
+		feedback.explanationMd.trim() !== (feedback.optionFeedbackMd ?? "").trim();
+
 	return (
 		<section className="rounded-xl border border-border bg-card p-5">
 			<div className="flex items-center justify-between">
@@ -438,7 +453,7 @@ export function ItemRunner({
 						)}
 					</p>
 					{feedback.optionFeedbackMd && <TheoryMarkdown source={feedback.optionFeedbackMd} />}
-					{feedback.correct && feedback.explanationMd && (
+					{feedback.correct && explanationAddsSomething && feedback.explanationMd && (
 						<TheoryMarkdown source={feedback.explanationMd} />
 					)}
 				</output>

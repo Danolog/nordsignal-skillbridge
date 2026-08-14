@@ -62,6 +62,14 @@ const nextConfig: NextConfig = {
 			"./node_modules/.pnpm/pdfjs-dist@*/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
 			"./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
 		],
+		// E4: /prywatnosc renderuje CZĘŚĆ I dokumentu klauzuli PROSTO Z NOŚNIKA
+		// (docs/legal/…), zamiast trzymać przepisaną kopię w komponencie — patrz
+		// src/lib/legal/klauzula-art13.ts. Odczyt idzie przez `readFileSync` ze
+		// ścieżki złożonej w czasie działania, więc statyczna analiza śladu funkcji
+		// serverless go NIE widzi: bez tego wpisu strona działa lokalnie i wywala
+		// się na Vercelu („ENOENT"). Ten sam mechanizm i ten sam powód co przy
+		// workerze pdfjs wyżej.
+		"/prywatnosc": ["./docs/legal/klauzula-informacyjna-art13.md"],
 	},
 	async headers() {
 		return [

@@ -7,7 +7,7 @@
  * NIGDY nie znika, więc pole zostaje `true` także po zaliczeniu modułu. Odznaka
  * odpowiada na INNE pytanie — „czy TERAZ warto to pokazać" — i §12.9 pkt 2 mówi
  * wprost: znika, gdy moduł zostanie zaliczony, bo wtedy prawdą staje się jego
- * własny stan („Zaliczony").
+ * własny stan (`MODULE_STATUS_LABEL.completed`).
  *
  * Nazwa pola sugeruje stan bieżący, a niesie historię. Kolejny autor widoku użyje
  * go wprost jako „pokaż odznakę" i nie dowie się, że brakuje drugiej połowy

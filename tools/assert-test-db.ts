@@ -2,27 +2,94 @@
  * assert-test-db — guard bezpieczeństwa bazy (allowlista hostów lokalnych).
  *
  * Wywołaj PRZED każdą operacją dotykającą bazy (migrate, seed, push, studio, e2e).
- * Przerywa z czytelnym błędem, gdy DATABASE_URL wskazuje na host spoza allowlisty
- * lokalnych hostów — CHYBA że ustawiono jawną flagę potwierdzenia.
  *
- * Wzorzec: ALLOWLISTA (dozwolone hosty lokalne), nie denylista —
- * łapie każdy zdalny host, nie tylko znane nazwy produkcyjne.
+ * ═══════════════════════════════════════════════════════════════════════════
+ * REGUŁA, KTÓREJ TEN PLIK PILNUJE (spisana ZANIM powstało dopasowanie)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * „Narzędzie z tego repo nie dotyka bazy produkcyjnej — chyba że ceremonia
+ *  produkcyjna jest udokumentowaną częścią zadania TEGO narzędzia, a operator
+ *  potwierdził ją jawną flagą."
  *
- * Logika decyzyjna (trzy ścieżki):
- *   1. Host LOKALNY (localhost / 127.0.0.1 / ::1) → przechodzi cicho.
- *      CI (PostgreSQL w kontenerze na localhost) przechodzi bez żadnej flagi.
- *   2. Host ZDALNY + brak CONFIRM_PROD_DB=1 → ABORT z instrukcją.
- *      Zamyka incydent „gołe db:migrate z prod-DSN".
- *   3. Host ZDALNY + CONFIRM_PROD_DB=1 → przechodzi (świadoma ścieżka operatora).
- *      Darek na prod: $env:CONFIRM_PROD_DB=1; pnpm db:migrate
+ * Reguła ma dwie części, a dawniej egzekwowana była tylko druga:
+ *   (1) KTÓRE narzędzie w ogóle może sięgnąć na produkcję → deklaracja w KODZIE
+ *       (`{ allowProduction: true }`), nie zmienna w powłoce. Zmienna jest
+ *       dziedziczona przez każdy proces potomny i nie wie, które narzędzie
+ *       właśnie odpalasz.
+ *   (2) CZY operator jest świadomy → flaga CONFIRM_PROD_DB=1, czytana
+ *       WYŁĄCZNIE u narzędzi z punktu (1). JEDNA flaga, nie dwie —
+ *       druga (`E2E_ALLOW_REMOTE`) była drugą wyrocznią dla tego samego
+ *       pytania i została usunięta 2026-08-13 (warunek C1 przeglądu Leo).
  *
- * Hard-deny (warstwa dodatkowa, pierwsza — przed parsowaniem hosta):
- *   Zawsze blokuje znane fragmenty prod-URL nawet przy CONFIRM_PROD_DB=1 i E2E_ALLOW_REMOTE=1.
- *   Cel: ostatnia linia obrony przy dosłownym prod-DSN.
+ * ═══════════════════════════════════════════════════════════════════════════
+ * POLARYZACJA: ALLOWLISTA. ŻADNEJ NAZWY PRODUKCJI W TYM PLIKU
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Przechodzą wyłącznie hosty lokalne (`ALLOWED_LOCAL_HOSTS`). Wszystko inne —
+ * dowolny host zdalny, dowolny dostawca, DSN nieparseowalny — jest odmawiane.
  *
- * E2E_ALLOW_REMOTE=1 (legacy dla seed-e2e / b5-contract-test):
- *   Przepuszcza zdalny host jak CONFIRM_PROD_DB=1, ale tylko gdy NIE trafił w hard-deny.
- *   Obie flagi traktowane równorzędnie.
+ * Nie wolno tu dodać nazwy naszej bazy produkcyjnej, adresu punktu dostępowego
+ * ani nazwy projektu. Powód jest empiryczny, nie estetyczny. Poprzednia wersja
+ * miała warstwę „hard-deny" opisaną jako „ostatnia linia obrony przy dosłownym
+ * prod-DSN", której JEDYNYM dopasowaniem był fragment `"skill-bridge-ai"` —
+ * nazwa projektu na Vercelu, wpisana z pamięci. W adresie naszej bazy
+ * produkcyjnej ten fragment nie występuje ani razu, więc warstwa nie broniła
+ * przed niczym, co nazywała (pomiar: Ryan/CRCO, 2026-08-12, odczyt
+ * `vercel env run -e production` + sonda z prawdziwym DSN → „PRZEPUSZCZONY").
+ *
+ * Dopasowanie po nazwie ma dwa tryby awarii i oba już nas kosztowały:
+ *   - nazwa z pamięci nigdy nie pasowała do rzeczywistości (stan zastany);
+ *   - nazwa z dzisiejszego pomiaru zestarzeje się po CICHU przy pierwszej
+ *     migracji punktu dostępowego albo zmianie dostawcy.
+ * Allowlista hostów lokalnych nie ma żadnego z tych trybów: nie wie, jak
+ * nazywa się produkcja, i nie musi wiedzieć. „Lokalny" jest własnością, nie
+ * nazwą — zmiana dostawcy bazy nie może tej reguły osłabić.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * DWIE POLITYKI WYWOŁANIA
+ * ═══════════════════════════════════════════════════════════════════════════
+ * A. DOMYŚLNA — `assertTestDb(dsn, varName)` — „to narzędzie nigdy nie tyka
+ *    produkcji". Przechodzi wyłącznie host lokalny; host zdalny i DSN
+ *    nieparseowalny → ABORT. **Żadna zmienna środowiskowa tego nie obchodzi**
+ *    (w szczególności CONFIRM_PROD_DB=1). To jest realna „ostatnia
+ *    linia obrony": operator, który wyeksportował flagę do legalnej ceremonii
+ *    i w tej samej powłoce odpalił narzędzie destrukcyjne, zostaje zatrzymany.
+ *
+ * B. CEREMONIA — `assertTestDb(dsn, varName, { allowProduction: true })` —
+ *    dla narzędzi, których udokumentowanym zadaniem jest ceremonia produkcyjna
+ *    (migracja schemy, zaciąg treści, remediacja — delegacja v1.12, CLAUDE.md
+ *    §5). Host lokalny → PASS. Host zdalny + CONFIRM_PROD_DB=1 → PASS
+ *    z ostrzeżeniem. Host zdalny bez flagi → ABORT.
+ *
+ * Zasięg polityki B jest policzalny i pilnowany: strażnik
+ * `tests/unit/tools/assert-test-db-zasieg-ceremonii.test.ts` czerwieni się,
+ * gdy `allowProduction` pojawi się w narzędziu spoza spisanej listy. Poszerzenie
+ * dostępu do produkcji nie da się zrobić PRZEZ PRZEOCZENIE. Świadomego zacierania
+ * śladu ten strażnik nie łapie i nie udaje, że łapie: dopasowanie jest tekstowe,
+ * więc `{ allowProduction: STALA }` przez stałą logiczną przechodzi i jego, i
+ * kontrolę typów (zmierzone przez Leo, przegląd #298). Strażnik broni przed
+ * pomyłką i rutyną — nie przed autorem, który chce go obejść.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * DLACZEGO BRAMKA NIE PYTA BAZY, KIM JEST
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Kuszące jest rozstrzygać tożsamość bazy z połączenia (`current_database()`,
+ * identyfikator klastra) zamiast z adresu. Odrzucone — i nie dlatego, że
+ * kosztowne, tylko dlatego, że **sprzeczne samo w sobie**: żeby zapytać bazę
+ * „kim jesteś", trzeba się z nią POŁĄCZYĆ, czyli wykonać dokładnie tę czynność,
+ * przed którą ta bramka ma zatrzymać. Bramka, która musi dotknąć produkcji, by
+ * stwierdzić, że nie wolno jej dotykać, nie jest bramką. U dostawcy usypiającego
+ * instancje obudziłaby ją i zostawiła ślad.
+ *
+ * Odczyt tożsamości ma legalne miejsce — **w ceremonii, PO połączeniu**, jako
+ * asercja „jestem na gałęzi, na którą się umówiłem". Nie tutaj.
+ *
+ * ── OGRANICZENIE, KTÓRE Z TEGO WYNIKA (nazwane, nie przemilczane) ──────────
+ * Bramka rozstrzyga z rozdzielnością HOSTA, więc **nie odróżnia produkcji od
+ * jej kopii zapasowej ani od gałęzi deweloperskiej u tego samego dostawcy**.
+ * Pod polityką ceremonii jedna flaga otwiera wszystkie trzy tak samo. Klasa
+ * wypadku „właściwe narzędzie, niewłaściwa gałąź" pozostaje NIEPOKRYTA — tak
+ * samo jak przed tą zmianą. Domknięcie należy do asercji tożsamości w ceremonii
+ * (wyżej), nie do tego pliku. Próg: pierwsza ceremonia produkcyjna wykonywana
+ * na gałęzi innej niż główna.
  *
  * Dozwolone hosty lokalne:
  *   localhost / 127.0.0.1 / ::1
@@ -31,17 +98,22 @@
  * db:generate nie łączy się z bazą i nie używa tego guarda.
  */
 
+import pg from "pg";
+
 /** Hosty bezwarunkowo dozwolone — lokalny kontener / loopback. */
 const ALLOWED_LOCAL_HOSTS = ["localhost", "127.0.0.1", "::1"];
 
-/**
- * Fragmenty bezwarunkowo blokowane w surowym URL (hard-deny).
- * Sprawdzane PRZED parsowaniem hosta — pierwsza warstwa ochrony.
- * Blokuje nawet przy CONFIRM_PROD_DB=1 i E2E_ALLOW_REMOTE=1.
- */
-const HARD_DENY_FRAGMENTS = [
-	"skill-bridge-ai", // produkcyjna baza Neon SkillBridge
-];
+/** Opcje polityki wywołania. Brak opcji = polityka A („nigdy produkcja"). */
+export type AssertTestDbOptions = {
+	/**
+	 * `true` = to narzędzie MA udokumentowaną ceremonię produkcyjną i wolno mu
+	 * sięgnąć na host zdalny, gdy operator ustawi CONFIRM_PROD_DB=1.
+	 * Ustawiaj WYŁĄCZNIE w narzędziach wymienionych w strażniku zasięgu
+	 * (`tests/unit/tools/assert-test-db-zasieg-ceremonii.test.ts`) — inaczej
+	 * bramka zapala się na czerwono i zmiana nie przechodzi.
+	 */
+	allowProduction?: boolean;
+};
 
 /**
  * Zwraca znormalizowany hostname z connection stringa PostgreSQL.
@@ -52,20 +124,55 @@ const HARD_DENY_FRAGMENTS = [
  *   IPv6: postgresql://u@[::1]:5432/db → zwraca "::1" (bez nawiasów)
  *
  * Zwraca null gdy nie udało się sparsować (nieznany format DSN).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * JEDNA WYROCZNIA: HOST LICZY TEN, KTO ZESTAWIA POŁĄCZENIE
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Host wyliczamy przez `pg.Client` — czyli ten sam obiekt, który potem otworzy
+ * połączenie. NIE przez `new URL().hostname`. To nie jest szczegół stylu, tylko
+ * naprawa dziury (znalezisko Leo, przegląd #298, 2026-08-12):
+ *
+ *   adres postaci  postgres://localhost:5432/neondb?host=<punkt-produkcji>
+ *     new URL().hostname          → "localhost"      ← co widziała bramka
+ *     pg.Client…connectionParameters.host → "ep-….neon.tech"  ← dokąd szło połączenie
+ *
+ * Bramka przepuszczała TO CICHO: polityka domyślna, zero flag, zero ostrzeżenia,
+ * a `new pg.Client({ connectionString })` łączył się z produkcją. Poprzednia
+ * dziura (fragment `"skill-bridge-ai"`) wymagała przynajmniej flagi — ta nie
+ * wymagała niczego. Dotyczyła wprost `tools/run-sql-file.ts`, wykonującego
+ * dowolny plik `.sql` i słusznie stojącego na liście „nigdy produkcja".
+ *
+ * Wada tej samej rodziny co reszta tego pliku, o poziom głębiej: reguła miała
+ * DWA NOŚNIKI odpowiedzi na pytanie „co jest hostem" i drugi z nich milczał.
+ * Dlatego lekarstwem nie jest wyliczanie kolejnych sztuczek w adresie
+ * (`host=`, `options=`, …), tylko usunięcie drugiej wyroczni: pytamy sterownik.
+ * Rozjazd między bramką a połączeniem staje się wtedy NIEMOŻLIWY z konstrukcji,
+ * a nie „niewystępujący na znanych nam przykładach".
+ *
+ * Zmierzone przy naprawie (`pg@8.22.0`, 2026-08-12): `?hostaddr=` i `?options=`
+ * NIE przekierowują hosta w node-postgres — jedynym wektorem był `?host=`.
+ * Świadomie nie robimy z tego listy zakazanych parametrów: lista znów byłaby
+ * drugim nośnikiem, a `options=endpoint%3D…` jest u Neona użyciem legalnym.
  */
 export function parseDbHost(url: string): string | null {
+	// Warunek wstępny bez zmian: guard rozumie wyłącznie DSN PostgreSQL. Cokolwiek
+	// innego → null → traktowane jak host zdalny (nie rozumiem = nie przepuszczam).
+	if (!url.startsWith("postgresql://") && !url.startsWith("postgres://")) return null;
 	try {
-		if (url.startsWith("postgresql://") || url.startsWith("postgres://")) {
-			const parsed = new URL(url);
-			const hostname = parsed.hostname || null;
-			if (!hostname) return null;
-			// Normalizacja IPv6: URL.hostname zwraca "[::1]" z nawiasami — stripujemy.
-			return hostname.replace(/^\[|\]$/g, "");
-		}
+		// JEDNA WYROCZNIA: pytamy o host DOKŁADNIE ten obiekt, który zestawi
+		// połączenie. `new pg.Client(...)` niczego nie otwiera — konstruktor tylko
+		// wylicza parametry połączenia; gniazdo powstaje dopiero w `connect()`.
+		// `Client.host` jest publiczne i otypowane (@types/pg) — bierzemy je, a nie
+		// wewnętrzne `connectionParameters`. Zmierzone: obie drogi dają ten sam host
+		// dla adresu czystego, z `?host=` zdalnym i z `?host=` wracającym na localhost.
+		const host = new pg.Client({ connectionString: url }).host;
+		if (!host) return null;
+		// Normalizacja IPv6: bywa zwracany w nawiasach — stripujemy.
+		return String(host).replace(/^\[|\]$/g, "");
 	} catch {
-		// URL.parse rzucił — prawdopodobnie nieparseable DSN
+		// Konstruktor rzucił — DSN nie do odczytania nawet dla sterownika.
+		return null;
 	}
-	return null;
 }
 
 /**
@@ -97,20 +204,30 @@ export function isDedicatedTestDbUrl(dbUrl: string | undefined): boolean {
 }
 
 /**
- * Guard bezpieczeństwa bazy — sprawdza host i wymagane flagi.
+ * Guard bezpieczeństwa bazy — sprawdza host, a flagi tylko w polityce ceremonii.
  *
  * Kolejność sprawdzeń (KRYTYCZNA — nie zmieniaj):
- *   1. Hard-deny na surowym stringu → ABORT bezwarunkowo.
+ *   1. Brak DSN → STOP.
  *   2. Parsowanie hosta.
- *   3. Nieparseable + brak flagi → ABORT.
- *   4. Host lokalny → PASS cicho.
- *   5. Host zdalny + flaga (CONFIRM_PROD_DB=1 lub E2E_ALLOW_REMOTE=1) → PASS z ostrzeżeniem.
- *   6. Host zdalny + brak flagi → ABORT z instrukcją jak postąpić.
+ *   3. Host lokalny → PASS cicho (obie polityki; CI stoi na loopbacku).
+ *   4. Polityka DOMYŚLNA (bez `allowProduction`) → ODMOWA bezwarunkowa.
+ *      Zmienne środowiskowe NIE są tu w ogóle czytane.
+ *   5. Polityka CEREMONII + CONFIRM_PROD_DB=1 → PASS z ostrzeżeniem.
+ *   6. Polityka CEREMONII bez flagi → ABORT z instrukcją jak postąpić.
+ *
+ * DSN nieparseowalny jest traktowany jak host zdalny (nie jak host lokalny) —
+ * guard, który nie rozumie adresu, nie ma podstaw twierdzić, że jest bezpieczny.
  *
  * @param dbUrl   Wartość zmiennej z DSN (DATABASE_URL, E2E_DATABASE_URL, itp.)
  * @param varName Nazwa zmiennej (dla czytelnego komunikatu błędu)
+ * @param options `{ allowProduction: true }` wyłącznie dla narzędzi z udokumentowaną
+ *                ceremonią produkcyjną — patrz strażnik zasięgu.
  */
-export function assertTestDb(dbUrl: string | undefined, varName = "DATABASE_URL"): void {
+export function assertTestDb(
+	dbUrl: string | undefined,
+	varName = "DATABASE_URL",
+	options: AssertTestDbOptions = {},
+): void {
 	if (!dbUrl) {
 		throw new Error(
 			`[assert-test-db] STOP: ${varName} nie jest ustawiona. ` +
@@ -118,62 +235,57 @@ export function assertTestDb(dbUrl: string | undefined, varName = "DATABASE_URL"
 		);
 	}
 
-	// ── 1. HARD-DENY — pierwsza warstwa, na surowym stringu, bezwarunkowa ─────
-	// Musi być PRZED gałęzią host===null, żeby nieparseable URL + fragment prod
-	// nie był przepuszczany przez E2E_ALLOW_REMOTE=1.
-	const hardDenied = HARD_DENY_FRAGMENTS.find((frag) => dbUrl.toLowerCase().includes(frag));
-	if (hardDenied) {
-		throw new Error(
-			`[assert-test-db] ODMOWA: ${varName} zawiera fragment "${hardDenied}", ` +
-				`który wygląda na produkcyjną bazę SkillBridge. ` +
-				`Operacja na tej bazie jest zakazana z tego skryptu. ` +
-				`(Ani CONFIRM_PROD_DB=1 ani E2E_ALLOW_REMOTE=1 nie obchodzą tej blokady)`,
-		);
-	}
+	const allowProduction = options.allowProduction === true;
 
 	// ── 2. Parsowanie hosta ────────────────────────────────────────────────────
 	const host = parseDbHost(dbUrl);
 
-	// Flagi świadomego przejścia (równorzędne — obie traktowane jak "znam ryzyko")
-	const confirmProd = process.env.CONFIRM_PROD_DB === "1";
-	const allowRemote = process.env.E2E_ALLOW_REMOTE === "1";
-	const hasRemoteFlag = confirmProd || allowRemote;
+	// ── 3. Host lokalny — PASS cicho (obie polityki) ──────────────────────────
+	if (host !== null && ALLOWED_LOCAL_HOSTS.includes(host)) {
+		return;
+	}
 
-	// ── 3. Nieparseable URL ───────────────────────────────────────────────────
-	if (host === null) {
-		if (!hasRemoteFlag) {
-			throw new Error(
-				`[assert-test-db] STOP: nie udało się sparsować hosta z ${varName}. ` +
-					"Sprawdź format connection stringa. " +
-					"Aby świadomie uruchomić na zdalnej bazie: ustaw CONFIRM_PROD_DB=1.",
-			);
-		}
-		console.warn(
-			`[assert-test-db] OSTRZEŻENIE: nie udało się sparsować hosta z ${varName}. ` +
-				"Flaga potwierdzenia ustawiona — przepuszczam.",
+	// Dalej: host jest ZDALNY albo DSN nieparseowalny.
+	const opisHosta = host === null ? "host nieparseowalny z DSN" : `zdalny host "${host}"`;
+
+	// ── 4. Polityka DOMYŚLNA — ODMOWA BEZWARUNKOWA ────────────────────────────
+	// Świadomie NIE czytamy tu process.env. Flaga wyeksportowana do innej,
+	// legalnej ceremonii nie może otwierać drogi narzędziu, które produkcji
+	// nigdy nie powinno tknąć. To jest ta „ostatnia linia obrony", która
+	// wcześniej istniała wyłącznie w komentarzu.
+	if (!allowProduction) {
+		throw new Error(
+			`[assert-test-db] ODMOWA: ${varName} wskazuje na ${opisHosta}, ` +
+				`a to narzędzie nie ma ceremonii produkcyjnej — wolno mu wyłącznie na host lokalny ` +
+				`(${ALLOWED_LOCAL_HOSTS.join(", ")}). ` +
+				`Tej odmowy NIE obchodzi ŻADNA zmienna środowiskowa, w tym CONFIRM_PROD_DB=1. ` +
+				`Jeśli to narzędzie naprawdę ma mieć ceremonię produkcyjną — to zmiana w kodzie ` +
+				`(opcja { allowProduction: true }) plus dopisanie go do strażnika zasięgu, ` +
+				`a nie flaga w powłoce.`,
 		);
-		return;
 	}
 
-	// ── 4. Host lokalny — PASS cicho ─────────────────────────────────────────
-	if (ALLOWED_LOCAL_HOSTS.includes(host)) {
-		return;
-	}
-
-	// ── 5. Host zdalny + flaga potwierdzenia — PASS z ostrzeżeniem ───────────
-	if (hasRemoteFlag) {
-		const flagName = confirmProd ? "CONFIRM_PROD_DB=1" : "E2E_ALLOW_REMOTE=1";
+	// ── 5/6. Polityka CEREMONII — decyduje JEDNA jawna flaga operatora ────────
+	// Świadomie JEDNA. Wcześniej otwierała tę ścieżkę także `E2E_ALLOW_REMOTE=1`
+	// — druga wyrocznia dla tego samego pytania („czy operator wie, że to zdalna
+	// baza"), o której runbook ceremonii nawet nie wspominał. Operator ceremonii
+	// czytał więc dokument mówiący o jednej fladze, a produkcję otwierała mu też
+	// druga, odziedziczona w powłoce po testach przeglądarkowych.
+	// Pomiar przy usuwaniu (2026-08-13): żaden przepływ CI jej nie ustawiał,
+	// a oba narzędzia, dla których powstała (`seed-e2e`, `b5-contract-test`),
+	// są dziś w polityce domyślnej, gdzie żadna zmienna i tak nic nie otwiera.
+	// Flaga przeżyła swój cel — usunięta, zamiast pilnowana.
+	if (process.env.CONFIRM_PROD_DB === "1") {
 		console.warn(
-			`[assert-test-db] OSTRZEŻENIE: ${varName} wskazuje na zdalny host "${host}". ` +
-				`${flagName} ustawione — przyjmuję świadomą decyzję operatora. ` +
+			`[assert-test-db] OSTRZEŻENIE: ${varName} wskazuje na ${opisHosta}. ` +
+				`CONFIRM_PROD_DB=1 ustawione — przyjmuję świadomą decyzję operatora. ` +
 				`NIE używaj z bazą prod bez pełnej świadomości konsekwencji.`,
 		);
 		return;
 	}
 
-	// ── 6. Host zdalny + brak flagi — ABORT z instrukcją ─────────────────────
 	throw new Error(
-		`[assert-test-db] ABORT: ${varName} wskazuje na zdalny host "${host}" — możliwy prod lub zdalny serwer. ` +
+		`[assert-test-db] ABORT: ${varName} wskazuje na ${opisHosta} — możliwy prod lub zdalny serwer. ` +
 			`Dozwolone hosty lokalne: ${ALLOWED_LOCAL_HOSTS.join(", ")}. ` +
 			`Dla testów użyj lokalnej bazy / pnpm db:migrate:test. ` +
 			`Aby świadomie uruchomić na zdalnej bazie: ustaw CONFIRM_PROD_DB=1 ` +
