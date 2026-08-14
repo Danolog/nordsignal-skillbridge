@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Harmonogram czujnika nocnego przebiegu CI.
+
+  DLACZEGO launchd, A NIE GITHUB ACTIONS: czujnik ma pilnować, czy nocny przebieg
+  Actions w ogóle się odbył. Harmonogram wiszący w Actions dziedziczyłby awarię
+  Actions — czyli w jedynym momencie, w którym jest potrzebny, byłby wyłączony
+  razem z tym, co pilnuje. Ten plik jest jedynym powodem, dla którego czujnik ma
+  jakąkolwiek wartość: przenosi WYZWALACZ poza obserwowany system.
+
+  PORA: 09:15 czasu lokalnego. Nocny przebieg startuje o 03:00 UTC, a okno czujnika
+  to 26 h — pora jest więc z zapasem po przebiegu i w godzinach, w których ktoś
+  realnie patrzy na powiadomienie.
+
+  ZASYPIANIE MASZYNY: przy `StartCalendarInterval` launchd uruchamia zadanie
+  pominięte podczas snu — po wybudzeniu, jednorazowo. To łagodzi lukę „laptop był
+  wyłączony", ale jej NIE zamyka: maszyna wyłączona przez dobę oznacza brak odczytu
+  przez dobę. Luka nazwana w runbooku, sekcja „Czego czujnik nie złapie".
+
+  INSTALACJA — patrz docs/runbooks/czujnik-nocnego-przebiegu.md sekcja 3.
+  Ścieżkę ZMIEŃ na własną: launchd nie rozwija `~` ani zmiennych powłoki.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>cc.nordsignal.czujnik-nocny</string>
+
+  <!--
+    ŚCIEŻKA POZA DRZEWEM ROBOCZYM — to nie jest wygoda, to wymóg.
+    Pierwsza wersja tego pliku wskazywała `…/SkillBridge/tools/…` w kanonicznym
+    checkoucie i była BŁĘDNA z dwóch powodów, oba wyszły przy instalacji 2026-08-10:
+      1. checkout stoi na `main`, a skrypt żyje na gałęzi — pliku tam po prostu NIE MA;
+      2. nawet po scaleniu drzewo robocze zmienia gałęzie, a repozytorium ma 21 drzew.
+         Harmonogram wskazujący w drzewo robocze przestawałby działać za każdym razem,
+         gdy ktoś przełączy gałąź — i to w ciszy, bo launchd nie ma komu tego zgłosić.
+    Kopia operacyjna leży więc w stałym miejscu. Cena: może się rozjechać z repo —
+    dlatego runbook (sekcja 3) każe porównać skrót po każdej aktualizacji.
+  -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/dariuszgradzik/.nordsignal/bin/czujnik-nocnego-przebiegu.sh</string>
+  </array>
+
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>9</integer>
+    <key>Minute</key><integer>15</integer>
+  </dict>
+
+  <!-- `gh` mieszka w /opt/homebrew/bin; launchd nie dziedziczy PATH powłoki
+       logowania, więc bez tego czujnik alarmowałby „brak narzędzia gh" co dzień. -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/nordsignal-czujnik-nocny.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/nordsignal-czujnik-nocny.err.log</string>
+
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>
