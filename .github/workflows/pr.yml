@@ -964,6 +964,17 @@ jobs:
       # ZAKRES PODANY SCIEZKA PLIKU, NIE `--grep` — nie ma jak zostac zeskipowanym
       # filtrem (ta sama konwencja co w jobie a11y-klauzula).
       - name: Playwright — rejestracja od zera + rozwidlenie #309 (sciezka krytyczna #1)
+        # BIEGNIE TAKZE, GDY KROK @llm WYZEJ PADL — i to jest sedno, nie detal.
+        # ZMIERZONE 2026-08-14 (przebieg 31819262813, reczny `workflow_dispatch` na
+        # galezi tego zgloszenia): krok @llm padl, a ten krok dostal status `skipped`.
+        # Czyli bramka sciezki krytycznej #1 — „czy da sie zalozyc konto" — byla
+        # ZAKLADNIKIEM segmentu, ktory wola model i bywa czerwony z zupelnie innego
+        # powodu. Bramka, ktora nie biega, nie jest bramka; dokladnie ta klasa bledu,
+        # co straznik-atrapa (CLAUDE.md v1.17).
+        # `!cancelled()` zamiast `always()`: przy recznym anulowaniu przebiegu nie ma
+        # po co palic minut runnera, ale KAZDY pad wczesniejszego kroku ma ten krok
+        # przepuscic. Wlasny wynik kroku dalej bramkuje job normalnie.
+        if: ${{ !cancelled() }}
         env:
           # Serwer: rozwidlenie N2′ istnieje tylko w trybie diagnozy.
           FLAG_DIAGNOSTIC_ASSESSMENT: "1"
