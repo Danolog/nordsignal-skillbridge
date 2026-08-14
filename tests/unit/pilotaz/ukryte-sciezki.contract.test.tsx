@@ -163,8 +163,17 @@ describe("jeden nośnik reguły (CLAUDE.md v1.17)", () => {
 		// (i cytujący jej zapis) jest pożądany w każdym z tych plików — kopia WARUNKU nie.
 		// Bez tego rozróżnienia test padał na własnej dokumentacji: przy pierwszym
 		// przebiegu zwrócił 3 trafienia w career-paths.ts, z czego 2 to były komentarze.
+		//
+		// WARIANT #317 (Ethan) — ujednolicony po przeglądzie Leo. Mój pierwotny filtr
+		// (`(^|[^:])\/\/.*$`) uznawał `//` w środku napisu („a//b") za początek
+		// komentarza i wycinał RESZTĘ LINII: druga kopia warunku zapisana w takiej linii
+		// stawała się dla strażnika NIEWIDZIALNA. To jest psucie się w stronę OTWARTĄ —
+		// bramka milczy, choć wada jest. Wariant niżej wymaga białego znaku przed `//`,
+		// więc taką linię zostawia w skanie: najwyżej zgłosi nadmiarowo, czyli psuje się
+		// w stronę CZERWONĄ. Przy bramce wybieramy mechanizm psujący się głośno.
+		// Sonda z kontrolą: tests/unit/pilotaz/slad-nosnikow.contract.test.ts.
 		const bezKomentarzy = (tresc: string) =>
-			tresc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+			tresc.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|\s)\/\/[^\n]*/g, "$1");
 		const wystapienia = pliki.flatMap((p) => {
 			const tresc = bezKomentarzy(readFileSync(join(korzen, p), "utf8"));
 			const trafienia = tresc.match(/availableInPilot\s*!==\s*false/g) ?? [];

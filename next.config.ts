@@ -80,6 +80,17 @@ const nextConfig: NextConfig = {
 		// funkcji trasy `/passport/[id]`, więc ślad dokłada się do niej.
 		"/passport/[id]": ["./docs/product/zasada-odpowiedzi-dla-pracodawcy.md"],
 		"/regulamin": ["./docs/product/regulamin-pilotazu.md"],
+		// Dwie trasy, które czytają regulamin NIE PO TO, żeby go pokazać:
+		//   • `/signup` — strona rejestracji odczytuje WERSJĘ dokumentu (jeden nośnik
+		//     wersji) i wysyła ją z formularzem jako dowód „na co ta osoba się zgodziła";
+		//   • `/api/auth/[...path]` — tędy biegnie `/sign-up/email`, a zaczep `before`
+		//     porównuje wersję z żądania z wersją z dokumentu.
+		// Przy ZAPALONEJ fladze regulaminu odczyt wykonuje się przy KAŻDEJ rejestracji,
+		// więc brak tych wpisów to awaria na rejestracji uczestnika — czyli w miejscu
+		// droższym niż strona z treścią, i odkrywana dopiero przy zapłonie flagi.
+		// Pilnowane maszynowo: tests/unit/pilotaz/slad-nosnikow.contract.test.ts.
+		"/signup": ["./docs/product/regulamin-pilotazu.md"],
+		"/api/auth/[...path]": ["./docs/product/regulamin-pilotazu.md"],
 	},
 	async headers() {
 		return [
