@@ -178,9 +178,10 @@ export const FLAGS = {
 			"curriculum_placements hookiem po domknięciu diagnozy (best-effort, po transakcji). " +
 			"Off = hook nie odpala, zero wierszy curriculum_placements, odpowiedź " +
 			"/api/assessment/[id]/complete identyczna jak dziś. ⚠ Zapłon WYMAGA FLAG_MASTERY_GATE=1 " +
-			"na tym samym środowisku — droga alternatywna „test out” to warunek nośny A22-2 oceny " +
-			"art. 22 RODO (RoPA wpis #5), nie tylko wybór produktowy. Wymóg jest EGZEKWOWANY " +
-			"(`requires` niżej), nie tylko opisany.",
+			"ORAZ FLAG_DIAGNOSTIC_ASSESSMENT=1 na tym samym środowisku — pierwsze, bo droga " +
+			"alternatywna „test out” to warunek nośny A22-2 oceny art. 22 RODO (RoPA wpis #5); " +
+			"drugie, bo bez diagnozy drabina obiecuje studentowi pomiar, którego produkt nie " +
+			"zawiera. Oba wymogi są EGZEKWOWANE (`requires` niżej), nie tylko opisane.",
 		defaultValue: false,
 		// TWARDA BRAMKA SPRZĘŻENIA (decyzja Ethana, 1E.7 L4). Placement OTWIERA moduły,
 		// egzamin ZALICZA — przy zgaszonym `masteryGate` student wrzucony placementem
@@ -190,7 +191,68 @@ export const FLAGS = {
 		// automatycznego"). Zapalenie placementu przy zgaszonym egzaminie nie jest więc
 		// „gorszym UX" — WYWRACA PODSTAWĘ PRAWNĄ przetwarzania. Dlatego bramka jest
 		// w kodzie ewaluacji flagi, a nie w runbooku wdrożenia.
-		requires: ["masteryGate"],
+		//
+		// DRUGI CZŁON (N3, rozpoznanie Sophii — scratchpad/lejek-diagnozy-sophia.md
+		// §4.3 WADA 3): `diagnosticAssessment`. Ta flaga wybiera brzmienie wstępu na
+		// `/curriculum` i na kafelku pulpitu — przy zapalonej mówi studentowi
+		// „…albo od razu, jeśli DIAGNOZA pokazała, że znasz wcześniejszy materiał".
+		// Przy zgaszonej diagnozie tego mechanizmu w produkcie NIE MA: trasy
+		// /api/assessment/* odpowiadają 404, więc placement nie ma z czego powstać,
+		// a zdanie jest nieprawdziwe W CHWILI WYPOWIADANIA. Ten sam argument, co
+		// przy sprzężeniu klauzuli art. 13 z usuwaniem konta niżej: obietnica
+		// mechanizmu, którego nie umiemy wykonać, jest gorsza niż jego brak.
+		//
+		// Zmierzone wykonaniem, nie wyczytane z kodu (2026-08-13): przy
+		// FLAG_MASTERY_GATE=1, FLAG_PLACEMENT_DIAGNOSTIC=1, FLAG_DIAGNOSTIC_ASSESSMENT=0
+		// `isFeatureEnabled("placementDiagnostic")` zwracało `true`, kafelek pulpitu
+		// renderował zdanie o diagnozie, a POST /api/assessment/start w tej samej
+		// konfiguracji odpowiadał 404. Strażnik: tests/unit/ds/obietnica-diagnozy-
+		// -sprzezenie.contract.test.tsx (kontrakt „obietnica ⟹ diagnoza istnieje").
+		//
+		// SKUTEK ZAPALENIA/ZGASZENIA (dla runbooku wdrożenia): zgaszenie
+		// FLAG_DIAGNOSTIC_ASSESSMENT gasi teraz TAKŻE placement — istniejące wiersze
+		// `curriculum_placements` przestają otwierać moduły (drabina czyta flagę).
+		// To jest zamierzone: konfiguracja „diagnoza wyłączona, placement włączony"
+		// jest błędem, nie wyborem. Kolejność zapłonu: diagnoza + egzamin, potem
+		// placement; kolejność gaszenia odwrotna.
+		requires: ["masteryGate", "diagnosticAssessment"],
+	},
+	accountDeletion: {
+		envVar: "FLAG_ACCOUNT_DELETION",
+		description:
+			"E1b (RODO art. 17): ścieżka usunięcia konta przez studenta — włączona ścieżka " +
+			"biblioteki uwierzytelniającej (`user.deleteUser`) z zaczepami before/after, " +
+			"śladem audytowym wzorca A7 i usunięciem natychmiastowym bez karencji (D-U3). " +
+			"Off = trasa `/api/auth/delete-user` odpowiada 404, konto bez zmian. " +
+			"⚠ ZAPŁON NA PRODUKCJI MA WŁASNY RUNBOOK Z LISTĄ BRAMEK — jeden nośnik: " +
+			"`docs/runbooks/zaplon-flagi-usuwania-konta.md` (właściciel: Ethan). Ta flaga " +
+			"NIE JEST przełącznikiem „gotowe/niegotowe”: zielony S-U-1 to dopiero bramka 1 " +
+			"z ośmiu. Otwarte są m.in. porównanie katalogu produkcji z migracjami, kopie " +
+			"zapasowe, sign-off Ryana i ekran w interfejsie. Nie zapalaj bez przejścia listy.",
+		defaultValue: false,
+	},
+	privacyNoticeArt13: {
+		envVar: "FLAG_PRIVACY_NOTICE_ART13",
+		description:
+			"E4: klauzula informacyjna art. 13 RODO w interfejsie — strona /prywatnosc renderuje " +
+			"CZĘŚĆ I dokumentu docs/legal/klauzula-informacyjna-art13.md + odnośnik ze ścieżki " +
+			"rejestracji. Off = trasa nie istnieje (404), odnośnik się nie renderuje. " +
+			"⚠ ZAPŁON NIE JEST DECYZJĄ TECHNICZNĄ: dokument ma PIĘĆ twardych warunków wejścia " +
+			"w życie (sekcja Z-2 — cała tabela, nie wybrane wiersze), z których W-4 i W-5 leżą " +
+			"poza kodem. Zapalenie tej flagi przed nimi publikuje obietnice praw, których nie " +
+			"umiemy wykonać — a to jest gorsze niż brak klauzuli (zasada porządkująca cały " +
+			"pakiet RODO). W-1 (sprzężenie z usuwaniem konta) jest od 2026-08-13 " +
+			"ZADEKLAROWANE w `requires` niżej — flaga `accountDeletion` weszła do rejestru " +
+			"scaleniem #293, więc próg strażnika minął i kontrakt kompilacji na nazwy flag " +
+			"go przyjmuje.",
+		defaultValue: false,
+		// W-1 (sekcja Z-2 dokumentu): sekcja 8 klauzuli obiecuje studentowi, że usunie
+		// konto samodzielnie w ustawieniach profilu. Przy zgaszonej ścieżce usunięcia to
+		// zdanie jest NIEPRAWDZIWE W CHWILI WYPOWIADANIA — a obietnica prawa, którego nie
+		// umiemy wykonać, jest gorsza niż brak klauzuli. Dlatego bramka stoi w ewaluacji
+		// flagi (fail-closed + wpis [flags.requires] w logu), nie w runbooku wdrożenia —
+		// ten sam argument, co przy sprzężeniu placementu z egzaminem wyżej.
+		requires: ["accountDeletion"],
 	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje

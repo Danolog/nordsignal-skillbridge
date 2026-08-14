@@ -61,9 +61,14 @@ dBack("1E.7 L4 · drabina honoruje placement (realna baza)", () => {
 	const moduleIds: Record<string, string> = {};
 
 	const zapamietaneFlagi: Record<string, string | undefined> = {};
-	function ustawFlagi(placement: boolean, mastery = true) {
+	function ustawFlagi(placement: boolean, mastery = true, diagnoza = true) {
 		process.env.FLAG_PLACEMENT_DIAGNOSTIC = placement ? "1" : "0";
 		process.env.FLAG_MASTERY_GATE = mastery ? "1" : "0";
+		// N3: od 2026-08-13 `placementDiagnostic` wymaga TAKŻE `diagnosticAssessment`
+		// (drabina nie obiecuje pomiaru, którego produkt nie zawiera). Bez tej linii
+		// „placement ON" w tym teście znaczyłoby fail-closed OFF i suita mierzyłaby
+		// wariant bez placementu, wyglądając przy tym na zieloną.
+		process.env.FLAG_DIAGNOSTIC_ASSESSMENT = diagnoza ? "1" : "0";
 	}
 
 	/**
@@ -100,7 +105,11 @@ dBack("1E.7 L4 · drabina honoruje placement (realna baza)", () => {
 	beforeAll(async () => {
 		({ db } = await import("@/lib/db"));
 		({ getLadder, isModuleUnlocked } = await import("../ladder"));
-		for (const k of ["FLAG_PLACEMENT_DIAGNOSTIC", "FLAG_MASTERY_GATE"]) {
+		for (const k of [
+			"FLAG_PLACEMENT_DIAGNOSTIC",
+			"FLAG_MASTERY_GATE",
+			"FLAG_DIAGNOSTIC_ASSESSMENT",
+		]) {
 			zapamietaneFlagi[k] = process.env[k];
 		}
 
