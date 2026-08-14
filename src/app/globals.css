@@ -58,7 +58,8 @@
 	--color-ed-danger: var(--ed-danger);
 	--color-ed-badge-bg: var(--ed-badge-bg);
 	--color-ed-card: var(--ed-card);
-	/* Fonty editorial: display = Playfair, body = DM Sans (next/font w layout.tsx). */
+	/* Fonty editorial: display = Playfair, body = DM Sans.
+	   Same pliki kroju i zmienne `--font-*`: `src/app/fonts.css` (lokalnie, bez sieci). */
 	--font-ed-display: var(--font-playfair), "Playfair Display", Georgia, serif;
 	--font-ed-body: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
 }
