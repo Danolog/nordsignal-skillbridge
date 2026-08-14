@@ -254,6 +254,44 @@ export const FLAGS = {
 		// ten sam argument, co przy sprzężeniu placementu z egzaminem wyżej.
 		requires: ["accountDeletion"],
 	},
+	passportNotFoundNotice: {
+		envVar: "FLAG_PASSPORT_NOT_FOUND_NOTICE",
+		description:
+			"Fala 2 (B2): strona pod MARTWYM ODNOŚNIKIEM paszportu — /passport/[id] dla " +
+			"nieistniejącego lub wycofanego identyfikatora renderuje CZĘŚĆ I dokumentu " +
+			"docs/product/zasada-odpowiedzi-dla-pracodawcy.md zamiast wbudowanego 404 " +
+			"Next.js po angielsku. Odbiorcą jest PRACODAWCA sprawdzający kandydata, więc " +
+			"treść jest odpowiedzią na jego pytanie („co to znaczy, że nie ma tej strony”), " +
+			"nie komunikatem błędu. Off = ekran minimalny bez treści dokumentu.\n" +
+			"⚠ ZAPŁON = SIGN-OFF DARKA, NIE SCALENIE: dokument mówi w imieniu firmy do " +
+			"osoby z zewnątrz, która podejmuje na jego podstawie decyzję o kandydacie.\n" +
+			"⚠ OGRANICZENIE, KTÓREGO TA FLAGA NIE ZNOSI: pliku `not-found.tsx` nie da się " +
+			"„nie mieć” warunkowo — Next.js wiąże go z segmentem trasy przy budowaniu, a " +
+			"`notFound()` wywołane w nim samym daje pętlę. Zgaszona flaga NIE przywraca " +
+			"więc wbudowanego 404, tylko zastępuje go ekranem minimalnym (po polsku, bez " +
+			"ani jednej obietnicy z dokumentu). To świadome odstępstwo od „off = zero " +
+			"zmian” — opisane, nie przemilczane.",
+		defaultValue: false,
+	},
+	pilotTerms: {
+		envVar: "FLAG_PILOT_TERMS",
+		description:
+			"Fala 2 (C): regulamin pilotażu w interfejsie — strona /regulamin renderuje " +
+			"CZĘŚĆ I dokumentu docs/product/regulamin-pilotazu.md, a ścieżka rejestracji " +
+			"dostaje WYMAGANE pole wyboru akceptacji (domyślnie puste), egzekwowane po " +
+			"stronie serwera w zaczepie `before` biblioteki uwierzytelniającej. " +
+			"Off = trasa /regulamin nie istnieje (404), pole się nie renderuje, a bramka " +
+			"serwerowa przepuszcza rejestrację jak dziś.\n" +
+			"⚠ ZAPŁON = SIGN-OFF DARKA: dokument jest w wersji v0.1 DRAFT (autor: Sophia) " +
+			"i wiąże firmę wobec uczestnika pilotażu.\n" +
+			"⚠ ZAPIS AKCEPTACJI (znacznik czasu + wersja dokumentu) NIE ISTNIEJE — wymaga " +
+			"migracji schematu, która NIE należy do warstwy interfejsu (właściciel: Ethan). " +
+			"Do czasu jej wykonania akceptacja jest EGZEKWOWANA, ale NIEUTRWALONA: " +
+			"potrafimy nie wpuścić bez zaznaczenia, nie potrafimy udowodnić po fakcie, że " +
+			"ktoś zaznaczył. Zapalenie tej flagi przed migracją jest decyzją świadomą — " +
+			"z tą luką dowodową, nie bez niej.",
+		defaultValue: false,
+	},
 	// gapVerifier (AG.1) USUNIĘTA w AG.2 (2026-07-07): jedyny konsument —
 	// LLM-owa gałąź legacy generate-gaps — skasowany; moduł verify-gaps zostaje
 	// jako klocek bez flagi (przyszli konsumenci AG.5+ dostaną własne flagi).

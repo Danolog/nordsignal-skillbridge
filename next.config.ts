@@ -70,6 +70,16 @@ const nextConfig: NextConfig = {
 		// się na Vercelu („ENOENT"). Ten sam mechanizm i ten sam powód co przy
 		// workerze pdfjs wyżej.
 		"/prywatnosc": ["./docs/legal/klauzula-informacyjna-art13.md"],
+		// Fala 2 — ten sam mechanizm i ten sam powód co przy `/prywatnosc` wyżej:
+		// odczyt nośnika idzie przez `readFileSync` ze ścieżki składanej w czasie
+		// działania, więc statyczna analiza śladu funkcji go NIE widzi. BEZ tych
+		// dwóch wpisów obie strony działają lokalnie i wywalają się na produkcji
+		// błędem „ENOENT" — a jedna z nich to ekran, który widzi PRACODAWCA
+		// sprawdzający kandydata, czyli awaria dokładnie w chwili największej stawki.
+		// Klucz to segment TRASY (nie plik): `not-found.tsx` renderuje się w ramach
+		// funkcji trasy `/passport/[id]`, więc ślad dokłada się do niej.
+		"/passport/[id]": ["./docs/product/zasada-odpowiedzi-dla-pracodawcy.md"],
+		"/regulamin": ["./docs/product/regulamin-pilotazu.md"],
 	},
 	async headers() {
 		return [
