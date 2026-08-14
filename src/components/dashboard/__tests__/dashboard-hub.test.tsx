@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { CURRICULUM_INTRO, CURRICULUM_INTRO_WITH_PLACEMENT } from "@/components/curriculum/labels";
 import { DashboardHub } from "../dashboard-hub";
 
 // AG.6: hub renderuje MarketGapNotifications (useRouter) — router poza Next musi być zmockowany.
@@ -64,6 +65,9 @@ const defaultProps = {
 	reviewDue: null,
 	// 1E.6a: flaga off → kafelek ścieżki nauki nie istnieje.
 	curriculumEnabled: false,
+	// N1: flaga placementDiagnostic off → kafelek mówi to samo co `/curriculum`
+	// przy zgaszonej fladze (wariant bez skrótów). Testy wariantu ON niżej.
+	placementEnabled: false,
 };
 
 describe("DashboardHub", () => {
@@ -121,7 +125,36 @@ describe("DashboardHub", () => {
 		render(<DashboardHub {...defaultProps} curriculumEnabled />);
 		const hrefs = screen.getAllByRole("link").map((l) => l.getAttribute("href"));
 		expect(hrefs).toContain("/curriculum");
-		expect(screen.getByText("Ucz się po kolei, bez skrótów")).toBeInTheDocument();
+	});
+
+	/**
+	 * N1 (dług D7, druga kopia) — STRAŻNIK REGUŁY, nie brzmienia.
+	 *
+	 * Reguła: kafelek pulpitu — pierwsze drzwi na drabinę — mówi o kolejności
+	 * modułów DOKŁADNIE to, co mówi `/curriculum`, i wybiera brzmienie tą samą
+	 * flagą. Wcześniej kafelek trzymał własną kopię zdania („Ucz się po kolei, bez
+	 * skrótów"), a TEN test przypinał ją jako kontrakt — zielony strażnik pilnował
+	 * nieprawdy (trzecia odmiana atrapy: strzeże, tylko nie tego, co trzeba).
+	 *
+	 * Że zdanie było nieprawdziwe, jest ZMIERZONE wykonaniem na realnej bazie, nie
+	 * wyczytane z kodu: `src/lib/curriculum/__tests__/ladder-placement.integration
+	 * .test.ts` → „FLAGA ON: moduł z wierszem placementu jest DOSTĘPNY mimo
+	 * niezaliczonego prerekwizytu".
+	 *
+	 * Kotwica na STAŁEJ, nie na literale: redakcja mikrocopy Sophii ma nie
+	 * czerwienić strażnika; czerwienić ma go rozjazd dwóch powierzchni.
+	 */
+	it("STRAŻNIK: przy zapalonym placemencie kafelek nie obiecuje braku skrótów", () => {
+		const { container } = render(
+			<DashboardHub {...defaultProps} curriculumEnabled placementEnabled />,
+		);
+		expect(screen.getByText(CURRICULUM_INTRO_WITH_PLACEMENT)).toBeInTheDocument();
+		expect(container.textContent).not.toContain("bez skrótów");
+	});
+
+	it("KONTROLA DWUSTRONNA: przy zgaszonym placemencie kafelek mówi to samo co /curriculum", () => {
+		render(<DashboardHub {...defaultProps} curriculumEnabled />);
+		expect(screen.getByText(CURRICULUM_INTRO)).toBeInTheDocument();
 	});
 
 	// 1E.4 R6 — kafelek powtórek: „deploy ≠ release" (null = flaga off → brak sekcji).

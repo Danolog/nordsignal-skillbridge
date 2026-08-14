@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auditContextFromRequest, recordAudit } from "@/lib/audit";
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { submissionReviews, vivaSessions } from "@/lib/db/schema";
 import { isFeatureEnabled } from "@/lib/flags";
@@ -27,11 +27,15 @@ import {
  *    pytaniach (nowa sesja, stara `expired`); ≥1 odp. → inconclusive → 409,
  *  - `expired` (terminal, 0 odp.) → restart jak wyżej,
  *  - stany końcowe (passed/failed/inconclusive/superseded) → 409 ze stanem.
+ *
+ * A1+A2 (ADR A-1 (a+)): ślad obrony NIE niesie `actorId` ani kontekstu żądania
+ * — reguła i jej uzasadnienie żyją w `src/lib/audit.ts` (`REGULA_AKTORA`), tu
+ * są tylko egzekwowane przez typ.
  */
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
 
-export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
 	if (!isFeatureEnabled("vivaDefense")) {
 		return NextResponse.json({ error: "Not found" }, { status: 404 });
 	}
@@ -103,11 +107,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 				.returning();
 			await recordAudit({
 				actorType: "student",
-				actorId: auth_.studentId,
 				action: "submission.viva.started",
 				targetType: "submission",
 				targetId: submissionId,
-				...auditContextFromRequest(req),
 				metadata: { sessionId: session.id },
 			});
 			return NextResponse.json(await serializeVivaState(updated as VivaSessionRow));
@@ -131,11 +133,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 					.returning();
 				await recordAudit({
 					actorType: "student",
-					actorId: auth_.studentId,
 					action: "submission.viva.restarted",
 					targetType: "submission",
 					targetId: submissionId,
-					...auditContextFromRequest(req),
 					metadata: { previousSessionId: session.id, sessionId: fresh.id },
 				});
 				return NextResponse.json(await serializeVivaState(fresh as VivaSessionRow));

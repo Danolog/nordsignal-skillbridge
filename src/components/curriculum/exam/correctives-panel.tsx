@@ -19,9 +19,10 @@
 
 import { ClipboardList } from "lucide-react";
 import Link from "next/link";
+import { itemKindLabel } from "@/components/curriculum/labels";
 import { Button } from "@/components/ui/button";
 import type { CorrectivesAtom, CorrectivesPackage } from "@/lib/assessment/correctives";
-import { atomKindLabel, humanizeConceptSlug, resolveAtomHref } from "@/lib/curriculum/atom-href";
+import { humanizeConceptSlug, resolveAtomHref } from "@/lib/curriculum/atom-href";
 
 interface CorrectivesPanelProps {
 	pkg: CorrectivesPackage;
@@ -43,7 +44,7 @@ function AtomRow({
 	resolveHref: (atom: CorrectivesAtom) => string | null;
 }) {
 	const href = resolveHref(atom);
-	const label = `${atomKindLabel(atom.kind)} — ${atom.title}`;
+	const label = `${itemKindLabel(atom.kind)} — ${atom.title}`;
 	if (href === null) {
 		// Stan 3: atom osierocony (moduleSlug=null) — zero martwego linku (Mila 7.2).
 		return (

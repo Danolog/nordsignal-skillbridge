@@ -14,7 +14,7 @@ import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auditContextFromRequest, recordAudit } from "@/lib/audit";
+import { recordAudit } from "@/lib/audit";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { placementEvents, students } from "@/lib/db/schema";
@@ -67,13 +67,19 @@ export async function POST(req: Request) {
 		if (!result) return NextResponse.json({ error: "Student not found" }, { status: 404 });
 
 		// Ślad decyzji zgody (bez treści zdarzeń) — rozliczalność RODO.
+		//
+		// A1+A2 (ADR A-1 (a+), decyzja D-1 Ryana): BEZ `actorId` i BEZ kontekstu
+		// żądania. `actorId` był tu DOSŁOWNYM duplikatem `targetId` (ta sama
+		// zmienna `result` = `students.id`), więc jego usunięcie nie kosztuje ani
+		// grama rozliczalności — art. 5 ust. 1 lit. c bez przeciwwagi.
+		// `targetId` ZOSTAJE: to jedyny nośnik „czyja zgoda", potrzebny dopóki
+		// konto żyje (art. 7 ust. 1 — wykazanie zgody). Ginie z kontem kaskadą,
+		// więc art. 17 zaspokaja struktura, nie procedura.
 		await recordAudit({
 			actorType: "student",
-			actorId: result,
 			action: consent ? "placement.consent.granted" : "placement.consent.revoked",
 			targetType: "student",
 			targetId: result,
-			...auditContextFromRequest(req),
 		});
 		return NextResponse.json({ success: true, consent });
 	} catch (err) {

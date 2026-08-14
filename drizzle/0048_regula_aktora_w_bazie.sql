@@ -1,0 +1,93 @@
+-- ============================================================================
+-- E1b / D-U8 (decyzja Ethana, zakres przyjęty przez Olivera 2026-08-10) —
+-- REGUŁA AKTORA JAKO OGRANICZENIE W BAZIE.
+--
+-- CO TO JEST. Drugi EGZEKUTOR reguły, która ma DOKŁADNIE JEDEN NOŚNIK:
+-- `REGULA_AKTORA` w `src/lib/audit.ts`. Nośnik mówi, którym typom działającego
+-- wolno nieść identyfikator i kontekst żądania; typ `AuditEntry` jest z niego
+-- wyprowadzony, więc w kodzie aplikacji reguły NIE DA SIĘ złamać — dopisanie
+-- `actorId` przy `actorType: "student"` się nie kompiluje.
+--
+-- CZEGO TYP NIE PILNUJE, a to ogranicznie pilnuje: zapisu z pominięciem
+-- `recordAudit`. Ścieżki zapisu do `audit_log` są trzy i tylko pierwsza jest
+-- typowana: (1) `recordAudit`, (2) surowy SQL w narzędziach `tools/` (jedyne
+-- REALNE naruszenie znalezione w tym zadaniu leżało właśnie tam —
+-- `tools/viva-flag-off-recompute.ts`), (3) zdanie wpisane ręcznie w konsoli
+-- bazy podczas naprawy produkcyjnej. Warstwa, która pokrywa wszystkie trzy,
+-- leży w bazie i nigdzie indziej.
+--
+-- ── DLACZEGO TO NIE JEST „ODSIEWACZ”, KTÓRY ODRZUCILIŚMY ────────────────────
+--
+-- Odrzuciliśmy warstwę w czasie działania, która po cichu ZERUJE pola: taka
+-- warstwa naprawia regresję w locie, przez co strażnik S-A1-2 zaczyna pilnować
+-- odsiewacza zamiast miejsc wywołania, a system wygląda IDENTYCZNIE w dwóch
+-- różnych światach („trasy czyste” i „trasy brudne, ale odsiane”).
+--
+-- Ograniczenie zachowuje się odwrotnie i to jest cała różnica: naruszenie
+-- ODBIJA `INSERT`, `recordAudit` połyka błąd, wiersz NIE POWSTAJE, a S-A1-2
+-- pada na swoim wymogu twardym (1) „najpierw dowód, że wiersze powstały”.
+-- Mutacje M2/M3 nadal czerwienią — innym komunikatem, ale czerwienią. To jest
+-- różnica między „strażnik zmienia zdanie” a „strażnik przestaje strzec”.
+--
+-- ── KSZTAŁT: KLUCZOWANY PO `actor_type`, WIERSZ W WIERSZ JAK NOŚNIK ─────────
+--
+-- Świadomie ODRZUCONY wariant kluczowany po NAZWACH ZDARZEŃ
+-- (`CHECK ... action NOT IN (...)`): miałby INNY KSZTAŁT niż nośnik, a dwie
+-- różne postacie tej samej reguły rozjadą się na pewno — pytanie tylko kiedy.
+-- Tutaj każdy człon odpowiada jednemu wierszowi `REGULA_AKTORA`:
+--
+--   student   → actorId=false, kontekstZadania=false
+--   system    → actorId=false, kontekstZadania=false
+--   anonymous → actorId=false, kontekstZadania=TRUE  (adres IP jest jedynym
+--               sygnałem wykrycia ataku siłowego, a konta do skasowania nie ma)
+--   faculty   → actorId=true,  kontekstZadania=true
+--   operator  → actorId=true,  kontekstZadania=true
+--
+-- CENA I WARUNEK (CLAUDE.md v1.17): drugi egzekutor jednego nośnika wymaga
+-- STRAŻNIKA PARYTETU. Jest nim
+-- `src/lib/db/__tests__/rodo-e1b-parytet-regula-aktora.integration.test.ts` —
+-- czyta `REGULA_AKTORA` i sprawdza ZACHOWANIEM (próba zapisu w transakcji
+-- wycofywanej), czy baza mówi to samo, dla KAŻDEGO typu i KAŻDEGO z trzech pól.
+-- Bez tego strażnika tej migracji NIE WOLNO było dokładać: dopisanie szóstego
+-- typu działającego do nośnika bez ruszenia ograniczenia byłoby bezgłośne.
+--
+-- ── `NOT VALID`: JAWNY ZAPIS ZNANEGO DŁUGU, NIE WYTRYCH ─────────────────────
+--
+-- Klauzula obejmuje wyłącznie historię sprzed naprawy A-1 — zmierzone na
+-- produkcji 2026-08-10: 32 wiersze, z czego 7 łamie regułę (6 `student`, w tym
+-- 5 z `actor_id` i 5 z adresem IP; 14 `system`, w tym 2 z `actor_id` i 2 z IP;
+-- `anonymous`: 3 wiersze, 0 z `actor_id` — wariant „kontekst tak, tożsamość
+-- nie” JUŻ jest spełniony). To są co do wiersza te same siedem, które ADR A-1
+-- nazywa klasą 1 przeszłości. Nie da się ich poprawić: `UPDATE` na `audit_log`
+-- blokuje wyzwalacz append-only (0008/0010) — i to jest zamierzone.
+--
+-- Dokładnie ta asymetria uzasadnia całą migrację: zapobieganie jest tanie,
+-- a wiersz zapisany źle jest zapisany źle NA ZAWSZE.
+--
+-- MIGRACJA W PEŁNI ADDYTYWNA — jeden `ADD CONSTRAINT ... NOT VALID`. Zero DROP,
+-- zero DELETE, zero przepisywania wierszy, zero blokady na skanowanie tabeli
+-- (`NOT VALID` nie skanuje). Nie wywołuje bramki komend niszczących.
+-- ============================================================================
+
+ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_regula_aktora" CHECK (
+	-- Typy spoza nośnika nie są tu regulowane: listę pięciu dopuszczalnych
+	-- wartości `actor_type` trzyma TypeScript (`REGULA_AKTORA`), a powielenie
+	-- jej tutaj byłoby drugim nośnikiem TAMTEJ reguły. To ograniczenie
+	-- odpowiada wyłącznie na pytanie „co wolno nieść”, nie „kto może istnieć”.
+	   ("actor_type" NOT IN ('student', 'system', 'anonymous'))
+	-- student, system — bez tożsamości i bez kontekstu żądania.
+	OR ("actor_type" IN ('student', 'system')
+	    AND "actor_id" IS NULL AND "ip_address" IS NULL AND "user_agent" IS NULL)
+	-- anonymous — kontekst TAK (wykrycie ataku siłowego), tożsamość NIE.
+	OR ("actor_type" = 'anonymous' AND "actor_id" IS NULL)
+) NOT VALID;
+
+-- ROLLBACK (migracja w pełni addytywna — bez enumów, bez zmiany danych):
+-- ALTER TABLE "audit_log" DROP CONSTRAINT IF EXISTS "audit_log_regula_aktora";
+--
+-- Wycofanie jest BEZPIECZNE dla produktu — żadna trasa ani ekran tego
+-- ograniczenia nie czyta, a reguła nadal jest egzekwowana typem `AuditEntry`
+-- w całym kodzie aplikacji. Wycofanie odbiera WYŁĄCZNIE obronę przed zapisem
+-- z pominięciem `recordAudit` (surowy SQL w `tools/`, ręczne zdanie w konsoli
+-- bazy). Po wycofaniu strażnik parytetu zapala się na czerwono — świadomie:
+-- brak ograniczenia jest wtedy STANEM DO ZATWIERDZENIA, nie stanem cichym.

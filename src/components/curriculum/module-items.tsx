@@ -4,15 +4,26 @@
  * Sekwencja: pozycja k+1 otwiera się po zaliczeniu k (ladder.getModuleItems).
  * Pozycja `locked` jest widoczna, ale nieklikalna — bramką jest serwer.
  *
- * Lab: mówimy wprost, że automatycznego zaliczania jeszcze NIE MA (wchodzi
- * w 1E.6b — `/complete` zwraca dziś 501). Bez udawania, że da się zaliczyć.
+ * Pozycja `kind === "lab"` (nazwa dla studenta: `itemKindLabel`): zaliczana kodem
+ * wypisanym przez notatnik i weryfikowanym serwerowo (ADR-015). Podpis NIE twierdzi, że
+ * zaliczenie jest niedostępne — od 1E.6b jest dostępne, a nieaktualne zdanie
+ * odstraszało studenta od pozycji, którą da się zaliczyć (sygnał Darka
+ * 2026-08-10). Jedynym nośnikiem prawdy o dostępności jest widżet zaliczenia
+ * w widoku pozycji, który renderuje się tylko przy skonfigurowanym sekrecie
+ * i niepustym kontrakcie sprawdzeń — tu tego stanu NIE duplikujemy.
  *
  * Komponent czysto prezentacyjny (server component).
  */
 
 import { CheckCircle2, FlaskConical, Lock } from "lucide-react";
 import Link from "next/link";
-import { ITEM_STATUS_LABEL, itemKindLabel, statusBadgeClass } from "@/components/curriculum/labels";
+import {
+	ITEM_LOCKED_HINT,
+	ITEM_STATUS_LABEL,
+	itemKindLabel,
+	LAB_ITEM_HINT,
+	statusBadgeClass,
+} from "@/components/curriculum/labels";
 import type { LadderItem } from "@/lib/curriculum/ladder";
 
 function ItemRow({ item, moduleId }: { item: LadderItem; moduleId: string }) {
@@ -35,15 +46,13 @@ function ItemRow({ item, moduleId }: { item: LadderItem; moduleId: string }) {
 					</span>
 				</div>
 				{item.kind === "lab" && (
-					<p className="mt-1 flex items-center gap-1.5 text-xs text-amber-800">
+					<p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
 						<FlaskConical aria-hidden className="size-3.5" />
-						Automatyczne sprawdzanie labów wchodzi w 1E.6b — tej pozycji nie da się dziś zaliczyć.
+						{LAB_ITEM_HINT}
 					</p>
 				)}
 				{item.status === "locked" && (
-					<p className="mt-1 text-xs text-muted-foreground">
-						Zablokowana — zalicz poprzednią pozycję, żeby ją otworzyć.
-					</p>
+					<p className="mt-1 text-xs text-muted-foreground">{ITEM_LOCKED_HINT}</p>
 				)}
 			</div>
 			{item.status === "completed" || item.status === "skipped_by_placement" ? (

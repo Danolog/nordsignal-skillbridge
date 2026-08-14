@@ -145,6 +145,48 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 					.where(eq(projectSubmissions.id, id));
 			}
 
+			// D-U7 (E1b §4, warunek W2 Sophii) — ŚLAD DECYZJI CZŁOWIEKA ZAPISYWANY
+			// W TEJ SAMEJ TRANSAKCJI CO KREDENCJAŁ.
+			//
+			// Do 2026-08-12 ten zapis stał POZA transakcją i był best-effort
+			// (połknięty błąd). Skutek był cichy i nieodwracalny naraz: zgłoszenie
+			// dostawało status `verified`, plakietka „Oceniał człowiek” się rysowała,
+			// a jedyny ocalały dowód, że decyzję podjął CZŁOWIEK, mógł nie powstać —
+			// i nikt by tego nie zobaczył.
+			//
+			// Dlaczego akurat TEN jeden zapis, a nie wszystkie: rekord operacyjny
+			// recenzji (`submission_reviews`) GINIE kaskadą razem z kontem studenta,
+			// więc po usunięciu konta ślad audytowy zostaje JEDYNYM nośnikiem
+			// obietnicy z CLAUDE.md §7. Nośnik pewny ginie, nośnik zawodny zostaje —
+			// dlatego zawodny przestaje być zawodny. Pozostałe 19 miejsc wywołania
+			// zostaje best-effort i to jest słuszne: ślad nie może blokować pracy
+			// studenta.
+			//
+			// ŚWIADOMY KOSZT: awaria zapisu do `audit_log` zatrzymuje kolejkę
+			// recenzencką. Decyzja bez dowodu jest gorsza niż decyzja niepodjęta —
+			// drugą można powtórzyć, pierwsza jest cicha. PRÓG POWROTU: pierwszy
+			// incydent, w którym zapis audytu zablokuje pracę recenzenta.
+			//
+			// SKUTEK UBOCZNY, zostawiony świadomie: przy wycofaniu transakcji cofnie
+			// się także wiersz audytu, więc nie zostaje ślad po NIEUDANEJ próbie
+			// decyzji. To inne zdarzenie (`submission.review.failed`) i inny próg:
+			// pierwszy spór o to, czy decyzja została podjęta.
+			await recordAudit(
+				{
+					actorType: reviewer.kind === "quality_operator" ? "operator" : "faculty",
+					actorId: reviewer.sessionId,
+					action: `submission.review.${decision}`,
+					targetType: "submission",
+					targetId: id,
+					metadata: {
+						previousStatus: submission.status,
+						newStatus,
+						reviewerType: reviewer.kind,
+					},
+				},
+				{ tx },
+			);
+
 			return {
 				outcome: "decided" as const,
 				previousStatus: submission.status,
@@ -164,18 +206,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 			await recomputeConfirmedCoverage(result.studentId);
 		}
 
-		await recordAudit({
-			actorType: reviewer.kind === "quality_operator" ? "operator" : "faculty",
-			actorId: reviewer.sessionId,
-			action: `submission.review.${decision}`,
-			targetType: "submission",
-			targetId: id,
-			metadata: {
-				previousStatus: result.previousStatus,
-				newStatus: result.newStatus,
-				reviewerType: reviewer.kind,
-			},
-		});
+		// (Ślad audytowy zapisany WEWNĄTRZ transakcji wyżej — D-U7. Nie przywracać
+		// tu drugiego zapisu: dwa wiersze na jedną decyzję są gorsze niż jeden,
+		// a strażnik S-U-4 asertuje DOKŁADNIE JEDEN, nie „co najmniej jeden”.)
 
 		return NextResponse.json({
 			success: true,

@@ -45,26 +45,40 @@ describe("1E.6b · ewaluacja checków (serwer NIE ufa fladze 'zaliczone')", () =
 	});
 
 	it("relation: serwer PRZELICZA relację z wartości studenta (nie zna ich z góry)", () => {
-		// F1.4: razem == cena * sztuki ORAZ srednio_dziennie == razem / 30
+		// Przypadek SYNTETYCZNY silnika — celowo NIE jest lustrem żadnego laba.
+		//
+		// Do #291 stała tu etykieta „F1.4" i kontrakt tamtego laba przepisany
+		// w dane. Kontrakt F1.4 zmienił się w tym samym zgłoszeniu (C2 liczy dziś
+		// cenę kromki z `cena`, nie średnią dzienną z `razem`), a etykieta została —
+		// czyli test opisywał siebie jako lustro czegoś, czym przestał być, i był
+		// gotowym cytatem dla kogoś, kto za miesiąc szukałby kontraktu F1.4.
+		//
+		// Etykieta zdjęta zamiast zaktualizowana ŚWIADOMIE: aktualizacja zrobiłaby
+		// z testu drugi nośnik kontraktu (CLAUDE.md v1.17). Kontrakty labów mają
+		// jeden nośnik — `CHECKS_F1_*` w `tools/pack-curriculum-atoms.ts`, skąd
+		// packer wpisuje je do `config.checks`. Silnik testujemy na własnych danych.
+		//
+		// Kształt: dwie relacje, druga liczona z wyniku pierwszej (mul, potem div) —
+		// to wystarcza, by pokazać, że serwer przelicza obie z wartości studenta.
 		const checks: LabCheck[] = [
 			{
 				id: "C1",
 				kind: "relation",
 				note: "",
-				rule: { op: "eq", left: "razem", right: { mul: ["cena", "sztuki"] } },
+				rule: { op: "eq", left: "iloczyn", right: { mul: ["a", "b"] } },
 			},
 			{
 				id: "C2",
 				kind: "relation",
 				note: "",
-				rule: { op: "eq", left: "srednio_dziennie", right: { div: ["razem", 30] } },
+				rule: { op: "eq", left: "polowa_iloczynu", right: { div: ["iloczyn", 2] } },
 			},
 		];
-		const dobre: StampPayload = { cena: 5.4, sztuki: 3, razem: 16.2, srednio_dziennie: 0.54 };
+		const dobre: StampPayload = { a: 5.4, b: 3, iloczyn: 16.2, polowa_iloczynu: 8.1 };
 		expect(evaluateChecks(checks, dobre).passed).toBe(true);
 
-		// student policzył razem źle
-		const zle: StampPayload = { cena: 5.4, sztuki: 3, razem: 15, srednio_dziennie: 0.5 };
+		// student policzył `iloczyn` źle
+		const zle: StampPayload = { a: 5.4, b: 3, iloczyn: 15, polowa_iloczynu: 7.5 };
 		expect(evaluateChecks(checks, zle).passed).toBe(false);
 	});
 
