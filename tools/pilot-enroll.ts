@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import { Pool } from "pg";
+import { assertTestDb } from "./assert-test-db";
 
 config({ path: ".env.local" });
 
@@ -72,6 +73,18 @@ function wczytajLinie(zapytanie: string): Promise<string> {
 }
 
 const args = czytajArgumenty(process.argv.slice(2));
+
+// #305 klasa A — rejestr pilotażu to wpis o REALNEJ osobie, więc narzędzie ma
+// udokumentowaną ścieżkę produkcyjną (miernik §6a czyta ten rejestr na prodzie).
+// Ceremonia: host zdalny wymaga świadomej flagi operatora. Dotąd bramki nie było
+// żadnej. Zapisy są addytywne (INSERT do pilot_participants + audit_log).
+try {
+	assertTestDb(process.env.DATABASE_URL, "DATABASE_URL", { allowProduction: true });
+} catch (e) {
+	console.error(e instanceof Error ? e.message : String(e));
+	process.exit(1);
+}
+
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function main() {

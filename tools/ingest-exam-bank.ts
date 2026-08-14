@@ -367,7 +367,7 @@ async function main(): Promise<void> {
 		process.exit(1);
 	}
 	try {
-		assertTestDb(process.env.DATABASE_URL, "DATABASE_URL");
+		assertTestDb(process.env.DATABASE_URL, "DATABASE_URL", { allowProduction: true });
 	} catch (e) {
 		console.error(e instanceof Error ? e.message : String(e));
 		process.exit(1);

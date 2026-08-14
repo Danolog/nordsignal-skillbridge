@@ -147,6 +147,10 @@ export default async function DashboardPage() {
 			reviewDue={reviewDue}
 			// 1E.6a: kafelek ścieżki nauki tylko przy włączonej fladze (deploy ≠ release).
 			curriculumEnabled={isFeatureEnabled("curriculumPath")}
+			// N1: ta sama flaga i ten sam nośnik zdania co nagłówek `/curriculum` —
+			// bramkujemy po fladze, nie po tym, czy TEN student ma coś odblokowane
+			// (reguła Sophii w `components/curriculum/labels.ts`).
+			placementEnabled={isFeatureEnabled("placementDiagnostic")}
 		/>
 	);
 }

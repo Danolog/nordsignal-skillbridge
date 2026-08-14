@@ -32,6 +32,8 @@ function kandydat(nadpisz: Partial<WierszKandydat>): WierszKandydat {
 		zdarzenieId: "zd-1",
 		akcja: "curriculum.placement.computed",
 		utworzono: new Date("2026-08-06T10:00:00Z"),
+		// Domyślnie wpis PRZED zdarzeniem — czyli dyscyplina utrzymana.
+		wpisano: new Date("2026-08-05T10:00:00Z"),
 		sesjaId: "sesja-1",
 		studentId: "student-1",
 		kohorta: "pilotaz-1e7-2026-08",
@@ -292,6 +294,7 @@ describe("1E.7 D5b · ograniczenia wnioskowania stoją PRZY liczbie", () => {
 			uczestnicyWRejestrze: 0,
 			uczestnicyBezZdarzenia: 0,
 			rejestrPodejrzany: 0,
+			obserwacjeWsteczne: 0,
 			policzenia: [],
 			pominieciaLiczenia: [],
 			odrzucone: { sierota: 0, spozaRejestru: 0, spozaRejestruTechniczne: 0 },

@@ -1,7 +1,13 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import {
+	afterDeleteAccount,
+	beforeDeleteAccount,
+	FLAGA_USUWANIA_KONTA,
+} from "@/lib/auth/account-deletion";
 import { db } from "@/lib/db";
+import { isFeatureEnabled } from "@/lib/flags";
 
 export const auth = betterAuth({
 	baseURL: process.env.BETTER_AUTH_URL,
@@ -37,6 +43,31 @@ export const auth = betterAuth({
 		google: {
 			clientId: process.env.GOOGLE_CLIENT_ID ?? "",
 			clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+		},
+	},
+	// E1b (RODO art. 17, D-U1) — WŁĄCZAMY gotową ścieżkę biblioteki zamiast pisać
+	// własną trasę. Trasa zbiorcza `/api/auth/[...path]` już ją oddaje, więc nie
+	// dokładamy ani jednego pliku trasy. Szczegóły i uzasadnienie kształtu:
+	// `src/lib/auth/account-deletion.ts`.
+	//
+	// Potwierdzenie tożsamości robi biblioteka sama (D-U2): hasło, gdy konto je
+	// ma, w przeciwnym razie wymóg ŚWIEŻEJ SESJI. To nie jest wygoda — 18 z 33
+	// kont produkcyjnych nie ma żadnego hasła (3 logowanie Google + 15 zasianych),
+	// więc ścieżka oparta wyłącznie na haśle odebrałaby prawo z art. 17 ponad
+	// połowie populacji.
+	//
+	// `sendDeleteAccountVerification` ŚWIADOMIE NIEUSTAWIONE — tryb pocztowy
+	// zapisuje do tabeli `verification` wiersz o wartości równej identyfikatorowi
+	// usuwanego konta, a ta tabela nie kaskaduje (E1b §3.5). Pilnuje tego
+	// strażnik konfiguracji, nie ten komentarz.
+	user: {
+		deleteUser: {
+			// Odczyt PRZY STARCIE — kierunek awarii zamkniętej. Bramką
+			// ROZSTRZYGAJĄCĄ jest `beforeDelete` (odczyt przy każdym żądaniu),
+			// bo zmienna środowiskowa przestawia się bez wdrożenia.
+			enabled: isFeatureEnabled(FLAGA_USUWANIA_KONTA),
+			beforeDelete: beforeDeleteAccount,
+			afterDelete: afterDeleteAccount,
 		},
 	},
 	plugins: [nextCookies()],

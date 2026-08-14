@@ -7,6 +7,16 @@
 
 > **⚠ Aktualizacja 2026-07-01:** proces opisany tutaj (fazy, kontrakt, 7 reguł autora) pozostaje w mocy, ale został podporządkowany **kanonicznemu runbookowi z bramkami jakości merytorycznej QG-1…QG-7**: `docs/runbooks/projekty-sciezki-runbook.md`. Każda nowa partia projektów (dowolnej ścieżki) MUSI przejść bramki QG przed autoringiem i przed ingestem prod. Geneza bramek: `docs/curation/weryfikacja-ds-plan-projektow.md`.
 
+> **⚠ Aktualizacja 2026-08-12 (Sophia):** w §4 pkt 3 stał szkic polecenia zapisu
+> do tabeli `projects` wymieniający kolumny `title`/`description`. **To nie był
+> ładunek gotowy do wykonania** — nie miał ani wartości, ani treści produktu, więc
+> nikt nie mógł nim niczego nadpisać (inaczej niż w runbooku 1E.1, gdzie ładunek
+> był kompletny). Przepisany na prozę z jednego powodu: strażnik
+> `tests/unit/ds/dokumentacja-bez-tresci.contract.test.ts` celowo nie rozróżnia
+> szkicu od gotowca — rozróżnianie wymagałoby czytania intencji, a to jest ta
+> sama zdolność, której zabrakło autorowi ładunku w 1E.1. Tańsza proza niż wyjątek
+> w strażniku.
+
 ---
 
 ## 0. TL;DR (jedna minuta)
@@ -249,7 +259,7 @@ Kontrakt wejścia narzędzia E2 = **tablica** takich obiektów (jak `b3-theory.s
    - **(zalecane) nazwy kompetencji walidowane względem zbioru liści ścieżki cyber** z `career-model.ts` — nazwa spoza zbioru → WARN (literówka = cicha utrata pokrycia, §1.2 B);
    - `rubricJson[]`: suma `weight` = 100; `url`/`source_links`/`learning_resources` jak w B3 (http/https, `type` ∈ {video,docs,course}).
 3. **Transakcja per projekt (keyed-by-slug, idempotentnie):**
-   - **UPSERT katalogu:** `INSERT INTO projects (...) ON CONFLICT (slug) DO UPDATE SET title, description, level, estimated_hours, source_type, source_url, theory_md, rubric_json, updated_at` — wstawia nowy albo aktualizuje istniejący po slugu. (`slug` ma `unique` — l. 280.)
+   - **UPSERT katalogu:** wstawienie po slugu albo — gdy slug już jest — nadpisanie pól katalogu (tytuł, opis, poziom, szacowany czas, rodzaj i adres źródła, teoria, rubryka, znacznik aktualizacji). Slug jest kluczem idempotencji (`unique` — l. 280). Szczegóły zapisu należą do narzędzia; dokument ich nie przepisuje (patrz nota niżej).
    - **Replace-per-projekt kompetencji:** `DELETE FROM project_competencies WHERE project_id = … ; INSERT …` nowych.
    - **Replace-per-projekt materiałów/linków** (jeśli podane) — jak B3.
    - Całość w jednej transakcji per projekt → atomowo i idempotentnie; błąd jednego projektu = rollback tylko jego.

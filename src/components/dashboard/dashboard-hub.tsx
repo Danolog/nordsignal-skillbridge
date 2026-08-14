@@ -2,6 +2,7 @@
 
 import { ArrowRight, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { CURRICULUM_INTRO, CURRICULUM_INTRO_WITH_PLACEMENT } from "@/components/curriculum/labels";
 import { MarketGapNotifications } from "@/components/dashboard/market-gap-notifications";
 import { RhythmCard, type RhythmCardState } from "@/components/rhythm/rhythm-card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,12 @@ interface DashboardHubProps {
 	reviewDue: { count: number; capped: boolean } | null;
 	/** 1E.6a: flaga curriculumPath — off = kafelek ścieżki nauki nie istnieje. */
 	curriculumEnabled: boolean;
+	/**
+	 * N1 (dług D7, druga kopia): flaga placementDiagnostic — wybiera brzmienie
+	 * zdania o kolejności modułów. Prop, nie odczyt flagi w komponencie: hub jest
+	 * klientowy, `isFeatureEnabled` czyta zmienne serwera (jak `curriculumEnabled`).
+	 */
+	placementEnabled: boolean;
 }
 
 const GOAL_COVERAGE = 80;
@@ -161,6 +168,7 @@ export function DashboardHub(props: DashboardHubProps) {
 		rhythmCard,
 		reviewDue,
 		curriculumEnabled,
+		placementEnabled,
 	} = props;
 
 	const firstName = user.name.split(" ")[0];
@@ -313,17 +321,23 @@ export function DashboardHub(props: DashboardHubProps) {
 				</div>
 			)}
 
-			{/* 1E.6a: wejście na drabinę curriculum (flaga off → kafelek nie istnieje) */}
+			{/* 1E.6a: wejście na drabinę curriculum (flaga off → kafelek nie istnieje).
+			    N1 (dług D7, druga kopia): zdanie o kolejności modułów NIE jest tu
+			    wpisane literałem. Nagłówek „Ucz się po kolei, bez skrótów" i podpis
+			    sekcji („kolejny otwiera się po zaliczeniu poprzedniego") mówiły to samo
+			    co `CURRICULUM_INTRO` na `/curriculum` — trzy kopie jednej reguły, z czego
+			    dwie poza zasięgiem strażnika D7 i nietknięte przy jego spłacie. Kafelek
+			    WOŁA teraz nośnik (CLAUDE.md v1.17), więc oba wejścia na drabinę mówią
+			    w każdej konfiguracji flagi dokładnie to samo. */}
 			{curriculumEnabled && (
 				<div className="db-section">
 					<div className="db-eyebrow">Ścieżka nauki</div>
 					<div className="db-section-note">
-						Drabina modułów od podstaw do projektu — kolejny otwiera się po zaliczeniu poprzedniego.
+						{placementEnabled ? CURRICULUM_INTRO_WITH_PLACEMENT : CURRICULUM_INTRO}
 					</div>
 					<div className="db-card db-nextstep">
 						<div className="db-nextstep-top">
 							<div>
-								<h3 className="db-nextstep-h3">Ucz się po kolei, bez skrótów</h3>
 								<p className="db-nextstep-why">
 									Teoria, ćwiczenia i laby ułożone w drabinę. Zaliczasz pozycję dopiero, gdy
 									odpowiesz poprawnie na wszystkie pytania — bez samodeklaracji.

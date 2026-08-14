@@ -81,21 +81,56 @@ export type AuditEntry = {
 }[AuditActorType];
 
 /**
- * Insert an audit row. Best-effort: a failure here MUST NOT block the user
- * action — we log it and continue. Always wrap in try/catch internally.
+ * Wykonawca zapisu — uchwyt bazy albo uchwyt TRANSAKCJI. Węższy niż cały typ
+ * `db`: potrzebujemy wyłącznie `insert(...).values(...)`, a im węższy typ, tym
+ * mniej powodów, by ktoś przekazał tu coś innego.
  */
-export async function recordAudit(entry: AuditEntry): Promise<void> {
+type WykonawcaZapisu = Pick<typeof db, "insert">;
+
+/**
+ * D-U7 (E1b §4, warunek W2 Sophii) — DOWÓD NIE MOŻE ZNIKNĄĆ CISZEJ NIŻ TO,
+ * CO POŚWIADCZA.
+ *
+ * Domyślnie (bez `tx`) zapis jest best-effort: awaria śladu NIE MOŻE blokować
+ * pracy studenta i tak zostaje w 19 z 20 miejsc wywołania.
+ *
+ * Z `tx` zapis idzie W TEJ SAMEJ TRANSAKCJI co poświadczana rzecz, a błąd
+ * PROPAGUJE — czyli brak dowodu wywraca kredencjał. Nie jest to wybór stylu:
+ * semantyka „best-effort” jest WEWNĄTRZ transakcji Postgresa NIEWYKONALNA —
+ * nieudany `INSERT` przerywa transakcję, a połknięcie wyjątku sprawia, że każde
+ * kolejne zdanie i tak padnie („current transaction is aborted”). Wybór jest
+ * binarny: albo dowód jest warunkiem kredencjału, albo jest poza transakcją.
+ *
+ * JEDNA FUNKCJA, JEDNO MIEJSCE BUDOWY WIERSZA. Osobne `recordAuditTx`
+ * z powieloną budową byłoby drugim nośnikiem reguły „jak wygląda wiersz
+ * audytu” (CLAUDE.md v1.17), a rozjazd między nimi jest dokładnie tą klasą
+ * wady, którą naprawia dług A-1. Różni się wyłącznie WYKONAWCA i POLITYKA
+ * BŁĘDU — nie kształt wiersza.
+ */
+export async function recordAudit(
+	entry: AuditEntry,
+	opts?: { tx?: WykonawcaZapisu },
+): Promise<void> {
+	const wykonawca = opts?.tx ?? db;
+	const wartosci = {
+		actorType: entry.actorType,
+		actorId: entry.actorId ?? null,
+		action: entry.action,
+		targetType: entry.targetType ?? null,
+		targetId: entry.targetId ?? null,
+		ipAddress: entry.ipAddress ?? null,
+		userAgent: entry.userAgent ?? null,
+		metadata: entry.metadata ?? null,
+	};
+
+	if (opts?.tx) {
+		// Bez `try` — błąd MA wywrócić transakcję wywołującego.
+		await wykonawca.insert(auditLog).values(wartosci);
+		return;
+	}
+
 	try {
-		await db.insert(auditLog).values({
-			actorType: entry.actorType,
-			actorId: entry.actorId ?? null,
-			action: entry.action,
-			targetType: entry.targetType ?? null,
-			targetId: entry.targetId ?? null,
-			ipAddress: entry.ipAddress ?? null,
-			userAgent: entry.userAgent ?? null,
-			metadata: entry.metadata ?? null,
-		});
+		await wykonawca.insert(auditLog).values(wartosci);
 	} catch (err) {
 		logError("audit.write", err, { action: entry.action });
 	}

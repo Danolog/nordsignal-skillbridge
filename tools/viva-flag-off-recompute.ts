@@ -21,6 +21,7 @@
 
 import { config } from "dotenv";
 import { Pool } from "pg";
+import { assertTestDb } from "./assert-test-db";
 
 config({ path: ".env.local" });
 config({ path: ".env" });
@@ -29,6 +30,16 @@ const EXECUTE = process.argv.includes("--execute");
 const DB_URL = process.env.DATABASE_URL;
 if (!DB_URL) {
 	console.error("Brak DATABASE_URL");
+	process.exit(1);
+}
+
+// #305 klasa A — narzędzie nie miało ŻADNEJ bramki, mimo że jego własny nagłówek
+// mówi „Prod = czerwona linia". Ceremonia produkcyjna: host zdalny wymaga
+// świadomej flagi CONFIRM_PROD_DB=1 operatora (dotąd nie wymagał niczego).
+try {
+	assertTestDb(DB_URL, "DATABASE_URL", { allowProduction: true });
+} catch (e) {
+	console.error(e instanceof Error ? e.message : String(e));
 	process.exit(1);
 }
 

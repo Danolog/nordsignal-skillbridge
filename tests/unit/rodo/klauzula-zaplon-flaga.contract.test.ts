@@ -1,0 +1,124 @@
+/**
+ * STRAŻNIK ZAPŁONU: klauzula art. 13 jest wdrożona i WYŁĄCZONA — oraz nie da się
+ * jej zapalić w oderwaniu od ścieżki usunięcia konta.
+ *
+ * ── Dlaczego to nie jest zwykły test flagi ───────────────────────────────────
+ * Warunek W-1 z sekcji Z-2 dokumentu mówi: klauzula zapala się dopiero, gdy
+ * ścieżka usunięcia konta DZIAŁA w produkcie. Sekcja 8 klauzuli obiecuje
+ * studentowi „usuniesz konto samodzielnie w ustawieniach profilu"; przy zgaszonej
+ * ścieżce to zdanie jest nieprawdziwe w chwili wypowiadania. Sprzężenie flag
+ * (`requires` w `src/lib/flags.ts`) jest MECHANIZMEM, który to egzekwuje —
+ * i celowo żyje w ewaluacji flagi, bo zmienną na Vercelu przestawia się bez
+ * wdrożenia.
+ *
+ * ── ŚWIADOMY DŁUG Z PROGIEM (CLAUDE.md v1.17) ────────────────────────────────
+ * Sprzężenia NIE DA SIĘ dziś zadeklarować: flaga usuwania konta (E1b) nie
+ * istnieje jeszcze w rejestrze, a `requires` wskazujące nieistniejącą nazwę nie
+ * przechodzi kontraktu kompilacji (`_RequirementsAreFlagNames`). Zamiast zostawić
+ * to jako notatkę w opisie flagi — czyli dług ukryty — stoi tu strażnik z jawnym
+ * progiem:
+ *
+ *   PRÓG: w chwili, gdy w rejestrze FLAGS pojawi się flaga usuwania konta,
+ *   `privacyNoticeArt13` MUSI wymienić ją w `requires`. Do tego czasu test
+ *   pilnuje, że flagi nie ma — więc próg nie może minąć niezauważony.
+ *
+ * ── DOWÓD, ŻE STRAŻNIK STRZEŻE (mutacja, nie zielona suita) ──────────────────
+ * M4 — próg przekroczony bez domknięcia sprzężenia (dokładnie to, co się stanie,
+ *      gdy E1b Ethana wejdzie do rejestru, a ktoś zapomni o `requires`).
+ *   Zmiana: `src/lib/flags.ts` — do rejestru dopisana flaga
+ *           `accountDeletion: { envVar: "FLAG_ACCOUNT_DELETION", description:
+ *           "MUTACJA M4 — atrapa flagi E1b.", defaultValue: false }`, BEZ dopisania
+ *           jej do `requires` flagi klauzuli.
+ *   Padły 2 testy: „gdy flaga usuwania konta wejdzie do rejestru, klauzula MUSI
+ *           ją wymagać (W-1)" oraz „dopóki tamtej flagi nie ma, próg jest jawny
+ *           (a nie zapomniany)".
+ *   Komunikat: „AssertionError: W rejestrze jest flaga usuwania konta
+ *           (accountDeletion), a klauzula art. 13 jej NIE wymaga. Warunek W-1
+ *           sekcji Z-2: sekcja 8 klauzuli obiecuje studentowi samodzielne usunięcie
+ *           konta — przy zgaszonej ścieżce to zdanie jest nieprawdziwe w chwili
+ *           wypowiadania. Dopisz ją do `requires` flagi privacyNoticeArt13.:
+ *           expected [ 'accountDeletion' ] to deeply equal []"
+ *   Wykonana 2026-08-13 na zacommitowanym drzewie, cofnięta (`git checkout
+ *           src/lib/flags.ts`).
+ *
+ * Kontrola dwustronna: bez mutacji „Tests 5 passed (5)", a test „domyślnie
+ * zgaszona" dowodzi, że pilnujemy STANU flagi, nie samego istnienia wpisu.
+ */
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { FLAGS, isFeatureEnabled, requirementsOf } from "@/lib/flags";
+
+/** Jak rozpoznajemy flagę ścieżki usunięcia konta, zanim poznamy jej nazwę. */
+const WZORZEC_USUWANIA_KONTA = /deletion|usuwan|usuniec|delete.*account|account.*delet/i;
+
+function flagiUsuwaniaKonta(): string[] {
+	return Object.entries(FLAGS)
+		.filter(
+			([nazwa, def]) =>
+				WZORZEC_USUWANIA_KONTA.test(nazwa) || WZORZEC_USUWANIA_KONTA.test(def.envVar),
+		)
+		.map(([nazwa]) => nazwa);
+}
+
+describe("klauzula art. 13 · zapłon", () => {
+	afterEach(() => {
+		vi.unstubAllEnvs();
+	});
+
+	it("flaga istnieje i jest domyślnie ZGASZONA (gotowe i wyłączone)", () => {
+		expect(FLAGS.privacyNoticeArt13).toBeDefined();
+		expect(FLAGS.privacyNoticeArt13.defaultValue).toBe(false);
+		vi.stubEnv("FLAG_PRIVACY_NOTICE_ART13", "");
+		expect(isFeatureEnabled("privacyNoticeArt13")).toBe(false);
+	});
+
+	it("nieznana wartość env nie zapala klauzuli (fail-closed)", () => {
+		vi.stubEnv("FLAG_PRIVACY_NOTICE_ART13", "tak");
+		expect(isFeatureEnabled("privacyNoticeArt13")).toBe(false);
+	});
+
+	it("opis flagi odsyła do warunków Z-2, a nie powtarza ich liczby", () => {
+		// Nośnikiem listy warunków jest tabela Z-2 (strażnik
+		// klauzula-liczba-warunkow.contract.test.ts). Opis flagi ją WOŁA.
+		expect(FLAGS.privacyNoticeArt13.description).toMatch(/Z-2/);
+	});
+
+	it("gdy flaga usuwania konta wejdzie do rejestru, klauzula MUSI ją wymagać (W-1)", () => {
+		const kandydaci = flagiUsuwaniaKonta();
+		const wymagane = requirementsOf("privacyNoticeArt13") as readonly string[];
+		const nieobjete = kandydaci.filter((f) => !wymagane.includes(f));
+
+		expect(
+			nieobjete,
+			`W rejestrze jest flaga usuwania konta (${nieobjete.join(", ")}), a klauzula art. 13 ` +
+				`jej NIE wymaga. Warunek W-1 sekcji Z-2: sekcja 8 klauzuli obiecuje studentowi ` +
+				`samodzielne usunięcie konta — przy zgaszonej ścieżce to zdanie jest nieprawdziwe ` +
+				`w chwili wypowiadania. Dopisz ją do \`requires\` flagi privacyNoticeArt13.`,
+		).toEqual([]);
+	});
+
+	// PRÓG MINĄŁ 2026-08-13. Stał tu test „dopóki tamtej flagi nie ma, próg jest
+	// jawny (a nie zapomniany)" — kontrola dodatnia progu, która pilnowała, żeby
+	// wejście flagi usuwania konta do rejestru nie przeszło niezauważone. Flaga
+	// `accountDeletion` weszła scaleniem #293, próg minął zgodnie z planem, więc
+	// test skasowany dokładnie tak, jak nakazywał jego własny komunikat. Jego rolę
+	// przejmuje test W-1 wyżej, który od tej chwili pilnuje czegoś REALNEGO:
+	// sprzężenia zadeklarowanego w `requires`, a nie pustego zbioru.
+	//
+	// Kasowanie asercji jest najtańszym zielonym i zwykle najgorszym — tu jest
+	// poprawne wyłącznie dlatego, że reguła nie znika, tylko zmienia strażnika.
+	// Dowód, że nowy strażnik naprawdę strzeże: mutacja w nagłówku tego pliku.
+
+	it("W-1 realnie GASI klauzulę, gdy ścieżka usunięcia konta jest zgaszona", () => {
+		// Pomiar zachowania, nie kształtu rejestru: „test przestał świecić na
+		// czerwono" to nie to samo co „sprzężenie działa". Env klauzuli zapalony
+		// w obu przypadkach — różnicę robi wyłącznie druga flaga.
+		vi.stubEnv("FLAG_PRIVACY_NOTICE_ART13", "1");
+
+		vi.stubEnv("FLAG_ACCOUNT_DELETION", "");
+		expect(isFeatureEnabled("privacyNoticeArt13")).toBe(false);
+
+		vi.stubEnv("FLAG_ACCOUNT_DELETION", "1");
+		expect(isFeatureEnabled("privacyNoticeArt13")).toBe(true);
+	});
+});
