@@ -142,10 +142,29 @@ jobs:
 
           # ── CZLON 2: czy etykieta jest MLODSZA niz commit glowy ─────────────
           # Awaria w strone zamknieta: pusty odczyt = czerwone, nigdy zielone.
+          #
+          # STRONICOWANIE (poprawka po przegladzie Leo): `--paginate` stosuje
+          # wyrazenie `--jq` DO KAZDEJ STRONY OSOBNO. Konstrukcja `[…] | last`
+          # dawalaby wiec „ostatni wpis KAZDEJ strony" — tyle linii, ile stron —
+          # i przy zgloszeniu z dluga osia czasu (ponad 100 zdarzen) do zmiennej
+          # trafilby zlepek kilku znacznikow zamiast jednego. Porownanie nizej
+          # bierze wtedy smieci. Dlatego: wypisujemy PLASKO wszystkie pasujace
+          # znaczniki (po jednym w linii, ze wszystkich stron), sortujemy i bierzemy
+          # ostatni — czyli faktycznie najnowsze nadanie etykiety.
+          #
+          # Sortowanie tekstowe jest tu rownowazne chronologicznemu, bo GitHub
+          # zwraca znaczniki w ISO 8601 W UTC (przyrostek `Z`), o stalej dlugosci.
+          # Gdyby kiedykolwiek zaczal zwracac przesuniecia stref (`+02:00`),
+          # to zalozenie pada i trzeba przejsc na `date -d`.
           CZAS_ETYKIETY="$(gh api "repos/$REPO/issues/$NUMER/timeline" --paginate \
-            --jq "[.[] | select(.event == \"labeled\" and .label.name == \"$WYMAGANA\") | .created_at] | last // empty")"
+            --jq ".[] | select(.event == \"labeled\" and .label.name == \"$WYMAGANA\") | .created_at" \
+            | sort | tail -n 1)"
+          # Tu `--paginate` nie wystepuje (pojedynczy obiekt), wiec `max` liczy sie
+          # raz. Swiadomie bez `// empty`: gdy pola nie ma, `--jq` zwraca pusty
+          # napis, a pustka jest ponizej obslugiwana jako CZERWONE. Dokladanie
+          # `// empty` sugerowaloby, ze istnieje jakas inna sciezka pustki.
           CZAS_GLOWY="$(gh api "repos/$REPO/commits/$GLOWA_SHA" \
-            --jq '[.commit.committer.date, .commit.author.date] | max // empty')"
+            --jq '[.commit.committer.date, .commit.author.date] | max')"
 
           if [ -z "$CZAS_ETYKIETY" ] || [ -z "$CZAS_GLOWY" ]; then
             echo "::error title=Nie da sie zweryfikowac swiezosci::Pusty odczyt osi czasu albo commita."
@@ -156,7 +175,9 @@ jobs:
           echo "Etykieta nadana : $CZAS_ETYKIETY"
           echo "Commit glowy    : $CZAS_GLOWY  ($GLOWA_SHA)"
 
-          # Oba znaczniki sa w UTC w formacie ISO 8601, wiec porownanie
+          # Oba znaczniki przychodza z API GitHuba w ISO 8601 W UTC (przyrostek
+          # `Z`, stala dlugosc `YYYY-MM-DDTHH:MM:SSZ`) — nie ma tu stref lokalnych
+          # ani czasu letniego, wiec porownanie
           # leksykograficzne jest rownowazne porownaniu chronologicznemu.
           if [ "$CZAS_ETYKIETY" \< "$CZAS_GLOWY" ]; then
             echo "::error title=Przeglad wygasl::Etykieta jest starsza niz commit glowy."
