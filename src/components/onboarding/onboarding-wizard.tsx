@@ -2,7 +2,7 @@
 
 import { BookOpen, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CareerHelperFlow } from "@/components/career-helper/career-helper-flow";
 import {
@@ -156,14 +156,41 @@ export function OnboardingWizard({
 	// 422 ze startu (bank nie pokrywa ścieżki) → jawny fallback do klasycznej samooceny.
 	const [diagnosisFallback, setDiagnosisFallback] = useState(false);
 	const [startingDiagnosis, setStartingDiagnosis] = useState(false);
+	// N2′ — rozwidlenie „zero zaznaczeń" otwarte. true = zamiast wiersza akcji krok
+	// pokazuje DWA jawne wyjścia (dalej bez testu / wróć i zaznacz). Nie jest to
+	// ostrzeżenie do przeczytania: dopóki student nie wybierze, krok stoi.
+	const [noSelectionFork, setNoSelectionFork] = useState(false);
 	// Tryb diagnozy aktywny: flaga ON i bank nie odmówił pokrycia tej ścieżki.
 	const diagnosticMode = diagnosticEnabled && !diagnosisFallback;
+	// Sekcja rozwidlenia — fokus po otwarciu idzie TU, nie na przycisk (poprawka 5 Leo):
+	// czytnik ekranu ma przeczytać POWÓD zatrzymania (nazwa sekcji + zdanie Sophii), a nie
+	// samą nazwę przycisku wyrwaną z kontekstu.
+	const forkRef = useRef<HTMLElement | null>(null);
 
 	// Katalog z nałożoną adnotacją sylabusa (D4) — pochodna, nie osobny stan.
 	const catalog = useMemo(
 		() => annotateWithSyllabus(rawCatalog, syllabusCompetencies),
 		[rawCatalog, syllabusCompetencies],
 	);
+
+	// ── JEDYNY NOŚNIK BRAMKI DOMKNIĘCIA KROKU 3 (MUST-FIX Leo, CLAUDE.md v1.17) ─────
+	// „Czy wolno domknąć krok 3" to JEDNA reguła, a krok ma DWA wyjścia: przycisk
+	// wiersza akcji i „Przejdź dalej bez testu" w rozwidleniu N2′. Dopóki predykat stał
+	// wpisany w `disabled` pierwszego przycisku, drugie wyjście miało własną, uboższą
+	// kopię (`disabled={submitting}`) i przepuszczało to, czego pierwsze nie przepuszcza.
+	// Leo zmierzył 2026-08-14 realną ścieżką (krok 3 → 0 zaznaczeń → rozwidlenie → zmiana
+	// celu na spoza 23 ścieżek → powrót → klik): POST /api/onboarding z careerGoal
+	// „Zaklinacz deszczu" i `competencies: []` — onboarding domknięty pustym paszportem
+	// na celu, którego katalog nie zna (market-catalog/route.ts:41 — cel spoza listy →
+	// isRealCareerGoal=false, items puste).
+	// Reguła ma teraz jeden nośnik; oba przyciski go WOŁAJĄ (`disabled={!canCloseStep3}`),
+	// żaden nie powtarza. Zmiana bramki w jednym miejscu zmienia OBA wyjścia naraz.
+	// Pilnuje tego test „JEDEN NOŚNIK" (`__tests__/onboarding-wizard-diagnoza-zero-zaznaczen`):
+	// liczy wołania w KODZIE (komentarze wycina), bo stanu „rozwidlenie otwarte ∧ zła
+	// bramka" nie da się po naprawie osiągnąć klikaniem — powód w nagłówku tego testu.
+	// Umiejscowienie: tuż za `catalog` (nie przy `diagnosticMode`), bo czyta jego długość.
+	const canCloseStep3 =
+		!submitting && !startingDiagnosis && !catalogLoading && isRealGoal && catalog.length > 0;
 
 	const isStep0Valid = Boolean(profile.careerGoal);
 	const isStep1Valid = Boolean(
@@ -174,6 +201,18 @@ export function OnboardingWizard({
 	const loadCatalog = useCallback(
 		async (careerGoal: string) => {
 			if (!careerGoal) return;
+			// N2′: rozwidlenie orzeka o KONKRETNEJ liście („nic nie zaznaczyłeś"). Lista
+			// właśnie się przeładowuje, więc panel nie ma o czym orzekać — gaśnie razem z nią.
+			//
+			// STRAŻNIK NIEPOTWIERDZONY (CLAUDE.md §8 v1.17 — mówię to wprost, zamiast liczyć
+			// tę linię jako pilnowaną). Mutacja „usuń tę linię" NIE czerwieni żadnego testu
+			// (pomiar 2026-08-14: 12/12 zielone). Powód: każde wejście tutaj idzie dziś przez
+			// `advanceTo` (nawigacja) albo `onRetry` po błędzie katalogu, a oba stany już
+			// wykluczają otwarte rozwidlenie — czyli warstwa jest nadmiarowa, nie martwa.
+			// PRÓG, PRZY KTÓRYM ZACZNIE PRACOWAĆ: pierwsze przeładowanie katalogu BEZ zmiany
+			// kroku (odświeżanie w tle albo carryover zasiewający zaznaczenia niżej w tej
+			// samej funkcji). Wtedy dopisuje się przypadek do strażnika.
+			setNoSelectionFork(false);
 			setCatalogLoading(true);
 			setCatalogError(false);
 			// Oznacz cel jako „obsłużony" OPTYMISTYCZNIE — inaczej efekt poniżej wpadłby w
@@ -222,6 +261,16 @@ export function OnboardingWizard({
 		[carryoverSelfAssessments],
 	);
 
+	// Fokus po otwarciu rozwidlenia N2′ (poprawka 5 Leo, WCAG 2.2 AA — 2.4.3 kolejność
+	// fokusu + 4.1.2 nazwa/rola). Dawniej `autoFocus` na „Wróć i zaznacz": czytnik ekranu
+	// czytał NAZWĘ PRZYCISKU, a powód zatrzymania kroku zostawał wyżej, nieprzeczytany.
+	// Teraz fokus idzie na sekcję (`tabIndex={-1}` = programowo tak, tabulatorem nie),
+	// więc czytnik podaje nazwę sekcji (`aria-labelledby`, nagłówek) i jej opis
+	// (`aria-describedby`, zdanie Sophii), a dopiero potem student tabuluje do wyborów.
+	useEffect(() => {
+		if (noSelectionFork) forkRef.current?.focus();
+	}, [noSelectionFork]);
+
 	// Wejście na krok 3 (także przy wznawianiu) → pobierz katalog, jeśli nie ten cel.
 	useEffect(() => {
 		if (step === 3 && profile.careerGoal && catalogGoal !== profile.careerGoal && !catalogLoading) {
@@ -262,6 +311,13 @@ export function OnboardingWizard({
 	};
 
 	const advanceTo = (target: number) => {
+		// N2′: rozwidlenie jest stanem KROKU 3, nie kreatora. Każde przejście między
+		// krokami je gasi — inaczej przeżywa zmianę kontekstu i po powrocie oferuje
+		// „przejdź dalej bez testu" na liście, o której już nic nie wie (Leo zmierzył:
+		// po skoku krok 3 → krok 1 → krok 3 przycisk rozwidlenia NADAL był w drzewie).
+		// Tu, nie w `goToStep`: `goToStep` ma jedno wyjście i jest nim `advanceTo(target)`,
+		// więc to jest ten sam jeden nośnik dla całej nawigacji, a nie dwie kopie.
+		setNoSelectionFork(false);
 		setStep(target);
 		if (target > maxReached) {
 			setMaxReached(target);
@@ -357,6 +413,9 @@ export function OnboardingWizard({
 
 	// ── Wybór kompetencji (krok 3) ──────────────────────────────────────────
 	const handleSelectionChange = (name: string, level: PossessionLevel | null) => {
+		// N2′: rozwidlenie mówi „nic nie zaznaczono". Każda zmiana zaznaczeń może to
+		// zdanie unieważnić, więc panel znika — zamiast wisieć i kłamać o stanie listy.
+		if (noSelectionFork) setNoSelectionFork(false);
 		// Zmiana zaznaczeń unieważnia trwający/ukończony test (1.12) — pomiar
 		// dotyczył innego zestawu; serwer i tak wznowi/odrzuci po odcisku wejścia.
 		if (diagnosis || diagnosisOutcome) {
@@ -378,8 +437,15 @@ export function OnboardingWizard({
 	const startDiagnosis = async () => {
 		const names = Object.keys(selections);
 		if (names.length === 0) {
-			// 0 zaznaczeń = nie ma czego mierzyć — klasyczny zapis (cały rynek luką, D5).
-			await runSubmit();
+			// ── N2′ — JEDYNY NOŚNIK REGUŁY „zero zaznaczeń nie przechodzi samo" ──
+			// Dawniej stało tu `await runSubmit()`: przy zerze zaznaczeń ten sam
+			// przycisk, w tym samym miejscu, po cichu przenosił do Wniosków — student
+			// mijał JEDYNY pomiar, jaki produkt ma, nie dowiadując się, że go mija
+			// (przejazd Darka 2026-08-10: „gdzie miałem zobaczyć ekran diagnozy").
+			// Teraz krok się zatrzymuje i pyta. Reguła ma tu DOKŁADNIE JEDEN nośnik
+			// (CLAUDE.md v1.17): przycisk kroku 3 nie zna warunku `length === 0` i nie
+			// wolno go tam powielić — inaczej powstaje druga, cicha droga wyjścia.
+			setNoSelectionFork(true);
 			return;
 		}
 		setStartingDiagnosis(true);
@@ -754,9 +820,19 @@ export function OnboardingWizard({
 				) : step === 3 ? (
 					<>
 						<h2 className="font-heading text-2xl font-extrabold">Twoje kompetencje</h2>
+						{/* N2a — ZAPOWIEDŹ TESTU PRZED KLIKNIĘCIEM (Sophia §3, wiersz N2a: „jedno
+						    zdanie, że po zatwierdzeniu przyjdzie krótki test zaznaczonych pozycji").
+						    Zdanie środkowe realizuje ten zapis; brzmienie MOJE — Sophia podała kształt,
+						    nie tekst wiążący (inaczej niż przy N2′, gdzie tekst jest jej 1:1).
+						    ŚWIADOMIE BEZ LICZBY PYTAŃ: `total` = 2 × kompetencje POKRYTE BANKIEM
+						    (start/route.ts:159), nie zaznaczone — „2 pytania na każdą zaznaczoną"
+						    byłoby obietnicą bez pokrycia przy zaznaczeniach spoza banku (te idą do
+						    mini-samooceny). ŚWIADOMIE BEZ zdania o zerze zaznaczeń: ten przypadek
+						    ma teraz swój nośnik w rozwidleniu N2′ (tekst Sophii 1:1) i powtórzenie
+						    go tutaj dałoby dwa nośniki jednej reguły. */}
 						<p className="mb-6 mt-1.5 text-sm text-muted-foreground">
 							{diagnosticMode
-								? "Zaznacz, z czym masz styczność — poziom zmierzy krótki test, nie deklaracja. Czego nie zaznaczysz, zostaje Twoim planem nauki."
+								? "Zaznacz, z czym masz styczność — poziom zmierzy krótki test, nie deklaracja. Po zatwierdzeniu tego kroku przyjdzie krótki test zaznaczonych pozycji. Czego nie zaznaczysz, zostaje Twoim planem nauki."
 								: "Zaznacz przy każdej umiejętności poziom, jaki masz. Czego nie zaznaczysz, zostaje Twoim planem nauki. Nie musisz zaznaczać nic — możesz zacząć od zera."}
 						</p>
 						<StepMarketCompetencies
@@ -772,46 +848,112 @@ export function OnboardingWizard({
 							profileNote={profileNote}
 							binaryMode={diagnosticMode}
 						/>
-						<div className="mt-8 flex items-center justify-between">
-							<Button variant="ghost" onClick={() => goToStep(2)} className="gap-2">
-								<ChevronLeft className="h-4 w-4" />
-								Wstecz
-							</Button>
-							{/* MUST-FIX (Leo): blokuj domknięcie pustym paszportem + nierealnym celem.
+						{/* N2′ — ROZWIDLENIE PRZY ZERZE ZAZNACZEŃ (tryb diagnozy).
+						    Zastępuje wiersz akcji, więc oba wyjścia stoją dokładnie tam, gdzie
+						    przed chwilą był przycisk — student nie musi niczego szukać ani
+						    przewijać. To jest WYBÓR, nie komunikat: krok nie idzie dalej sam.
+
+						    WARUNEK RENDEROWANIA MA DWA CZŁONY: flaga (student kliknął i czeka na
+						    rozstrzygnięcie) ORAZ realny stan listy (zaznaczeń nadal zero). Panel
+						    orzeka o stanie listy, więc nie wolno mu przeżyć zdania, które orzeka —
+						    a `selections` ma CZTERECH pisarzy (`handleSelectionChange`, carryover
+						    w `loadCatalog`, zmiana celu, wynik testu) i tylko pierwszy gasi flagę
+						    u siebie.
+
+						    DRUGI CZŁON — STRAŻNIK NIEPOTWIERDZONY (CLAUDE.md §8 v1.17). Mutacja
+						    „zdejmij człon o zaznaczeniach" NIE czerwieni żadnego testu (pomiar
+						    2026-08-14: 12/12 zielone), bo pozostali trzej pisarze są dziś
+						    nieosiągalni przy otwartym rozwidleniu. Zostaje jako bariera na
+						    przyszłość, nazwana wprost, nie liczona jako pilnowana.
+						    PRÓG: pierwszy pisarz `selections`, który zadziała przy otwartym
+						    panelu — wtedy przypadek dopisuje się do strażnika.
+						    UWAGA: ten człon NIE zastępuje gaszenia flagi w `handleSelectionChange`
+						    — bez tamtego panel wraca sam po odznaczeniu z powrotem do zera
+						    (mutacja m5 czerwieni „rozwidlenie nie WRACA samo"). */}
+						{noSelectionFork && Object.keys(selections).length === 0 ? (
+							<section
+								ref={forkRef}
+								tabIndex={-1}
+								className="mt-8 rounded-lg border border-ed-amber bg-ed-badge-bg p-4"
+								aria-labelledby="ob-brak-zaznaczen-tytul"
+								aria-describedby="ob-brak-zaznaczen-powod"
+							>
+								{/* Nagłówek — MÓJ, nie Sophii: jej §3 N2′ nie przewiduje nagłówka sekcji.
+								    Dołożyłem go wyłącznie jako nośnik `aria-labelledby` (sekcja bez
+								    nazwy nie ma się czym przedstawić czytnikowi ekranu). Do skreślenia
+								    albo przepisania na jej słowo — wtedy zostaje sam `aria-label`. */}
+								<h3 id="ob-brak-zaznaczen-tytul" className="font-heading text-base font-bold">
+									Nie zaznaczono żadnej kompetencji
+								</h3>
+								{/* TEKST SOPHII, 1:1 — `scratchpad/gdzie-jest-diagnoza-sophia.md` §3, wiersz
+								    N2′ („Tekst mój, 1:1"). Nie parafrazować przy refaktorze: to mikrocopy
+								    wiążące dosłownie, nie propozycja. Wcześniej stał tu mój własny akapit
+								    — zdjęty, bo tekst wiążący już istniał. */}
+								<p id="ob-brak-zaznaczen-powod" className="mt-1.5 text-sm text-muted-foreground">
+									Nic nie zaznaczyłeś, więc nie mamy czego zmierzyć — zaczniesz od podstaw. Zaznacz
+									cokolwiek, żeby test sprawdził Twój poziom.
+								</p>
+								<div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+									<Button
+										variant="ghost"
+										onClick={() => setNoSelectionFork(false)}
+										className="gap-2"
+									>
+										<ChevronLeft className="h-4 w-4" />
+										Wróć i zaznacz
+									</Button>
+									{/* TA SAMA bramka co w wierszu akcji — wołana, nie przepisana.
+									    Dawniej `disabled={submitting}`: druga, cicha droga wyjścia obok
+									    pełnego predykatu (mierzalny skutek w nagłówku `canCloseStep3`). */}
+									<Button
+										onClick={() => {
+											setNoSelectionFork(false);
+											void runSubmit();
+										}}
+										disabled={!canCloseStep3}
+										className="ob-btn-accent gap-2"
+									>
+										<Check className="h-4 w-4" />
+										Przejdź dalej bez testu
+									</Button>
+								</div>
+							</section>
+						) : (
+							<div className="mt-8 flex items-center justify-between">
+								<Button variant="ghost" onClick={() => goToStep(2)} className="gap-2">
+									<ChevronLeft className="h-4 w-4" />
+									Wstecz
+								</Button>
+								{/* MUST-FIX (Leo): blokuj domknięcie pustym paszportem + nierealnym celem.
 							    Pusty katalog / cel spoza 23 ścieżek → krok pokazuje bursztynowy
 							    komunikat „wróć i wybierz realną ścieżkę", a submit jest WYŁĄCZONY.
 							    Warunek dotyczy KATALOGU (length===0) / realności celu — NIE liczby
 							    zaznaczeń: realny cel + niepusty katalog + 0 zaznaczeń zostaje aktywny
 							    (próg min-5→0, D5). Nie mylić tych dwóch. */}
-							<Button
-								onClick={diagnosticMode ? startDiagnosis : () => runSubmit()}
-								disabled={
-									submitting ||
-									startingDiagnosis ||
-									catalogLoading ||
-									!isRealGoal ||
-									catalog.length === 0
-								}
-								className="ob-btn-accent gap-2"
-							>
-								{submitting || startingDiagnosis ? (
-									<>
-										<BookOpen className="h-4 w-4 animate-spin" />
-										{startingDiagnosis ? "Przygotowuję test…" : "Zapisywanie…"}
-									</>
-								) : diagnosticMode && Object.keys(selections).length > 0 ? (
-									<>
-										<Check className="h-4 w-4" />
-										Zatwierdź i sprawdź się testem
-									</>
-								) : (
-									<>
-										<Check className="h-4 w-4" />
-										Zatwierdź i przejdź dalej
-									</>
-								)}
-							</Button>
-						</div>
+								<Button
+									onClick={diagnosticMode ? startDiagnosis : () => runSubmit()}
+									disabled={!canCloseStep3}
+									className="ob-btn-accent gap-2"
+								>
+									{submitting || startingDiagnosis ? (
+										<>
+											<BookOpen className="h-4 w-4 animate-spin" />
+											{startingDiagnosis ? "Przygotowuję test…" : "Zapisywanie…"}
+										</>
+									) : diagnosticMode && Object.keys(selections).length > 0 ? (
+										<>
+											<Check className="h-4 w-4" />
+											Zatwierdź i sprawdź się testem
+										</>
+									) : (
+										<>
+											<Check className="h-4 w-4" />
+											Zatwierdź i przejdź dalej
+										</>
+									)}
+								</Button>
+							</div>
+						)}
 					</>
 				) : null}
 
