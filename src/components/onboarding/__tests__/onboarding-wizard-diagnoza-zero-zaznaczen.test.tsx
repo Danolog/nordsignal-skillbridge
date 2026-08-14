@@ -30,6 +30,8 @@
  * o limit, przyczyną jest liczba interakcji w `goToStep3`, nie limit.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -40,9 +42,16 @@ vi.mock("sonner", () => ({
 	toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
+/**
+ * Cel oddawany przez Pomocnika (stub) jest ZMIENNY — testy zmiany kontekstu wracają na
+ * krok „Cel kariery" i wybierają cel spoza 23 realnych ścieżek. `vi.hoisted`, bo fabryka
+ * `vi.mock` jest wynoszona ponad deklaracje modułu.
+ */
+const stub = vi.hoisted(() => ({ careerGoal: "Data Analyst" }));
+
 vi.mock("@/components/career-helper/career-helper-flow", () => ({
 	CareerHelperFlow: ({ onCareerGoalChosen }: { onCareerGoalChosen?: (l: string) => void }) => (
-		<button type="button" onClick={() => onCareerGoalChosen?.("Data Analyst")}>
+		<button type="button" onClick={() => onCareerGoalChosen?.(stub.careerGoal)}>
 			Wybierz cel (stub)
 		</button>
 	),
@@ -60,17 +69,28 @@ const CATALOG_ITEMS = [
 	{ competencyName: "Python", demandPercentage: 70, category: "Język" },
 ];
 
+type CatalogResponse = { isRealCareerGoal: boolean; items: typeof CATALOG_ITEMS };
+
+/**
+ * Katalog per cel. Domyślnie: „Data Analyst" realny z 2 pozycjami, każdy inny cel spoza
+ * 23 ścieżek (pusto) — dokładnie jak `market-catalog/route.ts:41`. `catalogFor` pozwala
+ * testom rozdzielić OBA człony bramki osobno (cel nierealny ≠ katalog pusty).
+ */
+function defaultCatalogFor(goal: string): CatalogResponse {
+	return goal === "Data Analyst"
+		? { isRealCareerGoal: true, items: CATALOG_ITEMS }
+		: { isRealCareerGoal: false, items: [] };
+}
+
 /** Mock sieci: PATCH /progress, GET katalogu, POST /assessment/start, POST /onboarding. */
-function mockFetch() {
+function mockFetch(catalogFor: (goal: string) => CatalogResponse = defaultCatalogFor) {
 	const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
 		if (url === "/api/onboarding/progress" && init?.method === "PATCH") {
 			return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
 		}
 		if (url.startsWith("/api/onboarding/market-catalog")) {
-			return Promise.resolve({
-				ok: true,
-				json: () => Promise.resolve({ isRealCareerGoal: true, items: CATALOG_ITEMS }),
-			});
+			const goal = new URL(url, "http://t").searchParams.get("careerGoal") ?? "";
+			return Promise.resolve({ ok: true, json: () => Promise.resolve(catalogFor(goal)) });
 		}
 		if (url === "/api/assessment/start" && init?.method === "POST") {
 			return Promise.resolve({
@@ -114,8 +134,38 @@ function assessmentStarts(fetchMock: ReturnType<typeof mockFetch>) {
 	return fetchMock.mock.calls.filter(([url]) => url === "/api/assessment/start").length;
 }
 
-/** Picker celu (stub) → profil → pominięcie sylabusa → krok 3 (Kompetencje). */
-async function goToStep3(user: ReturnType<typeof userEvent.setup>) {
+/** Ciała POST /api/onboarding — do sprawdzenia, CO dokładnie poszłoby na serwer. */
+function onboardingBodies(fetchMock: ReturnType<typeof mockFetch>) {
+	return fetchMock.mock.calls
+		.filter(
+			([url, init]) =>
+				url === "/api/onboarding" && (init as RequestInit | undefined)?.method === "POST",
+		)
+		.map(([, init]) => JSON.parse(String((init as RequestInit).body)));
+}
+
+/** Rozwidlenie N2′ — sekcja jako całość (kotwica dla fokusu i dla obecności w drzewie). */
+function forkSection() {
+	return screen.queryByRole("region", { name: /Nie zaznaczono żadnej kompetencji/i });
+}
+
+function forkSubmitButton() {
+	return screen.queryByRole("button", { name: /Przejdź dalej bez testu/i });
+}
+
+function rowSubmitButton() {
+	return screen.getByRole("button", { name: /Zatwierdź i przejdź dalej/i });
+}
+
+/**
+ * Picker celu (stub) → profil → pominięcie sylabusa → krok 3 (Kompetencje).
+ * `expect: "lista"` czeka na licznik zaznaczeń, `"bramka"` na bursztynowy komunikat
+ * kroku 3 (cel nierealny ALBO katalog pusty — dziecko scala oba w jedną gałąź).
+ */
+async function goToStep3(
+	user: ReturnType<typeof userEvent.setup>,
+	expectView: "lista" | "bramka" = "lista",
+) {
 	await user.click(screen.getByRole("button", { name: /Wybierz cel \(stub\)/i }));
 	await user.click(screen.getAllByRole("combobox")[0]);
 	await user.click(await screen.findByRole("option", { name: "WSB Merito Gdańsk" }));
@@ -126,7 +176,11 @@ async function goToStep3(user: ReturnType<typeof userEvent.setup>) {
 	await user.click(await screen.findByRole("button", { name: /Pomiń sylabus/i }));
 	// Kotwica obecna w OBU trybach kroku 3 (nagłówek pokrycia istnieje tylko poza
 	// trybem binarnym — czekanie na niego uśpiłoby test właśnie w trybie diagnozy).
-	await screen.findByText(/Zaznaczono \d+ z \d+ kompetencji rynku/i);
+	if (expectView === "lista") {
+		await screen.findByText(/Zaznaczono \d+ z \d+ kompetencji rynku/i);
+	} else {
+		await screen.findByText(/nie mamy jeszcze katalogu kompetencji z rynku/i);
+	}
 }
 
 function renderWizard(diagnosticEnabled: boolean) {
@@ -140,6 +194,7 @@ function renderWizard(diagnosticEnabled: boolean) {
 
 beforeEach(() => {
 	vi.clearAllMocks();
+	stub.careerGoal = "Data Analyst";
 });
 
 describe("N2′ — zero zaznaczeń w trybie diagnozy nie przechodzi dalej samo", () => {
@@ -210,6 +265,147 @@ describe("N2′ — zero zaznaczeń w trybie diagnozy nie przechodzi dalej samo"
 			screen.queryByRole("button", { name: /Przejdź dalej bez testu/i }),
 		).not.toBeInTheDocument();
 		expect(onboardingPosts(fetchMock)).toBe(0);
+	});
+
+	it("rozwidlenie NIE przeżywa zmiany kroku: krok 3 → krok 2 (Profil) → krok 3 = panelu nie ma", async () => {
+		const fetchMock = mockFetch();
+		const user = userEvent.setup({ delay: null });
+		renderWizard(true);
+		await goToStep3(user);
+
+		await user.click(rowSubmitButton());
+		expect(forkSection()).toBeInTheDocument();
+
+		// Skok wstecz i z powrotem po kropkach drabinki (cel bez zmian → katalog się NIE
+		// przeładowuje, więc mierzymy sam efekt zmiany kroku, nie efekt uboczny fetcha).
+		await user.click(screen.getByRole("button", { name: /Krok 2: Profil/i }));
+		await user.click(await screen.findByRole("button", { name: /Krok 4: Kompetencje/i }));
+		await screen.findByText(/Zaznaczono 0 z 2 kompetencji rynku/i);
+
+		// Panel orzekał o stanie sprzed skoku — po powrocie nie ma prawa wisieć w drzewie.
+		expect(forkSection()).not.toBeInTheDocument();
+		expect(forkSubmitButton()).not.toBeInTheDocument();
+		// Krok wrócił do wiersza akcji i nadal nic nie zapisał.
+		expect(rowSubmitButton()).toBeEnabled();
+		expect(onboardingPosts(fetchMock)).toBe(0);
+	});
+
+	it("ŚCIEŻKA ZMIERZONA PRZEZ LEO: rozwidlenie → zmiana celu na spoza 23 ścieżek → powrót = brak zapisu", async () => {
+		const fetchMock = mockFetch();
+		const user = userEvent.setup({ delay: null });
+		renderWizard(true);
+		await goToStep3(user);
+
+		await user.click(rowSubmitButton());
+		expect(forkSection()).toBeInTheDocument();
+
+		// Krok „Cel kariery" → Pomocnik oddaje cel spoza katalogu (wolny tekst).
+		stub.careerGoal = "Zaklinacz deszczu";
+		await user.click(screen.getByRole("button", { name: /Krok 1: Cel kariery/i }));
+		await user.click(await screen.findByRole("button", { name: /Wybierz cel \(stub\)/i }));
+		await user.click(await screen.findByRole("button", { name: /Krok 4: Kompetencje/i }));
+		await screen.findByText(/nie mamy jeszcze katalogu kompetencji z rynku/i);
+
+		// SEDNO (pomiar Leo 2026-08-14 12:56 CEST): tutaj stał przycisk „Przejdź dalej bez
+		// testu" z bramką `disabled={submitting}` i wypychał POST /api/onboarding z
+		// careerGoal „Zaklinacz deszczu" i `competencies: []`.
+		expect(forkSubmitButton()).not.toBeInTheDocument();
+		expect(rowSubmitButton()).toBeDisabled();
+		expect(onboardingPosts(fetchMock)).toBe(0);
+		expect(onboardingBodies(fetchMock)).toEqual([]);
+	});
+
+	it("CZŁON BRAMKI 1/2 — cel spoza 23 ścieżek przy NIEPUSTYM katalogu: krok się nie domyka", async () => {
+		// Rozdzielenie koniunkcji: `isRealGoal=false`, ale `catalog.length > 0`. Jedyne, co
+		// blokuje, to realność celu — mutacja tego członu czerwieni WYŁĄCZNIE ten przypadek.
+		const fetchMock = mockFetch(() => ({ isRealCareerGoal: false, items: CATALOG_ITEMS }));
+		const user = userEvent.setup({ delay: null });
+		renderWizard(true);
+		await goToStep3(user, "bramka");
+
+		await user.click(rowSubmitButton());
+
+		expect(rowSubmitButton()).toBeDisabled();
+		expect(forkSubmitButton()).not.toBeInTheDocument();
+		expect(onboardingPosts(fetchMock)).toBe(0);
+		expect(assessmentStarts(fetchMock)).toBe(0);
+	});
+
+	it("CZŁON BRAMKI 2/2 — katalog pusty przy REALNYM celu: krok się nie domyka", async () => {
+		// Druga połowa koniunkcji: `isRealGoal=true`, `catalog.length === 0`. Blokuje wyłącznie
+		// pustka katalogu — mutacja tego członu czerwieni WYŁĄCZNIE ten przypadek. Dwa osobne
+		// pomiary, bo jeden nie dowodzi dwóch (CLAUDE.md §8 v1.17).
+		const fetchMock = mockFetch(() => ({ isRealCareerGoal: true, items: [] }));
+		const user = userEvent.setup({ delay: null });
+		renderWizard(true);
+		await goToStep3(user, "bramka");
+
+		await user.click(rowSubmitButton());
+
+		expect(rowSubmitButton()).toBeDisabled();
+		expect(forkSubmitButton()).not.toBeInTheDocument();
+		expect(onboardingPosts(fetchMock)).toBe(0);
+		expect(assessmentStarts(fetchMock)).toBe(0);
+	});
+
+	it("A11Y (poprawka 5): fokus po otwarciu idzie na SEKCJĘ z powodem, nie na przycisk", async () => {
+		mockFetch();
+		const user = userEvent.setup({ delay: null });
+		renderWizard(true);
+		await goToStep3(user);
+
+		await user.click(rowSubmitButton());
+
+		// Czytnik ekranu ma przeczytać POWÓD zatrzymania kroku (nazwa sekcji + opis), zanim
+		// student usłyszy nazwy dwóch wyjść. Fokus na przycisku czytał samą nazwę przycisku.
+		const fork = forkSection();
+		expect(fork).toHaveFocus();
+		expect(fork).toHaveAttribute("aria-describedby", "ob-brak-zaznaczen-powod");
+		expect(screen.getByRole("button", { name: /Wróć i zaznacz/i })).not.toHaveFocus();
+	});
+
+	/**
+	 * KONTROLA STRUKTURALNA — po co czyta źródło zamiast klikać.
+	 *
+	 * Po naprawie stan „rozwidlenie otwarte ∧ (cel nierealny ∨ katalog pusty)" jest
+	 * NIEOSIĄGALNY z interfejsu: rozwidlenie otwiera się tylko przy zdrowym katalogu, a
+	 * każde zdarzenie, które katalog psuje, przechodzi przez `advanceTo` albo `loadCatalog`
+	 * i gasi panel. Skutek: mutacja SAMEJ bramki przycisku rozwidlenia (powrót do
+	 * `disabled={submitting}`) nie czerwieni żadnego testu behawioralnego — nie dlatego, że
+	 * jest niegroźna, tylko dlatego, że drugi zamek trzyma drzwi zamknięte. Dokładnie tak
+	 * wyglądał ten kod przed naprawą: jeden zamek pękł i całość puściła.
+	 *
+	 * CLAUDE.md §8 v1.17 przewiduje ten przypadek („gdy mutacja jest fizycznie
+	 * niewykonalna — kontrola równoważna"). Kontrolą jest tu tekst źródła: reguła ma mieć
+	 * JEDEN nośnik, a oba wyjścia mają go WOŁAĆ. Test pada w chwili, w której ktokolwiek
+	 * wpisze predykat z powrotem do `disabled` — nie czekając, aż zmiana gdzie indziej
+	 * przywróci osiągalność stanu.
+	 *
+	 * KOSZT: wrażliwość na formatowanie (Biome). Świadomy — alternatywą jest brak
+	 * jakiegokolwiek dowodu na tę bramkę.
+	 */
+	it("JEDEN NOŚNIK: oba wyjścia kroku 3 wołają `canCloseStep3`, żadne nie ma własnej kopii", () => {
+		// Ścieżka od korzenia projektu (vitest root), nie od `import.meta.url` — pod jsdom
+		// `import.meta.url` jest adresem http i `readFileSync` go nie przyjmuje.
+		const src = readFileSync(
+			resolve(process.cwd(), "src/components/onboarding/onboarding-wizard.tsx"),
+			"utf8",
+		);
+		// Bezpiecznik: pusty/nieznaleziony plik dałby test, który przechodzi zawsze.
+		expect(src).toContain("export function OnboardingWizard");
+
+		// Liczymy KOD, nie komentarze — nagłówki w tym pliku cytują starą, wadliwą bramkę
+		// dosłownie („dawniej `disabled={submitting}`") i to jest wartościowy ślad, a nie
+		// naruszenie. Bez tego kroku strażnik zmuszałby do wycierania historii z komentarzy.
+		const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "");
+
+		// Definicja dokładnie raz.
+		expect(code.match(/const canCloseStep3\s*=/g) ?? []).toHaveLength(1);
+		// Wołana dokładnie dwa razy — wiersz akcji i „Przejdź dalej bez testu".
+		expect(code.match(/disabled=\{!canCloseStep3\}/g) ?? []).toHaveLength(2);
+		// I żadne wyjście kroku 3 nie trzyma własnego predykatu obok wspólnego.
+		expect(code).not.toMatch(/disabled=\{submitting\}/);
+		expect(code).not.toMatch(/disabled=\{\s*submitting\s*\|\|/);
 	});
 
 	it("KONTROLA DWUSTRONNA: flaga diagnozy OFF → 0 zaznaczeń zapisuje jak dotąd (D5 nietknięte)", async () => {
