@@ -930,8 +930,10 @@ jobs:
             exit 1
           fi
           echo "Klucz modelu obecny (wartosc zamaskowana przez GitHub)."
-      # ZAKRES TESTOW: PELNY pakiet @llm (10-b0, 20-B4, 40), z wykluczeniem
-      # przeterminowanego 50 (Z5 — pomija nowy Krok 0, do przepisania). Job biega tylko
+      # ZAKRES TESTOW: PELNY pakiet @llm (10-b0, 20-B4, 40). Spec 50 (rejestracja)
+      # NIE JEST juz wykluczony jako „przeterminowany" — zostal przepisany pod obecny
+      # kreator (zadanie 1.6, blokada B6) i ma WLASNY krok nizej, poza tym `--grep @llm`,
+      # bo jego sciezka domyka sie bez zaleznosci od wyniku modelu. Job biega tylko
       # nocnym cronem/recznie, wiec zawsze pelny zakres (brak juz wariantu per-PR).
       # E2E_LLM_AVAILABLE=1 zdejmuje test.skip segmentow @llm (klucz po stronie serwera).
       - name: Ustaw zakres testow
@@ -942,6 +944,42 @@ jobs:
         env:
           E2E_LLM_AVAILABLE: "1"
         run: pnpm exec playwright test --config playwright.config.ci.ts --grep "${E2E_LLM_GREP}" ${E2E_LLM_SPEC}
+      # ─────────────────────────────────────────────────────────────────────
+      # SCIEZKA KRYTYCZNA #1 — REJESTRACJA OD ZERA (zadanie 1.6, blokada B6).
+      #
+      # PO CO OSOBNY KROK, a nie dopisanie pliku do E2E_LLM_SPEC wyzej:
+      #   1. Krok wyzej filtruje `--grep @llm`. Spec 50 NIE MA segmentu @llm (jego
+      #      sciezka domyka sie bez zaleznosci od wyniku modelu — paszport powstaje
+      #      w transakcji PRZED generateSkillMap, a pad generacji jest lapany).
+      #      Dopisany do tamtego kroku zostalby po cichu odfiltrowany do zera testow
+      #      — czyli dokladnie „zielono, bo nic nie pobieglo".
+      #   2. Spec 50 wymaga FLAG_DIAGNOSTIC_ASSESSMENT=1, a specy 10/20/40 NIE.
+      #      Flaga przestawia krok 3 kreatora w tryb binarny (zaznaczenie zamiast
+      #      poziomu) i wlacza rozwidlenie N2′, wiec zapalenie jej NA POZIOMIE JOBA
+      #      zmieniloby zachowanie tamtych trzech specow. Env kroku dotyczy tylko
+      #      tego procesu, a `playwright.config.ci.ts` podnosi WLASNY serwer na krok
+      #      (`reuseExistingServer: false`) i dziedziczy `process.env` — wiec serwer
+      #      pod tym krokiem ma flage, a pod krokiem wyzej jej nie ma.
+      #
+      # ZAKRES PODANY SCIEZKA PLIKU, NIE `--grep` — nie ma jak zostac zeskipowanym
+      # filtrem (ta sama konwencja co w jobie a11y-klauzula).
+      - name: Playwright — rejestracja od zera + rozwidlenie #309 (sciezka krytyczna #1)
+        env:
+          # Serwer: rozwidlenie N2′ istnieje tylko w trybie diagnozy.
+          FLAG_DIAGNOSTIC_ASSESSMENT: "1"
+          # Serwer: odnosnik do klauzuli art. 13 pod formularzem rejestracji.
+          # `privacyNoticeArt13` ma `requires: ["accountDeletion"]` (W-1 w src/lib/flags.ts),
+          # wiec bez drugiej flagi trasa /prywatnosc odpowiada 404 mimo zapalonego env —
+          # zapalamy obie, jak job a11y-klauzula. To bramka jakosci sciezki rejestracji,
+          # NIE decyzja o zaplonie na produkcji (tam zaplon ma piec warunkow sekcji Z-2).
+          FLAG_PRIVACY_NOTICE_ART13: "1"
+          FLAG_ACCOUNT_DELETION: "1"
+          # Proces Playwrighta: flagi serwera sa czytane server-side, wiec spec nie ma
+          # jak ich sam sprawdzic — dostaje jawny sygnal. Bez sygnalu testy zaleznych
+          # segmentow POMIJAJA SIE zamiast falszywie zielenic (helpers/guards.ts + test.skip).
+          E2E_DIAGNOSIS_FLAG: "1"
+          E2E_PRIVACY_FLAG: "1"
+        run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/50-rejestracja-onboarding.spec.ts
       # Artefakty diagnostyczne przy padzie (trace/screenshot — bez sekretow w logu).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
