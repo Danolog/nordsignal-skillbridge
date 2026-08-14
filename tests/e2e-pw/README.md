@@ -73,8 +73,12 @@ wskazuje na nie-lokalny host.
 
 - **Lokalny Postgres / Docker** (rekomendowane offline): utwórz pustą bazę, np.
   `docker run -e POSTGRES_PASSWORD=postgres -p 5433:5432 postgres:16-alpine`.
-- **Dedykowana gałąź Neon** (test): utwórz w konsoli Neon gałąź testową; jej
-  connection string podaj jako `E2E_DATABASE_URL` i ustaw `E2E_ALLOW_REMOTE=1`.
+- ~~**Dedykowana gałąź Neon** (test)~~ — **ta droga jest ZAMKNIĘTA od 2026-08-13.**
+  `E2E_ALLOW_REMOTE=1` **została usunięta** (warunek C1 przeglądu `#298`): otwierała
+  ceremonię produkcyjną wszystkim narzędziom, a runbook ceremonii o niej nie
+  wspominał. Pomiar przed usunięciem: żaden przepływ CI jej nie ustawiał, a oba
+  narzędzia, dla których powstała, i tak jej nie czytały. Narzędzia E2E pracują
+  wyłącznie na hoście lokalnym — użyj Postgresa w kontenerze (wyżej).
 
 ### 2. Zmienne (BAZA TESTOWA — nie prod!)
 
@@ -124,8 +128,9 @@ Izolowany tenant `e2e-test`:
 
 Idempotentny: kasuje własne rekordy po stałych ID i wstawia od nowa.
 Guard: wymaga `E2E_DATABASE_URL`, sprawdza allowlistę hostów testowych przez
-`tools/assert-test-db.ts` (odmawia hostów innych niż localhost/127.0.0.1/::1,
-chyba że `E2E_ALLOW_REMOTE=1`), nie drukuje connection stringa.
+`tools/assert-test-db.ts` — odmawia hostów innych niż localhost/127.0.0.1/::1
+**bezwarunkowo, bez żadnej furtki środowiskowej** (dawne `E2E_ALLOW_REMOTE=1`
+usunięte 2026-08-13). Nie drukuje connection stringa.
 
 ## Koszt LLM
 

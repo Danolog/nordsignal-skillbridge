@@ -27,6 +27,14 @@
 // nic do bazy, więc nie może być miejscem zapisu. `drizzle/*.sql` i `tools/`
 // zostają w zasięgu w całości.
 //
+// ⚠ CZEGO TEN STRAŻNIK NIE PILNUJE (etykieta, nie naprawa): zasięg detektora
+// obejmuje wyłącznie `INSERT INTO` w JEDNEJ LINII — zapis złamany na dwie linie
+// jest dla niego niewidoczny (M-D, #299). Zmierzone 2026-08-13: 0 wieloliniowych
+// na 6 miejsc zapisu. Domknięcie wymaga skanu po zdaniach, co przepisuje model
+// `Trafienie` i asercję A1 — właściciel Leo, przegląd Ryan, próg: pierwsza zmiana
+// `znajdzSuroweWstawki`/`ROZSZERZENIA_WYKONYWALNE` albo siódme miejsce zapisu,
+// zapora 2026-08-31.
+//
 // ── DWIE LISTY, BO DWA RÓŻNE PYTANIA ────────────────────────────────────────
 //
 // `DOPUSZCZONE`      — „wolno omijać `recordAudit`" (asercja 3).
@@ -46,6 +54,7 @@
 // takie miejsce nie przeszło po cichu.
 
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -91,21 +100,60 @@ const DOPUSZCZONE = [
  * pisać surowym SQL-em — czyli wyłączyłoby jedyną asercję pilnującą rdzenia
  * długu A-1. Dlatego lista jest osobna, krótka i obwarowana.
  *
- * WARUNEK WPISU (obie rzeczy naraz, do sprawdzenia w przeglądzie):
+ * WARUNEK WPISU (obie rzeczy naraz) — od `#293` sprawdzany MASZYNOWO, asercją
+ * „kazdy wpis na SONDY_ODRZUCENIA spelnia oba warunki wpisu" niżej:
  *   (1) to TEST, nie kod produktu ani narzędzie operacyjne;
  *   (2) zapis jest WYCOFYWANY (`ROLLBACK`) — sonda nie zostawia wiersza.
  *       `audit_log` jest append-only (wyzwalacz blokuje `UPDATE`/`DELETE`),
  *       więc sonda zapisująca na trwałe zatruwa bazę bez możliwości sprzątnięcia.
  *
- * DZIŚ LISTA JEST PUSTA I TO JEST POPRAWNY STAN. Mechanizm powstaje tutaj, bo
- * tutaj mieszka reguła; pierwszy wpis przychodzi RAZEM ze zmianą, która go
- * potrzebuje — sonda parytetu D-U8 z `#293`
- * (`rodo-e1b-parytet-regula-aktora.integration.test.ts`). Wyjątek dopisuje
- * zgłoszenie, które go wnosi, nie zgłoszenie, które buduje mechanizm: inaczej
- * lista od pierwszego dnia niesie pozycję bez pokrycia, a kontrola martwych
- * pozycji (niżej) słusznie się na tym czerwieni. Sprawdzone wykonaniem.
+ * DLACZEGO ASERCJA, SKORO PIERWSZY WPIS OBA WARUNKI SPEŁNIA. Bo dziś pilnuje
+ * ich KOD SONDY (`describe.skip` poza bazą lokalną, `ROLLBACK` w `finally`), a
+ * nie ta lista — czyli DRUGI wpis wszedłby przy zielonej suicie i bez śladu.
+ * Wyciszenie działa na CAŁY PLIK (`!SONDY_ODRZUCENIA[t.plik]`), a klucz jest
+ * zwykłym napisem: bez tej asercji „warunek wpisu" byłby wyłącznie komentarzem.
+ * Warunek wiążący Ryana (CRCO) przy `#293`, domena 8; podstawa: CLAUDE.md v1.17.
+ *
+ * ZASIĘG ŚWIADOMIE STATYCZNY — sprawdzamy KSZTAŁT wpisu, nie jego zachowanie:
+ * że ścieżka jest ścieżką testu i że plik zawiera `ROLLBACK`. Że wycofanie
+ * NAPRAWDĘ zachodzi w czasie wykonania — tego ta asercja nie dowodzi i nie
+ * udaje, że dowodzi (Ryan jawnie nie wymaga dowodu wykonaniowego).
+ *
+ * NAZWA LISTY JEST WĘŻSZA NIŻ JEJ ZAKRES (przyjęte przez Ryana, nie blokuje):
+ * dla `faculty`/`operator` nośnik `REGULA_AKTORA` `actor_id` DOPUSZCZA, więc
+ * sonda parytetu bywa bodźcem DODATNIM — baza przyjmuje, zapis i tak wraca
+ * `ROLLBACK`-iem. Warunek wpisu brzmi „test + wycofanie", nie „musi zostać
+ * odrzucone", i tak jest sprawdzany.
+ *
+ * MECHANIZM POWSTAŁ PUSTY (`#296`) I TAK MIAŁO BYĆ — wyjątek dopisuje
+ * zgłoszenie, które go wnosi, nie zgłoszenie, które buduje mechanizm. Pierwszy
+ * i na dziś jedyny wpis przyszedł z `#293` (sonda parytetu D-U8), po przeglądzie
+ * obu warunków na kodzie sondy, nie na jej opisie.
  */
-const SONDY_ODRZUCENIA: Record<string, string> = {};
+const SONDY_ODRZUCENIA: Record<string, string> = {
+	// Sonda parytetu D-U8: podaje `actor_id` UMYŚLNIE, bo mierzy, czy ograniczenie
+	// `audit_log_regula_aktora` w bazie robi DOKŁADNIE to, co mówi `REGULA_AKTORA`.
+	// Warunek (1) — to test, i to zamknięty w bazie lokalnej: cały blok jest pod
+	// `describe.skip`, dopóki `DATABASE_URL` nie wskazuje na `localhost`/`127.0.0.1`/`[::1]`.
+	// Warunek (2) — `ROLLBACK` stoi w `finally`, więc wykonuje się na KAŻDEJ ścieżce,
+	// także przy zapisie przyjętym; ani jeden wiersz nie powstaje.
+	// ⚠ Zakres szerszy niż nazwa listy: dla `faculty`/`operator` nośnik POZWALA na
+	// `actor_id`, więc tam sonda jest bodźcem DODATNIM (baza przyjmuje) i też jest
+	// wycofywana. Warunek wpisu (test + ROLLBACK) spełniony w obie strony; rozbieżność
+	// nazwy z klasą zgłoszona Ryanowi jako pozycja przeglądu, nie naprawiana tutaj.
+	"src/lib/db/__tests__/rodo-e1b-parytet-regula-aktora.integration.test.ts":
+		"Sonda parytetu D-U8 — podaje `actor_id` celowo, żeby zmierzyć, czy ograniczenie " +
+		"w bazie odrzuca dokładnie to, czego zabrania REGULA_AKTORA; każda próba biegnie " +
+		"w transakcji zakończonej ROLLBACK-iem, więc nie zostaje po niej ani jeden wiersz.",
+};
+
+/**
+ * Warunek (1) wpisu na `SONDY_ODRZUCENIA` — „to jest test", wyrażone ścieżką:
+ * katalog `__tests__/` albo nazwa `*.test.ts(x)` / `*.spec.ts(x)`. To jest ta
+ * sama konwencja, po której zbiera testy `vitest.config.ts` — jeśli plik jej nie
+ * spełnia, nie jest testem także dla narzędzia, które go uruchamia.
+ */
+const WZORZEC_SCIEZKI_TESTU = /(^|\/)__tests__\/|\.(test|spec)\.tsx?$/;
 
 type Trafienie = { plik: string; linia: number; tresc: string };
 
@@ -215,6 +263,40 @@ describe("S-A1-4 · obejscie kontraktu TypeScriptu — surowy INSERT do audit_lo
 				"czerwona zostanie asercja A1, która listy dopuszczonych świadomie nie czyta. " +
 				"Wtedy właściwą listą jest SONDY_ODRZUCENIA (o ile to sonda ujemna z ROLLBACK-iem) " +
 				"albo zapis nie ma prawa istnieć.",
+		).toEqual([]);
+	});
+
+	it("kazdy wpis na SONDY_ODRZUCENIA spelnia oba warunki wpisu", () => {
+		// Sprawdzenie KSZTAŁTU wpisu, statyczne — patrz „ZASIĘG ŚWIADOMIE
+		// STATYCZNY" przy liście. Każdy wpis raportuje WSZYSTKIE złamane warunki
+		// naraz, nie pierwszy z brzegu: inaczej naprawa jednego odsłaniałaby drugi
+		// dopiero w kolejnej rundzie CI.
+		const naruszenia = Object.keys(SONDY_ODRZUCENIA).flatMap((plik) => {
+			const powody: string[] = [];
+			if (!WZORZEC_SCIEZKI_TESTU.test(plik)) {
+				powody.push("(1) ścieżka nie jest ścieżką testu");
+			}
+			let tresc = "";
+			try {
+				tresc = readFileSync(resolve(KORZEN, plik), "utf8");
+			} catch {
+				powody.push("plik nie istnieje w drzewie roboczym");
+			}
+			if (tresc && !/\bROLLBACK\b/i.test(tresc)) {
+				powody.push("(2) brak `ROLLBACK` w treści pliku");
+			}
+			return powody.length ? [`${plik}: ${powody.join("; ")}`] : [];
+		});
+		expect(
+			naruszenia,
+			"Wpis na SONDY_ODRZUCENIA nie spełnia warunku wpisu. Wyciszenie asercji A1 " +
+				"działa na CAŁY PLIK, więc na tę listę wchodzi wyłącznie miejsce, które " +
+				"(1) JEST TESTEM — ścieżka w `__tests__/` albo nazwa `*.test.ts(x)`/`*.spec.ts(x)` — " +
+				"oraz (2) WYCOFUJE ZAPIS — treść pliku zawiera `ROLLBACK`; `audit_log` jest " +
+				"dopisywalny-tylko (wyzwalacz blokuje UPDATE/DELETE), więc sonda zapisująca na " +
+				"trwałe zatruwa bazę bez możliwości sprzątnięcia. Narzędzie operacyjne nie wchodzi " +
+				"na tę listę nigdy — dla niego właściwą listą jest DOPUSZCZONE, a `actor_id` " +
+				"nie ma prawa się w nim znaleźć.",
 		).toEqual([]);
 	});
 

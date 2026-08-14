@@ -1,6 +1,9 @@
 import { randomBytes } from "node:crypto";
+import { createInterface } from "node:readline";
 import { config } from "dotenv";
 import { Pool } from "pg";
+import { assertTestDb } from "./assert-test-db";
+import { komunikatWydania, odcisk, zapiszPoufnie } from "./zapis-poufny";
 
 config({ path: ".env.local" });
 
@@ -10,13 +13,75 @@ if (!process.env.DATABASE_URL) {
 }
 const ownerUrl: string = process.env.DATABASE_URL;
 
-// Generuje hasło na żądanie LUB używa ustawionego (gdy ten skrypt
-// uruchamiany jest powtórnie z pre-istniejącym hasłem do regeneracji
-// DATABASE_URL_RUNTIME bez nowego ALTER ROLE).
-const password = process.env.APP_RUNTIME_PASSWORD ?? randomBytes(32).toString("base64url");
-const useExisting = !!process.env.APP_RUNTIME_PASSWORD;
+// #305 klasa A — POLITYKA DOMYŚLNA (odmowa dla każdego hosta zdalnego), świadomie
+// BEZ ceremonii. Powód: to narzędzie nadaje ROLĘ i UPRAWNIENIA (CREATE ROLE /
+// ALTER ROLE ... PASSWORD / GRANT), a to NIE MIEŚCI SIĘ w delegacji v1.12 — nie
+// jest ani migracją schemy, ani zaciągiem danych. Otwarcie ścieżki produkcyjnej
+// wymaga osobnej ceremonii z sign-offem Darka (eskalacja Olivera, 2026-08-12);
+// do tego czasu fail-closed jest stanem docelowym, nie długiem.
+try {
+	assertTestDb(ownerUrl, "DATABASE_URL");
+} catch (e) {
+	console.error(e instanceof Error ? e.message : String(e));
+	process.exit(1);
+}
+
+/**
+ * ŚCIEŻKA ZAPISU poświadczenia — wymagana, bo poświadczenie NIE IDZIE NA EKRAN.
+ * Podaj ścieżkę POZA repozytorium (np. w katalogu domowym).
+ */
+const sciezkaZapisu = (() => {
+	const i = process.argv.indexOf("--zapis");
+	return i !== -1 ? process.argv[i + 1] : undefined;
+})();
+
+/** `--haslo-z-wejscia` = podam istniejące hasło na WEJŚCIU STANDARDOWYM (nie zmieniam roli). */
+const hasloZWejscia = process.argv.includes("--haslo-z-wejscia");
+
+/**
+ * Wczytuje sekret z WEJŚCIA STANDARDOWEGO.
+ *
+ * Dlaczego nie ze zmiennej środowiskowej (tak było wcześniej): zmienną ustawia
+ * się w praktyce w jednej linii z poleceniem, więc ląduje w historii powłoki.
+ * To ten sam mechanizm wycieku, który `tools/pilot-enroll.ts` zamknął u siebie
+ * dla adresu uczestnika i który konstytucja rozstrzygnęła dla poświadczeń CI
+ * (CLAUDE.md §5, bramka (i) punkt 5 — „wyłącznie przez standardowe wejście,
+ * nigdy jako argument polecenia").
+ *
+ * ⚠ `echo … | pnpm tsx …` PRZYWRACA DOKŁADNIE TEN WYCIEK — wartość wraca do
+ * historii powłoki i do tablicy procesów. Wpisz ją po zapytaniu narzędzia.
+ *
+ * Monit idzie na wyjście DIAGNOSTYCZNE, nie standardowe, żeby nie mieszał się
+ * z treścią przekierowaną do pliku.
+ */
+async function wczytajSekret(): Promise<string> {
+	const rl = createInterface({ input: process.stdin, output: process.stderr });
+	try {
+		return await new Promise<string>((res) => {
+			rl.question("Sekret app_runtime (wejście standardowe, nie zostanie wypisany): ", (v) =>
+				res(v.trim()),
+			);
+		});
+	} finally {
+		rl.close();
+	}
+}
 
 async function main() {
+	if (!sciezkaZapisu) {
+		console.error(
+			"Brak --zapis <ścieżka>. Poświadczenie NIE jest wypisywane na ekran — musi trafić\n" +
+				"do pliku o prawach 0600. Podaj ścieżkę POZA repozytorium.",
+		);
+		process.exit(1);
+	}
+	const sekret = hasloZWejscia ? await wczytajSekret() : randomBytes(32).toString("base64url");
+	const useExisting = hasloZWejscia;
+	if (useExisting && sekret.length === 0) {
+		console.error("Puste wejście — przerywam.");
+		process.exit(1);
+	}
+
 	// 1. Połącz się jako owner i zrób ALTER ROLE (lub CREATE jeśli z jakiegoś
 	// powodu brakuje). Idempotentne.
 	const ownerPool = new Pool({ connectionString: ownerUrl });
@@ -27,19 +92,19 @@ async function main() {
 		);
 		if (existing.rowCount === 0) {
 			console.log("⚠️  app_runtime nie istnieje — CREATE (migracja 0011 nieaplikowana?)");
-			await ownerClient.query(`CREATE ROLE app_runtime LOGIN NOBYPASSRLS PASSWORD $1`, [password]);
+			await ownerClient.query(`CREATE ROLE app_runtime LOGIN NOBYPASSRLS PASSWORD $1`, [sekret]);
 			await ownerClient.query("GRANT app_student TO app_runtime");
 			await ownerClient.query("GRANT app_faculty TO app_runtime");
 			await ownerClient.query("GRANT USAGE ON SCHEMA public TO app_runtime");
 		} else if (useExisting) {
-			console.log("ℹ️  Re-using APP_RUNTIME_PASSWORD env (nie zmieniam roli)");
+			console.log("ℹ️  Sekret podany na wejściu standardowym — nie zmieniam roli");
 		} else {
 			console.log("✅ app_runtime istnieje — ALTER ROLE LOGIN + PASSWORD");
 			// pg.escapeIdentifier byłby idealny, ale password musi iść jako literal w SQL;
 			// używamy parametryzowanej formy + pg-format-style nie ma. Próbujemy w sposób
 			// natywny: ALTER ROLE nie wspiera $1 dla PASSWORD (PG parser). Generujemy
 			// pojedynczy string przez `quote_literal`.
-			const safePwd = await ownerClient.query(`SELECT quote_literal($1::text) AS q`, [password]);
+			const safePwd = await ownerClient.query(`SELECT quote_literal($1::text) AS q`, [sekret]);
 			const literal = safePwd.rows[0].q;
 			await ownerClient.query(`ALTER ROLE app_runtime LOGIN PASSWORD ${literal}`);
 		}
@@ -65,7 +130,7 @@ async function main() {
 	// 3. Zbuduj DATABASE_URL_RUNTIME przez podmianę user+password
 	const u = new URL(ownerUrl);
 	u.username = "app_runtime";
-	u.password = password;
+	u.password = sekret;
 	const runtimeUrl = u.toString();
 
 	// 4. Smoke test nowego URL — login + simple query
@@ -100,14 +165,17 @@ async function main() {
 		await runtimePool.end();
 	}
 
-	// 5. Print final connection string (do skopiowania do Vercel)
-	console.log("\n=== DATABASE_URL_RUNTIME (do Vercel env Production + Preview) ===");
-	console.log(runtimeUrl);
-	console.log("\n=== Hasło app_runtime (do 1Password — kategoria 'SkillBridge prod') ===");
-	console.log(password);
+	// 5. WYDANIE POŚWIADCZENIA — do pliku 0600, nigdy na ekran.
+	// Było tu `console.log(runtimeUrl)` i wypisanie sekretu wprost. Wyjście
+	// narzędzia trafia do przewijania terminala, zapisu sesji agenta i dziennika
+	// CI — trzech miejsc, których nikt nie sprząta i które przeżywają sesję.
+	zapiszPoufnie(sciezkaZapisu, `DATABASE_URL_RUNTIME=${runtimeUrl}`);
+	for (const linia of komunikatWydania(sciezkaZapisu, odcisk(runtimeUrl))) {
+		console.log(linia);
+	}
 	console.log("\nNastępne kroki:");
-	console.log("1. Skopiuj DATABASE_URL_RUNTIME do Vercel Dashboard → skill-bridge-ai →");
-	console.log("   Settings → Environment Variables → Add New → Production + Preview");
+	console.log("1. Odczytaj wartość Z PLIKU (nie z ekranu) i wklej do Vercel Dashboard →");
+	console.log("   skill-bridge-ai → Settings → Environment Variables → Production + Preview");
 	console.log("2. Vercel Dashboard → Deployments → najnowszy production → ⋯ → Redeploy");
 	console.log("3. Powiedz mi 'gotowe' — zrobię smoke przez Vercel MCP");
 }

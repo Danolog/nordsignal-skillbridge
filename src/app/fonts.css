@@ -1,0 +1,113 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Kroje pisma — ZACIĄGNIĘTE LOKALNIE, zero sieci w trakcie budowania.
+   ─────────────────────────────────────────────────────────────────────────────
+
+   DLACZEGO TEN PLIK ISTNIEJE (a nie `next/font/google`):
+
+   `next/font/google` pobiera pliki kroju z `fonts.gstatic.com` W TRAKCIE
+   KOMPILACJI. To czyni cudzy serwer treści zależnością naszego budowania —
+   a budowanie jest krokiem WYMAGANEJ bramki. 2026-08-14 serwer Google zwrócił
+   `404` i bramka `a11y-exam` zaczerwieniła się na zgłoszeniu #297, mimo że kod
+   był poprawny; zadanie `build` w tym samym przebiegu przeszło, bo zdążyło
+   pobrać krój minutę wcześniej. Ryzyko mnoży się przez liczbę zadań budujących
+   projekt osobno (cztery bramki Playwrighta + `build`).
+
+   Pliki `.woff2` leżą teraz w `src/app/fonts/` i są zaciągane przez pakowarkę
+   (ang. bundler) z dysku. Zostały pobrane RAZ z Google Fonts i są dokładnie tymi
+   samymi plikami, które serwowałby `next/font/google` — te same podzbiory
+   (ang. subset), te same wagi, te same zakresy znaków. Wygląd się nie zmienia.
+
+   STRAŻNIK: `src/app/__tests__/fonts-bez-sieci.test.ts` czerwieni się, gdy
+   ktokolwiek wróci do `next/font/google` albo wskaże krój adresem sieciowym.
+
+   ZAKRESY ZNAKÓW (`unicode-range`) — przepisane 1:1 z odpowiedzi Google Fonts,
+   odczyt 2026-08-14. Dzięki nim przeglądarka pobiera plik `latin-ext` TYLKO gdy
+   na stronie faktycznie wystąpią polskie znaki diakrytyczne (ą, ć, ę, ł, ń, ś,
+   ź, ż leżą w U+0100–U+017F). Bez tego podziału albo tracimy diakrytykę, albo
+   każdy użytkownik pobiera oba pliki.
+
+   ŚWIADOMY KOSZT: tracimy automatyczny `preload` kroju, który dokładał
+   `next/font`. Tekst pozostaje widoczny od pierwszej klatki (`font-display:
+   swap`), więc jest to koszt milisekund w pierwszym malowaniu, nie koszt
+   dostępności. Wymiana: determinizm wymaganej bramki za wskazówkę wydajnościową.
+
+   Geist Sans (`--font-geist-sans`) USUNIĘTY — zmienna była deklarowana
+   w `layout.tsx` i nie konsumowana w żadnym arkuszu ani komponencie.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Geist Mono — krój zmienny (ang. variable font), wagi 100–900 ──
+   Wyłącznie podzbiór `latin`, dokładnie jak poprzednia konfiguracja
+   (`Geist_Mono({ subsets: ["latin"] })`). Używany jako zapasowy za
+   „JetBrains Mono" w blokach z danymi. */
+@font-face {
+	font-family: "Geist Mono";
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url("./fonts/geist-mono-latin.woff2") format("woff2");
+	unicode-range:
+		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+		U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+		U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ── Playfair Display 700 — nagłówki („Papierowy editorial") ── */
+@font-face {
+	font-family: "Playfair Display";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("./fonts/playfair-display-latin.woff2") format("woff2");
+	unicode-range:
+		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+		U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+		U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: "Playfair Display";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("./fonts/playfair-display-latin-ext.woff2") format("woff2");
+	unicode-range:
+		U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+		U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+		U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ── DM Sans — treść. Krój ZMIENNY: Google serwuje JEDEN plik na podzbiór dla
+   wag 400/500/700 (sprawdzone sumą kontrolną — trzy pobrania wag dały ten sam
+   plik co do bajtu). Deklarujemy więc zakres wag zamiast trzech kopii tego
+   samego pliku: 3 pliki mniej, 111 kB mniej w repozytorium. */
+@font-face {
+	font-family: "DM Sans";
+	font-style: normal;
+	font-weight: 100 1000;
+	font-display: swap;
+	src: url("./fonts/dm-sans-latin.woff2") format("woff2");
+	unicode-range:
+		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+		U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+		U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: "DM Sans";
+	font-style: normal;
+	font-weight: 100 1000;
+	font-display: swap;
+	src: url("./fonts/dm-sans-latin-ext.woff2") format("woff2");
+	unicode-range:
+		U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+		U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+		U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Zmienne, których używa `globals.css`. Wcześniej wstrzykiwał je `next/font`
+   przez klasę na `<body>`; teraz stoją wprost, a nazwa rodziny jest ta sama,
+   więc zapisy typu `var(--font-dm-sans), "DM Sans", system-ui` działają bez
+   zmian — również wtedy, gdy plik kroju się nie pobierze. */
+:root {
+	--font-geist-mono: "Geist Mono";
+	--font-playfair: "Playfair Display";
+	--font-dm-sans: "DM Sans";
+}

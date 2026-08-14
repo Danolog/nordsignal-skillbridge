@@ -1,6 +1,19 @@
 # Runbook: kopia zapasowa Neona przed zmianą danych produkcyjnych
 
-**Wersja:** v0.2 · 2026-08-06 · właściciel: Ethan (CTO)
+**Wersja:** v0.3 · 2026-08-13 · właściciel: Ethan (CTO)
+
+> **Zmiana v0.2 → v0.3 (pakiet kopii zapasowych, bramka 3 runbooka zapłonu flagi).**
+> Runbook opisywał **tworzenie** i **kasowanie** kopii, a milczał o dwóch rzeczach, które
+> klauzula informacyjna **obiecuje studentowi**: że kopie z jego danymi wygasają w oknie
+> i że po odtworzeniu systemu ponawiamy na nim jego usunięcie. Nowe **§8** (okno życia
+> kopii, reguła odświeżania, kod wyjścia zamiast wrażenia) i **§9** (odtworzenie + krok
+> „ponów usunięcia"). Liczby dni **tu nie ma** — ma jeden nośnik w sekcji 9 klauzuli
+> i pilnuje tego `tests/unit/rodo/kopie-zapasowe-okno.contract.test.ts`.
+> Etykieta „niezweryfikowane" **zdjęta z odczytu 3a** (dwa realne wywołania w postaci
+> `-K -`, 2026-08-13) i **zostawiona na zapisie 3b**, bo tego nadal nikt nie wykonał.
+> Powód powstania: pomiar 2026-08-13 pokazał, że automatyczna historia Neona to **6 godzin**,
+> ale nasze gałęzie `prod-backup-*` **nie wygasają w ogóle** — zdanie z klauzuli było
+> prawdziwe przypadkiem, nie z mechanizmu.
 
 > **Zmiana v0.1 → v0.2 (blok Leo w PR #265).** v0.1 obiecywała w §3, że klucz nie trafia
 > do treści polecenia, i **łamała tę obietnicę w trzech własnych blokach kodu** (`-H
@@ -173,15 +186,18 @@ DELETE | Authorization=Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9 | cialo=(brak c
 Wszystkie trzy niosą nagłówek, a ciało `POST` dociera nienaruszone — `-d` i `-K -` nie
 kolidują. To zamyka obawę, że poprawka działa tylko dla odczytu.
 
-> **NIEZWERYFIKOWANE:** odczyt (3a) był wykonany realnym wywołaniem do Neona 2026-08-01,
-> ale **w starej postaci `-H`** — postaci `-K -` nie odpalono jeszcze przeciw Neonowi,
-> tylko przeciw nasłuchowi lokalnemu (3c). Pomiar 3c pokazuje, że nagłówek dociera
-> identyczny, więc oczekiwana różnica to zero; **oczekiwanie to nie jest jednak to samo co
-> odczyt** — pierwsze realne wywołanie 3a w nowej postaci należy potwierdzić przy
-> najbliższym oknie. Zapisu (3b) **nie wykonano** — ceremonia 1E.7 była w locie, a bramka
-> (g) zabrania ruszania gałęzi w trakcie ceremonii. Do sprawdzenia przejściem
-> tam-i-z-powrotem (utwórz → potwierdź → skasuj) **przy najbliższym oknie poza ceremonią**.
-> Do tego czasu traktuj 3b jako procedurę opisaną, nie sprawdzoną.
+> **ODCZYT (3a) — ETYKIETA ZDJĘTA 2026-08-13.** v0.2 oznaczała 3a jako niezweryfikowane
+> w postaci `-K -`: realne wywołanie z 2026-08-01 poszło jeszcze starym `-H`, a nową postać
+> sprawdzono wyłącznie przeciw nasłuchowi lokalnemu (3c). **Domknięte wykonaniem** — dwa
+> wywołania przeciw realnemu Neonowi w postaci `-K -`, oba zwróciły dane (Ethan, odczyt
+> 2026-08-13 18:50 CEST): `GET /projects/$PROJ` (stąd `history_retention_seconds` = 21600)
+> oraz `GET /projects/$PROJ/branches` (7 gałęzi, limit 10). Oczekiwanie z 3c potwierdzone
+> odczytem: różnica wynosi zero.
+>
+> **ZAPIS (3b) NADAL NIEZWERYFIKOWANY** — i etykieta zostaje, bo tego nie wykonałem.
+> Do sprawdzenia przejściem tam-i-z-powrotem (utwórz → potwierdź → skasuj) **przy
+> najbliższym oknie poza ceremonią**; do tego czasu 3b jest procedurą opisaną, nie
+> sprawdzoną. Naturalnym momentem jest pierwsze odświeżenie kopii z §8.
 
 ---
 
@@ -247,3 +263,102 @@ Klucz ma zasięg całej organizacji (sekcja 1) i jest jedynym uwierzytelnieniem 
   poświadczeń produkcyjnych leżącym jawnym tekstem w dziesięciu kopiach `.env.prod` to
   przestawianie mebli. Prawdziwą pozycją jest całość — propozycja Ryana do 2026-08-15.
   Rotacja Neona ma sens, ale nie jest najwyżej punktowaną pozycją.
+
+---
+
+## 8. Okno życia kopii — reguła odświeżania (obietnica z klauzuli, nie porządki)
+
+**Skąd to się bierze.** Sekcja 9 klauzuli informacyjnej (`docs/legal/klauzula-informacyjna-art13.md`)
+obiecuje studentowi, że kopie z jego danymi wygasają najpóźniej w zadeklarowanym oknie.
+**Liczba dni ma jeden nośnik i jest nim tamto zdanie** — tutaj jej nie przepisujemy
+(CLAUDE.md v1.17). Kto potrzebuje wartości, czyta ją stamtąd maszynowo.
+
+**Dlaczego to nie jest sprzątanie, tylko bramka.** Automatyczna historia Neona wynosi
+**6 godzin** (`history_retention_seconds` = 21600, odczyt 2026-08-13) — mieści się w oknie
+z ogromnym zapasem. Ale gałęzie `prod-backup-*` to **pełne kopie bazy i nie wygasają
+w ogóle**; żyją do ręcznego skasowania. Do 2026-08-13 zdanie z klauzuli było prawdziwe
+**przypadkiem** — bo akurat niedawno były ceremonie — a nie dlatego, że ktokolwiek
+odliczał dni.
+
+### Przegląd (kod wyjścia, nie wrażenie)
+
+```bash
+NEON_API_KEY=$(grep '^NEON_API_KEY=' .env.prod | cut -d= -f2- | tr -d '"')
+printf 'header = "Authorization: Bearer %s"\n' "$NEON_API_KEY" | curl -s -K - \
+  "https://console.neon.tech/api/v2/projects/$PROJ/branches" \
+| pnpm exec tsx tools/kopie-zapasowe-przeglad.ts
+```
+
+| Kod | Werdykt | Co robisz |
+|---|---|---|
+| **0** | `W OKNIE` | nic — obietnica z sekcji 9 jest prawdziwa |
+| **1** | `NARUSZENIE` | istnieje kopia starsza niż okno → **reguła odświeżania** niżej |
+| **2** | `NIEROZSTRZYGNIĘTY` | nie odczytano wejścia albo okna z klauzuli. **To nie jest „prawie zielone"** — traktuj jak `1` |
+
+### Reguła odświeżania — i dlaczego nie kłóci się z bramką (g)
+
+Bramka (g) (`CLAUDE.md` v1.15) każe **zawsze zostawić dwie najnowsze** kopie stanu produkcji.
+Przy dłuższej przerwie między ceremoniami obie przekroczą okno — i wtedy bramka (g) zabrania
+skasować to, czego klauzula każe się pozbyć. **Rozwiązaniem jest odświeżenie, nie wyjątek
+od bramki:**
+
+> **Reguła.** Gdy przegląd zwróci `1`, a skasowanie przeterminowanych zeszłoby poniżej dwóch
+> kopii — **najpierw zrób świeżą kopię** (§3b), **dopiero potem kasuj** przeterminowane (§4).
+> Narzędzie mówi to wprost w werdykcie (`wymagaSwiezejKopiiPrzedKasowaniem`).
+>
+> **Uzasadnienie, nie zaklęcie:** świeża kopia jest zdjęciem stanu **po** usunięciach, więc
+> **nie zawiera danych osoby, która konto usunęła**. Utrzymujemy dwie kopie, obietnica zostaje
+> prawdziwa, żadna reguła nie ustępuje drugiej.
+
+### Cena tej reguły — obie strony, bo czytać ją będzie ktoś pod presją
+
+Przy **6-godzinnej** historii automatycznej te ręczne gałęzie **są** naszą zdolnością
+odtworzeniową: poza sześciogodzinnym oknem nie ma z czego odtwarzać niczego innego.
+Skracanie życia kopii to więc **wymiana ryzyka RODO na ryzyko odtworzeniowe**, nie darmowe
+sprzątanie. Dlatego reguła brzmi „odśwież, potem skasuj", a nigdy „skasuj, bo termin" —
+kolejność odwrotna zostawia okno, w którym nie mamy ani kopii w oknie, ani kopii w ogóle.
+
+---
+
+## 9. Odtworzenie z kopii — i krok „ponów usunięcia"
+
+**Trzecia obietnica z sekcji 9 klauzuli** brzmi: *„jeśli musimy [system] odtworzyć —
+ponawiamy na nim Twoje usunięcie"*. Do 2026-08-13 ten krok **nie istniał w żadnym runbooku**
+— jedynym miejscem, w którym żył, było zdanie w klauzuli, którego nikt nie wykonuje.
+
+**Dlaczego to konieczne.** Odtworzenie cofa bazę do stanu sprzed usunięcia konta, więc
+**wskrzesza wiersze osoby, która skorzystała z art. 17**. Cofa przy tym także `audit_log`,
+czyli ślad samego żądania — dlatego tabela produktu **nie może być jedynym rejestrem żądań**.
+
+### Procedura (wykonuje Ethan)
+
+1. **Nie promuj kopii od razu.** Odtwarzaj do **nowej gałęzi**, nie na `main`.
+2. **Zbierz listę usunięć z gałęzi SPRZED odtworzenia** — dopóki istnieje, niesie zdarzenia
+   `account.deletion.completed` (`src/lib/auth/account-deletion.ts`), których w kopii nie ma:
+
+   ```sql
+   SELECT target_id, created_at FROM audit_log
+    WHERE action = 'account.deletion.completed' AND created_at > '<data utworzenia kopii>'
+    ORDER BY created_at;
+   ```
+3. **Ponów usunięcia na odtworzonej gałęzi** — tą samą ścieżką co zwykłe usunięcie konta,
+   nigdy ręcznym `DELETE` (kaskada i ślad muszą zachować się identycznie).
+4. **Dopiero teraz promuj** odtworzoną gałąź.
+5. **Zapisz w audit logu firmy**: co odtworzono, ile usunięć ponowiono, z jakiego odczytu.
+
+### ⚠ Czego ta procedura NIE zamyka — i to jest pozycja, nie przeoczenie
+
+Krok 2 działa, **dopóki gałąź sprzed odtworzenia istnieje** (awaria danych, zła migracja,
+pomyłka operatora — czyli większość realnych przypadków). **Nie działa przy utracie całej
+gałęzi produkcyjnej**: wtedy jedynym źródłem listy żądań byłby rejestr **poza bazą produktu**,
+a takiego dziś **nie mamy** — wskazany w kodzie „audit log firmy" jest zapisywany hookiem na
+maszynie operatora, więc dla usunięć samoobsługowych (student klika „usuń konto" na Vercelu)
+jest **pusty z konstrukcji**, a nie „jeszcze niewypełniony".
+
+Każdy trwały magazyn poza bazą, do którego umie pisać produkt, to **nowe źródło danych =
+czerwona linia** (`CLAUDE.md` §4, sign-off Darka). **Właściciel decyzji: Darek**, przygotowanie:
+Ryan (RoPA) + Ethan (wykonanie). **Próg: przed zapłonem `FLAG_ACCOUNT_DELETION`** — bramka 3
+runbooka zapłonu (`docs/runbooks/zaplon-flagi-usuwania-konta.md`) jest domknięta w częściach
+„okno" i „ponów usunięcia", a **otwarta** w części „rejestr poza bazą".
+
+---

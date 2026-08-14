@@ -419,7 +419,7 @@ export async function runCurriculumIngest(
 	// guard wyłącznie w CLI zostawiał realną ścieżkę zapisu bez ochrony.
 	// main() woła go powtórnie (fail-fast przed czytaniem plików) — guard jest
 	// idempotentny i bez efektów ubocznych, więc podwójne wywołanie nic nie kosztuje.
-	assertTestDb(databaseUrl, "DATABASE_URL");
+	assertTestDb(databaseUrl, "DATABASE_URL", { allowProduction: true });
 
 	// Walidacja treści PRZED dotknięciem bazy (plik niekontraktowy nie wejdzie).
 	const problems = validateContentSet(contents);
@@ -683,7 +683,7 @@ export async function runCurriculumIngest(
 }
 
 async function main(): Promise<void> {
-	assertTestDb(process.env.DATABASE_URL, "DATABASE_URL");
+	assertTestDb(process.env.DATABASE_URL, "DATABASE_URL", { allowProduction: true });
 	const ladder = JSON.parse(readFileSync(LADDER_PATH, "utf8")) as Ladder;
 	const wszystkie = readContentFiles();
 	// ── ADR-016 D4 — bramka publikacji, druga (i skuteczniejsza) połowa ──────
