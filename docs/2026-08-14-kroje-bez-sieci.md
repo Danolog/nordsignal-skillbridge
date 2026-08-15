@@ -62,6 +62,16 @@ export HTTP_PROXY=http://127.0.0.1:9  http_proxy=http://127.0.0.1:9
 rm -rf .next && pnpm build
 ```
 
+> **Sondę uruchamiaj we własnym drzewie roboczym** (osobny klon albo `git worktree`), nigdy w cudzym checkoucie — budowanie kasuje `.next`.
+>
+> **Zależności musisz w tym drzewie zainstalować (`pnpm install`), nie da się ich dowiązać.** Dowiązanie symboliczne `node_modules` do innego drzewa **nie działa** — Turbopack odmawia:
+>
+> ```
+> Symlink … points out of the filesystem root
+> ```
+>
+> (znalezione przez Leo, 2026-08-14). To jest pułapka warta minuty czytania: bez tego sonda wywala się z powodu **niezwiązanego z krojami**, a następna osoba zobaczy czerwień i wyciągnie z niej wniosek „kroje znowu sięgają do sieci". Instalacja trwa dłużej niż dowiązanie — i tak ma być.
+
 **Kontrola dwustronna jest obowiązkowa** — sonda, która nigdy się nie odzywa, jest nieodróżnialna od sondy zepsutej:
 
 - **człon dodatni** (sonda ma moc): przywróć w `src/app/layout.tsx` import kroju z `next/font/google` i zbuduj pod martwym pośrednikiem → budowanie ma **paść**;
