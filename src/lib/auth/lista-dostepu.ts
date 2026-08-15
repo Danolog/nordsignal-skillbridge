@@ -40,6 +40,30 @@
  * najważniejsze — co dzieje się z listą, gdy uczestnik zażąda usunięcia konta.
  * LISTA PRZEŻYJE USUNIĘCIE Z BAZY, bo leży poza nią. To ta sama klasa wady, którą
  * Ryan opisał przy Pakiecie B, i nie domyka jej żaden kod w tym pliku.
+ *
+ * ZAKRES OCHRONY — CZEGO TA LISTA NIE WIDZI
+ * -----------------------------------------
+ * Zielony strażnik tego modułu NIE dowodzi, że lista widzi cały ruch. Zna trzy
+ * nazwane dziury i żadna nie jest domykana tutaj:
+ *
+ *  1. ISTNIEJĄCE KONTO SPOZA LISTY, logujące się dostawcą (Google).
+ *     `databaseHooks.user.create.before` rusza WYŁĄCZNIE przy tworzeniu konta,
+ *     więc kto ma konto od wczoraj, wchodzi dalej. Na produkcji takich kont
+ *     jest 33. To warunek zapłonu, nie dług — rozstrzygnięcie: Sophia
+ *     z sign-offem Ryana (rekomendacja Leo: wyłączyć logowanie dostawcą na czas
+ *     pilotażu, zamiast domykać dwie bramki po kolei).
+ *
+ *  2. ŻĄDANIE, KTÓRE W OGÓLE NIE WYCHODZI. Przy zapalonej fladze regulaminu pole
+ *     zgody ma `required`, a formularz nie ma `noValidate` — przeglądarka blokuje
+ *     wysłanie PRZED zdarzeniem `submit`. Bramka serwera nie dochodzi wtedy do
+ *     głosu. To nie jest wada tej listy, ale zawęża jej zasięg.
+ *
+ *  3. WSZYSTKO POZA WARSTWĄ LOGOWANIA. Ta lista bramkuje wejście, nie żądania.
+ *     Sesja wydana wcześniej działa do wygaśnięcia albo do rotacji klucza
+ *     podpisu — cięcie sesji jest osobną czynnością przy zapłonie.
+ *
+ * Ten akapit stoi w pliku, a nie w raporcie, świadomie: raport przeczyta się raz,
+ * a plik czyta każdy, kto kiedyś uzna „przecież mamy listę dostępu" za dowód.
  */
 
 /** Nazwa zmiennej niosącej listę. Jedno miejsce, żeby strażnik i kod nie rozjechały się co do napisu. */
@@ -89,16 +113,28 @@ export function wpisyDomenowe(): readonly string[] {
 }
 
 /**
- * Czy działamy na PRODUKCJI. Jeden nośnik tego pytania.
+ * Czy działamy na WDROŻENIU OSIĄGALNYM Z INTERNETU. Jeden nośnik tego pytania.
  *
- * `VERCEL_ENV` ustawia sama platforma i przyjmuje `production` wyłącznie na
- * wdrożeniu produkcyjnym — w podglądach jest `preview`, lokalnie i w CI nie ma
- * jej wcale. Świadomie NIE pytamy o `NODE_ENV`: ten jest `production` także
- * w każdym zbudowanym podglądzie i w torze nocnym, więc odpowiadałby „tak" tam,
- * gdzie odpowiedź brzmi „nie".
+ * `VERCEL_ENV` ustawia sama platforma: `production` na wdrożeniu produkcyjnym,
+ * `preview` na każdym podglądzie. Lokalnie i w CI zmiennej NIE MA WCALE.
+ * Pytamy więc o jej OBECNOŚĆ, nie o wartość.
+ *
+ * DLACZEGO NIE SAMA PRODUKCJA (sprostowanie po pomiarze Leo, 2026-08-15):
+ * pierwsza wersja blokowała wpisy domenowe wyłącznie przy `production`, więc
+ * na PODGLĄDZIE wpis domenowy działał — a podgląd jest wdrożeniem osiągalnym
+ * z internetu. Broniło go wyłącznie `ssoProtection`, czyli USTAWIENIE W KONSOLI:
+ * poza kontrolą wersji, bez strażnika, zmienialne jednym kliknięciem przez
+ * kogoś, kto nie wie, że opiera się na nim bramka dostępu. To ten sam argument,
+ * który postawiłem przeciw wyjątkom per trasa w ochronie wdrożenia — i który
+ * obrócił się przeciw mojej własnej bramce.
+ *
+ * Świadomie NIE pytamy o `NODE_ENV`: ten jest `production` także w każdym
+ * zbudowanym podglądzie i w torze nocnym, więc odpowiadałby „tak" tam, gdzie
+ * odpowiedź brzmi „nie".
  */
-function czyProdukcja(): boolean {
-	return process.env.VERCEL_ENV === "production";
+function czyWdrozenieSieciowe(): boolean {
+	const env = process.env.VERCEL_ENV;
+	return typeof env === "string" && env.length > 0;
 }
 
 /**
@@ -107,11 +143,11 @@ function czyProdukcja(): boolean {
  * Zwraca `false` dla listy pustej — patrz nagłówek. Zwraca `false` także dla
  * adresu pustego/niepodanego: brak adresu nie jest zgodą.
  *
- * WPIS DOMENOWY NIE DZIAŁA NA PRODUKCJI — i to jest cała jego bramka.
- * Na produkcji wpuszczamy wyłącznie adresy wskazane z nazwiska, bo `@uczelnia.pl`
- * na liście pilotażu wpuściłby każdego studenta tej uczelni, a nie pięcioro
- * zaproszonych. Poza produkcją wpis domenowy jest niezbędny, bo przejazd
- * rejestracji generuje adresy losowe.
+ * WPIS DOMENOWY NIE DZIAŁA NA ŻADNYM WDROŻENIU — ani na produkcji, ani na
+ * podglądzie. To jest cała jego bramka. Wpuszczamy tam wyłącznie adresy wskazane
+ * z nazwiska, bo `@uczelnia.pl` na liście pilotażu wpuściłby każdego studenta tej
+ * uczelni, a nie pięcioro zaproszonych. Poza wdrożeniami (lokalnie i w CI) wpis
+ * domenowy jest niezbędny, bo przejazd rejestracji generuje adresy losowe.
  *
  * To jest ŚWIADOMA różnica zachowania per środowisko — jedyna w tym pliku.
  * Zwykle jej unikam, bo rozdwaja regułę; tutaj różnica JEST regułą
@@ -125,8 +161,8 @@ export function czyAdresDozwolony(adres: string | null | undefined): boolean {
 	const znormalizowany = znormalizuj(adres);
 	if (dozwolone.includes(znormalizowany)) return true;
 
-	// Dopasowanie domenowe — nigdy na produkcji.
-	if (czyProdukcja()) return false;
+	// Dopasowanie domenowe — nigdy na wdrożeniu (produkcja ani podgląd).
+	if (czyWdrozenieSieciowe()) return false;
 	const malpa = znormalizowany.lastIndexOf("@");
 	if (malpa < 0) return false;
 	const domena = znormalizowany.slice(malpa); // razem z „@"

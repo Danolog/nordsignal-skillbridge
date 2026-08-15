@@ -17,6 +17,8 @@
 //   M5  zdjęta bramka produkcji (wpis domenowy działa wszędzie)  -> 1 czerwony
 //   M6' porównanie po nazwie domeny bez małpy (poddomena wchodzi)-> 1 czerwony
 //   M7  produkcja rozpoznawana po `NODE_ENV` zamiast `VERCEL_ENV`-> 1 czerwony
+//   M8  powrót do „blokuj tylko na production" (podgląd przepuszcza) -> 2 czerwone
+//   M9  zdjęta bramka wdrożenia w całości                       -> 3 czerwone
 // Po cofnięciu wszystkich: 0 czerwonych.
 //
 // MUTACJA, KTÓRA PRZEŻYŁA — i dlaczego to NIE jest strażnik-atrapa:
@@ -133,6 +135,22 @@ describe("lista dostępu — wpis domenowy NIE działa na produkcji", () => {
 		expect(czyAdresDozwolony("losowy-1234@example.com")).toBe(false);
 	});
 
+	it("NA PODGLĄDZIE wpis domenowy TEŻ nie wpuszcza", () => {
+		// Sprostowanie po pomiarze Leo: podgląd jest wdrożeniem OSIĄGALNYM
+		// Z INTERNETU. Pierwsza wersja blokowała tylko `production`, więc na
+		// podglądzie wpis domenowy działał, a bronił go wyłącznie `ssoProtection`
+		// — ustawienie w konsoli, poza kontrolą wersji i bez strażnika.
+		process.env.VERCEL_ENV = "preview";
+		expect(czyAdresDozwolony("losowy-1234@example.com")).toBe(false);
+	});
+
+	it("nieznana wartość VERCEL_ENV też blokuje (pytamy o obecność, nie o wartość)", () => {
+		// Gdyby platforma dołożyła trzecią nazwę środowiska, domyślnie ma być
+		// zamknięte. Lista wartości gniłaby; obecność zmiennej nie gnije.
+		process.env.VERCEL_ENV = "jakies-nowe-srodowisko";
+		expect(czyAdresDozwolony("losowy-1234@example.com")).toBe(false);
+	});
+
 	it("NA produkcji adres imienny nadal wpuszcza — bramka tnie domeny, nie listę", () => {
 		process.env.VERCEL_ENV = "production";
 		expect(czyAdresDozwolony("imienny@nordsignal.cc")).toBe(true);
@@ -144,11 +162,6 @@ describe("lista dostępu — wpis domenowy NIE działa na produkcji", () => {
 		// Domenę bierzemy po OSTATNIEJ małpie, więc `@example.com` nie łapie
 		// `ktos@evil.example.com` — inaczej wystarczyłoby zarejestrować poddomenę.
 		expect(czyAdresDozwolony("ktos@evil.example.com")).toBe(false);
-	});
-
-	it("`preview` to nie produkcja — podglądy mają działać jak CI", () => {
-		process.env.VERCEL_ENV = "preview";
-		expect(czyAdresDozwolony("losowy@example.com")).toBe(true);
 	});
 
 	it("spis wpisów domenowych jest widoczny na zewnątrz (diagnostyka i przegląd)", () => {
