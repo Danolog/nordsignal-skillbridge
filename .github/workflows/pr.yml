@@ -60,6 +60,24 @@ concurrency:
 permissions:
   contents: read
 
+# LISTA DOSTEPU DLA CI (src/lib/auth/lista-dostepu.ts).
+#
+# Od 2026-08-15 rejestracja i logowanie sa bramkowane lista dozwolonych adresow,
+# a PUSTA LISTA ZNACZY ODMOWE WSZYSTKIM — swiadomie, bo regula bezpieczenstwa,
+# ktora brak konfiguracji zamienia w przepustke, jest gorsza niz jej brak.
+# Bez tej zmiennej kazdy tor logujacy sie dostaje odmowe (zmierzone: 6 bramek
+# na czerwono, zgloszenie #325).
+#
+# WPISY DOMENOWE, nie doslowne adresy: przejazd rejestracji generuje adresy
+# LOSOWE, wiec lista imienna nigdy by go nie przepuscila.
+#
+# NA PRODUKCJI WPIS DOMENOWY NIE DZIALA — pilnuje tego sam modul (`VERCEL_ENV`),
+# nie ten komentarz. Dlatego ta wartosc jest bezpieczna tutaj i bylaby grozna
+# w konfiguracji produkcyjnej: `@uczelnia.pl` wpuscilby kazdego studenta
+# uczelni zamiast pieciorga zaproszonych.
+env:
+  PILOT_ALLOWLIST: "@example.com,@e2e.invalid,@test.invalid"
+
 jobs:
   lint:
     name: lint (biome)

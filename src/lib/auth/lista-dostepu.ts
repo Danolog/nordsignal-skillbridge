@@ -74,16 +74,63 @@ export function adresyDozwolone(): readonly string[] {
 }
 
 /**
+ * Czy wpis jest DOMENOWY (`@example.com`), czy dosłownym adresem.
+ *
+ * Wpis domenowy istnieje dla jednego powodu: przejazd rejestracji w CI generuje
+ * adresy LOSOWE, więc lista dosłownych adresów nigdy by go nie przepuściła.
+ */
+export function czyWpisDomenowy(wpis: string): boolean {
+	return wpis.startsWith("@");
+}
+
+/** Wpisy domenowe z bieżącej listy — do wglądu strażnika i diagnostyki. */
+export function wpisyDomenowe(): readonly string[] {
+	return adresyDozwolone().filter(czyWpisDomenowy);
+}
+
+/**
+ * Czy działamy na PRODUKCJI. Jeden nośnik tego pytania.
+ *
+ * `VERCEL_ENV` ustawia sama platforma i przyjmuje `production` wyłącznie na
+ * wdrożeniu produkcyjnym — w podglądach jest `preview`, lokalnie i w CI nie ma
+ * jej wcale. Świadomie NIE pytamy o `NODE_ENV`: ten jest `production` także
+ * w każdym zbudowanym podglądzie i w torze nocnym, więc odpowiadałby „tak" tam,
+ * gdzie odpowiedź brzmi „nie".
+ */
+function czyProdukcja(): boolean {
+	return process.env.VERCEL_ENV === "production";
+}
+
+/**
  * Rozstrzyga, czy adres może wejść. JEDYNE miejsce, które o tym orzeka.
  *
  * Zwraca `false` dla listy pustej — patrz nagłówek. Zwraca `false` także dla
  * adresu pustego/niepodanego: brak adresu nie jest zgodą.
+ *
+ * WPIS DOMENOWY NIE DZIAŁA NA PRODUKCJI — i to jest cała jego bramka.
+ * Na produkcji wpuszczamy wyłącznie adresy wskazane z nazwiska, bo `@uczelnia.pl`
+ * na liście pilotażu wpuściłby każdego studenta tej uczelni, a nie pięcioro
+ * zaproszonych. Poza produkcją wpis domenowy jest niezbędny, bo przejazd
+ * rejestracji generuje adresy losowe.
+ *
+ * To jest ŚWIADOMA różnica zachowania per środowisko — jedyna w tym pliku.
+ * Zwykle jej unikam, bo rozdwaja regułę; tutaj różnica JEST regułą
+ * bezpieczeństwa, nie skutkiem ubocznym, i pilnują jej mutacje w obie strony.
  */
 export function czyAdresDozwolony(adres: string | null | undefined): boolean {
 	if (!adres) return false;
 	const dozwolone = adresyDozwolone();
 	if (dozwolone.length === 0) return false;
-	return dozwolone.includes(znormalizuj(adres));
+
+	const znormalizowany = znormalizuj(adres);
+	if (dozwolone.includes(znormalizowany)) return true;
+
+	// Dopasowanie domenowe — nigdy na produkcji.
+	if (czyProdukcja()) return false;
+	const malpa = znormalizowany.lastIndexOf("@");
+	if (malpa < 0) return false;
+	const domena = znormalizowany.slice(malpa); // razem z „@"
+	return dozwolone.some((wpis) => czyWpisDomenowy(wpis) && wpis === domena);
 }
 
 /**
