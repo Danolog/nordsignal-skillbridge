@@ -1,6 +1,16 @@
-# Klauzula informacyjna (art. 13 RODO) — SkillBridge · DRAFT v0.3
+# Klauzula informacyjna (art. 13 RODO) — SkillBridge · DRAFT v0.4
 
-**Wersja:** v0.3 · 2026-08-14 · **Autor:** Ryan (CRCO nordsignal) · **Zadanie:** E2c pakietu RODO
+**Changelog v0.3 → v0.4 (2026-08-15) — trzy sign-offy Darka, jedna pozycja zamknięta, dwie nadal
+otwarte.** **(1)** Wiersz **W-5** i pozycja **S-2**: regulamin i zasada odpowiedzi dla pracodawcy
+**podpisane 2026-08-15 13:43**. **Warunków nie zamykam** — oba mają drugi człon, którym jest **kod
+na `main`** (zgłoszenie #323, niescalone), a nie podpis. Podpis domyka to, co domyka podpis.
+**(2)** Pozycja **S-1** (Pakiet B) **zamknięta** wariantem (2): powstał
+`docs/data/rejestr-zadan-usuniecia.md` — rejestr żądań usunięcia poza gałęzią produkcyjną,
+z procedurą ponowienia po odtworzeniu kopii. Zdejmuje to czerwoną linię „nowe źródło danych"
+z biurka Darka. **(3)** Oświadczenie administratora o kontach **podpisane**; rozróżnienie
+pomiar / oświadczenie zapisane wprost. Treść dla studenta (CZĘŚĆ I) **nietknięta w tej wersji**.
+
+**Wersja:** v0.4 · 2026-08-15 · **Autor:** Ryan (CRCO nordsignal) · **Zadanie:** E2c pakietu RODO
 (artefakt **E-1**) · **Zleceniodawca:** Oliver (COO) · **Sign-off:** Darek (CEO) — wymagany, akt
 wychodzący na zewnątrz (CLAUDE.md §4).
 
@@ -76,7 +86,7 @@ Dlatego klauzula zapala się **razem z** poniższymi, nigdy przed nimi:
 | **W-2** | **Pozycje rejestru kompletności art. 17 rozstrzygnięte** — każda albo naprawiona, albo świadomie przyjęta i **opisana w sekcji 9 tej klauzuli** | Ryan (odbiór), Ethan (wykonanie) | Nośnik listy: `docs/data/art17-kompletnosc-usuniecia.md`. Sekcja 9 mówi studentowi, co zostaje po usunięciu konta — jeśli rejestr nie jest rozstrzygnięty, **nie wiemy, co tam napisać** |
 | **W-3** | **Dług A-1 zamknięty dla nowych wierszy śladu rozliczalności** (kierunek (a+): nowe zdarzenia bez identyfikatora osoby, bez adresu IP) | Ryan (kierunek), Ethan (kod) | Bez tego zdanie z sekcji 9 („zostaje zapis, że coś się wydarzyło, bez danych wskazujących na Ciebie") jest **nieprawdziwe dla osoby rejestrującej się po zapłonie klauzuli** |
 | **W-4** | **Odpowiedzi na pytania P-1…P-3** (umowa powierzenia z dostawcą modelu, podstawa transferu, trenowanie modeli) — albo uzyskane, albo sekcja 11 zostaje w brzmieniu „ustalamy to" i Darek to **świadomie akceptuje**. **Domknięty drugą drogą 2026-08-14** — Darek wybrał wariant (b) i przyjął ryzyko; zapis decyzji: **Z-2b**. Tor uzyskiwania odpowiedzi idzie dalej, **równolegle i bez blokowania**: `docs/legal/pytania-do-dostawcy-modelu-p1-p3.md` | Darek (posiadacz konta u dostawcy) | Art. 13 ust. 1 lit. f wymaga podania podstawy przekazania danych poza EOG. **Nie wolno jej zmyślić.** Przyznanie się do luki jest dopuszczalne; zmyślona podstawa nie jest |
-| **W-5** | **Zasada odpowiedzi dla pracodawcy podpisana i wdrożona** — nośnik: `docs/product/zasada-odpowiedzi-dla-pracodawcy.md` (Sophia), **na 2026-08-14 draft poza kontrolą wersji** (pozycja na liście `SCIEZKI_JESZCZE_NIEISTNIEJACE` strażnika ścieżek). Mój przegląd RODO **odbył się merytorycznie i pozostawił ślad w rejestrze** (pozycja L-8 / dług A-3, commit `e66312d`), ale **artefaktu przeglądu nie ma**, a wraz z nim przepadła treść „poprawki R-2" — **nie odtwarzam jej z pamięci**; obowiązuje wymóg **R-2′** postawiony na nowo w **Z-2a** | Sophia (treść), Ryan (przegląd — **ślad w rejestrze, artefakt utracony**), Darek (sign-off) | Sekcja 9 klauzuli **obiecuje studentowi konkretne zachowanie wobec pracodawcy** („nie potwierdzimy ani nie zaprzeczymy"). Obietnica bez wdrożonej zasady i bez strony pod martwym odnośnikiem jest obietnicą bez pokrycia — tą samą klasą wady, którą naprawia W-1 |
+| **W-5** | **Zasada odpowiedzi dla pracodawcy podpisana i wdrożona** — **PODPISANA 2026-08-15 13:43** (sign-off Darka, ta sama tura co regulamin i oświadczenie o kontach). **Warunek nadal NIEspełniony**, bo ma dwa człony, a podpis domyka jeden: nośnik `docs/product/zasada-odpowiedzi-dla-pracodawcy.md` (Sophia) i **strona pod martwym odnośnikiem** wchodzą zgłoszeniem **#323**, **niescalonym na 2026-08-15**. „Wdrożona" znaczy: kod na `main`, nie podpis pod dokumentem. Mój przegląd RODO **odbył się merytorycznie i pozostawił ślad w rejestrze** (pozycja L-8 / dług A-3, commit `e66312d`), ale **artefaktu przeglądu nie ma**, a wraz z nim przepadła treść „poprawki R-2" — **nie odtwarzam jej z pamięci**; obowiązuje wymóg **R-2′** postawiony na nowo w **Z-2a** | Sophia (treść), Ryan (przegląd — **ślad w rejestrze, artefakt utracony**), Darek (sign-off) | Sekcja 9 klauzuli **obiecuje studentowi konkretne zachowanie wobec pracodawcy** („nie potwierdzimy ani nie zaprzeczymy"). Obietnica bez wdrożonej zasady i bez strony pod martwym odnośnikiem jest obietnicą bez pokrycia — tą samą klasą wady, którą naprawia W-1 |
 
 **Nośnikiem tej listy jest ta tabela.** Rejestr czynności (`ropa.md`) i rejestr kompletności art. 17
 **wołają ją**, nie powtarzają.
@@ -694,8 +704,8 @@ i dawało się na niej oprzeć proces prowadzony w głowie. Nabór tę przesłan
 
 | # | Akceptacja i jej pierwotna wycena | Co się psuje przy naborze | Co proponuję |
 |---|---|---|---|
-| **S-1** | **Pakiet B — rejestr żądań usunięcia poza bazą.** Moja rekomendacja brzmiała dosłownie: *„(3) przyjąć ryzyko na jednego uczestnika, (1) osobny projekt bazy **przed naborem**"*. Przesłanka zmierzona i nadal aktualna: produkt na hostingu **nie ma ani jednego odwołania** do dziennika firmy, więc rejestr żądań usunięcia jest pusty z konstrukcji | **Wariant (3) wygasa z definicji** — nabór to jest właśnie ten próg, który sam postawiłem. Przy jednej osobie żądanie usunięcia pamięta administrator; przy pięciu, rozłożonych w czasie, „pamięta" przestaje być procesem. Dowód wykonania art. 17 wobec organu **nie może być zeznaniem administratora** | **Rejestr żądań usunięcia poza gałęzią produkcyjną — przed wpuszczeniem grupy.** Wariant (2) z pakietu (rejestr ręczny prowadzony przez operatora) jest **wystarczający i tani**: data żądania, identyfikator skrótem, data wykonania, potwierdzenie ponowienia po odtworzeniu kopii. Wariant (1) — osobny projekt bazy — to czerwona linia (nowe źródło danych) i **decyzja Darka**; nie jest konieczny przy pięciu osobach, jeśli powstanie wariant (2) |
-| **S-2** | **Brak regulaminu (pozycja L-h).** Zapisałem: *„Przy jednym uczestniku znanym administratorowi do przyjęcia; **przy naborze nie**"*. Klauzula powołuje się na **wykonanie umowy** (art. 6 ust. 1 lit. b) jako podstawę dla konta, mapowania kompetencji i funkcji modelu — a umowy nie ma | Podstawa z lit. b wymaga umowy, która **istnieje**. Przy osobie znanej administratorowi da się bronić tezy o umowie zawartej ustnie; **przy naborze z listy — nie**, bo nie ma czego okazać. To nie jest wada klauzuli, to wada pakietu, którego klauzula jest częścią | **Regulamin przed pierwszą rejestracją** — plan już to przewiduje i to jest właściwa kolejność. Zaznaczam tylko, że to **warunek działania klauzuli**, a nie równoległy drobiazg: bez regulaminu połowa wierszy tabeli z sekcji 4 wskazuje podstawę, której nie ma |
+| **S-1** | **Pakiet B — rejestr żądań usunięcia poza bazą.** Moja rekomendacja brzmiała dosłownie: *„(3) przyjąć ryzyko na jednego uczestnika, (1) osobny projekt bazy **przed naborem**"*. Przesłanka zmierzona i nadal aktualna: produkt na hostingu **nie ma ani jednego odwołania** do dziennika firmy, więc rejestr żądań usunięcia jest pusty z konstrukcji | **Wariant (3) wygasł z definicją naboru** — to był próg, który sam postawiłem. Przy jednej osobie żądanie usunięcia pamięta administrator; przy pięciu, rozłożonych w czasie, „pamięta" przestaje być procesem. Dowód wykonania art. 17 wobec organu **nie może być zeznaniem administratora** | **ZAŁATWIONE 2026-08-15 wariantem (2)** — `docs/data/rejestr-zadan-usuniecia.md`, czynny, z procedurą ponowienia po odtworzeniu kopii i kontrolą dwustronną. **Wariant (1) niepotrzebny** — zdejmuje to czerwoną linię (nowe źródło danych) z biurka Darka. Próg powrotu do (1) zapisany w samym rejestrze: grupa **> 20 osób** albo pierwsze żądanie, które wpłynęło i nie zostało wpisane |
+| **S-2** | **PODPISANY 2026-08-15 13:43 — pozostaje otwarty co do wdrożenia.** Regulamin ma sign-off Darka, ale wchodzi do produktu zgłoszeniem **#323**, niescalonym na 2026-08-15; obowiązuje też rekomendacja z Z-8: zapłon regulaminu ma być **sprzężony z flagą** usunięcia konta, nie związany zdaniem. Poniżej pierwotny opis długu, bo do chwili scalenia jest aktualny. **Brak regulaminu (pozycja L-h).** Zapisałem: *„Przy jednym uczestniku znanym administratorowi do przyjęcia; **przy naborze nie**"*. Klauzula powołuje się na **wykonanie umowy** (art. 6 ust. 1 lit. b) jako podstawę dla konta, mapowania kompetencji i funkcji modelu — a umowy nie ma | Podstawa z lit. b wymaga umowy, która **istnieje**. Przy osobie znanej administratorowi da się bronić tezy o umowie zawartej ustnie; **przy naborze z listy — nie**, bo nie ma czego okazać. To nie jest wada klauzuli, to wada pakietu, którego klauzula jest częścią | **Regulamin przed pierwszą rejestracją** — plan już to przewiduje i to jest właściwa kolejność. Zaznaczam tylko, że to **warunek działania klauzuli**, a nie równoległy drobiazg: bez regulaminu połowa wierszy tabeli z sekcji 4 wskazuje podstawę, której nie ma |
 | **S-3** | **Dług A-3 / pozycja L-8 — prefiks identyfikatora paszportu jako numer na wydruku PDF.** Klasyfikowałem go jako ryzyko **teoretyczne**, z progiem „pierwsze zapytanie pracodawcy" | Przy jednym uczestniku istniał **najwyżej jeden** wydruk i to zwykle wydruk testowy. Przy naborze krąży **tyle wydruków, ilu uczestników**, i trafiają do prawdziwych pracodawców. Ryzyko przestaje być teoretyczne **z chwilą wpuszczenia grupy**, a nie z chwilą pierwszego zapytania — próg, który postawiłem, jest o krok za późny | **Zakaz zestawiania numeru dokumentu ze śladem zdarzeń trafia do pytań dla prawnika jako pozycja L-j**, z wnioskiem o przekwalifikowanie z decyzji produktowej na wymóg zgodności. Do czasu odpowiedzi zakaz obowiązuje jako **środek organizacyjny z nazwanym właścicielem** (Ryan), nie jako preferencja |
 
 **Czego ta sekcja NIE mówi.** Nie mówi, że nabór jest zły — decyzja o skali należy do Darka i ma
@@ -705,8 +715,18 @@ rozszerzeniem zgody, której nikt nie udzielił. **S-1 i S-2 uważam za bramki p
 rejestracją**; S-3 za dług z właścicielem i terminem, nie za bramkę.
 
 **Osobno, i to nie jest część W-4 ani żadnego warunku z Z-2 — oświadczenie administratora o kontach.**
-Oświadczenie „wszystkie konta zarejestrowane obecnie na platformie są kontami testowymi" jest
-**twierdzeniem o stanie na dany dzień** i tak musi być zapisane: z datą i z liczbą. Bez daty stanie
-się nieprawdziwe automatycznie w dniu, w którym wpuścimy pierwszego uczestnika — a wtedy dokument,
-na którym opiera się klasyfikacja długu A-1, zacznie kłamać, **nie zmieniając ani jednego słowa**.
-Pomiar stanu na 2026-08-14 i jego wynik: `docs/audyty/2026-08-14-konta-produkcyjne-pomiar-ryan.md`.
+Oświadczenie o kontach jest **twierdzeniem o stanie na dany dzień** i tak musi być zapisane: z datą
+i z liczbą. Bez daty stałoby się nieprawdziwe automatycznie w dniu, w którym wpuścimy pierwszego
+uczestnika — a wtedy dokument, na którym opiera się klasyfikacja długu A-1, zacząłby kłamać,
+**nie zmieniając ani jednego słowa**.
+
+**PODPISANE 2026-08-15 13:43**, z datą i z zakresem ograniczonym do stanu bazy produkcyjnej.
+Jedyny nośnik: `docs/data/ropa.md`, sekcja „Oświadczenie administratora — populacja kont na
+produkcji" (tam też domknięcie z 2026-08-15 i **otwarta pozycja P-2′** — jedno konto, którego
+administrator nie tknął wprost). Pomiar niezależny stojący pod tym podpisem: repozytorium systemu
+operacyjnego, `docs/audyty/2026-08-14-konta-produkcyjne-pomiar-ryan.md`.
+
+**Rozróżnienie, które musi przetrwać do audytu:** liczby i wzorce logowania to **pomiar**;
+przypisanie konta do konkretnej osoby to **oświadczenie administratora**. W bazie nie ma pola
+„czyje to konto" i nigdy nie będzie — przyszły audytor nie powinien szukać tu dowodu technicznego,
+bo go nie ma i nie może być.

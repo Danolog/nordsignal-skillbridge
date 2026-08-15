@@ -6,11 +6,22 @@
 > z art. 13 — osobny artefakt, którego jeszcze nie ma; patrz E-1 w
 > `docs/security/hint-reveals-retencja-signoff.md` §7).
 
-**Wersja:** v0.6 · 2026-08-12 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
+**Wersja:** v0.7 · 2026-08-15 · **Owner:** Ryan (CRCO nordsignal) → Wendy (Legal) od Fazy 3.
 **Administrator danych:** nordsignal (podmiot w rejestracji — NIP TBD, trigger A/B/C, CLAUDE.md §9).
 **Status:** **rejestr minimalny, zasiany** — założony przy sign-offie FSRS (1E.4, rls-matrix v0.30).
 Kompletny przegląd wszystkich czynności przetwarzania w produkcie = **Wendy, Faza 3**, przed pierwszą
 realną rejestracją studenta. Poniższe wpisy to stan wiedzy zweryfikowany na kodzie na dziś.
+
+**Changelog v0.6 → v0.7 (2026-08-15) — Ryan (CRCO). Oświadczenie administratora PODPISANE; jedna
+zmiana statusu i jedno domknięcie, plus samokrytyka.** (1) Sekcja „Oświadczenie administratora"
+zmienia status z **BRZMIENIE DO PODPISU** na **PODPISANE 2026-08-15 13:43** — od tej chwili wolno
+je cytować jako oświadczenie administratora, a nie tylko jako moją parafrazę. (2) Dopisana sekcja
+**„Domknięcie 2026-08-15"**: niezależny pomiar E-1 z 2026-08-14, rozstrzygnięcie właściciela co do
+konta spornego, **zachowana zmierzona anomalia** (adres IP unikatowy w całej bazie) oraz **pytanie
+P-2′** o drugie konto, którego właściciel nie tknął wprost. (3) Samokrytyka: mój audyt z 2026-08-14
+opisał konto jako „nierozstrzygnięte", **nie zauważywszy, że ten rejestr niósł już na nie
+odpowiedź** — wprawdzie niepodpisaną, więc niecytowalną, ale wartą przywołania. Zmierzyłem bazę
+i nie przeczytałem rejestru. **Żaden cel, podstawa prawna, odbiorca ani okres nie zmieniony.**
 
 **Changelog v0.5 → v0.6 (2026-08-10, uzupełniony 2026-08-12) — Ryan (CRCO), zadanie E2c pakietu RODO
 (klauzula z art. 13) + domknięcie warunku Leo przy zgłoszeniu #288. Pięć zmian, z czego trzy to
@@ -109,9 +120,18 @@ mandatem, idzie do Darka (E-1).
 > Powód jest zmierzony, nie teoretyczny: poprzednia wersja tego ustalenia żyła w **dwóch** kopiach
 > (tu i w taksonomii §6), obie były nieprawdziwe i obie trzeba było prostować osobno.
 
-**Status: BRZMIENIE DO PODPISU — jeszcze niepodpisane.** Do chwili podpisu nikt nie cytuje treści
-poniżej jako oświadczenia administratora; wolno cytować wyłącznie pomiar (sekcja „Co zmierzono")
-i moją klasyfikację ryzyka, która jest **moja**, nie jego.
+**Status: PODPISANE — 2026-08-15, godz. 13:43.** Administrator (Darek) udzielił sign-offu; treść
+poniżej wolno od tej chwili cytować **jako oświadczenie administratora**, a nie jako moją parafrazę
+jego wypowiedzi. Podpis objął tego samego dnia trzy dokumenty naraz: regulamin pilotażu, zasadę
+odpowiedzi dla pracodawcy i to oświadczenie. **Klasyfikacja ryzyka niżej pozostaje moja, nie jego** —
+podpis dotyczy faktów o kontach, nie mojej oceny wagi długu.
+
+> **Do 2026-08-15 stało tu:** „**Status: BRZMIENIE DO PODPISU — jeszcze niepodpisane.** Do chwili
+> podpisu nikt nie cytuje treści poniżej jako oświadczenia administratora; wolno cytować wyłącznie
+> pomiar (sekcja „Co zmierzono") i moją klasyfikację ryzyka, która jest **moja**, nie jego."
+>
+> Zapis zostaje, bo w okresie 2026-08-10 → 2026-08-15 to zdanie **obowiązywało i wiązało** — moje
+> własne postępowanie z 2026-08-14 (niżej) jest tego przykładem.
 
 ### Dlaczego to w ogóle powstaje — sprostowanie mojej własnej przesłanki
 
@@ -307,11 +327,111 @@ patrz warunek wejścia w życie w samej klauzuli.
 >    niż produkcyjne. Nie jest zgodą na rejestrację kogokolwiek spoza zespołu przed domknięciem
 >    pakietu RODO.
 >
-> Data: __________  ·  Podpis: __________
+> Data: **2026-08-15, godz. 13:43**  ·  Podpis: **Dariusz Grądzik** (sign-off udzielony w kanale
+> zlecenia Olivera; ta sama tura objęła regulamin pilotażu i zasadę odpowiedzi dla pracodawcy)
 
-**Po podpisaniu** wpisz tutaj datę podpisu i usuń nagłówek „BRZMIENIE DO PODPISU"; wersja tego pliku
-idzie wtedy na v0.5.1, a sam podpis **nie zmienia** klasyfikacji ryzyka wyżej — ona jest moja
-i zmienia ją wyłącznie nowy pomiar albo nowa okoliczność.
+Podpis **nie zmienia** klasyfikacji ryzyka wyżej — ona jest moja i zmienia ją wyłącznie nowy pomiar
+albo nowa okoliczność.
+
+### Domknięcie 2026-08-15 — niezależny pomiar E-1 i rozstrzygnięcie właściciela
+
+Między brzmieniem a podpisem stanął **drugi, niezależny pomiar** (E-1, wykonawca Ryan, 2026-08-14).
+Zapisuję go tutaj, bo zmienił przebieg sprawy: **wstrzymał podpis o dobę** i doprowadził do
+imiennego rozstrzygnięcia jednego konta przez właściciela.
+
+**Granica, którą ta sekcja ma unieść — i to jest jej cały sens.** Poniżej stoją obok siebie dwie
+rzeczy o **różnym statusie dowodowym** i audytor musi je rozróżnić bez pytania nas:
+
+| Co | Status | Skąd |
+|---|---|---|
+| 33 konta, rozbiór na kategorie, wzorce logowania, unikatowy adres IP | **POMIAR** — odtwarzalny, cytowany dosłownie | zapytania tylko do odczytu, odczyt 2026-08-14 13:12 UTC |
+| **Czyje jest dane konto** | **OŚWIADCZENIE ADMINISTRATORA** — nie wynik komendy | wypowiedź właściciela, 2026-08-15 13:43 |
+
+**W bazie nie ma i nigdy nie będzie pola „czyje to konto".** Żaden pomiar tego nie rozstrzygnie
+i żaden przyszły audyt nie powinien szukać tu dowodu technicznego — bo go nie ma i nie może być.
+Przypisanie konta do zespołu stoi **wyłącznie** na słowie człowieka, który za nie odpowiada.
+
+#### Co zmierzył E-1 (2026-08-14, odczyt 13:12 UTC)
+
+Pełny protokół z zacytowanymi wyjściami:
+`nordsignal-operating-system/docs/audyty/2026-08-14-konta-produkcyjne-pomiar-ryan.md` (repozytorium
+systemu operacyjnego). Wynik w skrócie: **33 konta** — zgodnie z E0; **18 bez hasła**, z tego
+15 ze skryptu danych demonstracyjnych (jedna milisekunda utworzenia, zero sesji), 1 konto
+administratora (loguje się przez Google, więc **nie ma hasła — co nie znaczy „nie jego"**),
+1 zespołowe na domenie firmowej i **1 wymagające rozstrzygnięcia**.
+
+#### Konto rozstrzygnięte przez właściciela
+
+**Skrót SHA-256 adresu: `72d6b5e72ea5`** (pierwszych 12 znaków; adresu nie wypisujemy — dokument
+go nie potrzebuje). Konto założone przez Google **2026-07-01 o 12:00:02 UTC**, jedna sesja
+0,2 s później, po 8,5 minuty zgłoszenie projektu „Mapa demograficzna powiatów Polski", onboarding
+niedokończony.
+
+> **Rozstrzygnięcie administratora, 2026-08-15:** *„to moje konto testowe"*.
+
+**To jest oświadczenie właściciela, nie wynik pomiaru** — i tak należy je czytać. Konto mieści się
+w punkcie 2 i 3 oświadczenia wyżej: jest to **drugie konto Google**, o którym mowa w punkcie
+uzgadniającym.
+
+#### Zmierzona anomalia — ZOSTAJE W DOKUMENCIE, mimo że konto jest wyjaśnione
+
+Adres IP tej jednej sesji występuje **w całej bazie dokładnie raz** — na żadnym innym koncie,
+w żadnym innym wierszu śladu zdarzeń, i **nie pokrywa się z żadnym z 7 adresów**, z których
+logował się administrator. Przeglądarka: zwykły Chrome na Windows, nie tryb bezgłowy.
+
+**Nie usuwam tego zdania po wyjaśnieniu i mówię wprost dlaczego.** Ciche wycięcie niewygodnej
+przesłanki po tym, jak przestała być kłopotliwa, to ta sama wada, którą ten pakiet prostował
+w tym tygodniu pięciokrotnie. Anomalia **pozostaje faktem**: administrator loguje się z wielu
+sieci (7 adresów na koncie podstawowym), więc ósma sieć nie jest sprzecznością — ale **jest
+zdarzeniem, którego pomiar nie przewidział**, i przyszły audytor ma prawo je zobaczyć razem
+z wyjaśnieniem, a nie zamiast niego.
+
+#### P-2′ — druga pozycja, której właściciel nie tknął. Pytam wprost, nie domykam domysłem
+
+**Skrót `73dbccaf5749`**, domena konsumencka, logowanie hasłem: **7 sesji z 3 różnych adresów IP
+w ciągu 9 dni** (2026-06-17 → 2026-06-26). To **nie jest** wzorzec jednorazowego testu dymnego
+i jako jedyne z 15 kont hasłowych wygląda na konto realnie używane.
+
+**Wywód, dlaczego oświadczenie prawdopodobnie już je obejmuje** — i jest to **wnioskowanie
+z dwóch pomiarów, nie trzeci pomiar**, więc oznaczam je jako takie:
+- E0 (2026-08-10) zmierzył **10 kont klasy F** (domena konsumencka), z czego **1 to adres
+  podstawowy administratora** → oświadczenie obejmuje **9**;
+- E-1 (2026-08-14) zmierzył **10 kont na domenach konsumenckich** (9 × `gmail.com` + 1 × `me.com`)
+  — liczba zgadza się co do sztuki;
+- konto `73dbccaf5749` jest na `gmail.com`, więc **należy do tej dziesiątki**, a nie będąc adresem
+  podstawowym — do dziewiątki objętej punktem 2 oświadczenia;
+- **kontrola spójności obu pomiarów:** E0/K1 podał, że klasa F loguje się „credential 8 · google 2";
+  E-1 znalazł 3 konta Google, z czego 1 na domenie firmowej (klasa B) → w klasie F zostaje **2**.
+  Zgadza się. Najnowsze konto w bazie powstało **2026-08-10 11:14 UTC**, czyli **przed** odczytem E0
+  — między pomiarami **nie przybyło ani jedno konto**, więc oba opisują ten sam zbiór.
+
+**Mimo to nie zamykam tej pozycji sam.** Wywód jest silny, ale opiera się na moim odwzorowaniu
+kategorii „klasa F" z pomiaru E0 na domeny zmierzone w E-1 — a to jest **moja rekonstrukcja cudzej
+kategoryzacji**, nie cytat z E0. Pytanie do administratora, do odpowiedzi „tak" albo „nie":
+
+> **P-2′.** Czy oświadczenie z punktu 2 obejmuje również konto o skrócie `73dbccaf5749`
+> (domena konsumencka, logowanie hasłem, 7 sesji z 3 adresów IP w czerwcu 2026)?
+> **Jeśli tak** — komplet 33 kont jest objęty i pozycja znika. **Jeśli nie** — wyłączamy je
+> imiennie, a klasa długu A-1 wraca na „WAŻNE dla danych", bo pojawia się podmiot danych inny
+> niż administrator.
+
+**Do czasu odpowiedzi** oświadczenie czytamy tak, jak jest napisane: obejmuje dziewięć kont klasy F
+z pomiaru E0. **Nie dopisuję do niego niczego w imieniu administratora.**
+
+#### Samokrytyka — mój audyt zignorował ten rejestr
+
+Audyt E-1 opisał konto `72d6b5e72ea5` jako takie, którego „nie potrafię przypisać", **nie
+wspominając ani słowem, że ten rejestr niósł już wtedy odpowiedź** — punkt uzgadniający
+o drugim koncie Google, zapisany 2026-08-10. Formalnie miałem rację, że się na niego nie powołałem:
+oświadczenie było **niepodpisane**, a ta sekcja wprost zakazywała cytowania go jako ustalenia.
+**Ale należało napisać, że taka odpowiedź istnieje i czeka na podpis** — zamiast tego postawiłem
+sprawę tak, jakby nikt nigdy o to nie pytał. To kosztowało dobę i wywołało niepokój, którego dało
+się uniknąć jednym zdaniem.
+
+**Wzorzec jest ten sam, który prostuję u innych przez cały tydzień:** zmierzyłem świat i nie
+przeczytałem rejestru. Reguła na przyszłość, dla mnie: **pomiar populacji kont zaczyna się od
+odczytania tej sekcji**, a znalezisko formułuje się jako „rejestr twierdzi X, pomiar pokazuje Y",
+nigdy jako „nie wiadomo".
 
 ---
 
@@ -1062,8 +1182,9 @@ jest długiem, tylko notatką:**
 
 | # | Co sprawdzić | Termin | Właściciel |
 |---|---|---|---|
-| P-1 | Czy **oświadczenie administratora** zostało podpisane i uzupełnione o podział 9 kont (własne / osoby trzecie) | przy pierwszym przeglądzie, nie później niż 2026-08-24 | Darek |
-| P-2 | Czy osoby z grupy (b) **dostały informację z art. 13** — data i sposób przekazania | 2026-08-24 | Darek |
+| P-1 | ~~Czy **oświadczenie administratora** zostało podpisane~~ — **ZAMKNIĘTE 2026-08-15 13:43.** Podpisane; podział na „własne / osoby trzecie" bezprzedmiotowy, bo administrator oświadczył, że grupy osób trzecich nie ma | — | — |
+| P-2 | ~~Czy osoby z grupy (b) **dostały informację z art. 13**~~ — **BEZPRZEDMIOTOWE** od doprecyzowania z 2026-08-10 17:56: grupa (b) („proszeni znajomi") nie istnieje | — | — |
+| **P-2′** | **Czy oświadczenie obejmuje również konto `73dbccaf5749`** (domena konsumencka, 7 sesji z 3 adresów IP w czerwcu 2026). Wywód mówi, że tak — ale opiera się na **mojej rekonstrukcji** kategorii „klasa F", nie na cytacie z pomiaru E0. Odpowiedź „tak" zamyka komplet 33 kont; „nie" cofa klasę A-1 na „WAŻNE dla danych" | **przed pierwszą rejestracją uczestnika** | Darek (odpowiedź), Ryan (odbiór) |
 | P-3 | Czy wpis **#7 został zweryfikowany na wdrożonym stanie** (dziś opisuje projekt: `0047` niezastosowana) | po etapie E3 pakietu RODO | Ryan |
 | P-4 | Czy trzy warunki nośne podstawy z lit. f dla wpisu #7 (F7-1…F7-3) nadal zachodzą | kwartalnie | Ryan |
 | P-5 | Czy **istnieje ścieżka usunięcia konta** (E1b) i czy przeszła weryfikację kompletności kaskady | przed pierwszą rejestracją osoby nieznanej administratorowi | Ethan (wykonanie), Ryan (odbiór) |
