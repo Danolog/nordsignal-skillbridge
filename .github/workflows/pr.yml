@@ -990,7 +990,30 @@ jobs:
           # segmentow POMIJAJA SIE zamiast falszywie zielenic (helpers/guards.ts + test.skip).
           E2E_DIAGNOSIS_FLAG: "1"
           E2E_PRIVACY_FLAG: "1"
-        run: pnpm exec playwright test --config playwright.config.ci.ts tests/e2e-pw/50-rejestracja-onboarding.spec.ts
+          # Raport maszynowy dla bramki licznosci nizej (reporter `json` czyta te zmienna).
+          PLAYWRIGHT_JSON_OUTPUT_NAME: raport-rejestracja.json
+        # BRAMKA LICZNOSCI W TYM SAMYM KROKU, nie w osobnym — osobny krok dalby sie
+        # pominac (`skipped`) przy padzie tego, a wtedy strazniczka liczby sama nie
+        # bieglaby dokladnie wtedy, kiedy jest najbardziej potrzebna.
+        #
+        # PO CO W OGOLE: `playwright test` konczy sie kodem 0 takze wtedy, gdy WSZYSTKIE
+        # przypadki zostaly POMINIETE (brak FLAG_*/E2E_* → `test.skip`). Zadanie swieciloby
+        # na zielono, nie sprawdziwszy niczego — pusty zbior przechodzi kazdy test.
+        # Zielone „0 wykonanych" jest tu wynikiem CZERWONYM.
+        #
+        # `set +e` wokol samego przebiegu: chcemy PRZECZYTAC raport takze po padzie testow
+        # (inaczej przy czerwonym pakiecie nie dowiedzielibysmy sie, ile go w ogole poszlo),
+        # ale kod wyjscia pakietu i tak oddajemy na koncu.
+        run: |
+          set +e
+          pnpm exec playwright test --config playwright.config.ci.ts \
+            --reporter=list,json tests/e2e-pw/50-rejestracja-onboarding.spec.ts
+          KOD_PAKIETU=$?
+          set -e
+          # 4 = liczba przypadkow w 50-rejestracja-onboarding.spec.ts (2 rejestracja/klauzula
+          # + 2 warianty rozwidlenia #309). Rosnie SWIADOMIE razem z pakietem.
+          node tools/sprawdz-licznosc-e2e.mjs raport-rejestracja.json 4
+          exit $KOD_PAKIETU
       # Artefakty diagnostyczne przy padzie (trace/screenshot — bez sekretow w logu).
       - name: Upload raportu Playwright (przy padzie)
         if: failure()
