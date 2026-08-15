@@ -18,10 +18,16 @@ zmienia status z **BRZMIENIE DO PODPISU** na **PODPISANE 2026-08-15 13:43** — 
 je cytować jako oświadczenie administratora, a nie tylko jako moją parafrazę. (2) Dopisana sekcja
 **„Domknięcie 2026-08-15"**: niezależny pomiar E-1 z 2026-08-14, rozstrzygnięcie właściciela co do
 konta spornego, **zachowana zmierzona anomalia** (adres IP unikatowy w całej bazie) oraz **pytanie
-P-2′** o drugie konto, którego właściciel nie tknął wprost. (3) Samokrytyka: mój audyt z 2026-08-14
-opisał konto jako „nierozstrzygnięte", **nie zauważywszy, że ten rejestr niósł już na nie
-odpowiedź** — wprawdzie niepodpisaną, więc niecytowalną, ale wartą przywołania. Zmierzyłem bazę
-i nie przeczytałem rejestru. **Żaden cel, podstawa prawna, odbiorca ani okres nie zmieniony.**
+P-2′** o drugie konto, którego właściciel nie tknął wprost — **zamknięte tego samego dnia** po
+przeglądzie Leo przy #324: rozstrzyga **klauzula wyczerpująca** samego oświadczenia (pkt 1
++ ostatnie zdanie pkt 2), więc pytanie **nie wraca na biurko Darka**; zastrzeżenie
+**„zespół ≠ administrator"** wchodzi do brzmienia i dostaje własny próg — nowa pozycja **P-7**,
+otwierana zadziałaniem triggera C. (3) Samokrytyka, **dwie**: audyt z 2026-08-14 opisał konto jako
+„nierozstrzygnięte", **nie zauważywszy, że ten rejestr niósł już na nie odpowiedź** (niepodpisaną,
+więc niecytowalną, ale wartą przywołania) — zmierzyłem bazę i nie przeczytałem rejestru; a przy
+P-2′ **nie doczytałem oświadczenia, które sam zredagowałem** — szukałem w kategoriach cudzego
+pomiaru, mając odpowiedź we własnym tekście dwie sekcje wyżej. **Żaden cel, podstawa prawna,
+odbiorca ani okres nie zmieniony.**
 
 **Changelog v0.5 → v0.6 (2026-08-10, uzupełniony 2026-08-12) — Ryan (CRCO), zadanie E2c pakietu RODO
 (klauzula z art. 13) + domknięcie warunku Leo przy zgłoszeniu #288. Pięć zmian, z czego trzy to
@@ -405,18 +411,54 @@ z dwóch pomiarów, nie trzeci pomiar**, więc oznaczam je jako takie:
   Zgadza się. Najnowsze konto w bazie powstało **2026-08-10 11:14 UTC**, czyli **przed** odczytem E0
   — między pomiarami **nie przybyło ani jedno konto**, więc oba opisują ten sam zbiór.
 
-**Mimo to nie zamykam tej pozycji sam.** Wywód jest silny, ale opiera się na moim odwzorowaniu
-kategorii „klasa F" z pomiaru E0 na domeny zmierzone w E-1 — a to jest **moja rekonstrukcja cudzej
-kategoryzacji**, nie cytat z E0. Pytanie do administratora, do odpowiedzi „tak" albo „nie":
+**P-2′ ZAMKNIĘTE 2026-08-15 — ale nie tą drogą.** Powyższy wywód prowadziłem **wąską ścieżką**
+(przynależność do klasy F), która wymaga **mojej rekonstrukcji cudzej kategoryzacji** i dlatego
+sam jej nie uznałem za wystarczającą. Minąłem przy tym rzecz leżącą w dokumencie, który **sam
+napisałem i przedstawiłem do podpisu**: oświadczenie zawiera **klauzulę wyczerpującą wobec
+wszystkich 33 kont**, a nie tylko wobec dziewiątki. Wskazał to Leo przy przeglądzie #324.
 
-> **P-2′.** Czy oświadczenie z punktu 2 obejmuje również konto o skrócie `73dbccaf5749`
-> (domena konsumencka, logowanie hasłem, 7 sesji z 3 adresów IP w czerwcu 2026)?
-> **Jeśli tak** — komplet 33 kont jest objęty i pozycja znika. **Jeśli nie** — wyłączamy je
-> imiennie, a klasa długu A-1 wraca na „WAŻNE dla danych", bo pojawia się podmiot danych inny
-> niż administrator.
+**Cytat rozstrzygający — z podpisanego oświadczenia, punkty 1 i 2:**
 
-**Do czasu odpowiedzi** oświadczenie czytamy tak, jak jest napisane: obejmuje dziewięć kont klasy F
-z pomiaru E0. **Nie dopisuję do niego niczego w imieniu administratora.**
+> „**Znam pochodzenie wszystkich kont na produkcji.** Nie zarejestrował się dotąd żaden student
+> uczelni-partnera ani żadna osoba pozyskana kanałem publicznym."
+>
+> „Pozostałe konta to konta założone przeze mnie lub przez zespół (techniczne, weryfikacyjne,
+> demonstracyjne)."
+
+Punkt 1 mówi o **wszystkich** kontach, a ostatnie zdanie punktu 2 **nie zostawia reszty**: każde
+konto jest albo jedną z dziewięciu klasy F, albo „założone przeze mnie lub przez zespół". **Konto
+`73dbccaf5749` należy do jednej z tych dwóch grup niezależnie od tego, jak odwzoruję klasy** — i to
+jest właśnie ta droga, która nie wymaga mojej rekonstrukcji. Punkt 5 pokrywa przypadek „jednak inna
+osoba" zobowiązaniem do niezwłocznego zgłoszenia.
+
+**Zastrzeżenie Leo, które wchodzi do brzmienia zamiast być zagładzone: „zespół" ≠ „administrator".**
+Gdyby konto należało do **człowieka z zespołu innego niż administrator**, mielibyśmy **podmiot
+danych będący inną osobą fizyczną** — a wtedy obowiązek z art. 13 odżywa i klasa długu A-1 wraca
+na „WAŻNE dla danych". Klauzula wyczerpująca **sama z siebie tego nie wyklucza**.
+
+**Dlaczego mimo to zamykam — i na czym dokładnie to stoi.** Dziś „zespół" nie zawiera **żadnego
+innego człowieka**: firma to jeden człowiek i role agentowe, a rola agentowa nie jest osobą fizyczną
+i nie ma adresu e-mail na domenie konsumenckiej. Nośnik tej przesłanki (odczyt 2026-08-15,
+repozytorium systemu operacyjnego): `CLAUDE.md` §1 — *„Jeden człowiek (Darek, Founder & CEO)
++ 32 role agentowe"* — oraz §9, gdzie **trigger C („zatrudnienie pierwszego człowieka") figuruje
+jako warunek jeszcze niespełniony**. **Oznaczam status tej przesłanki uczciwie: to zapis polityki
+firmy, nie pomiar** — nie ma komendy, która policzyłaby ludzi. Jest natomiast sprawdzalna
+i falsyfikowalna: pierwszy człowiek zatrudniony w firmie ją obala.
+
+**Próg ponownego otwarcia — twardy i wpisany, nie dorozumiany:** **zadziałanie triggera C**
+(zatrudnienie pierwszego człowieka). Od tej chwili „konto zespołowe" **przestaje być równoznaczne**
+z „kontem administratora", a to zamknięcie wymaga powtórzenia — z podziałem kont na „administrator"
+i „inny człowiek z zespołu". Ten sam próg obowiązuje wstecz: jeśli okaże się, że **już dziś**
+któreś konto założył człowiek inny niż administrator, działa punkt 5 oświadczenia.
+
+**Czyje to zamknięcie.** Leo dostarczył cytat, nie podpis — **domknięcie jest moje** i biorę za nie
+odpowiedzialność jako CRCO. Nie wraca na biurko Darka.
+
+**Samokrytyka, druga w tym samym wątku.** Wczoraj przyznałem, że zmierzyłem bazę i nie przeczytałem
+rejestru. Dziś okazuje się, że **nie doczytałem też oświadczenia, które sam zredagowałem i sam
+przedstawiłem do podpisu** — szukałem odpowiedzi w kategoriach cudzego pomiaru, mając ją dwie
+sekcje wyżej we własnym tekście. To nie jest ta sama pomyłka co wczoraj, tylko jej cięższa odmiana:
+tam pominąłem cudzy nośnik, tu własny.
 
 #### Samokrytyka — mój audyt zignorował ten rejestr
 
@@ -1184,7 +1226,8 @@ jest długiem, tylko notatką:**
 |---|---|---|---|
 | P-1 | ~~Czy **oświadczenie administratora** zostało podpisane~~ — **ZAMKNIĘTE 2026-08-15 13:43.** Podpisane; podział na „własne / osoby trzecie" bezprzedmiotowy, bo administrator oświadczył, że grupy osób trzecich nie ma | — | — |
 | P-2 | ~~Czy osoby z grupy (b) **dostały informację z art. 13**~~ — **BEZPRZEDMIOTOWE** od doprecyzowania z 2026-08-10 17:56: grupa (b) („proszeni znajomi") nie istnieje | — | — |
-| **P-2′** | **Czy oświadczenie obejmuje również konto `73dbccaf5749`** (domena konsumencka, 7 sesji z 3 adresów IP w czerwcu 2026). Wywód mówi, że tak — ale opiera się na **mojej rekonstrukcji** kategorii „klasa F", nie na cytacie z pomiaru E0. Odpowiedź „tak" zamyka komplet 33 kont; „nie" cofa klasę A-1 na „WAŻNE dla danych" | **przed pierwszą rejestracją uczestnika** | Darek (odpowiedź), Ryan (odbiór) |
+| **P-2′** | ~~Czy oświadczenie obejmuje również konto `73dbccaf5749`~~ — **ZAMKNIĘTE 2026-08-15 przez Ryana.** Rozstrzyga **klauzula wyczerpująca** oświadczenia (pkt 1 „wszystkich kont" + ostatnie zdanie pkt 2 „pozostałe konta … przeze mnie lub przez zespół"), nie odwzorowanie klas. **Nie wróciło na biurko Darka** | — | — |
+| **P-7** | **Powtórzyć zamknięcie P-2′ z podziałem „administrator / inny człowiek z zespołu".** Dziś „zespół" nie zawiera innego człowieka (`CLAUDE.md` §1 i §9, trigger C niespełniony) — to **zapis polityki, nie pomiar**, i pierwszy zatrudniony człowiek go obala | **przy zadziałaniu triggera C** (zatrudnienie pierwszego człowieka) | Ryan |
 | P-3 | Czy wpis **#7 został zweryfikowany na wdrożonym stanie** (dziś opisuje projekt: `0047` niezastosowana) | po etapie E3 pakietu RODO | Ryan |
 | P-4 | Czy trzy warunki nośne podstawy z lit. f dla wpisu #7 (F7-1…F7-3) nadal zachodzą | kwartalnie | Ryan |
 | P-5 | Czy **istnieje ścieżka usunięcia konta** (E1b) i czy przeszła weryfikację kompletności kaskady | przed pierwszą rejestracją osoby nieznanej administratorowi | Ethan (wykonanie), Ryan (odbiór) |
