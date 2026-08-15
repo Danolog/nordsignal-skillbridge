@@ -70,6 +70,27 @@ const nextConfig: NextConfig = {
 		// się na Vercelu („ENOENT"). Ten sam mechanizm i ten sam powód co przy
 		// workerze pdfjs wyżej.
 		"/prywatnosc": ["./docs/legal/klauzula-informacyjna-art13.md"],
+		// Fala 2 — ten sam mechanizm i ten sam powód co przy `/prywatnosc` wyżej:
+		// odczyt nośnika idzie przez `readFileSync` ze ścieżki składanej w czasie
+		// działania, więc statyczna analiza śladu funkcji go NIE widzi. BEZ tych
+		// dwóch wpisów obie strony działają lokalnie i wywalają się na produkcji
+		// błędem „ENOENT" — a jedna z nich to ekran, który widzi PRACODAWCA
+		// sprawdzający kandydata, czyli awaria dokładnie w chwili największej stawki.
+		// Klucz to segment TRASY (nie plik): `not-found.tsx` renderuje się w ramach
+		// funkcji trasy `/passport/[id]`, więc ślad dokłada się do niej.
+		"/passport/[id]": ["./docs/product/zasada-odpowiedzi-dla-pracodawcy.md"],
+		"/regulamin": ["./docs/product/regulamin-pilotazu.md"],
+		// Dwie trasy, które czytają regulamin NIE PO TO, żeby go pokazać:
+		//   • `/signup` — strona rejestracji odczytuje WERSJĘ dokumentu (jeden nośnik
+		//     wersji) i wysyła ją z formularzem jako dowód „na co ta osoba się zgodziła";
+		//   • `/api/auth/[...path]` — tędy biegnie `/sign-up/email`, a zaczep `before`
+		//     porównuje wersję z żądania z wersją z dokumentu.
+		// Przy ZAPALONEJ fladze regulaminu odczyt wykonuje się przy KAŻDEJ rejestracji,
+		// więc brak tych wpisów to awaria na rejestracji uczestnika — czyli w miejscu
+		// droższym niż strona z treścią, i odkrywana dopiero przy zapłonie flagi.
+		// Pilnowane maszynowo: tests/unit/pilotaz/slad-nosnikow.contract.test.ts.
+		"/signup": ["./docs/product/regulamin-pilotazu.md"],
+		"/api/auth/[...path]": ["./docs/product/regulamin-pilotazu.md"],
 	},
 	async headers() {
 		return [

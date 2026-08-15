@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import {
 	afterDeleteAccount,
@@ -8,6 +9,14 @@ import {
 } from "@/lib/auth/account-deletion";
 import { db } from "@/lib/db";
 import { isFeatureEnabled } from "@/lib/flags";
+import {
+	type AkceptacjaRegulaminu,
+	sprawdzAkceptacjeRegulaminu,
+	wersjaRegulaminuPilotazu,
+} from "@/lib/tresc/akceptacja-regulaminu";
+
+/** Ścieżka rejestracji mailem — jedyna, którą bramkuje zaczep niżej. */
+const SCIEZKA_REJESTRACJI = "/sign-up/email";
 
 export const auth = betterAuth({
 	baseURL: process.env.BETTER_AUTH_URL,
@@ -69,6 +78,37 @@ export const auth = betterAuth({
 			beforeDelete: beforeDeleteAccount,
 			afterDelete: afterDeleteAccount,
 		},
+	},
+	// FALA 2 (C, zamówienie Sophii R-6 pkt 1) — AKCEPTACJA REGULAMINU PILOTAŻU.
+	//
+	// Bramka stoi TUTAJ, po stronie serwera, a nie tylko na atrybucie `required`
+	// w formularzu: atrybut w przeglądarce zdejmuje się narzędziami dewelopera
+	// w dwie sekundy, a rejestracja idzie prosto do trasy biblioteki — więc
+	// walidacja wyłącznie w kliencie nie broni przed niczym i nie jest dowodem
+	// świadomej czynności. Ten sam argument, co przy sprzężeniu flag: sprawdzenie
+	// wykonane nie po tej stronie, po której zapada skutek, nie chroni przed niczym.
+	//
+	// FAIL-CLOSED, ale WYŁĄCZNIE przy zapalonej fladze: zgaszona flaga = rejestracja
+	// jak dziś (pole się nie renderuje, więc egzekwowanie go byłoby zablokowaniem
+	// rejestracji dla wszystkich). Odczyt flagi jest PER ŻĄDANIE — zmienna
+	// środowiskowa przestawia się bez wdrożenia.
+	//
+	// Odczyt wersji z dokumentu może rzucić wyjątkiem (dokument bez oznaczenia
+	// wersji). To celowe: brak pewności, na co ktoś się zgadza, ma zatrzymać
+	// rejestrację, a nie przepuścić ją z wersją „nie wiem".
+	hooks: {
+		before: createAuthMiddleware(async (ctx) => {
+			if (ctx.path !== SCIEZKA_REJESTRACJI) return;
+			if (!isFeatureEnabled("pilotTerms")) return;
+
+			const wynik = sprawdzAkceptacjeRegulaminu(
+				ctx.body as AkceptacjaRegulaminu | undefined,
+				wersjaRegulaminuPilotazu(),
+			);
+			if (!wynik.ok) {
+				throw new APIError("BAD_REQUEST", { message: wynik.powod });
+			}
+		}),
 	},
 	plugins: [nextCookies()],
 });
