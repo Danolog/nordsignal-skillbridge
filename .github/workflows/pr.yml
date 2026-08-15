@@ -1007,12 +1007,49 @@ jobs:
         run: |
           set +e
           pnpm exec playwright test --config playwright.config.ci.ts \
-            --reporter=list,json tests/e2e-pw/50-rejestracja-onboarding.spec.ts
+            --reporter=list,json --grep-invert "@regulamin" \
+            tests/e2e-pw/50-rejestracja-onboarding.spec.ts
           KOD_PAKIETU=$?
           set -e
-          # 4 = liczba przypadkow w 50-rejestracja-onboarding.spec.ts (2 rejestracja/klauzula
-          # + 2 warianty rozwidlenia #309). Rosnie SWIADOMIE razem z pakietem.
+          # 4 = liczba przypadkow segmentu podstawowego (2 rejestracja/klauzula + 2 warianty
+          # rozwidlenia #309). Segment @regulamin ma osobny krok nizej i wlasna liczbe.
+          # `--grep-invert` jest tu bezpieczny WYLACZNIE dlatego, ze ponizsza bramka liczy
+          # przypadki: gdyby filtr wycial za duzo, zobaczymy to jako czerwone, nie jako zielen.
           node tools/sprawdz-licznosc-e2e.mjs raport-rejestracja.json 4
+          exit $KOD_PAKIETU
+      # ─────────────────────────────────────────────────────────────────────
+      # ZGODA NA REGULAMIN PILOTAZU (#323) — bramka SERWERA, nie przegladarki.
+      #
+      # OSOBNY KROK, A NIE DOPISANIE DO KROKU WYZEJ — POWOD JEST MIERZALNY:
+      # Better Auth liczy /sign-up na adres IP i zeruje licznik dopiero po 10 s CISZY
+      # (`decideConsume`: reset tylko gdy `now - lastRequest > window`; window 10, max 3).
+      # Krok wyzej zuzywa 3 rejestracje w ~12 s, czyli caly budzet. Te dwa przypadki
+      # dorzucone tam bylyby czwartym i piatym zadaniem w oknie = pewne 429, czyli
+      # migotanie z winy PROJEKTU TESTU, nie produktu. Osobny krok startuje wlasny
+      # serwer (`reuseExistingServer: false`), wiec okno jest swieze.
+      #
+      # DRUGI POWOD: ten krok potrzebuje FLAG_PILOT_TERMS=1, a krok wyzej ma dowodzic,
+      # ze sciezka dziala przy fladze ZGASZONEJ — czyli w dzisiejszym stanie produkcji.
+      # Dwa stany flagi = dwa serwery = dwa kroki.
+      - name: Playwright — zgoda na regulamin pilotazu (bramka serwera, #323)
+        if: ${{ !cancelled() }}
+        env:
+          FLAG_PILOT_TERMS: "1"
+          FLAG_PRIVACY_NOTICE_ART13: "1"
+          FLAG_ACCOUNT_DELETION: "1"
+          E2E_TERMS_FLAG: "1"
+          PLAYWRIGHT_JSON_OUTPUT_NAME: raport-regulamin.json
+        run: |
+          set +e
+          pnpm exec playwright test --config playwright.config.ci.ts \
+            --reporter=list,json --grep "@regulamin" \
+            tests/e2e-pw/50-rejestracja-onboarding.spec.ts
+          KOD_PAKIETU=$?
+          set -e
+          # 2 = strona ujemna (serwer odrzuca, konto NIE powstaje) + strona dodatnia
+          # (ze zgoda konto powstaje). Obie sa potrzebne: bez dodatniej te sama asercje
+          # spelnialaby bramka zepsuta na amen, ktora nie przepuszcza nikogo.
+          node tools/sprawdz-licznosc-e2e.mjs raport-regulamin.json 2
           exit $KOD_PAKIETU
       # Artefakty diagnostyczne przy padzie (trace/screenshot — bez sekretow w logu).
       - name: Upload raportu Playwright (przy padzie)

@@ -44,6 +44,12 @@ import { dbWriteTest as test } from "./helpers/guards";
  *   2. `E2E_PRIVACY_FLAG=1` — analogicznie dla `FLAG_PRIVACY_NOTICE_ART13=1`
  *      (odnośnik do klauzuli pod formularzem rejestracji znika razem z flagą).
  *
+ *   3. `E2E_TERMS_FLAG=1` — analogicznie dla `FLAG_PILOT_TERMS=1` (#323). Dotyczy
+ *      WYŁĄCZNIE segmentu `@regulamin` na końcu pliku, który biega w OSOBNYM kroku CI
+ *      (powód: limit 3 żądań / 10 s — uzasadnienie przy samym segmencie). Segment
+ *      podstawowy przechodzi przy fladze ZGASZONEJ, czyli w dzisiejszym stanie produkcji,
+ *      i przy zapalonej też — helper zaznacza pole zgody wtedy, gdy jest ono w drzewie.
+ *
  * ROZBIEŻNOŚĆ ZE ZLECENIEM — ŚWIADOMA, ZGŁOSZONA, NIE OBEJŚCIE:
  * zlecenie mówiło „klauzulę i akceptację". AKCEPTACJI NIE MA I NIE POWINNO BYĆ:
  * `src/app/(auth)/signup/page.tsx` nazywa to wprost — art. 13 to obowiązek
@@ -84,6 +90,7 @@ const CEL_KARIERY = "Data Analyst";
 
 const DIAGNOZA_WLACZONA = process.env.E2E_DIAGNOSIS_FLAG === "1";
 const KLAUZULA_WLACZONA = process.env.E2E_PRIVACY_FLAG === "1";
+const REGULAMIN_WLACZONY = process.env.E2E_TERMS_FLAG === "1";
 
 /** Tekst rozwidlenia N2′ — mikrocopy WIĄŻĄCE Sophii (§3, „Tekst mój, 1:1").
  *  Kotwiczę na nim świadomie: gdyby ktoś je sparafrazował przy refaktorze, ma o tym
@@ -117,8 +124,14 @@ function unikalnyEmail(tag: string): string {
  * następna osoba zobaczy „limit czasu", uzna to za flaka i PODNIESIE LIMIT CZASU.
  * Podniesiony limit nie naprawi odmowy, tylko ją ukryje.
  *
- * Dlatego pad ma tu trzy ROZŁĄCZNE kształty: odmowa z limitu / rejestracja odrzucona
- * / konto powstało, ale brak przekierowania.
+ * Dlatego pad ma tu CZTERY kształty: odmowa z limitu / rejestracja odrzucona / konto
+ * powstało, ale brak przekierowania / żądanie w ogóle nie wyszło.
+ *
+ * CZWARTY DOŁOŻONY PO PRZEGLĄDZIE LEO — trzy pierwsze były rozłączne MIĘDZY SOBĄ,
+ * ale zbiór nie był WYCZERPUJĄCY. Stan „żądanie nie wyszło" powstał realnie przez
+ * scalenie #323 (pole zgody `required`, formularz bez `noValidate`) i wypadał poza
+ * nie, wracając do surowego limitu czasu Playwrighta — czyli do tej samej
+ * dwuznaczności, którą ta asercja usuwa.
  */
 async function zarejestruj(page: Page, imie: string, email: string): Promise<void> {
 	await page.goto("/signup");
@@ -126,13 +139,62 @@ async function zarejestruj(page: Page, imie: string, email: string): Promise<voi
 	await page.getByLabel("Email").fill(email);
 	await page.getByLabel(PASSWORD_FIELD_LABEL, { exact: true }).fill(KONTO_HASLO);
 
+	// ── POLE ZGODY NA REGULAMIN (#323) ───────────────────────────────────────
+	// Zaznaczamy je WTEDY I TYLKO WTEDY, gdy realnie jest w drzewie — pole renderuje
+	// się za flagą `pilotTerms`, więc helper ma działać przy fladze zgaszonej (stan
+	// produkcyjny dziś) i zapalonej (stan po zapłonie) BEZ rozgałęziania na zmiennej
+	// środowiskowej. Warunkiem jest obecność pola, nie nasze wyobrażenie o fladze.
+	const poleZgody = page.locator("#regulamin");
+	if ((await poleZgody.count()) === 1) await poleZgody.check();
+
 	// Nasłuch MUSI być uzbrojony przed kliknięciem — inaczej odpowiedź zdąży wrócić.
+	// LIMIT 15 s, NIE 30 s — ŚWIADOMIE KRÓTSZY OD LIMITU TESTU (30 s z konfiguracji).
+	// To jest OBNIŻENIE, nie podniesienie, i ma powód znaleziony mutacją: przy 30 s
+	// czekanie kończyło się DOKŁADNIE wtedy, co cały test, więc Playwright zamykał
+	// stronę, zanim gałąź diagnostyczna niżej zdążyła ją odczytać — i zamiast mojego
+	// komunikatu wypadało `locator.evaluateAll: Target page, context or browser has
+	// been closed`. Strażnik z diagnostyką, która nie ma kiedy się wykonać, jest
+	// strażnikiem-atrapą. Odpowiedź rejestracji wraca w ~1–2 s (lokalnie i w CI),
+	// więc 15 s to nadal ogromny zapas.
 	const czekajNaOdpowiedz = page.waitForResponse(
 		(r) => r.url().includes("/api/auth/sign-up/email") && r.request().method() === "POST",
-		{ timeout: 30_000 },
+		{ timeout: 15_000 },
 	);
 	await page.getByRole("button", { name: /Utwórz konto/i }).click();
-	const odpowiedz = await czekajNaOdpowiedz;
+
+	// ── KSZTAŁT 4: żądanie w ogóle nie wyszło ────────────────────────────────
+	// Trzy kształty niżej są rozłączne MIĘDZY SOBĄ, ale zbiór nie był WYCZERPUJĄCY:
+	// gdy przeglądarka zablokuje wysłanie (pole `required` bez `noValidate` na
+	// formularzu), `handleSubmit` się nie wykona, żądania nie ma, a `waitForResponse`
+	// pada po 30 s SUROWYM komunikatem Playwrighta — czyli dokładnie tą dwuznacznością,
+	// którą asercja na odpowiedzi miała usunąć.
+	// ZMIERZONE 2026-08-15 przy `FLAG_PILOT_TERMS=1` i niezaznaczonym polu: liczba
+	// żądań na /api/auth/sign-up = 0, adres bez zmian, `validity.valid` pola = false.
+	let odpowiedz: Awaited<typeof czekajNaOdpowiedz>;
+	try {
+		odpowiedz = await czekajNaOdpowiedz;
+	} catch {
+		// Rozróżnienie „przeglądarka zablokowała" od „sieć/serwer nie odpowiedział":
+		// pierwsze zostawia w formularzu pole niespełniające walidacji HTML, drugie nie.
+		const niepoprawne = await page
+			.locator("form.auth-form :invalid")
+			.evaluateAll((pola) => pola.map((p) => (p as HTMLInputElement).id || p.tagName));
+		if (niepoprawne.length > 0) {
+			throw new Error(
+				`ŻĄDANIE NIE WYSZŁO — PRZEGLĄDARKA ZABLOKOWAŁA WYSŁANIE formularza dla ${email}. ` +
+					`Pola odrzucone przez walidację HTML: ${niepoprawne.join(", ")}. ` +
+					"To NIE jest awaria sieci ani wolny serwer: `handleSubmit` się nie wykonał, więc " +
+					"zaczep serwera (hooks.before w src/lib/auth/server.ts) NIGDY nie doszedł do głosu. " +
+					"Najczęstsza przyczyna: pole `required` (np. zgoda na regulamin za flagą pilotTerms) " +
+					"niezaznaczone przez test. Uzupełnij pole w helperze `zarejestruj`, NIE podnoś limitu czasu.",
+			);
+		}
+		throw new Error(
+			`ŻĄDANIE NIE WYSZŁO dla ${email}, mimo że formularz przeszedł walidację przeglądarki. ` +
+				"Żadne pole nie jest odrzucone przez walidację HTML, więc to NIE jest brak zaznaczenia — " +
+				`podejrzenie po stronie sieci/serwera. Bieżący adres: ${page.url()}`,
+		);
+	}
 	const status = odpowiedz.status();
 
 	// ── KSZTAŁT 1: odmowa z limitu żądań ─────────────────────────────────────
@@ -167,7 +229,8 @@ async function zarejestruj(page: Page, imie: string, email: string): Promise<voi
 	// Dopiero TERAZ czekanie na adres znaczy to, co ma znaczyć: HTTP 200 jest już
 	// stwierdzone, więc pad poniżej mówi o warstwie klienta, nie o rejestracji.
 	try {
-		await page.waitForURL((url) => !url.pathname.startsWith("/signup"), { timeout: 30_000 });
+		// Ten sam powód co wyżej: krócej niż limit testu, żeby komunikat zdążył powstać.
+		await page.waitForURL((url) => !url.pathname.startsWith("/signup"), { timeout: 15_000 });
 	} catch {
 		throw new Error(
 			`KONTO POWSTAŁO (HTTP 200) dla ${email}, ale przeglądarka została na /signup — ` +
@@ -363,6 +426,76 @@ test.describe("@dbwrite Ścieżka krytyczna #1 — rozwidlenie przy zerze zaznac
 				[s.rows[0].id],
 			);
 			expect(p.rows[0].n).toBeGreaterThanOrEqual(1);
+		} finally {
+			await pool.end();
+		}
+	});
+});
+
+// ── E. Zgoda na regulamin pilotażu (#323) — @regulamin ───────────────────────
+//
+// OSOBNY SEGMENT I OSOBNY KROK CI — NIE KAPRYS, TYLKO LIMIT ŻĄDAŃ.
+// Better Auth liczy /sign-up na adres IP i zeruje licznik dopiero po 10 s CISZY
+// (`decideConsume`: reset wyłącznie gdy `now - lastRequest > window`). Segment
+// podstawowy zużywa 3 rejestracje w ~12 s, czyli cały budżet. Dołożenie tych dwóch
+// przypadków do tego samego przebiegu dałoby czwarte i piąte żądanie w oknie =
+// pewne 429 — a to NIE byłaby wada produktu, tylko wada projektu testu.
+// Osobny krok CI startuje własny serwer, więc okno jest świeże.
+//
+// Segment biega WYŁĄCZNIE przy `E2E_TERMS_FLAG=1` (serwer z `FLAG_PILOT_TERMS=1`).
+// Przy zgaszonej fladze pola zgody NIE MA i orzekanie o nim byłoby orzekaniem
+// o ekranie, którego nie ma. Bramka liczności (`tools/sprawdz-licznosc-e2e.mjs`)
+// pilnuje, żeby „pominięty segment" nie przeszedł jako zielony.
+test.describe("@dbwrite @regulamin Zgoda na regulamin pilotażu — bramka serwera", () => {
+	test.skip(
+		!REGULAMIN_WLACZONY,
+		"Wymaga FLAG_PILOT_TERMS=1 na serwerze (sygnał: E2E_TERMS_FLAG=1). " +
+			"Przy zgaszonej fladze pole zgody nie istnieje.",
+	);
+
+	// ── STRONA UJEMNA kontroli dwustronnej ───────────────────────────────────
+	// Celowo OMIJAMY przeglądarkę i strzelamy prosto w trasę. To jest sedno tego
+	// przypadku: gdyby test szedł formularzem, przeglądarka zablokowałaby wysłanie
+	// na `required` i dowiedzielibyśmy się WYŁĄCZNIE tego, że pole jest wymagane
+	// w przeglądarce — czyli mielibyśmy walidację po stronie klienta UDAJĄCĄ kontrolę
+	// dostępu. Pierwszy człowiek z narzędziem wiersza poleceń omija ją w całości.
+	// Dowodem, że bramka istnieje, jest odmowa SERWERA i BRAK WIERSZA w bazie.
+	test("bez zgody: serwer odrzuca żądanie I konto NIE powstaje", async ({ request }) => {
+		const email = unikalnyEmail("bezzgody");
+
+		const odpowiedz = await request.post("/api/auth/sign-up/email", {
+			data: { email, password: KONTO_HASLO, name: "Bez Zgody" },
+			failOnStatusCode: false,
+		});
+
+		// 400 z zaczepu `before` (src/lib/auth/server.ts) — nie 200, nie 500.
+		expect(odpowiedz.status()).toBe(400);
+
+		// ASERCJA NOŚNA: sam kod odpowiedzi nie wystarcza. Trasa mogłaby zwrócić 400
+		// PO utworzeniu konta i wtedy bramka byłaby ozdobą — liczy się brak wiersza.
+		const pool = new Pool({ connectionString: DATABASE_URL });
+		try {
+			const u = await pool.query<{ id: string }>('SELECT id FROM "user" WHERE email = $1', [email]);
+			expect(u.rows.length).toBe(0);
+		} finally {
+			await pool.end();
+		}
+	});
+
+	// ── STRONA DODATNIA kontroli dwustronnej ─────────────────────────────────
+	// Bez tego przypadku „brak zgody nie tworzy konta" spełniałaby też bramka zepsuta
+	// na amen — taka, która nie przepuszcza NIKOGO. Formularzem (nie trasą), bo to on
+	// dokłada wersję regulaminu; helper zaznacza pole, gdy jest obecne.
+	test("ze zgodą: konto powstaje i ląduje w kreatorze", async ({ page }) => {
+		const email = unikalnyEmail("zezgoda");
+		await zarejestruj(page, "Uczestnik Ze Zgodą", email);
+		await page.goto("/onboarding");
+		await expect(page.getByRole("heading", { name: /Zacznijmy od celu/i })).toBeVisible();
+
+		const pool = new Pool({ connectionString: DATABASE_URL });
+		try {
+			const u = await pool.query<{ id: string }>('SELECT id FROM "user" WHERE email = $1', [email]);
+			expect(u.rows.length).toBe(1);
 		} finally {
 			await pool.end();
 		}
