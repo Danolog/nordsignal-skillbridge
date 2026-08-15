@@ -109,8 +109,13 @@ test.describe("@safe E4 — klauzula art. 13 pod /prywatnosc", () => {
 					`że klauzuli nie napisał prawnik.`,
 			).not.toContain(igla);
 		}
-		// Klucze maszynowe strażnika okresów też nie są treścią dla człowieka.
+		// Klucze maszynowe strażników też nie są treścią dla człowieka. Oba rodzaje
+		// znikają tym samym mechanizmem (wycięcie komentarzy HTML w `wytnijCzescI`),
+		// więc to jedna reguła o dwóch zastosowaniach, a nie dwie reguły.
 		expect(html).not.toContain("retencja:");
+		// `pracodawca:` — klucze sekcji 9, dołożone 2026-08-14 pod porównywarkę
+		// dwóch nośników zasady odpowiedzi dla pracodawcy (klauzula, sekcja Z-3).
+		expect(html).not.toContain("pracodawca:");
 	});
 
 	test("axe-core: 0 naruszeń WCAG 2.1 AA", async ({ page }) => {
