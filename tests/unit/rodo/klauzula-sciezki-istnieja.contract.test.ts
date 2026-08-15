@@ -70,13 +70,20 @@ const NOSNIKI = [
  * To jest jedyne legalne wyjście poza regułę. Pusta lista jest stanem docelowym.
  */
 const SCIEZKI_JESZCZE_NIEISTNIEJACE: Readonly<Record<string, string>> = {
-	"docs/product/zasada-odpowiedzi-dla-pracodawcy.md":
-		"nośnik warunku W-5, draft Sophii z 2026-08-14 poza kontrolą wersji; " +
-		"zdejmujemy z listy w zgłoszeniu, które wprowadza go na `main`",
-	"docs/product/regulamin-pilotazu.md":
-		"regulamin pilotażu, draft Sophii z 2026-08-14 poza kontrolą wersji; " +
-		"cytowany w sekcji Z-8 klauzuli (kolizja podstaw R-3); zdejmujemy z listy " +
-		"w zgłoszeniu, które wprowadza go na `main`",
+	// PUSTO — stan docelowy osiągnięty 2026-08-14.
+	//
+	// Obie pozycje („docs/product/zasada-odpowiedzi-dla-pracodawcy.md" i
+	// „docs/product/regulamin-pilotazu.md") zdjęte w tym samym zgłoszeniu, które
+	// wprowadza oba pliki do kontroli wersji — dokładnie tak, jak nakazywał ich
+	// własny wpis („zdejmujemy z listy w zgłoszeniu, które wprowadza go na `main`").
+	// Zdjęcie jest w TYM SAMYM commicie co wejście plików: gdyby szło osobno,
+	// pomiędzy jednym a drugim `main` miałby suitę czerwoną.
+	//
+	// Że lista nie zgniła, nie wynika z tego komentarza — pilnuje tego test
+	// „lista pozycji niepowstałych nie zgniła" niżej, który padał na obu pozycjach
+	// (cytat: „expected [ 'docs/product/zasada-odpowiedzi-dla-pracodawcy.md',
+	// 'docs/product/regulamin-pilotazu.md' ] to deeply equal []", odczyt 2026-08-14)
+	// dopóki tu stały.
 };
 
 /**
