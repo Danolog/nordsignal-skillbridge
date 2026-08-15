@@ -95,15 +95,87 @@ function unikalnyEmail(tag: string): string {
 	return `reg-${tag}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
 }
 
-/** Rejestracja od zera przez realny formularz (nie przez seed, nie przez API). */
+/**
+ * Rejestracja od zera przez realny formularz (nie przez seed, nie przez API).
+ *
+ * DLACZEGO ASERCJA NA ODPOWIEDZI, A NIE SAMO CZEKANIE NA ADRES (przegląd Leo):
+ * poprzednia wersja opierała się na zdaniu „wyjście ze /signup = konto realnie
+ * powstało" i czekała wyłącznie na zmianę adresu. To zdanie jest FAŁSZYWE, a
+ * kontrprzykładem była moja własna mutacja: po usunięciu `router.push("/dashboard")`
+ * konto POWSTAWAŁO (HTTP 200), a przeglądarka zostawała na /signup — test padał
+ * na limicie czasu `waitForURL`, czyli z sygnaturą nie do odróżnienia od „rejestracja
+ * się nie powiodła". Asercja o wierszu w bazie stoi dopiero w ciele testu, więc pad
+ * ją WYPRZEDZAŁ i nikt się nie dowiadywał, co naprawdę zawiodło.
+ *
+ * DRUGI POWÓD, WAŻNIEJSZY OD PIERWSZEGO: ta sama dwuznaczna sygnatura zamienia
+ * ODMOWĘ Z LIMITU ŻĄDAŃ w „migotliwy test". Better Auth 1.6.26 (wersja z blokady
+ * zależności) limituje /sign-up i /sign-in do `window: 10, max: 3` na adres IP
+ * (`getDefaultSpecialRules()`), a limiter jest czynny w trybie produkcyjnym
+ * (`enabled ?? isProduction`) — czyli TAKŻE w CI, bo tor jedzie na `next start`.
+ * Pakiet rejestruje 3 konta i przebiega w ~12 s: siedzimy DOKŁADNIE na granicy.
+ * Czwarty przypadek rejestrujący zacznie zwracać 429 — a przy dwuznacznej sygnaturze
+ * następna osoba zobaczy „limit czasu", uzna to za flaka i PODNIESIE LIMIT CZASU.
+ * Podniesiony limit nie naprawi odmowy, tylko ją ukryje.
+ *
+ * Dlatego pad ma tu trzy ROZŁĄCZNE kształty: odmowa z limitu / rejestracja odrzucona
+ * / konto powstało, ale brak przekierowania.
+ */
 async function zarejestruj(page: Page, imie: string, email: string): Promise<void> {
 	await page.goto("/signup");
 	await page.getByLabel("Imię i nazwisko").fill(imie);
 	await page.getByLabel("Email").fill(email);
 	await page.getByLabel(PASSWORD_FIELD_LABEL, { exact: true }).fill(KONTO_HASLO);
+
+	// Nasłuch MUSI być uzbrojony przed kliknięciem — inaczej odpowiedź zdąży wrócić.
+	const czekajNaOdpowiedz = page.waitForResponse(
+		(r) => r.url().includes("/api/auth/sign-up/email") && r.request().method() === "POST",
+		{ timeout: 30_000 },
+	);
 	await page.getByRole("button", { name: /Utwórz konto/i }).click();
-	// Wyjście ze /signup = konto realnie powstało (formularz zostaje przy błędzie auth).
-	await page.waitForURL((url) => !url.pathname.startsWith("/signup"), { timeout: 30_000 });
+	const odpowiedz = await czekajNaOdpowiedz;
+	const status = odpowiedz.status();
+
+	// ── KSZTAŁT 1: odmowa z limitu żądań ─────────────────────────────────────
+	// Świadomie NIE ponawiamy i NIE czekamy na wygaśnięcie okna: ponowienie zamieniłoby
+	// realne ograniczenie w niewidzialne, a to jest dokładnie ta rzecz, o której zespół
+	// ma się dowiedzieć. Rozdzielenie limitów rejestracji i logowania ocenia Ethan —
+	// ten test tego nie przesądza, tylko nazywa stan po imieniu.
+	if (status === 429) {
+		throw new Error(
+			`ODMOWA Z LIMITU ŻĄDAŃ (HTTP 429) przy rejestracji ${email}. ` +
+				"To NIE jest wolny test ani flak — Better Auth limituje /sign-up do 3 żądań / 10 s " +
+				"na adres IP (getDefaultSpecialRules, window: 10, max: 3), a limiter działa w trybie " +
+				`produkcyjnym, więc też w CI. Nagłówek x-retry-after: ${odpowiedz.headers()["x-retry-after"] ?? "brak"}. ` +
+				"NIE PODNOŚ LIMITU CZASU I NIE PONAWIAJ — to niczego nie naprawi. Zmniejsz liczbę " +
+				"rejestracji w pakiecie albo poczekaj na decyzję o rozdzieleniu limitów.",
+		);
+	}
+
+	// ── KSZTAŁT 2: rejestracja odrzucona przez serwer ────────────────────────
+	// Tu wyląduje m.in. brak akceptacji regulaminu przy zapalonej fladze `pilotTerms`
+	// (zaczep `before` w src/lib/auth/server.ts) — i ma być widać, że to ODRZUCENIE
+	// żądania, a nie brak przekierowania.
+	if (status !== 200) {
+		const tresc = await odpowiedz.text().catch(() => "<nieczytelna>");
+		throw new Error(
+			`REJESTRACJA ODRZUCONA PRZEZ SERWER (HTTP ${status}) dla ${email}. ` +
+				`Konto NIE powstało. Treść odpowiedzi: ${tresc.slice(0, 300)}`,
+		);
+	}
+
+	// ── KSZTAŁT 3: konto powstało, ale interfejs nie przeniósł dalej ─────────
+	// Dopiero TERAZ czekanie na adres znaczy to, co ma znaczyć: HTTP 200 jest już
+	// stwierdzone, więc pad poniżej mówi o warstwie klienta, nie o rejestracji.
+	try {
+		await page.waitForURL((url) => !url.pathname.startsWith("/signup"), { timeout: 30_000 });
+	} catch {
+		throw new Error(
+			`KONTO POWSTAŁO (HTTP 200) dla ${email}, ale przeglądarka została na /signup — ` +
+				"brak przekierowania po rejestracji. Wada jest w warstwie klienta " +
+				"(src/components/auth/signup-form.tsx), NIE w rejestracji po stronie serwera. " +
+				`Bieżący adres: ${page.url()}`,
+		);
+	}
 	await expect(page).toHaveURL(/\/(dashboard|onboarding)/);
 }
 
