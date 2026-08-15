@@ -76,7 +76,7 @@ permissions:
 # w konfiguracji produkcyjnej: `@uczelnia.pl` wpuscilby kazdego studenta
 # uczelni zamiast pieciorga zaproszonych.
 env:
-  PILOT_ALLOWLIST: "@example.com,@e2e.invalid,@test.invalid"
+  PILOT_ALLOWLIST: "@example.com,@test.local,@e2e.invalid,@test.invalid"
 
 jobs:
   lint:
