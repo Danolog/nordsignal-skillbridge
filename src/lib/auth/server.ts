@@ -7,6 +7,7 @@ import {
 	beforeDeleteAccount,
 	FLAGA_USUWANIA_KONTA,
 } from "@/lib/auth/account-deletion";
+import { czyAdresDozwolony, KOMUNIKAT_ODMOWY } from "@/lib/auth/lista-dostepu";
 import { db } from "@/lib/db";
 import { isFeatureEnabled } from "@/lib/flags";
 import {
@@ -15,8 +16,15 @@ import {
 	wersjaRegulaminuPilotazu,
 } from "@/lib/tresc/akceptacja-regulaminu";
 
-/** Ścieżka rejestracji mailem — jedyna, którą bramkuje zaczep niżej. */
+/** Ścieżka rejestracji mailem — bramkowana akceptacją regulaminu i listą dostępu. */
 const SCIEZKA_REJESTRACJI = "/sign-up/email";
+
+/**
+ * Ścieżki, na których znamy adres z ciała żądania i możemy sprawdzić listę
+ * dostępu PRZED wykonaniem czynności. Logowanie Google nie niesie tu adresu —
+ * jego pierwsze wejście łapie `databaseHooks.user.create.before` niżej.
+ */
+const SCIEZKI_Z_ADRESEM_W_CIELE = [SCIEZKA_REJESTRACJI, "/sign-in/email"] as const;
 
 export const auth = betterAuth({
 	baseURL: process.env.BETTER_AUTH_URL,
@@ -96,8 +104,35 @@ export const auth = betterAuth({
 	// Odczyt wersji z dokumentu może rzucić wyjątkiem (dokument bez oznaczenia
 	// wersji). To celowe: brak pewności, na co ktoś się zgadza, ma zatrzymać
 	// rejestrację, a nie przepuścić ją z wersją „nie wiem".
+	// KONTROLA DOSTĘPU — pierwsze wejście kontem Google.
+	//
+	// Zaczep na ciele żądania (niżej) nie widzi adresu przy logowaniu społecznym:
+	// Google podaje go dopiero w wywołaniu zwrotnym. Tworzenie użytkownika jest
+	// natomiast wspólnym wąskim gardłem dla KAŻDEJ drogi rejestracji, więc tu
+	// odcinamy nowe konta spoza listy. Reguła mieszka w `lista-dostepu.ts` —
+	// tu jest tylko jej wywołanie.
+	databaseHooks: {
+		user: {
+			create: {
+				before: async (user) => {
+					if (czyAdresDozwolony(user.email)) return;
+					throw new APIError("FORBIDDEN", { message: KOMUNIKAT_ODMOWY });
+				},
+			},
+		},
+	},
 	hooks: {
 		before: createAuthMiddleware(async (ctx) => {
+			// KONTROLA DOSTĘPU przed czymkolwiek innym: rejestracja i logowanie
+			// mailem. Sprawdzenie stoi PO STRONIE SERWERA, na trasie biblioteki —
+			// ten sam argument, co przy akceptacji regulaminu niżej.
+			if ((SCIEZKI_Z_ADRESEM_W_CIELE as readonly string[]).includes(ctx.path)) {
+				const adres = (ctx.body as { email?: unknown } | undefined)?.email;
+				if (!czyAdresDozwolony(typeof adres === "string" ? adres : null)) {
+					throw new APIError("FORBIDDEN", { message: KOMUNIKAT_ODMOWY });
+				}
+			}
+
 			if (ctx.path !== SCIEZKA_REJESTRACJI) return;
 			if (!isFeatureEnabled("pilotTerms")) return;
 
