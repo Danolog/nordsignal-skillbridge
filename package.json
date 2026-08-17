@@ -101,6 +101,32 @@
 		"vite-tsconfig-paths": "^6.1.1",
 		"vitest": "^4.1.9"
 	},
+	"//pnpm.overrides.deepmerge-ts": [
+		"DLACZEGO TO TU JEST (2026-08-17, Ethan): `pnpm audit` zaczal zglaszac",
+		"`deepmerge-ts@7.1.5` — 'DeepmergeTS has stack exhaustion when merging',",
+		"poziom `high`, podatne <8.0.0, zalatane >=8.0.0. Bramka `deps-scan` jest",
+		"WYMAGANA, wiec czerwien blokowala scalenie WSZYSTKIEGO w repozytorium,",
+		"nie tylko zgloszenia, ktore ja wywolalo.",
+		"",
+		"Zaleznosc jest PRZECHODNIA: ciagnie ja `@prisma/config@7.4.2`. Zadne",
+		"z pieciu zgloszen bota zaleznosci (#327-#331) jej nie ruszalo, wiec pomoc",
+		"nie przyszlaby sama.",
+		"",
+		"GRANICA TEGO UZASADNIENIA — projekt uzywa Drizzle, NIE Prismy, wiec",
+		"`@prisma/config` jest tu zaleznoscia narzedziowa i realne ryzyko jest",
+		"niskie. ALE BRAMKI TO NIE ZMIENIA: `deps-scan` nie pyta o wykorzystanie,",
+		"tylko o wersje. Oba zdania stoja tu razem swiadomie — kto czyta powod,",
+		"ma zobaczyc takze jego granice.",
+		"",
+		"PROG POWROTU: przy najblizszym dotknieciu Prismy (podniesienie wersji,",
+		"usuniecie zaleznosci, zmiana narzedzia) SPRAWDZIC, czy nadpisanie jest",
+		"jeszcze potrzebne, i je ZDJAC, jesli `@prisma/config` ciagnie juz >=8.",
+		"Nadpisanie wersji jest lataniem objawu; wlasciwa naprawa to podniesienie",
+		"pakietu-rodzica.",
+		"",
+		"Uwaga porzadkowa: pozostale 22 nadpisania w tym bloku NIE MAJA zadnego",
+		"zapisanego powodu. Nie wiadomo, ktore z nich sa jeszcze potrzebne."
+	],
 	"pnpm": {
 		"overrides": {
 			"@better-auth/sso": "1.6.23",
@@ -124,7 +150,8 @@
 			"micromatch>picomatch": "^2.3.2",
 			"brace-expansion": ">=5.0.9",
 			"express-rate-limit>ip-address": "^10.3.1",
-			"js-yaml": ">=5.2.2"
+			"js-yaml": ">=5.2.2",
+			"deepmerge-ts": ">=8.0.0"
 		}
 	}
 }
