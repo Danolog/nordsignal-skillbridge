@@ -148,6 +148,10 @@ export function assertBezAparatuWewnetrznego(tekst: string): void {
  *     prawnika.
  */
 export function wytnijCzescI(markdown: string): string {
+	// MUTACJA POMIAROWA 0.5 — CZESC II wycieka do strony studenta.
+	// Gałąź jednorazowa, NIE do scalenia. Cofana po pomiarze.
+	return markdown;
+	// biome-ignore lint/correctness/noUnreachable: mutacja pomiarowa
 	const linie = markdown.split("\n");
 
 	const poczatki = linie.flatMap((l, i) => (ZNACZNIK_POCZATKU.test(l) ? [i] : []));
