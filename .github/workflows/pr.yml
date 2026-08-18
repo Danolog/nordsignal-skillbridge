@@ -60,6 +60,19 @@ concurrency:
 permissions:
   contents: read
 
+# PANEL WYKLADOWCY — ZAPALONY W CI, ZGASZONY NA PRODUKCJI.
+#
+# Panel jest wylaczony na czas pilotazu (haslo wspoldzielone = nie wiadomo, kto
+# sie zalogowal), ale jego LOGIKA ma byc dalej sprawdzana: kolejka recenzji,
+# rozdzial tenantow, slad decyzji czlowieka pod kredencjalem. Bez tej zmiennej
+# cztery zestawy integracyjne dostaja 401 i bramka mierzy ZGASZONA FLAGE zamiast
+# produktu.
+#
+# To NIE jest oslabienie bramki: produkcja tej zmiennej NIE ustawia, wiec tam
+# panel pozostaje zamkniety. Rozdzial „co wylaczone" od „co niesprawdzone".
+env:
+  FLAG_FACULTY_PANEL: "1"
+
 jobs:
   lint:
     name: lint (biome)
