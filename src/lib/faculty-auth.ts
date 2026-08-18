@@ -3,6 +3,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { facultySessions } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
 
 export const FACULTY_COOKIE_NAME = "faculty_session";
 
@@ -28,6 +29,18 @@ export type FacultyAuth = { tenantId: string; sessionId: string };
  * (sprzed K3) = nieważna → wymusza ponowne logowanie (fail-closed).
  */
 export async function checkFacultyAuth(): Promise<FacultyAuth | null> {
+	// PANEL ZA FLAGA (2026-08-17). Odczyt PER ZADANIE, nie przy starcie: zmienna
+	// srodowiskowa przestawia sie bez wdrozenia, wiec gaszenie dziala natychmiast.
+	//
+	// To jest punkt egzekucji dla OBU tras panelu (/faculty i /api/faculty/dashboard) —
+	// obie wolaja te funkcje. Sprawdzenie stoi TUTAJ, a nie w kazdej trasie osobno,
+	// zeby nie powstaly dwa zachowania, ktore ktos kiedys rozjedzie.
+	//
+	// Zgaszona flaga uniewaznia takze SESJE JUZ WYDANE: funkcja zwraca null zanim
+	// dotknie ciasteczka i tabeli, wiec otwarta sesja przestaje dawac dostep od razu.
+	// „Usuniete != uniewaznione" — czyszczenie hasel zamyka tylko NOWE logowania.
+	if (!isFeatureEnabled("facultyPanel")) return null;
+
 	const cookieStore = await cookies();
 	const token = cookieStore.get(FACULTY_COOKIE_NAME)?.value;
 	if (!token) return null;

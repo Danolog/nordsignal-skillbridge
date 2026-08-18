@@ -73,6 +73,21 @@ vi.mock("@/lib/ai/project-tutor", async (importOriginal) => {
 	return { ...orig, runTutorTurn: (...a: unknown[]) => runTutorTurnMock(...a) };
 });
 
+// Krok 1 potoku zmockowany — test NIE woła GitHub API.
+//
+// Atrapa musi stać pod TYM modułem, nie pod `@/lib/ai/pipeline`: trasa tutora
+// importuje `fetchContent` wprost stąd, więc atrapa podstawiona pod moduł obok
+// jej nie zasłania. Do 2026-08-17 tej atrapy tu nie było i test wychodził
+// naprawdę do `api.github.com/repos/student/analiza` — przy wolnej odpowiedzi
+// GitHuba padał na limicie 5000 ms bez ani jednej asercji, mówiąc „coś trwało
+// za długo" zamiast „wyszedłem do sieci". Wzorzec przeniesiony z
+// `src/app/api/projects/[id]/tutor/__tests__/tutor.integration.test.ts`.
+// Reguła i strażnik całego zestawu: `src/test/network-guard.ts`.
+const fetchContentMock = vi.fn();
+vi.mock("@/lib/ai/pipeline/step1-fetch-content", () => ({
+	fetchContent: (...a: unknown[]) => fetchContentMock(...a),
+}));
+
 const QUESTIONS = [
 	{ position: 0, question: "Dlaczego merge zamiast join?", filePath: "a.py", excerpt: "df.merge" },
 	{
@@ -258,6 +273,11 @@ dBack("B7/1.16a · cykl życia obrony ustnej (realna baza, DoD)", () => {
 		runReviewPipelineMock.mockResolvedValue(pipelineResult());
 		judgeMock.mockResolvedValue({ points: 2, justification: "trafna" });
 		reviewerAuthMock.mockResolvedValue({ kind: "quality_operator", sessionId: "op-sess-1" });
+		fetchContentMock.mockResolvedValue({
+			ok: true,
+			data: { artifact: "=== analiza.py (L1–L2) ===\nimport pandas as pd" },
+			flags: [],
+		});
 		await pool?.query(
 			"DELETE FROM viva_answers WHERE session_id IN (SELECT id FROM viva_sessions WHERE student_id IN ($1,$2))",
 			[studentId, student2Id],

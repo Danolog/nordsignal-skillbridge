@@ -75,8 +75,29 @@ permissions:
 # nie ten komentarz. Dlatego ta wartosc jest bezpieczna tutaj i bylaby grozna
 # w konfiguracji produkcyjnej: `@uczelnia.pl` wpuscilby kazdego studenta
 # uczelni zamiast pieciorga zaproszonych.
+#
+# PANEL WYKLADOWCY — ZAPALONY W CI, ZGASZONY NA PRODUKCJI.
+#
+# Panel jest wylaczony na czas pilotazu (haslo wspoldzielone = nie wiadomo, kto
+# sie zalogowal), ale jego LOGIKA ma byc dalej sprawdzana: kolejka recenzji,
+# rozdzial tenantow, slad decyzji czlowieka pod kredencjalem. Bez tej zmiennej
+# cztery zestawy integracyjne dostaja 401 i bramka mierzy ZGASZONA FLAGE zamiast
+# produktu.
+#
+# To NIE jest oslabienie bramki: produkcja tej zmiennej NIE ustawia, wiec tam
+# panel pozostaje zamkniety. Rozdzial „co wylaczone" od „co niesprawdzone".
+#
+# ROZWIAZANIE KONFLIKTU (2026-08-18, recznie): obie zmienne sa potrzebne
+# i dotycza ROZNYCH rzeczy — lista dostepu bramkuje logowanie studenta,
+# flaga panelu odblokowuje tor wykladowcy w CI. Automat pokazal je jako
+# konflikt tylko dlatego, ze oba zgloszenia dokladaly blok `env` w tym
+# samym miejscu pliku. Rozwiazanie „biore swoja strone" skasowaloby jedna
+# z nich przy ZIELONEJ suicie — i to jest dokladnie ten wzorzec, przed
+# ktorym ostrzegalismy przy scalaniu tej partii.
 env:
   PILOT_ALLOWLIST: "@example.com,@test.local,@e2e.invalid,@test.invalid"
+  FLAG_FACULTY_PANEL: "1"
+
 
 jobs:
   lint:
