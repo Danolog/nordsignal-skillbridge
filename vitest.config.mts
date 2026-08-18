@@ -72,7 +72,11 @@ export default defineConfig({
 					// równoległość plików = wzajemne kasowanie stanu w beforeEach.
 					fileParallelism: false,
 					globals: true,
-					setupFiles: ["./src/test/setup.ts"],
+					// Drugi plik startowy uzbraja strażnika żywej sieci: wyjście do hosta
+					// spoza pętli zwrotnej przewraca test i NAZYWA adres. Podpięty tylko
+					// tutaj — projekt `evals` woła prawdziwy model z założenia. Powód
+					// i granica „sieć zewnętrzna kontra lokalna": src/test/network-guard.ts.
+					setupFiles: ["./src/test/setup.ts", "./src/test/network-guard.setup.ts"],
 					css: true,
 					include: [INTEGRATION_GLOB],
 					exclude: ["**/node_modules/**", "**/dist/**", "**/.claude/**"],
