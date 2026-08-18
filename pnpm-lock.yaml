@@ -27,6 +27,7 @@ overrides:
   brace-expansion: '>=5.0.9'
   express-rate-limit>ip-address: ^10.3.1
   js-yaml: '>=5.2.2'
+  deepmerge-ts: '>=8.0.0'
 
 importers:
 
@@ -3428,8 +3429,8 @@ packages:
       babel-plugin-macros:
         optional: true
 
-  deepmerge-ts@7.1.5:
-    resolution: {integrity: sha512-HOJkrhaYsweh+W+e74Yn7YStZOilkoPb6fycpwNLKzSPtruFs48nYis0zy5yJz1+ktUhHxoRDJ27RQAWLIJVJw==}
+  deepmerge-ts@8.0.1:
+    resolution: {integrity: sha512-szCXE7YLCvLKR9bFPJcvsezOShdalctSvrgN/LM/QGUEPZQajwjmsMObZ6/DuANT5lxzM/wtO8Feubwdkz8myA==}
     engines: {node: '>=16.0.0'}
 
   deepmerge@4.3.1:
@@ -6817,7 +6818,7 @@ snapshots:
   '@prisma/config@7.4.2':
     dependencies:
       c12: 3.1.0
-      deepmerge-ts: 7.1.5
+      deepmerge-ts: 8.0.1
       effect: 3.22.1
       empathic: 2.0.0
     transitivePeerDependencies:
@@ -8539,7 +8540,7 @@ snapshots:
 
   dedent@1.7.2: {}
 
-  deepmerge-ts@7.1.5:
+  deepmerge-ts@8.0.1:
     optional: true
 
   deepmerge@4.3.1: {}
