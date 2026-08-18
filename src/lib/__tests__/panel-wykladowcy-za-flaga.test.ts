@@ -21,6 +21,31 @@
 // dalej. „Usunięte ≠ unieważnione".
 //
 // MUTACJE CZERWIENIĄCE — wynik w opisie zgłoszenia.
+//
+// ⚠ CZŁON ZAPISU NIE MA TU STRAŻNIKA — nagłówek wyżej mówi „oba wywołania są
+// konieczne", ale ten plik pilnuje WYŁĄCZNIE członu ODCZYTU (`checkFacultyAuth`).
+// Mutacja zdejmująca bramkę z TRASY LOGOWANIA przeżyłaby wszystkie testy niżej.
+//
+// To nie jest przeoczenie zamiatane pod dywan, tylko granica nazwana wprost:
+// deklaracja „oba konieczne" jest w tej chwili twierdzeniem, nie własnością
+// pilnowaną maszynowo. Dopóki tak jest, nie wolno cytować zieleni tego pliku
+// jako dowodu, że logowanie wykładowcy jest zamknięte — dowodzi ona tylko, że
+// zamknięty jest dostęp.
+//
+// Strażnik członu zapisu: zgłoszenie Quinna (osobne). Jego mutacja jest dziś
+// niewidoczna także dlatego, że w CI panel jest ZAWSZE otwarty
+// (`FLAG_FACULTY_PANEL: "1"` w konfiguracji przepływu).
+//
+// ⚠ WARUNEK UTRZYMANIA (Leo): ten plik jest JEDYNYM świadkiem stanu
+// PRODUKCYJNEGO — w CI flaga jest zapalona, więc nigdzie indziej nie sprawdzamy
+// zachowania przy zgaszonej. NIE USUWAĆ przy sprzątaniu testów.
+//
+// ROLA POMIARU SESJI — potwierdzenie, nie przesłanka. Odczyt z produkcji
+// (5 wierszy, 0 żywych, 2026-08-18) mówi, że nie ma czego unieważniać W TYM DNIU.
+// Konstrukcja na tym NIE STOI: nawet żywa sesja nie przeszłaby, bo bramka kończy
+// pracę PRZED dotknięciem ciasteczka (asercja „nie dotyka ciasteczka ani bazy").
+// Kto za miesiąc zobaczy żywe sesje, nie ma powodu sądzić, że wyłączenie panelu
+// przestało działać.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
