@@ -14,6 +14,7 @@
 import { randomBytes } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { wymagajFlagi } from "@/test/wymagaj-flagi";
 
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
 const isLocalTestDb = /@(localhost|127\.0\.0\.1|\[::1\])(:\d+)?\//.test(DATABASE_URL);
@@ -76,6 +77,10 @@ dBack(
 		}
 
 		beforeAll(async () => {
+			// Panel wykładowcy jest ZGASZONY na produkcji, ale CI go zapala — te przypadki
+			// mierzą produkt, nie flagę. Bez tego warunku brak zmiennej w konfiguracji CI
+			// dawał „expected 401 to be 200": pad alarmował, ale nie kierował.
+			wymagajFlagi("facultyPanel");
 			vi.stubEnv("FLAG_HUMAN_REVIEW_QUEUE", "1");
 			vi.stubEnv("OPERATOR_PASSWORD", OPERATOR_PASSWORD);
 			({ db } = await import("@/lib/db"));

@@ -20,17 +20,42 @@
 // powstawała, tylko nic by nie dawała. Bez pierwszego — sesje już wydane żyłyby
 // dalej. „Usunięte ≠ unieważnione".
 //
+// GDZIE PILNOWANY JEST DRUGI CZŁON — ten plik pilnuje WYŁĄCZNIE członu ODCZYT.
+// Człon ZAPIS wymaga realnej bazy (asercja na liczności wierszy w tabeli sesji,
+// nie na kodzie odpowiedzi), więc mieszka osobno:
+//   `src/app/api/faculty/login/__tests__/faculty-login-flaga.integration.test.ts`
+//
 // MUTACJE CZERWIENIĄCE — wynik w opisie zgłoszenia.
 //
-// ⚠ CZŁON ZAPISU NIE MA TU STRAŻNIKA — nagłówek wyżej mówi „oba wywołania są
-// konieczne", ale ten plik pilnuje WYŁĄCZNIE członu ODCZYTU (`checkFacultyAuth`).
-// Mutacja zdejmująca bramkę z TRASY LOGOWANIA przeżyłaby wszystkie testy niżej.
+// ⚠ CZŁON ZAPISU MA STRAŻNIKA OD 2026-08-18 — ten plik nadal pilnuje WYŁĄCZNIE
+// członu ODCZYTU (`checkFacultyAuth`). Człon ZAPIS wymaga realnej bazy (asercja
+// na LICZNOŚCI wierszy w tabeli sesji, nie na kodzie odpowiedzi), więc mieszka
+// osobno:
+//   `src/app/api/faculty/login/__tests__/faculty-login-flaga.integration.test.ts`
 //
-// To nie jest przeoczenie zamiatane pod dywan, tylko granica nazwana wprost:
-// deklaracja „oba konieczne" jest w tej chwili twierdzeniem, nie własnością
-// pilnowaną maszynowo. Dopóki tak jest, nie wolno cytować zieleni tego pliku
-// jako dowodu, że logowanie wykładowcy jest zamknięte — dowodzi ona tylko, że
-// zamknięty jest dostęp.
+// PRZEWIDYWANIE ZAMIENIONE NA POMIAR. Do 2026-08-18 stało tu zdanie: „Mutacja
+// zdejmująca bramkę z TRASY LOGOWANIA przeżyłaby wszystkie testy niżej". Było
+// trafne, ale było TWIERDZENIEM. Pomiar na `bca0fc7` (Quinn, 2026-08-18):
+//
+//   flaga ZAPALONA + mutacja → 2778 zielonych (448 integracyjnych + 2330
+//                              jednostkowych), ani jednej czerwieni
+//   flaga ZGASZONA + mutacja → 4 czerwienie / 439 / 5 pominiętych
+//   flaga ZGASZONA BEZ mutacji → IDENTYCZNIE 4 / 439 / 5
+//
+// Ostatnie dwa wiersze są sednem: mutacja nie zmieniała NICZEGO również tam,
+// gdzie człon miał działać. Była niewidoczna pod obiema flagami.
+//
+// DLACZEGO BYŁA NIEWIDOCZNA — dopełnienie Leo, ważniejsze niż sama liczba:
+// człon ZAPIS działa wyłącznie przy ZGASZONEJ fladze, a CI trzyma panel
+// ZAPALONY. Środowisko pomiarowe nigdy nie wchodziło w stan, którego ten człon
+// dotyczy, więc żadna liczba testów w CI nie mogła go złapać. Stąd pytanie do
+// zadawania przy każdym strażniku: CZY CI W OGÓLE BYWA W STANIE, KTÓREGO PILNUJĘ.
+// Nowy strażnik członu ZAPIS omija tę pułapkę, bo stanu nie dziedziczy po
+// środowisku, tylko go wytwarza — i czerwieni się przy `FLAG_FACULTY_PANEL=1`,
+// czyli pod środowiskiem CI takim, jakie jest (zmierzone, cytaty w zgłoszeniu).
+//
+// Zieleń TEGO pliku nadal dowodzi tylko tego, że zamknięty jest DOSTĘP.
+// Dowód, że zamknięte jest LOGOWANIE, stoi w pliku wskazanym wyżej.
 //
 // DLACZEGO TO PRZEOCZYLIŚMY OBAJ — reguła szersza niż ta sprawa (Leo, 2026-08-18):
 // KONIUNKCJA ROZŁOŻONA NA DWA PLIKI NIE WYGLĄDA JAK KONIUNKCJA. Gdy oba człony
