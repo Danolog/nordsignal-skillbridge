@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
-import { isFeatureEnabled } from "@/lib/flags";
 import { facultySessions } from "@/lib/db/schema";
+import { isFeatureEnabled } from "@/lib/flags";
 
 export const FACULTY_COOKIE_NAME = "faculty_session";
 

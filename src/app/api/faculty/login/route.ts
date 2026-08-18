@@ -1,7 +1,6 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { isFeatureEnabled } from "@/lib/flags";
 import { z } from "zod";
 import { auditContextFromRequest, recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
@@ -12,6 +11,7 @@ import {
 	facultyPasswordEnvVar,
 	hashToken,
 } from "@/lib/faculty-auth";
+import { isFeatureEnabled } from "@/lib/flags";
 import { applyRateLimit, getClientIp, rateLimiters, rateLimitResponse } from "@/lib/rate-limit";
 
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
