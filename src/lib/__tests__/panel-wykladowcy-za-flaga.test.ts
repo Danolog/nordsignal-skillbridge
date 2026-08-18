@@ -32,6 +32,19 @@
 // jako dowodu, że logowanie wykładowcy jest zamknięte — dowodzi ona tylko, że
 // zamknięty jest dostęp.
 //
+// DLACZEGO TO PRZEOCZYLIŚMY OBAJ — reguła szersza niż ta sprawa (Leo, 2026-08-18):
+// KONIUNKCJA ROZŁOŻONA NA DWA PLIKI NIE WYGLĄDA JAK KONIUNKCJA. Gdy oba człony
+// stoją w jednej funkcji, brak mutacji na jednym widać gołym okiem. Gdy jeden
+// siedzi w `faculty-auth.ts`, a drugi w `api/faculty/login/route.ts`, oko widzi
+// „dwa wywołania tej samej flagi" i domyka temat na pytaniu o NOŚNIK — a pytanie
+// o LICZBĘ MUTACJI nigdy nie pada.
+//
+// Kryterium ma być odruchowe: ILE CZŁONÓW MA REGUŁA, TYLE MUTACJI — niezależnie
+// od tego, w ilu plikach mieszkają. Rozdzielenie na dwa punkty egzekucji było
+// POPRAWNE (to jedyne dwa miejsca, w których różnica odczyt/zapis istnieje);
+// brakowało wyłącznie drugiej mutacji. Kto doda tu trzeci punkt egzekucji, jest
+// winien trzecią mutację.
+//
 // Strażnik członu zapisu: zgłoszenie Quinna (osobne). Jego mutacja jest dziś
 // niewidoczna także dlatego, że w CI panel jest ZAWSZE otwarty
 // (`FLAG_FACULTY_PANEL: "1"` w konfiguracji przepływu).
