@@ -16,6 +16,28 @@
  * pliku integracyjnego, a lista wyjątków jest zamknięta celowo. Ten plik nie
  * może przenieść się do projektu `unit` (tam strażnik nie jest uzbrojony),
  * więc konformizm jest tańszy niż rozpychanie listy wyjątków.
+ *
+ * ═══ PRÓG: DRUGI TOR STRAŻNIKA MA POKRYCIE TYLKO TUTAJ ═══
+ *
+ * Ustalenie Leo z przeglądu #332 (2026-08-17). Drugi tor strażnika — rejestr
+ * naruszeń przeżywający produkcyjny `catch` — jest sprawdzany WYŁĄCZNIE w tym
+ * pliku, czyli wyłącznie w projekcie `integration`. Testy jednostkowe pokrywają
+ * sam klasyfikator (`network-guard.test.ts`), nie rejestr.
+ *
+ * Do tego ten plik stoi pod bramką `isLocalTestDb`: gdy adres bazy testowej
+ * przestanie wskazywać pętlę zwrotną, cały ten opis POMINIE SIĘ, a razem z nim
+ * jedyne pokrycie drugiego toru. Zniknęłoby po cichu — dokładnie ta awaria,
+ * którą zamykał `integration-db-guard.ts` („388 skipped" wyglądające na sukces).
+ *
+ * Dziś jest to bezpieczne: adres bazy testowej w CI i lokalnie wskazuje pętlę
+ * zwrotną, więc bramka nigdy nie pomija (warunek wstępny projektu wymusza to
+ * twardo). Świadomie NIE budujemy dziś drugiego pokrycia — byłoby to
+ * zabezpieczanie stanu, który nie zachodzi.
+ *
+ * PRÓG: pierwsza zmiana adresu bazy testowej na NIELOKALNY. Wtedy — zanim
+ * cokolwiek innego — drugi tor strażnika musi dostać pokrycie niezależne od
+ * bramki `isLocalTestDb` (najprościej: przenieść sprawdzenie rejestru do
+ * projektu `unit`, gdzie strażnik da się uzbroić ręcznie w samym teście).
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

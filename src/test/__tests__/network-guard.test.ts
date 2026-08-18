@@ -30,6 +30,23 @@ describe("strażnik sieci · klasyfikator wyjścia", () => {
 	// Kontrola dwustronna: strażnik ma NIE czerwienić się na ruchu, który sam
 	// postawiliśmy. Inaczej wywróciłby zestaw i zostałby wyciszony w tydzień.
 	it("przepuszcza pętlę zwrotną we wszystkich zapisach z allowlisty", () => {
+		// PRZYPIĘCIE ZAWARTOŚCI — MUSI STAĆ PRZED PĘTLĄ.
+		//
+		// Bez tej linii test iterował po tej samej tablicy, którą sprawdza: pusta
+		// tablica dawała pustą pętlę i zieleń. „Pusty zbiór przechodzi każdy test"
+		// — wewnątrz strażnika zbudowanego po to, żeby tę klasę tępić (znalezisko
+		// Leo przy przeglądzie #332, 2026-08-17; kontrola liczności obowiązuje też
+		// kontrolę liczności).
+		//
+		// Stawka nie jest teoretyczna: ta lista trzyma wyjątek dla NASZEGO mostu
+		// w CI. Zepsuta i nieprzypięta przechodziłaby testy jednostkowe, a zestaw
+		// integracyjny zacząłby padać komunikatem o żywym wyjściu sieciowym —
+		// czyli myląco, dokładnie jak przed naprawą z #332.
+		//
+		// Przypięcie łapie zepsucie w OBIE strony: opróżnienie listy i dopisanie
+		// do niej obcego adresu (rozszczelnienie granicy) czerwienią tak samo.
+		expect(HOSTY_LOKALNE).toEqual(["localhost", "127.0.0.1", "::1"]);
+
 		for (const host of HOSTY_LOKALNE) {
 			const adres = host === "::1" ? "http://[::1]:5432/db" : `http://${host}:5432/db`;
 			expect(zdiagnozujWyjscieSieciowe(adres), adres).toEqual({
