@@ -48,6 +48,20 @@ type FlagDefinition = {
  * wszystkie startują wyłączone i zapala je dopiero env danego środowiska.
  */
 export const FLAGS = {
+	facultyPanel: {
+		envVar: "FLAG_FACULTY_PANEL",
+		description:
+			"Panel wykladowcy (/faculty, /api/faculty/*) — logowanie haslem WSPOLDZIELONYM " +
+			"per kampus (FACULTY_PASSWORD_<SLUG>), poza biblioteka uwierzytelniajaca: wlasne " +
+			"ciasteczko, wlasna tabela sesji. WYLACZONY na czas pilotazu (decyzja 2026-08-17). " +
+			"Powod NIE jest techniczny: haslo wspoldzielone znaczy, ze nie wiadomo, KTO sie " +
+			"zalogowal, a panel pokazuje dane uczestnikow. Prog trzech osob chroni przed " +
+			"liczebnoscia zbioru, nie przed tym, ze odbiorca jest nierozpoznany. " +
+			"Off = checkFacultyAuth zwraca null (panel i trasy odmawiaja) ORAZ logowanie " +
+			"nie tworzy sesji. Flaga istnieje, zeby wylaczenie bylo DECYZJA, nie pusta " +
+			"zmienna, ktora ktos za dwa miesiace uzna za niedokonczona konfiguracje i wypelni.",
+		defaultValue: false,
+	},
 	proactiveMarketRefresh: {
 		envVar: "FLAG_PROACTIVE_MARKET_REFRESH",
 		description: "Blok AG: cykliczne odświeżanie rynku + recompute luk (strona operacyjna Darka).",

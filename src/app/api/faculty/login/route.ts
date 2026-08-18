@@ -1,6 +1,7 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { isFeatureEnabled } from "@/lib/flags";
 import { z } from "zod";
 import { auditContextFromRequest, recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
@@ -71,6 +72,15 @@ function matchTenantSlug(password: string): MatchResult {
 }
 
 export async function POST(req: Request) {
+	// PANEL ZA FLAGA (2026-08-17) — drugie z dwoch wywolan tej samej reguly.
+	// `checkFacultyAuth` zamyka ODCZYT (dostep), a to zamyka ZAPIS (tworzenie sesji).
+	// Bez tego czlonu zgaszona flaga nie przeszkadzalaby w logowaniu — sesja by
+	// powstawala, tylko nic by nie dawala. Odmowa jest po stronie SERWERA i wyglada
+	// jak brak trasy: nie potwierdzamy, ze panel istnieje ani ze haslo bylo poprawne.
+	if (!isFeatureEnabled("facultyPanel")) {
+		return NextResponse.json({ error: "Not found" }, { status: 404 });
+	}
+
 	const passwordCheckErr = assertProductionPasswordStrength();
 	if (passwordCheckErr) {
 		return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
