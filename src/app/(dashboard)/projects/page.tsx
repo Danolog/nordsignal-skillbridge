@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { ProjectCatalog } from "@/components/projects/project-catalog";
 import { auth } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { CAREER_PATHS } from "@/lib/db/data/career-paths";
+import { CAREER_PATHS, selectableCareerPaths } from "@/lib/db/data/career-paths";
 import { gaps, projects, students } from "@/lib/db/schema";
 import { computeCareerGoalsForProjects } from "@/lib/projects/career-match";
 
@@ -55,7 +55,29 @@ export default async function ProjectsPage({ searchParams }: PageProps) {
 	// Wyjątek: aktywna luka nie może zostać zamaskowana filtrem kierunku (anchor-logika
 	// careerGoals mogłaby wyciąć szeroką kompetencję i pokazać pustą siatkę).
 	const defaultCareer = career ?? (gapId ? "" : (student.careerGoal ?? ""));
-	const careerOptions = CAREER_PATHS.map((c) => ({ careerGoal: c.careerGoal, family: c.family }));
+	// PILOTAŻ: filtr kierunku pokazuje WYBIERALNE ścieżki (20 z 23). To trzecia
+	// powierzchnia wyboru — poza pickerem onboardingu i listą w profilu — i bez niej
+	// ukrycie byłoby dziurawe: rozwijana lista filtra jest pełnoprawną listą ścieżek
+	// pokazaną uczestnikowi, z tym samym skutkiem „platforma uwiarygodnia kotwicę".
+	//
+	// WYJĄTEK dla WŁASNEGO celu: jeśli konto ma już zapisany cel spoza listy
+	// wybieralnych (stare konto albo pole „Inne (wpisz)" w profilu), dokładamy tę
+	// jedną pozycję. Bez tego `initialCareer` = cel studenta ustawiałby filtr na
+	// wartość, której nie ma wśród opcji — lista pokazywałaby pusto, a wyniki byłyby
+	// zawężone. To nie jest druga kopia reguły ukrycia (nie pyta o `availableInPilot`),
+	// tylko domknięcie własnego stanu konta.
+	const wybieralne = selectableCareerPaths();
+	const wlasnyCel = student.careerGoal
+		? CAREER_PATHS.find(
+				(c) =>
+					c.careerGoal === student.careerGoal &&
+					!wybieralne.some((w) => w.careerGoal === c.careerGoal),
+			)
+		: undefined;
+	const careerOptions = [...wybieralne, ...(wlasnyCel ? [wlasnyCel] : [])].map((c) => ({
+		careerGoal: c.careerGoal,
+		family: c.family,
+	}));
 
 	return (
 		<div className="proj-page">

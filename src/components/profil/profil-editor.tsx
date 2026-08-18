@@ -18,7 +18,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { CAREER_PATHS } from "@/lib/db/data/career-paths";
+import { selectableCareerPaths } from "@/lib/db/data/career-paths";
 import type {
 	GroupCatalog,
 	MarketCatalogItem,
@@ -26,12 +26,18 @@ import type {
 	SelectedCompetency,
 } from "@/lib/onboarding/market-catalog";
 
-// 0.15/C1: cele kariery Z KATALOGU (career-paths.ts, jedno źródło prawdy — 23 ścieżki),
-// nie lokalna hardcodowana lista. Stara lista zdryfowała („Full-stack Developer" vs
-// katalogowe „Full-Stack Developer", „Cybersecurity Analyst" vs „Cybersecurity
-// Specialist") — wybór zdryfowanej opcji nie przechodził exact-matchowego
-// isRealCareerGoal → pusty katalog rynku i zablokowany zapis (canSave=false).
-const CAREER_GOALS = CAREER_PATHS.map((p) => p.careerGoal);
+// 0.15/C1: cele kariery Z KATALOGU (career-paths.ts, jedno źródło prawdy), nie lokalna
+// hardcodowana lista. Stara lista zdryfowała („Full-stack Developer" vs katalogowe
+// „Full-Stack Developer", „Cybersecurity Analyst" vs „Cybersecurity Specialist") —
+// wybór zdryfowanej opcji nie przechodził exact-matchowego isRealCareerGoal → pusty
+// katalog rynku i zablokowany zapis (canSave=false).
+//
+// PILOTAŻ: lista WYBIERALNYCH (20 z 23) — trzy ścieżki z kotwicą patologiczną nie
+// wchodzą do rozwijanej listy. Reguła ukrycia mieszka w `selectableCareerPaths()`,
+// tutaj jej NIE powtarzamy. Uwaga: pole „Inne (wpisz)" niżej zostaje otwarte, więc
+// wpisanie ukrytej ścieżki z ręki nadal przechodzi — furtka opisana przy
+// `isRealCareerGoal`, domknięcie po stronie serwera należy do Ethana.
+const CAREER_GOALS = selectableCareerPaths().map((p) => p.careerGoal);
 
 interface InitialCompetency {
 	name: string;

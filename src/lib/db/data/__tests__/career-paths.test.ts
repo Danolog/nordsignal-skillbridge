@@ -118,18 +118,18 @@ describe("normalizeGoalKey — ścisła normalizacja (nie fuzzy)", () => {
 });
 
 describe("entryCareerPaths — ścieżki wejściowe (Pomocnik proponuje aktywnie)", () => {
-	it("21 ścieżek = 23 − 2 role docelowe", () => {
+	it("19 ścieżek = 20 wybieralnych − 1 rola docelowa wśród nich", () => {
 		const entry = entryCareerPaths();
-		expect(entry).toHaveLength(21);
+		expect(entry).toHaveLength(19);
 		expect(entry.every((p) => p.targetRole === false)).toBe(true);
 	});
 });
 
 describe("groupCareerPathsByFamily — grupowanie po 5 rodzinach e-CF (D1)", () => {
-	it("5 rodzin w kolejności CAREER_FAMILIES, suma ścieżek = 23", () => {
+	it("5 rodzin w kolejności CAREER_FAMILIES, suma ścieżek = 20 wybieralnych", () => {
 		const groups = groupCareerPathsByFamily();
 		expect(groups.map((g) => g.family)).toEqual([...CAREER_FAMILIES]);
-		expect(groups.reduce((n, g) => n + g.paths.length, 0)).toBe(23);
+		expect(groups.reduce((n, g) => n + g.paths.length, 0)).toBe(20);
 	});
 
 	it("każda ścieżka trafia do swojej rodziny (brak sieroty)", () => {
