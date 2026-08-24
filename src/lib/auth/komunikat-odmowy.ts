@@ -2,11 +2,16 @@
  * DOSTARCZANIE ODMOWY SERWERA — nośnik reguły „co z odmowy serwera trafia
  * na ekran".
  *
- * UWAGA: NIE JEST DZIŚ JEDYNY. Ścieżka logowania Google go omija —
- * `google-button.tsx` pokazuje treść błędu wprost, bez żadnego filtru.
- * Pełny opis tego długu, z pomiarem i progiem, w sekcji „DRUGI NOŚNIK"
- * na końcu nagłówka. Nie przywracaj tu słowa „jedyny", dopóki tamta sekcja
- * istnieje — pierwsza wersja tego pliku tak twierdziła i było to nieprawdą.
+ * Wołają go dziś WSZYSTKIE pięć wejść: `login-form.tsx`, `signup-form.tsx`,
+ * `google-button.tsx` oraz — drugą polityką — `faculty-login-form.tsx`
+ * i `review-login-form.tsx`.
+ *
+ * Zanim dopiszesz tu słowo „jedyny": pierwsza wersja tego pliku tak twierdziła
+ * i BYŁA W BŁĘDZIE — `google-button.tsx` omijał nośnik, a wykrył to dopiero
+ * czwarty przegląd. Szczegóły i pomiar w sekcji „ŚCIEŻKA GOOGLE" na końcu.
+ * Zdanie o wyłączności jest prawdziwe wyłącznie tak długo, jak długo ktoś je
+ * sprawdził — a sprawdza się je przez policzenie WEJŚĆ, nie przez lekturę
+ * tego akapitu.
  *
  * PO CO TEN PLIK ISTNIEJE
  * -----------------------
@@ -105,39 +110,40 @@
  * Nie pisz tu „biblioteka zawsze ustawia code" ani „domyka je warunek 5xx":
  * oba zdania są mocniejsze niż pomiar.
  *
- * DRUGI NOŚNIK — ŚCIEŻKA GOOGLE OMIJA TEN PLIK (warunek W19, przegląd Leo)
- * -----------------------------------------------------------------------
- * ŚWIADOMY drugi nośnik w rozumieniu CLAUDE.md §8 v1.17 — dopuszczalny
- * wyłącznie z jawnym progiem i właścicielem, nigdy po cichu. Oto jedno i drugie.
+ * ŚCIEŻKA GOOGLE — DLACZEGO TEN AKAPIT ISTNIEJE (warunek W19, przegląd Leo)
+ * ------------------------------------------------------------------------
+ * Do 2026-08-24 `google-button.tsx` NIE WOŁAŁ tego nośnika: pokazywał treść
+ * błędu wprost, bez rozróżnika po `code` i bez warunku 5xx. Nie było to
+ * powtórzenie reguły, tylko jej OMINIĘCIE — przypadek gorszy od duplikatu, bo
+ * nie ma czego synchronizować, skoro reguły tam nie ma wcale.
  *
- * `src/components/auth/google-button.tsx` NIE WOŁA `komunikatOdmowy`. Pokazuje
- * `err.message` wprost, bez rozróżnika po `code` i bez warunku 5xx. Nie jest to
- * powtórzenie reguły — to jej OMINIĘCIE, czyli gorszy przypadek: nie ma czego
- * zsynchronizować, bo tam reguły nie ma wcale.
- *
- * I DOKŁADNIE TAM LEŻY DZIEWIĄTE MIEJSCE. `oauth2/state.mjs:26` („Unable to
+ * I DOKŁADNIE TAM LEŻAŁO DZIEWIĄTE MIEJSCE. `oauth2/state.mjs:26` („Unable to
  * create verification", 500, bez `code`) obsługuje tworzenie stanu OAuth, czyli
- * ścieżkę Google. Warunek `status >= 500` z tego pliku JEJ NIE CHRONI, bo tamta
- * ścieżka przez ten plik nie przechodzi.
+ * ścieżkę Google. Warunek `status >= 500` z tego pliku JEJ NIE CHRONIŁ, bo
+ * tamta ścieżka przez ten plik nie przechodziła. Wniosek ogólniejszy, wart
+ * zapamiętania: WARUNEK CHRONI ŚCIEŻKĘ TYLKO WTEDY, GDY ŚCIEŻKA PRZEZ NIEGO
+ * PRZECHODZI. Zieleń tego pliku nie mówi nic o wejściach, które go omijają.
  *
- * DRUGA WADA, OSOBNA OD KOMUNIKATU — zmierzona 2026-08-24, prawdziwym klientem
- * biblioteki, atrapą sieci oddającą 500:
+ * DRUGA WADA, OSOBNA OD KOMUNIKATU — zmierzona 2026-08-24 prawdziwym klientem
+ * biblioteki:
  *   RZUCIL: false
  *   WYNIK:  {"data":null,"error":{"message":"Unable to create verification",
  *            "status":500,"statusText":""}}
- * `signIn.social` NIE RZUCA — ODDAJE błąd. W `google-button.tsx` gałąź `catch`
- * nie wykona się więc nigdy przy błędzie serwera, a `setLoading(false)` stoi
- * WYŁĄCZNIE w niej. Skutek dla człowieka: żadnego komunikatu i przycisk
- * kręcący się bez końca. To ten sam kształt co incydent z 2026-08-18, o stopień
- * gorszy — tam było fałszywe wyjaśnienie, tutaj nie ma żadnego.
+ * `signIn.social` NIE RZUCA — ODDAJE błąd. Gałąź `catch` nie wykonywała się
+ * więc nigdy przy błędzie serwera, a `setLoading(false)` stało WYŁĄCZNIE w niej.
+ * Skutek dla człowieka: żadnego komunikatu i przycisk kręcący się bez końca —
+ * ten sam kształt co incydent z 2026-08-18, o stopień gorszy, bo tam było
+ * fałszywe wyjaśnienie, a tutaj nie było żadnego.
  *
- * PRÓG ZDARZENIOWY (nie „kiedyś"): najbliższe dotknięcie ścieżki logowania
- * Google — zgłoszenie zmieniające `google-button.tsx`, zapalenie kolejnego
- * dostawcy tożsamości albo zamknięcie logowania dostawcą na czas pilotażu
- * (rekomendacja Leo z `lista-dostepu.ts`, dziura 1). Którekolwiek pierwsze.
- * WŁAŚCICIEL PROGU: Ethan (CTO) — warstwa uwierzytelniania.
- * Do tego czasu dług jest DECYZJĄ, nie przeoczeniem: wada jest wcześniejsza
- * niż to zgłoszenie i nie została nim wniesiona.
+ * OBIE WADY SĄ SPŁACONE, nie odłożone: `google-button.tsx` odczytuje teraz
+ * zwrócony błąd, przepuszcza go przez ten nośnik i gasi stan ładowania poza
+ * `catch`. Pilnuje tego `src/components/auth/__tests__/google-button-odmowa.test.tsx`
+ * z mutacją przywracającą stan sprzed naprawy (czerwieni trzy przypadki,
+ * w tym osobno komunikat i osobno zawieszony przycisk).
+ *
+ * Wada była WCZEŚNIEJSZA niż zgłoszenie #344 i nie została nim wniesiona —
+ * znalazł ją czwarty przegląd, sprawdzając, gdzie NAPRAWDĘ trafia dziewiąte
+ * miejsce, zamiast przyjąć, że domyka je warunek 5xx.
  *
  * AWARIA PO STRONIE SERWERA (5xx) NIE IDZIE NA EKRAN
  * --------------------------------------------------
