@@ -49,12 +49,57 @@
  * o obecność `code`, a nie o treść napisu. Napis potrafi się zmienić przy
  * każdej aktualizacji biblioteki; kształt błędu nie.
  *
- * DLACZEGO NIE WYBIERAMY PO STATUSIE — to była pierwsza, błędna wersja
- * -------------------------------------------------------------------
- * Kuszące jest „status 403 znaczy nasza odmowa". Byłaby to wada bezpieczeństwa:
- * `EMAIL_NOT_VERIFIED` biblioteki to RÓWNIEŻ 403, a jego treść („Email not
- * verified") zdradza, że konto o tym adresie ISTNIEJE. Wybór po statusie
- * wypuściłby ją na ekran. Wybór po `code` — nie.
+ * GRANICA TEGO NIEZMIENNIKA — obowiązuje NA NASZYCH TRASACH, nie w całej
+ * bibliotece (sprostowanie po przeglądzie Leo, warunek W10, #344). Zmierzone:
+ * `sign-in.mjs` i `sign-up.mjs` nie zawierają ANI JEDNEGO `new APIError(` —
+ * każdy ich błąd leci przez `APIError.from(...)`, czyli zawsze z `code`.
+ * W całej bibliotece jest jednak 24 wywołań `new APIError(..., { message })`
+ * bez kodu; poza wtyczkami (używamy wyłącznie `nextCookies`) zostają trzy:
+ *   api/to-auth-endpoints.mjs:20  „Dynamic baseURL could not be resolved…"
+ *   api/to-auth-endpoints.mjs:24  treść z BetterAuthError
+ *   api/dispatch.mjs:73           „…hook matcher execution. Check the logs…"
+ * Wszystkie trzy mają status 500 — i dlatego domyka je warunek niżej, a nie
+ * rozróżnik po `code`. Nie pisz tu „biblioteka zawsze ustawia code": to zdanie
+ * jest mocniejsze niż pomiar.
+ *
+ * AWARIA PO STRONIE SERWERA (5xx) NIE IDZIE NA EKRAN
+ * --------------------------------------------------
+ * Zmierzone 2026-08-24, przez zaczep rzucający dokładnie ten kształt, co
+ * `dispatch.mjs:73`:
+ *   {"message":"An error occurred during hook matcher execution. Check the
+ *    logs for more details.","status":500,"statusText":"INTERNAL_SERVER_ERROR"}
+ *   klucze: message, status, statusText   ← BEZ `code`
+ * Bez warunku `status >= 500` ta treść przechodziła przepustem DOSŁOWNIE i
+ * lądowała na ekranie studenta po angielsku, z odesłaniem do logów.
+ *
+ * Rozróżnienie warte zapamiętania: ZWYKŁY wyjątek rzucony z zaczepu (nie
+ * `APIError`) daje klientowi `{"status":500,"statusText":"Internal Server
+ * Error"}` — BEZ pola `message`, więc przepust i tak oddawał tekst zapasowy.
+ * Przeciekał wyłącznie `APIError` 5xx Z TREŚCIĄ. To jest dokładnie kształt
+ * wszystkich trzech miejsc wyżej.
+ *
+ * DLACZEGO NIE WYBIERAMY PO STATUSIE — to była pierwsza, kusząca wersja
+ * --------------------------------------------------------------------
+ * „Status 403 znaczy nasza odmowa" byłoby wadą bezpieczeństwa: `EMAIL_NOT_VERIFIED`
+ * to RÓWNIEŻ 403, a jego treść zdradza, że konto o tym adresie ISTNIEJE.
+ * Potwierdzone mutacją Leo (niezależną od naszej): po zamianie na wybór po
+ * statusie pada asercja `expected 'Email not verified' to be 'Nieprawidłowy
+ * email lub hasło'`, czyli wyliczanie kont faktycznie trafia na ekran.
+ * Skutek uboczny tej samej mutacji, którego nikt nie zapowiadał: zniknąłby też
+ * komunikat o zbyt wielu próbach logowania.
+ *
+ * KTÓRE KODY ZDRADZAJĄ ISTNIENIE KONTA — to jest własność nośna, nie status
+ * ------------------------------------------------------------------------
+ * Statusów 403 biblioteka ma dwa: `EMAIL_NOT_VERIFIED` (`sign-in.mjs:313,324`)
+ * oraz `SESSION_NOT_FRESH` (`session.mjs:368`). Ten drugi NIE wylicza kont —
+ * mówi o wieku sesji — i nie pada na ścieżkach obu formularzy (leży na ścieżce
+ * świeżej sesji, m.in. przy usuwaniu konta).
+ * Osobno, poza statusem 403, kształt wyliczający konta ma `USER_EMAIL_NOT_FOUND`
+ * (`sign-in.mjs:166`, status 401, `code` OBECNY). Leży w uchwycie logowania
+ * społecznościowego (`signInSocial` zaczyna się w 107, `signInEmail` w 211),
+ * a znaczy „dostawca nie oddał adresu", nie „tego adresu u nas nie ma" —
+ * nasze formularze tej gałęzi nie wołają, więc nie ma go na liście niżej.
+ * Gdyby kiedyś zaczęły ją wołać, to jest pierwszy kod do dopisania.
  */
 
 /**
@@ -83,10 +128,22 @@ export const KODY_ZASTEPOWANE: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * ŚWIADOMIE NIE MA TU `USER_ALREADY_EXISTS`.
+ * ŚWIADOMIE NIE MA TU `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`.
  *
- * Ten kod pada przy rejestracji na zajęty adres i odróżnia „adres wolny" od
- * „adres zajęty" — czyli TEŻ wylicza konta. Zostawiam go widocznym, bo:
+ * NAZWA KODU JEST TU ISTOTNA, NIE OZDOBNA (sprostowanie po przeglądzie Leo,
+ * warunek W9, #344). Biblioteka ma DWA różne kody o tym znaczeniu:
+ *   BASE_ERROR_CODES.USER_ALREADY_EXISTS                  („User already exists.")
+ *   BASE_ERROR_CODES.USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL
+ * Nasza trasa rejestracji rzuca WYŁĄCZNIE ten drugi:
+ *   sign-up.mjs:208  APIError.from("UNPROCESSABLE_ENTITY",
+ *                    BASE_ERROR_CODES.USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL)
+ * Pierwotnie stała tu nazwa `USER_ALREADY_EXISTS` — zapis bez skutku dzisiaj
+ * (oba kody i tak przechodzą), ale w dniu decyzji o zamknięciu tej ścieżki wpis
+ * na liście PO PROSTU BY NIE TRAFIŁ. To nie była literówka do poprawienia
+ * z pamięci: to dwa różne napisy w tym samym słowniku.
+ *
+ * Ten kod odróżnia „adres wolny" od „adres zajęty" — czyli TEŻ wylicza konta.
+ * Zostawiam go widocznym, bo:
  *  (a) `signup-form.tsx` pokazuje go dzisiaj i zawsze pokazywał — usunięcie
  *      byłoby zmianą zachowania produktu, nie naprawą incydentu;
  *  (b) bez tej informacji człowiek nie wie, że ma już konto, i nie umie się
@@ -123,6 +180,14 @@ export function komunikatOdmowy(blad: unknown, zapasowy: string): string {
 
 	// Nie odpowiedź serwera (np. zerwane połączenie) — nie ma czego przepuszczać.
 	if (typeof odmowa.status !== "number") return zapasowy;
+
+	// AWARIA SERWERA NIGDY NIE IDZIE NA EKRAN (warunek W8 przeglądu Leo, #344).
+	// Powód i pomiar w nagłówku, sekcja „Awaria po stronie serwera". Krótko:
+	// treść błędu 500 to opis wnętrza systemu, z którym człowiek nie może zrobić
+	// nic — a druga polityka w tym samym pliku już dziś odmawia pokazywania
+	// takich napisów. Bez tego warunku w jednym pliku stałyby dwie polityki
+	// o przeciwnym znaku.
+	if (odmowa.status >= 500) return zapasowy;
 
 	// Słownik biblioteki, którego świadomie nie pokazujemy.
 	if (typeof odmowa.code === "string" && KODY_ZASTEPOWANE.has(odmowa.code)) {

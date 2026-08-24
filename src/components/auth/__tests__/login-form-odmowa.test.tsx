@@ -35,8 +35,14 @@ vi.mock("@/lib/auth/client", () => ({
 	},
 }));
 
-/** Wypełnia formularz i wysyła go. Zwraca, gdy React przemieli zdarzenie. */
-async function zaloguj() {
+/**
+ * Wypełnia formularz i wysyła go. Zwraca, gdy React przemieli zdarzenie.
+ *
+ * Odnotowuje przypadek NA WEJŚCIU, nie po udanych asercjach — patrz komentarz
+ * przy `zobaczonePrzypadki`.
+ */
+async function zaloguj(nazwaPrzypadku: string) {
+	zobaczonePrzypadki.push(nazwaPrzypadku);
 	const user = userEvent.setup();
 	await user.type(screen.getByLabelText("Email"), "ktos@example.com");
 	await user.type(screen.getByLabelText("Hasło"), "tajne-haslo-123");
@@ -73,16 +79,33 @@ const BLAD_NIEZWERYFIKOWANY_MAIL = {
 };
 
 /**
+ * Awaria po stronie serwera — kształt ZMIERZONY, nie wymyślony (warunek W8).
+ * Zaczep rzucający `APIError("INTERNAL_SERVER_ERROR", { message })`, czyli
+ * dokładnie to, co robi `dispatch.mjs:73` w bibliotece, oddaje klientowi:
+ *   {"message":"An error occurred during hook matcher execution. Check the
+ *    logs for more details.","status":500,"statusText":"INTERNAL_SERVER_ERROR"}
+ * Bez warunku `status >= 500` ta treść szła na ekran studenta dosłownie.
+ */
+const AWARIA_SERWERA = {
+	message: "An error occurred during hook matcher execution. Check the logs for more details.",
+	status: 500,
+	statusText: "INTERNAL_SERVER_ERROR",
+};
+
+/**
  * KONTROLA LICZNOŚCI. Sprawdzenie, do którego nic nie dociera, melduje sukces —
  * u nas trafiło się to cztery razy w ciągu doby (pusty zbiór, nieosiągalny człon
  * koniunkcji, sonda w złej warstwie). Ten licznik odpowiada na pytanie „ile
- * przypadków ten plik w ogóle zobaczył" i sam się przewraca, gdy któryś
- * przypadek przestanie się wykonywać.
+ * przypadków ten plik w ogóle zobaczył".
+ *
+ * ZAPIS NASTĘPUJE NA WEJŚCIU DO PRZYPADKU, nie po jego asercjach — sprostowanie
+ * po uwadze metodycznej Leo (#344). W pierwszej wersji zapis stał na końcu
+ * testu, więc gdy padała asercja, licznik czerwienił się KASKADOWO: wyglądał
+ * jak drugi, niezależny sygnał, a był echem pierwszego. Teraz mierzy to, co ma
+ * mierzyć — czy przypadek się WYKONAŁ — i milczy, gdy wykonał się i tylko nie
+ * przeszedł.
  */
 const zobaczonePrzypadki: string[] = [];
-function odnotuj(nazwa: string) {
-	zobaczonePrzypadki.push(nazwa);
-}
 
 describe("LoginForm — dostarczanie odmowy serwera", () => {
 	beforeEach(() => {
@@ -93,7 +116,7 @@ describe("LoginForm — dostarczanie odmowy serwera", () => {
 	it("POKAZUJE komunikat serwera przy odmowie z listy dostępu", async () => {
 		mockSignIn.mockResolvedValue({ error: ODMOWA_Z_LISTY_DOSTEPU });
 		render(<LoginForm />);
-		await zaloguj();
+		await zaloguj("odmowa-z-listy-dostepu");
 
 		// Asercja na tym, CO WIDZI CZŁOWIEK — nie na wartości stałej.
 		await waitFor(() => {
@@ -101,39 +124,36 @@ describe("LoginForm — dostarczanie odmowy serwera", () => {
 		});
 		// I jednocześnie: napis obwiniający użytkownika ZNIKA z ekranu.
 		expect(screen.queryByText("Nieprawidłowy email lub hasło")).not.toBeInTheDocument();
-		odnotuj("odmowa-z-listy-dostepu");
 	});
 
 	it("KONTROLA DWUSTRONNA — przy poprawnym logowaniu odmowy NIE MA na ekranie", async () => {
 		mockSignIn.mockResolvedValue({ error: null });
 		render(<LoginForm />);
-		await zaloguj();
+		await zaloguj("poprawne-logowanie");
 
 		await waitFor(() => {
 			expect(mockPush).toHaveBeenCalledWith("/dashboard");
 		});
 		expect(screen.queryByText(KOMUNIKAT_ODMOWY)).not.toBeInTheDocument();
 		expect(screen.queryByText("Nieprawidłowy email lub hasło")).not.toBeInTheDocument();
-		odnotuj("poprawne-logowanie");
 	});
 
 	it("ZASTĘPUJE słownik biblioteki przy błędnych poświadczeniach", async () => {
 		mockSignIn.mockResolvedValue({ error: BLAD_POSWIADCZEN_BIBLIOTEKI });
 		render(<LoginForm />);
-		await zaloguj();
+		await zaloguj("bledne-poswiadczenia");
 
 		await waitFor(() => {
 			expect(screen.getByText("Nieprawidłowy email lub hasło")).toBeInTheDocument();
 		});
 		// Angielski komunikat biblioteki nie trafia na polski ekran.
 		expect(screen.queryByText("Invalid email or password")).not.toBeInTheDocument();
-		odnotuj("bledne-poswiadczenia");
 	});
 
 	it("NIE WYPUSZCZA komunikatu wyliczającego konta (niezweryfikowany adres)", async () => {
 		mockSignIn.mockResolvedValue({ error: BLAD_NIEZWERYFIKOWANY_MAIL });
 		render(<LoginForm />);
-		await zaloguj();
+		await zaloguj("wyliczanie-kont");
 
 		await waitFor(() => {
 			expect(screen.getByText("Nieprawidłowy email lub hasło")).toBeInTheDocument();
@@ -141,28 +161,41 @@ describe("LoginForm — dostarczanie odmowy serwera", () => {
 		// „Email not verified" pada tylko dla adresu, który MA konto — to jest
 		// wyliczanie kont i na ekran trafić nie może.
 		expect(screen.queryByText("Email not verified")).not.toBeInTheDocument();
-		odnotuj("wyliczanie-kont");
 	});
 
 	it("NIE WYPUSZCZA wewnętrznej treści wyjątku przy zerwanym połączeniu", async () => {
 		mockSignIn.mockRejectedValue(new TypeError("fetch failed"));
 		render(<LoginForm />);
-		await zaloguj();
+		await zaloguj("zerwane-polaczenie");
 
 		await waitFor(() => {
 			expect(screen.getByText("Coś poszło nie tak. Spróbuj ponownie.")).toBeInTheDocument();
 		});
 		expect(screen.queryByText("fetch failed")).not.toBeInTheDocument();
-		odnotuj("zerwane-polaczenie");
 	});
 
-	it("kontrola liczności — plik zobaczył wszystkie pięć przypadków", () => {
+	it("NIE WYPUSZCZA treści awarii serwera na ekran (5xx) — warunek W8", async () => {
+		mockSignIn.mockResolvedValue({ error: AWARIA_SERWERA });
+		render(<LoginForm />);
+		await zaloguj("awaria-serwera");
+
+		await waitFor(() => {
+			expect(screen.getByText("Nieprawidłowy email lub hasło")).toBeInTheDocument();
+		});
+		// Wnętrze systemu i odesłanie do logów nie są informacją, z którą student
+		// może cokolwiek zrobić — i nie trafiają na ekran.
+		expect(screen.queryByText(/Check the logs/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/hook matcher execution/)).not.toBeInTheDocument();
+	});
+
+	it("kontrola liczności — plik zobaczył wszystkie sześć przypadków", () => {
 		expect(zobaczonePrzypadki).toEqual([
 			"odmowa-z-listy-dostepu",
 			"poprawne-logowanie",
 			"bledne-poswiadczenia",
 			"wyliczanie-kont",
 			"zerwane-polaczenie",
+			"awaria-serwera",
 		]);
 	});
 });

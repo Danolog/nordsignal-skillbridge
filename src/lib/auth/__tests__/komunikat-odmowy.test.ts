@@ -57,6 +57,41 @@ describe("komunikatOdmowy — przepust selektywny", () => {
 		expect(komunikatOdmowy(new TypeError("fetch failed"), ZAPASOWY)).toBe(ZAPASOWY);
 	});
 
+	it("NIE przepuszcza treści awarii serwera (5xx) — warunek W8", () => {
+		// Kształt zmierzony na prawdziwej bibliotece: `APIError` 5xx Z TREŚCIĄ
+		// i BEZ pola `code`, czyli dokładnie to, co rzuca `dispatch.mjs:73`.
+		// Bez warunku `status >= 500` ta treść szła na ekran dosłownie.
+		const wynik = komunikatOdmowy(
+			{
+				message:
+					"An error occurred during hook matcher execution. Check the logs for more details.",
+				status: 500,
+				statusText: "INTERNAL_SERVER_ERROR",
+			},
+			ZAPASOWY,
+		);
+		expect(wynik).toBe(ZAPASOWY);
+		expect(wynik).not.toContain("Check the logs");
+	});
+
+	it("NIE przepuszcza 5xx także wtedy, gdy błąd NIESIE kod", () => {
+		// Granica warunku od drugiej strony: o 5xx decyduje status, nie `code`.
+		expect(komunikatOdmowy({ message: "Boom", code: "COKOLWIEK", status: 503 }, ZAPASOWY)).toBe(
+			ZAPASOWY,
+		);
+	});
+
+	it("GRANICA — 4xx tuż pod progiem NADAL przechodzi", () => {
+		// Kontrola dwustronna warunku W8: gdyby ktoś napisał `>= 400`, zamknąłby
+		// przy okazji naszą odmowę 403 i przywrócił incydent.
+		expect(komunikatOdmowy({ message: "Za dużo żądań", status: 429 }, ZAPASOWY)).toBe(
+			"Za dużo żądań",
+		);
+		expect(komunikatOdmowy({ message: KOMUNIKAT_ODMOWY, status: 403 }, ZAPASOWY)).toBe(
+			KOMUNIKAT_ODMOWY,
+		);
+	});
+
 	it("oddaje tekst zapasowy przy braku błędu, pustej treści i wartościach nie-obiektowych", () => {
 		expect(komunikatOdmowy(null, ZAPASOWY)).toBe(ZAPASOWY);
 		expect(komunikatOdmowy(undefined, ZAPASOWY)).toBe(ZAPASOWY);
@@ -66,14 +101,20 @@ describe("komunikatOdmowy — przepust selektywny", () => {
 	});
 
 	it("ŚWIADOMIE przepuszcza komunikat o zajętym adresie (decyzja Ryana/Sophii, nie widoku)", () => {
-		// Gdyby ktoś dopisał USER_ALREADY_EXISTS do zastępowanych bez rozmowy
-		// z właścicielem decyzji, ten strażnik to pokaże.
-		expect(KODY_ZASTEPOWANE.has("USER_ALREADY_EXISTS")).toBe(false);
+		// KOD MUSI BYĆ TEN, KTÓRY FAKTYCZNIE PADA NA NASZEJ TRASIE (warunek W9).
+		// `sign-up.mjs:208` rzuca `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`, a nie
+		// `USER_ALREADY_EXISTS` — biblioteka ma OBA kody. Atrapa cytująca zły
+		// z nich wyglądałaby na strażnika, a pilnowałaby ścieżki, której nie ma.
+		expect(KODY_ZASTEPOWANE.has("USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL")).toBe(false);
 		const wynik = komunikatOdmowy(
-			{ message: "User already exists.", code: "USER_ALREADY_EXISTS", status: 422 },
+			{
+				message: "User already exists. Use another email.",
+				code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL",
+				status: 422,
+			},
 			"Nie udało się utworzyć konta",
 		);
-		expect(wynik).toBe("User already exists.");
+		expect(wynik).toBe("User already exists. Use another email.");
 	});
 
 	it("kontrola liczności — zbiór zastępowanych kodów NIE jest pusty", () => {
