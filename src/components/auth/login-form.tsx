@@ -4,6 +4,17 @@ import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
+import { komunikatOdmowy } from "@/lib/auth/komunikat-odmowy";
+
+/**
+ * Tekst pokazywany, gdy serwer NIE przysłał własnego wyjaśnienia — albo gdy
+ * przysłał komunikat, którego świadomie nie pokazujemy (`KODY_ZASTEPOWANE`).
+ * Zostaje w tej roli, bo dla najczęstszego przypadku jest wierny: biblioteka
+ * zwraca identyczną odmowę przy złym haśle i przy nieistniejącym koncie
+ * (pomiar w `komunikat-odmowy.ts`), więc to zdanie nic nie zdradza.
+ * NIE jest już jednak odpowiedzią na WSZYSTKO — od tego zaczął się incydent.
+ */
+const ZAPASOWY_LOGOWANIE = "Nieprawidłowy email lub hasło";
 
 export function LoginForm() {
 	const router = useRouter();
@@ -25,14 +36,19 @@ export function LoginForm() {
 			});
 
 			if (authError) {
-				setError("Nieprawidłowy email lub hasło");
+				// Odmowę serwera DOSTARCZAMY, nie zastępujemy. Reguła, co wolno
+				// pokazać, mieszka w `komunikat-odmowy.ts` — tu jest jej wywołanie.
+				setError(komunikatOdmowy(authError, ZAPASOWY_LOGOWANIE));
 				setLoading(false);
 				return;
 			}
 
 			router.push("/dashboard");
-		} catch {
-			setError("Coś poszło nie tak. Spróbuj ponownie.");
+		} catch (wyjatek) {
+			// To samo wywołanie, nie druga kopia reguły. Zerwane połączenie nie ma
+			// pola `status`, więc nośnik odda tekst zapasowy zamiast wewnętrznego
+			// „fetch failed"; odmowa serwera, gdyby tu doleciała, zostanie pokazana.
+			setError(komunikatOdmowy(wyjatek, "Coś poszło nie tak. Spróbuj ponownie."));
 			setLoading(false);
 		}
 	};

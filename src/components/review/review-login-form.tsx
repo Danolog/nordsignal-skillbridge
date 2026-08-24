@@ -7,6 +7,7 @@
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { komunikatBramkiHaslowej } from "@/lib/auth/komunikat-odmowy";
 
 export function ReviewLoginForm() {
 	const router = useRouter();
@@ -27,7 +28,9 @@ export function ReviewLoginForm() {
 			});
 
 			if (!res.ok) {
-				setError("Nieprawidłowe hasło");
+				// Lustro bramki panelu uczelni — ta sama reguła, ten sam nośnik.
+				// Tutaj 404 znaczy zgaszoną flagę `humanReviewQueue`, nie złe hasło.
+				setError(komunikatBramkiHaslowej(res.status));
 				return;
 			}
 
