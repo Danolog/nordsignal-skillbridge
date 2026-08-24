@@ -95,8 +95,40 @@ describe("sonda D2 w transakcji — kolejność względem SET LOCAL ROLE", () =>
 	});
 });
 
-describe("sonda D2 w transakcji — punkt zapisu chroni żądanie", () => {
-	it("gdy sonda PADNIE: ROLLBACK TO SAVEPOINT, a praca żądania i tak się wykonuje", async () => {
+describe("sonda D2 w transakcji — koszt po pomiarze (W11)", () => {
+	it("DRUGIE żądanie w procesie wysyła TRZY polecenia, nie pięć", async () => {
+		// Sedno W11: para SAVEPOINT/RELEASE była BEZWARUNKOWA, więc kosztowała dwa
+		// obiegi do bazy w każdej transakcji najemcy NA ZAWSZE — długo po tym, jak
+		// sonda skończyła mierzyć. Zmierzone przez Leo (#345, 16:23:31 CEST):
+		//   PIERWSZE: 5 poleceń, DRUGIE: 5 poleceń.
+		//
+		// Poprzedni strażnik („mierzy RAZ na proces") tego NIE łapał, bo liczył
+		// wyłącznie zapytanie tożsamości — obiecywał w nazwie własność, której
+		// mierzył połowę. Ten przypadek liczy WSZYSTKIE polecenia transakcji.
+		//
+		// ROZBIEŻNOŚĆ Z PRZEGLĄDEM, ZAPISANA JAWNIE: Leo podał „PIERWSZE żądanie:
+		// 5 poleceń", ale jego własne wyliczenie ma SZEŚĆ pozycji (set_config ×2,
+		// SET LOCAL ROLE, SAVEPOINT, IDENTITY_SQL, RELEASE). Odtworzone tutaj
+		// wykonaniem: pierwsze żądanie = 6, drugie przed naprawą = 5, drugie po
+		// naprawie = 3. Etykieta „5" przy pierwszym była omyłką w liczeniu, nie
+		// różnicą w kodzie — wniosek Leo (para punktu zapisu jest bezwarunkowa)
+		// stoi bez zmian i to on był nośny.
+		const { withTenantContext } = await import("@/lib/db/tenant-context");
+
+		await withTenantContext(KONTEKST, async () => "pierwsze");
+		const poPierwszym = [...wykonane];
+		wykonane.length = 0;
+		await withTenantContext(KONTEKST, async () => "drugie");
+
+		expect(poPierwszym).toHaveLength(6); // set_config ×2, SET LOCAL ROLE, SAVEPOINT, IDENTITY_SQL, RELEASE
+		expect(wykonane).toHaveLength(3); // set_config ×2, SET LOCAL ROLE — i nic więcej
+		expect(wykonane).not.toContain("SAVEPOINT sonda_d2");
+		expect(wykonane).not.toContain("RELEASE SAVEPOINT sonda_d2");
+	});
+});
+
+describe("sonda D2 w transakcji — punkt zapisu: KOLEJNOŚĆ POLECEŃ, nie zachowanie bazy", () => {
+	it("KOLEJNOŚĆ POLECEŃ przy padzie: ROLLBACK TO SAVEPOINT, praca żądania wykonana (NIE mierzy bazy)", async () => {
 		padnijNaTozsamosci = true;
 		const { withTenantContext } = await import("@/lib/db/tenant-context");
 
@@ -105,11 +137,19 @@ describe("sonda D2 w transakcji — punkt zapisu chroni żądanie", () => {
 		// (1) Żądanie NIE zostało przerwane przez narzędzie pomiarowe.
 		expect(wynik).toBe("praca-wykonana");
 		// (2) Transakcja została cofnięta do punktu zapisu, czyli NIE jest zatruta.
-		expect(wykonane).toContain("ROLLBACK TO SAVEPOINT sonda_d2");
+		expect(
+			wykonane,
+			"ZASIĘG TEGO STRAŻNIKA: mierzy KOLEJNOŚĆ POLECEŃ wysłanych do atrapy, " +
+				"a NIE zachowanie PostgreSQL. Nie wolno cytować jego zieleni jako dowodu, " +
+				"że wycofanie ratuje unieważnioną transakcję ani że rola przeżywa wycofanie. " +
+				"Te dwie własności zmierzył przegląd Leo #345 na PostgreSQL 16.14 " +
+				"(2026-08-24 16:21:04 CEST): po ROLLBACK TO SAVEPOINT — session_user=app_runtime, " +
+				"current_user=app_student, transakcja żyje, wierszy=0.",
+		).toContain("ROLLBACK TO SAVEPOINT sonda_d2");
 		expect(wykonane).not.toContain("RELEASE SAVEPOINT sonda_d2");
 	});
 
-	it("gdy sonda przejdzie: RELEASE SAVEPOINT — punkt zapisu nie zostaje otwarty", async () => {
+	it("KOLEJNOŚĆ POLECEŃ przy powodzeniu: RELEASE, punkt zapisu nie zostaje otwarty", async () => {
 		// Kontrola dodatnia. Bez niej „jest ROLLBACK" byłoby prawdą także wtedy,
 		// gdyby kod cofał punkt zapisu ZAWSZE — czyli gdyby sonda nigdy nie
 		// działała, a my byśmy tego nie zauważyli.

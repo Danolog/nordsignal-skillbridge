@@ -43,6 +43,12 @@
  * asercja wywróciłaby każdą trasę najemcy w chwili wdrożenia. To byłby incydent
  * spowodowany narzędziem pomiarowym.
  *
+ * ⚠ NOŚNIK PROGU FAZY 2 NIE JEST TYM KOMENTARZEM: `docs/2026-08-24-dlug-b9-faza-2.md`.
+ * Ten akapit go WOŁA, nie zastępuje. Powód (W13, przegląd Leo #345): próg zapisany
+ * wyłącznie prozą w nagłówku „się czyta, a nie się o niego odbija" — faza 2
+ * zależałaby od tego, czy ktoś za miesiąc trafi na komentarz. Krok „odczyt logu
+ * z produkcji" ma w definicji ukończenia pozycję **„decyzja o fazie 2 zapisana"**.
+ *
  *   FAZA 1 (teraz)  — sonda logująca, stała, raz na proces.
  *   FAZA 2 (próg: pierwszy odczyt z produkcji) — jeśli wyjdzie `app_runtime`,
  *           zamiana na twardą asercję pozytywną. Jeśli wyjdzie właściciel,
@@ -70,12 +76,50 @@ const ROLE_NAJEMCY = new Set(["app_student", "app_faculty"]);
 /** Prefiks logu — stały, żeby dało się go wyłuskać z logów wykonania dostawcy. */
 export const PREFIKS_SONDY = "[sonda-d2]";
 
-/** Raz na proces, nie raz na żądanie — koszt to jedno zapytanie na zimny start. */
+/**
+ * Czy pomiar odbył się już w tym procesie.
+ *
+ * SPROSTOWANIE JAWNE (W11, przegląd Leo #345). Stare brzmienie tego komentarza:
+ *
+ *   „Raz na proces, nie raz na żądanie — koszt to jedno zapytanie na zimny start."
+ *
+ * **Było nieprawdziwe.** Zapytanie tożsamości faktycznie szło raz na proces, ale
+ * para `SAVEPOINT`/`RELEASE` u wołającego była BEZWARUNKOWA — czyli dwa
+ * dodatkowe obiegi do bazy w każdej transakcji najemcy, na zawsze. Zmierzone
+ * atrapą zliczającą polecenia (Leo, 2026-08-24 16:23:31 CEST):
+ *
+ *   PIERWSZE żądanie: 5 poleceń (set_config ×2, SET LOCAL ROLE, SAVEPOINT,
+ *                                IDENTITY_SQL, RELEASE)
+ *   DRUGIE żądanie:   5 poleceń (set_config ×2, SET LOCAL ROLE, SAVEPOINT, RELEASE)
+ *
+ * Gorsze od samego kosztu było to, że strażnik „mierzy RAZ na proces" PRZECHODZIŁ
+ * — sprawdzał wyłącznie zapytanie tożsamości, więc **obiecywał w nazwie własność,
+ * której mierzył połowę**. Ta sama klasa co W1 na #342.
+ *
+ * Po naprawie: `czyJuzZmierzono()` pozwala wołającemu pominąć CAŁĄ obudowę, więc
+ * drugie żądanie w procesie wysyła **trzy** polecenia. Pilnuje tego strażnik
+ * `tenant-context-sonda-punkt-zapisu.test.ts` z mutacją przywracającą
+ * bezwarunkowość.
+ */
 let juzZmierzono = false;
 
 /** Tylko na potrzeby testów — pozwala odtworzyć stan „jeszcze nie mierzono". */
 export function zresetujSonde(): void {
 	juzZmierzono = false;
+}
+
+/**
+ * Czy pomiar już się odbył w tym procesie.
+ *
+ * Istnieje po to, żeby WOŁAJĄCY mógł pominąć **całą** obudowę sondy — łącznie
+ * z parą punktu zapisu — a nie tylko samo zapytanie tożsamości. Bez tego
+ * predykatu `SAVEPOINT`/`RELEASE` szły bezwarunkowo w KAŻDEJ transakcji
+ * najemcy, czyli dwa dodatkowe obiegi do bazy na zawsze, długo po tym, jak
+ * sonda skończyła mierzyć (zmierzone przez Leo, przegląd #345: drugie żądanie
+ * w procesie wysyłało 5 poleceń zamiast 3).
+ */
+export function czyJuzZmierzono(): boolean {
+	return juzZmierzono;
 }
 
 export type WynikSondy =
@@ -112,17 +156,34 @@ export async function zmierzTozsamosc(klient: Queryable): Promise<WynikSondy> {
 	};
 }
 
+/**
+ * Środowisko, w którym padł pomiar — `VERCEL_ENV` ustawia sama platforma
+ * (`production` / `preview`); poza wdrożeniem zmiennej NIE MA WCALE.
+ *
+ * PO CO TO W LINII LOGU: bez tego pola sonda w CI wypisuje przy każdym
+ * przebiegu integracji „połączenie NIE jest rolą runtime" — bo integracje łączą
+ * się jako `test`, a nie `app_runtime`. Kto trafi na taką linię wyszukiwaniem,
+ * ma gotowy **fałszywy werdykt B9**. To bliźniak wady, przed którą broni
+ * kontrola dodatnia: pomiar poprawny, ale opisujący nie ten świat, o który
+ * pytamy. Werdykt B9 wolno czytać WYŁĄCZNIE z linii `env=production`.
+ */
+function srodowisko(): string {
+	const env = process.env.VERCEL_ENV;
+	return typeof env === "string" && env.length > 0 ? env : "poza-wdrozeniem";
+}
+
 /** Zamienia wynik na jedną linię logu — bez DSN, bez hasła. */
 export function sformatujWynik(w: WynikSondy): string {
+	const gdzie = `env=${srodowisko()}`;
 	if (w.rodzaj === "niewazna") {
-		return `${PREFIKS_SONDY} POMIAR NIEWAŻNY — ${w.powod}. Werdyktu NIE podaję.`;
+		return `${PREFIKS_SONDY} ${gdzie} POMIAR NIEWAŻNY — ${w.powod}. Werdyktu NIE podaję.`;
 	}
 	const ocena =
 		w.sessionUser === "app_runtime"
 			? "połączenie runtime AKTYWNE"
 			: `połączenie NIE jest rolą runtime (session_user=${w.sessionUser})`;
 	return (
-		`${PREFIKS_SONDY} session_user=${w.sessionUser} current_user=${w.currentUser} ` +
+		`${PREFIKS_SONDY} ${gdzie} session_user=${w.sessionUser} current_user=${w.currentUser} ` +
 		`database=${w.database} — ${ocena}`
 	);
 }
