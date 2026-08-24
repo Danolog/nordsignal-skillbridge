@@ -84,15 +84,23 @@ describe("GoogleButton — odmowa serwera dociera i przycisk się odblokowuje", 
 		expect(screen.queryByText("Przekierowanie...")).not.toBeInTheDocument();
 	});
 
-	it("KONTROLA DWUSTRONNA — przy powodzeniu NIE pokazuje odmowy", async () => {
-		mockSignInSocial.mockResolvedValue({ data: { url: "https://accounts.google.com" }, error: null });
+	it("KONTROLA DODATNIA — przy powodzeniu ani odmowy, ani przedwczesnego gaszenia", async () => {
+		mockSignInSocial.mockResolvedValue({
+			data: { url: "https://accounts.google.com" },
+			error: null,
+		});
 		render(<GoogleButton />);
 		await kliknij("powodzenie");
 
 		await waitFor(() => {
 			expect(mockSignInSocial).toHaveBeenCalledTimes(1);
 		});
+		// (1) żadnego błędu na ekranie…
 		expect(mockToastError).not.toHaveBeenCalled();
+		// (2) …i stan ładowania ZOSTAJE. Przekierowanie do dostawcy ma prawo trwać;
+		// zgaszenie go tutaj dałoby mrugnięcie przycisku tuż przed opuszczeniem
+		// strony i zapraszało do drugiego kliknięcia w trakcie nawigacji.
+		expect(screen.getByRole("button", { name: /Przekierowanie/ })).toBeDisabled();
 	});
 
 	it("przy zerwanym połączeniu NIE wypuszcza wewnętrznej treści wyjątku", async () => {
