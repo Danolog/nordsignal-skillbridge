@@ -46,13 +46,49 @@
  * zdarzeniami. Limit czasu został przy domyślnym 5 s ŚWIADOMIE — podnoszenie limitu
  * zamieniłoby wadę w dług o tym samym objawie. Jeśli ten plik zacznie się ocierać
  * o limit, przyczyną jest liczba interakcji w `goToStep3`, nie limit.
+ *
+ * ⚠ SPROSTOWANIE AKAPITU WYŻEJ — POMIAR, 2026-08-24 (Quinn, śledztwo po drugiej
+ * czerwieni: Ethan ~11:36, Leo po południu; oba „Test timed out in 5000ms", oba
+ * 12/12 zielone w izolacji).
+ *
+ * Zdanie „przyczyną jest liczba interakcji w `goToStep3`, nie limit" jest
+ * NIEPRAWDZIWE. Zmierzone na tej samej maszynie, tym samym kodem:
+ *
+ *   izolacja, maszyna spokojna ....... najdłuższy przypadek  847 ms  (12/12 ✓)
+ *   pełna suita, jedna sesja ......... najdłuższy przypadek 2509 ms  (12/12 ✓)
+ *   pełna suita, druga sesja obok .... CAŁY PLIK 28,23 s zamiast 6,95 s
+ *
+ * Ostatni wiersz jest sednem: BEZ ŻADNEJ ZMIANY KODU ten sam plik zmienia czas
+ * czterokrotnie. Zmienną nośną jest OBCIĄŻENIE MASZYNY, nie liczba interakcji.
+ * Odczyt w chwili pomiaru: `load averages: 127.52` przy 8 rdzeniach, czyli
+ * szesnastokrotne przeciążenie — inna sesja agenta liczyła równolegle własną suitę.
+ *
+ * Sprawdziłem też lever wskazany w akapicie wyżej. Zamiana `user.type`
+ * (11 zdarzeń klawiatury) na wklejenie (1 zdarzenie) daje, mierzona NA PRZEMIAN
+ * żeby obciążenie działało na oba warianty tak samo: 6,95 / 7,61 s (pisanie)
+ * kontra 6,71 / 6,79 s (wklejenie) — czyli 3–11%, nie rząd wielkości. Zmianę
+ * zostawiam, bo jest darmowa i wierna zachowaniu człowieka, ale ONA NIE ZAMYKA
+ * TEGO FLAKA i nie wolno jej tak zaksięgować. Żadne przyspieszenie tego pliku
+ * nie przetrwa skoku obciążenia o rząd wielkości.
+ *
+ * WNIOSEK, KTÓRY WCHODZI DO KODU NIŻEJ: skoro pad „Test timed out" nie odróżnia
+ * zatłoczonej maszyny od realnego wyścigu, niech odróżnia SAM. Hak
+ * `onTestFailed` dokłada do padu odczyt obciążenia i werdykt. To jest poprawka
+ * na „pad alarmuje, ale nie kieruje" — ta sama, którą tego dnia zrobiłem
+ * w strażniku członu ODCZYT i w specyfikacji `01-public-auth`.
+ *
+ * CZEGO NIE ZROBIŁEM I DLACZEGO: nie podniosłem limitu. Akapit wyżej ma rację
+ * co do kierunku, nawet jeśli myli się co do przyczyny — limit 5 s jest
+ * uczciwym progiem dla pliku, który na spokojnej maszynie potrzebuje 0,85 s.
+ * Podniesienie go uciszyłoby sygnał, zamiast go wytłumaczyć.
  */
 
 import { readFileSync } from "node:fs";
+import { cpus, loadavg } from "node:os";
 import { resolve } from "node:path";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, onTestFailed, vi } from "vitest";
 import { OnboardingWizard } from "../onboarding-wizard";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -187,7 +223,12 @@ async function goToStep3(
 	await user.click(screen.getByRole("button", { name: /Wybierz cel \(stub\)/i }));
 	await user.click(screen.getAllByRole("combobox")[0]);
 	await user.click(await screen.findByRole("option", { name: "WSB Merito Gdańsk" }));
-	await user.type(screen.getByPlaceholderText(/np\. Informatyka/), "Informatyka");
+	// WKLEJENIE, NIE PISANIE: `user.type` wysyła 11 osobnych zdarzeń klawiatury,
+	// każde z przerysowaniem Reacta. Zysk zmierzony na przemian: 3–11% (patrz nagłówek) —
+	// realny, ale NIE zamykający flaka. Pole przyjmuje wartość końcową, nie reaguje
+	// na poszczególne znaki, więc wklejenie jest wierne temu, co robi człowiek.
+	await user.click(screen.getByPlaceholderText(/np\. Informatyka/));
+	await user.paste("Informatyka");
 	await user.click(screen.getAllByRole("combobox")[1]);
 	await user.click(await screen.findByRole("option", { name: "4" }));
 	await user.click(screen.getByRole("button", { name: /Dalej/i }));
@@ -210,9 +251,52 @@ function renderWizard(diagnosticEnabled: boolean) {
 	);
 }
 
+/**
+ * Próg, powyżej którego werdykt brzmi „zatłoczona maszyna". 4 zadania na rdzeń:
+ * przy 8 rdzeniach to 32 — daleko od normalnej pracy (1–8), a incydent z 2026-08-24
+ * pokazał 127,52. Próg ma odróżniać awarię środowiska od wyścigu, nie mierzyć
+ * subtelności, więc jest celowo wysoki: fałszywe „to obciążenie" byłoby gorsze
+ * niż brak podpowiedzi.
+ */
+const ZADAN_NA_RDZEN_PROG = 4;
+
 beforeEach(() => {
 	vi.clearAllMocks();
 	stub.careerGoal = "Data Analyst";
+
+	// PAD MA KIEROWAĆ, NIE TYLKO ALARMOWAĆ. „Test timed out in 5000ms" nie odróżnia
+	// zatłoczonej maszyny od realnego wyścigu w kreatorze — a to jedyne rozróżnienie,
+	// które przy tym padzie ma znaczenie. Odczyt obciążenia kosztuje mikrosekundy
+	// i jest robiony WYŁĄCZNIE przy czerwieni, więc nie płaci za niego zielony przebieg.
+	onTestFailed(() => {
+		const rdzenie = cpus().length;
+		const obciazenie = loadavg()[0];
+		const naRdzen = obciazenie / rdzenie;
+		const zatloczona = naRdzen > ZADAN_NA_RDZEN_PROG;
+		console.error(
+			[
+				"",
+				"─".repeat(74),
+				` DIAGNOSTYKA PADU — obciążenie maszyny w chwili czerwieni`,
+				"─".repeat(74),
+				`Średnie obciążenie (1 min): ${obciazenie.toFixed(2)} przy ${rdzenie} rdzeniach ` +
+					`= ${naRdzen.toFixed(1)} zadania na rdzeń.`,
+				"",
+				zatloczona
+					? "WERDYKT: MASZYNA BYŁA ZATŁOCZONA. Jeśli pad brzmi „Test timed out”, to\n" +
+						"najprawdopodobniej NIE jest wyścig w kreatorze, tylko rywalizacja o procesor\n" +
+						"z inną sesją. Zmierzone 2026-08-24: ten sam plik, ten sam kod, 6,95 s przy\n" +
+						"spokojnej maszynie i 28,23 s przy obciążeniu 127. NIE ponawiaj w kółko i NIE\n" +
+						"podnoś limitu — powtórz na spokojnej maszynie albo zaufaj CI."
+					: "WERDYKT: MASZYNA BYŁA SPOKOJNA. Ten pad NIE tłumaczy się obciążeniem —\n" +
+						"potraktuj go jako realną wadę i szukaj przyczyny w kreatorze, nie w limicie.",
+				"",
+				"Autorytatywny jest przebieg CI na czystym kontenerze, nie ten lokalny.",
+				"─".repeat(74),
+				"",
+			].join("\n"),
+		);
+	});
 });
 
 describe("N2′ — zero zaznaczeń w trybie diagnozy nie przechodzi dalej samo", () => {
