@@ -676,6 +676,110 @@ jobs:
           retention-days: 7
 
   # ─────────────────────────────────────────────────────────────────────────
+  # sciezka-wejscia — Playwright, PIERWSZY EKRAN: landing, logowanie, rejestracja,
+  # panel wykladowcy, bramka auth na trasach Bety (plik 01, 13 przypadkow @safe).
+  #
+  # PO CO TEN JOB POWSTAL — nie „dla pokrycia", tylko po zmierzonej awarii.
+  #
+  # Plik 01 istnial od dawna i NIE BYL URUCHAMIANY NIGDZIE. Byl jednym z siedmiu
+  # zestawow spoza toru (16 specyfikacji ogolem, 9 wolanych w tym pliku przed ta
+  # zmiana). Kosztowalo to dwa razy:
+  #
+  #  1. Po scaleniu #342 przypadek panelu wykladowcy padal od 16:02 — nikt tego
+  #     nie zobaczyl, bo nikt go nie uruchamial. Cicha zgnilizna, nie czerwien.
+  #  2. Logowanie mailem bylo na produkcji martwe szesc dni (2026-08-18…24,
+  #     33 konta) i ZADNA bramka o tym nie powiedziala. Sciezka wejscia byla
+  #     jedyna sciezka krytyczna bez zadnego przejazdu w CI.
+  #
+  # CZEGO TEN JOB NIE ROBI — granica postawiona wprost, bo tu ktos siegnie po
+  # dowod: zielen tego joba NIE MOWI NIC O PRODUKCJI. Job ma WLASNA liste
+  # dozwolonych adresow (PILOT_ALLOWLIST na poziomie przeplywu) i WLASNA flage
+  # panelu. Mierzy PRODUKT — czy kod potrafi wpuscic i potrafi odmowic — a nie
+  # KONFIGURACJE wdrozenia. Awarii z punktu 2 ten job by NIE zlapal, bo tam
+  # zawiodla konfiguracja produkcji, ktorej CI nie widzi. Na to jest osobna
+  # odpowiedz (sonda powdrozeniowa), nie ten job.
+  #
+  # POSTGRES JEST WYMAGANY, mimo ze zaden przypadek nie pisze do bazy. Przypadek
+  # logowania musi DOJSC do sprawdzenia poswiadczen — bez tabeli uzytkownikow
+  # biblioteka rzuca wyjatkiem, formularz pokazuje tekst zapasowy „Cos poszlo
+  # nie tak", a asercja rozrozniajaca odmowe od zlego hasla traci przedmiot.
+  # Bez bazy job bylby zielony, nie zmierzywszy tego, po co powstal.
+  # SEEDU NIE MA CELOWO: przypadek loguje sie na konto NIEISTNIEJACE. Zero zapisu.
+  sciezka-wejscia:
+    name: sciezka-wejscia (Playwright — landing, logowanie, rejestracja, bramka auth)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: skillbridge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Placeholder testowy (32 znaki) — nie sekret. Realny prod bierze z Vercela.
+      BETTER_AUTH_SECRET: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      BETTER_AUTH_URL: http://127.0.0.1:3000
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      # Boot-guard limitera sprawdza OBECNOSC zmiennych Upstash, nie lacznosc
+      # (src/lib/rate-limit.ts: hasUpstashConfig) — placeholdery wystarcza, zeby
+      # `next start` wstal. Zaden przypadek tego pliku nie dotyka limitera.
+      UPSTASH_REDIS_REST_URL: http://localhost:8079
+      UPSTASH_REDIS_REST_TOKEN: example-e2e-ci-token
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Ustaw DATABASE_URL (loopback uslugi testowej)
+        env:
+          PGUSER: test
+          PGPASS: test
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGDB: skillbridge_test
+        run: |
+          AT='@'
+          echo "DATABASE_URL=postgresql://${PGUSER}:${PGPASS}${AT}${PGHOST}:${PGPORT}/${PGDB}" >> "$GITHUB_ENV"
+      - run: pnpm exec playwright install --with-deps chromium
+      # Migracja na bazie TESTOWEJ (guard allowlisty hostow — przerwie na zdalnym DSN).
+      - run: pnpm db:migrate:test
+      - run: pnpm build
+      # ZAKRES: sciezka pliku, nie `--grep` → nie ma jak zostac zeskipowanym filtrem.
+      # `set +e` wokol przebiegu: raport czytamy TAKZE po padzie, ale kod wyjscia
+      # pakietu oddajemy na koncu.
+      - name: Playwright — sciezka wejscia (plik 01)
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: raport-sciezka-wejscia.json
+        run: |
+          set +e
+          pnpm exec playwright test --config playwright.config.ci.ts \
+            --reporter=list,json tests/e2e-pw/01-public-auth.spec.ts
+          KOD_PAKIETU=$?
+          set -e
+          # 13 = 5 przypadkow strony publicznej + 8 tras chronionych. Rownosc, nie
+          # „co najmniej": pakiet, ktory urosnie, ma zmusic autora do swiadomej
+          # zmiany tej liczby, zamiast po cichu degradowac bramke do „cokolwiek > 0".
+          node tools/sprawdz-licznosc-e2e.mjs raport-sciezka-wejscia.json 13
+          exit $KOD_PAKIETU
+      - name: Upload raportu Playwright (przy padzie)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-sciezka-wejscia
+          path: playwright-report/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────────────────────────
   # rate-limit-review — Playwright, DOWÓD ŻYWEGO LIMITERA na POST /api/review/answer
   # (1E.4 R4/CF-2, bramka Quinn — domknięcie zapłonu FLAG_SPACED_REPETITION). W
   # przeciwieństwie do a11y-review (mock trasy przez page.route) TU walimy w PRAWDZIWY
