@@ -12,10 +12,22 @@
 // Do 2026-08-18 pilnowany był WYŁĄCZNIE człon ODCZYT
 // (`src/lib/__tests__/panel-wykladowcy-za-flaga.test.ts`). Człon ZAPIS był
 // zadeklarowany w nagłówku tamtego pliku jako konieczny — i niestrzeżony.
-// Zmierzone mutacją, nie przeczytane: usunięcie warunku flagi z trasy logowania
-// zostawiało 2768 testów zielonych przy fladze zapalonej i DOKŁADNIE ten sam
-// wynik (4 czerwienie, wszystkie z członu ODCZYT) przy zgaszonej. Mutacja była
-// niewidoczna pod obiema flagami.
+//
+// ILE DOKŁADNIE JEST WART TEN PLIK — pomiar odtworzony na `0319a2b`
+// (Quinn, 2026-08-24, godz. 11:39–11:41 CEST). Mutacja M1 zdejmuje warunek
+// flagi z tej trasy; przebieg pod środowiskiem CI (`FLAG_FACULTY_PANEL=1`):
+//
+//   jednostkowe  → 2348 / 2348 ZIELONYCH, ani jednej czerwieni
+//   integracyjne → 449 zielonych, 1 todo, 3 CZERWIENIE
+//   wszystkie 3 czerwienie pochodzą Z TEGO PLIKU
+//
+// Czyli: 2797 testów przepuszcza tę mutację, a łapie ją wyłącznie ten plik.
+// To jest liczbowa odpowiedź na pytanie „po co jeszcze jeden test".
+//
+// (Pomiar z 2026-08-18 na `bca0fc7` mówił „2778 zielonych", a streszczenie
+// zlecenia mówiło „2768". Rozbieżności nie rozstrzygam — tamta podstawa jest
+// nieaktualna, a liczby wyżej są odtwarzalne na dzisiejszej. Cytując tę
+// sprawę, cytuj pomiar z 2026-08-24, nie tamten.)
 //
 // To wzorzec „strażnik-atrapa" z 1E.7 w czystej postaci: nagłówek deklarował
 // gwarancję, której nikt nie sprawdzał. Wniosek ogólniejszy, wart zapamiętania:
@@ -41,12 +53,39 @@
 // mutacja czerwieni się pod ŚRODOWISKIEM CI, a nie pod środowiskiem dobranym
 // do testu.
 //
-// CO SPRAWDZAMY — SKUTEK, NIE ODPOWIEDŹ
-// -------------------------------------
-// Asercja stoi na LICZNOŚCI wierszy w `faculty_sessions`, nie na kodzie
+// CO SPRAWDZAMY — SKUTEK ORAZ ODPOWIEDŹ, ROZDZIELONE
+// --------------------------------------------------
+// Własnością nośną jest LICZNOŚĆ wierszy w `faculty_sessions`, nie kod
 // odpowiedzi. Sam kod 404 nie dowodzi niczego o zapisie: trasa mogłaby oddać
 // 404 i mimo to utworzyć sesję (albo utworzyć ją wcześniej, a odmówić później).
 // Mierzymy to, co zostaje w bazie.
+//
+// ⚠ SPROSTOWANIE (Quinn, 2026-08-24) — ta sekcja była DEKLARACJĄ, nie pomiarem.
+// Do 2026-08-24 obie własności stały w jednym przypadku, w kolejności „najpierw
+// kod odpowiedzi, potem liczność". Pomiar mutacyjny pokazał, że asercja
+// liczności była wtedy MARTWA: mutacja czerwieniła plik wyłącznie na kodzie
+// odpowiedzi (`expected 200 to be 404`, linia 136 ówczesnego pliku), a do
+// liczności wykonanie nie docierało — wcześniejsza asercja rzucała pierwsza.
+// Nagłówek deklarował „skutek, nie odpowiedź", a czerwień pochodziła
+// z ODPOWIEDZI. Ta sama klasa wady, którą ten plik miał zamykać, o piętro niżej.
+// Naprawa: dwie własności, dwa przypadki, każdy pada osobno — plus trzecia
+// mutacja (M3) dowodząca, że asercja liczności łapie to, czego kod odpowiedzi
+// nie łapie. Wyniki w opisie zgłoszenia.
+//
+// CZEGO TEN PLIK NIE DOWODZI — zawężenie zasięgu stoi TUTAJ, bo tutaj ktoś
+// sięgnie po dowód. Zieleń tego pliku wolno cytować WYŁĄCZNIE jako dowód, że
+// uchwyt trasy `POST /api/faculty/login` odmawia zapisu sesji przy zgaszonej
+// fladze. NIE jest dowodem, że:
+//
+//   (a) panel jest zamknięty NA PRODUKCJI — to wynika z domyślnej wartości
+//       flagi (`defaultValue: false`), a pilnuje jej osobny przypadek
+//       w `src/lib/__tests__/panel-wykladowcy-za-flaga.test.ts`;
+//   (b) trasa jest nieosiągalna przez przeglądarkę — wołamy uchwyt WPROST,
+//       z pominięciem warstwy pośredniej (middleware) i serwera. Regresja
+//       w kierowaniu ruchem jest poza zasięgiem tego pliku;
+//   (c) ograniczanie liczby prób działa — `@/lib/rate-limit` jest tu ATRAPĄ
+//       (przepuszcza zawsze), żeby mierzyć bramkę flagi, a nie licznik prób;
+//   (d) sesje JUŻ WYDANE przestają działać — to człon ODCZYT, plik obok.
 //
 // Wymaga DATABASE_URL na bazie testowej + `FLAG_FACULTY_PANEL` (patrz
 // `src/test/wymagaj-flagi.ts` — pad nazywa zmienną i plik konfiguracji CI).
@@ -88,9 +127,19 @@ dBack("panel wykładowcy · człon ZAPIS (trasa logowania, realna baza)", () => 
 			body: JSON.stringify({ password: haslo }),
 		});
 
+	/**
+	 * Liczba wierszy w tabeli sesji.
+	 *
+	 * RZUCA zamiast zwracać wartość zastępczą. Wcześniej zwracała `-1`, gdy pula
+	 * połączeń była nieustawiona — a wtedy porównanie „przed" z „po" wychodziło
+	 * `-1 === -1` i MELDOWAŁO SUKCES pomiaru, który nie dotknął bazy. To wzorzec
+	 * „sprawdzenie, do którego nic nie dociera": brak połączenia ma przewracać
+	 * test i nazywać przyczynę, nie udawać zera zmian.
+	 */
 	async function liczbaSesji(): Promise<number> {
-		const r = await pool?.query("SELECT count(*)::int AS c FROM faculty_sessions");
-		return r?.rows[0].c ?? -1;
+		if (!pool) throw new Error("Brak puli połączeń — pomiar liczności nie dotknął bazy.");
+		const r = await pool.query("SELECT count(*)::int AS c FROM faculty_sessions");
+		return r.rows[0].c;
 	}
 
 	/** Stan flagi sprzed pliku — przywracany w `afterAll` (patrz niżej). */
@@ -125,20 +174,39 @@ dBack("panel wykładowcy · człon ZAPIS (trasa logowania, realna baza)", () => 
 		await pool?.query("DELETE FROM faculty_sessions");
 	});
 
-	it("flaga ZGASZONA → 404 i w tabeli sesji NIE przybywa wiersz", async () => {
+	// DWIE WŁASNOŚCI, DWA PRZYPADKI — rozdzielone świadomie (Quinn, 2026-08-24).
+	//
+	// Do 2026-08-24 obie stały w jednym przypadku, w kolejności „najpierw kod
+	// odpowiedzi, potem liczność". Pomiar pokazał, że to czyniło asercję
+	// liczności MARTWĄ: pod mutacją zdejmującą człon ZAPIS pierwsza linia
+	// rzucała wyjątek („expected 200 to be 404"), a do liczności wykonanie już
+	// nie docierało. Nagłówek pliku deklarował „skutek, nie odpowiedź" —
+	// a czerwień pochodziła wyłącznie z ODPOWIEDZI. Deklaracja bez pokrycia
+	// w pomiarze, czyli dokładnie ta wada, którą ten plik miał zamykać.
+	//
+	// Rozdzielone, każda własność pada osobno i widać KTÓRA.
+
+	it("SKUTEK: flaga ZGASZONA → w tabeli sesji NIE przybywa wiersz", async () => {
 		process.env.FLAG_FACULTY_PANEL = "0";
 		const przed = await liczbaSesji();
 
-		const res = await loginRoute.POST(zadanie(HASLO));
+		// Hasło POPRAWNE — bez członu ZAPIS sesja by tu powstała.
+		await loginRoute.POST(zadanie(HASLO));
 
-		// Odmowa wygląda jak brak trasy — nie potwierdzamy, że panel istnieje
-		// ani że hasło było poprawne.
-		expect(res.status).toBe(404);
-
-		// SEDNO: skutek, nie odpowiedź. Hasło było POPRAWNE, więc bez członu ZAPIS
-		// sesja by tu powstała.
+		// Żadnej asercji na kodzie odpowiedzi PRZED tą linią: to ona jest
+		// własnością nośną i musi mieć szansę się odezwać.
 		expect(await liczbaSesji()).toBe(przed);
 		expect(await liczbaSesji()).toBe(0);
+	});
+
+	it("ODPOWIEDŹ: flaga ZGASZONA → 404, odmowa wygląda jak brak trasy", async () => {
+		// Osobno od skutku: nie potwierdzamy, że panel istnieje ani że hasło
+		// było poprawne. 404, nie 401 i nie 403.
+		process.env.FLAG_FACULTY_PANEL = "0";
+
+		const res = await loginRoute.POST(zadanie(HASLO));
+
+		expect(res.status).toBe(404);
 	});
 
 	it("KONTROLA DODATNIA: flaga ZAPALONA → 200 i przybywa DOKŁADNIE jeden wiersz", async () => {
@@ -149,8 +217,13 @@ dBack("panel wykładowcy · człon ZAPIS (trasa logowania, realna baza)", () => 
 
 		const res = await loginRoute.POST(zadanie(HASLO));
 
-		expect(res.status).toBe(200);
+		// KONTROLA LICZNOŚCI POMIARU — najpierw, nie po kodzie odpowiedzi.
+		// Ta linia odpowiada na pytanie „ile rzeczy ten pomiar w ogóle widział":
+		// dowodzi, że licznik POTRAFI się ruszyć (0 → 1). Bez niej przypadek
+		// „nie przybywa wiersz" byłby prawdziwy także wtedy, gdyby trasa nie
+		// tworzyła sesji NIGDY — i strażnik meldowałby sukces, nie mierząc nic.
 		expect(await liczbaSesji()).toBe(przed + 1);
+		expect(res.status).toBe(200);
 	});
 
 	it("flaga ZGASZONA → odmowa zapada PRZED sprawdzeniem hasła (złe hasło też 404)", async () => {
