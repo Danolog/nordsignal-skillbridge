@@ -53,14 +53,51 @@
  * bibliotece (sprostowanie po przeglądzie Leo, warunek W10, #344). Zmierzone:
  * `sign-in.mjs` i `sign-up.mjs` nie zawierają ANI JEDNEGO `new APIError(` —
  * każdy ich błąd leci przez `APIError.from(...)`, czyli zawsze z `code`.
- * W całej bibliotece jest jednak 24 wywołań `new APIError(..., { message })`
- * bez kodu; poza wtyczkami (używamy wyłącznie `nextCookies`) zostają trzy:
+ *
+ * POZA TYMI TRASAMI JEST DZIEWIĘĆ MIEJSC BEZ KODU, NIE TRZY
+ * ---------------------------------------------------------
+ * Drugie sprostowanie tego samego akapitu (warunek W18, przegląd krytyczny
+ * Ethana). Poprzednia wersja mówiła „zostają trzy … wszystkie trzy mają status
+ * 500 — i dlatego domyka je warunek niżej". To było zdanie MOCNIEJSZE NIŻ
+ * POMIAR: policzone zostały wyłącznie miejsca 5xx, a wniosek postawiony o całym
+ * zbiorze. Dokładnie ta klasa błędu, którą ten plik naprawia — i popełniona
+ * dwie linie po ostrzeżeniu przed nią.
+ *
+ * Zmierzone ponownie 2026-08-24 (`grep -rn "new APIError(" … | grep -v /plugins/`
+ * → 13 trafień, z czego 4 bez ciała, więc bez treści do przepuszczenia:
+ * `authorization.mjs:21,33,37,56`). Z ciałem `{ message }` i BEZ pola `code`
+ * zostaje DZIEWIĘĆ, w dwóch grupach o RÓŻNYM mechanizmie ochrony:
+ *
+ * (A) CZTERY o statusie 5xx — domyka je warunek `status >= 500` niżej:
  *   api/to-auth-endpoints.mjs:20  „Dynamic baseURL could not be resolved…"
  *   api/to-auth-endpoints.mjs:24  treść z BetterAuthError
  *   api/dispatch.mjs:73           „…hook matcher execution. Check the logs…"
- * Wszystkie trzy mają status 500 — i dlatego domyka je warunek niżej, a nie
- * rozróżnik po `code`. Nie pisz tu „biblioteka zawsze ustawia code": to zdanie
- * jest mocniejsze niż pomiar.
+ *   oauth2/state.mjs:26           „Unable to create verification"
+ * Ostatniego z nich nie wymienił ani przegląd, ani poprzednia wersja tego
+ * akapitu — a leży na ścieżce logowania Google, którego UŻYWAMY
+ * (`server.ts:59`). Osiągalności nie weryfikowałem wykonaniem, ale to jedyne
+ * z tych miejsc, przy którym warunek 5xx nie jest czysto teoretyczny.
+ *
+ * (B) PIĘĆ o statusie 4xx — tych warunek 5xx NIE DOTYKA:
+ *   api/middlewares/authorization.mjs:23  BAD_REQUEST „Missing required parameter: …"
+ *   api/middlewares/authorization.mjs:57  BAD_REQUEST „Organization plugin is required…"
+ *   api/middlewares/authorization.mjs:59  BAD_REQUEST „Missing required parameter: …"
+ *   api/middlewares/authorization.mjs:70  FORBIDDEN   „Not a member of this organization"
+ *   api/middlewares/authorization.mjs:73  FORBIDDEN   „Insufficient role for this operation"
+ *
+ * TE PIĘĆ DOMYKA DZIŚ NIEOSIĄGALNOŚĆ, NIE ŻADEN WARUNEK W TYM PLIKU.
+ * Leżą w pośredniku autoryzacji zasobu/organizacji, którego nie wywołujemy:
+ * `plugins: [nextCookies()]` to jedyna wtyczka, a w `src/lib/auth` nie ma ani
+ * jednego odwołania do `authorization`/`organization`. Gdyby któreś zostało
+ * wywołane, jego angielska treść przeszłaby przepustem NA EKRAN — bo jest bez
+ * `code` i poniżej 500. Zieleń tego pliku o tym NIE POWIE.
+ *
+ * PRÓG POWROTU: pierwsze użycie pośrednika autoryzacji albo wtyczki organizacji.
+ * Wtedy albo dopisujemy te kody do reguły, albo świadomie przyjmujemy przeciek —
+ * ale jako decyzję, nie jako skutek uboczny. Właściciel progu: Ethan.
+ *
+ * Nie pisz tu „biblioteka zawsze ustawia code" ani „domyka je warunek 5xx":
+ * oba zdania są mocniejsze niż pomiar.
  *
  * AWARIA PO STRONIE SERWERA (5xx) NIE IDZIE NA EKRAN
  * --------------------------------------------------
