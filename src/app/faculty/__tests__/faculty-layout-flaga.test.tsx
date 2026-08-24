@@ -100,7 +100,7 @@ describe("panel wykładowcy — CZŁON STRONA, flaga ZGASZONA", () => {
 });
 
 describe("panel wykładowcy — ILE CZŁONÓW, TYLE MUTACJI (strażnik długu)", () => {
-	it("punktów egzekucji flagi jest DOKŁADNIE trzy — czwarty ma zaczerwienić ten test", async () => {
+	it('DOKŁADNIE trzy LITERALNE wywołania isFeatureEnabled("facultyPanel") w src/, poza __tests__', async () => {
 		// PO CO TEN TEST — spłata długu nazwanego wprost w
 		// `src/lib/__tests__/panel-wykladowcy-za-flaga.test.ts`:
 		// „Kto doda tu trzeci punkt egzekucji, jest winien trzecią mutację".
@@ -113,6 +113,25 @@ describe("panel wykładowcy — ILE CZŁONÓW, TYLE MUTACJI (strażnik długu)",
 		// i mówi mu, że jest winien czwartą mutację. Bez tego reguła „ile członów,
 		// tyle mutacji" żyje wyłącznie w cudzej pamięci — a to jest dokładnie ten
 		// nośnik, który zawiódł 2026-08-18.
+		//
+		// CO TEN STRAŻNIK MIERZY, A CZEGO NIE — zmierzone przez Leo przy przeglądzie
+		// #342 (2026-08-24, 11:58–11:59), nie wydedukowane. Wyrażenie regularne łapie
+		// ZAPIS, nie ZNACZENIE, więc czwarty punkt egzekucji przemknie, jeśli powstanie
+		// którąkolwiek z tych dróg — każda sprawdzona osobno, każda dała 5 zielonych:
+		//
+		//   const F = "facultyPanel"; isFeatureEnabled(F)      → ślepy (stała)
+		//   import { isFeatureEnabled as flagaWlaczona }       → ślepy (alias importu)
+		//   evaluateFlagIn(FLAGS, "facultyPanel")              → ślepy (inna funkcja)
+		//   ten sam zapis w pliku poza src/ (np. tools/)       → ślepy (zasięg przejścia)
+		//   isFeatureEnabled(\n  "facultyPanel",\n)            → ślepy (zapis wielolinijkowy)
+		//
+		// Ostatni przypadek jest drogą WYŁĄCZNIE ręczną: `biome format` zwija krótki
+		// argument do jednej linii (sprawdzone 12:00), więc formatter go nie wyprodukuje.
+		//
+		// Świadomie NIE gonimy tych wariantów. Wyrażenie regularne nigdy nie złapie
+		// znaczenia, a strażnik, który udaje, że łapie, jest gorszy od takiego, który
+		// mówi wprost, gdzie ma granicę. Dlatego granica stoi w NAZWIE testu i w
+		// KOMUNIKACIE asercji — tam, gdzie ktoś po nią sięgnie — a nie tylko tutaj.
 		//
 		// ŚWIADOMY DRUGI NOŚNIK, z jawnym progiem (CLAUDE.md §8 v1.17): nagłówek
 		// pliku `panel-wykladowcy-za-flaga.test.ts` nadal mówi „DWA WYWOŁANIA".
@@ -149,14 +168,75 @@ describe("panel wykładowcy — ILE CZŁONÓW, TYLE MUTACJI (strażnik długu)",
 
 		expect(
 			trafienia.sort(),
-			"Zmieniła się liczba punktów egzekucji flagi facultyPanel. ILE CZŁONÓW MA " +
-				"REGUŁA, TYLE MUTACJI — dołóż mutację czerwieniącą nowy człon i dopisz " +
-				"go tutaj oraz w nagłówku src/lib/__tests__/panel-wykladowcy-za-flaga.test.ts.",
+			'Zmieniła się liczba LITERALNYCH wywołań isFeatureEnabled("facultyPanel") ' +
+				"w src/, poza katalogami __tests__. TYLE MUTACJI, ILE CZŁONÓW MA REGUŁA — " +
+				"dołóż mutację czerwieniącą nowy człon i dopisz go tutaj oraz w nagłówku " +
+				"src/lib/__tests__/panel-wykladowcy-za-flaga.test.ts.\n" +
+				"UWAGA NA ZASIĘG: ten pomiar łapie wyłącznie zapis literalny. NIE łapie " +
+				"wywołania przez stałą, przez alias importu, przez inną funkcję " +
+				"(evaluateFlagIn) ani pliku spoza src/ — zmierzone, patrz nagłówek pliku.",
 		).toEqual([
 			"app/api/faculty/login/route.ts", // ZAPIS  — tworzenie sesji
 			"app/faculty/layout.tsx", // STRONA — powierzchnia HTML
 			"lib/faculty-auth.ts", // ODCZYT — dostęp
 		]);
+	});
+});
+
+describe("panel wykładowcy — POWIERZCHNIA, KTÓREJ UKŁAD NIE OBEJMUJE", () => {
+	it("w src/app/faculty/** nie ma obsług tras ani plików metadanych — te omijają układ", async () => {
+		// PO CO — luka ZMIERZONA przez Leo przy przeglądzie #342 (2026-08-24 12:01:34),
+		// nie wyczytana. Sonda `src/app/faculty/probe-route/route.ts` przy ZGASZONEJ
+		// fladze odpowiedziała:
+		//
+		//   /faculty              -> 404
+		//   /faculty/login        -> 404
+		//   /faculty/probe-route  -> 200   ← obsługa trasy OMINĘŁA układ w całości
+		//   /nie-istnieje         -> 404   (kontrola ujemna — przyrząd mierzył)
+		//   /                     -> 200   (kontrola dodatnia)
+		//
+		// Obsługa trasy (plik `route.ts` — odpowiada na żądanie, nie renderuje strony)
+		// NIE jest opakowywana układem segmentu. To samo dotyczy plików metadanych
+		// (`opengraph-image`, `icon`, `sitemap`, `robots`) — Next traktuje je jak trasy.
+		// Nośnik zgodny z pomiarem: `node_modules/next/dist/docs/…/route.md:642`.
+		//
+		// DLACZEGO OSOBNA ASERCJA, A NIE ROZSZERZENIE STRAŻNIKA DŁUGU: tamten liczy
+		// wywołania flagi, a nowy plik obsługi trasy flagi NIE WOŁA. Lista trafień
+		// zostałaby trzyelementowa, suita zielona, a powierzchnia otwarta — strażnik
+		// długu nie widzi tego przypadku Z KONSTRUKCJI, nie przez niedopatrzenie.
+		//
+		// Dziś luka jest PUSTA (segment ma układ, dwie strony i ten katalog testów).
+		// Ta asercja pilnuje, żeby pozostała pusta albo żeby autor nowego pliku
+		// dowiedział się, że jest winien własny człon egzekucji.
+		const { readdirSync, statSync } = await import("node:fs");
+		const { join } = await import("node:path");
+
+		const segment = new URL("../", import.meta.url).pathname; // src/app/faculty/
+		const OMIJAJACE_UKLAD =
+			/^(route\.(ts|tsx|js|jsx)|opengraph-image.*|twitter-image.*|icon.*|apple-icon.*|sitemap\.(ts|js)|robots\.(ts|js))$/;
+		const znalezione: string[] = [];
+
+		function przejdz(katalog: string): void {
+			for (const wpis of readdirSync(katalog)) {
+				const sciezka = join(katalog, wpis);
+				if (statSync(sciezka).isDirectory()) {
+					if (wpis === "__tests__") continue;
+					przejdz(sciezka);
+					continue;
+				}
+				if (OMIJAJACE_UKLAD.test(wpis)) znalezione.push(sciezka.slice(segment.length));
+			}
+		}
+		przejdz(segment);
+
+		expect(
+			znalezione.sort(),
+			"W src/app/faculty/** pojawił się plik, którego UKŁAD SEGMENTU NIE OBEJMUJE " +
+				"(obsługa trasy albo plik metadanych). Przy zgaszonej fladze taki plik " +
+				"odpowiada normalnie — zmierzone: 200, gdy strony segmentu dawały 404. " +
+				'Dołóż w nim własne sprawdzenie isFeatureEnabled("facultyPanel") i dopisz ' +
+				"go do strażnika długu wyżej (wtedy członów jest cztery, nie trzy).",
+		).toEqual([]);
 	});
 });
 
