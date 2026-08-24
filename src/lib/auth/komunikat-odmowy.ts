@@ -1,6 +1,12 @@
 /**
- * DOSTARCZANIE ODMOWY SERWERA — jedyny nośnik reguły „co z odmowy serwera
- * trafia na ekran".
+ * DOSTARCZANIE ODMOWY SERWERA — nośnik reguły „co z odmowy serwera trafia
+ * na ekran".
+ *
+ * UWAGA: NIE JEST DZIŚ JEDYNY. Ścieżka logowania Google go omija —
+ * `google-button.tsx` pokazuje treść błędu wprost, bez żadnego filtru.
+ * Pełny opis tego długu, z pomiarem i progiem, w sekcji „DRUGI NOŚNIK"
+ * na końcu nagłówka. Nie przywracaj tu słowa „jedyny", dopóki tamta sekcja
+ * istnieje — pierwsza wersja tego pliku tak twierdziła i było to nieprawdą.
  *
  * PO CO TEN PLIK ISTNIEJE
  * -----------------------
@@ -98,6 +104,40 @@
  *
  * Nie pisz tu „biblioteka zawsze ustawia code" ani „domyka je warunek 5xx":
  * oba zdania są mocniejsze niż pomiar.
+ *
+ * DRUGI NOŚNIK — ŚCIEŻKA GOOGLE OMIJA TEN PLIK (warunek W19, przegląd Leo)
+ * -----------------------------------------------------------------------
+ * ŚWIADOMY drugi nośnik w rozumieniu CLAUDE.md §8 v1.17 — dopuszczalny
+ * wyłącznie z jawnym progiem i właścicielem, nigdy po cichu. Oto jedno i drugie.
+ *
+ * `src/components/auth/google-button.tsx` NIE WOŁA `komunikatOdmowy`. Pokazuje
+ * `err.message` wprost, bez rozróżnika po `code` i bez warunku 5xx. Nie jest to
+ * powtórzenie reguły — to jej OMINIĘCIE, czyli gorszy przypadek: nie ma czego
+ * zsynchronizować, bo tam reguły nie ma wcale.
+ *
+ * I DOKŁADNIE TAM LEŻY DZIEWIĄTE MIEJSCE. `oauth2/state.mjs:26` („Unable to
+ * create verification", 500, bez `code`) obsługuje tworzenie stanu OAuth, czyli
+ * ścieżkę Google. Warunek `status >= 500` z tego pliku JEJ NIE CHRONI, bo tamta
+ * ścieżka przez ten plik nie przechodzi.
+ *
+ * DRUGA WADA, OSOBNA OD KOMUNIKATU — zmierzona 2026-08-24, prawdziwym klientem
+ * biblioteki, atrapą sieci oddającą 500:
+ *   RZUCIL: false
+ *   WYNIK:  {"data":null,"error":{"message":"Unable to create verification",
+ *            "status":500,"statusText":""}}
+ * `signIn.social` NIE RZUCA — ODDAJE błąd. W `google-button.tsx` gałąź `catch`
+ * nie wykona się więc nigdy przy błędzie serwera, a `setLoading(false)` stoi
+ * WYŁĄCZNIE w niej. Skutek dla człowieka: żadnego komunikatu i przycisk
+ * kręcący się bez końca. To ten sam kształt co incydent z 2026-08-18, o stopień
+ * gorszy — tam było fałszywe wyjaśnienie, tutaj nie ma żadnego.
+ *
+ * PRÓG ZDARZENIOWY (nie „kiedyś"): najbliższe dotknięcie ścieżki logowania
+ * Google — zgłoszenie zmieniające `google-button.tsx`, zapalenie kolejnego
+ * dostawcy tożsamości albo zamknięcie logowania dostawcą na czas pilotażu
+ * (rekomendacja Leo z `lista-dostepu.ts`, dziura 1). Którekolwiek pierwsze.
+ * WŁAŚCICIEL PROGU: Ethan (CTO) — warstwa uwierzytelniania.
+ * Do tego czasu dług jest DECYZJĄ, nie przeoczeniem: wada jest wcześniejsza
+ * niż to zgłoszenie i nie została nim wniesiona.
  *
  * AWARIA PO STRONIE SERWERA (5xx) NIE IDZIE NA EKRAN
  * --------------------------------------------------
