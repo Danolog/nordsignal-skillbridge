@@ -83,11 +83,55 @@ on:
 # pada, bramka jest czerwona. Przy bramce bezpieczenstwa wybieramy awarie
 # w strone zamknieta.
 #
-# ZNANA GRANICA (nazwana, nie ukryta): daty commitow ustawia klient, wiec commit
-# z data cofnieta w przeszlosc przeszedlby te bramke. Nie domykamy tego, bo model
-# zagrozenia to ZAPOMNIENIE wlasnych agentow, nie falszerstwo. Gdyby kiedys stal
-# sie falszerstwem — trzeba porownywac ze zdarzeniem `synchronize`, nie z data
-# commita.
+# COFNIECIE GALEZI — DRUGA DZIURA, ZAMKNIETA 2026-08-24 (znalezisko Leo)
+# ---------------------------------------------------------------------
+# Porownanie „etykieta mlodsza niz commit glowy" lapie przypadek, dla ktorego
+# powstalo: commit DOLOZONY po przegladzie ma date pozniejsza, wiec bramka
+# czerwienieje. Nie lapie przypadku ODWROTNEGO: gdy glowa galezi COFNIE SIE do
+# commita STARSZEGO, etykieta zostaje mlodsza i bramka melduje „przeglad swiezy",
+# choc drzewo zmienilo sie PO przegladzie.
+#
+# To nie byla teoria — drugi raz w historii tej bramki. Zmierzone na #343:
+#     14:55:35Z  labeled przeglad-leo-ok    (po przegladzie glowy 8518d6f)
+#     14:58:24Z  head_ref_force_pushed      (glowa cofnieta o commit)
+#     glowa teraz: 27d502d, data commita 14:18:40Z — STARSZA niz etykieta
+#     werdykt starej logiki: success
+# Bramka potwierdzala przeglad drzewa, ktorego Leo nie widzial: z galezi zniknal
+# caly commit (86 wstawien) oceniany w przegladzie imiennie.
+#
+# NAPRAWA: punktem odniesienia jest NAJPOZNIEJSZE ze zdarzen zmiany drzewa —
+# data commita glowy ORAZ ostatnie `head_ref_force_pushed`. Znacznik wymuszenia
+# ustawia SERWER (nie klient), wiec cofniecie galezi jest widoczne niezaleznie
+# od dat commitow.
+#
+# SPROSTOWANIE PROPOZYCJI (Leo, ta sama godzina): pierwsza wersja tej poprawki
+# miala porownywac ze zdarzeniem `synchronize` — tak brzmiala tez rekomendacja
+# w akapicie ponizej, sprzed dzisiaj. TAKIEGO ZDARZENIA W OSI CZASU NIE MA:
+# `synchronize` jest zdarzeniem webhooka (wyzwala ten przebieg), a nie wpisem
+# osi czasu. Zmierzone — pelna lista typow zdarzen zwracanych przez
+# `issues/<n>/timeline` dla #342, #343 i #345:
+#     commented committed cross-referenced deployed head_ref_force_pushed
+#     labeled mentioned merged referenced subscribed unlabeled unsubscribed
+# Trwalym, serwerowym sladem zmiany drzewa jest `head_ref_force_pushed` i to on
+# wchodzi do porownania.
+#
+# CZEGO TA POPRAWKA NADAL NIE LAPIE (jawnie, zeby nie robic wrazenia pelnego
+# pokrycia — trzeci raz dzisiaj okazalo sie, ze straznik widzi wezszy swiat, niz
+# deklaruje):
+#   (a) commit DOLOZONY zwyklym pchnieciem, z data commitera cofnieta w przeszlosc
+#       (`GIT_COMMITTER_DATE`). Zwykle pchniecie nie tworzy `head_ref_force_pushed`,
+#       a data jest wtedy klienta. Model zagrozenia to ZAPOMNIENIE wlasnych
+#       agentow, nie falszerstwo — jak dotad. Domkniecie wymagaloby porownywania
+#       SHA przegladanej glowy, a tego oś czasu przy zdarzeniu `labeled` nie niesie.
+#   (b) zmiana BAZY zgloszenia (`base_ref_changed`) — inne drzewo scalenia przy
+#       tej samej glowie. Nie widzialem tego u nas ani razu; wpisane, bo brak
+#       wpisu bylby milczeniem, nie brakiem ryzyka.
+#   (c) obejscie przez zmiane TEGO pliku w samym zgloszeniu. Zmierzone dzis na
+#       #343: nowe zadanie dolozone do `pr.yml` w zgloszeniu URUCHOMILO SIE na tym
+#       samym zgloszeniu, wiec plik przeplywu nie jest chroniony przed edycja
+#       z galezi. Ta bramka wymusza SWIADOMOSC i zostawia SLAD; nie jest ochrona
+#       przed kims, kto ja swiadomie rozbraja (patrz akapit „CZEGO TA BRAMKA NIE
+#       ROBI" wyzej).
 
 permissions:
   contents: read
@@ -180,6 +224,21 @@ jobs:
           CZAS_GLOWY="$(gh api "repos/$REPO/commits/$GLOWA_SHA" \
             --jq '[.commit.committer.date, .commit.author.date] | max')"
 
+          # ZDARZENIE COFNIECIA GALEZI — znacznik SERWEROWY, nie klienta.
+          #
+          # `head_ref_force_pushed` pojawia sie przy kazdym wymuszonym pchnieciu,
+          # w tym przy cofnieciu glowy do STARSZEGO commita. Bez tego czlonu
+          # cofniecie przechodzilo na zielono: etykieta zostawala mlodsza niz
+          # (stara) data commita glowy. Zmierzone na #343 — cytat w naglowku.
+          #
+          # PUSTY WYNIK JEST TU LEGALNY: wiekszosc zgloszen nie ma ani jednego
+          # wymuszonego pchniecia. Awaria ODCZYTU nadal zamyka bramke, bo
+          # `set -o pipefail` przewraca krok, gdy `gh api` padnie — czyli pusty
+          # napis znaczy „nie bylo zdarzenia", a nie „nie udalo sie sprawdzic".
+          CZAS_WYMUSZENIA="$(gh api "repos/$REPO/issues/$NUMER/timeline" --paginate \
+            --jq '.[] | select(.event == "head_ref_force_pushed") | .created_at' \
+            | sort | tail -n 1)"
+
           # SPRAWDZENIE KSZTALTU, NIE LISTY ZAKAZANYCH WARTOSCI (uwaga Leo).
           #
           # Poprzednia wersja odrzucala pustke i `null` — czyli wyliczala WARTOSCI,
@@ -211,24 +270,51 @@ jobs:
             exit 1
           fi
 
+          # PUNKT ODNIESIENIA = NAJPOZNIEJSZA ZMIANA DRZEWA, nie sama data commita.
+          # Znacznik wymuszenia sprawdzamy tym samym orzeczeniem ksztaltu, co
+          # pozostale — inaczej uszkodzone zdarzenie osi czasu przeszloby cicho.
+          CZAS_ODNIESIENIA="$CZAS_GLOWY"
+          ZRODLO_ODNIESIENIA="commit glowy"
+          if [ -n "$CZAS_WYMUSZENIA" ]; then
+            if ! znacznik_poprawny "$CZAS_WYMUSZENIA"; then
+              echo "::error title=Nie da sie zweryfikowac swiezosci::Zdarzenie cofniecia galezi nie ma ksztaltu znacznika UTC."
+              echo "head_ref_force_pushed='$CZAS_WYMUSZENIA'" >&2
+              exit 1
+            fi
+            if [ "$CZAS_ODNIESIENIA" \< "$CZAS_WYMUSZENIA" ]; then
+              CZAS_ODNIESIENIA="$CZAS_WYMUSZENIA"
+              ZRODLO_ODNIESIENIA="cofniecie galezi (head_ref_force_pushed)"
+            fi
+          fi
+
           echo "Etykieta nadana : $CZAS_ETYKIETY"
           echo "Commit glowy    : $CZAS_GLOWY  ($GLOWA_SHA)"
+          echo "Cofniecie glowy : ${CZAS_WYMUSZENIA:-brak zdarzenia}"
+          echo "Punkt odniesien.: $CZAS_ODNIESIENIA  (zrodlo: $ZRODLO_ODNIESIENIA)"
 
           # Oba znaczniki przychodza z API GitHuba w ISO 8601 W UTC (przyrostek
           # `Z`, stala dlugosc `YYYY-MM-DDTHH:MM:SSZ`) — nie ma tu stref lokalnych
           # ani czasu letniego, wiec porownanie
           # leksykograficzne jest rownowazne porownaniu chronologicznemu.
-          if [ "$CZAS_ETYKIETY" \< "$CZAS_GLOWY" ]; then
-            echo "::error title=Przeglad wygasl::Etykieta jest starsza niz commit glowy."
+          if [ "$CZAS_ETYKIETY" \< "$CZAS_ODNIESIENIA" ]; then
+            echo "::error title=Przeglad wygasl::Etykieta jest starsza niz ostatnia zmiana drzewa."
             cat >&2 <<KONIEC
 
-          PRZEGLAD WYGASL — ETYKIETA STARSZA NIZ KOD.
+          PRZEGLAD WYGASL — ETYKIETA STARSZA NIZ OSTATNIA ZMIANA DRZEWA.
 
           Etykieta nadana : $CZAS_ETYKIETY
           Commit glowy    : $CZAS_GLOWY
+          Cofniecie glowy : ${CZAS_WYMUSZENIA:-brak zdarzenia}
+          Punkt odniesien.: $CZAS_ODNIESIENIA  (zrodlo: $ZRODLO_ODNIESIENIA)
 
-          Po przegladzie Leo doszedl nowy commit. Etykieta zostala, bo GitHub jej
-          nie zdejmuje — ale potwierdza przeglad KODU, KTOREGO JUZ NIE MA.
+          Po przegladzie Leo drzewo sie zmienilo — doszedl commit ALBO glowa
+          galezi zostala COFNIETA. Etykieta zostala, bo GitHub jej nie zdejmuje —
+          ale potwierdza przeglad KODU, KTOREGO JUZ NIE MA.
+
+          Cofniecie jest grozniejsze od dolozenia, bo z galezi ZNIKA praca, ktora
+          ktos ocenil imiennie — a data commita glowy jest wtedy STARSZA niz
+          etykieta, wiec sama data niczego nie wykrywa (zmierzone na #343,
+          2026-08-24: cofniecie 3 minuty po nadaniu etykiety, werdykt „success").
 
           Dotyczy to takze zwyklego odswiezenia galezi: scalenie `main` do galezi
           potrafi po cichu skasowac czyjas prace przy zielonej suicie. Drzewo po
@@ -241,5 +327,5 @@ jobs:
             exit 1
           fi
 
-          echo "Przeglad Leo potwierdzony i swiezy (etykieta mlodsza niz commit glowy)."
+          echo "Przeglad Leo potwierdzony i swiezy (etykieta mlodsza niz ostatnia zmiana drzewa: $ZRODLO_ODNIESIENIA)."
           exit 0
