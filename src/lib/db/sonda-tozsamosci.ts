@@ -86,11 +86,22 @@ export const PREFIKS_SONDY = "[sonda-d2]";
  * **Było nieprawdziwe.** Zapytanie tożsamości faktycznie szło raz na proces, ale
  * para `SAVEPOINT`/`RELEASE` u wołającego była BEZWARUNKOWA — czyli dwa
  * dodatkowe obiegi do bazy w każdej transakcji najemcy, na zawsze. Zmierzone
- * atrapą zliczającą polecenia (Leo, 2026-08-24 16:23:31 CEST):
+ * atrapą zliczającą polecenia (odtworzone na `525d6c3` i `6756d24`):
  *
- *   PIERWSZE żądanie: 5 poleceń (set_config ×2, SET LOCAL ROLE, SAVEPOINT,
- *                                IDENTITY_SQL, RELEASE)
- *   DRUGIE żądanie:   5 poleceń (set_config ×2, SET LOCAL ROLE, SAVEPOINT, RELEASE)
+ *   PIERWSZE żądanie:            6 poleceń (set_config ×2, SET LOCAL ROLE,
+ *                                           SAVEPOINT, IDENTITY_SQL, RELEASE)
+ *   DRUGIE żądanie PRZED W11:    5 poleceń (set_config ×2, SET LOCAL ROLE,
+ *                                           SAVEPOINT, RELEASE)
+ *   DRUGIE żądanie PO W11:       3 polecenia (set_config ×2, SET LOCAL ROLE)
+ *
+ * ⚠ SPROSTOWANIE W SPROSTOWANIU (W14). Pierwsza wersja tego akapitu cytowała
+ * „PIERWSZE żądanie: 5 poleceń" za przeglądem #345 — i **wyliczała przy tym
+ * sześć pozycji**. Liczba była omyłką w liczeniu, nie różnicą w kodzie:
+ * Leo potwierdził to licznikiem na OBU commitach, gdzie lista pozycji
+ * pierwszego żądania jest identyczna. Zostawiam ślad, bo blok, który miał być
+ * sprostowaniem, sam niósł nieprawdziwą liczbę przez jeden commit — a nośnikiem
+ * prawdy są tu trzy miejsca naraz (ten nagłówek, strażnik kosztu i
+ * `docs/2026-08-24-dlug-b9-faza-2.md`) i muszą mówić to samo.
  *
  * Gorsze od samego kosztu było to, że strażnik „mierzy RAZ na proces" PRZECHODZIŁ
  * — sprawdzał wyłącznie zapytanie tożsamości, więc **obiecywał w nazwie własność,

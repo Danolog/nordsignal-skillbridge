@@ -125,6 +125,62 @@ describe("sonda D2 — sekret nie wycieka", () => {
 	});
 });
 
+describe("sonda D2 — pole env= niesie definicję ukończenia (W15)", () => {
+	// PO CO TEN BLOK ISTNIEJE: pole `env=` nie miało strażnika. Leo podmienił je
+	// na pusty napis i **11/11 testów zostało zielonych** — a na tym polu stoi
+	// definicja ukończenia kroku odczytu logu („werdykt czytamy WYŁĄCZNIE
+	// z env=production"). Gdyby pole okazało się puste albo złe po wdrożeniu,
+	// spalilibyśmy jedyne okno pomiarowe człowieka i trzeba by prosić drugi raz.
+	//
+	// Stan środowiska jest WYTWARZANY w każdym przypadku, nie dziedziczony —
+	// inaczej wynik zależałby od tego, czy przebieg leci lokalnie, czy w CI.
+	const POPRZEDNIE = process.env.VERCEL_ENV;
+	const ustaw = (v: string | undefined) => {
+		if (v === undefined) delete process.env.VERCEL_ENV;
+		else process.env.VERCEL_ENV = v;
+	};
+
+	it("na produkcji linia niesie env=production — inaczej werdyktu nie wolno czytać", async () => {
+		ustaw("production");
+		const { klient } = atrapa(RUNTIME);
+		expect(sformatujWynik(await zmierzTozsamosc(klient))).toContain("env=production");
+		ustaw(POPRZEDNIE);
+	});
+
+	it("poza wdrożeniem linia NAZYWA to wprost, zamiast milczeć", async () => {
+		// Milczenie byłoby gorsze niż zła wartość: linia bez pola wygląda jak
+		// linia z produkcji. To jest cała wada, przed którą to pole broni.
+		ustaw(undefined);
+		const { klient } = atrapa(RUNTIME);
+		const tekst = sformatujWynik(await zmierzTozsamosc(klient));
+		expect(tekst).toContain("env=poza-wdrozeniem");
+		expect(tekst).not.toContain("env=production");
+		ustaw(POPRZEDNIE);
+	});
+
+	it("pole env= NIGDY nie jest puste — pusta wartość to usterka przyrządu", async () => {
+		// Pusty napis w `VERCEL_ENV` musi zachować się jak brak zmiennej, a nie
+		// dać `env=` bez wartości. To jest dokładnie mutacja, którą Leo przeżył.
+		ustaw("");
+		const { klient } = atrapa(RUNTIME);
+		const tekst = sformatujWynik(await zmierzTozsamosc(klient));
+		expect(tekst).not.toMatch(/env=(\s|$)/);
+		expect(tekst).toContain("env=poza-wdrozeniem");
+		ustaw(POPRZEDNIE);
+	});
+
+	it("pole env= jest w KAŻDEJ linii — także przy odmowie werdyktu", async () => {
+		// Odmowa werdyktu bez środowiska jest równie myląca jak werdykt bez niego:
+		// czytelnik nie wie, czy przyrząd zawiódł na produkcji, czy w CI.
+		ustaw("production");
+		const { klient } = atrapa({ ...RUNTIME, current_user_name: "neondb_owner" });
+		const w = await zmierzTozsamosc(klient);
+		expect(w.rodzaj).toBe("niewazna");
+		expect(sformatujWynik(w)).toContain("env=production");
+		ustaw(POPRZEDNIE);
+	});
+});
+
 describe("sonda D2 — koszt i odporność", () => {
 	it("mierzy RAZ na proces, nie raz na żądanie", async () => {
 		const { klient, query } = atrapa(RUNTIME);
