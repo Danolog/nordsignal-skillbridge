@@ -3,6 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { komunikatBramkiHaslowej } from "@/lib/auth/komunikat-odmowy";
 
 export function FacultyLoginForm() {
 	const router = useRouter();
@@ -23,7 +24,11 @@ export function FacultyLoginForm() {
 			});
 
 			if (!res.ok) {
-				setError("Nieprawidłowe hasło");
+				// Winą użytkownika jest WYŁĄCZNIE 401. Wcześniej każdy inny kod —
+				// zgaszona flaga panelu (404), błąd konfiguracji (500), niezgodne
+				// źródło żądania (403) — też czytał się jako „pomyliłeś hasło".
+				// To ten sam mechanizm ciszy, który kosztował sześć dni na logowaniu.
+				setError(komunikatBramkiHaslowej(res.status));
 				return;
 			}
 
