@@ -1,0 +1,122 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Własne reguły skanu sekretów — SkillBridge (B8, fala 1)
+#
+# Skan sekretów (gitleaks) do 2026-09-02 chodził wyłącznie po regułach
+# DOMYŚLNYCH. Ten plik ich nie zastępuje — rozszerza (`useDefault = true`).
+# Dwa człony, obie strony tej samej monety:
+#
+#   1. REGUŁA DODATNIA — dokładamy wzorzec, którego domyślne reguły nie mają:
+#      klucz API Neona. Ten klucz daje pełną władzę nad projektem produkcyjnej
+#      bazy, łącznie ze skasowaniem bazy razem z kopiami zapasowymi.
+#   2. ALLOWLISTA UJEMNA — przestajemy krzyczeć na atrapy haseł w testach.
+#
+# CZEGO TU ŚWIADOMIE NIE MA: ani jednego odcisku palca (`fingerprint`). Odcisk
+# zawiera identyfikator commita, a identyfikatory zmieniają się przy każdej
+# aktualizacji gałęzi do `main` i przy scaleniu ze zgnieceniem (squash).
+# Wyciszenie oparte na odcisku rozsypuje się w ciągu jednej nocy i wraca jako
+# ta sama czerwona bramka. Opisujemy WŁASNOŚĆ trafienia (kształt wartości),
+# nie jego adres w historii. Plik `.gitleaksignore` z odciskami zostaje
+# nietknięty jako rusztowanie historyczne — patrz komentarz w nim.
+# ─────────────────────────────────────────────────────────────────────────────
+
+title = "nordsignal SkillBridge — reguly skanu sekretow"
+
+# Prog wersji narzedzia. Bez niego starszy gitleaks, ktory nie zna klucza
+# `targetRules` ani tablicy `[[allowlists]]`, POMIJA je po cichu i chodzi po
+# konfiguracji innej niz ta, ktora zmierzylismy — czyli daje sygnal, nie
+# sprawdzajac tego, co mial sprawdzic. Z progiem pada glosno.
+# Zmierzone 2026-09-02: akcja `gitleaks-action@v3` nie ustawia zmiennej
+# GITLEAKS_VERSION, wiec ciagnie najnowsze wydanie — v8.30.1 z 2026-03-21,
+# czyli dokladnie te, na ktorej wykonano wszystkie pomiary tego pliku.
+minVersion = "8.30.1"
+
+[extend]
+useDefault = true
+
+# ─── CZŁON 1: reguła dodatnia ────────────────────────────────────────────────
+#
+# DLACZEGO OSOBNA REGUŁA, skoro domyślne czasem ten klucz łapią. Zmierzone
+# 2026-09-02 na gitleaks 8.30.1 — ten sam losowy klucz w trzech opakowaniach:
+#
+#   napi_<64>                                        → no leaks found   ← LUKA
+#   Authorization: Bearer napi_<64>                  → leaks found: 1
+#   const NEON_TOKEN = "napi_<64>"                   → leaks found: 1
+#
+# Reguła `generic-api-key` z zestawu domyślnego potrzebuje SŁOWA KLUCZOWEGO w
+# pobliżu (`token`, `key`, `bearer`) i przekroczonego progu entropii. Klucz
+# stojący sam — czyli dokładnie w postaci, w jakiej trafia do wiersza pliku
+# `.env`, do dziennika procesu, do zrzutu JSON albo do zmiennej powłoki —
+# przechodzi przez skan bez śladu. Reguła niżej zaczepia się o PRZEDROSTEK, a
+# nie o kontekst, więc łapie klucz w każdym z trzech opakowań.
+#
+# DLACZEGO {32,80}, A NIE {64}. Zlecenie mówi „przedrostek + 64 znaki" i taką
+# długość ma klucz, którego kształt odtworzyliśmy. Widełki są celową polisą:
+# gdyby Neon zmienił długość klucza albo gdyby założenie o 64 znakach było
+# błędne, reguła przypięta sztywno do 64 nigdy by się nie odezwała i byłaby
+# strażnikiem-atrapą (CLAUDE.md §8, v1.17). Przedrostek `napi_` jest na tyle
+# swoisty, że rozluźnienie długości nie kosztuje fałszywych trafień —
+# zmierzone: 0 wystąpień `napi_` w całym drzewie repozytorium na 2026-09-02.
+[[rules]]
+id = "neon-api-key"
+description = "Klucz API Neona (napi_) — pelna wladza nad projektem bazy produkcyjnej"
+regex = '''\bnapi_[A-Za-z0-9]{32,80}\b'''
+keywords = ["napi_"]
+
+# ─── CZŁON 2: allowlista ujemna ──────────────────────────────────────────────
+#
+# CO GASIMY. Nocny skan pełnej historii był czerwony 25.08–01.09 na trzech
+# trafieniach `generic-api-key` — wszystkie w jednym pliku testowym warstwy
+# uwierzytelniania, wszystkie to ten sam literał hasła-atrapy przekazywany do
+# formularza logowania. Test dowodzi kształtu odmowy serwera; wartość hasła
+# jest w nim bez znaczenia z definicji, bo logowanie ma się NIE udać.
+#
+# DLACZEGO NIE MA TU KLUCZA `paths` — to jest sedno tej konfiguracji i wynik
+# pomiaru, nie preferencja. Zmierzone 2026-09-02 na trzech wariantach tego
+# pliku, na tym samym pliku próbnym z trzema wierszami (atrapa hasła / sekret
+# o wysokiej entropii bez słowa „haslo" / atrapa klucza Neona):
+#
+#   paths + regexes + matchCondition = "AND"   → wyciszone WSZYSTKIE trzy
+#   paths + regexes niepasujący  + "AND"       → wyciszone WSZYSTKIE trzy
+#   same regexes (bez paths)                   → wyciszona TYLKO atrapa hasła
+#
+# Wniosek: w allowliście globalnej `paths` pomija CAŁY PLIK, zanim w ogóle
+# dojdzie do oceny wartości — warunek `matchCondition = "AND"` nie ma czego
+# łączyć, bo sekret na tym etapie jeszcze nie istnieje. Konfiguracja
+# „ścieżka ORAZ wzorzec" wygląda na precyzyjne wyciszenie, a jest dziurą
+# wielkości całego katalogu testów: przepuściłaby prawdziwy klucz Neona
+# wklejony do dowolnego pliku testowego. Wykryte kontrolą dwustronną, nie
+# czytaniem — pierwsza wersja tego pliku miała `paths` i tę dziurę.
+#
+# JAK OPISANE ZAMIAST TEGO: warunek na KSZTAŁCIE wartości.
+#   `^([a-z0-9]+[-_])*haslo([-_][a-z0-9]+)*$`
+# czyli: wartość jest łańcuchem małych liter i cyfr łączonych myślnikiem lub
+# podkreśleniem, w którym jednym z członów jest słowo „haslo". Trafia w
+# atrapy w rodzaju `dowolne-haslo-123`. NIE trafia w nic, co ma wielką literę,
+# znak specjalny albo losowy szum — czyli w nic, co wygląda na prawdziwe
+# poświadczenie. Prawdziwe hasło produkcyjne zawierające słowo „haslo" nadal
+# się zapali, o ile ma cokolwiek poza małymi literami i myślnikami.
+#
+# DLACZEGO WZORZEC, A NIE CAŁY LITERAŁ. Gdyby allowlista cytowała dokładne
+# brzmienie atrapy, przemianowanie stałej w teście cicho ją unieważnia i nocna
+# bramka wraca na czerwono bez żadnego sygnału. Dodatkowo literał nie jest tu
+# powtórzony, więc ten plik nie staje się drugim nośnikiem atrapy
+# (CLAUDE.md §8, v1.17 „jeden nośnik").
+#
+# `targetRules` zawęża wyciszenie do JEDNEJ reguły domyślnej — i uczciwie:
+# w TEJ wersji pliku nie jest nośny. Zmierzone 2026-09-02 (mutacja M4):
+# usunięcie `targetRules` z konfiguracji końcowej nie zmienia ani jednego
+# trafienia na pliku próbnym, bo oba wzorce wykluczają się z konstrukcji —
+# wartość pasująca do allowlisty składa się z członów oddzielonych myślnikiem
+# lub podkreśleniem, a reguła Neona wymaga 32+ znaków ALFANUMERYCZNYCH z rzędu
+# tuż za przedrostkiem. Nie da się napisać napisu spełniającego oba warunki.
+# `targetRules` zostaje mimo to, jako ograniczenie promienia rażenia na
+# przyszłość: gdyby ktoś dołożył regułę wykrywającą token o kształcie
+# słowo-myślnik-słowo, allowlista nie zdejmie jej po cichu. Nośny był w
+# wariancie z kluczem `paths` (wariant C wyżej: bez `targetRules` wyciszał
+# także regułę Neona) — po usunięciu `paths` ta przesłanka wygasła.
+# Zgodnie z CLAUDE.md §8 v1.17 opisujemy to jako zabezpieczenie
+# NIEPOTWIERDZONE mutacją, a nie jako działającego strażnika.
+[[allowlists]]
+description = "Atrapy hasel w testach — wartosc ma ksztalt slowa-z-myslnikami z czlonem 'haslo'"
+targetRules = ["generic-api-key"]
+regexes = ['''(?i)^([a-z0-9]+[-_])*has[lł]o([-_][a-z0-9]+)*$''']
