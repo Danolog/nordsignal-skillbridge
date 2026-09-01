@@ -39,9 +39,90 @@ config({ path: ".env.local" });
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 let failures = 0;
+let pominiete = 0;
 function check(name: string, ok: boolean, detail = "") {
 	console.log(`${ok ? "✅ PASS" : "❌ FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
 	if (!ok) failures++;
+}
+
+/**
+ * Trzeci stan wyniku: kontrola, która NIE MIAŁA CZEGO ZMIERZYĆ.
+ *
+ * Do 2026-09-02 skrypt znał dwa stany — PASS i FAIL — więc kontrola bez
+ * warunku wstępnego musiała udawać jedno albo drugie. Udawanie PASS jest
+ * dokładnie tym trybem awarii, który konstytucja nazywa strażnikiem-atrapą
+ * (sprawdzenie, do którego nic nie dociera, melduje sukces); udawanie FAIL
+ * czerwieni bramkę bez regresji.
+ *
+ * POMINIĘTE nie wpływa na kod wyjścia, ale JEST LICZONE i wypisane przy
+ * werdykcie — żeby „zielono" nigdy nie znaczyło po cichu „nic nie zmierzono".
+ */
+function pomin(name: string, powod: string) {
+	console.log(`⏭️  POMINIĘTE  ${name} — ${powod}`);
+	pominiete++;
+}
+
+/**
+ * D1 (fala 1) — OCENA AKTYWACJI ROLI POŁĄCZENIA `app_runtime` (Faza 2).
+ *
+ * JEDEN NOŚNIK reguły. Kontrola #9d w `main()` tylko ją woła; strażnik
+ * (`tools/__tests__/d1-*.integration.test.ts`) też ją woła, a nie powtarza.
+ *
+ * REGUŁA — koniunkcja dwuczłonowa. Rola runtime jest aktywna wtedy i tylko
+ * wtedy, gdy JEDNOCZEŚNIE:
+ *   (1) `rolcanlogin = true` — rola może się w ogóle zalogować;
+ *   (2) `rolpassword IS NOT NULL` — rola ma ustawione hasło.
+ *
+ * DLACZEGO DRUGI CZŁON, SKORO PIERWSZY „WYSTARCZA".
+ * Ten stan nadano RĘCZNIE, poza migracjami (`ALTER ROLE app_runtime LOGIN
+ * PASSWORD …`, krok 4 runbooka `k3-prod-migration-phase2.md`) — migracja 0011
+ * tworzy rolę jako `NOLOGIN` i taką ją odtwarza każda gałąź Neona sprzed
+ * 2026-05-31. Odtworzenie gałęzi to ścieżka, którą rekomenduje NASZ WŁASNY
+ * runbook kopii zapasowej, więc cofnięcie jest realne i ciche. Rollback
+ * z runbooka (`ALTER ROLE app_runtime NOLOGIN PASSWORD NULL`) rusza oba człony,
+ * ale częściowa ręczna zmiana rusza jeden — i wtedy tylko drugi człon widzi
+ * różnicę.
+ *
+ * PUŁAPKA ŹRÓDŁA (pomiar 2026-09-01, postgres:16 w kontenerze):
+ *   SELECT r.rolpassword, (a.rolpassword IS NOT NULL) FROM pg_roles r
+ *     JOIN pg_authid a USING (rolname) WHERE rolname IN ('app_runtime','test');
+ *   → test        | ******** | t
+ *   → app_runtime | ******** | f
+ * Widok `pg_roles` oddaje w kolumnie `rolpassword` STAŁĄ `'********'` — dla
+ * roli z hasłem i bez hasła identycznie. Asercja `rolpassword IS NOT NULL`
+ * czytana z `pg_roles` NIE MOŻE PAŚĆ NIGDY, czyli byłaby strażnikiem-atrapą
+ * w dosłownym sensie v1.17. Prawdziwym nośnikiem jest `pg_authid`, a ten
+ * bywa nieczytelny dla roli nie-superużytkownika — stąd trzecia wartość
+ * `maHaslo: null` (nie „nie ma hasła", tylko „nie wiem") i osobny brak.
+ */
+export type StanRoliRuntime = {
+	/** `pg_roles.rolcanlogin` — czy rola może się zalogować. */
+	mozeSieLogowac: boolean;
+	/** `pg_authid.rolpassword IS NOT NULL`; `null` = katalog nieczytelny z tego połączenia. */
+	maHaslo: boolean | null;
+};
+
+export function ocenAktywacjeRuntime(stan: StanRoliRuntime): { ok: boolean; braki: string[] } {
+	const braki: string[] = [];
+	if (!stan.mozeSieLogowac) {
+		braki.push(
+			"rolcanlogin = false (rola NOLOGIN — połączenie DATABASE_URL_RUNTIME nie wstanie, " +
+				"a aplikacja spadnie na rolę właściciela albo padnie przy starcie)",
+		);
+	}
+	if (stan.maHaslo === false) {
+		braki.push(
+			"pg_authid.rolpassword IS NULL (hasło skasowane — najczęściej po odtworzeniu " +
+				"gałęzi Neona sprzed ręcznej aktywacji Fazy 2)",
+		);
+	}
+	if (stan.maHaslo === null) {
+		braki.push(
+			"stan hasła NIESPRAWDZALNY z tego połączenia (brak SELECT na pg_authid) — " +
+				"asercji nie stawiamy jako zielonej bez dowodu",
+		);
+	}
+	return { ok: braki.length === 0, braki };
 }
 
 const TENANT_TABLES = [
@@ -633,6 +714,77 @@ async function main() {
 				memberships.rowCount === 2,
 				`członek ${memberships.rowCount}/2 grup`,
 			);
+
+			// 9d. D1 — AKTYWACJA Fazy 2: LOGIN **oraz** ustawione hasło.
+			//
+			// WARUNEK WSTĘPNY, i dlaczego akurat ten. Kontrola jest aktywna tylko
+			// wtedy, gdy środowisko DEKLARUJE połączenie runtime (`DATABASE_URL_RUNTIME`).
+			// Bez tej bramki kontrola czerwieniłaby dwa miejsca, w których stan
+			// NOLOGIN jest POPRAWNY, nie regresją:
+			//   - job `integration` w CI (pomiar 2026-09-01: po samym `pnpm db:migrate`
+			//     na czystym postgres:16 rola ma `rolcanlogin = f`, bo migracja 0011
+			//     tworzy ją jako NOLOGIN);
+			//   - krok 3 runbooka `k3-prod-migration-phase2.md`, który każe uruchomić
+			//     tę walidację ZANIM w kroku 4 padnie `ALTER ROLE … LOGIN PASSWORD`.
+			// Deklaracja jest właściwym warunkiem, bo pyta o to samo, co reguła:
+			// „czy ktoś twierdzi, że runtime łączy się jako app_runtime".
+			{
+				const deklaracja = Boolean(process.env.DATABASE_URL_RUNTIME);
+				const nazwa = "9d. app_runtime aktywna (LOGIN + ustawione hasło) — D1";
+				if (!exists) {
+					check(
+						nazwa,
+						false,
+						"rola app_runtime nie istnieje (patrz 9a) — asercja nie ma na czym stanąć",
+					);
+				} else if (!deklaracja) {
+					pomin(
+						nazwa,
+						"DATABASE_URL_RUNTIME nieustawione w środowisku tego przebiegu: baza jest w Fazie 1 " +
+							"(rola NOLOGIN z migracji 0011 to stan poprawny). Kontrola zapala się dopiero tam, " +
+							"gdzie zadeklarowano połączenie runtime — czyli na produkcji i preview",
+					);
+				} else {
+					// KONTROLA LICZNOŚCI: pomiar, do którego nie dotarł żaden wiersz,
+					// nie może zameldować sukcesu. `rolcanlogin` czytamy z tego samego
+					// zapytania co 9a/9b — ale liczbę wierszy sprawdzamy jawnie.
+					const login = await client.query(
+						`SELECT rolcanlogin FROM pg_roles WHERE rolname = 'app_runtime'`,
+					);
+					// Hasło: WYŁĄCZNIE z pg_authid. `pg_roles.rolpassword` to stała
+					// '********' (patrz nagłówek `ocenAktywacjeRuntime`) — czytanie go
+					// dałoby asercję, która nie może paść.
+					const widacAuthid = await client.query(
+						`SELECT has_table_privilege(current_user, 'pg_authid', 'SELECT') AS widac`,
+					);
+					let maHaslo: boolean | null = null;
+					if (widacAuthid.rows[0]?.widac === true) {
+						const haslo = await client.query(
+							`SELECT (rolpassword IS NOT NULL) AS ma_haslo FROM pg_authid WHERE rolname = 'app_runtime'`,
+						);
+						maHaslo = haslo.rowCount === 1 ? haslo.rows[0].ma_haslo === true : null;
+					}
+					if (login.rowCount !== 1) {
+						check(
+							nazwa,
+							false,
+							`pg_roles oddało ${login.rowCount} wierszy dla app_runtime (oczekiwano 1)`,
+						);
+					} else {
+						const wynik = ocenAktywacjeRuntime({
+							mozeSieLogowac: login.rows[0].rolcanlogin === true,
+							maHaslo,
+						});
+						check(
+							nazwa,
+							wynik.ok,
+							wynik.ok
+								? "rolcanlogin = true ORAZ pg_authid.rolpassword IS NOT NULL"
+								: `BRAKI: ${wynik.braki.join(" | ")}`,
+						);
+					}
+				}
+			}
 		}
 
 		// 10. FORCE RLS (§8 #1 Phase 2 / sub-issue #19h, migracja 0012, ADR-005)
@@ -897,12 +1049,34 @@ async function main() {
 	// Werdykt końcowy NIESIE TOŻSAMOŚĆ BAZY (1E.7 A5): kto zobaczy tylko ostatnią
 	// linię (podsumowanie CI, wklejka do raportu), ma wiedzieć, czego ona dotyczy.
 	console.log(
-		`\n${failures === 0 ? "✅ K3 WALIDACJA ZIELONA" : `❌ ${failures} FAIL`} — ${identityLine}`,
+		`\n${failures === 0 ? "✅ K3 WALIDACJA ZIELONA" : `❌ ${failures} FAIL`}` +
+			// Liczba POMINIĘTYCH stoi w werdykcie, bo „zielono" bez niej może
+			// znaczyć „nic nie zmierzono" — a to jest ten sam tryb awarii,
+			// przez który „388 skipped" wyglądało jak sukces.
+			`${pominiete > 0 ? ` · ${pominiete} POMINIĘTE (warunek wstępny niespełniony)` : ""}` +
+			` — ${identityLine}`,
 	);
 	process.exit(failures === 0 ? 0 : 1);
 }
 
-main().catch((err) => {
-	console.error("Błąd walidacji:", err.message);
-	process.exit(1);
-});
+/**
+ * Uruchomienie automatyczne — pomijane WYŁĄCZNIE pod vitest.
+ *
+ * Powód: strażnik D1 (`tools/__tests__/d1-*.integration.test.ts`) importuje
+ * z tego pliku `ocenAktywacjeRuntime`, żeby regułę WOŁAĆ, a nie przepisywać
+ * (v1.17, jeden nośnik). Import bez tej bramki odpalałby całą walidację —
+ * łącznie z `process.exit`.
+ *
+ * Tryb awarii jest tu świadomie ustawiony na BEZPIECZNY: warunek jest
+ * negatywny i wąski, więc każde środowisko, które NIE jest przebiegiem
+ * vitest — krok `pnpm tsx tools/k3-validate.ts` w CI (pr.yml), przebieg
+ * operatora z runbooka — uruchamia skrypt normalnie. Pomyłka w drugą stronę
+ * (skrypt cicho nic nie robi i kończy zerem) wymagałaby ustawienia zmiennej
+ * VITEST w kroku CI, którego jedyną treścią jest to wywołanie.
+ */
+if (!process.env.VITEST) {
+	main().catch((err) => {
+		console.error("Błąd walidacji:", err.message);
+		process.exit(1);
+	});
+}
