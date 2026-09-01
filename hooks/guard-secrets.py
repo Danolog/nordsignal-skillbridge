@@ -8,6 +8,48 @@ Zmiany merytoryczne robi się TAM i przenosi tutaj (dług nośnika opisany
 jawnie w CLAUDE.md operating systemu, v1.20 — próg konsolidacji: przy
 pierwszej kolejnej zmianie tego pliku kopie muszą zostać zrównane).
 
+TA KOPIA NIE MA TESTU — NIEPILNOWANA, jawnie (CLAUDE.md sekcja 8 v1.17).
+Test `tools/test/test-guard-secrets.py` (52 przypadki, mutacja `_detect_file`
+daje 22 czerwone) żyje WYŁĄCZNIE w repozytorium firmy. Po tej stronie nie ma
+ani jednego testu tego hooka — zmierzone: `git ls-tree -r --name-only HEAD |
+grep -i guard-secrets` → wyłącznie ten plik. Rozjazd kopii z nośnikiem NIE
+zostanie tu wykryty przez nic.
+
+CO JEST ZAMIAST — kontrola wykonawcza z przeglądu Leo, 2026-09-02:
+  kod tej kopii == kod nośnika (diff: 20 linii, wszystkie w tym docstringu;
+  deny=0 ask=0 _signal=4 _emit=0 po obu stronach)
+  py_compile                                → OK
+  Write/Edit/Bash + atrapa sekretu          → SYGNAŁ, bez `permissionDecision`
+  Bash + DSN loopback / komenda bez sekretu → CISZA (kontrola ujemna)
+To jest POMIAR JEDNORAZOWY, nie strażnik: nic go nie powtórzy przy następnej
+zmianie.
+
+JAK POWTÓRZYĆ TE LICZNIKI, ŻEBY NIE SKŁAMAŁY (Ethan, 2026-09-02 — ten zapis
+zepsuł własny pomiar). Powyższe `deny=0 ask=0 _signal=4 _emit=0` to liczby dla
+KODU. Policzone `grep`em po CAŁYM pliku dają dziś `_signal=5 _emit=1`, bo
+liczą też te dwa słowa w zdaniu wyżej. Zapis cytujący pomiar stał się częścią
+mierzonego zbioru. Kto powtórzy kontrolę dosłownie, zobaczy rozjazd, którego
+nie ma. Odporny sposób — porównanie kodu z pominięciem docstringu modułu:
+  python3 -c "import ast,io
+  f=lambda p:(lambda s,m:'\n'.join(s.splitlines()[:m.body[0].lineno-1]+
+      s.splitlines()[m.body[0].end_lineno:]))(io.open(p).read(),
+      ast.parse(io.open(p).read()))
+  print(f('hooks/guard-secrets.py')==f('<nośnik>'))"
+Zmierzone 2026-09-02 po dopisaniu tego bloku: True, 283 linie kodu po obu
+stronach. Rozjazdu nie ma — jest tylko dłuższy docstring lokalny.
+
+PUŁAPKA PRZY POWTARZANIU TEJ KONTROLI (Leo prawie postawił fałszywe
+znalezisko, 2026-09-02): pierwszy przebieg ścieżki `Write` dał PUSTO i
+wyglądał na defekt hooka. Przyczyną była ATRAPA, nie hook — podany był AWS
+*secret access key*, a reguła łapie *access key id* (`(AKIA|ASIA)` + 16
+znaków). Cisza hooka na złej atrapie jest nieodróżnialna od ciszy na wadzie.
+Powtarzając: najpierw potwierdź, że atrapa pasuje do reguły, którą testujesz.
+
+PRÓG: przy pierwszej kolejnej zmianie tego pliku — razem ze zrównaniem kopii
+(v1.20) — albo powtarzamy te kontrole i wpisujemy nowy wynik, albo świadomie
+przyjmujemy, że kopia jest niesprawdzana. Jako decyzja, nie jako zaniedbanie.
+Właściciel: Ethan (kod), Ryan (owner reguły).
+
 Wersja: v1.3 · 2026-08-27 · owner: Ryan (CRCO). Wykonanie: sesja Darka.
 Edycja tego pliku jest czerwoną linią (sign-off Darka — jest, 2026-08-27).
 
