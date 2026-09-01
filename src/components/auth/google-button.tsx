@@ -3,20 +3,47 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
+import { komunikatOdmowy } from "@/lib/auth/komunikat-odmowy";
+
+/** Tekst, gdy serwer nic sensownego nie powie — patrz `komunikat-odmowy.ts`. */
+const ZAPASOWY_GOOGLE = "Nie udało się zalogować przez Google";
 
 export function GoogleButton() {
 	const [loading, setLoading] = useState(false);
 
 	const handleGoogleSignIn = async () => {
 		setLoading(true);
+
+		/** Jedno miejsce na odmowę: ten sam nośnik co formularze, plus odblokowanie przycisku. */
+		const pokazOdmowe = (zrodlo: unknown) => {
+			toast.error(komunikatOdmowy(zrodlo, ZAPASOWY_GOOGLE));
+			setLoading(false);
+		};
+
 		try {
-			await authClient.signIn.social({
+			// `signIn.social` NIE RZUCA przy błędzie serwera — ODDAJE go (zmierzone
+			// 2026-08-24 prawdziwym klientem: `{"data":null,"error":{"message":
+			// "Unable to create verification","status":500}}`). Dlatego wynik trzeba
+			// ODCZYTAĆ. Wcześniej cały ten plik polegał na `catch`, który przy
+			// błędzie serwera nie wykonywał się NIGDY: człowiek nie dostawał żadnego
+			// komunikatu, a `setLoading(false)` — stojące wyłącznie w `catch` —
+			// nie biegło, więc przycisk kręcił się bez końca.
+			const { error } = await authClient.signIn.social({
 				provider: "google",
 				callbackURL: "/dashboard",
 			});
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Nie udało się zalogować przez Google");
-			setLoading(false);
+
+			// Sukces: przeglądarka nawiguje do dostawcy. Stan ładowania zostaje
+			// ŚWIADOMIE — gaszenie go tutaj dałoby mrugnięcie przycisku tuż przed
+			// opuszczeniem strony.
+			if (!error) return;
+
+			pokazOdmowe(error);
+		} catch (wyjatek) {
+			// `catch` zostaje, ale przestaje być jedyną drogą: łapie już tylko
+			// prawdziwe wyjątki (zerwane połączenie), nie odmowy serwera. Nośnik
+			// odda przy nich tekst zapasowy, bo wyjątek nie ma pola `status`.
+			pokazOdmowe(wyjatek);
 		}
 	};
 
