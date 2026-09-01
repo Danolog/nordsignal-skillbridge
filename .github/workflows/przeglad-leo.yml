@@ -151,6 +151,38 @@ on:
 #       dolaczyc do plikow rzadzenia (`CLAUDE.md`, `agents/*.md`, `hooks/`),
 #       skoro egzekwuje warunek konstytucyjny. Do czasu rozstrzygniecia zmiana
 #       tego pliku w zgloszeniu jest DOPUSZCZALNA, ale ma byc nazwana w opisie.
+#   (d) SAM CZLON COFNIECIA NIE MA DOWODU WYKONAWCZEGO — niepotwierdzony
+#       w rozumieniu CLAUDE.md sekcja 8 v1.17. Galaz `if [ -n "$CZAS_WYMUSZENIA" ]`
+#       nie wykonala sie ani razu na zadnym przebiegu: przebieg 33560280682
+#       (#349, 2026-09-01) pokazal `Cofniecie glowy : brak zdarzenia` i
+#       `zrodlo: commit glowy` — padl STARY czlon, nie nowy. W repozytorium nie
+#       ma testu tego przeplywu (grep na `przeglad-leo|head_ref_force_pushed`
+#       w *.ts/*.sh/*.yml daje wylacznie ten plik).
+#       SPROSTOWANIE OBSERWACJI (Ethan zglosil, Leo obalil, 2026-09-01): fakt, ze
+#       w dzienniku widac linie `Cofniecie glowy:` i `Punkt odniesien.:`, dowodzi
+#       tylko tego, ze biegnie NOWY PLIK — nie tego, ze zadzialal nowy CZLON.
+#       Sprawdzenie, do ktorego nic nie dotarlo, melduje sukces identycznie jak
+#       sprawdzenie, ktore zadzialalo. To ten sam ksztalt awarii, ktory ta
+#       poprawka naprawia, tylko o poziom wyzej.
+#       DOWOD ZASTEPCZY — RACHUNEK, NIE PRZEBIEG. Na realnych danych #343:
+#           etykieta                 2026-08-24T14:55:35Z
+#           commit 27d502d           2026-08-24T14:18:40Z  (glowa PO cofnieciu)
+#           force_pushed             2026-08-24T14:58:24Z
+#           stara logika: odniesienie=14:18:40 -> PRZEPUSZCZA  (dziura)
+#           nowa  logika: odniesienie=14:58:24 -> PADA         (dziura zamknieta)
+#       UWAGA PRZY POWTARZANIU TEGO POMIARU (kontrola Ethana, 2026-09-01): powyzsze
+#       liczby to stan Z CHWILI INCYDENTU, nie dzisiejszy odczyt #343. Kto odpyta
+#       os czasu dzis, dostanie TRZY wymuszenia (14:30:46Z, 14:58:24Z, 15:05:39Z)
+#       i inna glowe (05842fd, 15:05:36Z) — bo po incydencie galaz ruszyla dalej.
+#       Rachunek jest zakotwiczony w commicie `27d502d`, nie w „glowie #343",
+#       wlasnie dlatego. Inne liczby przy powtorzeniu NIE sa bledem tego zapisu.
+#       KIERUNEK AWARII: gdyby czlon nie dzialal, wracamy do zachowania z `main`
+#       — czyli do stanu sprzed tej poprawki, nie gorzej. Dlatego brak dowodu
+#       wykonawczego nie blokuje wdrozenia, ale JEST wpisany, a nie przemilczany.
+#       PROG: pierwsze realne `head_ref_force_pushed` na dowolnym zgloszeniu po
+#       scaleniu tej zmiany — wtedy odczytac dziennik i sprawdzic, czy
+#       `zrodlo:` pokazalo „cofniecie galezi". To zamyka dowod bez wywolywania
+#       sztucznego cofniecia.
 
 permissions:
   contents: read
