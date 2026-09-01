@@ -1,6 +1,23 @@
 # Runbook: kopia zapasowa Neona przed zmianą danych produkcyjnych
 
-**Wersja:** v0.3 · 2026-08-13 · właściciel: Ethan (CTO)
+**Wersja:** v0.4 · 2026-09-02 · właściciel: Ethan (CTO) · redakcja v0.4: Eva (Platform/DevOps)
+
+> **Zmiana v0.3 → v0.4 (redakcja kształtu wartości + skąd wziąć klucz).** Trzy rzeczy,
+> wszystkie z pozycji B8 planu z 2026-08-14: *„Sześć wystąpień w tym runbooku nadal
+> nieredagowanych"*.
+> **(1) Sprostowanie liczby, nie jej przepisanie.** Pomiar z 2026-09-02: nieredagowanych
+> **wartości poświadczeń w tym pliku nie ma ani jednej** — zero adresów połączenia
+> z hasłem, zero kluczy o kształcie Neona, także po sklejeniu ośmiu linii łamanych
+> odwrotnym ukośnikiem. „Sześć" opisuje sześć wystąpień **jawnej atrapy pomiarowej**
+> w §3c. Pełny pomiar i jego granica: **§3d**.
+> **(2) Redakcja kształtu, nie wartości.** Atrapa miała kształt żywego żetonu dostępu
+> (*token* — ciąg, którym program się uwierzytelnia), więc i człowiek, i skan sekretów
+> musieli zgadywać, czy patrzą na sekret. Zastąpiona nieomylnym znacznikiem; odcisk
+> poprzedniego brzmienia w §3d, wartość — w historii repozytorium.
+> **(3) Wykonalność.** §3 kazał wziąć klucz z `.env.prod`, nie mówiąc, że **tego pliku
+> nie ma w repozytorium** i nie będzie go w świeżym klonie. Nowe **§3.0** mówi, skąd
+> wartość pochodzi, i każe zatrzymać się na pustej zmiennej — zamiast dostać odpowiedź
+> `401` i wziąć ją za awarię Neona.
 
 > **Zmiana v0.2 → v0.3 (pakiet kopii zapasowych, bramka 3 runbooka zapłonu flagi).**
 > Runbook opisywał **tworzenie** i **kasowanie** kopii, a milczał o dwóch rzeczach, które
@@ -85,9 +102,39 @@ z pudełka**. Sekcja 3 podaje ścieżkę, która działa bez instalowania czegok
 
 ## 3. Ścieżka A — REST API (działa dziś, bez instalacji)
 
-Uwierzytelnienie: `NEON_API_KEY` z `.env.prod`. **Klucz podajemy wyłącznie przez plik
+Uwierzytelnienie: `NEON_API_KEY` — **skąd wziąć wartość, mówi §3.0**. **Klucz podajemy wyłącznie przez plik
 konfiguracyjny `curl` czytany z wejścia standardowego (`curl -K -`) — nigdy w argumentach
 polecenia, nigdy do logu.** Uzasadnienie pomiarem: sekcja 3c.
+
+### 3.0. Skąd wziąć wartość klucza — i jak sprawdzić, że ją masz
+
+Trzy różne pytania, trzy różne źródła. Mylenie ich kosztowało nas już jedno sprostowanie
+audytu, więc rozdzielamy je tutaj, zanim ktokolwiek zacznie wpisywać polecenia:
+
+| Pytanie | Gdzie jest odpowiedź | Czego się spodziewać |
+|---|---|---|
+| **Skąd wziąć wartość, żeby wykonać procedurę** | plik `.env.prod` **na maszynie operatora** | **Nie ma go w repozytorium.** Jest wyłączony z wersjonowania (`.gitignore`), `git ls-files` nie zna ani jednego takiego pliku, a świeży klon go nie zawiera (odczyt 2026-09-02) |
+| **Czy klucz nadal żyje** | interfejs programowy Neona: `GET /api/v2/api_keys` | Źródło autorytatywne. Zrzut konfiguracji odpowiada na to pytanie tylko pozornie — `docs/policies/konfiguracja-produkcji-zrodlo-autorytatywne.md` (repozytorium firmy) |
+| **Skąd wziąć NOWĄ wartość** | konsola Neona, **po sign-offie Darka** | Wystawienie zastępnika to czerwona linia, nie czynność operacyjna — §7. Nigdy w trakcie ceremonii |
+
+**Wartości klucza w tym dokumencie nie ma i nie ma jej mieć.** Runbook niesie procedurę
+i **miejsce**, z którego wartość pochodzi — nigdy samą wartość (`CLAUDE.md` §8).
+
+Po wykonaniu podstawienia z bloku poniżej (`NEON_API_KEY=$(grep …)`) sprawdź, że **coś**
+w zmiennej jest — nie wypisując, co:
+
+```bash
+if [ -z "$NEON_API_KEY" ]; then
+  echo "STOP: klucz pusty — nie ma czym sie uwierzytelnic, nie strzelaj do API"
+else
+  echo "klucz niepusty, dlugosc: ${#NEON_API_KEY} znakow"
+fi
+```
+
+Dlaczego to nie jest ceremonia: **pusta zmienna nie zatrzymuje `curl`.** Żądanie idzie,
+wraca odpowiedź `401`, a ta wygląda jak awaria Neona albo unieważniony klucz — czyli
+prowadzi śledztwo w złą stronę. To ten sam mechanizm awarii co „osiem pominiętych testów
+wygląda jak sukces": **brak wejścia melduje się jak wynik.**
 
 ```bash
 cd <repo>
@@ -144,7 +191,7 @@ Oba warianty strzelały do lokalnego nasłuchu zapisującego odebrany nagłówek
 
 ```
 $ ps aux | grep <znacznik> | grep -v grep
-dariuszgradzik 28697 ... curl -s -H Authorization: Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9 http://127.0.0.1:8973/api/v2/projects/projekt-pomiarowy/branches
+dariuszgradzik 28697 ... curl -s -H Authorization: Bearer <ATRAPA-ZREDAGOWANA> http://127.0.0.1:8973/api/v2/projects/projekt-pomiarowy/branches
 --- liczba trafien w tablicy procesow: 1
 ```
 
@@ -166,8 +213,8 @@ Zero trafień; w `argv` zostaje samo `-K -` i adres.
 co faktycznie odebrał w obu przebiegach:
 
 ```
-  ODEBRANY Authorization: Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9
-  ODEBRANY Authorization: Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9
+  ODEBRANY Authorization: Bearer <ATRAPA-ZREDAGOWANA>
+  ODEBRANY Authorization: Bearer <ATRAPA-ZREDAGOWANA>
 ```
 
 Nagłówek dociera identyczny. Zmienia się wyłącznie droga: wejście standardowe zamiast
@@ -178,9 +225,9 @@ gdziekolwiek wracać do `-H` z podstawionym kluczem.
 sprawdzono, czy nie zjada ciała żądania w `POST` (3b) i czy działa z `-X DELETE` (sekcja 4):
 
 ```
-GET    | Authorization=Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9 | cialo=(brak ciala)
-POST   | Authorization=Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9 | cialo={"branch":{"name":"prod-backup-pre-TEST-20260806","parent_id":"br-proud-sun-al3aezrj"}}
-DELETE | Authorization=Bearer UDAWANA-WARTOSC-POMIAROWA-b7f3e1a9 | cialo=(brak ciala)
+GET    | Authorization=Bearer <ATRAPA-ZREDAGOWANA> | cialo=(brak ciala)
+POST   | Authorization=Bearer <ATRAPA-ZREDAGOWANA> | cialo={"branch":{"name":"prod-backup-pre-TEST-20260806","parent_id":"br-proud-sun-al3aezrj"}}
+DELETE | Authorization=Bearer <ATRAPA-ZREDAGOWANA> | cialo=(brak ciala)
 ```
 
 Wszystkie trzy niosą nagłówek, a ciało `POST` dociera nienaruszone — `-d` i `-K -` nie
@@ -198,6 +245,61 @@ kolidują. To zamyka obawę, że poprawka działa tylko dla odczytu.
 > Do sprawdzenia przejściem tam-i-z-powrotem (utwórz → potwierdź → skasuj) **przy
 > najbliższym oknie poza ceremonią**; do tego czasu 3b jest procedurą opisaną, nie
 > sprawdzoną. Naturalnym momentem jest pierwsze odświeżenie kopii z §8.
+
+### 3d. Co zostało zredagowane — i co pomiar naprawdę pokazał
+
+**Najpierw nośnik, potem pomiar.** Pozycja B8 planu z 2026-08-14
+(`docs/operations/2026-08-14-oliver-plan-wpuszczenia-pierwszego-uczestnika-v0.1.md`,
+repozytorium firmy) twierdzi: *„Sześć wystąpień w `docs/runbooks/neon-kopia-zapasowa.md`
+nadal nieredagowanych"*. Pomiar całego pliku, 2026-09-02:
+
+| Czego szukano | Trafień | Uwaga |
+|---|---|---|
+| adres połączenia z hasłem (`postgres://użytkownik:hasło@…`) | **0** | sprawdzone dwiema drogami — wyszukiwanie liniowe **i** po sklejeniu ośmiu linii łamanych odwrotnym ukośnikiem, bo zapis wielolinijkowy umyka temu pierwszemu |
+| klucz o kształcie Neona (przedrostek `napi_`) | **0** | |
+| przypisanie hasła (`PGPASSWORD`, `password=`) | **0** | |
+| identyfikator klucza u dostawcy | **0** | |
+| **atrapa pomiarowa z §3c** | **6** | w tekście opisana jako wartość udawana — ale kształtem nie do odróżnienia od żywego żetonu |
+| wiersze poleceń podstawiające `$NEON_API_KEY` | **6** | procedura, nie wartość |
+
+**Sześć wypada dwa razy, z dwóch różnych rzeczy** — dlatego sama liczba nie rozstrzyga,
+o czym B8 mówi. Wniosek, który rozstrzyga: **nieredagowanej wartości poświadczenia nie
+było w tym pliku ani jednej.** Zredagowana została pozycja piąta.
+
+**Co zrobiono z atrapą.** Sześć jej wystąpień w §3c zastąpiono znacznikiem
+`<ATRAPA-ZREDAGOWANA>`. Powód nie jest taki, że to był sekret — nie był. Powód jest taki,
+że **miała kształt sekretu**: 34 znaki z liter, cyfr i myślników, tuż po słowie `Bearer`.
+Człowiek musiał uwierzyć prozie obok, a skan sekretów — zgadnąć. Poprzednie brzmienie stoi
+w historii repozytorium (commit `1ea2b06`); tutaj, zgodnie z `CLAUDE.md` §8, podajemy
+**odcisk zamiast wartości: 34 znaki, `sha256` zaczyna się od `80e579b2`**. Kto chce
+sprawdzić, że nie ruszono niczego poza tym, porównuje skrót — wartość nie jest mu do tego
+potrzebna.
+
+**Podmiana dotyczy cytatu z wyjścia polecenia, więc mówimy o niej wprost.** Wiersze §3c to
+zapis realnego przebiegu, a cicha podmiana w cytacie byłaby przeredagowaniem dowodu. Sam
+dowód zostaje nietknięty: w wariancie 1 wartość **jest** widoczna w tablicy procesów
+(1 trafienie), w wariancie 2 **nie ma jej** (0 trafień). Zredagowano znak, nie wynik.
+
+**Nic nie pilnuje tego maszynowo.** Gdyby ktoś jutro wkleił tu z powrotem literał
+o kształcie żetonu, żaden test tego nie zatrzyma — ten dokument nie ma i nie ma mieć
+własnej reguły skanu. Nośnikiem takiej reguły jest `.gitleaks.toml` (pozycja B8,
+właściciel: Ethan); runbook ją **woła**, nie powtarza. Zapisane jako luka, nie jako
+domknięcie.
+
+**Ta redakcja nie zmienia werdyktu skanu — i nigdy nie miała.** Pomiar 2026-09-02,
+`gitleaks detect --no-git` na samym tym pliku: **przed redakcją „no leaks found", po
+redakcji „no leaks found"**. Reguły domyślne nie widziały tu niczego, więc sześć atrap
+**nigdy nie było przyczyną czerwonej bramki** — czerwień nocnego przebiegu bierze się
+z trzech literałów w pliku testowym, nie stąd. Wartość tej zmiany jest po stronie
+czytelnika i przyszłych reguł: znika ciąg, który człowiek musiał rozstrzygać prozą,
+a nowa, ostrzejsza reguła musiałaby rozstrzygać wyjątkiem.
+
+**Czego ta redakcja NIE naprawia — i to jest pozycja, nie przeoczenie.** Skan sekretów
+w ciągłej integracji (*CI* — serwer odpalający sprawdzenia po każdej zmianie) czyta
+**commity, nie dysk**. Plik `.env.prod`, w którym wartość faktycznie leży, jest wyłączony
+z wersjonowania — więc **żadna reguła skanu nigdy go nie ogląda**, niezależnie od tego, jak
+dobrze ją napiszemy. Redakcja tego dokumentu nie zmienia tamtego stanu ani o jotę. Pozycją,
+która go zmienia, jest rotacja z §7 — i ona czeka na sign-off Darka.
 
 ---
 

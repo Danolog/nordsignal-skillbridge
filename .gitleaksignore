@@ -23,3 +23,28 @@ f2232b25b401c756daf94f6f37847bfc4708b085:src/lib/curriculum/__tests__/placement-
 # `gitleaks:allow` w teście, zero literału tutaj), więc nocny pełny skan main
 # jest zielony bez nich. Wolno je przyciąć przy najbliższym sprzątaniu.
 5f87b00a264fc1e0bd1f7d91f2917f5dbd7357f6:.gitleaksignore:generic-api-key:7
+
+# #344 (W21) — atrapy poświadczeń w strażniku kontraktu odmowy logowania.
+# Trzy trafienia `generic-api-key` na polach o nazwie poświadczenia w atrapach
+# żądań. To NIE są sekrety: każdy z tych przypadków dostaje odmowę, zanim
+# cokolwiek sprawdzi to pole (bramka listy dostępu w `hooks.before`, a w drugim
+# przypadku wyłączone logowanie mailem). Reguła łapie KSZTAŁT, nie znaczenie.
+#
+# PIERWSZEŃSTWO MIAŁA NAPRAWA, NIE WYCISZENIE — i została wykonana: bieżąca
+# wersja pliku nie ma już żadnego napisu w tych miejscach, tylko nazwaną stałą
+# (`cf. ATRAPA_NIEISTOTNA`), więc każdy KOLEJNY commit jest czysty bez tych
+# wpisów. Wyciszenie jest konieczne wyłącznie dlatego, że skan zgłoszenia chodzi
+# po COMMITACH gałęzi, a commit 5f503cf powstał przed naprawą — a historii nie
+# przepisuję, bo trzej recenzenci przypięli swoje werdykty do konkretnych
+# odcisków (5f503cf, e484914, 754965b) i przepisanie unieważniłoby ślad audytu.
+#
+# ⚠ NIE cytuj tu wartości — komentarz z literałem sam odpala regułę na TYM
+# pliku (kosztowało już jeden przebieg przy 1E.7, wpis wyżej).
+#
+# Każdy wpis przypięty do JEDNEGO commita, pliku, reguły i numeru linii —
+# nie rozluźnia skanera nigdzie indziej. Po scaleniu przez squash main dostaje
+# jeden commit z czystą treścią, więc nocny pełny skan jest zielony bez nich;
+# wolno je przyciąć przy najbliższym sprzątaniu (jak dwa wpisy 1E.7 wyżej).
+5f503cfa779bd26b34061686b1cfc2c6a81f0e61:src/lib/auth/__tests__/ksztalt-odmowy-biblioteki.test.ts:generic-api-key:56
+5f503cfa779bd26b34061686b1cfc2c6a81f0e61:src/lib/auth/__tests__/ksztalt-odmowy-biblioteki.test.ts:generic-api-key:79
+5f503cfa779bd26b34061686b1cfc2c6a81f0e61:src/lib/auth/__tests__/ksztalt-odmowy-biblioteki.test.ts:generic-api-key:99
