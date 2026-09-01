@@ -72,6 +72,15 @@
 // mutacja (M3) dowodząca, że asercja liczności łapie to, czego kod odpowiedzi
 // nie łapie. Wyniki w opisie zgłoszenia.
 //
+// ZAKRES TEGO SPROSTOWANIA — żeby nikt nie przeczytał go szerzej, niż jest
+// (doprecyzowanie po przeglądzie Leo, 2026-09-02). Te trzy martwe asercje
+// istniały WYŁĄCZNIE w tej gałęzi i nigdy nie dotarły na `main`: zmierzone
+// `git log --oneline origin/main -- src/app/api/faculty/login/__tests__/`
+// → pusto. Czyli to była SAMO-NAPRAWA PRZED SCALENIEM, a nie naprawa
+// strażnika, który cokolwiek przepuścił na produkcji. Zdanie „strażnik
+// z 2026-08-18 miał trzy martwe asercje" da się przeczytać jako „na `main`
+// stał zepsuty strażnik" — nie stał; na `main` nie stało nic.
+//
 // CZEGO TEN PLIK NIE DOWODZI — zawężenie zasięgu stoi TUTAJ, bo tutaj ktoś
 // sięgnie po dowód. Zieleń tego pliku wolno cytować WYŁĄCZNIE jako dowód, że
 // uchwyt trasy `POST /api/faculty/login` odmawia zapisu sesji przy zgaszonej

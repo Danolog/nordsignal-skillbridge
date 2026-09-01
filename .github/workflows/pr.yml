@@ -705,6 +705,24 @@ jobs:
   # nie tak", a asercja rozrozniajaca odmowe od zlego hasla traci przedmiot.
   # Bez bazy job bylby zielony, nie zmierzywszy tego, po co powstal.
   # SEEDU NIE MA CELOWO: przypadek loguje sie na konto NIEISTNIEJACE. Zero zapisu.
+  #
+  # NIE JEST BRAMKA — JEST POMIAREM. STAN NA DZIS, JAWNIE.
+  # Job biega na kazdym zgloszeniu, ale NIE JEST wsrod wymaganych bramek ochrony
+  # galezi. Zmierzone 2026-09-01T22:16:16Z (odczyt `branches/main/protection`):
+  # 14 kontekstow wymaganych, trafien na `sciezka-wejscia` — ZERO. Czerwien tego
+  # joba NIE ZATRZYMA scalenia. Wpiecie do required-status-checks to osobna,
+  # administracyjna zmiana ochrony galezi — poza plikiem przeplywu, dokladnie
+  # jak przy `a11y-exam` wyzej (ten sam akapit, ta sama granica).
+  #
+  # DLACZEGO TO JEST TU NAPISANE: zielony job na liscie zgloszenia czyta sie jak
+  # „sciezka wejscia jest pilnowana". Do czasu wpiecia jest MIERZONA, nie
+  # pilnowana. Roznica kosztowala juz szesc dni martwego logowania (punkt 2
+  # wyzej) — a job, ktorego czerwieni nikt nie musi sluchac, jest strazikiem
+  # w rozumieniu CLAUDE.md sekcja 8 v1.17 tylko z nazwy.
+  #
+  # PROG: pierwsze zgloszenie scalone z CZERWONYM `sciezka-wejscia` — albo
+  # wpinamy job do wymaganych, albo swiadomie przyjmujemy, ze to pomiar
+  # informacyjny. Jako decyzja, nie jako zaniedbanie. Wlasciciel: Ethan.
   sciezka-wejscia:
     name: sciezka-wejscia (Playwright — landing, logowanie, rejestracja, bramka auth)
     runs-on: ubuntu-latest
