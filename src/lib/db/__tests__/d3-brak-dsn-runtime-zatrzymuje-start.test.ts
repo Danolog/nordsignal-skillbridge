@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  *
  * DLACZEGO TO NIE JEST TEST NA OBECNOŚĆ NAPISU
  * --------------------------------------------
- * Sprawdzana jest ROLA warunku (start pada / start przechodzi) w czterech
+ * Sprawdzana jest ROLA warunku (start pada / start przechodzi) w siedmiu
  * różnych stanach środowiska, a nie to, czy w pliku stoi słowo „throw".
  * Mutacja, która osłabia warunek, przewraca dokładnie nazwany test niżej —
  * dowód mutacyjny w zgłoszeniu.
@@ -45,9 +45,10 @@ function ustaw(klucz: (typeof KLUCZE)[number], wartosc: string | undefined) {
 beforeEach(() => {
 	kopia = Object.fromEntries(KLUCZE.map((k) => [k, env[k]]));
 	vi.resetModules();
-	// Owner DSN musi zostać — bez niego moduł i tak nie ma czego użyć jako
-	// fallbacku, a testujemy zachowanie przy BRAKU dedykowanego DSN runtime.
-	ustaw("DATABASE_URL", "postgresql://localhost:5432/test");
+	// Stan bazowy: DSN awaryjny wskazuje bazę ZDALNĄ (host spoza allowlisty
+	// lokalnej) — czyli sytuację produkcyjną. Testy, które badają drugi człon,
+	// nadpisują to własnym DSN.
+	ustaw("DATABASE_URL", "postgresql://db.przyklad.invalid:5432/skillbridge");
 	ustaw("DATABASE_URL_RUNTIME", undefined);
 	ustaw("NEXT_PHASE", undefined);
 });
@@ -60,7 +61,7 @@ afterEach(() => {
 });
 
 describe("D3 — DATABASE_URL_RUNTIME jako warunek startu", () => {
-	it("na produkcji BEZ zmiennej: import modułu bazy PADA (nie ostrzega)", async () => {
+	it("CZŁON 1 — na produkcji, na bazie zdalnej, BEZ zmiennej: import modułu bazy PADA (nie ostrzega)", async () => {
 		ustaw("NODE_ENV", "production");
 
 		await expect(import(SCIEZKA_MODULU)).rejects.toThrow(/DATABASE_URL_RUNTIME/);
@@ -72,7 +73,7 @@ describe("D3 — DATABASE_URL_RUNTIME jako warunek startu", () => {
 		// Treść bierzemy ze ŹRÓDŁA reguły, nie z literału w teście — dlatego
 		// moduł ładujemy dwa razy: raz po komunikat (ze stanem, w którym się
 		// nie wywraca), raz po zachowanie.
-		ustaw("DATABASE_URL_RUNTIME", "postgresql://localhost:5432/test?application_name=app_runtime");
+		ustaw("DATABASE_URL_RUNTIME", "postgresql://db.przyklad.invalid:5432/skillbridge");
 		const { KOMUNIKAT_BRAK_DSN_RUNTIME } = await import(SCIEZKA_MODULU);
 		expect(KOMUNIKAT_BRAK_DSN_RUNTIME).toMatch(/WŁAŚCICIELA/);
 
@@ -83,24 +84,41 @@ describe("D3 — DATABASE_URL_RUNTIME jako warunek startu", () => {
 
 	it("na produkcji Z ustawioną zmienną: import przechodzi i oddaje klienta runtime", async () => {
 		ustaw("NODE_ENV", "production");
-		ustaw("DATABASE_URL_RUNTIME", "postgresql://localhost:5432/test?application_name=app_runtime");
+		ustaw("DATABASE_URL_RUNTIME", "postgresql://db.przyklad.invalid:5432/skillbridge");
 
 		const modul = await import(SCIEZKA_MODULU);
 		expect(modul.dbRuntime).toBeDefined();
 	});
 
-	it("w FAZIE BUDOWANIA (next build) BEZ zmiennej: import przechodzi — inaczej bramka `build` w CI byłaby czerwona", async () => {
-		// Pomiar 2026-09-01 (`pnpm build` z env jobu `build` z pr.yml, sonda w
-		// src/lib/db/index.ts, 14 wywołań): NODE_ENV=production,
-		// NEXT_PHASE=phase-production-build, brak DATABASE_URL_RUNTIME.
+	it("CZŁON 2 — na produkcji, ale na DEDYKOWANEJ LOKALNEJ bazie testowej: import przechodzi", async () => {
+		// To jest stan sześciu jobów przeglądarkowych CI: serwują artefakt
+		// produkcyjny (`pnpm start` = `next start`, czyli NODE_ENV=production)
+		// przeciwko bazie testowej na pętli zwrotnej, bez DATABASE_URL_RUNTIME.
+		// Wersja tej zmiany bez tego członu położyła je wszystkie — odczyt
+		// z dziennika zgłoszenia #357 z 2026-09-01, job a11y-exam:
+		//   [WebServer] ⨯ Error: [db] DATABASE_URL_RUNTIME nieustawione…
 		ustaw("NODE_ENV", "production");
-		ustaw("NEXT_PHASE", "phase-production-build");
+		ustaw("DATABASE_URL", "postgresql://localhost:5432/skillbridge_test");
 
 		const modul = await import(SCIEZKA_MODULU);
 		expect(modul.dbRuntime).toBeDefined();
 	});
 
-	it("poza produkcją BEZ zmiennej: import przechodzi (Faza 1 to świadomy stan dev)", async () => {
+	it("na produkcji z DSN NIEPARSEOWALNYM: import PADA (fail-closed — brak wiedzy nie otwiera furtki)", async () => {
+		ustaw("NODE_ENV", "production");
+		ustaw("DATABASE_URL", "to-nie-jest-dsn");
+
+		await expect(import(SCIEZKA_MODULU)).rejects.toThrow(/DATABASE_URL_RUNTIME/);
+	});
+
+	it("na produkcji, na LOKALNYM hoście, ale NIE-testowej bazie: import PADA (nazwa bazy też się liczy)", async () => {
+		ustaw("NODE_ENV", "production");
+		ustaw("DATABASE_URL", "postgresql://localhost:5432/skillbridge");
+
+		await expect(import(SCIEZKA_MODULU)).rejects.toThrow(/DATABASE_URL_RUNTIME/);
+	});
+
+	it("CZŁON 1 — poza produkcją BEZ zmiennej: import przechodzi (Faza 1 to świadomy stan dev)", async () => {
 		ustaw("NODE_ENV", "development");
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
