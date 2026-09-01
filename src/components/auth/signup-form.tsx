@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
+import { komunikatOdmowy } from "@/lib/auth/komunikat-odmowy";
 
 interface SignupFormProps {
 	/** Czy pokazać i egzekwować pole akceptacji regulaminu (flaga `pilotTerms`). */
@@ -50,7 +51,13 @@ export function SignupForm({
 		});
 
 		if (authError) {
-			setError(authError.message || "Nie udało się utworzyć konta");
+			// Rejestracja przepuszczała komunikat serwera od zawsze i to było
+			// zachowanie POPRAWNE — to logowanie się z nią rozjechało. Wołamy tu
+			// wspólny nośnik, żeby reguła miała jedno miejsce, a nie dwa zgodne
+			// przez przypadek. Zachowanie widoczne dla człowieka bez zmian:
+			// komunikat o zajętym adresie nadal się pokazuje (świadomie —
+			// uzasadnienie i próg w `komunikat-odmowy.ts`).
+			setError(komunikatOdmowy(authError, "Nie udało się utworzyć konta"));
 			setLoading(false);
 			return;
 		}
