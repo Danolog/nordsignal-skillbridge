@@ -88,13 +88,50 @@ keywords = ["napi_"]
 # czytaniem — pierwsza wersja tego pliku miała `paths` i tę dziurę.
 #
 # JAK OPISANE ZAMIAST TEGO: warunek na KSZTAŁCIE wartości.
-#   `^([a-z0-9]+[-_])*haslo([-_][a-z0-9]+)*$`
-# czyli: wartość jest łańcuchem małych liter i cyfr łączonych myślnikiem lub
-# podkreśleniem, w którym jednym z członów jest słowo „haslo". Trafia w
-# atrapy w rodzaju `dowolne-haslo-123`. NIE trafia w nic, co ma wielką literę,
-# znak specjalny albo losowy szum — czyli w nic, co wygląda na prawdziwe
+#   `^([a-z0-9]+[-_])*has[lł]o([-_][a-z0-9]+)*$`
+# czyli: wartość jest łańcuchem MAŁYCH liter i cyfr łączonych myślnikiem lub
+# podkreśleniem, w którym jednym z członów jest słowo „haslo" albo „hasło".
+# Trafia w atrapy w rodzaju `dowolne-haslo-123`. NIE trafia w nic, co ma wielką
+# literę, znak specjalny albo losowy szum — czyli w nic, co wygląda na prawdziwe
 # poświadczenie. Prawdziwe hasło produkcyjne zawierające słowo „haslo" nadal
 # się zapali, o ile ma cokolwiek poza małymi literami i myślnikami.
+#
+# ⚠ SPROSTOWANIE (Leo znalazł, Ethan potwierdził pomiarem, 2026-09-02).
+# Do tej wersji wzorzec zaczynał się flagą `(?i)`, która czyni CAŁE wyrażenie
+# niewrażliwym na wielkość liter — więc `[a-z0-9]` łapało także `A–Z`, a akapit
+# wyżej był NIEPRAWDZIWY akurat o tę własność, na której stoi cała obrona
+# rezygnacji z `paths`. Zmierzone na wzorcu z pliku (atrapy syntetyczne, nie
+# z repozytorium; wartości nie cytujemy — v1.16 „dowód bez ujawnienia"):
+#     wartosc wygladajaca na poswiadczenie   z (?i): PASUJE   bez (?i): nie
+#     wartosc pisana wielkimi literami       z (?i): PASUJE   bez (?i): nie
+#     losowy szum z wielkimi literami        z (?i): PASUJE   bez (?i): nie
+# Złożone z brakiem `paths` dawało to jedno zdanie: prawdziwe poświadczenie
+# o kształcie `cos-haslo-Cos1`, w DOWOLNYM pliku repozytorium, nie zostałoby
+# wykryte — ani przez regułę domyślną (bo wyciszone), ani przez nic innego.
+#
+# NAPRAWA: usunięta flaga, nie rozszerzony komentarz. Zawężamy MECHANIZM do
+# DEKLARACJI, nie odwrotnie — w konfiguracji skanu sekretów węższa allowlista
+# jest zawsze lepszym domyślnym wyborem. Że nic to nie kosztuje, jest zmierzone
+# na historycznej wersji pliku testowego (`5f503cf`), tam gdzie trafienia jeszcze
+# żyją — pomiar niezależnie powtórzony po obu stronach przeglądu:
+#     pasuje Z (?i): 3   |   pasuje BEZ (?i): 3   |   psuje wyciszenie: NIE
+#     każde trafienie: długość 17, wyłącznie małe litery i separatory
+# Trójka zgadza się co do sztuki z `leaks found: 3` skanu nocnego.
+#
+# ZASIĘG, JAWNIE: bez klucza `paths` ta allowlista działa na KAŻDY plik w zasięgu
+# `generic-api-key`, także produkcyjny — nie tylko na testy. `paths` NIE wraca
+# (powód wyżej: w allowliście globalnej pomija cały plik, zanim dojdzie do oceny
+# wartości). Zawężenie robi wyłącznie kształt wartości, dlatego kształt musi być
+# wąski naprawdę, a nie tylko w opisie.
+#
+# CZŁON UJEMNY JEST Z NATURY TYMCZASOWY. Dziś działa WYŁĄCZNIE na historię:
+# bieżąca treść pliku testowego nie zawiera już żadnego literału hasła — po
+# naprawie z #344 stoi tam stała składana z tablicy, której wartość nie zawiera
+# członu „haslo", więc do tej allowlisty nie pasuje i pasować nie musi.
+# Wyciszenie obsługuje commity, które widzi skan nocny (`--full-history --all`).
+# PRÓG: gdy historia przestanie być skanowana albo zostanie zgnieciona, ten człon
+# traci przedmiot — wtedy usunąć go razem z tym akapitem, zamiast zostawiać jako
+# martwą regułę. Właściciel: Ethan.
 #
 # DLACZEGO WZORZEC, A NIE CAŁY LITERAŁ. Gdyby allowlista cytowała dokładne
 # brzmienie atrapy, przemianowanie stałej w teście cicho ją unieważnia i nocna
@@ -117,6 +154,6 @@ keywords = ["napi_"]
 # Zgodnie z CLAUDE.md §8 v1.17 opisujemy to jako zabezpieczenie
 # NIEPOTWIERDZONE mutacją, a nie jako działającego strażnika.
 [[allowlists]]
-description = "Atrapy hasel w testach — wartosc ma ksztalt slowa-z-myslnikami z czlonem 'haslo'"
+description = "Atrapy hasel — wartosc o ksztalcie slowa-z-myslnikami (TYLKO male litery) z czlonem 'haslo'; dziala w KAZDYM pliku, nie tylko w testach (klucz paths swiadomie usuniety — powod w komentarzu wyzej)"
 targetRules = ["generic-api-key"]
-regexes = ['''(?i)^([a-z0-9]+[-_])*has[lł]o([-_][a-z0-9]+)*$''']
+regexes = ['''^([a-z0-9]+[-_])*has[lł]o([-_][a-z0-9]+)*$''']
