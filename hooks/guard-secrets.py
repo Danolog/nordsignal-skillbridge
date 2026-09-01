@@ -1,38 +1,96 @@
 #!/usr/bin/env python3
 """
-guard-secrets.py — PreToolUse hook, nordsignal operating system.
+guard-secrets.py — PreToolUse hook, repo produktu SkillBridge.
 
-Bramkuje sekrety (klucze API, AWS, PEM, GitHub/Slack/Google, DSN z hasłem,
-generyczne API_KEY/SECRET/TOKEN/PASSWORD z wartością) w dwóch klasach narzędzi:
+KOPIA. Nośnik kanoniczny tej reguły: repo operating system,
+Danolog/nordsignal-operating-system -> hooks/guard-secrets.py.
+Zmiany merytoryczne robi się TAM i przenosi tutaj (dług nośnika opisany
+jawnie w CLAUDE.md operating systemu, v1.20 — próg konsolidacji: przy
+pierwszej kolejnej zmianie tego pliku kopie muszą zostać zrównane).
 
-  - Write/Edit -> skanuje treść zapisu (Write: tool_input.content,
-    Edit: tool_input.new_string). KAŻDY sekret, łącznie z DSN (niezależnie
-    od hosta), daje `deny`. Sekret w pliku w repo NIGDY nie jest pożądany.
+TA KOPIA NIE MA TESTU — NIEPILNOWANA, jawnie (CLAUDE.md sekcja 8 v1.17).
+Test `tools/test/test-guard-secrets.py` (52 przypadki, mutacja `_detect_file`
+daje 22 czerwone) żyje WYŁĄCZNIE w repozytorium firmy. Po tej stronie nie ma
+ani jednego testu tego hooka — zmierzone: `git ls-tree -r --name-only HEAD |
+grep -i guard-secrets` → wyłącznie ten plik. Rozjazd kopii z nośnikiem NIE
+zostanie tu wykryty przez nic.
 
-  - Bash -> skanuje tool_input.command (od v1.1). Twarde sekrety
-    (klucze/tokeny/generyczny, BEZ DSN) -> `deny`. DSN z hasłem rozróżnia po
-    HOŚCIE: host zdalny -> `ask` (kandydat na prod-DSN, człowiek potwierdza
-    świadomie), host loopback (lokalny test) -> brak akcji (przepuść).
+CO JEST ZAMIAST — kontrola wykonawcza z przeglądu Leo, 2026-09-02:
+  kod tej kopii == kod nośnika (diff: 20 linii, wszystkie w tym docstringu;
+  deny=0 ask=0 _signal=4 _emit=0 po obu stronach)
+  py_compile                                → OK
+  Write/Edit/Bash + atrapa sekretu          → SYGNAŁ, bez `permissionDecision`
+  Bash + DSN loopback / komenda bez sekretu → CISZA (kontrola ujemna)
+To jest POMIAR JEDNORAZOWY, nie strażnik: nic go nie powtórzy przy następnej
+zmianie.
 
-Decyzja hooka nadpisuje tryb uprawnień.
+JAK POWTÓRZYĆ TE LICZNIKI, ŻEBY NIE SKŁAMAŁY (Ethan, 2026-09-02 — ten zapis
+zepsuł własny pomiar). Powyższe `deny=0 ask=0 _signal=4 _emit=0` to liczby dla
+KODU. Policzone `grep`em po CAŁYM pliku dają dziś `_signal=5 _emit=1`, bo
+liczą też te dwa słowa w zdaniu wyżej. Zapis cytujący pomiar stał się częścią
+mierzonego zbioru. Kto powtórzy kontrolę dosłownie, zobaczy rozjazd, którego
+nie ma. Odporny sposób — porównanie kodu z pominięciem docstringu modułu:
+  python3 -c "import ast,io
+  f=lambda p:(lambda s,m:'\n'.join(s.splitlines()[:m.body[0].lineno-1]+
+      s.splitlines()[m.body[0].end_lineno:]))(io.open(p).read(),
+      ast.parse(io.open(p).read()))
+  print(f('hooks/guard-secrets.py')==f('<nośnik>'))"
+Zmierzone 2026-09-02 po dopisaniu tego bloku: True, 283 linie kodu po obu
+stronach. Rozjazdu nie ma — jest tylko dłuższy docstring lokalny.
 
-Dlaczego DSN w Bash jest host-aware, a w pliku nie: w realnym ruchu firmy DSN
-w komendzie to prawie wyłącznie lokalny DSN testowy (e2e/migracje na kontenerze
-loopback) — twardy `deny` blokowałby dziesiątki legalnych komend dziennie i
-agenci obeszliby guard. Plik z DSN nie ma takiego legalnego przypadku, więc
-zostaje twardy `deny` (zero regresji v1.0). Pełne uzasadnienie i dowód (62
-trafienia DSN w Bash, 59 loopback, 0 zdalnych w oknie ~24h):
-docs/audyty/2026-06-05-finding-guard-secrets-bash-dsn-ryan.md.
+PUŁAPKA PRZY POWTARZANIU TEJ KONTROLI (Leo prawie postawił fałszywe
+znalezisko, 2026-09-02): pierwszy przebieg ścieżki `Write` dał PUSTO i
+wyglądał na defekt hooka. Przyczyną była ATRAPA, nie hook — podany był AWS
+*secret access key*, a reguła łapie *access key id* (`(AKIA|ASIA)` + 16
+znaków). Cisza hooka na złej atrapie jest nieodróżnialna od ciszy na wadzie.
+Powtarzając: najpierw potwierdź, że atrapa pasuje do reguły, którą testujesz.
 
-Dlaczego `deny`, a nie `ask`, dla sekretów w pliku i twardych kluczy: te wektory
-nigdy nie są pożądane, a hook ma działać też tam, gdzie nie ma człowieka do
-odpowiedzi na `ask`. Dla zdalnego DSN w komendzie wybieramy `ask`, bo bywa to
-legalna świadoma operacja człowieka (jednorazowy klient do stagingu).
+PRÓG: przy pierwszej kolejnej zmianie tego pliku — razem ze zrównaniem kopii
+(v1.20) — albo powtarzamy te kontrole i wpisujemy nowy wynik, albo świadomie
+przyjmujemy, że kopia jest niesprawdzana. Jako decyzja, nie jako zaniedbanie.
+Właściciel: Ethan (kod), Ryan (owner reguły).
 
-W `permissionDecisionReason` podajemy WYŁĄCZNIE etykietę typu sekretu i co
-najwyżej sam host (host nie jest sekretem) — NIGDY wartości/hasła (reason
-trafia do transkryptu i logów; wyciek wartości tam = ten sam problem, który
-blokujemy).
+Wersja: v1.3 · 2026-08-27 · owner: Ryan (CRCO). Wykonanie: sesja Darka.
+Edycja tego pliku jest czerwoną linią (sign-off Darka — jest, 2026-08-27).
+
+UWAGA NAJWAŻNIEJSZA — OD v1.3 TEN HOOK NICZEGO NIE BLOKUJE.
+Do v1.2 zwracał `deny` (sekret w pliku / w komendzie) i `ask` (zdalny DSN).
+Od v1.3 wszystkie trzy ścieżki emitują SYGNAŁ nieblokujący: `systemMessage`
++ `additionalContext`, BEZ klucza `permissionDecision`. Hook nie dotyka
+przepływu uprawnień — ostrzega i nic więcej.
+
+Powód (decyzja Darka 2026-08-27, CLAUDE.md operating systemu, v1.19/v1.20):
+cel „plan implementowany przez agenty bez udziału człowieka". Bramka `deny`
+zatrzymywała przebieg na ATRAPACH kluczy w danych testowych i dokumentacji —
+dwa trafienia w ciągu godziny 2026-08-27, oba na wartościach zmyślonych.
+`deny` nie daje operatorowi wyboru „przepuść", tylko zabija operację, więc
+w trybie autonomicznym kosztuje cały przebieg.
+
+CO PRZEZ TO PRZESTAŁO DZIAŁAĆ (v1.18 §8, „co przestanie działać"):
+prawdziwy sekret zapisany do pliku w repo NIE zostanie zatrzymany. Warstwy,
+które zostają: ten sygnał (widoczny w transkrypcie), audit log (PostToolUse)
+i skan `gitleaks` w CI. Uwaga — gitleaks skanuje COMMITY, nie dysk: plik
+w .gitignore (np. .env.local) nie jest przez niego sprawdzany w ogóle.
+
+Co skanuje (bez zmian od v1.2): klucze API, AWS, PEM, GitHub/Slack/Google,
+DSN z hasłem, generyczne API_KEY/SECRET/TOKEN/PASSWORD z wartością.
+
+  - Write/Edit -> tool_input.content / tool_input.new_string. KAŻDY sekret,
+    łącznie z DSN niezależnie od hosta -> sygnał.
+  - Bash -> tool_input.command. Twarde sekrety (bez DSN) -> sygnał. DSN
+    z hasłem rozróżnia po HOŚCIE: host zdalny -> sygnał; host loopback
+    (lokalny test) -> CISZA, hook nie odzywa się w ogóle.
+
+Rozróżnienie host-aware zostaje, bo dalej niesie informację: w realnym ruchu
+firmy DSN w komendzie to prawie wyłącznie lokalny DSN testowy (62 trafienia
+w oknie ~24h, 59 loopback, 0 zdalnych — operating system:
+docs/audyty/2026-06-05-finding-guard-secrets-bash-dsn-ryan.md). Ostrzeganie o każdym z nich byłoby szumem,
+który uczy ignorować sygnał.
+
+W treści sygnału podajemy WYŁĄCZNIE etykietę typu sekretu i co najwyżej sam
+host (host nie jest sekretem) — NIGDY wartości/hasła. Sygnał trafia do
+transkryptu i logów; wyciek wartości tam = ten sam problem, przed którym
+ostrzegamy.
 
 Wzór wzorców: hooks/audit-log.py `_PII_PATTERNS` (lista (regex, label) +
 kompilacja). Struktura hooka: hooks/guard-bash.py (json.load(stdin), tool_name,
@@ -296,14 +354,19 @@ def _extract_blob(tool_input):
     return "\n".join(parts)
 
 
-def _emit(decision, reason):
+def _signal(message):
+    """Sygnał NIEBLOKUJĄCY — świadomie BEZ `permissionDecision`: hook nie dotyka
+    przepływu uprawnień, nie blokuje i nie zwalnia. Zostawia ostrzeżenie dla
+    Darka (systemMessage) i dla agenta (additionalContext). Ten sam kształt
+    wyjścia co sygnał E-2 w hooks/guard-bash.py (v1.2). Dodane w v1.2 tego
+    hooka — decyzja Darka 2026-08-27 (zdjęcie bramek `ask`, CLAUDE.md v1.19)."""
     print(json.dumps({
+        "systemMessage": message,
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "permissionDecision": decision,
-            "permissionDecisionReason": reason,
+            "additionalContext": message,
         }
-    }))
+    }, ensure_ascii=False))
 
 
 def main():
@@ -329,12 +392,19 @@ def main():
         except Exception:
             return  # fail-open na błędzie skanera
         if hits:
-            _emit("deny", (
-                "Blokada zapisu sekretu (guard-secrets, CLAUDE.md sekcja 4 — "
-                "ochrona sekretów): wykryto " + ", ".join(hits) + ". Sekret "
-                "nigdy nie trafia do pliku w repo. Usuń wartość albo użyj "
-                "odwołania do menedżera sekretów (Doppler/env), nie literału."
-            ))
+            # v1.3 (2026-08-27): było `deny`, jest sygnał. Decyzja Darka —
+            # bramka blokowała autonomiczny przebieg na ATRAPACH kluczy
+            # (dane testowe, dokumentacja). Hook ostrzega, nie zatrzymuje.
+            _signal(
+                "SYGNAŁ — NIE BLOKUJĘ, ostrzegam. Zapis sekretu do pliku "
+                "(guard-secrets): wykryto " + ", ".join(hits) + ". Jeśli to "
+                "prawdziwa wartość — NIE zapisuj jej w repo: użyj odwołania do "
+                "menedżera sekretów (Doppler/env), nie literału, a wartość, "
+                "która już poszła, traktuj jak spaloną (rotacja u dostawcy). "
+                "Jeśli to atrapa na potrzeby testu — pomiń to ostrzeżenie. "
+                "Uwaga: skan sekretów w CI czyta commity, nie dysk — plik "
+                "w .gitignore nie zostanie przez niego sprawdzony."
+            )
         return
 
     # --- Ścieżka Bash (od v1.1): twarde sekrety -> deny; DSN host-aware. ---
@@ -345,22 +415,30 @@ def main():
         try:
             hard = _detect_hard_secrets(command)
             if hard:
-                _emit("deny", (
-                    "Blokada sekretu w komendzie (guard-secrets): wykryto "
-                    + ", ".join(hard) + ". Klucz/token nie należy do treści "
-                    "komendy — użyj zmiennej środowiskowej z menedżera sekretów."
-                ))
+                # v1.3 (2026-08-27): było `deny`, jest sygnał (jak wyżej).
+                _signal(
+                    "SYGNAŁ — NIE BLOKUJĘ, ostrzegam. Sekret w treści komendy "
+                    "(guard-secrets): wykryto " + ", ".join(hard) + ". Klucz "
+                    "w komendzie trafia do transkryptu i do audit logu i "
+                    "zostaje tam po operacji — użyj zmiennej środowiskowej "
+                    "z menedżera sekretów. Jeśli to atrapa testowa — pomiń."
+                )
                 return
             ask_host = _dsn_ask_host(command)
             if ask_host:
-                _emit("ask", (
-                    "DSN bazy z hasłem do ZDALNEGO lub NIEJEDNOZNACZNEGO hosta "
-                    "w komendzie (guard-secrets, CLAUDE.md sekcja 4). Host: "
-                    + ask_host +
-                    ". Hasło w komendzie trafia do transkryptu i audit logu. "
-                    "Zatwierdź ręcznie tylko jeśli to świadoma operacja; "
-                    "preferuj DSN ze zmiennej środowiskowej."
-                ))
+                # v1.2 (2026-08-27): było `ask`, jest sygnał nieblokujący.
+                # Zdjęcie wszystkich bramek `ask` — decyzja Darka, CLAUDE.md v1.19.
+                # Ostrzeżenie zostaje widoczne, przepływ uprawnień nietknięty.
+                _signal(
+                    "SYGNAŁ — NIE BLOKUJĘ, ostrzegam. DSN bazy z hasłem do "
+                    "ZDALNEGO lub NIEJEDNOZNACZNEGO hosta w komendzie "
+                    "(guard-secrets). Host: " + ask_host +
+                    ". Hasło w treści komendy trafia do transkryptu i do audit "
+                    "logu — zostaje tam po zakończeniu operacji. Preferuj DSN "
+                    "ze zmiennej środowiskowej z menedżera sekretów. Jeśli to "
+                    "hasło już poszło w komendzie — traktuj je jak spalone: "
+                    "rotacja w konsoli dostawcy, potem ponowne wdrożenie."
+                )
         except Exception:
             return  # fail-open
         return
