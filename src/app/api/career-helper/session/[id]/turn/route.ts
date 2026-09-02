@@ -29,6 +29,18 @@ const TurnSchema = z.object({ userMessage: z.string().max(USER_MESSAGE_MAX_LEN).
  * Filtr kryzysowy regułowy biegnie PRZED modelem — trafienie = model NIE
  * wołany, zwracamy sygnał crisis (front: S5 paused_crisis, statyczny komunikat).
  */
+/**
+ * Kod stanu HTTP z błędu dostawcy modelu — albo `undefined`, gdy go nie ma.
+ *
+ * Czytamy WYŁĄCZNIE `statusCode` i wyłącznie gdy jest liczbą. Reszta obiektu
+ * błędu SDK (`responseBody`, `requestBodyValues`, `url`) niesie treść zapytania
+ * studenta i nie wolno jej dotykać — patrz nagłówek `src/lib/log.ts`.
+ */
+function kodStanuOdpowiedzi(error: unknown): number | undefined {
+	const kod = (error as { statusCode?: unknown } | null | undefined)?.statusCode;
+	return typeof kod === "number" ? kod : undefined;
+}
+
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
 	const studentAuth = await resolveStudent();
 	if (!studentAuth.ok) {
@@ -301,6 +313,66 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 		headers: {
 			"x-career-helper-turn": String(nextTurn),
 			"x-career-helper-total-turns": String(MAX_TURNS),
+		},
+		/**
+		 * BŁĄD W TRAKCIE STRUMIENIA ZOSTAWIA ŚLAD PO STRONIE SERWERA.
+		 *
+		 * Domyślna obsługa AI SDK to `() => "An error occurred."` — błąd jedzie
+		 * do przeglądarki i NIE trafia nigdzie po stronie serwera. Skutek
+		 * zmierzony w nocnym śledztwie (Quinn, 2026-09-02): z 16 padłych podejść
+		 * Pomocnika kariery **12 nie zostawiło ani jednej linii diagnostycznej**.
+		 * Przyczynę czternastu nocy czerwieni dało się nazwać wyłącznie dlatego,
+		 * że w tym samym przebiegu biegła druga trasa (`/api/syllabus/parse`),
+		 * która woła `logError` i przyznaje się w dzienniku. Gdyby awaria
+		 * dotknęła tylko tej trasy, nie byłoby ŻADNEGO śladu.
+		 *
+		 * CZY TO NIE JEST DRUGI NOŚNIK — nośnik sprawdzony PRZED dołożeniem tego.
+		 * `runTurn` przekazuje do `streamText` własny `onError`
+		 * (`streamUsageTracker` w `src/lib/ai/usage.ts:194`). Ten istniejący hak
+		 * NIE pokrywa tej potrzeby i nie duplikuje się z tym tutaj:
+		 *   - pisze do INNEGO ujścia — wiersz telemetrii przez `recordAiUsage`,
+		 *     nie linia w dzienniku serwera;
+		 *   - niesie WYŁĄCZNIE nazwę klasy błędu (`error.name`), więc zdanie
+		 *     rozstrzygające o przyczynie („Your credit balance is too low")
+		 *     nie pojawia się w nim w ogóle;
+		 *   - w `NODE_ENV=test` z ujściem bazodanowym jest jawnym no-op
+		 *     (`usage.ts:107`), a przy padzie zapisu loguje własną porażkę,
+		 *     nie porażkę modelu.
+		 * Ten uchwyt dokłada brakującą warstwę: JEDNO zdanie w dzienniku, które
+		 * nazywa przyczynę.
+		 *
+		 * OCHRONA DANYCH OSOBOWYCH — logujemy PRZEZ `logError`, nigdy obok.
+		 * `src/lib/log.ts` celowo wyrzuca surowy obiekt błędu, bo obiekty błędów
+		 * SDK niosą oryginalny prompt (ankieta, cel kariery, treść rozmowy).
+		 * Stąd tutaj: żadnego `error.responseBody`, `error.url` ani
+		 * `error.requestBodyValues` — wyłącznie identyfikatory, które i tak już
+		 * stoją w pozostałych czterech wywołaniach `logError` w tym pliku, plus
+		 * kod stanu HTTP (liczba, nie treść). Rozpoznanie przyczyny bierze się
+		 * z `name` + `message`, które dokłada `logError`.
+		 */
+		onError: (error) => {
+			logError("career-helper.turn.stream", error, {
+				studentId,
+				sessionId: params.data.id,
+				turn: nextTurn,
+				// Kod stanu odpowiedzi dostawcy — jedyna rzecz, którą wyciągamy
+				// z obiektu błędu, i wyłącznie gdy jest liczbą. To metadana
+				// (402/429/529 rozstrzygają „budżet kontra przeciążenie"), nie
+				// treść. Ta sama polaryzacja co `extractValidationIssues`
+				// w `src/lib/log.ts`: metadane tak, dane studenta nigdy.
+				statusCode: kodStanuOdpowiedzi(error),
+			});
+			// TRZECI CZŁON, ZMIERZONY — nie „to samo, co było".
+			// Sprawdziłem, co SDK robi BEZ tego uchwytu, zamiast założyć:
+			// przebieg z wyłączonym `onError` oddaje do przeglądarki
+			//   data: {"type":"error","errorText":"Your credit balance is too
+			//          low to access the Anthropic API."}
+			// czyli SUROWY komunikat dostawcy. Zwrócenie stałej go zatrzymuje.
+			// Dla studenta nie zmienia się nic: ekran czatu renderuje własną
+			// treść (`COPY.chat.streamError`) na podstawie stanu „error",
+			// a `errorText` nie jest nigdzie wyświetlany (chat-screen.tsx §S4).
+			// Czyli: mniej wychodzi na zewnątrz, tyle samo widzi student.
+			return "An error occurred.";
 		},
 	});
 }
