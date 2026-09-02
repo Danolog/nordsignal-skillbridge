@@ -952,7 +952,61 @@ jobs:
     runs-on: ubuntu-latest
     # Tylko nocny cron (schedule) + reczne odpalenie (workflow_dispatch). NIE biega na
     # pull_request ani push — koszt modelu trzymany na jednym nocnym przebiegu.
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    #
+    # ══════════════════════════════════════════════════════════════════════════
+    # ZAWIESZONE DO BETY — DECYZJA, NIE DLUG. Darek, 2026-09-02 (czat, sign-off).
+    # ══════════════════════════════════════════════════════════════════════════
+    # Warunek pierwotny, do przywrocenia JEDNA edycja (podmien `false` na te linie):
+    #     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    #
+    # POWOD — saldo u dostawcy modelu wyczerpane 2026-08-15. Nie hipoteza, pomiar:
+    #   AI_APICallError · "Your credit balance is too low"
+    #   czternascie nocy z rzedu; sygnatura sie przesuwala — 19.08 pad zaczynal sie
+    #   od testu nr 7, od 20.08 juz od nr 1 (czyli budzet konczyl sie coraz wczesniej).
+    # Job biega RAZ NA DOBE, nie przy zmianach — to abonament za istnienie, nie
+    # oplata za prace. Przy zerze studentow nie chroni dzis nikogo.
+    #
+    # DLACZEGO ZAWIESZENIE, A NIE „niech sobie czerwieni" — to jest sedno.
+    # `e2e-llm` NIE JEST wsrod 14 bramek wymaganych w ochronie galezi `main`
+    # (zmierzone: trafien 0). Czyli przez czternascie nocy produkowal czerwien,
+    # ktorej NIKT NIE MUSIAL SLUCHAC, i nie zablokowal ani jednego scalenia.
+    # To ten sam wzorzec, ktory blokowalismy przy `sciezka-wejscia` (patrz jej
+    # komentarz wyzej), tylko grozniejszy: uczy zespol, ze czerwony tor nocny to
+    # STAN NORMALNY. Kosztowalo to realnie — zlecenie nocne z 2026-09-01 niosło
+    # „osiem nocy czerwieni", a bylo ich czternascie, bo nikt juz nie liczyl.
+    #
+    # PROG POWROTU — ZDARZENIE, NIE DATA: pierwsze konto PRAWDZIWEGO UZYTKOWNIKA.
+    # Data nie jest progiem, bo mija sama i nikogo nie zmusza do decyzji. Dopiero
+    # przy pierwszym uzytkowniku sciezka rozmowy przestaje byc hipotetyczna,
+    # a warstwa `premium` zaczyna wystawiac kredencjal, ktory ktos pokaze
+    # pracodawcy (CLAUDE.md sekcja 7 — rozdzial wagi oceny). Wtedy ten job wraca
+    # RAZEM z rozstrzygnieciem, czy ma byc wsrod bramek wymaganych.
+    #
+    # CO PRZEZ TO PRZESTAJE DZIALAC (v1.18, pozycja obowiazkowa) — nazwane teraz,
+    # zeby nie zostalo odkryte przed Beta: przez okolo dwa miesiace sciezka
+    # Pomocnika kariery (rozmowa z modelem, domkniecie w 9 turach, przycisk
+    # podsumowania) NIE MA ZADNEGO automatycznego sprawdzenia. Zaden inny job jej
+    # nie dotyka. To akceptowalny koszt przy zerze uzytkownikow i przestaje nim
+    # byc w dniu, w ktorym prog powrotu zostanie osiagniety.
+    #
+    # CZEGO TA ZMIANA NIE RUSZA, SWIADOMIE:
+    #   - wyzwalacza `schedule` (linia 15) — jego usuniecie zabiloby CALY przebieg
+    #     nocny, w tym `secret-scan`, ktory 2026-09-02 o 07:31 PIERWSZY RAZ od
+    #     osmiu dni przeszedl w pelnym zasiegu historii (751 commits scanned,
+    #     no leaks found). Ten zasieg istnieje WYLACZNIE w przebiegu nocnym:
+    #     na zgloszeniach skan widzi tylko commity zgloszenia i przez osiem dni
+    #     pokazywal zielen przy czerwonej nocy. To byla przyczyna calego B8.
+    #   - samego joba ani jego komentarzy — historia i uzasadnienia zostaja.
+    #   - listy `needs` w `nocny-alarm` (nizej), gdzie `e2e-llm` nadal figuruje.
+    #     DO OBSERWACJI, nie do zalozenia: job pominiety nie jest padnietym, a
+    #     `nocny-alarm` ma `if: failure() && (...)`, wiec powinien nadal budzic sie
+    #     przy czerwieni POZOSTALYCH bramek. Tego nie da sie zmierzyc na zgloszeniu
+    #     (tam `nocny-alarm` jest pomijany z powodu zdarzenia). PROG: pierwszy
+    #     nocny przebieg z czerwona bramka po tej zmianie — sprawdzic, czy alarm
+    #     sie odezwal. Jesli nie, `e2e-llm` wypada z `needs`.
+    #
+    # WLASCICIEL: Ethan (CTO).
+    if: false
     services:
       postgres:
         image: postgres:16
