@@ -734,23 +734,39 @@ jobs:
   # Bez bazy job bylby zielony, nie zmierzywszy tego, po co powstal.
   # SEEDU NIE MA CELOWO: przypadek loguje sie na konto NIEISTNIEJACE. Zero zapisu.
   #
-  # NIE JEST BRAMKA — JEST POMIAREM. STAN NA DZIS, JAWNIE.
-  # Job biega na kazdym zgloszeniu, ale NIE JEST wsrod wymaganych bramek ochrony
-  # galezi. Zmierzone 2026-09-01T22:16:16Z (odczyt `branches/main/protection`):
-  # 14 kontekstow wymaganych, trafien na `sciezka-wejscia` — ZERO. Czerwien tego
-  # joba NIE ZATRZYMA scalenia. Wpiecie do required-status-checks to osobna,
-  # administracyjna zmiana ochrony galezi — poza plikiem przeplywu, dokladnie
-  # jak przy `a11y-exam` wyzej (ten sam akapit, ta sama granica).
+  # JEST BRAMKA WYMAGANA — od 2026-09-02. Czerwien tego joba ZATRZYMUJE scalenie.
   #
-  # DLACZEGO TO JEST TU NAPISANE: zielony job na liscie zgloszenia czyta sie jak
-  # „sciezka wejscia jest pilnowana". Do czasu wpiecia jest MIERZONA, nie
-  # pilnowana. Roznica kosztowala juz szesc dni martwego logowania (punkt 2
-  # wyzej) — a job, ktorego czerwieni nikt nie musi sluchac, jest strazikiem
-  # w rozumieniu CLAUDE.md sekcja 8 v1.17 tylko z nazwy.
+  # Zmierzone po wpieciu, odczyt niezalezny (nie z odpowiedzi na zapis),
+  # 2026-09-02T21:00:49Z, `branches/main/protection`:
+  #     kontekstow wymaganych: 15   (bylo 14)
+  #     trafien na `sciezka-wejscia`: 1   (bylo 0)
+  #     strict: true, enforce_admins: true — nietkniete
+  # Decyzja Darka 2026-09-02; wykonal Ethan (CTO). Wpiecie jest zmiana ochrony
+  # galezi, czyli administracyjna i poza tym plikiem — dlatego stoi tu tylko
+  # ZAPIS o niej, tak jak przy `a11y-exam` wyzej.
   #
-  # PROG: pierwsze zgloszenie scalone z CZERWONYM `sciezka-wejscia` — albo
+  # PROG Z POPRZEDNIEJ WERSJI TEGO AKAPITU JEST DOMKNIETY, NIE SKASOWANY.
+  # Brzmial: „pierwsze zgloszenie scalone z CZERWONYM `sciezka-wejscia` — albo
   # wpinamy job do wymaganych, albo swiadomie przyjmujemy, ze to pomiar
-  # informacyjny. Jako decyzja, nie jako zaniedbanie. Wlasciciel: Ethan.
+  # informacyjny". Rozstrzygniecie zapadlo PRZED tym zdarzeniem: wpinamy.
+  # Prog, ktory stracil przedmiot, zamienia sie w notatke o domknieciu — nie
+  # zostaje wiszacy, bo prog bez przedmiotu czyta sie jak otwarta pozycja i
+  # przy nastepnym czytaniu produkuje prace, ktorej nie ma.
+  #
+  # PO CO TEN AKAPIT ZOSTAJE, SKORO PROG JEST ZAMKNIETY: zeby nastepny czytelnik
+  # wiedzial, ze przez 19 godzin ten job BIEGAL I NIE BRAMKOWAL. Zielony job na
+  # liscie zgloszenia czyta sie jak „sciezka wejscia jest pilnowana"; miedzy
+  # 2026-09-02T00:36Z (scalenie #343) a 2026-09-02T21:00Z byla MIERZONA, nie
+  # pilnowana. Job, ktorego czerwieni nikt nie musi sluchac, jest straznikiem
+  # w rozumieniu CLAUDE.md sekcja 8 v1.17 tylko z nazwy — a ta roznica
+  # kosztowala juz szesc dni martwego logowania (punkt 2 wyzej).
+  #
+  # CO PRZEZ TO WPIECIE PRZESTAJE DZIALAC (v1.18) — koszt nazwany, nie odkryty
+  # pozniej: szesc zgloszen otwartych PRZED powstaniem tego joba (#341, #340,
+  # #339, #285, #261, #212) zablokuje sie na bramce, ktora dla nich nigdy nie
+  # pobiegla. Przy `strict: true` i tak wymagaja wyrownania do `main` przed
+  # scaleniem, a wyrownanie ja uruchomi — wiec to koszt jednego dodatkowego
+  # przeliczenia na zgloszenie, nie awaria. Wlasciciel: Ethan (CTO).
   sciezka-wejscia:
     name: sciezka-wejscia (Playwright — landing, logowanie, rejestracja, bramka auth)
     runs-on: ubuntu-latest
