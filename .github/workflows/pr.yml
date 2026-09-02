@@ -247,6 +247,34 @@ jobs:
       - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # WERSJA SKANERA PRZYPIETA — inaczej `minVersion` w `.gitleaks.toml`
+          # jest zabezpieczeniem o strukturze kola. Zmierzone dwukrotnie,
+          # niezaleznie (przebieg reczny 2026-09-02T00:00Z i nocny 07:31Z):
+          #     gitleaks version: 8.24.3
+          #     minVersion w .gitleaks.toml: 8.30.1
+          #     wzmianek o minVersion w calym dzienniku: ZERO
+          # Skaner byl STARSZY niz nasze wlasne minimum i NIE ZGLOSIL tego —
+          # bo klucza `minVersion` nie zna, wiec go zignorowal. Prog chronil
+          # przed starym skanerem, ale zeby zadzialac, wymagal nowego.
+          # Skutek: nie wiedzielismy, czy tablica `[[allowlists]]` i `targetRules`
+          # zostaly w ogole wczytane, czy pominiete po cichu.
+          #
+          # Nazwa zmiennej wzieta z README akcji (nosnik autorytatywny, nie
+          # z pamieci): „GITLEAKS_VERSION (optional): a particular Gitleaks
+          # version to use (e.g. 8.15.3, no `v` prefix) or use `latest`".
+          #
+          # DLACZEGO KONKRETNA WERSJA, A NIE `latest`: przy skanerze bezpieczenstwa
+          # `latest` znaczy, ze zachowanie zmienia sie bez naszej decyzji —
+          # nowa regula domyslna moze pewnego ranka zapalic bramke, a wycofana
+          # moze przestac lapac to, co lapala. Chcemy zmiane wersji jako DECYZJE.
+          # 8.30.1 to najnowsze wydanie w chwili przypiecia (2026-03-21,
+          # sprawdzone w `repos/gitleaks/gitleaks/releases`) i dokladnie ta,
+          # ktorej wymaga nasz `minVersion`.
+          #
+          # PROG PODNIESIENIA: przy pierwszej zmianie `.gitleaks.toml`, ktora
+          # podniesie `minVersion` — obie wartosci maja isc razem, inaczej wraca
+          # dokladnie ten sam rozjazd. Wlasciciel: Ethan (CTO).
+          GITLEAKS_VERSION: "8.30.1"
 
   deps-scan:
     name: deps-scan (pnpm audit)
